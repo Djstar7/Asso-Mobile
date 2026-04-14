@@ -77,6 +77,7 @@ class CustomerOrderItem {
 /// Commande client
 class CustomerOrder {
   final String id;
+  final String? orderNumber;
   final CustomerOrderStatus status;
   final List<CustomerOrderItem> items;
   final double subtotal;
@@ -86,11 +87,16 @@ class CustomerOrder {
   final DateTime? deliveryDate;
   final String deliveryAddress;
   final String? trackingNumber;
+  final String? confirmationCode;
+  final bool canRate;
+  final String? ratedAt;
   final String? deliveryPersonName;
   final String? deliveryPersonPhone;
+  final String? deliveryCompanyName;
 
   CustomerOrder({
     required this.id,
+    this.orderNumber,
     required this.status,
     required this.items,
     required this.subtotal,
@@ -100,14 +106,19 @@ class CustomerOrder {
     this.deliveryDate,
     required this.deliveryAddress,
     this.trackingNumber,
+    this.confirmationCode,
+    this.canRate = false,
+    this.ratedAt,
     this.deliveryPersonName,
     this.deliveryPersonPhone,
+    this.deliveryCompanyName,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
     final statusStr = map['status']?.toString() ?? 'pending';
     return CustomerOrder(
       id: (map['id'] ?? '').toString(),
+      orderNumber: map['order_number'],
       status: _parseStatus(statusStr),
       items: (map['items'] as List?)?.map((i) => CustomerOrderItem.fromMap(Map<String, dynamic>.from(i))).toList() ?? [],
       subtotal: double.tryParse(map['subtotal']?.toString() ?? '0') ?? 0,
@@ -117,8 +128,12 @@ class CustomerOrder {
       deliveryDate: map['delivered_at'] != null ? DateTime.tryParse(map['delivered_at']) : null,
       deliveryAddress: map['delivery_address'] ?? '',
       trackingNumber: map['tracking_number'],
-      deliveryPersonName: map['delivery_person'] != null ? '${map['delivery_person']['first_name']} ${map['delivery_person']['last_name']}' : null,
+      confirmationCode: map['confirmation_code'],
+      canRate: map['can_rate'] == true,
+      ratedAt: map['rated_at'],
+      deliveryPersonName: map['delivery_person'] != null ? '${map['delivery_person']['name'] ?? ''}' : null,
       deliveryPersonPhone: map['delivery_person']?['phone'],
+      deliveryCompanyName: map['delivery_company']?['name'],
     );
   }
 

@@ -18,6 +18,13 @@ class FcmService extends GetxService {
   Stream<Map<String, dynamic>> get walletNotificationStream =>
       _walletNotificationStream.stream;
 
+  // Stream controller pour les notifications de commande/livraison
+  final _orderNotificationStream =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get orderNotificationStream =>
+      _orderNotificationStream.stream;
+
   /// Initialiser le service FCM
   Future<FcmService> init() async {
     print('[FCM] Initializing FCM Service...');
@@ -194,13 +201,18 @@ class FcmService extends GetxService {
         Get.toNamed('/package-subscription');
       }
     }
-    // Notifications de commande
-    else if (type?.startsWith('order_') == true) {
-      print('[FCM] Order notification received');
+    // Notifications de commande / livraison
+    else if (type?.startsWith('order_') == true ||
+             type?.startsWith('delivery_') == true ||
+             type?.startsWith('new_delivery') == true) {
+      print('[FCM] Order/delivery notification received: $type');
+
+      // Émettre dans le stream pour que TrackingController et DeliveryDashboardController réagissent
+      _orderNotificationStream.add(data);
 
       if (inForeground) {
         _showLocalNotification(
-          title: message.notification?.title ?? '📦 Commande',
+          title: message.notification?.title ?? 'Commande',
           body: message.notification?.body ?? 'Mise à jour de commande',
           payload: 'order_details:${data['order_id'] ?? ''}',
         );
@@ -298,6 +310,7 @@ class FcmService extends GetxService {
   @override
   void onClose() {
     _walletNotificationStream.close();
+    _orderNotificationStream.close();
     super.onClose();
   }
 }

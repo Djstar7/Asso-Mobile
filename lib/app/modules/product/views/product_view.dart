@@ -571,13 +571,22 @@ class ProductView extends GetView<ProductController> {
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
     final productPrice = double.tryParse(product['price'].toString().replaceAll(' ', '')) ?? 0.0;
+    final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
 
     // Réinitialiser les valeurs
     controller.withDelivery.value = false;
-    controller.fetchCurrentLocation();
+    controller.selectedPartner.value = null;
+    controller.deliveryPrice.value = 0;
+    controller.deliveryPartners.clear();
+
+    // Charger la position + partenaires
+    controller.fetchCurrentLocation().then((_) {
+      controller.loadDeliveryPartners(productId);
+    });
 
     Get.bottomSheet(
       Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
         decoration: BoxDecoration(
           color: AppThemeSystem.getBackgroundColor(context),
           borderRadius: BorderRadius.only(
@@ -640,7 +649,7 @@ class ProductView extends GetView<ProductController> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                product['name'],
+                                '${product['name']} — ${productPrice.toStringAsFixed(0)} FCFA',
                                 style: context.textStyle(
                                   FontSizeType.caption,
                                   color: AppThemeSystem.grey600,
@@ -654,152 +663,157 @@ class ProductView extends GetView<ProductController> {
                       ],
                     ),
 
-                    SizedBox(height: 24),
+                    SizedBox(height: 20),
 
-                    // Option de livraison
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.getSurfaceColor(context),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppThemeSystem.getBorderColor(context),
+                    // Adresse de livraison
+                    Obx(() => InkWell(
+                      onTap: () => _showChangeAddressDialog(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: controller.isLoadingLocation.value
+                                  ? SizedBox(
+                                      width: 20, height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+                                      ),
+                                    )
+                                  : Icon(Icons.location_on_rounded, color: AppThemeSystem.primaryColor, size: 20),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Adresse de livraison',
+                                    style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                                  SizedBox(height: 4),
+                                  Text(controller.currentLocation.value,
+                                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
+                                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
+                            if (!controller.isLoadingLocation.value)
+                              Icon(Icons.edit_outlined, color: AppThemeSystem.primaryColor, size: 20),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.local_shipping_rounded,
-                                color: AppThemeSystem.primaryColor,
-                                size: 24,
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Livraison à domicile',
-                                      style: context.textStyle(
-                                        FontSizeType.body1,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Obx(() => Text(
-                                      controller.withDelivery.value
-                                          ? '+${controller.deliveryPrice.value.toStringAsFixed(0)} FCFA'
-                                          : 'Retrait sur place',
-                                      style: context.textStyle(
-                                        FontSizeType.caption,
-                                        color: AppThemeSystem.grey600,
-                                      ),
-                                    )),
-                                  ],
+                    )),
+
+                    SizedBox(height: 20),
+
+                    // Section partenaires de livraison
+                    Text(
+                      'Choisir un partenaire de livraison',
+                      style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 12),
+
+                    Obx(() {
+                      if (controller.isLoadingPartners.value) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Column(
+                              children: [
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+                                ),
+                                SizedBox(height: 12),
+                                Text('Chargement des partenaires...',
+                                  style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (controller.deliveryPartners.isEmpty) {
+                        return Container(
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppThemeSystem.getSurfaceColor(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+                          ),
+                          child: Center(
+                            child: Text('Aucun partenaire de livraison disponible',
+                              style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: controller.deliveryPartners.map((partner) {
+                          final isSelected = controller.selectedPartner.value?['company_id'] == partner['company_id']
+                              && controller.selectedPartner.value?['zone_id'] == partner['zone_id'];
+                          final price = (partner['delivery_price'] as num?)?.toDouble() ?? 0;
+
+                          return GestureDetector(
+                            onTap: () {
+                              controller.selectPartner(partner);
+                              controller.withDelivery.value = true;
+                            },
+                            child: Container(
+                              margin: EdgeInsets.only(bottom: 10),
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
+                                    : AppThemeSystem.getSurfaceColor(context),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppThemeSystem.primaryColor
+                                      : AppThemeSystem.getBorderColor(context),
+                                  width: isSelected ? 2 : 1,
                                 ),
                               ),
-                              Obx(() => Switch(
-                                value: controller.withDelivery.value,
-                                onChanged: (value) {
-                                  controller.toggleDelivery();
-                                  if (value) {
-                                    controller.fetchCurrentLocation();
-                                  }
-                                },
-                                activeTrackColor: AppThemeSystem.primaryColor,
-                              )),
-                            ],
-                          ),
-
-                          // Adresse de livraison (si activée)
-                          Obx(() {
-                            if (!controller.withDelivery.value) return SizedBox.shrink();
-
-                            return Column(
-                              children: [
-                                Divider(height: 24),
-                                InkWell(
-                                  onTap: () => _showChangeAddressDialog(context),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                                      ),
+                              child: Row(
+                                children: [
+                                  if (isSelected)
+                                    Padding(
+                                      padding: EdgeInsets.only(right: 10),
+                                      child: Icon(Icons.check_circle_rounded, color: AppThemeSystem.primaryColor, size: 22),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: controller.isLoadingLocation.value
-                                              ? SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                                      AppThemeSystem.primaryColor,
-                                                    ),
-                                                  ),
-                                                )
-                                              : Icon(
-                                                  Icons.location_on_rounded,
-                                                  color: AppThemeSystem.primaryColor,
-                                                  size: 20,
-                                                ),
-                                        ),
-                                        SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Adresse de livraison',
-                                                style: context.textStyle(
-                                                  FontSizeType.caption,
-                                                  color: AppThemeSystem.grey600,
-                                                ),
-                                              ),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                controller.currentLocation.value,
-                                                style: context.textStyle(
-                                                  FontSizeType.body2,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (!controller.isLoadingLocation.value)
-                                          Icon(
-                                            Icons.edit_outlined,
-                                            color: AppThemeSystem.primaryColor,
-                                            size: 20,
-                                          ),
-                                      ],
+                                  Expanded(
+                                    child: Text(
+                                      partner['company_name'] ?? 'Partenaire',
+                                      style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
+                                  Text(
+                                    '${price.toStringAsFixed(0)} FCFA',
+                                    style: context.textStyle(FontSizeType.body1,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? AppThemeSystem.primaryColor : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }),
 
-                    SizedBox(height: 24),
+                    SizedBox(height: 20),
 
                     // Récapitulatif des prix
                     Container(
@@ -818,143 +832,103 @@ class ProductView extends GetView<ProductController> {
                       ),
                       child: Obx(() => Column(
                         children: [
-                          // Prix du produit
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Prix du produit',
-                                style: context.textStyle(
-                                  FontSizeType.body2,
-                                  color: AppThemeSystem.grey600,
-                                ),
-                              ),
-                              Text(
-                                '${productPrice.toStringAsFixed(0)} FCFA',
-                                style: context.textStyle(
-                                  FontSizeType.body2,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              Text('Prix du produit', style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
+                              Text('${productPrice.toStringAsFixed(0)} FCFA', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
                             ],
                           ),
-
-                          if (controller.withDelivery.value) ...[
+                          if (controller.withDelivery.value && controller.selectedPartner.value != null) ...[
                             SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Frais de livraison',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: AppThemeSystem.grey600,
-                                  ),
+                                Expanded(
+                                  child: Text('Livraison (${controller.selectedPartner.value!['company_name']})',
+                                    style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600),
+                                    overflow: TextOverflow.ellipsis),
                                 ),
-                                Text(
-                                  '${controller.deliveryPrice.value.toStringAsFixed(0)} FCFA',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppThemeSystem.primaryColor,
-                                  ),
-                                ),
+                                Text('${controller.deliveryPrice.value.toStringAsFixed(0)} FCFA',
+                                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppThemeSystem.primaryColor)),
                               ],
                             ),
                           ],
-
                           Divider(height: 24),
-
-                          // Total
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Total',
-                                style: context.textStyle(
-                                  FontSizeType.h5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${controller.calculateTotal(productPrice).toStringAsFixed(0)} FCFA',
-                                style: context.textStyle(
-                                  FontSizeType.h5,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppThemeSystem.primaryColor,
-                                ),
-                              ),
+                              Text('Total', style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
+                              Text('${controller.calculateTotal(productPrice).toStringAsFixed(0)} FCFA',
+                                style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor)),
                             ],
                           ),
                         ],
                       )),
                     ),
 
-                    SizedBox(height: 24),
+                    SizedBox(height: 20),
 
-                    // Boutons d'action
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Get.back(),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppThemeSystem.primaryColor,
-                              side: BorderSide(
-                                color: AppThemeSystem.primaryColor,
-                                width: 2,
-                              ),
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Annuler',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Get.back();
-                              Get.snackbar(
-                                'Commande confirmée',
-                                controller.withDelivery.value
-                                    ? 'Votre commande sera livrée à ${controller.currentLocation.value}'
-                                    : 'Vous pouvez retirer votre commande sur place',
-                                snackPosition: SnackPosition.BOTTOM,
-                                backgroundColor: Colors.green,
-                                colorText: Colors.white,
-                                duration: Duration(seconds: 4),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppThemeSystem.primaryColor,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Text(
-                              'Confirmer',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                    // Boutons Wallet (FreeMoPay / PayPal)
+                    Obx(() {
+                      final hasPartner = controller.selectedPartner.value != null;
+
+                      return Column(
+                        children: [
+                          // Bouton FreeMoPay
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: !hasPartner || controller.isCreatingOrder.value
+                                  ? null
+                                  : () => _confirmOrder(context, product, productId, 'freemopay'),
+                              icon: controller.isCreatingOrder.value
+                                  ? SizedBox(width: 20, height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : Icon(Icons.phone_android_rounded, color: Colors.white),
+                              label: Text('Payer avec FreeMoPay',
+                                style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold, color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400,
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: hasPartner ? 4 : 0,
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          SizedBox(height: 10),
+                          // Bouton PayPal
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: !hasPartner || controller.isCreatingOrder.value
+                                  ? null
+                                  : () => _confirmOrder(context, product, productId, 'paypal'),
+                              icon: Icon(Icons.credit_card_rounded,
+                                color: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400),
+                              label: Text('Payer avec PayPal / Carte',
+                                style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppThemeSystem.primaryColor,
+                                side: BorderSide(
+                                  color: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey300,
+                                  width: 2,
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          if (!hasPartner)
+                            Padding(
+                              padding: EdgeInsets.only(top: 10),
+                              child: Text('Sélectionnez un partenaire de livraison pour continuer',
+                                style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey500),
+                                textAlign: TextAlign.center),
+                            ),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -965,6 +939,29 @@ class ProductView extends GetView<ProductController> {
       isScrollControlled: true,
       enableDrag: true,
     );
+  }
+
+  /// Confirmer et créer la commande
+  void _confirmOrder(BuildContext context, Map<String, dynamic> product, int productId, String walletProvider) async {
+    final success = await controller.createOrder(
+      productId: productId,
+      quantity: 1,
+      walletProvider: walletProvider,
+    );
+
+    if (success) {
+      Get.back(); // Fermer le bottomsheet
+      Get.snackbar(
+        'Commande créée !',
+        'Vos fonds sont bloqués en attente de validation du vendeur.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: Duration(seconds: 4),
+      );
+      // Naviguer vers mes commandes
+      Get.toNamed('/shipment');
+    }
   }
 
   Future<void> _showChangeAddressDialog(BuildContext context) async {

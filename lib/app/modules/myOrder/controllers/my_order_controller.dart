@@ -156,4 +156,101 @@ class MyOrderController extends GetxController {
       );
     }
   }
+
+  /// Client rate une commande livrée
+  Future<void> rateOrder(String orderId, {required int rating, String? comment}) async {
+    try {
+      final response = await OrderService.rateOrder(
+        int.parse(orderId),
+        rating: rating,
+        comment: comment,
+      );
+
+      if (response.success) {
+        Get.snackbar('Merci !', 'Votre avis a été envoyé au vendeur.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        loadOrders(refresh: true);
+      } else {
+        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de noter',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+      }
+    } catch (e) {
+      Get.snackbar('Erreur', 'Impossible d\'envoyer la note',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
+  }
+
+  /// Affiche le dialog de notation
+  void showRatingDialog(CustomerOrder order) {
+    final selectedRating = 0.obs;
+    final commentController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Noter votre expérience'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Commande #${order.orderNumber ?? order.id}'),
+            const SizedBox(height: 16),
+            Obx(() => Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (i) => GestureDetector(
+                onTap: () => selectedRating.value = i + 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    i < selectedRating.value ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: i < selectedRating.value ? Colors.amber : Colors.grey,
+                    size: 40,
+                  ),
+                ),
+              )),
+            )),
+            const SizedBox(height: 16),
+            TextField(
+              controller: commentController,
+              decoration: const InputDecoration(
+                hintText: 'Commentaire (optionnel)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Plus tard'),
+          ),
+          Obx(() => ElevatedButton(
+            onPressed: selectedRating.value > 0
+                ? () {
+                    Get.back();
+                    rateOrder(
+                      order.id,
+                      rating: selectedRating.value,
+                      comment: commentController.text.isNotEmpty ? commentController.text : null,
+                    );
+                  }
+                : null,
+            child: const Text('Envoyer'),
+          )),
+        ],
+      ),
+    );
+  }
 }

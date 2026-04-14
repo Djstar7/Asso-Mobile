@@ -1,23 +1,13 @@
 import 'package:get/get.dart';
+import '../../myOrder/controllers/my_order_controller.dart';
 
 class ShipmentController extends GetxController {
-  //TODO: Implement ShipmentController
+  late final MyOrderController orderController;
 
-  final count = 0.obs;
   @override
   void onInit() {
     super.onInit();
+    orderController = Get.find<MyOrderController>();
+    orderController.loadOrders(refresh: true);
   }
-
-  @override
-  void onReady() {
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
-
-  void increment() => count.value++;
 }

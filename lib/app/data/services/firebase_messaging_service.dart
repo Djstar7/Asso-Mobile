@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -83,9 +84,15 @@ class FirebaseMessagingService extends GetxService {
     }
   }
 
-  /// Configure les notifications locales (pour Android)
+  /// Configure les notifications locales (pour Android/iOS uniquement)
   Future<void> _setupLocalNotifications() async {
-    if (Platform.isAndroid) {
+    // Les notifications locales ne sont pas supportées sur le Web
+    if (kIsWeb) {
+      print('🌐 Web détecté — notifications locales ignorées');
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
       print('📱 Configuration des notifications locales Android...');
 
       // Créer le channel de notification avec haute importance
@@ -184,6 +191,16 @@ class FirebaseMessagingService extends GetxService {
   Future<Map<String, String>> _getDeviceInfo() async {
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
+    // Sur le Web, dart:io Platform n'est pas disponible
+    if (kIsWeb) {
+      final WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
+      return {
+        'platform': 'web',
+        'device_name': webInfo.browserName.name,
+        'device_model': webInfo.userAgent ?? 'Web',
+      };
+    }
+
     if (Platform.isAndroid) {
       final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       return {
@@ -214,9 +231,9 @@ class FirebaseMessagingService extends GetxService {
       };
     } else {
       return {
-        'platform': 'web',
-        'device_name': 'Browser',
-        'device_model': 'Web',
+        'platform': 'unknown',
+        'device_name': 'Unknown',
+        'device_model': 'Unknown',
       };
     }
   }

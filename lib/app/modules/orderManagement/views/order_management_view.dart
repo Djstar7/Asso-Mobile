@@ -243,20 +243,20 @@ class OrderManagementView extends GetView<OrderManagementController> {
   /// État vide
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(context.horizontalPadding * 2),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.inbox_outlined,
-                size: 80,
+                size: 60,
                 color: AppThemeSystem.primaryColor,
               ),
             ),

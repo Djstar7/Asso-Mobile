@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/delivery_models.dart';
 import '../../../data/providers/deliverer_service.dart';
+import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/services/fcm_service.dart';
 import '../../shipConfig/models/sync_models.dart';
 
 class DeliveryDashboardController extends GetxController {
@@ -40,14 +43,15 @@ class DeliveryDashboardController extends GetxController {
   final isLoading = false.obs;
   final isLoadingCompany = false.obs;
 
+  StreamSubscription? _orderFcmSubscription;
+
   @override
   void onInit() {
     super.onInit();
-    // Charger d'abord les infos de l'entreprise pour avoir les zones
     loadCompanyInfo();
     loadDeliveries();
+    _listenToDeliveryNotifications();
 
-    // Écouter les changements de filtre
     ever(selectedStatus, (_) => _applyFilter());
   }
 
@@ -105,7 +109,27 @@ class DeliveryDashboardController extends GetxController {
 
   @override
   void onClose() {
+    _orderFcmSubscription?.cancel();
     super.onClose();
+  }
+
+  /// Écoute les notifications FCM pour auto-refresh du dashboard livreur
+  void _listenToDeliveryNotifications() {
+    try {
+      final fcmService = Get.find<FcmService>();
+      _orderFcmSubscription = fcmService.orderNotificationStream.listen((data) {
+        final type = data['type'] as String? ?? '';
+        // Rafraîchir quand une nouvelle livraison arrive ou qu'un statut change
+        if (type == 'new_delivery_request' ||
+            type == 'delivery_assigned' ||
+            type == 'order_confirmed' ||
+            type.startsWith('order_')) {
+          loadDeliveries();
+        }
+      });
+    } catch (e) {
+      // FcmService pas encore initialisé
+    }
   }
 
   /// Charge les demandes de livraison depuis l'API
@@ -311,45 +335,32 @@ class DeliveryDashboardController extends GetxController {
     );
   }
 
-  /// Accepte une demande de livraison
+  /// Accepte une demande de livraison (appel API réel)
   Future<void> acceptRequest(String requestId) async {
     try {
-      final index = allRequests.indexWhere((r) => r.id == requestId);
-      if (index == -1) return;
+      final orderId = int.tryParse(requestId.toString());
+      if (orderId == null) return;
 
-      // TODO: Appel API pour accepter la demande
+      final response = await DeliveryService.acceptDelivery(orderId);
 
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Mettre à jour le statut
-      final request = allRequests[index];
-      allRequests[index] = DeliveryRequest(
-        id: request.id,
-        orderId: request.orderId,
-        status: DeliveryStatus.inProgress,
-        customerName: request.customerName,
-        customerPhone: request.customerPhone,
-        pickupAddress: request.pickupAddress,
-        pickupLocation: request.pickupLocation,
-        deliveryAddress: request.deliveryAddress,
-        deliveryLocation: request.deliveryLocation,
-        distance: request.distance,
-        commission: request.commission,
-        requestDate: request.requestDate,
-        acceptedDate: DateTime.now(),
-        notes: request.notes,
-      );
-
-      stats.value = _calculateStats();
-      _applyFilter();
-
-      Get.snackbar(
-        'Demande acceptée',
-        'Vous pouvez maintenant commencer la livraison',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      if (response.success) {
+        await loadDeliveries();
+        Get.snackbar(
+          'Livraison acceptée',
+          'Course démarrée — dirigez-vous vers le point de retrait',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Impossible d\'accepter',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
     } catch (e) {
       Get.snackbar(
         'Erreur',
@@ -411,50 +422,78 @@ class DeliveryDashboardController extends GetxController {
     }
   }
 
-  /// Marque une livraison comme terminée
+  /// Complète une livraison avec le code secret du client
   Future<void> markAsDelivered(String requestId) async {
+    final codeController = TextEditingController();
+
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Confirmer la livraison'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Entrez le code secret à 6 chiffres communiqué par le client :'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: codeController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: const InputDecoration(
+                hintText: '000000',
+                border: OutlineInputBorder(),
+                counterText: '',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || codeController.text.length != 6) return;
+
     try {
-      final index = allRequests.indexWhere((r) => r.id == requestId);
-      if (index == -1) return;
+      final orderId = int.tryParse(requestId.toString());
+      if (orderId == null) return;
 
-      // TODO: Appel API pour marquer comme livré
-
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Mettre à jour le statut
-      final request = allRequests[index];
-      allRequests[index] = DeliveryRequest(
-        id: request.id,
-        orderId: request.orderId,
-        status: DeliveryStatus.delivered,
-        customerName: request.customerName,
-        customerPhone: request.customerPhone,
-        pickupAddress: request.pickupAddress,
-        pickupLocation: request.pickupLocation,
-        deliveryAddress: request.deliveryAddress,
-        deliveryLocation: request.deliveryLocation,
-        distance: request.distance,
-        commission: request.commission,
-        requestDate: request.requestDate,
-        acceptedDate: request.acceptedDate,
-        deliveredDate: DateTime.now(),
-        notes: request.notes,
+      final response = await DeliveryService.completeDelivery(
+        orderId,
+        confirmationCode: codeController.text,
       );
 
-      stats.value = _calculateStats();
-      _applyFilter();
-
-      Get.snackbar(
-        'Livraison terminée',
-        'Vous avez gagné ${request.commission.toStringAsFixed(0)} XAF',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      if (response.success) {
+        await loadDeliveries();
+        Get.snackbar(
+          'Livraison confirmée !',
+          'Commission créditée sur votre wallet.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Code incorrect',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
     } catch (e) {
       Get.snackbar(
         'Erreur',
-        'Impossible de marquer comme livré',
+        'Impossible de confirmer la livraison',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,

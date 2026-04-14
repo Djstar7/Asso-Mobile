@@ -1,21 +1,28 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import '../../../data/providers/order_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/services/fcm_service.dart';
 
 class TrackingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   final RxList<Map<String, dynamic>> shipments = <Map<String, dynamic>>[].obs;
   final RxString selectedFilter = 'Tous'.obs;
   final RxString searchQuery = ''.obs;
+  final RxBool isLoading = false.obs;
 
   final List<String> filters = ['Tous', 'En cours', 'Livré', 'Annulé'];
+
+  StreamSubscription? _orderFcmSubscription;
 
   @override
   void onInit() {
     super.onInit();
-    // Charger les expéditions uniquement si l'utilisateur est connecté
     if (StorageService.isAuthenticated) {
-      _loadShipments();
+      loadOrders();
+      _listenToOrderNotifications();
     }
     searchController.addListener(() {
       searchQuery.value = searchController.text;
@@ -24,134 +31,208 @@ class TrackingController extends GetxController {
 
   @override
   void onClose() {
+    _orderFcmSubscription?.cancel();
     searchController.dispose();
     super.onClose();
   }
 
-  void _loadShipments() {
-    shipments.value = [
-      {
-        'id': 'CMD-001',
-        'productName': 'T-shirt Design Artistique',
-        'productImage': 'assets/images/p1.jpeg',
-        'status': 'En cours',
-        'statusColor': 0xFF3B82F6, // Blue
-        'orderDate': '15 Mars 2026',
-        'estimatedDelivery': '18 Mars 2026',
-        'currentLocation': 'Centre de tri - Douala',
-        'trackingSteps': [
-          {'title': 'Commande confirmée', 'date': '15 Mars, 10:30', 'completed': true},
-          {'title': 'En cours de préparation', 'date': '15 Mars, 14:20', 'completed': true},
-          {'title': 'Expédiée', 'date': '16 Mars, 09:15', 'completed': true},
-          {'title': 'En transit', 'date': '16 Mars, 15:00', 'completed': true},
-          {'title': 'Livraison en cours', 'date': 'Aujourd\'hui', 'completed': false},
-          {'title': 'Livrée', 'date': 'En attente', 'completed': false},
-        ],
-        'seller': 'Boutique Fashion',
-        'price': '15 000 FCFA',
-        'deliveryAddress': 'Douala, Bonapriso - Rue des Cocotiers',
-      },
-      {
-        'id': 'CMD-002',
-        'productName': 'Casque Audio Bluetooth',
-        'productImage': 'assets/images/p4.jpeg',
-        'status': 'Livré',
-        'statusColor': 0xFF10B981, // Green
-        'orderDate': '12 Mars 2026',
-        'estimatedDelivery': '14 Mars 2026',
-        'deliveredDate': '14 Mars 2026',
-        'currentLocation': 'Livré',
-        'trackingSteps': [
-          {'title': 'Commande confirmée', 'date': '12 Mars, 11:00', 'completed': true},
-          {'title': 'En cours de préparation', 'date': '12 Mars, 16:30', 'completed': true},
-          {'title': 'Expédiée', 'date': '13 Mars, 08:00', 'completed': true},
-          {'title': 'En transit', 'date': '13 Mars, 14:30', 'completed': true},
-          {'title': 'Livraison en cours', 'date': '14 Mars, 09:00', 'completed': true},
-          {'title': 'Livrée', 'date': '14 Mars, 11:20', 'completed': true},
-        ],
-        'seller': 'Tech Store',
-        'price': '28 000 FCFA',
-        'deliveryAddress': 'Yaoundé, Bastos - Avenue Kennedy',
-      },
-      {
-        'id': 'CMD-003',
-        'productName': 'Sneakers Sport Premium',
-        'productImage': 'assets/images/p2.jpeg',
-        'status': 'En cours',
-        'statusColor': 0xFF3B82F6, // Blue
-        'orderDate': '14 Mars 2026',
-        'estimatedDelivery': '17 Mars 2026',
-        'currentLocation': 'En préparation',
-        'trackingSteps': [
-          {'title': 'Commande confirmée', 'date': '14 Mars, 15:45', 'completed': true},
-          {'title': 'En cours de préparation', 'date': 'En cours', 'completed': false},
-          {'title': 'Expédiée', 'date': 'En attente', 'completed': false},
-          {'title': 'En transit', 'date': 'En attente', 'completed': false},
-          {'title': 'Livraison en cours', 'date': 'En attente', 'completed': false},
-          {'title': 'Livrée', 'date': 'En attente', 'completed': false},
-        ],
-        'seller': 'Sports Plus',
-        'price': '35 000 FCFA',
-        'deliveryAddress': 'Douala, Akwa - Rue Joffre',
-      },
-      {
-        'id': 'CMD-004',
-        'productName': 'Sac à Main Cuir',
-        'productImage': 'assets/images/p5.jpeg',
-        'status': 'Annulé',
-        'statusColor': 0xFFEF4444, // Red
-        'orderDate': '10 Mars 2026',
-        'estimatedDelivery': '13 Mars 2026',
-        'cancelledDate': '11 Mars 2026',
-        'currentLocation': 'Annulé',
-        'trackingSteps': [
-          {'title': 'Commande confirmée', 'date': '10 Mars, 09:30', 'completed': true},
-          {'title': 'Annulée', 'date': '11 Mars, 10:00', 'completed': true},
-        ],
-        'seller': 'Luxury Bags',
-        'price': '32 000 FCFA',
-        'cancelReason': 'Produit non disponible',
-      },
-      {
-        'id': 'CMD-005',
-        'productName': 'Montre Élégante',
-        'productImage': 'assets/images/p3.jpeg',
-        'status': 'Livré',
-        'statusColor': 0xFF10B981, // Green
-        'orderDate': '08 Mars 2026',
-        'estimatedDelivery': '10 Mars 2026',
-        'deliveredDate': '10 Mars 2026',
-        'currentLocation': 'Livré',
-        'trackingSteps': [
-          {'title': 'Commande confirmée', 'date': '08 Mars, 13:20', 'completed': true},
-          {'title': 'En cours de préparation', 'date': '08 Mars, 17:00', 'completed': true},
-          {'title': 'Expédiée', 'date': '09 Mars, 07:30', 'completed': true},
-          {'title': 'En transit', 'date': '09 Mars, 13:45', 'completed': true},
-          {'title': 'Livraison en cours', 'date': '10 Mars, 08:30', 'completed': true},
-          {'title': 'Livrée', 'date': '10 Mars, 10:15', 'completed': true},
-        ],
-        'seller': 'Time Boutique',
-        'price': '45 000 FCFA',
-        'deliveryAddress': 'Bafoussam, Centre-ville',
-      },
-    ];
+  /// Écoute les notifications FCM de commande pour auto-refresh
+  void _listenToOrderNotifications() {
+    try {
+      final fcmService = Get.find<FcmService>();
+      _orderFcmSubscription = fcmService.orderNotificationStream.listen((data) {
+        final type = data['type'] as String? ?? '';
+        // Rafraîchir sur tout changement de statut commande
+        if (type.startsWith('order_') || type.startsWith('delivery_')) {
+          loadOrders();
+        }
+      });
+    } catch (e) {
+      // FcmService pas encore initialisé, pas grave
+    }
+  }
+
+  /// Charge les commandes confirmées+ depuis l'API
+  Future<void> loadOrders() async {
+    isLoading.value = true;
+    try {
+      final response = await OrderService.getOrders(perPage: 50);
+
+      if (response.success && response.data != null) {
+        final ordersList = response.data!['orders'] as List? ?? [];
+        shipments.value = ordersList
+            .map((o) => _mapOrderToShipment(Map<String, dynamic>.from(o)))
+            .where((s) => s != null)
+            .cast<Map<String, dynamic>>()
+            .toList();
+      }
+    } catch (e) {
+      // Silently fail
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Mappe une commande API vers le format shipment pour le tracking
+  Map<String, dynamic>? _mapOrderToShipment(Map<String, dynamic> order) {
+    final status = order['status']?.toString() ?? 'pending';
+
+    // Ne montrer que les commandes qui ont avancé (pas pending = pas encore validé)
+    // On garde pending aussi pour que le client voit tout
+    final fmt = DateFormat('dd MMM, HH:mm', 'fr_FR');
+    final fmtDate = DateFormat('dd MMM yyyy', 'fr_FR');
+
+    final createdAt = DateTime.tryParse(order['created_at'] ?? '') ?? DateTime.now();
+    final confirmedAt = order['confirmed_at'] != null ? DateTime.tryParse(order['confirmed_at']) : null;
+    final shippedAt = order['shipped_at'] != null ? DateTime.tryParse(order['shipped_at']) : null;
+    final deliveredAt = order['delivered_at'] != null ? DateTime.tryParse(order['delivered_at']) : null;
+    final cancelledAt = order['cancelled_at'] != null ? DateTime.tryParse(order['cancelled_at']) : null;
+
+    // Déterminer le statut display + couleur
+    String displayStatus;
+    int statusColor;
+    switch (status) {
+      case 'pending':
+        displayStatus = 'En attente';
+        statusColor = 0xFFF59E0B; // Orange
+        break;
+      case 'confirmed':
+      case 'preparing':
+        displayStatus = 'En cours';
+        statusColor = 0xFF3B82F6; // Blue
+        break;
+      case 'shipped':
+        displayStatus = 'En cours';
+        statusColor = 0xFF6366F1; // Indigo
+        break;
+      case 'delivered':
+        displayStatus = 'Livré';
+        statusColor = 0xFF10B981; // Green
+        break;
+      case 'cancelled':
+        displayStatus = 'Annulé';
+        statusColor = 0xFFEF4444; // Red
+        break;
+      default:
+        displayStatus = 'En attente';
+        statusColor = 0xFFF59E0B;
+    }
+
+    // Items info
+    final items = order['items'] as List? ?? [];
+    String productName = 'Commande';
+    String productImage = '';
+    if (items.isNotEmpty) {
+      final firstItem = items[0] as Map<String, dynamic>;
+      productName = firstItem['product_name'] ?? 'Produit';
+      productImage = firstItem['product_image'] ?? '';
+      if (items.length > 1) {
+        productName += ' +${items.length - 1} autre${items.length > 2 ? 's' : ''}';
+      }
+    }
+
+    // Delivery company
+    final deliveryCompany = order['delivery_company'] as Map<String, dynamic>?;
+    final deliveryPerson = order['delivery_person'] as Map<String, dynamic>?;
+
+    // Construire la timeline de tracking
+    final trackingSteps = <Map<String, dynamic>>[];
+
+    trackingSteps.add({
+      'title': 'Commande passée',
+      'date': fmt.format(createdAt),
+      'completed': true,
+    });
+
+    if (status == 'cancelled') {
+      trackingSteps.add({
+        'title': 'Commande annulée',
+        'date': cancelledAt != null ? fmt.format(cancelledAt) : 'Annulée',
+        'completed': true,
+      });
+    } else {
+      trackingSteps.add({
+        'title': 'Validée par le vendeur',
+        'date': confirmedAt != null ? fmt.format(confirmedAt) : 'En attente',
+        'completed': confirmedAt != null,
+      });
+
+      trackingSteps.add({
+        'title': 'Prise en charge par le livreur',
+        'date': shippedAt != null
+            ? '${fmt.format(shippedAt)}${deliveryPerson != null ? ' — ${deliveryPerson['name'] ?? ''}' : ''}'
+            : 'En attente',
+        'completed': shippedAt != null,
+      });
+
+      trackingSteps.add({
+        'title': 'En cours de livraison',
+        'date': shippedAt != null && deliveredAt == null ? 'En route...' : (shippedAt != null ? fmt.format(shippedAt) : 'En attente'),
+        'completed': shippedAt != null,
+      });
+
+      trackingSteps.add({
+        'title': 'Livrée',
+        'date': deliveredAt != null ? fmt.format(deliveredAt) : 'En attente',
+        'completed': deliveredAt != null,
+      });
+    }
+
+    // Localisation courante
+    String currentLocation;
+    if (status == 'delivered') {
+      currentLocation = 'Livré';
+    } else if (status == 'shipped') {
+      currentLocation = 'En livraison${deliveryPerson != null ? ' par ${deliveryPerson['name']}' : ''}';
+    } else if (status == 'confirmed' || status == 'preparing') {
+      currentLocation = 'En préparation chez le vendeur';
+    } else if (status == 'cancelled') {
+      currentLocation = 'Annulé';
+    } else {
+      currentLocation = 'En attente de validation';
+    }
+
+    final total = double.tryParse(order['total']?.toString() ?? '0') ?? 0;
+    final numberFormat = NumberFormat('#,###', 'fr_FR');
+
+    return {
+      'id': order['order_number'] ?? 'CMD-${order['id']}',
+      'orderId': order['id'],
+      'productName': productName,
+      'productImage': productImage,
+      'status': displayStatus,
+      'statusColor': statusColor,
+      'orderDate': fmtDate.format(createdAt),
+      'estimatedDelivery': '',
+      'currentLocation': currentLocation,
+      'trackingSteps': trackingSteps,
+      'seller': '',
+      'price': '${numberFormat.format(total)} FCFA',
+      'deliveryAddress': order['delivery_address'] ?? '',
+      'deliveryCompany': deliveryCompany?['name'] ?? '',
+      'deliveryPersonName': deliveryPerson?['name'],
+      'deliveryPersonPhone': deliveryPerson?['phone'],
+      'confirmationCode': order['confirmation_code'],
+      'canRate': order['can_rate'] == true,
+      'cancelReason': order['cancel_reason'],
+      'deliveredDate': deliveredAt != null ? fmtDate.format(deliveredAt) : null,
+      'rawStatus': status,
+    };
   }
 
   List<Map<String, dynamic>> get filteredShipments {
     var results = shipments.toList();
 
-    // Filtrer par statut
     if (selectedFilter.value != 'Tous') {
-      results = results.where((shipment) => shipment['status'] == selectedFilter.value).toList();
+      results = results.where((s) => s['status'] == selectedFilter.value).toList();
     }
 
-    // Filtrer par numéro de commande/suivi
     if (searchQuery.value.isNotEmpty) {
-      results = results.where((shipment) {
-        final id = shipment['id'].toString().toLowerCase();
-        final productName = shipment['productName'].toString().toLowerCase();
-        final query = searchQuery.value.toLowerCase();
-        return id.contains(query) || productName.contains(query);
+      final query = searchQuery.value.toLowerCase();
+      results = results.where((s) {
+        final id = s['id'].toString().toLowerCase();
+        final name = s['productName'].toString().toLowerCase();
+        return id.contains(query) || name.contains(query);
       }).toList();
     }
 
@@ -167,15 +248,10 @@ class TrackingController extends GetxController {
     selectedFilter.value = filter;
   }
 
-  void openShipmentDetails(Map<String, dynamic> shipment) {
-    // Cette méthode sera utilisée par la vue pour ouvrir les détails
-    // La vue gère l'affichage du bottom sheet
-  }
-
   void contactSupport() {
     Get.snackbar(
       'Support',
-      'Fonction de contact support en cours de développement',
+      'Fonction de contact support en développement',
       snackPosition: SnackPosition.BOTTOM,
     );
   }

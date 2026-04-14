@@ -22,24 +22,26 @@ class OrderService {
     return await ApiProvider.get('${AppConstants.ordersUrl}/$id');
   }
 
-  /// Create order
+  /// Create order with escrow (wallet lock)
   static Future<ApiResponse> createOrder({
     required List<Map<String, dynamic>> items,
+    int? deliveryCompanyId,
+    int? deliveryZoneId,
+    required String walletProvider,
     String? deliveryAddress,
     double? deliveryLatitude,
     double? deliveryLongitude,
-    String? paymentMethod,
     String? notes,
-    double? deliveryFee,
   }) async {
     return await ApiProvider.post(AppConstants.ordersUrl, body: {
       'items': items,
+      'delivery_company_id': deliveryCompanyId,
+      'delivery_zone_id': deliveryZoneId,
+      'wallet_provider': walletProvider,
       'delivery_address': deliveryAddress,
       'delivery_latitude': deliveryLatitude,
       'delivery_longitude': deliveryLongitude,
-      'payment_method': paymentMethod ?? 'mobile',
       'notes': notes,
-      'delivery_fee': deliveryFee ?? 2000,
     });
   }
 
@@ -60,6 +62,14 @@ class OrderService {
       'order_id': orderId,
       'payment_method': paymentMethod,
       'phone_number': phoneNumber,
+    });
+  }
+
+  /// Rate a delivered order
+  static Future<ApiResponse> rateOrder(int orderId, {required int rating, String? comment}) async {
+    return await ApiProvider.post('${AppConstants.ordersUrl}/$orderId/rate', body: {
+      'rating': rating,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
     });
   }
 

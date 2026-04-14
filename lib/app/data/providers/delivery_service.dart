@@ -17,9 +17,26 @@ class DeliveryService {
     return await ApiProvider.post('/v1/delivery/$orderId/accept', body: {});
   }
 
-  /// Complete a delivery
-  static Future<ApiResponse> completeDelivery(int orderId) async {
-    return await ApiProvider.post('/v1/delivery/$orderId/complete', body: {});
+  /// Complete a delivery with confirmation code
+  static Future<ApiResponse> completeDelivery(int orderId, {required String confirmationCode}) async {
+    return await ApiProvider.post('/v1/delivery/$orderId/complete', body: {
+      'confirmation_code': confirmationCode,
+    });
+  }
+
+  /// Get delivery partners with calculated pricing for a product
+  static Future<ApiResponse> getDeliveryPartnersWithPricing({
+    required int productId,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final params = <String, dynamic>{
+      'product_id': productId,
+    };
+    if (latitude != null) params['latitude'] = latitude;
+    if (longitude != null) params['longitude'] = longitude;
+
+    return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }
 
   /// Check if delivery is available at a location

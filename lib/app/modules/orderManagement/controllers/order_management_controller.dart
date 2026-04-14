@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import '../models/cameroon_cities.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/vendor_service.dart';
 
 class OrderManagementController extends GetxController {
   // Liste complète des commandes
@@ -58,18 +59,15 @@ class OrderManagementController extends GetxController {
         } else if (data is Map && data['orders'] is List) {
           allOrders.value = _parseOrdersFromApi(data['orders']);
         } else {
-          // Fallback to mock if no orders in response
-          allOrders.value = _generateMockOrders();
+          allOrders.value = [];
         }
       } else {
-        // Fallback to mock data if API fails
-        allOrders.value = _generateMockOrders();
+        allOrders.value = [];
       }
 
       applyFilters();
     } catch (e) {
-      // Fallback to mock data on error
-      allOrders.value = _generateMockOrders();
+      allOrders.value = [];
       applyFilters();
 
       Get.snackbar(
@@ -88,21 +86,31 @@ class OrderManagementController extends GetxController {
   List<OrderModel> _parseOrdersFromApi(List<dynamic> rawOrders) {
     return rawOrders.map((item) {
       final order = item as Map<String, dynamic>;
+      // L'API retourne 'user' (objet) pour le client, pas des champs plats
+      final customer = order['customer'] as Map<String, dynamic>?
+          ?? order['user'] as Map<String, dynamic>?;
+
       return OrderModel(
-        id: order['id'] ?? 'CMD${DateTime.now().millisecondsSinceEpoch}',
-        clientId: order['client_id'] ?? order['customer_id'] ?? '',
-        clientName: order['client_name'] ?? order['customer_name'] ?? 'Client',
-        clientPhone: order['client_phone'] ?? order['customer_phone'] ?? '',
-        clientAvatar: order['client_avatar'] ?? order['customer_avatar'] ?? '',
+        id: (order['id'] ?? '').toString(),
+        clientId: (customer?['id'] ?? order['user_id'] ?? '').toString(),
+        clientName: customer?['name']
+            ?? '${customer?['first_name'] ?? ''} ${customer?['last_name'] ?? ''}'.trim(),
+        clientPhone: (customer?['phone'] ?? '').toString(),
+        clientAvatar: (customer?['avatar'] ?? '').toString(),
         items: _parseOrderItems(order['items'] ?? []),
-        totalAmount: (order['total_amount'] ?? order['total'] ?? 0).toDouble(),
+        totalAmount: double.tryParse(order['total']?.toString() ?? '0') ?? 0,
         status: _parseOrderStatus(order['status']),
-        city: order['city'] ?? 'Douala',
-        address: order['address'] ?? order['delivery_address'] ?? '',
-        orderDate: _parseDate(order['created_at'] ?? order['order_date']),
-        validatedDate: order['validated_at'] != null ? _parseDate(order['validated_at']) : null,
+        city: order['city'] ?? '',
+        address: order['delivery_address'] ?? '',
+        orderDate: _parseDate(order['created_at']),
+        validatedDate: order['confirmed_at'] != null ? _parseDate(order['confirmed_at']) : null,
         cancelledDate: order['cancelled_at'] != null ? _parseDate(order['cancelled_at']) : null,
-        cancelReason: order['cancel_reason'] ?? '',
+        cancelReason: order['cancel_reason'],
+        deliveryPersonId: order['delivery_person_id']?.toString(),
+        deliveryPersonName: order['delivery_person'] != null
+            ? (order['delivery_person']['name'] ?? '${order['delivery_person']['first_name'] ?? ''} ${order['delivery_person']['last_name'] ?? ''}'.trim())
+            : null,
+        notes: order['notes'],
       );
     }).toList();
   }
@@ -111,24 +119,33 @@ class OrderManagementController extends GetxController {
   List<OrderItem> _parseOrderItems(List<dynamic> rawItems) {
     return rawItems.map((item) {
       final orderItem = item as Map<String, dynamic>;
+      // L'API retourne 'product' (objet) dans chaque item
+      final product = orderItem['product'] as Map<String, dynamic>?;
+
       return OrderItem(
-        productId: orderItem['product_id'] ?? '',
-        productName: orderItem['product_name'] ?? 'Produit',
+        productId: (orderItem['product_id'] ?? '').toString(),
+        productName: orderItem['product_name'] ?? product?['name'] ?? 'Produit',
         quantity: orderItem['quantity'] ?? 1,
-        unitPrice: (orderItem['unit_price'] ?? orderItem['price'] ?? 0).toDouble(),
-        totalPrice: (orderItem['total_price'] ?? orderItem['total'] ?? 0).toDouble(),
+        unitPrice: double.tryParse(orderItem['unit_price']?.toString() ?? '0') ?? 0,
+        totalPrice: double.tryParse(orderItem['total_price']?.toString() ?? '0') ?? 0,
       );
     }).toList();
   }
 
-  /// Parse order status
+  /// Parse order status from backend
   OrderStatus _parseOrderStatus(String? status) {
     switch (status?.toLowerCase()) {
       case 'pending':
         return OrderStatus.pending;
+      case 'confirmed':
       case 'validated':
       case 'approved':
+      case 'preparing':
         return OrderStatus.validated;
+      case 'shipped':
+        return OrderStatus.inDelivery;
+      case 'delivered':
+        return OrderStatus.delivered;
       case 'cancelled':
         return OrderStatus.cancelled;
       default:
@@ -193,15 +210,14 @@ class OrderManagementController extends GetxController {
     searchController.clear();
   }
 
-  /// Valide une commande
+  /// Valide une commande (appel API réel)
   Future<void> validateOrder(OrderModel order) async {
     try {
-      // Afficher un dialogue de confirmation
       final confirm = await Get.dialog<bool>(
         AlertDialog(
           title: const Text('Valider la commande'),
           content: Text(
-            'Voulez-vous valider la commande #${order.id} de ${order.clientName} ?',
+            'Voulez-vous valider la commande #${order.id} de ${order.clientName} ?\n\nLes fonds seront crédités sur votre wallet (bloqués jusqu\'à livraison).',
           ),
           actions: [
             TextButton(
@@ -219,26 +235,29 @@ class OrderManagementController extends GetxController {
       if (confirm == true) {
         isLoading.value = true;
 
-        // TODO: Appel API pour valider la commande
-        await Future.delayed(const Duration(milliseconds: 500));
+        final orderId = int.tryParse(order.id.toString());
+        if (orderId == null) return;
 
-        // Mettre à jour la commande
-        final index = allOrders.indexWhere((o) => o.id == order.id);
-        if (index != -1) {
-          allOrders[index] = order.copyWith(
-            status: OrderStatus.validated,
-            validatedDate: DateTime.now(),
+        final response = await VendorService.validateOrder(orderId);
+
+        if (response.success) {
+          await loadOrders(); // Recharger depuis l'API
+          Get.snackbar(
+            'Commande validée',
+            'Fonds crédités et bloqués. Le livreur a été notifié.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
           );
-          applyFilters();
+        } else {
+          Get.snackbar(
+            'Erreur',
+            response.message.isNotEmpty ? response.message : 'Impossible de valider la commande',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
         }
-
-        Get.snackbar(
-          'Succès',
-          'Commande validée avec succès',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
       }
     } catch (e) {
       Get.snackbar(
@@ -253,25 +272,24 @@ class OrderManagementController extends GetxController {
     }
   }
 
-  /// Annule une commande
+  /// Rejette une commande (appel API réel)
   Future<void> cancelOrder(OrderModel order) async {
     try {
-      // Demander la raison de l'annulation
       final reasonController = TextEditingController();
       final confirm = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('Annuler la commande'),
+          title: const Text('Refuser la commande'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Voulez-vous annuler la commande #${order.id} de ${order.clientName} ?',
+                'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLes fonds du client seront débloqués.',
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: reasonController,
                 decoration: const InputDecoration(
-                  labelText: 'Raison de l\'annulation',
+                  labelText: 'Raison du refus (optionnel)',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
@@ -285,10 +303,8 @@ class OrderManagementController extends GetxController {
             ),
             ElevatedButton(
               onPressed: () => Get.back(result: true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text('Annuler la commande'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Refuser la commande', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -297,34 +313,37 @@ class OrderManagementController extends GetxController {
       if (confirm == true) {
         isLoading.value = true;
 
-        // TODO: Appel API pour annuler la commande
-        await Future.delayed(const Duration(milliseconds: 500));
+        final orderId = int.tryParse(order.id.toString());
+        if (orderId == null) return;
 
-        // Mettre à jour la commande
-        final index = allOrders.indexWhere((o) => o.id == order.id);
-        if (index != -1) {
-          allOrders[index] = order.copyWith(
-            status: OrderStatus.cancelled,
-            cancelledDate: DateTime.now(),
-            cancelReason: reasonController.text,
-          );
-          applyFilters();
-        }
-
-        Get.snackbar(
-          'Succès',
-          'Commande annulée',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
+        final response = await VendorService.rejectOrder(
+          orderId,
+          reason: reasonController.text.isNotEmpty ? reasonController.text : null,
         );
-      }
 
-      reasonController.dispose();
+        if (response.success) {
+          await loadOrders();
+          Get.snackbar(
+            'Commande refusée',
+            'Le client a été notifié et ses fonds débloqués.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        } else {
+          Get.snackbar(
+            'Erreur',
+            response.message.isNotEmpty ? response.message : 'Impossible de refuser la commande',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      }
     } catch (e) {
       Get.snackbar(
         'Erreur',
-        'Impossible d\'annuler la commande',
+        'Impossible de refuser la commande',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
