@@ -26,71 +26,43 @@ class ProfileView extends GetView<ProfileController> {
 
                 SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-                // Statistiques
-                _buildStats(context, deviceType),
-
-                SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
                 // Menu principal
-                _buildMenuSection(
-                  context,
-                  'Mon compte',
-                  [
-                    _MenuItem(
-                      icon: Icons.shopping_bag_outlined,
-                      title: 'Mes produits',
-                      subtitle: 'Gérer mes annonces',
-                      onTap: controller.goToMyProducts,
-                    ),
-                    _MenuItem(
-                      icon: Icons.favorite_outline_rounded,
-                      title: 'Mes favoris',
-                      subtitle: 'Articles sauvegardés',
-                      onTap: controller.goToFavorites,
-                    ),
-                    _MenuItem(
-                      icon: Icons.receipt_long_rounded,
-                      title: 'Mes commandes',
-                      subtitle: 'Historique d\'achats',
-                      onTap: controller.goToOrders,
-                    ),
-                  ],
-                ),
+                Obx(() {
+                  final user = controller.userProfile;
+                  final isVendor = user['is_vendor'] == true || user['role'] == 'vendor';
+
+                  return _buildMenuSection(
+                    context,
+                    'Mon compte',
+                    [
+                      _MenuItem(
+                        icon: isVendor ? Icons.inventory_rounded : Icons.store_rounded,
+                        title: isVendor ? 'Mes produits' : 'Devenir Vendeur',
+                        subtitle: isVendor ? 'Gérer mes annonces' : 'Vendez vos produits',
+                        onTap: isVendor ? controller.goToMyProducts : controller.goToBecomeVendor,
+                      ),
+                      _MenuItem(
+                        icon: Icons.favorite_outline_rounded,
+                        title: 'Mes favoris',
+                        subtitle: 'Articles sauvegardés',
+                        onTap: controller.goToFavorites,
+                      ),
+                      _MenuItem(
+                        icon: Icons.receipt_long_rounded,
+                        title: 'Mes commandes',
+                        subtitle: 'Historique d\'achats',
+                        onTap: controller.goToOrders,
+                      ),
+                    ],
+                  );
+                }),
 
                 SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 
-                // Paramètres et préférences
+                // Support & Paramètres
                 _buildMenuSection(
                   context,
-                  'Paramètres',
-                  [
-                    _MenuItem(
-                      icon: Icons.location_on_outlined,
-                      title: 'Adresses',
-                      subtitle: 'Gérer mes adresses',
-                      onTap: controller.goToAddresses,
-                    ),
-                    _MenuItem(
-                      icon: Icons.payment_rounded,
-                      title: 'Paiements',
-                      subtitle: 'Moyens de paiement',
-                      onTap: controller.goToPaymentMethods,
-                    ),
-                    _MenuItem(
-                      icon: Icons.settings_outlined,
-                      title: 'Paramètres',
-                      subtitle: 'Préférences de l\'app',
-                      onTap: controller.goToSettings,
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                // Support
-                _buildMenuSection(
-                  context,
-                  'Support',
+                  'Support & Paramètres',
                   [
                     _MenuItem(
                       icon: Icons.help_outline_rounded,
@@ -99,10 +71,10 @@ class ProfileView extends GetView<ProfileController> {
                       onTap: controller.goToHelp,
                     ),
                     _MenuItem(
-                      icon: Icons.info_outline_rounded,
-                      title: 'À propos',
-                      subtitle: 'Version et infos',
-                      onTap: controller.goToAbout,
+                      icon: Icons.settings_outlined,
+                      title: 'Paramètres',
+                      subtitle: 'Préférences de l\'app',
+                      onTap: controller.goToSettings,
                     ),
                   ],
                 ),
@@ -256,92 +228,6 @@ class ProfileView extends GetView<ProfileController> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStats(BuildContext context, DeviceType deviceType) {
-    final stats = controller.userProfile['stats'];
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppThemeSystem.getHorizontalPadding(context)),
-      child: Row(
-        children: [
-          _buildStatCard(
-            context,
-            Icons.shopping_cart_rounded,
-            stats['orders'].toString(),
-            'Commandes',
-            deviceType,
-          ),
-          SizedBox(width: AppThemeSystem.getElementSpacing(context)),
-          _buildStatCard(
-            context,
-            Icons.star_rounded,
-            stats['reviews'].toString(),
-            'Avis',
-            deviceType,
-          ),
-          SizedBox(width: AppThemeSystem.getElementSpacing(context)),
-          _buildStatCard(
-            context,
-            Icons.favorite_rounded,
-            stats['favorites'].toString(),
-            'Favoris',
-            deviceType,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    IconData icon,
-    String value,
-    String label,
-    DeviceType deviceType,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.all(AppThemeSystem.getElementSpacing(context) * 1.5),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: AppThemeSystem.primaryColor,
-              size: deviceType == DeviceType.mobile ? 28 : 36,
-            ),
-            SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.75),
-            Text(
-              value,
-              style: context.textStyle(
-                deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.5),
-            Text(
-              label,
-              style: context.textStyle(
-                deviceType == DeviceType.mobile ? FontSizeType.caption : FontSizeType.body2,
-                color: AppThemeSystem.grey600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

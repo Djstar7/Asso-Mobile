@@ -20,7 +20,26 @@ class ProductManagementController extends GetxController {
     print('========================================');
     print('🛍️ PRODUCT MANAGEMENT CONTROLLER: Init');
     print('========================================');
+
+    // Vérifier si on doit rafraîchir (retour depuis add/edit product)
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null && args['refresh'] == true) {
+      print('🔄 Refresh requested from arguments - will refresh products');
+    }
+
     loadProducts();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+
+    // Si on revient de la page d'ajout/édition, rafraîchir les produits
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null && args['refresh'] == true) {
+      print('🔄 Refreshing products after add/edit...');
+      refreshProducts();
+    }
   }
 
   /// Load products with pagination

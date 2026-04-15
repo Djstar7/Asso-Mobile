@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/shimmer_widgets.dart';
+import '../../../core/widgets/verified_badge.dart';
 import '../controllers/favorites_controller.dart';
 
 class FavoritesView extends GetView<FavoritesController> {
@@ -8,173 +10,167 @@ class FavoritesView extends GetView<FavoritesController> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final deviceType = AppThemeSystem.getDeviceType(context);
+
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: AppThemeSystem.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: AppThemeSystem.getPrimaryTextColor(context),
+          ),
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'Mes préférences',
-          style: context.h5.copyWith(fontWeight: FontWeight.w600),
+          'Mes Favoris',
+          style: context.textStyle(
+            deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(context.horizontalPadding),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.favoriteProducts.isEmpty) {
+          return _buildLoadingState(context);
+        }
+
+        if (controller.favoriteProducts.isEmpty) {
+          return _buildEmptyState(context, deviceType);
+        }
+
+        return RefreshIndicator(
+          onRefresh: controller.refreshFavorites,
+          color: AppThemeSystem.primaryColor,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+                controller.loadMore();
+              }
+              return false;
+            },
+            child: GridView.builder(
+              padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: deviceType == DeviceType.mobile ? 2 : 3,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: controller.favoriteProducts.length + (controller.isLoadingMore.value ? 2 : 0),
+              itemBuilder: (context, index) {
+                if (index >= controller.favoriteProducts.length) {
+                  return ShimmerWidgets.productCardShimmer(context);
+                }
+
+                final product = controller.favoriteProducts[index];
+                return _buildProductCard(context, product, deviceType);
+              },
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final deviceType = AppThemeSystem.getDeviceType(context);
+
+    return GridView.builder(
+      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: deviceType == DeviceType.mobile ? 2 : 3,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return ShimmerWidgets.productCardShimmer(context);
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, DeviceType deviceType) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context) * 2),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Section Notifications
-            _buildSectionTitle(context, 'Notifications'),
-            SizedBox(height: context.elementSpacing),
-            _buildPreferenceCard(
-              context,
-              children: [
-                Obx(() => _buildSwitchTile(
-                      context,
-                      title: 'Notifications push',
-                      subtitle: 'Recevoir des notifications sur votre appareil',
-                      icon: Icons.notifications_active,
-                      value: controller.pushNotifications.value,
-                      onChanged: (value) => controller.pushNotifications.value = value,
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildSwitchTile(
-                      context,
-                      title: 'Notifications email',
-                      subtitle: 'Recevoir des emails de mise à jour',
-                      icon: Icons.email,
-                      value: controller.emailNotifications.value,
-                      onChanged: (value) => controller.emailNotifications.value = value,
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildSwitchTile(
-                      context,
-                      title: 'Sons',
-                      subtitle: 'Activer les sons de notification',
-                      icon: Icons.volume_up,
-                      value: controller.notificationSounds.value,
-                      onChanged: (value) => controller.notificationSounds.value = value,
-                    )),
-              ],
-            ),
-
-            SizedBox(height: context.sectionSpacing),
-
-            // Section Apparence
-            _buildSectionTitle(context, 'Apparence'),
-            SizedBox(height: context.elementSpacing),
-            _buildPreferenceCard(
-              context,
-              children: [
-                Obx(() => _buildRadioTile(
-                      context,
-                      title: 'Thème sombre',
-                      subtitle: 'Interface sombre',
-                      icon: Icons.dark_mode,
-                      value: 'dark',
-                      groupValue: controller.themeMode.value,
-                      onChanged: (value) => controller.themeMode.value = value ?? 'light',
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildRadioTile(
-                      context,
-                      title: 'Thème clair',
-                      subtitle: 'Interface claire',
-                      icon: Icons.light_mode,
-                      value: 'light',
-                      groupValue: controller.themeMode.value,
-                      onChanged: (value) => controller.themeMode.value = value ?? 'light',
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildRadioTile(
-                      context,
-                      title: 'Automatique',
-                      subtitle: 'Suivre le système',
-                      icon: Icons.brightness_auto,
-                      value: 'system',
-                      groupValue: controller.themeMode.value,
-                      onChanged: (value) => controller.themeMode.value = value ?? 'system',
-                    )),
-              ],
-            ),
-
-            SizedBox(height: context.sectionSpacing),
-
-            // Section Langue
-            _buildSectionTitle(context, 'Langue'),
-            SizedBox(height: context.elementSpacing),
-            _buildPreferenceCard(
-              context,
-              children: [
-                Obx(() => _buildRadioTile(
-                      context,
-                      title: 'Français',
-                      subtitle: 'French',
-                      icon: Icons.language,
-                      value: 'fr',
-                      groupValue: controller.language.value,
-                      onChanged: (value) => controller.language.value = value ?? 'fr',
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildRadioTile(
-                      context,
-                      title: 'English',
-                      subtitle: 'Anglais',
-                      icon: Icons.language,
-                      value: 'en',
-                      groupValue: controller.language.value,
-                      onChanged: (value) => controller.language.value = value ?? 'fr',
-                    )),
-              ],
-            ),
-
-            SizedBox(height: context.sectionSpacing),
-
-            // Section Confidentialité
-            _buildSectionTitle(context, 'Confidentialité'),
-            SizedBox(height: context.elementSpacing),
-            _buildPreferenceCard(
-              context,
-              children: [
-                Obx(() => _buildSwitchTile(
-                      context,
-                      title: 'Partage de position',
-                      subtitle: 'Autoriser l\'accès à votre position',
-                      icon: Icons.location_on,
-                      value: controller.locationSharing.value,
-                      onChanged: (value) => controller.locationSharing.value = value,
-                    )),
-                Divider(color: context.borderColor, height: 1),
-                Obx(() => _buildSwitchTile(
-                      context,
-                      title: 'Analyses',
-                      subtitle: 'Partager les données d\'utilisation',
-                      icon: Icons.analytics,
-                      value: controller.analytics.value,
-                      onChanged: (value) => controller.analytics.value = value,
-                    )),
-              ],
-            ),
-
-            SizedBox(height: context.sectionSpacing),
-
-            // Bouton sauvegarder
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: controller.savePreferences,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                    AppThemeSystem.tertiaryColor.withValues(alpha: 0.1),
+                  ],
                 ),
-                child: const Text(
-                  'Sauvegarder les préférences',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.favorite_border_rounded,
+                size: deviceType == DeviceType.mobile ? 80 : 100,
+                color: AppThemeSystem.primaryColor.withValues(alpha: 0.6),
+              ),
+            ),
+
+            SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 1.5),
+
+            Text(
+              'Aucun favori',
+              style: context.textStyle(
+                deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
+                fontWeight: FontWeight.bold,
+                color: AppThemeSystem.getPrimaryTextColor(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+
+            Text(
+              'Vous n\'avez pas encore ajouté de produits à vos favoris.\nCommencez à explorer pour trouver des produits qui vous plaisent!',
+              style: context.textStyle(
+                FontSizeType.body1,
+                color: isDark ? AppThemeSystem.grey400 : AppThemeSystem.grey600,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 2),
+
+            ElevatedButton.icon(
+              onPressed: () => Get.back(),
+              icon: Icon(Icons.explore_rounded, color: Colors.white),
+              label: Text(
+                'Explorer les produits',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
               ),
             ),
           ],
@@ -183,96 +179,248 @@ class FavoritesView extends GetView<FavoritesController> {
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: context.h6.copyWith(
-        fontWeight: FontWeight.bold,
-        color: AppThemeSystem.primaryColor,
+  Widget _buildProductCard(BuildContext context, Map<String, dynamic> product, DeviceType deviceType) {
+    return GestureDetector(
+      onTap: () => controller.goToProductDetails(product),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppThemeSystem.getBorderColor(context).withValues(alpha: 0.5),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: SizedBox.expand(
+                      child: _buildProductImage(product),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0),
+                          Colors.black.withValues(alpha: 0.02),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: GestureDetector(
+                      onTap: () {
+                        final productId = product['id'] is int
+                            ? product['id']
+                            : int.tryParse(product['id'].toString()) ?? 0;
+                        controller.toggleFavorite(productId);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.favorite_rounded,
+                          size: 18,
+                          color: AppThemeSystem.errorColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['name'] ?? 'Produit',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _formatPrice(product),
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        fontWeight: FontWeight.bold,
+                        color: AppThemeSystem.primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (product['shop'] != null && product['shop']['name'] != null)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.store_outlined,
+                          size: 14,
+                          color: AppThemeSystem.grey600,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            product['shop']['name'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.grey700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        VerifiedBadge(
+                          isCertified: product['shop']['is_certified'] ?? false,
+                          size: 14,
+                        ),
+                      ],
+                    ),
+                  if (product['shop'] != null && product['shop']['name'] != null)
+                    const SizedBox(height: 8),
+                  if (_getLocation(product).isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 14,
+                          color: AppThemeSystem.grey600,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _getLocation(product),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.grey600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPreferenceCard(BuildContext context, {required List<Widget> children}) {
+  Widget _buildProductImage(Map<String, dynamic> product) {
+    final primaryImage = product['primary_image'];
+    final images = product['images'] as List?;
+
+    String? imageUrl;
+    if (primaryImage != null && primaryImage.toString().isNotEmpty) {
+      imageUrl = primaryImage.toString();
+    } else if (images != null && images.isNotEmpty) {
+      imageUrl = images[0] is Map ? images[0]['url'] : images[0].toString();
+    }
+
+    if (imageUrl != null && imageUrl.startsWith('http')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+        loadingBuilder: (_, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+              color: AppThemeSystem.primaryColor,
+            ),
+          );
+        },
+      );
+    }
+
+    final localImage = product['image'];
+    if (localImage != null && localImage.toString().isNotEmpty) {
+      return Image.asset(
+        localImage.toString(),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+      );
+    }
+
+    return _buildPlaceholderImage();
+  }
+
+  Widget _buildPlaceholderImage() {
     return Container(
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        children: children,
+      color: AppThemeSystem.grey200,
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 40, color: Colors.grey),
       ),
     );
   }
 
-  Widget _buildSwitchTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-          borderRadius: context.borderRadius(BorderRadiusType.small),
-        ),
-        child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
-      ),
-      title: Text(title, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: context.caption),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeTrackColor: AppThemeSystem.primaryColor.withValues(alpha: 0.5),
-        activeThumbColor: AppThemeSystem.primaryColor,
-      ),
-    );
+  String _formatPrice(Map<String, dynamic> product) {
+    final formattedPrice = product['formatted_price'];
+    if (formattedPrice != null) return formattedPrice.toString();
+
+    final price = product['price'];
+    if (price != null) {
+      if (price is num) {
+        return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
+      }
+      return '$price FCFA';
+    }
+    return 'Prix non défini';
   }
 
-  Widget _buildRadioTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String value,
-    required String groupValue,
-    required Function(String?) onChanged,
-  }) {
-    final isSelected = value == groupValue;
-
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-              : AppThemeSystem.grey200,
-          borderRadius: context.borderRadius(BorderRadiusType.small),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? AppThemeSystem.primaryColor : context.secondaryTextColor,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        title,
-        style: context.body2.copyWith(
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      subtitle: Text(subtitle, style: context.caption),
-      trailing: Radio<String>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-        activeColor: AppThemeSystem.primaryColor,
-      ),
-    );
+  String _getLocation(Map<String, dynamic> product) {
+    return product['location']?.toString() ?? product['shop']?['address']?.toString() ?? '';
   }
 }

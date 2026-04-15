@@ -74,6 +74,8 @@ import '../modules/addProduct/bindings/add_product_binding.dart';
 import '../modules/addProduct/views/add_product_view.dart';
 import '../modules/productManagement/bindings/product_management_binding.dart';
 import '../modules/productManagement/views/product_management_view.dart';
+import '../modules/inventoryList/bindings/inventory_list_binding.dart';
+import '../modules/inventoryList/views/inventory_list_view.dart';
 
 part 'app_routes.dart';
 
@@ -272,6 +274,11 @@ class AppPages {
       name: _Paths.WALLET_HISTORY,
       page: () => const WalletHistoryView(),
       binding: WalletBinding(),
+    ),
+    GetPage(
+      name: _Paths.INVENTORY_LIST,
+      page: () => const InventoryListView(),
+      binding: InventoryListBinding(),
     ),
   ];
 }

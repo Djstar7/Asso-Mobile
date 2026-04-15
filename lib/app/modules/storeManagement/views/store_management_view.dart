@@ -915,7 +915,7 @@ class _InventoryCard extends GetView<StoreManagementController> {
             ],
           )),
           SizedBox(height: context.elementSpacing),
-          // Liste des entrées
+          // Liste des entrées (3 les plus récentes)
           Obx(() {
             final entries = controller.filteredInventory;
             if (entries.isEmpty) {
@@ -933,9 +933,27 @@ class _InventoryCard extends GetView<StoreManagementController> {
             }
 
             return Column(
-              children: entries.take(3).map((entry) {
-                return _InventoryItem(entry: entry);
-              }).toList(),
+              children: [
+                ...entries.take(3).map((entry) {
+                  return _InventoryItem(entry: entry);
+                }).toList(),
+                if (entries.length > 3) ...[
+                  SizedBox(height: context.elementSpacing),
+                  OutlinedButton.icon(
+                    onPressed: controller.viewAllInventory,
+                    icon: Icon(Icons.visibility_outlined, size: 18),
+                    label: Text('Voir tout (${entries.length})'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppThemeSystem.primaryColor,
+                      side: BorderSide(color: AppThemeSystem.primaryColor),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             );
           }),
         ],

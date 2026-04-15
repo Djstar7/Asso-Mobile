@@ -62,26 +62,27 @@ class MyOrderView extends GetView<MyOrderController> {
   }
 
   Widget _buildStatusFilters(BuildContext context) {
+    final filters = [
+      {'label': 'Tout', 'value': 'all'},
+      {'label': 'En attente', 'value': 'pending'},
+      {'label': 'Confirmée', 'value': 'confirmed'},
+      {'label': 'En préparation', 'value': 'preparing'},
+      {'label': 'Expédiée', 'value': 'shipped'},
+      {'label': 'Livrée', 'value': 'delivered'},
+      {'label': 'Annulée', 'value': 'cancelled'},
+    ];
+
     return Container(
       height: 50,
       padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-      child: Obx(() {
-        final filters = [
-          {'label': 'Tout', 'value': 'all'},
-          {'label': 'En attente', 'value': 'pending'},
-          {'label': 'Confirmée', 'value': 'confirmed'},
-          {'label': 'En préparation', 'value': 'preparing'},
-          {'label': 'Expédiée', 'value': 'shipped'},
-          {'label': 'Livrée', 'value': 'delivered'},
-          {'label': 'Annulée', 'value': 'cancelled'},
-        ];
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: filters.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final filter = filters[index];
 
-        return ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: filters.length,
-          separatorBuilder: (context, index) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final filter = filters[index];
+          return Obx(() {
             final isSelected = controller.selectedStatus.value == filter['value'];
 
             return FilterChip(
@@ -102,9 +103,9 @@ class MyOrderView extends GetView<MyOrderController> {
                 color: isSelected ? AppThemeSystem.primaryColor : context.borderColor,
               ),
             );
-          },
-        );
-      }),
+          });
+        },
+      ),
     );
   }
 

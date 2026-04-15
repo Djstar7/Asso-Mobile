@@ -6,7 +6,7 @@ class AppConstants {
 
   // API Configuration
   //  // 10.144.156.28 maps to host localhost from Android emulator
-  static const String baseUrl = 'http://192.168.43.73:8000/api';
+  static const String baseUrl = 'http://10.30.89.109:8001/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Storage Keys
@@ -61,7 +61,8 @@ class AppConstants {
   static const String delivererVerifySyncCodeUrl =
       '/v1/deliverer/verify-sync-code';
   static const String delivererSyncProfileUrl = '/v1/deliverer/sync-profile';
-  static const String delivererUnsyncProfileUrl = '/v1/deliverer/unsync-profile';
+  static const String delivererUnsyncProfileUrl =
+      '/v1/deliverer/unsync-profile';
 
   // Delivery partners (for vendor map)
   static const String deliveryPartnersUrl = '/v1/delivery/partners';

@@ -16,10 +16,16 @@ class ProductManagementView extends GetView<ProductManagementController> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back_rounded,
             color: context.primaryTextColor,
           ),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Get.isOverlaysOpen) {
+              Get.back();
+            } else if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         title: Obx(() {
           return Row(

@@ -746,4 +746,9 @@ class StoreManagementController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
     );
   }
+
+  /// Voir toutes les entrées d'inventaire
+  void viewAllInventory() {
+    Get.toNamed(Routes.INVENTORY_LIST);
+  }
 }

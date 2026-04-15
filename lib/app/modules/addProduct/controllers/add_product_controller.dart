@@ -22,6 +22,11 @@ class AddProductController extends GetxController {
   final productImages = <File>[].obs;
   final primaryImageIndex = 0.obs;
 
+  // Track existing images (from server) vs new images (added by user)
+  final existingImageIds = <int>[].obs; // IDs des images déjà sur le serveur
+  final newImageStartIndex = 0.obs; // Index à partir duquel les images sont nouvelles
+  final deletedImageIds = <int>[].obs; // IDs des images supprimées par l'utilisateur
+
   // Catégorie et sous-catégorie
   final selectedCategory = Rx<String?>(null);
   final selectedSubcategory = Rx<String?>(null);
@@ -107,6 +112,12 @@ class AddProductController extends GetxController {
       final product = args['product'] as Map<String, dynamic>;
       editProductId.value = product['id'] as int?;
       print('📝 ADD_PRODUCT: Edit mode detected for product ID: ${editProductId.value}');
+    } else {
+      // Mode création - s'assurer que les listes sont vides
+      existingImageIds.clear();
+      deletedImageIds.clear();
+      newImageStartIndex.value = 0;
+      print('📝 ADD_PRODUCT: Create mode - starting fresh');
     }
 
     // Construire les sous-catégories hardcodées d'abord
@@ -383,19 +394,27 @@ class AddProductController extends GetxController {
         print('📝 ADD_PRODUCT: Available keys: ${product.keys.where((k) => k.toLowerCase().contains('weight')).toList()}');
       }
 
-      // Download images from URLs
+      // Download images from URLs and track existing image IDs
       final images = product['images'] as List?;
       if (images != null && images.isNotEmpty) {
         print('📝 ADD_PRODUCT: Downloading ${images.length} images...');
+        existingImageIds.clear(); // Clear previous IDs
+
         for (var i = 0; i < images.length; i++) {
           final imageData = images[i] as Map<String, dynamic>;
           final imageUrl = imageData['url'] as String?;
+          final imageId = imageData['id'] as int?;
 
           if (imageUrl != null) {
             try {
               final imageFile = await _downloadImage(imageUrl);
               if (imageFile != null) {
                 productImages.add(imageFile);
+
+                // Track this as an existing image
+                if (imageId != null) {
+                  existingImageIds.add(imageId);
+                }
 
                 // Set primary image if indicated
                 final isPrimary = imageData['is_primary'] ?? false;
@@ -408,7 +427,13 @@ class AddProductController extends GetxController {
             }
           }
         }
+
+        // Mark where new images will start
+        newImageStartIndex.value = productImages.length;
+
         print('✅ ADD_PRODUCT: Downloaded ${productImages.length} images');
+        print('📝 ADD_PRODUCT: Existing image IDs: $existingImageIds');
+        print('📝 ADD_PRODUCT: New images will start at index: ${newImageStartIndex.value}');
       }
 
       print('✅ ADD_PRODUCT: Edit data populated successfully');
@@ -533,12 +558,37 @@ class AddProductController extends GetxController {
 
   /// Supprimer une image
   void removeImage(int index) {
+    print('🗑️ Removing image at index $index');
+    print('   └─ Is edit mode: ${isEditMode.value}');
+    print('   └─ newImageStartIndex: ${newImageStartIndex.value}');
+    print('   └─ existingImageIds: $existingImageIds');
+
+    // Si on supprime une image existante (en mode édition)
+    if (isEditMode.value && index < newImageStartIndex.value) {
+      // Trouver l'ID de l'image supprimée
+      if (index < existingImageIds.length) {
+        final deletedId = existingImageIds[index];
+        deletedImageIds.add(deletedId);
+        existingImageIds.removeAt(index);
+        print('   └─ Added image ID $deletedId to deletedImageIds');
+        print('   └─ deletedImageIds now: $deletedImageIds');
+      }
+
+      // Décrementer newImageStartIndex car on a supprimé une image existante
+      newImageStartIndex.value--;
+      print('   └─ newImageStartIndex now: ${newImageStartIndex.value}');
+    }
+
     productImages.removeAt(index);
 
     // Ajuster l'index de l'image primaire si nécessaire
     if (primaryImageIndex.value >= productImages.length && productImages.isNotEmpty) {
       primaryImageIndex.value = 0;
+    } else if (primaryImageIndex.value == index && productImages.isNotEmpty) {
+      primaryImageIndex.value = 0; // Reset to first image if we deleted the primary
     }
+
+    print('   └─ Remaining images: ${productImages.length}');
   }
 
   /// Définir l'image primaire
@@ -641,20 +691,35 @@ class AddProductController extends GetxController {
     isLoading.value = true;
 
     try {
-      // Calculer la taille estimée des images
+      // Déterminer quelles images envoyer
+      List<File> imagesToUpload;
+      if (isEditMode.value) {
+        // En mode édition, n'envoyer que les NOUVELLES images
+        imagesToUpload = productImages.sublist(newImageStartIndex.value);
+        print('📦 ADD_PRODUCT: Mode EDIT - Sending only NEW images');
+        print('   └─ Total images: ${productImages.length}');
+        print('   └─ Existing images: ${newImageStartIndex.value}');
+        print('   └─ New images to upload: ${imagesToUpload.length}');
+      } else {
+        // En mode création, envoyer toutes les images
+        imagesToUpload = productImages;
+        print('📦 ADD_PRODUCT: Mode CREATE - Sending all images');
+        print('   └─ Total images to upload: ${imagesToUpload.length}');
+      }
+
+      // Calculer la taille estimée des images à uploader
       double totalSizeMb = 0;
-      for (var image in productImages) {
+      for (var image in imagesToUpload) {
         final bytes = await image.length();
         totalSizeMb += bytes / 1048576;
       }
 
-      print('');
-      print('📦 ADD PRODUCT: Total images size: ${totalSizeMb.toStringAsFixed(2)} MB');
+      print('📦 ADD_PRODUCT: Total images size: ${totalSizeMb.toStringAsFixed(2)} MB');
 
       // Préparer les fichiers pour l'upload
       final filesMap = <String, String>{};
-      for (int i = 0; i < productImages.length; i++) {
-        filesMap['images[$i]'] = productImages[i].path;
+      for (int i = 0; i < imagesToUpload.length; i++) {
+        filesMap['images[$i]'] = imagesToUpload[i].path;
       }
 
       // Récupérer le category_id depuis les données de la sous-catégorie sélectionnée
@@ -678,6 +743,22 @@ class AddProductController extends GetxController {
         'price': priceController.text.trim(),
         'condition': 'new', // L'API requiert ce champ
       };
+
+      // Si en mode édition, ajouter _method=PUT pour Laravel
+      // Laravel/PHP ne parse pas automatiquement PUT multipart, donc on utilise POST avec _method
+      if (isEditMode.value && editProductId.value != null) {
+        fieldsMap['_method'] = 'PUT';
+
+        // Ajouter les IDs des images supprimées
+        if (deletedImageIds.isNotEmpty) {
+          print('📦 ADD_PRODUCT: Deleted image IDs to send: $deletedImageIds');
+          for (int i = 0; i < deletedImageIds.length; i++) {
+            fieldsMap['deleted_image_ids[$i]'] = deletedImageIds[i].toString();
+          }
+        } else {
+          print('📦 ADD_PRODUCT: No images to delete');
+        }
+      }
 
       // Ajouter category_id (REQUIS par l'API)
       if (categoryId != null && categoryId.isNotEmpty) {
@@ -727,10 +808,11 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: Files count: ${filesMap.length}');
 
       // Appel API multipart pour créer ou modifier le produit
+      // Note: Pour PUT, on utilise POST avec _method=PUT car PHP ne parse pas PUT multipart nativement
       final response = isEditMode.value && editProductId.value != null
           ? await ApiProvider.multipart(
-              '/v1/products/${editProductId.value}',
-              method: 'PUT',
+              '/v1/vendor/products/${editProductId.value}',
+              method: 'POST', // POST avec _method=PUT dans les fields
               fields: fieldsMap,
               files: filesMap,
             )
@@ -745,6 +827,13 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: Réponse reçue - data: ${response.data}');
 
       if (response.success) {
+        print('');
+        print('✅ ========================================');
+        print('✅ PRODUCT ${isEditMode.value ? "UPDATED" : "CREATED"} SUCCESSFULLY!');
+        print('✅ ========================================');
+        print('📦 Product ID: ${response.data?['product']?['id'] ?? editProductId.value ?? 'N/A'}');
+        print('📦 Product Name: ${response.data?['product']?['name'] ?? nameController.text}');
+
         // Afficher info stockage si disponible
         if (response.data?['storage_info'] != null) {
           final storageInfo = response.data!['storage_info'];
@@ -752,12 +841,15 @@ class AddProductController extends GetxController {
           print('📊 Storage remaining: ${storageInfo['remaining_mb']} MB');
         }
 
+        print('🧭 Navigation: Redirecting to /product-management...');
+        print('');
+
         // Toast de succès avec style responsive
         Get.snackbar(
           isEditMode.value ? '✅ Produit modifié !' : '✅ Produit créé !',
           isEditMode.value
-              ? 'Votre produit a été modifié avec succès'
-              : 'Votre produit a été ajouté avec succès',
+              ? 'Votre produit a été modifié avec succès. Redirection vers la liste...'
+              : 'Votre produit a été ajouté avec succès. Redirection vers la liste...',
           snackPosition: SnackPosition.TOP,
           backgroundColor: AppThemeSystem.successColor,
           colorText: Colors.white,
@@ -778,15 +870,13 @@ class AddProductController extends GetxController {
           ],
         );
 
-        // Retour à la page précédente
-        Get.back(); // Ferme la page d'ajout/édition
+        // Navigation vers la page de gestion des produits
+        // On utilise offNamed pour remplacer la page actuelle (formulaire) par product-management
+        // Cela fait en sorte que le bouton back de product-management retourne au dashboard vendeur
+        print('🧭 Using Get.offNamed to replace current route with /product-management');
 
-        // Navigation vers la page de gestion des produits après un court délai (sauf si on est déjà en mode édition depuis product management)
-        if (!isEditMode.value) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            Get.toNamed('/product-management');
-          });
-        }
+        // On passe un argument pour indiquer qu'il faut rafraîchir les produits
+        Get.offNamed('/product-management', arguments: {'refresh': true});
       } else {
         // Gérer les erreurs spécifiques
         if (response.data?['error_code'] == 'NO_ACTIVE_PACKAGE') {

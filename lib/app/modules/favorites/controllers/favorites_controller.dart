@@ -1,22 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
-import '../../../data/providers/auth_service.dart';
 
 class FavoritesController extends GetxController {
-  final RxList<Map<String, dynamic>> favorites = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> favoriteProducts = <Map<String, dynamic>>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = true.obs;
-  int _currentPage = 1;
 
-  // Préférences utilisateur
-  final pushNotifications = true.obs;
-  final emailNotifications = true.obs;
-  final notificationSounds = true.obs;
-  final themeMode = 'light'.obs;
-  final language = 'fr'.obs;
-  final locationSharing = false.obs;
-  final analytics = false.obs;
+  int currentPage = 1;
+  final int perPage = 20;
 
   @override
   void onInit() {
@@ -24,111 +16,111 @@ class FavoritesController extends GetxController {
     loadFavorites();
   }
 
+  /// Load favorite products
   Future<void> loadFavorites({bool refresh = false}) async {
     if (refresh) {
-      _currentPage = 1;
+      currentPage = 1;
       hasMore.value = true;
+      favoriteProducts.clear();
     }
 
-    isLoading.value = true;
+    if (!hasMore.value) return;
+
+    if (currentPage == 1) {
+      isLoading.value = true;
+    } else {
+      isLoadingMore.value = true;
+    }
 
     try {
-      final response = await ProductService.getFavorites(page: _currentPage);
+      final response = await ProductService.getFavorites(
+        page: currentPage,
+        perPage: perPage,
+      );
 
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final List<Map<String, dynamic>> productsList = products
+            .map((p) => Map<String, dynamic>.from(p as Map))
+            .toList();
 
-        if (refresh || _currentPage == 1) {
-          favorites.value = products.map((p) => Map<String, dynamic>.from(p)).toList();
+        if (refresh) {
+          favoriteProducts.value = productsList;
         } else {
-          favorites.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+          favoriteProducts.addAll(productsList);
         }
 
-        hasMore.value = pagination['has_more'] ?? false;
+        // Check pagination
+        final pagination = response.data!['pagination'];
+        if (pagination != null) {
+          final currentPageNum = pagination['current_page'] ?? currentPage;
+          final lastPageNum = pagination['last_page'] ?? currentPage;
+          hasMore.value = currentPageNum < lastPageNum;
+
+          if (hasMore.value) {
+            currentPage++;
+          }
+        } else {
+          hasMore.value = productsList.length >= perPage;
+          if (hasMore.value) {
+            currentPage++;
+          }
+        }
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de charger les favoris',
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger les favoris: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
       );
     } finally {
       isLoading.value = false;
+      isLoadingMore.value = false;
     }
   }
 
+  /// Load more products (pagination)
+  Future<void> loadMore() async {
+    if (!isLoadingMore.value && hasMore.value) {
+      await loadFavorites();
+    }
+  }
+
+  /// Refresh favorites list
+  Future<void> refreshFavorites() async {
+    await loadFavorites(refresh: true);
+  }
+
+  /// Toggle favorite for a product
   Future<void> toggleFavorite(int productId) async {
     try {
       final response = await ProductService.toggleFavorite(productId);
 
       if (response.success) {
-        final isFav = response.data?['is_favorite'] ?? false;
-        if (!isFav) {
-          favorites.removeWhere((p) => p['id'] == productId);
+        final isFavorite = response.data?['is_favorite'] ?? false;
+
+        if (!isFavorite) {
+          // Remove from list if unfavorited
+          favoriteProducts.removeWhere((p) => p['id'] == productId);
         }
 
         Get.snackbar(
-          isFav ? 'Ajouté' : 'Retiré',
-          response.data?['message'] ?? (isFav ? 'Ajouté aux favoris' : 'Retiré des favoris'),
+          'Succès',
+          response.data?['message'] ?? (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
         );
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de modifier les favoris',
+      Get.snackbar(
+        'Erreur',
+        'Impossible de modifier le favori',
         snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
       );
     }
   }
 
-  void onProductTap(Map<String, dynamic> product) {
+  /// Navigate to product details
+  void goToProductDetails(Map<String, dynamic> product) {
     Get.toNamed('/product', arguments: product);
-  }
-
-  /// Sauvegarde les préférences utilisateur
-  Future<void> savePreferences() async {
-    try {
-      isLoading.value = true;
-      final response = await AuthService.updatePreferences({
-        'push_notifications': pushNotifications.value,
-        'email_notifications': emailNotifications.value,
-        'notification_sounds': notificationSounds.value,
-        'theme_mode': themeMode.value,
-        'language': language.value,
-        'location_sharing': locationSharing.value,
-        'analytics': analytics.value,
-      });
-
-      if (response.success) {
-        Get.snackbar('Succès', 'Préférences sauvegardées',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-      } else {
-        Get.snackbar('Erreur', response.message,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-      }
-    } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de sauvegarder les préférences',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-    } finally {
-      isLoading.value = false;
-    }
   }
 }

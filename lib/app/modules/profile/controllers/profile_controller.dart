@@ -139,7 +139,11 @@ class ProfileController extends GetxController {
   }
 
   void goToMyProducts() {
-    // TODO
+    Get.toNamed(Routes.PRODUCT_MANAGEMENT);
+  }
+
+  void goToBecomeVendor() {
+    Get.toNamed(Routes.VENDOR_CONFIG);
   }
 
   void goToFavorites() {
@@ -164,7 +168,7 @@ class ProfileController extends GetxController {
   void goToSettings() {
     // Protégé par le UI - ne devrait pas être appelé en mode invité
     if (StorageService.isAuthenticated) {
-      Get.toNamed(Routes.FAVORITES); // Settings page is in Favorites/Preferences view
+      Get.toNamed(Routes.PREFERENCES); // Settings/Preferences page
     }
   }
 
