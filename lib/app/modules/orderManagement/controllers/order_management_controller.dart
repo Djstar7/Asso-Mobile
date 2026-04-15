@@ -1,9 +1,11 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/order_model.dart';
 import '../models/cameroon_cities.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../core/utils/app_theme_system.dart';
 
 class OrderManagementController extends GetxController {
   // Liste complète des commandes
@@ -363,13 +365,230 @@ class OrderManagementController extends GetxController {
     );
   }
 
-  /// Contacter un livreur
-  void contactDelivery(OrderModel order) {
-    // TODO: Implémenter la sélection d'un livreur
-    Get.snackbar(
-      'Livreur',
-      'Fonctionnalité en cours de développement',
-      snackPosition: SnackPosition.BOTTOM,
+  /// Affiche les livreurs de la company assignée à cette commande
+  /// Le vendeur peut copier leur numéro pour les appeler directement
+  final RxBool isLoadingDeliverers = false.obs;
+
+  Future<void> contactDelivery(OrderModel order) async {
+    isLoadingDeliverers.value = true;
+
+    try {
+      final orderId = int.tryParse(order.id);
+      if (orderId == null) return;
+
+      final response = await VendorService.getAvailableDeliveryPersons(orderId: orderId);
+
+      if (response.success && response.data != null) {
+        final data = response.data!['data'] ?? response.data!;
+        final company = data['company'] as Map<String, dynamic>?;
+        final persons = (data['delivery_persons'] as List?) ?? [];
+
+        _showDeliverersSheet(company, persons);
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Impossible de charger les livreurs',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger les livreurs',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingDeliverers.value = false;
+    }
+  }
+
+  void _showDeliverersSheet(Map<String, dynamic>? company, List<dynamic> persons) {
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(
+          maxHeight: Get.height * 0.7,
+        ),
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Company header
+            if (company != null) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                    backgroundImage: company['logo'] != null
+                        ? NetworkImage(company['logo'] as String)
+                        : null,
+                    child: company['logo'] == null
+                        ? Icon(Icons.local_shipping, color: AppThemeSystem.primaryColor)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          company['name'] ?? 'Entreprise de livraison',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${persons.length} livreur(s) disponible(s)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+            ],
+            // Title
+            const Text(
+              'Livreurs disponibles',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Appuyez sur le numéro pour le copier',
+              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 12),
+            // List
+            if (persons.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_off, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Aucun livreur synchronisé',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: persons.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final person = persons[index] as Map<String, dynamic>;
+                    return _buildDelivererTile(person);
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildDelivererTile(Map<String, dynamic> person) {
+    final name = person['name'] ?? 'Livreur';
+    final phone = person['phone']?.toString() ?? '';
+    final avatar = person['avatar'] as String?;
+    final address = person['address']?.toString() ?? '';
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      leading: CircleAvatar(
+        radius: 22,
+        backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+        backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+        child: avatar == null || avatar.isEmpty
+            ? Icon(Icons.person, color: AppThemeSystem.primaryColor)
+            : null,
+      ),
+      title: Text(
+        name,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (address.isNotEmpty)
+            Text(address, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+          if (phone.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: phone));
+                Get.snackbar(
+                  'Copié !',
+                  'Numéro $phone copié dans le presse-papier',
+                  snackPosition: SnackPosition.BOTTOM,
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: AppThemeSystem.successColor,
+                  colorText: Colors.white,
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.phone, size: 14, color: AppThemeSystem.primaryColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      phone,
+                      style: TextStyle(
+                        color: AppThemeSystem.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.copy, size: 14, color: AppThemeSystem.primaryColor),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

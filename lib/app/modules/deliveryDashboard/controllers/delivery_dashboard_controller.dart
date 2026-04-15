@@ -122,6 +122,7 @@ class DeliveryDashboardController extends GetxController {
         // Rafraîchir quand une nouvelle livraison arrive ou qu'un statut change
         if (type == 'new_delivery_request' ||
             type == 'delivery_assigned' ||
+            type == 'delivery_taken' ||
             type == 'order_confirmed' ||
             type.startsWith('order_')) {
           loadDeliveries();

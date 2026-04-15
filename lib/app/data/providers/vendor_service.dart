@@ -146,9 +146,16 @@ class VendorService {
     });
   }
 
-  /// Get available delivery persons
-  static Future<ApiResponse> getAvailableDeliveryPersons() async {
-    return await ApiProvider.get(AppConstants.deliveryPersonsUrl);
+  /// Get available delivery persons for a specific order's delivery company
+  static Future<ApiResponse> getAvailableDeliveryPersons({int? orderId, int? companyId}) async {
+    final params = <String, String>{};
+    if (orderId != null) params['order_id'] = orderId.toString();
+    if (companyId != null) params['company_id'] = companyId.toString();
+    final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    final url = query.isNotEmpty
+        ? '${AppConstants.deliveryPersonsUrl}?$query'
+        : AppConstants.deliveryPersonsUrl;
+    return await ApiProvider.get(url);
   }
 
   /// Check if vendor has active orders

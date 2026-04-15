@@ -13,7 +13,7 @@ class TrackingController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
 
-  final List<String> filters = ['Tous', 'En cours', 'Livré', 'Annulé'];
+  final List<String> filters = ['Tous', 'En attente livreur', 'En livraison', 'Livré', 'Annulé'];
 
   StreamSubscription? _orderFcmSubscription;
 
@@ -97,12 +97,15 @@ class TrackingController extends GetxController {
         statusColor = 0xFFF59E0B; // Orange
         break;
       case 'confirmed':
+        displayStatus = 'En attente livreur';
+        statusColor = 0xFF3B82F6; // Blue
+        break;
       case 'preparing':
-        displayStatus = 'En cours';
+        displayStatus = 'En préparation';
         statusColor = 0xFF3B82F6; // Blue
         break;
       case 'shipped':
-        displayStatus = 'En cours';
+        displayStatus = 'En livraison';
         statusColor = 0xFF6366F1; // Indigo
         break;
       case 'delivered':
@@ -158,6 +161,14 @@ class TrackingController extends GetxController {
       });
 
       trackingSteps.add({
+        'title': 'En attente d\'un livreur',
+        'date': confirmedAt != null && shippedAt == null
+            ? 'Les livreurs ont été notifiés...'
+            : (shippedAt != null ? 'Livreur trouvé' : 'En attente'),
+        'completed': shippedAt != null,
+      });
+
+      trackingSteps.add({
         'title': 'Prise en charge par le livreur',
         'date': shippedAt != null
             ? '${fmt.format(shippedAt)}${deliveryPerson != null ? ' — ${deliveryPerson['name'] ?? ''}' : ''}'
@@ -184,7 +195,9 @@ class TrackingController extends GetxController {
       currentLocation = 'Livré';
     } else if (status == 'shipped') {
       currentLocation = 'En livraison${deliveryPerson != null ? ' par ${deliveryPerson['name']}' : ''}';
-    } else if (status == 'confirmed' || status == 'preparing') {
+    } else if (status == 'confirmed') {
+      currentLocation = 'En attente d\'un livreur — les livreurs ont été notifiés';
+    } else if (status == 'preparing') {
       currentLocation = 'En préparation chez le vendeur';
     } else if (status == 'cancelled') {
       currentLocation = 'Annulé';
