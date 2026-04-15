@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../controllers/order_management_controller.dart';
 import '../models/order_model.dart';
 
 class OrderCard extends StatelessWidget {
@@ -339,16 +341,29 @@ class OrderCard extends StatelessWidget {
         ],
       );
     } else if (order.status == OrderStatus.validated) {
+      final controller = Get.find<OrderManagementController>();
       return Row(
         children: [
           Expanded(
-            child: _buildCompactButton(
-              context,
-              icon: Icons.delivery_dining,
-              label: isTablet ? 'Contacter livreur' : 'Livreur',
-              color: AppThemeSystem.infoColor,
-              onPressed: onContactDelivery,
-              isTablet: isTablet,
+            child: Obx(() => controller.isLoadingDeliverers.value
+                ? Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppThemeSystem.infoColor,
+                      ),
+                    ),
+                  )
+                : _buildCompactButton(
+                    context,
+                    icon: Icons.delivery_dining,
+                    label: isTablet ? 'Contacter livreur' : 'Livreur',
+                    color: AppThemeSystem.infoColor,
+                    onPressed: onContactDelivery,
+                    isTablet: isTablet,
+                  ),
             ),
           ),
           const SizedBox(width: 8),

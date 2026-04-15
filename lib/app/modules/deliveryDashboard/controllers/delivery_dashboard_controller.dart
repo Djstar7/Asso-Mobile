@@ -122,6 +122,7 @@ class DeliveryDashboardController extends GetxController {
         // Rafraîchir quand une nouvelle livraison arrive ou qu'un statut change
         if (type == 'new_delivery_request' ||
             type == 'delivery_assigned' ||
+            type == 'delivery_taken' ||
             type == 'order_confirmed' ||
             type.startsWith('order_')) {
           loadDeliveries();
@@ -219,24 +220,41 @@ class DeliveryDashboardController extends GetxController {
   List<DeliveryRequest> _parseDeliveryRequests(List<dynamic> rawRequests) {
     return rawRequests.map((item) {
       final request = item as Map<String, dynamic>;
+
+      // Le backend peut retourner 'customer' comme objet ou des champs plats
+      final customer = request['customer'] as Map<String, dynamic>?;
+      final customerName = request['customer_name']
+          ?? customer?['name']
+          ?? 'Client';
+      final customerPhone = request['customer_phone']?.toString()
+          ?? customer?['phone']?.toString()
+          ?? '';
+
+      // Commission = delivery_fee
+      final commission = double.tryParse(
+        (request['commission'] ?? request['delivery_fee'] ?? 0).toString(),
+      ) ?? 0.0;
+
+      // Latitude/longitude de livraison
+      final deliveryLat = double.tryParse(request['delivery_latitude']?.toString() ?? '');
+      final deliveryLng = double.tryParse(request['delivery_longitude']?.toString() ?? '');
+
       return DeliveryRequest(
-        id: request['id'] ?? 'DEL${DateTime.now().millisecondsSinceEpoch}',
-        orderId: request['order_id'] ?? '',
+        id: (request['id'] ?? 'DEL${DateTime.now().millisecondsSinceEpoch}').toString(),
+        orderId: (request['order_id'] ?? request['order_number'] ?? request['id'] ?? '').toString(),
         status: _parseDeliveryStatus(request['status']),
-        customerName: request['customer_name'] ?? 'Client',
-        customerPhone: request['customer_phone'] ?? '',
+        customerName: customerName,
+        customerPhone: customerPhone,
         pickupAddress: request['pickup_address'] ?? '',
-        pickupLocation: request['pickup_latitude'] != null && request['pickup_longitude'] != null
-            ? LatLng(request['pickup_latitude'], request['pickup_longitude'])
-            : const LatLng(4.0511, 9.7679),
+        pickupLocation: const LatLng(4.0511, 9.7679),
         deliveryAddress: request['delivery_address'] ?? '',
-        deliveryLocation: request['delivery_latitude'] != null && request['delivery_longitude'] != null
-            ? LatLng(request['delivery_latitude'], request['delivery_longitude'])
+        deliveryLocation: deliveryLat != null && deliveryLng != null
+            ? LatLng(deliveryLat, deliveryLng)
             : const LatLng(4.0511, 9.7679),
         distance: (request['distance'] ?? 0).toDouble(),
-        commission: (request['commission'] ?? 0).toDouble(),
+        commission: commission,
         requestDate: _parseDate(request['created_at']),
-        acceptedDate: request['accepted_at'] != null ? _parseDate(request['accepted_at']) : null,
+        acceptedDate: request['shipped_at'] != null ? _parseDate(request['shipped_at']) : null,
         deliveredDate: request['delivered_at'] != null ? _parseDate(request['delivered_at']) : null,
         notes: request['notes'] ?? '',
       );
@@ -247,7 +265,10 @@ class DeliveryDashboardController extends GetxController {
   DeliveryStatus _parseDeliveryStatus(String? status) {
     switch (status?.toLowerCase()) {
       case 'pending':
+      case 'confirmed':
+      case 'preparing':
         return DeliveryStatus.pending;
+      case 'shipped':
       case 'accepted':
       case 'in_progress':
         return DeliveryStatus.inProgress;
