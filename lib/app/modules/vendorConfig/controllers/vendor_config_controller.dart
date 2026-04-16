@@ -71,6 +71,11 @@ class VendorConfigController extends GetxController {
 
   final ImagePicker _picker = ImagePicker();
 
+  // Scroll controllers for each step
+  final ScrollController step1ScrollController = ScrollController();
+  final ScrollController step2ScrollController = ScrollController();
+  final ScrollController step3ScrollController = ScrollController();
+
   @override
   void onInit() {
     super.onInit();
@@ -191,7 +196,16 @@ class VendorConfigController extends GetxController {
       locationSearchController.dispose();
       print('  └─ Text controllers disposed');
     } catch (e) {
-      print('  └─ Error disposing controllers: $e');
+      print('  └─ Error disposing text controllers: $e');
+    }
+
+    try {
+      step1ScrollController.dispose();
+      step2ScrollController.dispose();
+      step3ScrollController.dispose();
+      print('  └─ Scroll controllers disposed');
+    } catch (e) {
+      print('  └─ Error disposing scroll controllers: $e');
     }
 
     super.onClose();
@@ -562,6 +576,8 @@ class VendorConfigController extends GetxController {
     if (currentStep.value == 0) {
       if (validateStep1()) {
         currentStep.value++;
+        // Scroll to top of next step
+        _scrollToTop(step2ScrollController);
       }
     } else if (currentStep.value == 1) {
       if (validateStep2()) {
@@ -569,6 +585,8 @@ class VendorConfigController extends GetxController {
         await submitVendorConfig();
         // Si la soumission réussit, passer au step 3
         currentStep.value++;
+        // Scroll to top of next step
+        _scrollToTop(step3ScrollController);
       }
     } else if (currentStep.value == 2) {
       // Step 3 - Rediriger vers la boutique
@@ -580,7 +598,27 @@ class VendorConfigController extends GetxController {
   void previousStep() {
     if (currentStep.value > 0) {
       currentStep.value--;
+      // Scroll to top of previous step
+      if (currentStep.value == 0) {
+        _scrollToTop(step1ScrollController);
+      } else if (currentStep.value == 1) {
+        _scrollToTop(step2ScrollController);
+      }
     }
+  }
+
+  /// Scroll to top of a ScrollController
+  void _scrollToTop(ScrollController controller) {
+    // Wait for the UI to rebuild before scrolling
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controller.hasClients) {
+        controller.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   /// Toggle catégorie

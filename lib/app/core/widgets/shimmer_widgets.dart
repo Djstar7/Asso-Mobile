@@ -6,7 +6,7 @@ import '../utils/app_theme_system.dart';
 class ShimmerWidgets {
   /// Product card shimmer loader
   static Widget productCardShimmer(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
     final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
 
@@ -92,7 +92,7 @@ class ShimmerWidgets {
 
   /// Horizontal product card shimmer loader
   static Widget horizontalProductCardShimmer(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
     final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
 
@@ -178,7 +178,7 @@ class ShimmerWidgets {
 
   /// Banner shimmer loader
   static Widget bannerShimmer(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
     final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
 
@@ -214,7 +214,7 @@ class ShimmerWidgets {
 
   /// Category chip shimmer loader
   static Widget categoryChipShimmer(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
     final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
 

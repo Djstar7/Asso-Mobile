@@ -339,7 +339,7 @@ class AddProductView extends GetView<AddProductController> {
           decoration: InputDecoration(
             hintText: 'Ex: iPhone 13 Pro Max',
             filled: true,
-            fillColor: context.surfaceColor,
+            fillColor: context.inputFieldColor,
             prefixIcon: const Icon(Icons.inventory_2_outlined),
             border: OutlineInputBorder(
               borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -994,7 +994,7 @@ class AddProductView extends GetView<AddProductController> {
           decoration: InputDecoration(
             hintText: 'Entrez le prix',
             filled: true,
-            fillColor: context.surfaceColor,
+            fillColor: context.inputFieldColor,
             prefixIcon: const Icon(Icons.payments_outlined),
             suffixText: 'XAF',
             border: OutlineInputBorder(
@@ -1036,7 +1036,7 @@ class AddProductView extends GetView<AddProductController> {
           decoration: InputDecoration(
             hintText: 'Décrivez votre produit en détail...',
             filled: true,
-            fillColor: context.surfaceColor,
+            fillColor: context.inputFieldColor,
             border: OutlineInputBorder(
               borderRadius: context.borderRadius(BorderRadiusType.medium),
               borderSide: BorderSide(color: context.borderColor),
@@ -1332,7 +1332,7 @@ class AddProductView extends GetView<AddProductController> {
           decoration: InputDecoration(
             hintText: 'Ex: 200',
             filled: true,
-            fillColor: context.surfaceColor,
+            fillColor: context.inputFieldColor,
             prefixIcon: const Icon(Icons.inventory_outlined),
             suffixText: 'unités',
             border: OutlineInputBorder(

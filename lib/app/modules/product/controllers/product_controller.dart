@@ -1,9 +1,15 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/auth_guard.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/order_service.dart';
+import '../../../data/providers/product_service.dart';
+import '../../../data/providers/storage_service.dart';
+import '../../home/controllers/home_controller.dart';
 
 class ProductController extends GetxController {
   final RxInt currentImageIndex = 0.obs;
@@ -26,15 +32,57 @@ class ProductController extends GetxController {
   final RxList<Map<String, dynamic>> deliveryPartners = <Map<String, dynamic>>[].obs;
   final Rxn<Map<String, dynamic>> selectedPartner = Rxn<Map<String, dynamic>>();
 
-  void toggleFavorite() {
-    isFavorite.value = !isFavorite.value;
-    Get.snackbar(
-      isFavorite.value ? 'Ajouté aux favoris' : 'Retiré des favoris',
-      isFavorite.value
-          ? 'Ce produit a été ajouté à vos favoris'
-          : 'Ce produit a été retiré de vos favoris',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+  /// Toggle favorite for the current product
+  Future<void> toggleFavorite(int productId) async {
+    try {
+      // Check authentication
+      if (!StorageService.isAuthenticated) {
+        AuthGuard.navigateIfAuthenticated(
+          Get.context!,
+          '/favorites',
+          featureName: 'les favoris',
+          useDialog: true,
+        );
+        return;
+      }
+
+      final response = await ProductService.toggleFavorite(productId);
+
+      if (response.success) {
+        final newFavoriteStatus = response.data?['is_favorite'] ?? false;
+        final message = response.data?['message'] ?? (newFavoriteStatus ? 'Ajouté aux favoris' : 'Retiré des favoris');
+
+        // Update local state
+        isFavorite.value = newFavoriteStatus;
+
+        // Sync with HomeController if it exists
+        try {
+          if (Get.isRegistered<HomeController>()) {
+            final homeController = Get.find<HomeController>();
+            homeController.updateProductFavoriteStatus(productId, newFavoriteStatus);
+          }
+        } catch (e) {
+          // HomeController not found, ignore
+        }
+
+        Get.snackbar(
+          'Succès',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppThemeSystem.successColor,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de modifier le favori',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
+    }
   }
 
   void toggleDelivery() {

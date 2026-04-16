@@ -6,7 +6,7 @@ class AppConstants {
 
   // API Configuration
   //  // 10.144.156.28 maps to host localhost from Android emulator
-  static const String baseUrl = 'http://192.168.198.1:8000/api';
+  static const String baseUrl = 'http://10.126.9.109:8001/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Storage Keys
@@ -35,7 +35,13 @@ class AppConstants {
   static const String profileUrl = '/v1/auth/profile';
   static const String getPreferencesUrl = '/v1/auth/preferences';
   static const String updatePreferencesUrl = '/v1/auth/preferences';
+  static const String requestPhoneChangeUrl = '/v1/auth/request-phone-change';
+  static const String confirmPhoneChangeUrl = '/v1/auth/confirm-phone-change';
+  static const String deleteAccountUrl = '/v1/auth/delete-account';
   static const String logoutUrl = '/v1/auth/logout';
+  static const String invoicesUrl = '/v1/invoices';
+  static const String aboutUrl = '/v1/app/about';
+  static const String versionUrl = '/v1/app/version';
   static const String productsUrl = '/v1/products';
   static const String categoriesUrl = '/v1/categories';
   static const String bannersUrl = '/v1/banners';

@@ -8,7 +8,7 @@ class ProfileView extends GetView<ProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Scaffold(
@@ -28,8 +28,7 @@ class ProfileView extends GetView<ProfileController> {
 
                 // Menu principal
                 Obx(() {
-                  final user = controller.userProfile;
-                  final isVendor = user['is_vendor'] == true || user['role'] == 'vendor';
+                  final isVendor = controller.isVendor;
 
                   return _buildMenuSection(
                     context,

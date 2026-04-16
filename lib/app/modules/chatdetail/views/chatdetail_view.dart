@@ -8,7 +8,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -834,7 +834,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   /// Widget pour afficher le produit taggé (comme sur WhatsApp)
   Widget _buildProductTag(BuildContext context, Map<String, dynamic> product) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Container(
       margin: EdgeInsets.all(12),

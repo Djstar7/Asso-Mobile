@@ -24,7 +24,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Column(
       children: [

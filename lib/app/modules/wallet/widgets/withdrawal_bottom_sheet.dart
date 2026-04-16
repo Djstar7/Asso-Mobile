@@ -153,6 +153,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: TextStyle(
+                    color: AppThemeSystem.getPrimaryTextColor(context),
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Montant à retirer (FCFA)',
                     hintText: 'Ex: ${minAmount.toStringAsFixed(0)}',
@@ -236,6 +239,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    style: TextStyle(
+                      color: AppThemeSystem.getPrimaryTextColor(context),
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Numéro de téléphone',
                       hintText: '651826475 ou 237651826475',
@@ -281,6 +287,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(
+                      color: AppThemeSystem.getPrimaryTextColor(context),
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Email PayPal',
                       hintText: 'votre.email@exemple.com',
@@ -325,6 +334,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                 TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  style: TextStyle(
+                    color: AppThemeSystem.getPrimaryTextColor(context),
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Notes (optionnel)',
                     hintText: 'Ajouter une note pour ce retrait...',

@@ -28,7 +28,7 @@ class WebSocketService extends GetxService {
 
   // Configuration Reverb (Laravel)
   static const String appKey = '9r0idxmfd6d9lc9e055h';
-  static const String host = '10.30.89.109';
+  static const String host = '10.126.9.109';
   static const int wsPort = 8080;
 
   // Channels actifs

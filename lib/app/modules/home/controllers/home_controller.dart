@@ -630,6 +630,73 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     Get.toNamed('/search', arguments: {'filter': 'recent'});
   }
 
+  /// Toggle favorite for a product
+  Future<void> toggleFavorite(int productId) async {
+    try {
+      // Check authentication
+      if (!StorageService.isAuthenticated) {
+        AuthGuard.navigateIfAuthenticated(
+          Get.context!,
+          '/favorites',
+          featureName: 'les favoris',
+          useDialog: true,
+        );
+        return;
+      }
+
+      final response = await ProductService.toggleFavorite(productId);
+
+      if (response.success) {
+        final isFavorite = response.data?['is_favorite'] ?? false;
+        final message = response.data?['message'] ?? (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+
+        // Update the is_favorite status in all product lists
+        updateProductFavoriteStatus(productId, isFavorite);
+
+        Get.snackbar(
+          'Succès',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppThemeSystem.successColor,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de modifier le favori',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Update is_favorite status in all product lists (public for cross-controller sync)
+  void updateProductFavoriteStatus(int productId, bool isFavorite) {
+    // Update in products list
+    final productIndex = products.indexWhere((p) => p['id'] == productId);
+    if (productIndex != -1) {
+      products[productIndex]['is_favorite'] = isFavorite;
+      products.refresh();
+    }
+
+    // Update in nearby products list
+    final nearbyIndex = nearbyProducts.indexWhere((p) => p['id'] == productId);
+    if (nearbyIndex != -1) {
+      nearbyProducts[nearbyIndex]['is_favorite'] = isFavorite;
+      nearbyProducts.refresh();
+    }
+
+    // Update in recent products list
+    final recentIndex = recentProducts.indexWhere((p) => p['id'] == productId);
+    if (recentIndex != -1) {
+      recentProducts[recentIndex]['is_favorite'] = isFavorite;
+      recentProducts.refresh();
+    }
+  }
+
   /// Refresh categories after preferences update
   Future<void> refreshCategories() async {
     await _loadUserPreferences();

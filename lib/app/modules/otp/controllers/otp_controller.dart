@@ -15,6 +15,8 @@ class OtpController extends GetxController {
   final isLoading = false.obs;
   final isOtpComplete = false.obs;
   final isNewUser = false.obs;
+  final isPhoneChange = false.obs;
+  final newPhone = ''.obs;
 
   Timer? _timer;
 
@@ -26,10 +28,12 @@ class OtpController extends GetxController {
     if (Get.arguments != null) {
       phoneNumber.value = Get.arguments['phoneNumber'] ?? '';
       isNewUser.value = Get.arguments['isNewUser'] ?? false;
+      isPhoneChange.value = Get.arguments['isPhoneChange'] ?? false;
+      newPhone.value = Get.arguments['newPhone'] ?? '';
       developer.log(
         'Arguments received',
         name: 'OtpController',
-        error: 'Phone: ${phoneNumber.value}, Is new user: ${isNewUser.value}',
+        error: 'Phone: ${phoneNumber.value}, Is new user: ${isNewUser.value}, Is phone change: ${isPhoneChange.value}',
       );
     }
 
@@ -110,16 +114,24 @@ class OtpController extends GetxController {
     developer.log(
       '========== RESEND OTP ==========',
       name: 'OtpController',
-      error: 'Phone: ${phoneNumber.value}',
+      error: 'Phone: ${phoneNumber.value}, Is phone change: ${isPhoneChange.value}',
     );
 
     // Extract raw phone from full phone
-    final response = await AuthService.sendOtp(
-      phone: phoneNumber.value.replaceAll(RegExp(r'^\+\d{1,3}'), ''),
-      countryCode: phoneNumber.value.contains('+')
-          ? phoneNumber.value.replaceAll(RegExp(r'\d{8,}$'), '')
-          : '+237',
-    );
+    final rawPhone = phoneNumber.value.replaceAll(RegExp(r'^\+\d{1,3}'), '');
+    final countryCode = phoneNumber.value.contains('+')
+        ? phoneNumber.value.replaceAll(RegExp(r'\d{8,}$'), '')
+        : '+237';
+
+    final response = isPhoneChange.value
+        ? await AuthService.requestPhoneChange(
+            newPhone: rawPhone,
+            countryCode: countryCode,
+          )
+        : await AuthService.sendOtp(
+            phone: rawPhone,
+            countryCode: countryCode,
+          );
 
     developer.log(
       'Resend OTP response',
@@ -161,7 +173,7 @@ class OtpController extends GetxController {
     developer.log(
       '========== VERIFY OTP ==========',
       name: 'OtpController',
-      error: 'OTP complete: ${isOtpComplete.value}',
+      error: 'OTP complete: ${isOtpComplete.value}, Is phone change: ${isPhoneChange.value}',
     );
 
     if (!isOtpComplete.value) {
@@ -183,92 +195,155 @@ class OtpController extends GetxController {
 
     try {
       final otpCode = getOtpCode();
-      developer.log(
-        'Verifying OTP',
-        name: 'OtpController',
-        error: 'Phone: ${phoneNumber.value}, Code: $otpCode, Is new user: ${isNewUser.value}',
-      );
 
-      final response = await AuthService.verifyOtp(
-        fullPhone: phoneNumber.value,
-        otpCode: otpCode,
-      );
-
-      developer.log(
-        'Verify OTP response',
-        name: 'OtpController',
-        error: 'Success: ${response.success}, Message: ${response.message}',
-      );
-
-      if (response.success) {
-        Get.snackbar(
-          'Succès',
-          'Connexion réussie',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        // Envoyer le token FCM au backend ET s'abonner au topic des annonces
-        developer.log('📱 Registering device and subscribing to topics...', name: 'OtpController');
-        try {
-          final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
-          developer.log(
-            'FCM registration result',
-            name: 'OtpController',
-            error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
-          );
-        } catch (e) {
-          developer.log(
-            'Error registering device/subscribing to topics',
-            name: 'OtpController',
-            error: e,
-          );
-          // On ne bloque pas la navigation même si l'opération échoue
-        }
-
-        // Navigate based on profile completeness
-        final isNew = response.data?['is_new_user'] ?? false;
+      // Check if this is a phone change verification
+      if (isPhoneChange.value) {
         developer.log(
-          'Navigation decision',
+          'Verifying OTP for phone change',
           name: 'OtpController',
-          error: 'Is new user: $isNew',
+          error: 'New phone: ${newPhone.value}, Code: $otpCode',
         );
 
-        if (isNew) {
-          developer.log('Navigating to PREFERENCES', name: 'OtpController');
-          Get.offAllNamed(Routes.PREFERENCES);
+        final response = await AuthService.confirmPhoneChange(
+          newPhone: newPhone.value,
+          otpCode: otpCode,
+        );
+
+        developer.log(
+          'Phone change OTP verification response',
+          name: 'OtpController',
+          error: 'Success: ${response.success}, Message: ${response.message}',
+        );
+
+        if (response.success) {
+          Get.snackbar(
+            'Succès',
+            'Numéro de téléphone modifié avec succès',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // After successful phone change, go back to settings
+          developer.log('Phone changed successfully - going to SETTINGS', name: 'OtpController');
+          Get.offAllNamed(Routes.SETTINGS);
         } else {
-          developer.log('Navigating to HOME', name: 'OtpController');
-          Get.offAllNamed(Routes.HOME);
+          developer.log(
+            'Phone change OTP verification failed',
+            name: 'OtpController',
+            error: response.message,
+          );
+          Get.snackbar(
+            'Code incorrect',
+            response.message,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.error,
+            colorText: Get.theme.colorScheme.onError,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          for (var controller in otpControllers) {
+            controller.clear();
+          }
+          isOtpComplete.value = false;
+          focusNodes[0].requestFocus();
         }
       } else {
+        // Normal OTP verification for login
         developer.log(
-          'OTP verification failed',
+          'Verifying OTP for login',
           name: 'OtpController',
-          error: response.message,
-        );
-        Get.snackbar(
-          'Code incorrect',
-          response.message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.error,
-          colorText: Get.theme.colorScheme.onError,
-          duration: const Duration(seconds: 3),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
+          error: 'Phone: ${phoneNumber.value}, Code: $otpCode, Is new user: ${isNewUser.value}',
         );
 
-        for (var controller in otpControllers) {
-          controller.clear();
+        final response = await AuthService.verifyOtp(
+          fullPhone: phoneNumber.value,
+          otpCode: otpCode,
+        );
+
+        developer.log(
+          'Verify OTP response',
+          name: 'OtpController',
+          error: 'Success: ${response.success}, Message: ${response.message}',
+        );
+
+        if (response.success) {
+          Get.snackbar(
+            'Succès',
+            'Connexion réussie',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Envoyer le token FCM au backend ET s'abonner au topic des annonces
+          developer.log('📱 Registering device and subscribing to topics...', name: 'OtpController');
+          try {
+            final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
+            developer.log(
+              'FCM registration result',
+              name: 'OtpController',
+              error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
+            );
+          } catch (e) {
+            developer.log(
+              'Error registering device/subscribing to topics',
+              name: 'OtpController',
+              error: e,
+            );
+            // On ne bloque pas la navigation même si l'opération échoue
+          }
+
+          // Navigate based on profile completeness
+          final isNew = response.data?['is_new_user'] ?? false;
+          developer.log(
+            'Navigation decision',
+            name: 'OtpController',
+            error: 'Is new user: $isNew',
+          );
+
+          if (isNew) {
+            developer.log('Navigating to PREFERENCES', name: 'OtpController');
+            Get.offAllNamed(Routes.PREFERENCES);
+          } else {
+            developer.log('Navigating to HOME', name: 'OtpController');
+            Get.offAllNamed(Routes.HOME);
+          }
+        } else {
+          developer.log(
+            'OTP verification failed',
+            name: 'OtpController',
+            error: response.message,
+          );
+          Get.snackbar(
+            'Code incorrect',
+            response.message,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.error,
+            colorText: Get.theme.colorScheme.onError,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          for (var controller in otpControllers) {
+            controller.clear();
+          }
+          isOtpComplete.value = false;
+          focusNodes[0].requestFocus();
         }
-        isOtpComplete.value = false;
-        focusNodes[0].requestFocus();
       }
     } catch (e, stackTrace) {
       developer.log(

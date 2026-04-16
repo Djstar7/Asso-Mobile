@@ -837,7 +837,7 @@ class WithdrawWalletView extends GetView<WalletController> {
                           color: AppThemeSystem.freemopayColor,
                         ),
                         filled: true,
-                        fillColor: context.surfaceColor,
+                        fillColor: context.inputFieldColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: context.borderColor),
@@ -895,7 +895,7 @@ class WithdrawWalletView extends GetView<WalletController> {
                           color: AppThemeSystem.freemopayColor,
                         ),
                         filled: true,
-                        fillColor: context.surfaceColor,
+                        fillColor: context.inputFieldColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: context.borderColor),
@@ -1270,7 +1270,7 @@ class WithdrawWalletView extends GetView<WalletController> {
                           color: AppThemeSystem.paypalColor,
                         ),
                         filled: true,
-                        fillColor: context.surfaceColor,
+                        fillColor: context.inputFieldColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: context.borderColor),
@@ -1333,7 +1333,7 @@ class WithdrawWalletView extends GetView<WalletController> {
                           color: AppThemeSystem.paypalColor,
                         ),
                         filled: true,
-                        fillColor: context.surfaceColor,
+                        fillColor: context.inputFieldColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: context.borderColor),

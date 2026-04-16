@@ -249,7 +249,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           size: deviceType == DeviceType.mobile ? 20 : 24,
         ),
         filled: true,
-        fillColor: context.surfaceColor,
+        fillColor: context.inputFieldColor,
         border: OutlineInputBorder(
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           borderSide: BorderSide(color: context.borderColor),
@@ -321,7 +321,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
     VoidCallback onTap,
   ) {
     final deviceType = AppThemeSystem.getDeviceType(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return GestureDetector(
       onTap: onTap,
@@ -385,7 +385,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
 
   Widget _buildBirthDatePicker(BuildContext context) {
     final deviceType = AppThemeSystem.getDeviceType(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Obx(
       () => GestureDetector(
@@ -469,7 +469,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
   }
 
   Widget _buildSaveButton(BuildContext context, DeviceType deviceType) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     // Le bouton orange a toujours du texte blanc pour une meilleure lisibilité
     final buttonTextColor = Colors.white;
 

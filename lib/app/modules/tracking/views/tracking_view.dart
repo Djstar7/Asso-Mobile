@@ -49,7 +49,7 @@ class TrackingView extends GetView<TrackingController> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     return Container(
       padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
       decoration: BoxDecoration(

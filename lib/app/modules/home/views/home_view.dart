@@ -36,7 +36,7 @@ class HomeView extends GetView<HomeController> {
     print('========================================');
     print('');
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     // Protection contre l'utilisation d'un controller disposé
@@ -1008,7 +1008,7 @@ class HomeView extends GetView<HomeController> {
     String? badgeCount,
     required VoidCallback onPressed,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Stack(
@@ -1823,23 +1823,33 @@ class HomeItemView extends GetView<HomeController> {
                           Positioned(
                             top: 8,
                             right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6),
-                                ],
-                              ),
-                              child: Icon(
-                                product['is_favorite'] == true
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                size: 16,
-                                color: product['is_favorite'] == true
-                                    ? AppThemeSystem.errorColor
-                                    : AppThemeSystem.grey600,
+                            child: GestureDetector(
+                              onTap: () {
+                                final productId = product['id'] is int
+                                    ? product['id']
+                                    : int.tryParse(product['id'].toString()) ?? 0;
+                                if (productId > 0) {
+                                  controller.toggleFavorite(productId);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6),
+                                  ],
+                                ),
+                                child: Icon(
+                                  product['is_favorite'] == true
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 16,
+                                  color: product['is_favorite'] == true
+                                      ? AppThemeSystem.errorColor
+                                      : AppThemeSystem.grey600,
+                                ),
                               ),
                             ),
                           ),
@@ -1948,23 +1958,33 @@ class HomeItemView extends GetView<HomeController> {
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
-                        ],
-                      ),
-                      child: Icon(
-                        product['is_favorite'] == true
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        size: 18,
-                        color: product['is_favorite'] == true
-                            ? AppThemeSystem.errorColor
-                            : AppThemeSystem.grey700,
+                    child: GestureDetector(
+                      onTap: () {
+                        final productId = product['id'] is int
+                            ? product['id']
+                            : int.tryParse(product['id'].toString()) ?? 0;
+                        if (productId > 0) {
+                          controller.toggleFavorite(productId);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
+                          ],
+                        ),
+                        child: Icon(
+                          product['is_favorite'] == true
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 18,
+                          color: product['is_favorite'] == true
+                              ? AppThemeSystem.errorColor
+                              : AppThemeSystem.grey700,
+                        ),
                       ),
                     ),
                   ),
@@ -2124,7 +2144,7 @@ class HomeItemView extends GetView<HomeController> {
 
   /// État vide professionnel
   Widget _buildEmptyState(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Center(

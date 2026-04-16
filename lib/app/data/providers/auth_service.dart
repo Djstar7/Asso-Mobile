@@ -306,6 +306,108 @@ class AuthService {
     return response;
   }
 
+  /// Request phone number change - sends OTP to new number
+  static Future<ApiResponse> requestPhoneChange({
+    required String newPhone,
+    String countryCode = '+237',
+  }) async {
+    developer.log(
+      '========== REQUEST PHONE CHANGE ==========',
+      name: 'AuthService',
+      error: 'New phone: $countryCode$newPhone',
+    );
+
+    final response = await ApiProvider.post(AppConstants.requestPhoneChangeUrl, body: {
+      'new_phone': newPhone,
+      'country_code': countryCode,
+    });
+
+    developer.log(
+      'Phone change request response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}, Message: ${response.message}',
+    );
+
+    // Log OTP code in development mode
+    if (response.success && response.data != null && response.data!.containsKey('otp_code')) {
+      developer.log(
+        '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
+        name: 'AuthService',
+      );
+    }
+
+    return response;
+  }
+
+  /// Confirm phone number change with OTP
+  static Future<ApiResponse> confirmPhoneChange({
+    required String newPhone,
+    required String otpCode,
+    String countryCode = '+237',
+  }) async {
+    developer.log(
+      '========== CONFIRM PHONE CHANGE ==========',
+      name: 'AuthService',
+      error: 'New phone: $newPhone, OTP: $otpCode',
+    );
+
+    final response = await ApiProvider.post(AppConstants.confirmPhoneChangeUrl, body: {
+      'new_phone': newPhone,
+      'otp_code': otpCode,
+      'country_code': countryCode,
+    });
+
+    developer.log(
+      'Phone change confirmation response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}, Message: ${response.message}',
+    );
+
+    if (response.success && response.data != null) {
+      final token = response.data!['token'] as String?;
+      final userData = response.data!['user'] as Map<String, dynamic>?;
+
+      if (token != null && userData != null) {
+        developer.log(
+          'Phone changed successfully - saving new session',
+          name: 'AuthService',
+        );
+
+        final user = UserModel.fromJson(userData);
+        StorageService.saveAuthSession(token, user);
+
+        developer.log(
+          'New session saved',
+          name: 'AuthService',
+          error: 'User: ${user.toString()}',
+        );
+      }
+    }
+
+    return response;
+  }
+
+  /// Delete account
+  static Future<ApiResponse> deleteAccount() async {
+    developer.log('========== DELETE ACCOUNT ==========', name: 'AuthService');
+
+    final response = await ApiProvider.post(AppConstants.deleteAccountUrl);
+
+    developer.log(
+      'Delete account response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}',
+    );
+
+    if (response.success) {
+      // Clear local session
+      StorageService.clearAuth();
+      developer.log('Account deleted - local session cleared', name: 'AuthService');
+    }
+
+    return response;
+  }
+
   /// Logout
   static Future<ApiResponse> logout() async {
     developer.log('========== LOGOUT ==========', name: 'AuthService');

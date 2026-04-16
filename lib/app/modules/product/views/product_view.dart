@@ -10,7 +10,7 @@ class ProductView extends GetView<ProductController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     // Récupérer les données du produit depuis les arguments
     final product = Get.arguments as Map<String, dynamic>? ?? {
@@ -30,6 +30,11 @@ class ProductView extends GetView<ProductController> {
         'reviews': 120,
       },
     };
+
+    // Initialize favorite status from product data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.isFavorite.value = product['is_favorite'] ?? false;
+    });
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -86,36 +91,40 @@ class ProductView extends GetView<ProductController> {
                 },
               ),
               SizedBox(width: 8),
-              Obx(() => IconButton(
-                icon: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 1,
+              Obx(() {
+                final isFav = controller.isFavorite.value;
+                return IconButton(
+                  icon: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: isFav ? Colors.red : Colors.white,
+                      size: 20,
                     ),
                   ),
-                  child: Icon(
-                    controller.isFavorite.value
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: controller.isFavorite.value
-                        ? Colors.red
-                        : Colors.white,
-                    size: 20,
-                  ),
-                ),
-                onPressed: () {
-                  AuthGuard.requireAuth(
-                    context,
-                    onAuthenticated: controller.toggleFavorite,
-                    featureName: 'les favoris',
-                    useDialog: false,
-                  );
-                },
-              )),
+                  onPressed: () {
+                    final productId = product['id'] is int
+                        ? product['id']
+                        : int.tryParse(product['id'].toString()) ?? 0;
+                    if (productId > 0) {
+                      AuthGuard.requireAuth(
+                        context,
+                        onAuthenticated: () => controller.toggleFavorite(productId),
+                        featureName: 'les favoris',
+                        useDialog: false,
+                      );
+                    }
+                  },
+                );
+              }),
               SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -463,7 +472,7 @@ class ProductView extends GetView<ProductController> {
   }
 
   Widget _buildBottomBar(BuildContext context, Map<String, dynamic> product) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Container(
       padding: EdgeInsets.all(16),

@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
+import '../../home/controllers/home_controller.dart';
 
 class FavoritesController extends GetxController {
   final RxList<Map<String, dynamic>> favoriteProducts = <Map<String, dynamic>>[].obs;
@@ -104,6 +106,16 @@ class FavoritesController extends GetxController {
           favoriteProducts.removeWhere((p) => p['id'] == productId);
         }
 
+        // Sync with HomeController if it exists
+        try {
+          if (Get.isRegistered<HomeController>()) {
+            final homeController = Get.find<HomeController>();
+            homeController.updateProductFavoriteStatus(productId, isFavorite);
+          }
+        } catch (e) {
+          // HomeController not found, ignore
+        }
+
         Get.snackbar(
           'Succès',
           response.data?['message'] ?? (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
@@ -114,6 +126,68 @@ class FavoritesController extends GetxController {
       Get.snackbar(
         'Erreur',
         'Impossible de modifier le favori',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  /// Remove all favorites
+  Future<void> removeAllFavorites() async {
+    if (favoriteProducts.isEmpty) {
+      Get.snackbar(
+        'Info',
+        'Aucun favori à supprimer',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Confirmation'),
+        content: Text(
+          'Voulez-vous vraiment supprimer tous vos favoris (${favoriteProducts.length} produits) ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: Text('Supprimer tout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // Remove each favorite one by one
+      final List<int> productIds = favoriteProducts
+          .map((p) => p['id'] is int ? p['id'] as int : int.tryParse(p['id'].toString()) ?? 0)
+          .where((id) => id > 0)
+          .toList();
+
+      for (final productId in productIds) {
+        await ProductService.toggleFavorite(productId);
+      }
+
+      favoriteProducts.clear();
+      Get.snackbar(
+        'Succès',
+        'Tous les favoris ont été supprimés',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de supprimer tous les favoris',
         snackPosition: SnackPosition.BOTTOM,
       );
     }

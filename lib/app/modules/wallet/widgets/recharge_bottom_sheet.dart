@@ -469,6 +469,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             controller: _amountController,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               labelText: 'Montant (FCFA)',
               hintText: '10000',
@@ -502,9 +505,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           // Champs spécifiques selon la méthode
           if (_selectedMethod == 'om' || _selectedMethod == 'momo')
             ..._buildMobileMoneyFields(context),
+
           // Pour VISA, MasterCard et PayPal, on n'affiche PAS de champs supplémentaires
           // PayPal WebView gérera tout
-
           const SizedBox(height: 24),
 
           // Bouton de confirmation
@@ -550,6 +553,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
       TextFormField(
         controller: _phoneController,
         keyboardType: TextInputType.phone,
+        style: TextStyle(
+          color: AppThemeSystem.getPrimaryTextColor(context),
+        ),
         decoration: InputDecoration(
           labelText: 'Numéro de téléphone',
           hintText: '651826475',
@@ -694,10 +700,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
           if (paypalResult != null && paypalResult['success'] == true) {
             // L'utilisateur a approuvé, capturer le paiement
-            final captureResult = await walletController.captureNativePayPalPayment(
-              paymentId: paymentId,
-              orderId: orderId,
-            );
+            final captureResult = await walletController
+                .captureNativePayPalPayment(
+                  paymentId: paymentId,
+                  orderId: orderId,
+                );
 
             if (captureResult['success'] == true) {
               Get.snackbar(
@@ -718,7 +725,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                 colorText: AppThemeSystem.whiteColor,
               );
             }
-          } else if (paypalResult != null && paypalResult['cancelled'] == true) {
+          } else if (paypalResult != null &&
+              paypalResult['cancelled'] == true) {
             Get.snackbar(
               'Annulé',
               'Paiement PayPal annulé',

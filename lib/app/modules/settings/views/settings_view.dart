@@ -38,18 +38,10 @@ class SettingsView extends GetView<SettingsController> {
               children: [
                 _buildSettingsTile(
                   context,
-                  icon: Icons.person_outline,
-                  title: 'Modifier le profil',
-                  subtitle: 'Nom, photo, informations personnelles',
-                  onTap: controller.editProfile,
-                ),
-                Divider(color: context.borderColor, height: 1),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.lock_outline,
-                  title: 'Changer le mot de passe',
-                  subtitle: 'Modifier votre mot de passe',
-                  onTap: controller.changePassword,
+                  icon: Icons.phone_outlined,
+                  title: 'Changer le numéro de téléphone',
+                  subtitle: 'Modifier votre numéro de téléphone',
+                  onTap: controller.changePhoneNumber,
                 ),
               ],
             ),
@@ -64,19 +56,19 @@ class SettingsView extends GetView<SettingsController> {
               children: [
                 _buildSettingsTile(
                   context,
+                  icon: Icons.storage,
+                  title: 'Effacer le cache',
+                  subtitle: 'Libérer de l\'espace de stockage',
+                  onTap: controller.clearCache,
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
                   icon: Icons.tune,
                   title: 'Préférences',
                   subtitle: 'Notifications, thème, langue',
                   onTap: controller.goToPreferences,
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                ),
-                Divider(color: context.borderColor, height: 1),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.storage,
-                  title: 'Effacer le cache',
-                  subtitle: 'Libérer de l\'espace de stockage',
-                  onTap: controller.clearCache,
                 ),
               ],
             ),
@@ -91,10 +83,11 @@ class SettingsView extends GetView<SettingsController> {
               children: [
                 _buildSettingsTile(
                   context,
-                  icon: Icons.download_outlined,
-                  title: 'Exporter mes données',
-                  subtitle: 'Télécharger une copie de vos données',
-                  onTap: controller.exportData,
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Factures',
+                  subtitle: 'Consulter l\'historique de vos factures',
+                  onTap: controller.goToInvoices,
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
                 Divider(color: context.borderColor, height: 1),
                 _buildSettingsTile(
@@ -110,30 +103,12 @@ class SettingsView extends GetView<SettingsController> {
 
             SizedBox(height: context.sectionSpacing),
 
-            // Section Aide
-            _buildSectionTitle(context, 'Aide et support'),
+            // Section À propos
+            _buildSectionTitle(context, 'À propos'),
             SizedBox(height: context.elementSpacing),
             _buildSettingsCard(
               context,
               children: [
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.help_outline,
-                  title: 'Aide et Support',
-                  subtitle: 'Contactez-nous pour obtenir de l\'aide',
-                  onTap: controller.goToHelp,
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                ),
-                Divider(color: context.borderColor, height: 1),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.quiz_outlined,
-                  title: 'FAQ',
-                  subtitle: 'Questions fréquemment posées',
-                  onTap: controller.goToFAQ,
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                ),
-                Divider(color: context.borderColor, height: 1),
                 _buildSettingsTile(
                   context,
                   icon: Icons.info_outline,
@@ -202,64 +177,73 @@ class SettingsView extends GetView<SettingsController> {
               ),
             ],
           ),
-          child: Row(
+          child: Stack(
             children: [
-              // Avatar
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  size: 40,
-                  color: AppThemeSystem.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 16),
+              Row(
+                children: [
+                  // Avatar
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
 
-              // Informations
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      controller.userName.value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  // Informations
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          controller.userName.value,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.userEmail.value,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          controller.userPhone.value,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      controller.userEmail.value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      controller.userPhone.value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
-              // Bouton éditer
-              IconButton(
-                onPressed: controller.editProfile,
-                icon: const Icon(Icons.edit, color: Colors.white),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+              // Bouton d'édition
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: controller.editProfile,
+                  tooltip: 'Modifier le profil',
                 ),
               ),
             ],

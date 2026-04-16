@@ -69,7 +69,7 @@ class FaqView extends GetView<FaqController> {
                 )
               : const SizedBox.shrink()),
           filled: true,
-          fillColor: context.surfaceColor,
+          fillColor: context.inputFieldColor,
           border: OutlineInputBorder(
             borderRadius: context.borderRadius(BorderRadiusType.medium),
             borderSide: BorderSide(color: context.borderColor),

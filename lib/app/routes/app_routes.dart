@@ -43,6 +43,7 @@ abstract class Routes {
   static const USSD_WAITING = _Paths.USSD_WAITING;
   static const WALLET_HISTORY = _Paths.WALLET_HISTORY;
   static const INVENTORY_LIST = _Paths.INVENTORY_LIST;
+  static const INVOICES = _Paths.INVOICES;
 }
 
 abstract class _Paths {
@@ -87,4 +88,5 @@ abstract class _Paths {
   static const USSD_WAITING = '/ussd-waiting';
   static const WALLET_HISTORY = '/wallet/history';
   static const INVENTORY_LIST = '/inventory-list';
+  static const INVOICES = '/invoices';
 }

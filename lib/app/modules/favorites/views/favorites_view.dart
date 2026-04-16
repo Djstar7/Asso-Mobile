@@ -10,7 +10,7 @@ class FavoritesView extends GetView<FavoritesController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Scaffold(
@@ -33,6 +33,21 @@ class FavoritesView extends GetView<FavoritesController> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          Obx(() {
+            if (controller.favoriteProducts.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: Icon(
+                Icons.delete_sweep_rounded,
+                color: AppThemeSystem.errorColor,
+              ),
+              tooltip: 'Supprimer tout',
+              onPressed: controller.removeAllFavorites,
+            );
+          }),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.favoriteProducts.isEmpty) {
@@ -96,7 +111,7 @@ class FavoritesView extends GetView<FavoritesController> {
   }
 
   Widget _buildEmptyState(BuildContext context, DeviceType deviceType) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Center(
       child: Padding(

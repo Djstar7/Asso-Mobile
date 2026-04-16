@@ -5,6 +5,15 @@ import 'package:get/get.dart';
 /// Gère automatiquement les thèmes sombre/clair et toutes les tailles d'écran
 class AppThemeSystem {
   // ================================
+  // CONFIGURATION DU SYSTÈME DE THÈME
+  // ================================
+
+  /// Active/désactive le système de thème dynamique (dark/light)
+  /// Si false, seul le thème light sera appliqué
+  /// Si true, le thème s'adapte au mode natif de l'appareil
+  static bool enableDynamicTheming = false;
+
+  // ================================
   // COULEURS DU DESIGN SYSTEM
   // ================================
 
@@ -286,7 +295,7 @@ class AppThemeSystem {
     String fontFamily = 'SF-Pro',
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && theme.brightness == Brightness.dark;
     final fontSize = getFontSize(context, type);
 
     // Couleur automatique basée sur le thème
@@ -434,32 +443,43 @@ class AppThemeSystem {
 
   /// Couleur de surface basée sur le thème
   static Color getSurfaceColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
     return isDark ? darkCardColor : cardColor;
   }
 
   /// Couleur de background basée sur le thème
   static Color getBackgroundColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
     return isDark ? darkBackgroundColor : backgroundColor;
   }
 
   /// Couleur de texte primaire basée sur le thème
   static Color getPrimaryTextColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
     return isDark ? whiteColor : blackColor;
   }
 
   /// Couleur de texte secondaire basée sur le thème
   static Color getSecondaryTextColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
     return isDark ? grey300 : grey600;
   }
 
   /// Couleur de bordure basée sur le thème
   static Color getBorderColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
     return isDark ? grey700 : grey300;
+  }
+
+  /// Vérifie si le mode sombre est activé (méthode statique pour éviter les conflits d'extensions)
+  static bool isDarkMode(BuildContext context) {
+    return enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
+  }
+
+  /// Couleur de fond pour les champs de saisie (TextField, TextFormField)
+  static Color getInputFieldColor(BuildContext context) {
+    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
+    return isDark ? grey800 : grey50; // Gris très clair en light, gris foncé en dark
   }
 
   // ================================
@@ -738,6 +758,8 @@ class AppThemeSystem {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: grey100,
+        hintStyle: const TextStyle(color: grey500),
+        labelStyle: const TextStyle(color: grey700),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: grey300),
@@ -750,6 +772,13 @@ class AppThemeSystem {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
+      ),
+
+      // Force text color in text fields
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: blackColor),
+        bodyMedium: TextStyle(color: blackColor),
+        bodySmall: TextStyle(color: blackColor),
       ),
     );
   }
@@ -855,7 +884,7 @@ enum ElevationType { none, low, medium, high }
 // EXTENSIONS POUR FACILITER L'USAGE
 // ================================
 
-extension ThemeExtension on BuildContext {
+extension AppThemeExtensions on BuildContext {
   /// Accès rapide au système de thème
   AppThemeSystem get appTheme => AppThemeSystem();
 
@@ -863,7 +892,7 @@ extension ThemeExtension on BuildContext {
   ColorScheme get colors => Theme.of(this).colorScheme;
 
   /// Vérifie si le thème est sombre
-  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  bool get isDarkMode => AppThemeSystem.enableDynamicTheming && Theme.of(this).brightness == Brightness.dark;
 
   /// Type d'appareil
   DeviceType get deviceType => AppThemeSystem.getDeviceType(this);
@@ -897,6 +926,9 @@ extension ThemeExtension on BuildContext {
 
   /// Couleur de bordure
   Color get borderColor => AppThemeSystem.getBorderColor(this);
+
+  /// Couleur de fond pour les champs de saisie
+  Color get inputFieldColor => AppThemeSystem.getInputFieldColor(this);
 
   /// Hauteur de bouton
   double get buttonHeight => AppThemeSystem.getButtonHeight(this);

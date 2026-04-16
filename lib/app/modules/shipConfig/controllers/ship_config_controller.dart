@@ -39,7 +39,9 @@ class ShipConfigController extends GetxController {
 
     // D'abord vérifier le cache local
     var currentUser = StorageService.getUser();
-    print('  └─ Cache local: role=${currentUser?.role}, roles=${currentUser?.roles}');
+    print(
+      '  └─ Cache local: role=${currentUser?.role}, roles=${currentUser?.roles}',
+    );
 
     // Si le cache dit qu'il est livreur, OK
     if (currentUser != null && currentUser.isDelivery) {
@@ -55,7 +57,9 @@ class ShipConfigController extends GetxController {
 
     // Re-vérifier après rafraîchissement
     currentUser = StorageService.getUser();
-    print('  └─ Après rafraîchissement: role=${currentUser?.role}, roles=${currentUser?.roles}');
+    print(
+      '  └─ Après rafraîchissement: role=${currentUser?.role}, roles=${currentUser?.roles}',
+    );
 
     if (currentUser != null && currentUser.isDelivery) {
       print('✅ Backend confirme : utilisateur est livreur');
@@ -97,10 +101,14 @@ class ShipConfigController extends GetxController {
           try {
             final user = UserModel.fromJson(userData);
             StorageService.saveUser(user);
-            print('✅ Profil rafraîchi: role=${user.role}, roles=${user.roles}, isDelivery=${user.isDelivery}');
+            print(
+              '✅ Profil rafraîchi: role=${user.role}, roles=${user.roles}, isDelivery=${user.isDelivery}',
+            );
           } catch (parseError, stackTrace) {
             print('❌ Erreur de parsing du profil: $parseError');
-            print('  └─ Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}');
+            print(
+              '  └─ Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}',
+            );
           }
         } else {
           print('⚠️  Pas de données utilisateur dans la réponse');
@@ -110,7 +118,9 @@ class ShipConfigController extends GetxController {
       }
     } catch (e, stackTrace) {
       print('❌ Exception lors du rafraîchissement du profil: $e');
-      print('  └─ Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}');
+      print(
+        '  └─ Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}',
+      );
     }
   }
 
@@ -137,7 +147,9 @@ class ShipConfigController extends GetxController {
       final zonesData = _storage.read('delivery_zones');
       if (zonesData != null) {
         deliveryZones.value = (zonesData as List<dynamic>)
-            .map((zone) => DeliveryZone.fromJson(Map<String, dynamic>.from(zone)))
+            .map(
+              (zone) => DeliveryZone.fromJson(Map<String, dynamic>.from(zone)),
+            )
             .toList();
       }
 
@@ -175,7 +187,9 @@ class ShipConfigController extends GetxController {
         }
         if (data['zones'] != null) {
           deliveryZones.value = (data['zones'] as List<dynamic>)
-              .map((zone) => DeliveryZone.fromJson(zone as Map<String, dynamic>))
+              .map(
+                (zone) => DeliveryZone.fromJson(zone as Map<String, dynamic>),
+              )
               .toList();
         }
       }
@@ -364,22 +378,16 @@ class ShipConfigController extends GetxController {
   Future<void> contactSupport() async {
     try {
       final Uri supportUri = Uri.parse(
-        'mailto:support@asso.com?subject=Demande de code de synchronisation livreur',
+        'mailto:support@asso-corporation.com?subject=Demande de code de synchronisation livreur',
       );
 
       if (await canLaunchUrl(supportUri)) {
         await launchUrl(supportUri);
       } else {
-        _showErrorSnackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le client mail',
-        );
+        _showErrorSnackbar('Erreur', 'Impossible d\'ouvrir le client mail');
       }
     } catch (e) {
-      _showErrorSnackbar(
-        'Erreur',
-        'Une erreur est survenue',
-      );
+      _showErrorSnackbar('Erreur', 'Une erreur est survenue');
     }
   }
 
@@ -402,10 +410,7 @@ class ShipConfigController extends GetxController {
       colorText: Get.theme.colorScheme.onError,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
-      icon: const Icon(
-        Icons.error_outline,
-        color: Colors.white,
-      ),
+      icon: const Icon(Icons.error_outline, color: Colors.white),
       duration: const Duration(seconds: 4),
     );
   }
@@ -420,10 +425,7 @@ class ShipConfigController extends GetxController {
       colorText: Get.theme.colorScheme.onPrimary,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
-      icon: const Icon(
-        Icons.check_circle_outline,
-        color: Colors.white,
-      ),
+      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
       duration: const Duration(seconds: 3),
     );
   }
@@ -438,10 +440,7 @@ class ShipConfigController extends GetxController {
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
-      icon: const Icon(
-        Icons.info_outline,
-        color: Colors.white,
-      ),
+      icon: const Icon(Icons.info_outline, color: Colors.white),
       duration: const Duration(seconds: 3),
     );
   }

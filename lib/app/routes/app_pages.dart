@@ -1,3 +1,4 @@
+import 'package:asso/app/modules/invoices/views/invoices_view.dart';
 import 'package:get/get.dart';
 
 import '../modules/about/bindings/about_binding.dart';
@@ -76,6 +77,7 @@ import '../modules/productManagement/bindings/product_management_binding.dart';
 import '../modules/productManagement/views/product_management_view.dart';
 import '../modules/inventoryList/bindings/inventory_list_binding.dart';
 import '../modules/inventoryList/views/inventory_list_view.dart';
+import '../modules/invoices/bindings/invoices_binding.dart';
 
 part 'app_routes.dart';
 
@@ -279,6 +281,11 @@ class AppPages {
       name: _Paths.INVENTORY_LIST,
       page: () => const InventoryListView(),
       binding: InventoryListBinding(),
+    ),
+    GetPage(
+      name: _Paths.INVOICES,
+      page: () => const InvoicesView(),
+      binding: InvoicesBinding(),
     ),
   ];
 }

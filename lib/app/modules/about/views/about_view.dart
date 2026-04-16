@@ -35,11 +35,6 @@ class AboutView extends GetView<AboutController> {
 
             SizedBox(height: context.sectionSpacing),
 
-            // Réseaux sociaux
-            _buildSocialSection(context),
-
-            SizedBox(height: context.sectionSpacing),
-
             // Liens légaux
             _buildLegalSection(context),
 
@@ -98,22 +93,22 @@ class AboutView extends GetView<AboutController> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            controller.appName,
+          Obx(() => Text(
+            controller.appName.value,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
-          ),
+          )),
           const SizedBox(height: 8),
-          Text(
-            'Version ${controller.appVersion} (${controller.buildNumber})',
+          Obx(() => Text(
+            'Version ${controller.appVersion.value} (${controller.buildNumber.value})',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
             ),
-          ),
+          )),
           const SizedBox(height: 4),
           Text(
             controller.releaseDate,
@@ -144,99 +139,14 @@ class AboutView extends GetView<AboutController> {
             style: context.body1.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Asso Market est une plateforme de commerce en ligne qui connecte '
-            'les vendeurs et les acheteurs au Cameroun. Nous offrons une expérience '
-            'd\'achat simple, rapide et sécurisée avec livraison à domicile.',
+          Obx(() => Text(
+            controller.appDescription.value.isNotEmpty
+                ? controller.appDescription.value
+                : 'Asso Market est une plateforme de commerce en ligne qui connecte '
+                    'les vendeurs et les acheteurs au Cameroun. Nous offrons une expérience '
+                    'd\'achat simple, rapide et sécurisée avec livraison à domicile.',
             style: context.body2.copyWith(height: 1.5),
-          ),
-          const SizedBox(height: 16),
-          _buildInfoItem(
-            context,
-            icon: Icons.phone_android,
-            label: 'Plateforme',
-            value: 'Android & iOS',
-          ),
-          const SizedBox(height: 8),
-          _buildInfoItem(
-            context,
-            icon: Icons.code,
-            label: 'Framework',
-            value: 'Flutter',
-          ),
-          const SizedBox(height: 8),
-          _buildInfoItem(
-            context,
-            icon: Icons.location_on,
-            label: 'Pays',
-            value: 'Cameroun',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(BuildContext context,
-      {required IconData icon, required String label, required String value}) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppThemeSystem.primaryColor),
-        const SizedBox(width: 8),
-        Text('$label: ', style: context.caption),
-        Text(value, style: context.body2.copyWith(fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _buildSocialSection(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Suivez-nous',
-            style: context.body1.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: controller.socialLinks.map((link) {
-              return InkWell(
-                onTap: () => controller.openSocialLink(link.url),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: link.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: link.color.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(link.icon, color: link.color, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        link.name,
-                        style: context.body2.copyWith(
-                          color: link.color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+          )),
         ],
       ),
     );

@@ -1,166 +1,264 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/values/constants.dart';
+import '../../../data/providers/api_provider.dart';
 
 class AboutController extends GetxController {
-  // Informations de l'application
-  final appName = 'Asso Market';
-  final appVersion = '1.0.0';
-  final buildNumber = '1';
+  final isLoading = false.obs;
+
+  // Informations de l'application (from API)
+  final appName = 'Asso Market'.obs;
+  final appVersion = '1.0.0'.obs;
+  final buildNumber = '1'.obs;
+  final appDescription = ''.obs;
+  final appLogo = Rx<String?>(null);
+
+  // Contact
+  final contactEmail = ''.obs;
+  final contactPhone = ''.obs;
+  final contactAddress = ''.obs;
+  final contactWebsite = ''.obs;
+
+  // Legal
+  final termsUrl = ''.obs;
+  final privacyUrl = ''.obs;
+  final licensesUrl = ''.obs;
+
+  // Credits
+  final developedBy = 'ASSO Team'.obs;
+  final copyright = ''.obs;
+
   final releaseDate = 'Mars 2026';
 
   // Réseaux sociaux
-  final socialLinks = <SocialLink>[
-    SocialLink(
-      name: 'Facebook',
-      icon: Icons.facebook,
-      url: 'https://facebook.com/asso',
-      color: const Color(0xFF1877F2),
-    ),
-    SocialLink(
-      name: 'Twitter',
-      icon: Icons.close, // Utiliser X icon
-      url: 'https://twitter.com/asso',
-      color: Colors.black,
-    ),
-    SocialLink(
-      name: 'Instagram',
-      icon: Icons.camera_alt,
-      url: 'https://instagram.com/asso',
-      color: const Color(0xFFE4405F),
-    ),
-    SocialLink(
-      name: 'LinkedIn',
-      icon: Icons.work,
-      url: 'https://linkedin.com/company/asso',
-      color: const Color(0xFF0A66C2),
-    ),
-  ];
+  final socialLinks = <SocialLink>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    developer.log('========== ABOUT CONTROLLER INIT ==========', name: 'AboutController');
+    fetchAboutData();
+  }
+
+  /// Fetch about data from API
+  Future<void> fetchAboutData() async {
+    isLoading.value = true;
+
+    developer.log('========== FETCH ABOUT DATA ==========', name: 'AboutController');
+
+    try {
+      final response = await ApiProvider.get(AppConstants.aboutUrl);
+
+      developer.log(
+        'About data response',
+        name: 'AboutController',
+        error: 'Success: ${response.success}',
+      );
+
+      if (response.success && response.data != null) {
+        final aboutData = response.data!['about'] as Map<String, dynamic>;
+
+        // App info
+        appName.value = aboutData['app_name'] as String? ?? 'ASSO';
+        appVersion.value = aboutData['version'] as String? ?? '1.0.0';
+        buildNumber.value = aboutData['build_number'] as String? ?? '1';
+        appDescription.value = aboutData['description'] as String? ?? '';
+        appLogo.value = aboutData['logo'] as String?;
+
+        // Contact
+        final contact = aboutData['contact'] as Map<String, dynamic>?;
+        if (contact != null) {
+          contactEmail.value = contact['email'] as String? ?? '';
+          contactPhone.value = contact['phone'] as String? ?? '';
+          contactAddress.value = contact['address'] as String? ?? '';
+          contactWebsite.value = contact['website'] as String? ?? '';
+        }
+
+        // Legal
+        final legal = aboutData['legal'] as Map<String, dynamic>?;
+        if (legal != null) {
+          termsUrl.value = legal['terms_url'] as String? ?? '';
+          privacyUrl.value = legal['privacy_url'] as String? ?? '';
+          licensesUrl.value = legal['licenses_url'] as String? ?? '';
+        }
+
+        // Social
+        final social = aboutData['social'] as Map<String, dynamic>?;
+        if (social != null) {
+          final links = <SocialLink>[];
+
+          if (social['facebook'] != null && (social['facebook'] as String).isNotEmpty) {
+            links.add(SocialLink(
+              name: 'Facebook',
+              icon: Icons.facebook,
+              url: social['facebook'] as String,
+              color: const Color(0xFF1877F2),
+            ));
+          }
+
+          if (social['twitter'] != null && (social['twitter'] as String).isNotEmpty) {
+            links.add(SocialLink(
+              name: 'Twitter',
+              icon: Icons.close,
+              url: social['twitter'] as String,
+              color: Colors.black,
+            ));
+          }
+
+          if (social['instagram'] != null && (social['instagram'] as String).isNotEmpty) {
+            links.add(SocialLink(
+              name: 'Instagram',
+              icon: Icons.camera_alt,
+              url: social['instagram'] as String,
+              color: const Color(0xFFE4405F),
+            ));
+          }
+
+          socialLinks.value = links;
+        }
+
+        // Credits
+        final credits = aboutData['credits'] as Map<String, dynamic>?;
+        if (credits != null) {
+          developedBy.value = credits['developed_by'] as String? ?? 'ASSO Team';
+          copyright.value = credits['copyright'] as String? ?? '';
+        }
+
+        developer.log('About data loaded successfully', name: 'AboutController');
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching about data',
+        name: 'AboutController',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Ouvrir un lien
+  Future<void> openUrl(String url) async {
+    if (url.isEmpty) {
+      Get.snackbar(
+        'Erreur',
+        'URL non disponible',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    developer.log('Opening URL', name: 'AboutController', error: 'URL: $url');
+
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible d\'ouvrir le lien',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      developer.log('Error opening URL', name: 'AboutController', error: e);
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'ouvrir le lien',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
 
   /// Ouvrir un lien social
   void openSocialLink(String url) {
-    Get.snackbar(
-      'Ouverture',
-      'Redirection vers $url',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppThemeSystem.primaryColor,
-      colorText: Colors.white,
-    );
-    // TODO: Ouvrir l'URL avec url_launcher
+    openUrl(url);
   }
 
   /// Afficher les conditions d'utilisation
   void showTermsOfService() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Conditions d\'utilisation'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'Conditions d\'utilisation\n\n'
-            '1. Acceptation des conditions\n'
-            'En utilisant cette application, vous acceptez les présentes conditions.\n\n'
-            '2. Utilisation du service\n'
-            'Vous vous engagez à utiliser le service de manière légale et appropriée.\n\n'
-            '3. Propriété intellectuelle\n'
-            'Tous les contenus de l\'application sont protégés par les droits d\'auteur.\n\n'
-            '4. Limitation de responsabilité\n'
-            'Nous ne pouvons être tenus responsables des dommages indirects.\n\n'
-            '5. Modifications\n'
-            'Nous nous réservons le droit de modifier ces conditions à tout moment.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
-    );
+    if (termsUrl.value.isNotEmpty) {
+      openUrl(termsUrl.value);
+    } else {
+      Get.snackbar(
+        'Non disponible',
+        'Les conditions d\'utilisation ne sont pas encore disponibles',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
   }
 
   /// Afficher la politique de confidentialité
   void showPrivacyPolicy() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Politique de confidentialité'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'Politique de confidentialité\n\n'
-            '1. Collecte des données\n'
-            'Nous collectons uniquement les données nécessaires au fonctionnement du service.\n\n'
-            '2. Utilisation des données\n'
-            'Vos données sont utilisées pour améliorer votre expérience utilisateur.\n\n'
-            '3. Partage des données\n'
-            'Nous ne partageons pas vos données avec des tiers sans votre consentement.\n\n'
-            '4. Sécurité\n'
-            'Nous mettons en œuvre des mesures de sécurité appropriées.\n\n'
-            '5. Vos droits\n'
-            'Vous avez le droit d\'accéder, modifier ou supprimer vos données.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
-    );
+    if (privacyUrl.value.isNotEmpty) {
+      openUrl(privacyUrl.value);
+    } else {
+      Get.snackbar(
+        'Non disponible',
+        'La politique de confidentialité n\'est pas encore disponible',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
   }
 
   /// Afficher les licences
   void showLicenses() {
-    Get.snackbar(
-      'Licences',
-      'Affichage des licences des bibliothèques',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppThemeSystem.primaryColor,
-      colorText: Colors.white,
-    );
-    // TODO: Afficher la page des licences Flutter
+    if (licensesUrl.value.isNotEmpty) {
+      openUrl(licensesUrl.value);
+    } else {
+      Get.snackbar(
+        'Non disponible',
+        'Les licences ne sont pas encore disponibles',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Contacter le support
+  void contactSupport() {
+    if (contactEmail.value.isNotEmpty) {
+      openUrl('mailto:${contactEmail.value}');
+    } else {
+      Get.snackbar(
+        'Non disponible',
+        'Email de contact non disponible',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
   }
 
   /// Envoyer un feedback
   void sendFeedback() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Envoyer un feedback'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Votre avis nous intéresse !'),
-            const SizedBox(height: 16),
-            TextField(
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Écrivez votre feedback ici...',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              Get.snackbar(
-                'Merci !',
-                'Votre feedback a été envoyé',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
-              );
-            },
-            child: const Text('Envoyer'),
-          ),
-        ],
-      ),
-    );
+    if (contactEmail.value.isNotEmpty) {
+      openUrl('mailto:${contactEmail.value}?subject=Feedback%20ASSO%20Market');
+    } else {
+      Get.snackbar(
+        'Non disponible',
+        'Email de contact non disponible',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
   }
 }
 

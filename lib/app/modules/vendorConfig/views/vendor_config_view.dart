@@ -111,6 +111,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
   /// Étape 1: Profil personnel
   Widget _buildStep1(BuildContext context) {
     return SingleChildScrollView(
+      controller: controller.step1ScrollController,
       padding: EdgeInsets.symmetric(
         horizontal: context.horizontalPadding,
       ),
@@ -366,10 +367,13 @@ class VendorConfigView extends GetView<VendorConfigController> {
           SizedBox(height: context.elementSpacing),
           TextField(
             controller: controller.firstNameController,
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'Votre prénom',
               filled: true,
-              fillColor: context.surfaceColor,
+              fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.person_outline),
               border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -401,10 +405,13 @@ class VendorConfigView extends GetView<VendorConfigController> {
           SizedBox(height: context.elementSpacing),
           TextField(
             controller: controller.lastNameController,
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'Votre nom',
               filled: true,
-              fillColor: context.surfaceColor,
+              fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.badge_outlined),
               border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -437,10 +444,13 @@ class VendorConfigView extends GetView<VendorConfigController> {
           TextField(
             controller: controller.emailController,
             keyboardType: TextInputType.emailAddress,
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'votre.email@exemple.com',
               filled: true,
-              fillColor: context.surfaceColor,
+              fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.email_outlined),
               border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -469,6 +479,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
   /// Étape 2: Configuration boutique
   Widget _buildStep2(BuildContext context) {
     return SingleChildScrollView(
+      controller: controller.step2ScrollController,
       padding: EdgeInsets.symmetric(
         horizontal: context.horizontalPadding,
       ),
@@ -591,10 +602,13 @@ class VendorConfigView extends GetView<VendorConfigController> {
           SizedBox(height: context.elementSpacing),
           TextField(
             controller: controller.shopNameController,
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'Ex: Boutique Kira',
               filled: true,
-              fillColor: context.surfaceColor,
+              fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.store_outlined),
               border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -627,10 +641,13 @@ class VendorConfigView extends GetView<VendorConfigController> {
           TextField(
             controller: controller.shopDescriptionController,
             maxLines: 4,
+            style: TextStyle(
+              color: AppThemeSystem.getPrimaryTextColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'Décrivez votre activité et vos produits...',
               filled: true,
-              fillColor: context.surfaceColor,
+              fillColor: context.inputFieldColor,
               prefixIcon: Padding(
                 padding: EdgeInsets.only(bottom: 60),
                 child: Icon(Icons.description_outlined),
@@ -1026,6 +1043,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
   Widget _buildStep3(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
+        controller: controller.step3ScrollController,
         padding: EdgeInsets.symmetric(
           horizontal: context.horizontalPadding,
         ),

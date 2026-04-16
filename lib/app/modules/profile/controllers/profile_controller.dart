@@ -134,6 +134,17 @@ class ProfileController extends GetxController {
   String get role => profile['role'] ?? 'client';
   String get address => profile['location'] ?? '';
 
+  /// Check if user is a vendor based on profile data
+  bool get isVendor {
+    final roles = profile['roles'];
+    if (roles is List && roles.isNotEmpty) {
+      return roles.contains('vendor') || roles.contains('vendeur');
+    }
+    // Fallback to role column
+    final userRole = profile['role'] ?? 'client';
+    return userRole == 'vendor' || userRole == 'vendeur';
+  }
+
   void editProfile() {
     Get.toNamed(Routes.COMPLETE_PROFILE);
   }
@@ -168,12 +179,12 @@ class ProfileController extends GetxController {
   void goToSettings() {
     // Protégé par le UI - ne devrait pas être appelé en mode invité
     if (StorageService.isAuthenticated) {
-      Get.toNamed(Routes.PREFERENCES); // Settings/Preferences page
+      Get.toNamed(Routes.SETTINGS);
     }
   }
 
   void goToHelp() {
-    // TODO
+    Get.toNamed(Routes.HELP);
   }
 
   void goToAbout() {

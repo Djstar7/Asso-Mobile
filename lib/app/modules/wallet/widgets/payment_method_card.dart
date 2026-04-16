@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:asso/app/core/utils/responsive.dart';
 import 'package:flutter/material.dart';
 
@@ -21,7 +22,7 @@ class PaymentMethodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Déterminer l'opacité en fonction du thème
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
     final overlayStartOpacity = isDark ? 0.5 : 0.4;
     final overlayEndOpacity = isDark ? 0.75 : 0.7;
 

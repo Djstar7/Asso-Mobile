@@ -175,7 +175,7 @@ class LoginView extends GetView<LoginController> {
               ),
             ),
             filled: true,
-            fillColor: context.surfaceColor,
+            fillColor: context.inputFieldColor,
             contentPadding: EdgeInsets.symmetric(
               horizontal: context.horizontalPadding,
               vertical: context.verticalPadding * 0.75,

@@ -62,7 +62,7 @@ void main() async {
       debugShowCheckedModeBanner: false,
       theme: AppThemeSystem.getLightTheme(),
       darkTheme: AppThemeSystem.getDarkTheme(),
-      themeMode: ThemeMode.system,
+      themeMode: AppThemeSystem.enableDynamicTheming ? ThemeMode.system : ThemeMode.light,
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       // Support de la localisation française

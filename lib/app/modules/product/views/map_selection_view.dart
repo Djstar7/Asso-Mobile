@@ -179,7 +179,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
       appBar: AppBar(

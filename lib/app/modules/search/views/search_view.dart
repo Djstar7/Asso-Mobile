@@ -24,7 +24,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -77,10 +77,12 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppThemeSystem.grey800
-                        : AppThemeSystem.grey100,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppThemeSystem.grey300,
+                      width: 1,
+                    ),
                   ),
                   child: TextField(
                     controller: controller.searchTextController,
@@ -94,6 +96,10 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                         controller.performSearch(value);
                       }
                     },
+                    style: TextStyle(
+                      color: AppThemeSystem.blackColor,
+                      fontSize: 15,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Rechercher des produits...',
                       hintStyle: TextStyle(
@@ -121,7 +127,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                         vertical: 12,
                       ),
                     ),
-                    style: context.textStyle(FontSizeType.body1),
                   ),
                 ),
               ),
@@ -149,21 +154,23 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           itemBuilder: (context, index) {
             final category = controller.categories[index];
 
-            // Observer les changements de selectedCategory
-            final isSelected = index == 0
-                ? controller.selectedCategory.value.isEmpty || controller.selectedCategory.value == 'Tous'
-                : controller.selectedCategory.value == category;
+            // Chaque chip doit observer selectedCategory individuellement
+            return Obx(() {
+              final isSelected = index == 0
+                  ? controller.selectedCategory.value.isEmpty || controller.selectedCategory.value == 'Tous'
+                  : controller.selectedCategory.value == category;
 
-            return _buildFilterChip(
-              context,
-              isDark,
-              label: category,
-              icon: index == 0 ? Icons.grid_view_rounded : null,
-              isSelected: isSelected,
-              onTap: () {
-                controller.selectCategory(category);
-              },
-            );
+              return _buildFilterChip(
+                context,
+                isDark,
+                label: category,
+                icon: index == 0 ? Icons.grid_view_rounded : null,
+                isSelected: isSelected,
+                onTap: () {
+                  controller.selectCategory(category);
+                },
+              );
+            });
           },
         );
       }),
