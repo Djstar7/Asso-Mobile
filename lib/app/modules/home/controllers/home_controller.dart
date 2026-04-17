@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/values/constants.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
@@ -56,6 +55,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMoreProducts = true.obs;
   int _currentPage = 1;
+
+  // Global initial loading flag
+  final RxBool isInitialLoading = true.obs;
 
   // User
   final RxString userName = ''.obs;
@@ -214,15 +216,25 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   /// Load all data in correct order
   Future<void> _loadData() async {
-    // Load preferences first, then categories (which need preferences)
-    await _loadUserPreferences();
-    await _loadCategories();
+    isInitialLoading.value = true;
 
-    // Load other data in parallel
-    _loadNearbyProducts();
-    _loadRecentProducts();
-    _loadBanners();
-    _startBannerAutoScroll();
+    try {
+      // Load preferences first, then categories (which need preferences)
+      await _loadUserPreferences();
+      await _loadCategories();
+
+      // Load other data in parallel and wait for completion
+      await Future.wait([
+        _loadNearbyProducts(),
+        _loadRecentProducts(),
+        _loadBanners(),
+      ]);
+
+      _startBannerAutoScroll();
+    } finally {
+      // Marquer le chargement initial comme terminé
+      isInitialLoading.value = false;
+    }
   }
 
   /// Load user preferences from backend
@@ -364,7 +376,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
 
     isLoadingProducts.value = true;
-    final startTime = DateTime.now();
 
     try {
       final response = await ProductService.getProducts(
@@ -396,16 +407,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         error: e.toString(),
       );
     } finally {
-      // Ensure minimum shimmer duration for smooth transition
-      final elapsed = DateTime.now().difference(startTime);
-      final remaining = AppConstants.shimmerMinimumDuration - elapsed;
-
-      if (remaining.isNegative) {
-        isLoadingProducts.value = false;
-      } else {
-        await Future.delayed(remaining);
-        isLoadingProducts.value = false;
-      }
+      // Afficher immédiatement les produits sans attendre
+      // Les images se chargeront progressivement avec leur placeholder
+      isLoadingProducts.value = false;
     }
   }
 
@@ -442,7 +446,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   Future<void> _loadNearbyProducts() async {
     isLoadingNearby.value = true;
-    final startTime = DateTime.now();
 
     try {
       final response = await ProductService.getNearbyProducts(limit: 6);
@@ -454,6 +457,21 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           'Nearby products loaded: ${nearbyProducts.length} items',
           name: 'HomeController',
         );
+
+        // DEBUG: Log shop certification status
+        if (nearbyProducts.isNotEmpty) {
+          final firstProduct = nearbyProducts.first;
+          print('=== DEBUG NEARBY PRODUCT ===');
+          print('Product name: ${firstProduct['name']}');
+          print('Full product data keys: ${firstProduct.keys.toList()}');
+          print('Shop data: ${firstProduct['shop']}');
+          if (firstProduct['shop'] != null) {
+            print('Shop keys: ${firstProduct['shop'].keys.toList()}');
+            print('is_certified value: ${firstProduct['shop']['is_certified']}');
+            print('is_certified type: ${firstProduct['shop']['is_certified'].runtimeType}');
+          }
+          print('========================');
+        }
       }
     } catch (e) {
       developer.log(
@@ -462,22 +480,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         error: e.toString(),
       );
     } finally {
-      // Ensure minimum shimmer duration for smooth transition
-      final elapsed = DateTime.now().difference(startTime);
-      final remaining = AppConstants.shimmerMinimumDuration - elapsed;
-
-      if (remaining.isNegative) {
-        isLoadingNearby.value = false;
-      } else {
-        await Future.delayed(remaining);
-        isLoadingNearby.value = false;
-      }
+      // Afficher immédiatement les produits sans attendre
+      // Les images se chargeront progressivement avec leur placeholder
+      isLoadingNearby.value = false;
     }
   }
 
   Future<void> _loadRecentProducts() async {
     isLoadingRecent.value = true;
-    final startTime = DateTime.now();
 
     try {
       final response = await ProductService.getRecentProducts(limit: 6);
@@ -489,6 +499,21 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           'Recent products loaded: ${recentProducts.length} items',
           name: 'HomeController',
         );
+
+        // DEBUG: Log shop certification status
+        if (recentProducts.isNotEmpty) {
+          final firstProduct = recentProducts.first;
+          print('=== DEBUG RECENT PRODUCT ===');
+          print('Product name: ${firstProduct['name']}');
+          print('Full product data keys: ${firstProduct.keys.toList()}');
+          print('Shop data: ${firstProduct['shop']}');
+          if (firstProduct['shop'] != null) {
+            print('Shop keys: ${firstProduct['shop'].keys.toList()}');
+            print('is_certified value: ${firstProduct['shop']['is_certified']}');
+            print('is_certified type: ${firstProduct['shop']['is_certified'].runtimeType}');
+          }
+          print('========================');
+        }
       }
     } catch (e) {
       developer.log(
@@ -497,16 +522,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         error: e.toString(),
       );
     } finally {
-      // Ensure minimum shimmer duration for smooth transition
-      final elapsed = DateTime.now().difference(startTime);
-      final remaining = AppConstants.shimmerMinimumDuration - elapsed;
-
-      if (remaining.isNegative) {
-        isLoadingRecent.value = false;
-      } else {
-        await Future.delayed(remaining);
-        isLoadingRecent.value = false;
-      }
+      // Afficher immédiatement les produits sans attendre
+      // Les images se chargeront progressivement avec leur placeholder
+      isLoadingRecent.value = false;
     }
   }
 

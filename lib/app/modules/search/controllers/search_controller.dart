@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../data/providers/product_service.dart';
 
 class SearchController extends GetxController {
@@ -8,14 +9,15 @@ class SearchController extends GetxController {
   // SERVICES ET STORAGE
   // ================================
   final _storage = GetStorage();
+  final _imagePicker = ImagePicker();
   final TextEditingController searchTextController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
 
   // ================================
   // DONNÉES DES PRODUITS
   // ================================
+  final RxList<Map<String, dynamic>> allProducts = <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> searchResults = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> recentProducts = <Map<String, dynamic>>[].obs;
 
   // ================================
   // ÉTAT DE LA RECHERCHE
@@ -35,9 +37,12 @@ class SearchController extends GetxController {
   final RxString selectedCategory = ''.obs;
   final RxDouble minPrice = 0.0.obs;
   final RxDouble maxPrice = 1000000.0.obs;
+  final RxDouble currentMinPrice = 0.0.obs;
+  final RxDouble currentMaxPrice = 1000000.0.obs;
   final RxString selectedLocation = 'Toutes les villes'.obs;
   final RxString sortBy = 'created_at'.obs;
   final RxString sortOrder = 'desc'.obs;
+  final RxBool isImageSearchMode = false.obs;
 
   // ================================
   // TRI
@@ -79,9 +84,14 @@ class SearchController extends GetxController {
   int get activeFiltersCount {
     int count = 0;
     if (selectedCategory.value.isNotEmpty && selectedCategory.value != 'Tous') count++;
-    if (minPrice.value > 0 || maxPrice.value < 1000000) count++;
+    if (currentMinPrice.value > 0 || currentMaxPrice.value < 1000000) count++;
     if (selectedLocation.value != 'Toutes les villes') count++;
     return count;
+  }
+
+  /// Retourne les produits à afficher (recherche ou tous les produits)
+  RxList<Map<String, dynamic>> get displayedProducts {
+    return searchQuery.value.isNotEmpty ? searchResults : allProducts;
   }
 
   // ================================
@@ -94,10 +104,29 @@ class SearchController extends GetxController {
   void onInit() {
     super.onInit();
     _loadSearchHistory();
-    _loadRecentProducts();
     _loadCategories();
     _setupSearchListener();
     _setupFocusListener();
+
+    // Check if category filter was passed in arguments
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      final categoryId = args['categoryId'] as int?;
+      final categoryName = args['categoryName'] as String?;
+
+      if (categoryId != null) {
+        selectedCategoryId.value = categoryId;
+        if (categoryName != null) {
+          selectedCategory.value = categoryName;
+        }
+        // Load products with the category filter
+        loadAllProducts();
+        return;
+      }
+    }
+
+    // Charger tous les produits par défaut
+    loadAllProducts();
   }
 
   @override
@@ -111,17 +140,43 @@ class SearchController extends GetxController {
   // CHARGEMENT DES DONNÉES
   // ================================
 
-  /// Charge les produits récents depuis l'API
-  Future<void> _loadRecentProducts() async {
+  /// Charge tous les produits par défaut avec pagination
+  Future<void> loadAllProducts({bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentPage = 1;
+      allProducts.clear();
+    }
+
     isLoading.value = true;
     try {
-      final response = await ProductService.getProducts(page: 1, perPage: 10);
+      final response = await ProductService.getProducts(
+        page: _currentPage,
+        perPage: 20,
+        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        minPrice: currentMinPrice.value > 0 ? currentMinPrice.value : null,
+        maxPrice: currentMaxPrice.value < 1000000 ? currentMaxPrice.value : null,
+        sortBy: sortBy.value,
+        sortOrder: sortOrder.value,
+      );
+
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
-        recentProducts.value = products.map((p) => Map<String, dynamic>.from(p)).toList();
+        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+
+        if (isRefresh) {
+          allProducts.value = products.map((p) => Map<String, dynamic>.from(p)).toList();
+        } else {
+          allProducts.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+        }
+
+        hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      // Silent fail
+      Get.snackbar('Erreur', 'Impossible de charger les produits',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -277,15 +332,60 @@ class SearchController extends GetxController {
     searchQuery.value = '';
     searchTextController.clear();
     isSearching.value = false;
+    isImageSearchMode.value = false;
     suggestions.clear();
     searchResults.clear();
+  }
+
+  /// Lance la recherche par image
+  Future<void> searchByImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        isImageSearchMode.value = true;
+        isLoading.value = true;
+
+        // TODO: Implémenter l'appel API pour la recherche par image
+        // Pour l'instant, on affiche un message
+        Get.snackbar(
+          'Recherche par image',
+          'Image sélectionnée : ${image.name}',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+          duration: const Duration(seconds: 2),
+        );
+
+        // Simuler une recherche (à remplacer par l'appel API réel)
+        await Future.delayed(const Duration(seconds: 1));
+        isLoading.value = false;
+
+        // Note: Quand l'API sera prête, envoyer l'image et récupérer les résultats
+        // final bytes = await image.readAsBytes();
+        // final response = await ProductService.searchByImage(bytes);
+        // searchResults.value = response.data...
+      }
+    } catch (e) {
+      isLoading.value = false;
+      Get.snackbar('Erreur', 'Impossible de sélectionner l\'image',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
   }
 
   // ================================
   // FILTRES ET PAGINATION
   // ================================
 
-  /// Charge plus de résultats
+  /// Charge plus de résultats (recherche ou tous les produits)
   Future<void> loadMore() async {
     if (!hasMore.value || isLoading.value) return;
     _currentPage++;
@@ -293,10 +393,10 @@ class SearchController extends GetxController {
     try {
       final response = await ProductService.getProducts(
         page: _currentPage,
-        search: searchQuery.value,
+        search: searchQuery.value.isNotEmpty ? searchQuery.value : null,
         categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
-        minPrice: minPrice.value > 0 ? minPrice.value : null,
-        maxPrice: maxPrice.value < 1000000 ? maxPrice.value : null,
+        minPrice: currentMinPrice.value > 0 ? currentMinPrice.value : null,
+        maxPrice: currentMaxPrice.value < 1000000 ? currentMaxPrice.value : null,
         sortBy: sortBy.value,
         sortOrder: sortOrder.value,
       );
@@ -304,7 +404,14 @@ class SearchController extends GetxController {
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
         final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
-        searchResults.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+
+        // Ajouter aux bons résultats selon le contexte
+        if (searchQuery.value.isNotEmpty) {
+          searchResults.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+        } else {
+          allProducts.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+        }
+
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
@@ -327,6 +434,9 @@ class SearchController extends GetxController {
     // Si on a déjà une recherche active, relancer avec le nouveau filtre
     if (searchQuery.value.isNotEmpty) {
       _performSearchImmediate();
+    } else {
+      // Sinon recharger tous les produits avec le nouveau filtre
+      loadAllProducts(isRefresh: true);
     }
   }
 
@@ -334,7 +444,21 @@ class SearchController extends GetxController {
   void setPriceRange(double min, double max) {
     minPrice.value = min;
     maxPrice.value = max;
-    _performSearch();
+    if (searchQuery.value.isNotEmpty) {
+      _performSearch();
+    }
+  }
+
+  /// Applique les filtres de prix
+  void applyPriceFilters() {
+    currentMinPrice.value = minPrice.value;
+    currentMaxPrice.value = maxPrice.value;
+
+    if (searchQuery.value.isNotEmpty) {
+      _performSearchImmediate();
+    } else {
+      loadAllProducts(isRefresh: true);
+    }
   }
 
   /// Change la localisation
@@ -347,7 +471,11 @@ class SearchController extends GetxController {
   void selectSortOption(SortOption option) {
     selectedSortOption.value = option;
     _updateSortParams(option);
-    _performSearch();
+    if (searchQuery.value.isNotEmpty) {
+      _performSearch();
+    } else {
+      loadAllProducts(isRefresh: true);
+    }
   }
 
   /// Met à jour les paramètres de tri selon l'option sélectionnée
@@ -382,11 +510,17 @@ class SearchController extends GetxController {
     selectedCategoryId.value = 0;
     minPrice.value = 0.0;
     maxPrice.value = 1000000.0;
+    currentMinPrice.value = 0.0;
+    currentMaxPrice.value = 1000000.0;
     selectedLocation.value = 'Toutes les villes';
     selectedSortOption.value = SortOption.relevance;
     sortBy.value = 'created_at';
     sortOrder.value = 'desc';
-    _performSearch();
+    if (searchQuery.value.isNotEmpty) {
+      _performSearch();
+    } else {
+      loadAllProducts(isRefresh: true);
+    }
   }
 
   /// Toggle affichage des filtres

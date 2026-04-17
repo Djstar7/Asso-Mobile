@@ -5,7 +5,6 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/values/constants.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
-import '../../../core/widgets/verified_badge.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
@@ -49,7 +48,7 @@ class HomeView extends GetView<HomeController> {
 
     return Scaffold(
       // Supprimé key pour éviter le problème de GlobalKey duplicate
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: isDark ? AppThemeSystem.darkCardColor : const Color(0xFFF7F8FA),
       drawer: _buildDrawer(context),
       body: NestedScrollView(
         controller: controller.nestedScrollController,
@@ -1078,7 +1077,8 @@ class HomeItemView extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.isLoadingNearby.value && controller.isLoadingRecent.value) {
+      // Afficher le shimmer complet uniquement pendant le chargement initial
+      if (controller.isInitialLoading.value) {
         return _buildLoadingState(context);
       }
 
@@ -1147,9 +1147,9 @@ class HomeItemView extends GetView<HomeController> {
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount:
                                   AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
                             ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) => ShimmerWidgets.productCardShimmer(context),
@@ -1165,9 +1165,9 @@ class HomeItemView extends GetView<HomeController> {
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount:
                                   AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
                             ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
@@ -1241,9 +1241,9 @@ class HomeItemView extends GetView<HomeController> {
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount:
                                   AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.7,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
                             ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
@@ -1360,8 +1360,8 @@ class HomeItemView extends GetView<HomeController> {
 
   Widget _buildCategories(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      height: 48,
+      margin: const EdgeInsets.only(bottom: 16),
+      height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -1386,34 +1386,19 @@ class HomeItemView extends GetView<HomeController> {
               onTap: () => controller.selectCategory(category),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [
-                            AppThemeSystem.primaryColor,
-                            AppThemeSystem.primaryColor.withValues(alpha: 0.8),
-                          ],
-                        )
-                      : null,
-                  color: isSelected ? null : AppThemeSystem.getSurfaceColor(context),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected
+                      ? AppThemeSystem.primaryColor
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected
                         ? AppThemeSystem.primaryColor
-                        : AppThemeSystem.getBorderColor(context),
-                    width: isSelected ? 0 : 1,
+                        : const Color(0xFFE0E0E0),
+                    width: 1.5,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1422,19 +1407,19 @@ class HomeItemView extends GetView<HomeController> {
                     if (index == 0)
                       // "Tous" category - use default icon
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: 6),
                         child: Icon(
                           Icons.grid_view_rounded,
-                          size: 18,
+                          size: 16,
                           color: isSelected
                               ? Colors.white
-                              : AppThemeSystem.getPrimaryTextColor(context),
+                              : const Color(0xFF666666),
                         ),
                       )
                     else if (categoryData?['svg_icon'] != null)
                       // Category with SVG icon
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: 6),
                         child: _buildCategorySvgIcon(
                           categoryData!['svg_icon'],
                           isSelected,
@@ -1448,7 +1433,7 @@ class HomeItemView extends GetView<HomeController> {
                         fontWeight: FontWeight.w600,
                         color: isSelected
                             ? Colors.white
-                            : AppThemeSystem.getPrimaryTextColor(context),
+                            : const Color(0xFF333333),
                       ),
                     ),
                   ],
@@ -1466,12 +1451,12 @@ class HomeItemView extends GetView<HomeController> {
     try {
       return SvgPicture.string(
         svgIcon,
-        width: 18,
-        height: 18,
+        width: 16,
+        height: 16,
         colorFilter: ColorFilter.mode(
           isSelected
               ? Colors.white
-              : AppThemeSystem.getPrimaryTextColor(context),
+              : const Color(0xFF666666),
           BlendMode.srcIn,
         ),
       );
@@ -1479,10 +1464,10 @@ class HomeItemView extends GetView<HomeController> {
       // Fallback to default icon if SVG parsing fails
       return Icon(
         Icons.category_rounded,
-        size: 18,
+        size: 16,
         color: isSelected
             ? Colors.white
-            : AppThemeSystem.getPrimaryTextColor(context),
+            : const Color(0xFF666666),
       );
     }
   }
@@ -1502,8 +1487,8 @@ class HomeItemView extends GetView<HomeController> {
         : controller.fallbackBanners.length;
 
     return Container(
-      margin: const EdgeInsets.only(top: 16, bottom: 12),
-      height: deviceType == DeviceType.mobile ? 220 : 260,
+      margin: const EdgeInsets.only(top: 16, bottom: 16),
+      height: deviceType == DeviceType.mobile ? 240 : 280,
       child: Column(
         children: [
           Expanded(
@@ -1521,43 +1506,43 @@ class HomeItemView extends GetView<HomeController> {
                     horizontal: AppThemeSystem.getHorizontalPadding(context),
                   ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                        spreadRadius: -4,
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
                         // Image - API or local
                         _buildBannerImage(index),
 
-                        // Gradient overlay
+                        // Gradient overlay - améliore la lisibilité du texte
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.3),
+                                Colors.transparent,
                                 Colors.black.withValues(alpha: 0.7),
                               ],
+                              stops: const [0.5, 1.0],
                             ),
                           ),
                         ),
 
-                        // Content
+                        // Content - minimal
                         Positioned(
-                          left: AppThemeSystem.getHorizontalPadding(context),
-                          right: AppThemeSystem.getHorizontalPadding(context),
-                          bottom: AppThemeSystem.getVerticalPadding(context),
+                          left: 20,
+                          right: 20,
+                          bottom: 20,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -1567,37 +1552,26 @@ class HomeItemView extends GetView<HomeController> {
                                     ? (controller.banners[index]['title'] ?? data['title']!)
                                     : data['title']!,
                                 style: context.textStyle(
-                                  deviceType == DeviceType.mobile ? FontSizeType.h3 : FontSizeType.h2,
+                                  deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                data['subtitle']!,
-                                style: context.textStyle(
-                                  deviceType == DeviceType.mobile ? FontSizeType.body2 : FontSizeType.body1,
-                                  color: Colors.white.withValues(alpha: 0.95),
-                                  height: 1.4,
-                                ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [AppThemeSystem.primaryColor, AppThemeSystem.tertiaryColor],
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   'Découvrir',
                                   style: context.textStyle(
-                                    FontSizeType.button,
+                                    FontSizeType.body2,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: AppThemeSystem.primaryColor,
                                   ),
                                 ),
                               ),
@@ -1611,21 +1585,21 @@ class HomeItemView extends GetView<HomeController> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Obx(() => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   bannerCount,
                   (index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: controller.currentBannerIndex.value == index ? 28 : 8,
-                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: controller.currentBannerIndex.value == index ? 20 : 6,
+                    height: 6,
                     decoration: BoxDecoration(
                       color: controller.currentBannerIndex.value == index
                           ? AppThemeSystem.primaryColor
-                          : AppThemeSystem.grey300,
-                      borderRadius: BorderRadius.circular(4),
+                          : AppThemeSystem.grey400,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
@@ -1724,46 +1698,62 @@ class HomeItemView extends GetView<HomeController> {
     return product['location']?.toString() ?? product['shop']?['address']?.toString() ?? '';
   }
 
+  /// Check if shop is certified (handles bool, int, string)
+  bool _isShopCertified(Map<String, dynamic> product) {
+    final shop = product['shop'];
+    if (shop == null) {
+      return false;
+    }
+
+    final isCertified = shop['is_certified'];
+
+    // Handle different types
+    if (isCertified is bool) return isCertified;
+    if (isCertified is int) return isCertified == 1;
+    if (isCertified is String) return isCertified == '1' || isCertified.toLowerCase() == 'true';
+
+    return false;
+  }
+
   Widget _buildSectionTitle(BuildContext context, String title, IconData icon, {VoidCallback? onSeeAll}) {
     return Padding(
       padding: EdgeInsets.only(
         left: AppThemeSystem.getHorizontalPadding(context),
         right: AppThemeSystem.getHorizontalPadding(context),
-        top: 8,
+        top: 16,
         bottom: 12,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(title, style: context.textStyle(FontSizeType.h4, fontWeight: FontWeight.bold)),
-            ],
+          Text(
+            title,
+            style: context.textStyle(
+              FontSizeType.h5,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF222222),
+            ),
           ),
           if (onSeeAll != null)
-            TextButton(
-              onPressed: onSeeAll,
+            GestureDetector(
+              onTap: onSeeAll,
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Voir plus',
+                    'Voir tout',
                     style: context.textStyle(
                       FontSizeType.body2,
-                      color: AppThemeSystem.primaryColor,
-                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF666666),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppThemeSystem.primaryColor),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: const Color(0xFF666666),
+                  ),
                 ],
               ),
             ),
@@ -1778,8 +1768,8 @@ class HomeItemView extends GetView<HomeController> {
     }
 
     return Container(
-      height: 280,
-      margin: const EdgeInsets.only(bottom: 8),
+      height: 260,
+      margin: const EdgeInsets.only(bottom: 12),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -1791,19 +1781,19 @@ class HomeItemView extends GetView<HomeController> {
           return _FadeInProduct(
             delay: Duration(milliseconds: index * 50),
             child: Container(
-              width: 180,
-              margin: const EdgeInsets.only(right: 16),
+              width: 170,
+              margin: const EdgeInsets.only(right: 14),
               child: GestureDetector(
               onTap: () => Get.toNamed('/product', arguments: product),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppThemeSystem.getSurfaceColor(context),
-                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -1814,12 +1804,37 @@ class HomeItemView extends GetView<HomeController> {
                       child: Stack(
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium)),
-                              topRight: Radius.circular(AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium)),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
                             ),
                             child: SizedBox.expand(child: _buildProductImage(product)),
                           ),
+                          // Badge boutique certifiée
+                          if (product['shop'] != null && _isShopCertified(product))
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E88E5),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.star_rounded,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          // Bouton favori
                           Positioned(
                             top: 8,
                             right: 8,
@@ -1833,22 +1848,25 @@ class HomeItemView extends GetView<HomeController> {
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.all(6),
+                                padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   shape: BoxShape.circle,
                                   boxShadow: [
-                                    BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.1),
+                                      blurRadius: 4,
+                                    ),
                                   ],
                                 ),
                                 child: Icon(
                                   product['is_favorite'] == true
                                       ? Icons.favorite_rounded
                                       : Icons.favorite_border_rounded,
-                                  size: 16,
+                                  size: 14,
                                   color: product['is_favorite'] == true
                                       ? AppThemeSystem.errorColor
-                                      : AppThemeSystem.grey600,
+                                      : const Color(0xFF999999),
                                 ),
                               ),
                             ),
@@ -1857,37 +1875,45 @@ class HomeItemView extends GetView<HomeController> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             product['name'] ?? 'Produit',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF333333),
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             _formatPrice(product),
                             style: context.textStyle(
-                              FontSizeType.subtitle2,
+                              FontSizeType.body2,
                               fontWeight: FontWeight.bold,
                               color: AppThemeSystem.primaryColor,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           if (_getLocation(product).isNotEmpty)
                             Row(
                               children: [
-                                Icon(Icons.location_on_outlined, size: 14, color: AppThemeSystem.grey600),
-                                const SizedBox(width: 4),
+                                Icon(Icons.location_on_outlined, size: 11, color: const Color(0xFF999999)),
+                                const SizedBox(width: 2),
                                 Expanded(
                                   child: Text(
                                     _getLocation(product),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+                                    style: context.textStyle(
+                                      FontSizeType.overline,
+                                      color: const Color(0xFF999999),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1911,18 +1937,13 @@ class HomeItemView extends GetView<HomeController> {
       onTap: () => Get.toNamed('/product', arguments: product),
       child: Container(
         decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppThemeSystem.getBorderColor(context).withValues(alpha: 0.5),
-            width: 1,
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: -2,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -1934,30 +1955,39 @@ class HomeItemView extends GetView<HomeController> {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
                     child: SizedBox.expand(child: _buildProductImage(product)),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0),
-                          Colors.black.withValues(alpha: 0.02),
-                        ],
+                  // Badge boutique certifiée
+                  if (product['shop'] != null && _isShopCertified(product))
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E88E5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.star_rounded,
+                          size: 12,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
+                  // Bouton favori
                   Positioned(
-                    top: 10,
-                    right: 10,
+                    top: 8,
+                    right: 8,
                     child: GestureDetector(
                       onTap: () {
                         final productId = product['id'] is int
@@ -1968,22 +1998,25 @@ class HomeItemView extends GetView<HomeController> {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
+                          color: Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                            ),
                           ],
                         ),
                         child: Icon(
                           product['is_favorite'] == true
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          size: 18,
+                          size: 14,
                           color: product['is_favorite'] == true
                               ? AppThemeSystem.errorColor
-                              : AppThemeSystem.grey700,
+                              : const Color(0xFF999999),
                         ),
                       ),
                     ),
@@ -1992,67 +2025,45 @@ class HomeItemView extends GetView<HomeController> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     product['name'] ?? 'Produit',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      _formatPrice(product),
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.primaryColor,
-                      ),
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF333333),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  // Vendor name with verified badge
-                  if (product['shop'] != null && product['shop']['name'] != null)
-                    Row(
-                      children: [
-                        Icon(Icons.store_outlined, size: 14, color: AppThemeSystem.grey600),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            product['shop']['name'],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey700),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        VerifiedBadge(
-                          isCertified: product['shop']['is_certified'] ?? false,
-                          size: 14,
-                        ),
-                      ],
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatPrice(product),
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.bold,
+                      color: AppThemeSystem.primaryColor,
                     ),
-                  if (product['shop'] != null && product['shop']['name'] != null)
-                    const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 4),
                   if (_getLocation(product).isNotEmpty)
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded, size: 14, color: AppThemeSystem.grey600),
-                        const SizedBox(width: 4),
+                        Icon(Icons.location_on_outlined, size: 11, color: const Color(0xFF999999)),
+                        const SizedBox(width: 2),
                         Expanded(
                           child: Text(
                             _getLocation(product),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+                            style: context.textStyle(
+                              FontSizeType.overline,
+                              color: const Color(0xFF999999),
+                            ),
                           ),
                         ),
                       ],
@@ -2071,69 +2082,37 @@ class HomeItemView extends GetView<HomeController> {
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: AppThemeSystem.getVerticalPadding(context),
+        vertical: 16,
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                AppThemeSystem.tertiaryColor.withValues(alpha: 0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-              width: 2,
+              color: const Color(0xFFE0E0E0),
+              width: 1.5,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppThemeSystem.primaryColor,
-                      AppThemeSystem.tertiaryColor,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.grid_view_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
               Text(
                 'Voir tous les produits',
                 style: context.textStyle(
-                  FontSizeType.body1,
-                  fontWeight: FontWeight.w700,
-                  color: AppThemeSystem.primaryColor,
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF333333),
                 ),
               ),
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_rounded,
-                color: AppThemeSystem.primaryColor,
-                size: 20,
+                color: const Color(0xFF666666),
+                size: 18,
               ),
             ],
           ),
@@ -2144,57 +2123,35 @@ class HomeItemView extends GetView<HomeController> {
 
   /// État vide professionnel
   Widget _buildEmptyState(BuildContext context) {
-    final isDark = AppThemeSystem.isDarkMode(context);
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context) * 2),
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icône avec dégradé
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    AppThemeSystem.tertiaryColor.withValues(alpha: 0.1),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.inventory_2_outlined,
-                size: deviceType == DeviceType.mobile ? 80 : 100,
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.6),
-              ),
+            Icon(
+              Icons.inventory_2_outlined,
+              size: deviceType == DeviceType.mobile ? 72 : 88,
+              color: const Color(0xFFCCCCCC),
             ),
-
-            SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 1.5),
-
-            // Titre
+            const SizedBox(height: 24),
             Text(
               'Aucun produit disponible',
               style: context.textStyle(
-                deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.getPrimaryTextColor(context),
+                FontSizeType.h5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF333333),
               ),
               textAlign: TextAlign.center,
             ),
-
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-            // Message
+            const SizedBox(height: 12),
             Text(
               'Il n\'y a pas encore de produits disponibles dans votre région.',
               style: context.textStyle(
-                FontSizeType.body1,
-                color: isDark ? AppThemeSystem.grey400 : AppThemeSystem.grey600,
+                FontSizeType.body2,
+                color: const Color(0xFF999999),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,

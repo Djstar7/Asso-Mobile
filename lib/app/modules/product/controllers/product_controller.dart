@@ -32,6 +32,54 @@ class ProductController extends GetxController {
   final RxList<Map<String, dynamic>> deliveryPartners = <Map<String, dynamic>>[].obs;
   final Rxn<Map<String, dynamic>> selectedPartner = Rxn<Map<String, dynamic>>();
 
+  // Produits similaires
+  final RxList<Map<String, dynamic>> similarProducts = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingSimilarProducts = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeProduct();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Called after widget is built, ensure product is initialized
+    _initializeProduct();
+  }
+
+  /// Initialize or update product data from arguments
+  void _initializeProduct() {
+    final product = Get.arguments as Map<String, dynamic>?;
+    if (product != null) {
+      // Reset state
+      currentImageIndex.value = 0;
+      withDelivery.value = false;
+      deliveryPartners.clear();
+      selectedPartner.value = null;
+      similarProducts.clear();
+
+      // Set favorite status
+      isFavorite.value = product['is_favorite'] ?? false;
+
+      // Load similar products based on category
+      final categoryId = product['category']?['id'];
+      final productId = product['id'];
+      if (categoryId != null && productId != null) {
+        loadSimilarProducts(
+          categoryId: categoryId,
+          currentProductId: productId,
+        );
+      }
+    }
+  }
+
+  /// Update product data (called when navigating to a new product)
+  void updateProduct(Map<String, dynamic> newProduct) {
+    _initializeProduct();
+  }
+
   /// Toggle favorite for the current product
   Future<void> toggleFavorite(int productId) async {
     try {
@@ -226,6 +274,39 @@ class ProductController extends GetxController {
     // Choisir un message aléatoire
     final random = Random();
     return messages[random.nextInt(messages.length)];
+  }
+
+  /// Charger les produits similaires par catégorie
+  Future<void> loadSimilarProducts({
+    required int categoryId,
+    required int currentProductId,
+  }) async {
+    isLoadingSimilarProducts.value = true;
+    similarProducts.clear();
+
+    try {
+      final response = await ProductService.getProducts(
+        categoryId: categoryId,
+        perPage: 7, // Get 7 to exclude current product and keep 6
+      );
+
+      if (response.success && response.data != null) {
+        final products = response.data!['products'] as List<dynamic>? ?? [];
+
+        // Filtrer pour exclure le produit actuel
+        final filtered = products
+            .cast<Map<String, dynamic>>()
+            .where((p) => p['id'] != currentProductId)
+            .take(6)
+            .toList();
+
+        similarProducts.value = filtered;
+      }
+    } catch (e) {
+      print('❌ Erreur lors du chargement des produits similaires: $e');
+    } finally {
+      isLoadingSimilarProducts.value = false;
+    }
   }
 
   /// Ouvrir une conversation avec le vendeur concernant ce produit

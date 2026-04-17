@@ -17,6 +17,7 @@ import '../../../data/models/category_model.dart';
 import '../../../data/models/deliverer_model.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../views/map_location_picker_view.dart';
+import '../../profile/controllers/profile_controller.dart';
 
 class VendorConfigController extends GetxController {
   // State management
@@ -30,6 +31,11 @@ class VendorConfigController extends GetxController {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+
+  // Observable versions for reactive UI updates
+  final firstNameText = ''.obs;
+  final lastNameText = ''.obs;
+  final emailText = ''.obs;
 
   final selectedGender = ''.obs;
   final genders = ['Homme', 'Femme'];
@@ -46,6 +52,10 @@ class VendorConfigController extends GetxController {
   final TextEditingController shopNameController = TextEditingController();
   final TextEditingController shopDescriptionController = TextEditingController();
   final TextEditingController locationSearchController = TextEditingController();
+
+  // Observable versions for reactive UI updates
+  final shopNameText = ''.obs;
+  final shopDescriptionText = ''.obs;
 
   final shopLogo = Rx<File?>(null);
   final isPickingShopLogo = false.obs;
@@ -82,6 +92,32 @@ class VendorConfigController extends GetxController {
     _requestLocationPermission();
     _loadCategories();
     _loadDeliveryPartners();
+    _setupTextFieldListeners();
+  }
+
+  /// Configure les listeners sur les TextControllers pour la réactivité
+  void _setupTextFieldListeners() {
+    // Step 1 listeners
+    firstNameController.addListener(() {
+      firstNameText.value = firstNameController.text;
+    });
+
+    lastNameController.addListener(() {
+      lastNameText.value = lastNameController.text;
+    });
+
+    emailController.addListener(() {
+      emailText.value = emailController.text;
+    });
+
+    // Step 2 listeners
+    shopNameController.addListener(() {
+      shopNameText.value = shopNameController.text;
+    });
+
+    shopDescriptionController.addListener(() {
+      shopDescriptionText.value = shopDescriptionController.text;
+    });
   }
 
   /// Charge les catégories depuis l'API
@@ -1146,6 +1182,17 @@ class VendorConfigController extends GetxController {
                 print('  └─ Role: ${updatedUser.role}');
                 print('  └─ Roles: ${updatedUser.roles}');
                 print('  └─ Is Vendor: ${updatedUser.isVendor}');
+
+                // Update ProfileController to refresh the UI
+                try {
+                  if (Get.isRegistered<ProfileController>()) {
+                    final profileController = Get.find<ProfileController>();
+                    await profileController.reloadProfile();
+                    print('  └─ ProfileController reloaded');
+                  }
+                } catch (e) {
+                  print('  └─ ⚠️ Failed to reload ProfileController: $e');
+                }
               }
             } catch (e) {
               print('  └─ ⚠️ Failed to update user in storage: $e');

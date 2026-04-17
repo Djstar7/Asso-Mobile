@@ -31,10 +31,36 @@ class ProductView extends GetView<ProductController> {
       },
     };
 
-    // Initialize favorite status from product data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.isFavorite.value = product['is_favorite'] ?? false;
-    });
+    // 🔍 DEBUG: Afficher tous les détails du produit
+    print('');
+    print('═══════════════════════════════════════════════════════════════');
+    print('🔍 PRODUCT VIEW - DÉTAILS DU PRODUIT');
+    print('═══════════════════════════════════════════════════════════════');
+    print('📦 Nom: ${product['name']}');
+    print('💰 Prix: ${product['price']}');
+    print('📍 Location: ${product['location']}');
+    print('');
+    print('🗺️ COORDONNÉES GPS DIRECTES:');
+    print('   latitude: ${product['latitude']} (type: ${product['latitude']?.runtimeType})');
+    print('   longitude: ${product['longitude']} (type: ${product['longitude']?.runtimeType})');
+    print('');
+    print('🏪 SHOP DATA:');
+    if (product['shop'] != null) {
+      final shop = product['shop'] as Map<String, dynamic>;
+      print('   shop.name: ${shop['name']}');
+      print('   shop.address: ${shop['address']}');
+      print('   shop.latitude: ${shop['latitude']} (type: ${shop['latitude']?.runtimeType})');
+      print('   shop.longitude: ${shop['longitude']} (type: ${shop['longitude']?.runtimeType})');
+      print('   shop.is_certified: ${shop['is_certified']}');
+      print('   Toutes les clés shop: ${shop.keys.toList()}');
+    } else {
+      print('   ❌ Pas de données shop');
+    }
+    print('');
+    print('📋 TOUTES LES CLÉS DU PRODUIT:');
+    print('   ${product.keys.toList()}');
+    print('═══════════════════════════════════════════════════════════════');
+    print('');
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -153,6 +179,11 @@ class ProductView extends GetView<ProductController> {
                 // Info vendeur
                 _buildSellerSection(context, product),
 
+                Divider(height: 32),
+
+                // Produits similaires
+                _buildSimilarProductsSection(context, product),
+
                 SizedBox(height: 100), // Espace pour les boutons fixes
               ],
             ),
@@ -261,12 +292,15 @@ class ProductView extends GetView<ProductController> {
   }
 
   Widget _buildLocationSection(BuildContext context, Map<String, dynamic> product) {
+    final fullLocation = product['location']?.toString() ?? product['shop']?['address']?.toString() ?? 'Non spécifiée';
+    final shortLocation = _getShortLocation(fullLocation);
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppThemeSystem.getHorizontalPadding(context),
       ),
       child: InkWell(
-        onTap: () => _openMap(product['location']),
+        onTap: () => _openMapOptions(context, product),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.all(16),
@@ -305,17 +339,30 @@ class ProductView extends GetView<ProductController> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      product['location'],
+                      shortLocation,
                       style: context.textStyle(
                         FontSizeType.body1,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    if (fullLocation.length > shortLocation.length)
+                      Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Text(
+                          'Toucher pour voir sur la carte',
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            color: AppThemeSystem.primaryColor,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
               Icon(
-                Icons.open_in_new_rounded,
+                Icons.map_rounded,
                 color: AppThemeSystem.primaryColor,
                 size: 20,
               ),
@@ -366,11 +413,15 @@ class ProductView extends GetView<ProductController> {
   }
 
   Widget _buildSellerSection(BuildContext context, Map<String, dynamic> product) {
-    final seller = product['seller'] ?? {
-      'name': 'Vendeur',
-      'rating': 4.5,
-      'reviews': 120,
-    };
+    final shop = product['shop'];
+    final seller = product['seller'];
+
+    final shopName = shop?['name']?.toString() ?? seller?['name']?.toString() ?? 'Vendeur';
+    final shopImage = shop?['image']?.toString() ?? shop?['logo']?.toString();
+    final ownerImage = seller?['avatar']?.toString(); // Get seller avatar from seller object
+    final isCertified = _isShopCertified(product);
+    final rating = seller?['rating'] ?? shop?['rating'] ?? 4.5;
+    final reviewCount = seller?['reviews_count'] ?? shop?['reviews_count'] ?? 0;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -403,27 +454,191 @@ class ProductView extends GetView<ProductController> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (isCertified) ...[
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF1E88E5).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Color(0xFF1E88E5).withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_rounded,
+                          size: 14,
+                          color: Color(0xFF1E88E5),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Certifié',
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            color: Color(0xFF1E88E5),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             SizedBox(height: 16),
             Row(
               children: [
+                // Avatar du vendeur
+                Stack(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: ownerImage != null && ownerImage.isNotEmpty
+                            ? Image.network(
+                                ownerImage,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppThemeSystem.primaryColor,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (_, __, ___) => Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppThemeSystem.primaryColor,
+                                        AppThemeSystem.tertiaryColor,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppThemeSystem.primaryColor,
+                                      AppThemeSystem.tertiaryColor,
+                                    ],
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                      ),
+                    ),
+                    if (isCertified)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF1E88E5),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppThemeSystem.getSurfaceColor(context),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.star_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(width: 12),
+                // Logo boutique - toujours afficher
                 Container(
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppThemeSystem.primaryColor,
-                        AppThemeSystem.tertiaryColor,
-                      ],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isCertified
+                          ? AppThemeSystem.primaryColor.withValues(alpha: 0.5)
+                          : AppThemeSystem.getBorderColor(context),
+                      width: isCertified ? 2 : 1,
                     ),
-                    shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: Colors.white,
-                    size: 24,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: shopImage != null && shopImage.isNotEmpty
+                        ? Image.network(
+                            shopImage,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppThemeSystem.primaryColor,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppThemeSystem.grey300,
+                                    AppThemeSystem.grey200,
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.store_rounded,
+                                color: AppThemeSystem.grey600,
+                                size: 24,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppThemeSystem.grey300,
+                                  AppThemeSystem.grey200,
+                                ],
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.store_rounded,
+                              color: AppThemeSystem.grey600,
+                              size: 24,
+                            ),
+                          ),
                   ),
                 ),
                 SizedBox(width: 12),
@@ -432,11 +647,13 @@ class ProductView extends GetView<ProductController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        seller['name'],
+                        shopName,
                         style: context.textStyle(
                           FontSizeType.body1,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
                       Row(
@@ -444,7 +661,7 @@ class ProductView extends GetView<ProductController> {
                           Icon(Icons.star_rounded, color: Colors.amber, size: 16),
                           SizedBox(width: 4),
                           Text(
-                            '${seller['rating']}',
+                            '${rating is num ? rating.toStringAsFixed(1) : rating}',
                             style: context.textStyle(
                               FontSizeType.body2,
                               fontWeight: FontWeight.w600,
@@ -452,7 +669,7 @@ class ProductView extends GetView<ProductController> {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            '(${seller['reviews']} avis)',
+                            '($reviewCount avis)',
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.grey600,
@@ -464,6 +681,45 @@ class ProductView extends GetView<ProductController> {
                   ),
                 ),
               ],
+            ),
+            SizedBox(height: 16),
+            // Bouton voir la boutique
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  final shopId = shop?['id'];
+                  if (shopId != null) {
+                    Get.toNamed('/vendor-details', arguments: {
+                      'shop_id': shopId.toString(),
+                    });
+                  } else {
+                    Get.snackbar(
+                      'Erreur',
+                      'Impossible d\'accéder à la boutique',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: AppThemeSystem.errorColor,
+                      colorText: Colors.white,
+                    );
+                  }
+                },
+                icon: Icon(
+                  Icons.storefront_rounded,
+                  size: 18,
+                ),
+                label: Text('Voir la boutique'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppThemeSystem.primaryColor,
+                  side: BorderSide(
+                    color: AppThemeSystem.primaryColor,
+                    width: 1.5,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -569,13 +825,391 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  void _openMap(String location) {
+  /// Extract short location (city name) from full address
+  String _getShortLocation(String fullLocation) {
+    if (fullLocation.isEmpty || fullLocation == 'Non spécifiée') {
+      return fullLocation;
+    }
+
+    // Try to extract city name from common address formats
+    // Format examples: "Douala, Bonapriso" -> "Douala"
+    //                  "Yaoundé - Centre Ville" -> "Yaoundé"
+    //                  "Bafoussam, Quartier..." -> "Bafoussam"
+
+    // Split by common separators
+    final separators = [',', '-', '–', '|', '/'];
+    for (final separator in separators) {
+      if (fullLocation.contains(separator)) {
+        final parts = fullLocation.split(separator);
+        if (parts.isNotEmpty && parts[0].trim().isNotEmpty) {
+          return parts[0].trim();
+        }
+      }
+    }
+
+    // If no separator found, try to limit by word count (max 3 words)
+    final words = fullLocation.split(' ');
+    if (words.length > 3) {
+      return '${words.take(3).join(' ')}...';
+    }
+
+    // Return as is if short enough (< 30 chars)
+    if (fullLocation.length <= 30) {
+      return fullLocation;
+    }
+
+    // Otherwise truncate
+    return '${fullLocation.substring(0, 27)}...';
+  }
+
+  /// Check if shop is certified
+  bool _isShopCertified(Map<String, dynamic> product) {
+    final shop = product['shop'];
+    if (shop == null) return false;
+
+    final isCertified = shop['is_certified'];
+
+    if (isCertified is bool) return isCertified;
+    if (isCertified is int) return isCertified == 1;
+    if (isCertified is String) {
+      return isCertified == '1' || isCertified.toLowerCase() == 'true';
+    }
+
+    return false;
+  }
+
+  /// Open map options (Google Maps or Asso Map)
+  void _openMapOptions(BuildContext context, Map<String, dynamic> product) {
+    final location = product['location']?.toString() ??
+                    product['shop']?['address']?.toString() ??
+                    'Non spécifiée';
+
+    final latitude = product['latitude'] ?? product['shop']?['latitude'];
+    final longitude = product['longitude'] ?? product['shop']?['longitude'];
+
+    // 🔍 DEBUG: Vérifier les coordonnées
+    print('');
+    print('🗺️ ════════════════════════════════════════════════════════════');
+    print('🗺️ OUVERTURE DES OPTIONS DE CARTE');
+    print('🗺️ ════════════════════════════════════════════════════════════');
+    print('📍 Location: $location');
+    print('📌 Latitude brute: $latitude (type: ${latitude?.runtimeType})');
+    print('📌 Longitude brute: $longitude (type: ${longitude?.runtimeType})');
+    print('');
+    print('🔍 Vérification des sources:');
+    print('   product[latitude]: ${product['latitude']}');
+    print('   product[longitude]: ${product['longitude']}');
+    print('   product[shop][latitude]: ${product['shop']?['latitude']}');
+    print('   product[shop][longitude]: ${product['shop']?['longitude']}');
+    print('🗺️ ════════════════════════════════════════════════════════════');
+    print('');
+
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getBackgroundColor(context),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                margin: EdgeInsets.only(bottom: 20),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.grey300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Title
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.map_rounded,
+                    color: AppThemeSystem.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Voir la localisation',
+                        style: context.textStyle(
+                          FontSizeType.h5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        location,
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          color: AppThemeSystem.grey600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 24),
+
+            // Option 1: Carte Asso (bottomsheet)
+            InkWell(
+              onTap: () {
+                Get.back();
+                _openAssoMap(context, product);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                      AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.location_searching_rounded,
+                        color: AppThemeSystem.primaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Carte Asso',
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Voir sur la carte interactive Asso',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.grey600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            SizedBox(height: 12),
+
+            // Option 2: Google Maps (toujours affichée)
+            InkWell(
+                onTap: () {
+                  Get.back();
+                  _openGoogleMaps(latitude, longitude);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.getSurfaceColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppThemeSystem.getBorderColor(context),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.grey200,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.map_outlined,
+                          color: AppThemeSystem.grey700,
+                          size: 24,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Google Maps',
+                              style: context.textStyle(
+                                FontSizeType.body1,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Ouvrir dans Google Maps',
+                              style: context.textStyle(
+                                FontSizeType.caption,
+                                color: AppThemeSystem.grey600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.open_in_new_rounded,
+                        color: AppThemeSystem.grey600,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            SizedBox(height: 20),
+
+            // Cancel button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Get.back(),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Annuler'),
+              ),
+            ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+      isDismissible: true,
+      enableDrag: true,
+    );
+  }
+
+  /// Open Asso map in bottom sheet
+  void _openAssoMap(BuildContext context, Map<String, dynamic> product) async {
+    final latitude = product['latitude'] ?? product['shop']?['latitude'];
+    final longitude = product['longitude'] ?? product['shop']?['longitude'];
+    final location = product['location']?.toString() ?? product['shop']?['address']?.toString();
+
+    final lat = latitude != null
+        ? (latitude is num ? latitude.toDouble() : double.tryParse(latitude.toString()))
+        : null;
+    final lng = longitude != null
+        ? (longitude is num ? longitude.toDouble() : double.tryParse(longitude.toString()))
+        : null;
+
+    if (lat != null && lng != null) {
+      // Ouvrir la carte en mode lecture seule avec les coordonnées
+      await Get.to<Map<String, dynamic>>(
+        () => MapSelectionView(
+          initialLatitude: lat,
+          initialLongitude: lng,
+          readOnly: true,
+          locationName: location,
+        ),
+        transition: Transition.rightToLeft,
+      );
+    } else {
+      // Pas de coordonnées disponibles
+      Get.snackbar(
+        'Position non disponible',
+        'Les coordonnées GPS ne sont pas disponibles pour ce produit',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.warningColor,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+    }
+  }
+
+  /// Open Google Maps with coordinates
+  void _openGoogleMaps(dynamic latitude, dynamic longitude) async {
+    double? lat;
+    double? lng;
+
+    if (latitude != null) {
+      lat = latitude is num ? latitude.toDouble() : double.tryParse(latitude.toString());
+    }
+    if (longitude != null) {
+      lng = longitude is num ? longitude.toDouble() : double.tryParse(longitude.toString());
+    }
+
+    if (lat == null || lng == null) {
+      Get.snackbar(
+        'Position non disponible',
+        'Les coordonnées GPS ne sont pas disponibles pour ce produit',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.warningColor,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      return;
+    }
+
+    // Note: In a real implementation, you would use url_launcher package
+    // For now, just show a message
     Get.snackbar(
-      'Ouvrir sur Maps',
-      'Localisation: $location',
+      'Google Maps',
+      'Ouverture de Google Maps à la position: $lat, $lng',
       snackPosition: SnackPosition.BOTTOM,
       duration: Duration(seconds: 3),
+      backgroundColor: AppThemeSystem.successColor,
+      colorText: Colors.white,
     );
+
+    // TODO: Implement actual Google Maps opening with url_launcher
+    // final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    // if (await canLaunchUrl(Uri.parse(url))) {
+    //   await launchUrl(Uri.parse(url));
+    // }
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
@@ -1420,5 +2054,250 @@ class ProductView extends GetView<ProductController> {
         },
       );
     }
+  }
+
+  /// Build similar products section
+  Widget _buildSimilarProductsSection(BuildContext context, Map<String, dynamic> product) {
+    final categoryName = product['category']?['name']?.toString() ?? 'cette catégorie';
+    final categoryId = product['category']?['id'];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Produits similaires',
+                style: context.textStyle(
+                  FontSizeType.h5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (categoryId != null) {
+                    Get.toNamed('/search', arguments: {
+                      'categoryId': categoryId,
+                      'categoryName': categoryName,
+                    });
+                  }
+                },
+                child: Text(
+                  'Voir plus',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: AppThemeSystem.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          
+          // Products list
+          Obx(() {
+            if (controller.isLoadingSimilarProducts.value) {
+              return SizedBox(
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppThemeSystem.primaryColor,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            if (controller.similarProducts.isEmpty) {
+              return SizedBox(
+                height: 120,
+                child: Center(
+                  child: Text(
+                    'Aucun produit similaire trouvé',
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: AppThemeSystem.grey600,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return SizedBox(
+              height: 240,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: controller.similarProducts.length,
+                itemBuilder: (context, index) {
+                  final similarProduct = controller.similarProducts[index];
+                  return _buildSimilarProductCard(context, similarProduct);
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// Build similar product card
+  Widget _buildSimilarProductCard(BuildContext context, Map<String, dynamic> product) {
+    final productName = product['name']?.toString() ?? 'Produit';
+    final productPrice = product['price'] ?? 0;
+    final productStock = product['stock'] ?? 0;
+
+    // Get product image
+    String? productImage;
+    if (product['primary_image'] != null && product['primary_image'].toString().isNotEmpty) {
+      productImage = product['primary_image'].toString();
+    } else if (product['images'] != null && product['images'] is List && (product['images'] as List).isNotEmpty) {
+      final images = product['images'] as List;
+      if (images.isNotEmpty) {
+        // Check if it's a map with 'url' key or direct string
+        final firstImage = images[0];
+        if (firstImage is Map && firstImage['url'] != null) {
+          productImage = firstImage['url'].toString();
+        } else {
+          productImage = firstImage.toString();
+        }
+      }
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to new product with preventDuplicates: false to force route recreation
+        Get.offNamed(
+          '/product',
+          arguments: product,
+          preventDuplicates: false,
+        );
+      },
+      child: Container(
+        width: 160,
+        margin: EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(
+            AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(
+                  AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    height: 140,
+                    width: double.infinity,
+                    child: productImage != null && productImage.isNotEmpty
+                        ? Image.network(
+                            productImage,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppThemeSystem.primaryColor,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => Container(
+                              color: AppThemeSystem.grey200,
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 40,
+                                color: AppThemeSystem.grey400,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: AppThemeSystem.grey200,
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 40,
+                              color: AppThemeSystem.grey400,
+                            ),
+                          ),
+                  ),
+                  // Stock badge
+                  if (productStock <= 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.errorColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Épuisé',
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Product Info
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    productName,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '${productPrice} FCFA',
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.bold,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -44,6 +44,7 @@ abstract class Routes {
   static const WALLET_HISTORY = _Paths.WALLET_HISTORY;
   static const INVENTORY_LIST = _Paths.INVENTORY_LIST;
   static const INVOICES = _Paths.INVOICES;
+  static const VENDOR_DETAILS = _Paths.VENDOR_DETAILS;
 }
 
 abstract class _Paths {
@@ -89,4 +90,5 @@ abstract class _Paths {
   static const WALLET_HISTORY = '/wallet/history';
   static const INVENTORY_LIST = '/inventory-list';
   static const INVOICES = '/invoices';
+  static const VENDOR_DETAILS = '/vendor-details';
 }

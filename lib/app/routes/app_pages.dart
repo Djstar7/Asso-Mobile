@@ -78,6 +78,8 @@ import '../modules/productManagement/views/product_management_view.dart';
 import '../modules/inventoryList/bindings/inventory_list_binding.dart';
 import '../modules/inventoryList/views/inventory_list_view.dart';
 import '../modules/invoices/bindings/invoices_binding.dart';
+import '../modules/vendorDetails/bindings/vendor_details_binding.dart';
+import '../modules/vendorDetails/views/vendor_details_view.dart';
 
 part 'app_routes.dart';
 
@@ -286,6 +288,11 @@ class AppPages {
       name: _Paths.INVOICES,
       page: () => const InvoicesView(),
       binding: InvoicesBinding(),
+    ),
+    GetPage(
+      name: _Paths.VENDOR_DETAILS,
+      page: () => const VendorDetailsView(),
+      binding: VendorDetailsBinding(),
     ),
   ];
 }

@@ -119,4 +119,57 @@ class VendorProductService {
       rethrow;
     }
   }
+
+  /// Get inventory history for the vendor
+  static Future<ApiResponse> getInventory({
+    int page = 1,
+    int perPage = 50,
+    String? type, // 'entry', 'exit', 'adjustment'
+    int? productId,
+  }) async {
+    print('');
+    print('========================================');
+    print('📊 VENDOR PRODUCT SERVICE: Get Inventory START');
+    print('========================================');
+    print('  └─ Page: $page');
+    print('  └─ Per Page: $perPage');
+    if (type != null) print('  └─ Type Filter: $type');
+    if (productId != null) print('  └─ Product ID Filter: $productId');
+
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'per_page': perPage,
+      };
+
+      if (type != null) queryParams['type'] = type;
+      if (productId != null) queryParams['product_id'] = productId;
+
+      print('🌐 Calling API: GET /v1/vendor/inventory');
+
+      final response = await ApiProvider.get(
+        '/v1/vendor/inventory',
+        queryParams: queryParams,
+      );
+
+      print('✅ VENDOR PRODUCT SERVICE: API call completed');
+      print('  └─ Success: ${response.success}');
+      print('  └─ Status: ${response.statusCode}');
+      if (response.data != null && response.data!['meta'] != null) {
+        final meta = response.data!['meta'];
+        print('  └─ Total Entries: ${meta['total']}');
+        print('  └─ Current Page: ${meta['current_page']}');
+      }
+      print('========================================');
+
+      return response;
+    } catch (e, stackTrace) {
+      print('💥 VENDOR PRODUCT SERVICE: Exception!');
+      print('  └─ Error: $e');
+      print('  └─ Stack trace:');
+      print(stackTrace.toString().split('\n').take(3).join('\n'));
+      print('========================================');
+      rethrow;
+    }
+  }
 }

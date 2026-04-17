@@ -130,6 +130,38 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   ),
                 ),
               ),
+
+              // Bouton recherche par image
+              const SizedBox(width: 8),
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppThemeSystem.primaryColor,
+                      AppThemeSystem.tertiaryColor,
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.photo_camera_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: controller.searchByImage,
+                  tooltip: 'Rechercher par image',
+                ),
+              ),
             ],
           ),
 
@@ -249,21 +281,25 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
 
   /// Contenu principal
   Widget _buildContent(BuildContext context, bool isDark) {
-    // État de chargement
-    if (controller.isLoading.value) {
+    // État de chargement initial
+    if (controller.isLoading.value && controller.displayedProducts.isEmpty) {
       return _buildLoadingState(context);
     }
 
-    // Historique de recherche (si aucune recherche en cours)
-    if (!controller.isSearching.value && controller.searchQuery.value.isEmpty) {
+    // Historique de recherche (si aucune recherche en cours et pas de produits chargés)
+    if (!controller.isSearching.value &&
+        controller.searchQuery.value.isEmpty &&
+        controller.allProducts.isEmpty &&
+        !controller.isLoading.value) {
       return _buildSearchHistory(context, isDark);
     }
 
-    // Résultats de recherche
-    if (controller.searchResults.isEmpty && controller.searchQuery.value.isNotEmpty) {
+    // État vide (recherche sans résultats)
+    if (controller.searchQuery.value.isNotEmpty && controller.searchResults.isEmpty) {
       return _buildEmptyState(context, isDark);
     }
 
+    // Affichage des produits (recherche ou tous les produits)
     return _buildResults(context, isDark);
   }
 
@@ -532,20 +568,53 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Obx(() => Text(
-                        '${controller.searchResults.length} produit${controller.searchResults.length > 1 ? 's' : ''}',
+                        '${controller.displayedProducts.length} produit${controller.displayedProducts.length > 1 ? 's' : ''}',
                         style: context.textStyle(
                           FontSizeType.body1,
                           fontWeight: FontWeight.w600,
                         ),
                       )),
-                  // Bouton tri (optionnel)
-                  IconButton(
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: AppThemeSystem.primaryColor,
-                    ),
-                    onPressed: () => _showFiltersBottomSheet(context, isDark),
-                  ),
+                  // Bouton filtres avec badge
+                  Obx(() {
+                    final filterCount = controller.activeFiltersCount;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.tune_rounded,
+                            color: AppThemeSystem.primaryColor,
+                          ),
+                          onPressed: () => _showFiltersBottomSheet(context, isDark),
+                        ),
+                        if (filterCount > 0)
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppThemeSystem.primaryColor,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                '$filterCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -568,17 +637,17 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final product = controller.searchResults[index];
+                  final product = controller.displayedProducts[index];
                   return _buildProductCard(context, isDark, product);
                 },
-                childCount: controller.searchResults.length,
+                childCount: controller.displayedProducts.length,
               ),
             ),
           ),
 
           // Loading more indicator
           Obx(() {
-            if (controller.isLoading.value && controller.searchResults.isNotEmpty) {
+            if (controller.isLoading.value && controller.displayedProducts.isNotEmpty) {
               return SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -639,19 +708,48 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           children: [
             // Image
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: primaryImage != null && primaryImage.isNotEmpty
-                    ? Image.network(
-                        primaryImage,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: SizedBox.expand(
+                      child: primaryImage != null && primaryImage.isNotEmpty
+                          ? Image.network(
+                              primaryImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                            )
+                          : _buildPlaceholder(),
+                    ),
+                  ),
+                  // Badge boutique certifiée
+                  if (product['shop'] != null && _isShopCertified(product))
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E88E5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.star_rounded,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
 
@@ -734,8 +832,29 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     );
   }
 
+  /// Check if shop is certified (handles bool, int, string)
+  bool _isShopCertified(Map<String, dynamic> product) {
+    final shop = product['shop'];
+    if (shop == null) {
+      return false;
+    }
+
+    final isCertified = shop['is_certified'];
+
+    // Handle different types
+    if (isCertified is bool) return isCertified;
+    if (isCertified is int) return isCertified == 1;
+    if (isCertified is String) return isCertified == '1' || isCertified.toLowerCase() == 'true';
+
+    return false;
+  }
+
   /// Affiche la modal de filtres
   void _showFiltersBottomSheet(BuildContext context, bool isDark) {
+    // Reset temporary values to current applied filters
+    controller.minPrice.value = controller.currentMinPrice.value;
+    controller.maxPrice.value = controller.currentMaxPrice.value;
+
     Get.bottomSheet(
       Container(
         decoration: BoxDecoration(
@@ -745,132 +864,327 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             topRight: Radius.circular(24),
           ),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Filtres',
-                  style: context.textStyle(
-                    FontSizeType.h5,
-                    fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Filtres et tri',
+                    style: context.textStyle(
+                      FontSizeType.h5,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Get.back(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Options de tri
-            Text(
-              'Trier par',
-              style: context.textStyle(
-                FontSizeType.body1,
-                fontWeight: FontWeight.w600,
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Obx(() => Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: search_ctrl.SortOption.values.map((option) {
-                final isSelected = controller.selectedSortOption.value == option;
-                return InkWell(
-                  onTap: () {
-                    controller.selectSortOption(option);
-                    Get.back();
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+              const SizedBox(height: 24),
+
+              // Filtre de prix
+              Text(
+                'Fourchette de prix',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Prix minimum et maximum
+              Row(
+                children: [
+                  Expanded(
+                    child: Obx(() => _buildPriceInputField(
+                      context,
+                      isDark,
+                      label: 'Min',
+                      value: controller.minPrice.value,
+                      onChanged: (value) {
+                        controller.minPrice.value = value;
+                      },
+                    )),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      '-',
+                      style: context.textStyle(
+                        FontSizeType.h5,
+                        color: AppThemeSystem.grey500,
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? LinearGradient(
-                              colors: [
-                                AppThemeSystem.primaryColor,
-                                AppThemeSystem.tertiaryColor,
-                              ],
-                            )
-                          : null,
-                      color: isSelected
-                          ? null
-                          : isDark
-                              ? AppThemeSystem.grey800
-                              : AppThemeSystem.grey200,
-                      borderRadius: BorderRadius.circular(20),
-                      border: isSelected
-                          ? null
-                          : Border.all(
-                              color: isDark
-                                  ? AppThemeSystem.grey700
-                                  : AppThemeSystem.grey300,
-                            ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          option.icon,
-                          size: 16,
-                          color: isSelected
-                              ? Colors.white
-                              : AppThemeSystem.getPrimaryTextColor(context),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          option.label,
-                          style: context.textStyle(
-                            FontSizeType.body2,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                  Expanded(
+                    child: Obx(() => _buildPriceInputField(
+                      context,
+                      isDark,
+                      label: 'Max',
+                      value: controller.maxPrice.value,
+                      onChanged: (value) {
+                        controller.maxPrice.value = value;
+                      },
+                    )),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Prix suggérés
+              Obx(() => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildPriceChip(context, isDark, 'Moins de 5.000', 0, 5000),
+                  _buildPriceChip(context, isDark, '5.000 - 20.000', 5000, 20000),
+                  _buildPriceChip(context, isDark, '20.000 - 50.000', 20000, 50000),
+                  _buildPriceChip(context, isDark, '50.000 - 100.000', 50000, 100000),
+                  _buildPriceChip(context, isDark, 'Plus de 100.000', 100000, 1000000),
+                ],
+              )),
+
+              const SizedBox(height: 32),
+
+              // Options de tri
+              Text(
+                'Trier par',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Obx(() => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: search_ctrl.SortOption.values.map((option) {
+                  final isSelected = controller.selectedSortOption.value == option;
+                  return InkWell(
+                    onTap: () {
+                      controller.selectSortOption(option);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: isSelected
+                            ? LinearGradient(
+                                colors: [
+                                  AppThemeSystem.primaryColor,
+                                  AppThemeSystem.tertiaryColor,
+                                ],
+                              )
+                            : null,
+                        color: isSelected
+                            ? null
+                            : isDark
+                                ? AppThemeSystem.grey800
+                                : AppThemeSystem.grey200,
+                        borderRadius: BorderRadius.circular(20),
+                        border: isSelected
+                            ? null
+                            : Border.all(
+                                color: isDark
+                                    ? AppThemeSystem.grey700
+                                    : AppThemeSystem.grey300,
+                              ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            option.icon,
+                            size: 16,
                             color: isSelected
                                 ? Colors.white
                                 : AppThemeSystem.getPrimaryTextColor(context),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            option.label,
+                            style: context.textStyle(
+                              FontSizeType.body2,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppThemeSystem.getPrimaryTextColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              )),
+
+              const SizedBox(height: 32),
+
+              // Boutons d'action
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        controller.resetFilters();
+                        Get.back();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppThemeSystem.primaryColor,
+                        side: BorderSide(color: AppThemeSystem.primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Réinitialiser'),
                     ),
                   ),
-                );
-              }).toList(),
-            )),
-
-            const SizedBox(height: 24),
-
-            // Bouton réinitialiser
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  controller.resetFilters();
-                  Get.back();
-                },
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réinitialiser les filtres'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemeSystem.primaryColor,
-                  side: BorderSide(color: AppThemeSystem.primaryColor),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        controller.applyPriceFilters();
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppThemeSystem.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Appliquer les filtres'),
+                    ),
+                  ),
+                ],
               ),
-            ),
 
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
         ),
       ),
       isDismissible: true,
       enableDrag: true,
+      isScrollControlled: true,
+    );
+  }
+
+  /// Champ d'entrée de prix
+  Widget _buildPriceInputField(
+    BuildContext context,
+    bool isDark, {
+    required String label,
+    required double value,
+    required Function(double) onChanged,
+  }) {
+    final controller = TextEditingController(
+      text: value > 0 ? value.toInt().toString() : '',
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey300,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: AppThemeSystem.grey600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            style: context.textStyle(
+              FontSizeType.body1,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: '0',
+              hintStyle: TextStyle(color: AppThemeSystem.grey500),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              suffixText: 'FCFA',
+              suffixStyle: context.textStyle(
+                FontSizeType.caption,
+                color: AppThemeSystem.grey500,
+              ),
+            ),
+            onChanged: (text) {
+              final parsed = double.tryParse(text) ?? 0;
+              onChanged(parsed);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Chip de prix suggéré
+  Widget _buildPriceChip(
+    BuildContext context,
+    bool isDark,
+    String label,
+    double min,
+    double max,
+  ) {
+    final isSelected = controller.minPrice.value == min &&
+        controller.maxPrice.value == max;
+
+    return InkWell(
+      onTap: () {
+        controller.minPrice.value = min;
+        controller.maxPrice.value = max;
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
+              : isDark
+                  ? AppThemeSystem.grey800
+                  : AppThemeSystem.grey100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppThemeSystem.primaryColor
+                : isDark
+                    ? AppThemeSystem.grey700
+                    : AppThemeSystem.grey300,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: context.textStyle(
+            FontSizeType.body2,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected
+                ? AppThemeSystem.primaryColor
+                : AppThemeSystem.getPrimaryTextColor(context),
+          ),
+        ),
+      ),
     );
   }
 }

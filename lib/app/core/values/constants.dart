@@ -6,7 +6,7 @@ class AppConstants {
 
   // API Configuration
   //  // 10.144.156.28 maps to host localhost from Android emulator
-  static const String baseUrl = 'http://10.126.9.109:8001/api';
+  static const String baseUrl = 'http://10.193.76.109:8001/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Storage Keys

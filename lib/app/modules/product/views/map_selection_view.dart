@@ -7,7 +7,18 @@ import 'package:http/http.dart' as http;
 import '../../../core/utils/app_theme_system.dart';
 
 class MapSelectionView extends StatefulWidget {
-  const MapSelectionView({super.key});
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final bool readOnly;
+  final String? locationName;
+
+  const MapSelectionView({
+    super.key,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.readOnly = false,
+    this.locationName,
+  });
 
   @override
   State<MapSelectionView> createState() => _MapSelectionViewState();
@@ -28,14 +39,32 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
-    _searchFocusNode.addListener(() {
-      if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
-        setState(() {
-          _showSearchResults = false;
-        });
+
+    // Si des coordonnées initiales sont fournies, les utiliser
+    if (widget.initialLatitude != null && widget.initialLongitude != null) {
+      _selectedPosition = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      if (widget.locationName != null && widget.locationName!.isNotEmpty) {
+        _selectedAddress = widget.locationName!;
+      } else {
+        _reverseGeocode(_selectedPosition);
       }
-    });
+      // Centrer immédiatement sur la position
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(_selectedPosition, 15.0);
+      });
+    } else {
+      _getCurrentLocation();
+    }
+
+    if (!widget.readOnly) {
+      _searchFocusNode.addListener(() {
+        if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
+          setState(() {
+            _showSearchResults = false;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -193,7 +222,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'Choisir la position',
+          widget.readOnly ? 'Localisation du produit' : 'Choisir la position',
           style: context.textStyle(
             FontSizeType.h5,
             fontWeight: FontWeight.bold,
@@ -209,12 +238,17 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             options: MapOptions(
               initialCenter: _selectedPosition,
               initialZoom: 15.0,
-              onTap: (tapPosition, point) {
+              onTap: widget.readOnly ? null : (tapPosition, point) {
                 setState(() {
                   _selectedPosition = point;
                 });
                 _reverseGeocode(point);
               },
+              interactionOptions: InteractionOptions(
+                flags: widget.readOnly
+                    ? InteractiveFlag.drag | InteractiveFlag.pinchZoom
+                    : InteractiveFlag.all,
+              ),
             ),
             children: [
               TileLayer(
@@ -257,12 +291,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             ],
           ),
 
-          // Barre de recherche
-          Positioned(
-            top: 16,
-            left: 16,
-            right: 80,
-            child: Container(
+          // Barre de recherche (seulement si pas en lecture seule)
+          if (!widget.readOnly)
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 80,
+              child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -330,8 +365,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             ),
           ),
 
-          // Résultats de recherche
-          if (_showSearchResults)
+          // Résultats de recherche (seulement si pas en lecture seule)
+          if (!widget.readOnly && _showSearchResults)
             Positioned(
               top: 76,
               left: 16,
@@ -440,12 +475,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             right: 16,
             top: 16,
             child: FloatingActionButton(
+              heroTag: 'map_gps_button',
               mini: true,
               backgroundColor: Colors.white,
-              onPressed: _getCurrentLocation,
+              onPressed: widget.readOnly ? null : _getCurrentLocation,
               child: Icon(
                 Icons.my_location_rounded,
-                color: AppThemeSystem.primaryColor,
+                color: widget.readOnly ? AppThemeSystem.grey400 : AppThemeSystem.primaryColor,
               ),
             ),
           ),
@@ -455,6 +491,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             right: 16,
             top: 70,
             child: FloatingActionButton(
+              heroTag: 'map_zoom_in_button',
               mini: true,
               backgroundColor: Colors.white,
               onPressed: () {
@@ -475,6 +512,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             right: 16,
             top: 120,
             child: FloatingActionButton(
+              heroTag: 'map_zoom_out_button',
               mini: true,
               backgroundColor: Colors.white,
               onPressed: () {
@@ -551,7 +589,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Position sélectionnée',
+                                  widget.readOnly ? 'Localisation' : 'Position sélectionnée',
                                   style: context.textStyle(
                                     FontSizeType.caption,
                                     color: AppThemeSystem.grey600,
@@ -596,37 +634,72 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         ],
                       ),
 
+                      // Afficher les coordonnées en mode lecture seule
+                      if (widget.readOnly) ...[
+                        SizedBox(height: 12),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.gps_fixed_rounded,
+                                size: 16,
+                                color: AppThemeSystem.primaryColor,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Lat: ${_selectedPosition.latitude.toStringAsFixed(5)}, Lng: ${_selectedPosition.longitude.toStringAsFixed(5)}',
+                                style: context.textStyle(
+                                  FontSizeType.caption,
+                                  color: AppThemeSystem.primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       SizedBox(height: 20),
 
-                      // Bouton de validation
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Get.back(result: {
-                              'address': _selectedAddress,
-                              'latitude': _selectedPosition.latitude,
-                              'longitude': _selectedPosition.longitude,
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppThemeSystem.primaryColor,
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      // Bouton de validation (seulement si pas en lecture seule)
+                      if (!widget.readOnly)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Get.back(result: {
+                                'address': _selectedAddress,
+                                'latitude': _selectedPosition.latitude,
+                                'longitude': _selectedPosition.longitude,
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppThemeSystem.primaryColor,
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
                             ),
-                            elevation: 4,
-                          ),
-                          child: Text(
-                            'Confirmer cette position',
-                            style: context.textStyle(
-                              FontSizeType.body1,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            child: Text(
+                              'Confirmer cette position',
+                              style: context.textStyle(
+                                FontSizeType.body1,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),

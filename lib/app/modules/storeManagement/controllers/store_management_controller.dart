@@ -7,6 +7,7 @@ import '../models/store_models.dart';
 import '../../../data/providers/shop_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/providers/vendor_product_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 
 class StoreManagementController extends GetxController {
@@ -177,11 +178,38 @@ class StoreManagementController extends GetxController {
           );
         }
 
-        // Inventaire vide pour l'instant (TODO: implémenter l'API backend)
-        inventoryEntries.value = [];
-        print(
-          '✅ CONTROLLER: Inventory loaded (empty - waiting for backend implementation)',
-        );
+        // Charger l'inventaire depuis l'API
+        try {
+          final inventoryResponse = await VendorProductService.getInventory(
+            page: 1,
+            perPage: 50,
+          );
+
+          if (inventoryResponse.success && inventoryResponse.data != null) {
+            final List<dynamic> inventoryData = inventoryResponse.data!['data'] ?? [];
+            inventoryEntries.value = inventoryData.map((item) {
+              return InventoryEntry.fromJson({
+                'id': item['id'],
+                'productId': item['product_id'],
+                'productName': item['product_name'],
+                'type': item['type'],
+                'quantity': item['quantity'],
+                'date': item['date'],
+                'orderId': item['order_id'],
+                'notes': item['notes'],
+              });
+            }).toList();
+
+            print('✅ CONTROLLER: Inventory loaded successfully');
+            print('  └─ Total entries: ${inventoryEntries.length}');
+          } else {
+            inventoryEntries.value = [];
+            print('⚠️ CONTROLLER: No inventory data');
+          }
+        } catch (e) {
+          print('❌ CONTROLLER: Failed to load inventory: $e');
+          inventoryEntries.value = [];
+        }
       } else {
         print('❌ CONTROLLER: API call failed');
         // Clear all data

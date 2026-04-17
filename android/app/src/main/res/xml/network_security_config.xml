@@ -13,6 +13,6 @@
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">10.126.9.109</domain>
+        <domain includeSubdomains="true">10.193.76.109</domain>
     </domain-config>
 </network-security-config>

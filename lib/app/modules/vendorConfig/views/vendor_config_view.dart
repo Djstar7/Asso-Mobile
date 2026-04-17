@@ -1159,8 +1159,8 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Check if all required fields in Step 2 are filled
           final isStep2Complete = isSecondStep &&
-              controller.shopNameController.text.trim().isNotEmpty &&
-              controller.shopDescriptionController.text.trim().isNotEmpty &&
+              controller.shopNameText.value.trim().isNotEmpty &&
+              controller.shopDescriptionText.value.trim().isNotEmpty &&
               controller.shopLogo.value != null &&
               controller.shopLocation.value.isNotEmpty &&
               controller.selectedCategories.isNotEmpty;
