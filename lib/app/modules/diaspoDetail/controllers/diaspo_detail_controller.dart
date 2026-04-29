@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/conversation_service.dart';
 import '../../diaspoList/controllers/diaspo_list_controller.dart';
 
 class DiaspoDetailController extends GetxController {
@@ -53,14 +54,52 @@ class DiaspoDetailController extends GetxController {
     }
   }
 
-  /// Navigate to chat
-  void openChat() {
+  /// Navigate to chat with Diaspo offer tagging
+  Future<void> openChat() async {
     if (offer.value == null) return;
 
-    Get.toNamed('/chatdetail', arguments: {
-      'userId': offer.value!.userId,
-      'userName': offer.value!.user?.fullName ?? 'Utilisateur',
-    });
+    try {
+      // Créer ou obtenir une conversation avec l'utilisateur et l'offre Diaspo
+      final response = await ConversationService.startConversation(
+        userId: offer.value!.userId,
+        diaspoOfferId: offer.value!.id,
+      );
+
+      if (response.success && response.data != null) {
+        final conversationData = response.data!['conversation'];
+
+        // Naviguer vers le chat avec les données de la conversation et l'offre Diaspo
+        Get.toNamed('/chatdetail', arguments: {
+          'id': conversationData['id'].toString(),
+          'name': conversationData['other_user']['name'] ?? 'Utilisateur',
+          'avatar': (conversationData['other_user']['name'] ?? 'U')[0].toUpperCase(),
+          'isOnline': false,
+          'diaspo_offer': {
+            'id': offer.value!.id,
+            'departure_city': offer.value!.departureCity,
+            'departure_country': offer.value!.departureCountry,
+            'arrival_city': offer.value!.arrivalCity,
+            'arrival_country': offer.value!.arrivalCountry,
+            'price_per_kg': offer.value!.pricePerKg,
+            'currency': offer.value!.currency,
+            'remaining_kg': offer.value!.remainingKg,
+          },
+          'default_message': 'Ya til encore des kilo disponible ?',
+        });
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de démarrer la conversation',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   /// Navigate to booking

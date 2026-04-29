@@ -211,11 +211,19 @@ class ChatdetailView extends GetView<ChatdetailController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Afficher le produit taggé si présent (style WhatsApp)
+                  // Afficher le produit taggué si présent (style WhatsApp)
                   if (message['product'] != null)
                     _buildProductQuote(
                       context,
                       message['product'],
+                      isSentByMe,
+                    ),
+
+                  // Afficher l'offre Diaspo taguée si présente (style WhatsApp)
+                  if (message['diaspo_offer'] != null)
+                    _buildDiaspoOfferQuote(
+                      context,
+                      message['diaspo_offer'],
                       isSentByMe,
                     ),
 
@@ -401,6 +409,59 @@ class ChatdetailView extends GetView<ChatdetailController> {
                         color: AppThemeSystem.grey600,
                       ),
                       onPressed: controller.clearSelectedProduct,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            // Badge de l'offre Diaspo sélectionnée
+            Obx(() {
+              if (controller.selectedDiaspoOffer.value == null) {
+                return SizedBox.shrink();
+              }
+
+              final diaspoOffer = controller.selectedDiaspoOffer.value!;
+              return Container(
+                margin: EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.flight,
+                      color: AppThemeSystem.primaryColor,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${diaspoOffer['departure_city']} → ${diaspoOffer['arrival_city']}',
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          color: AppThemeSystem.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: AppThemeSystem.grey600,
+                      ),
+                      onPressed: controller.clearSelectedDiaspoOffer,
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(),
                     ),
@@ -983,5 +1044,109 @@ class ChatdetailView extends GetView<ChatdetailController> {
       return '$price FCFA';
     }
     return 'Prix non défini';
+  }
+
+  /// Widget pour afficher l'offre Diaspo comme une citation dans le message (style WhatsApp)
+  Widget _buildDiaspoOfferQuote(
+    BuildContext context,
+    Map<String, dynamic> diaspoOffer,
+    bool isSentByMe,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        // Naviguer vers la page de détails de l'offre Diaspo
+        Get.toNamed('/diaspo/detail', arguments: {'offerId': diaspoOffer['id']});
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSentByMe
+              ? Colors.white.withValues(alpha: 0.2)
+              : AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(
+              color: isSentByMe
+                  ? Colors.white
+                  : AppThemeSystem.primaryColor,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Icône de l'offre
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSentByMe
+                    ? Colors.white.withValues(alpha: 0.3)
+                    : AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.flight,
+                color: isSentByMe
+                    ? Colors.white
+                    : AppThemeSystem.primaryColor,
+                size: 24,
+              ),
+            ),
+            SizedBox(width: 8),
+            // Infos de l'offre
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Offre Diaspo',
+                    style: context.textStyle(
+                      FontSizeType.overline,
+                      color: isSentByMe
+                          ? Colors.white.withValues(alpha: 0.9)
+                          : AppThemeSystem.primaryColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    '${diaspoOffer['departure_city']} → ${diaspoOffer['arrival_city']}',
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: isSentByMe
+                          ? Colors.white.withValues(alpha: 0.95)
+                          : AppThemeSystem.getPrimaryTextColor(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${diaspoOffer['price_per_kg']} ${diaspoOffer['currency']}/kg',
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: isSentByMe
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : AppThemeSystem.primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Icône
+            Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: isSentByMe
+                  ? Colors.white.withValues(alpha: 0.7)
+                  : AppThemeSystem.grey600,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

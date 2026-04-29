@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
 class WelcomerController extends GetxController {
@@ -38,8 +39,23 @@ class WelcomerController extends GetxController {
     super.onClose();
   }
 
-  void skipWelcome() {
+  void skipWelcome() async {
     developer.log('Skip welcome - going to HOME', name: 'WelcomerController');
+
+    // S'abonner au topic des annonces même en mode invité
+    developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');
+    try {
+      await FirebaseMessagingService.to.subscribeToAnnouncementsTopic();
+      developer.log('✅ Subscribed to announcements topic', name: 'WelcomerController');
+    } catch (e) {
+      developer.log(
+        'Error subscribing to announcements topic',
+        name: 'WelcomerController',
+        error: e,
+      );
+      // On ne bloque pas la navigation même si l'opération échoue
+    }
+
     Get.offAllNamed(Routes.HOME);
   }
 
@@ -173,6 +189,24 @@ class WelcomerController extends GetxController {
 
             await Future.delayed(const Duration(milliseconds: 500));
 
+            // Envoyer le token FCM au backend ET s'abonner au topic des annonces
+            developer.log('📱 Registering device and subscribing to topics...', name: 'WelcomerController');
+            try {
+              final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
+              developer.log(
+                'FCM registration result',
+                name: 'WelcomerController',
+                error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
+              );
+            } catch (e) {
+              developer.log(
+                'Error registering device/subscribing to topics',
+                name: 'WelcomerController',
+                error: e,
+              );
+              // On ne bloque pas la navigation même si l'opération échoue
+            }
+
             // Navigate based on profile completeness
             final isNew = verifyResponse.data?['is_new_user'] ?? false;
             developer.log(
@@ -296,11 +330,26 @@ class WelcomerController extends GetxController {
     Get.offAllNamed(Routes.HOME);
   }
 
-  void continueAsGuest() {
+  void continueAsGuest() async {
     developer.log(
       'Continue as guest - going to HOME',
       name: 'WelcomerController',
     );
+
+    // S'abonner au topic des annonces même en mode invité
+    developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');
+    try {
+      await FirebaseMessagingService.to.subscribeToAnnouncementsTopic();
+      developer.log('✅ Subscribed to announcements topic', name: 'WelcomerController');
+    } catch (e) {
+      developer.log(
+        'Error subscribing to announcements topic',
+        name: 'WelcomerController',
+        error: e,
+      );
+      // On ne bloque pas la navigation même si l'opération échoue
+    }
+
     Get.offAllNamed(Routes.HOME);
   }
 

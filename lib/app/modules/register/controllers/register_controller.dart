@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
 class RegisterController extends GetxController {
@@ -168,6 +169,24 @@ class RegisterController extends GetxController {
             );
 
             await Future.delayed(const Duration(milliseconds: 500));
+
+            // Envoyer le token FCM au backend ET s'abonner au topic des annonces
+            developer.log('📱 Registering device and subscribing to topics...', name: 'RegisterController');
+            try {
+              final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
+              developer.log(
+                'FCM registration result',
+                name: 'RegisterController',
+                error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
+              );
+            } catch (e) {
+              developer.log(
+                'Error registering device/subscribing to topics',
+                name: 'RegisterController',
+                error: e,
+              );
+              // On ne bloque pas la navigation même si l'opération échoue
+            }
 
             // Navigate based on profile completeness
             final isNew = verifyResponse.data?['is_new_user'] ?? false;

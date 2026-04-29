@@ -24,6 +24,9 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   // Produit sélectionné pour taguer dans le prochain message
   final Rx<Map<String, dynamic>?> selectedProduct = Rx<Map<String, dynamic>?>(null);
 
+  // Offre Diaspo sélectionnée pour taguer dans le prochain message
+  final Rx<Map<String, dynamic>?> selectedDiaspoOffer = Rx<Map<String, dynamic>?>(null);
+
   // WebSocket
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
@@ -35,6 +38,17 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
     super.onInit();
     conversation = Get.arguments ?? {};
     _conversationId = int.tryParse(conversation['id']?.toString() ?? '');
+
+    // Si une offre Diaspo est passée en argument, la sélectionner automatiquement
+    if (conversation['diaspo_offer'] != null) {
+      selectedDiaspoOffer.value = conversation['diaspo_offer'];
+    }
+
+    // Si un message par défaut est fourni, l'insérer dans le champ de texte
+    if (conversation['default_message'] != null) {
+      messageController.text = conversation['default_message'];
+    }
+
     _loadMessages();
     _setupWebSocket();
 
@@ -183,6 +197,8 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
             'isRead': msg['is_read'] ?? false,
             // Charger le produit depuis le message (nouveau système)
             'product': msg['product'],
+            // Charger l'offre Diaspo depuis le message
+            'diaspo_offer': msg['diaspo_offer'],
           };
         }).toList();
 
@@ -230,6 +246,11 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         ? int.tryParse(selectedProduct.value!['id']?.toString() ?? '')
         : null;
 
+    // Récupérer le diaspo_offer_id si une offre Diaspo est sélectionnée
+    final diaspoOfferId = selectedDiaspoOffer.value != null
+        ? int.tryParse(selectedDiaspoOffer.value!['id']?.toString() ?? '')
+        : null;
+
     // Add message to UI immediately
     final tempMessage = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -238,13 +259,15 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       'timestamp': _getCurrentTime(),
       'isRead': false,
       'product': selectedProduct.value, // Ajouter le produit tagué
+      'diaspo_offer': selectedDiaspoOffer.value, // Ajouter l'offre Diaspo taguée
     };
 
     messages.add(tempMessage);
     messageController.clear();
 
-    // Réinitialiser le produit sélectionné après envoi
+    // Réinitialiser les sélections après envoi
     selectedProduct.value = null;
+    selectedDiaspoOffer.value = null;
 
     _scrollToBottom();
 
@@ -256,6 +279,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
           _conversationId!,
           text,
           productId: productId,
+          diaspoOfferId: diaspoOfferId,
         );
 
         print('📥 [CHAT] API Response received:');
@@ -291,6 +315,16 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   /// Annuler la sélection de produit
   void clearSelectedProduct() {
     selectedProduct.value = null;
+  }
+
+  /// Sélectionner une offre Diaspo à taguer dans le prochain message
+  void selectDiaspoOffer(Map<String, dynamic> diaspoOffer) {
+    selectedDiaspoOffer.value = diaspoOffer;
+  }
+
+  /// Annuler la sélection d'offre Diaspo
+  void clearSelectedDiaspoOffer() {
+    selectedDiaspoOffer.value = null;
   }
 
   void _scrollToBottom() {

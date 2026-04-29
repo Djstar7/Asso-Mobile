@@ -11,9 +11,11 @@ class ConversationService {
   static Future<ApiResponse> startConversation({
     required int userId,
     int? productId,
+    int? diaspoOfferId,
   }) async {
     final data = <String, dynamic>{'user_id': userId};
     if (productId != null) data['product_id'] = productId;
+    if (diaspoOfferId != null) data['diaspo_offer_id'] = diaspoOfferId;
     return await ApiProvider.post(AppConstants.startConversationUrl, body: data);
   }
 
@@ -29,9 +31,11 @@ class ConversationService {
     int conversationId,
     String message, {
     int? productId,
+    int? diaspoOfferId,
   }) async {
     final data = <String, dynamic>{'message': message};
     if (productId != null) data['product_id'] = productId;
+    if (diaspoOfferId != null) data['diaspo_offer_id'] = diaspoOfferId;
 
     return await ApiProvider.post(
       '${AppConstants.conversationsUrl}/$conversationId/messages',

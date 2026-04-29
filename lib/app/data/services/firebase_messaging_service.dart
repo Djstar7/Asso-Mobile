@@ -1,4 +1,6 @@
 import 'dart:io' show Platform;
+import 'dart:convert';
+import 'package:asso/app/routes/app_pages.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -311,22 +313,55 @@ class FirebaseMessagingService extends GetxService {
             presentSound: true,
           ),
         ),
-        payload: message.data.toString(),
+        payload: jsonEncode(message.data),
       );
     }
   }
 
   /// Gère les données du message
   void _handleMessageData(Map<String, dynamic> data) {
-    // TODO: Implémenter votre logique selon le type de notification
-    // Exemple:
-    // if (data['type'] == 'new_message') {
-    //   Get.toNamed('/chat', arguments: data['chatId']);
-    // } else if (data['type'] == 'new_order') {
-    //   Get.toNamed('/orders', arguments: data['orderId']);
-    // }
-
     print('📦 Données du message: $data');
+
+    final type = data['type'] as String?;
+
+    if (type == null) {
+      print('⚠️ Type de notification non défini');
+      return;
+    }
+
+    print('🔔 Type de notification: $type');
+
+    switch (type) {
+      case 'new_product':
+        // Navigation vers les détails du produit
+        final productId = data['product_id'];
+        if (productId != null) {
+          print('🛍️ Navigation vers le produit $productId');
+          Get.toNamed(Routes.PRODUCT, arguments: {'productId': productId});
+        } else {
+          // Si pas d'ID, naviguer vers la liste des produits
+          print('🛍️ Navigation vers la liste des produits');
+          Get.toNamed(Routes.HOME);
+        }
+        break;
+
+      case 'new_diaspo_offer':
+        // Navigation vers les détails de l'offre diaspo
+        final offerId = data['offer_id'];
+        if (offerId != null) {
+          print('✈️ Navigation vers l\'offre diaspo $offerId');
+          Get.toNamed(Routes.DIASPO_DETAIL, arguments: {'offerId': offerId});
+        } else {
+          // Si pas d'ID, naviguer vers la liste des offres diaspo
+          print('✈️ Navigation vers la liste des offres diaspo');
+          Get.toNamed(Routes.DIASPO);
+        }
+        break;
+
+      default:
+        print('⚠️ Type de notification non géré: $type');
+        break;
+    }
   }
 
   /// Gère les taps sur les notifications
@@ -349,7 +384,22 @@ class FirebaseMessagingService extends GetxService {
   /// Callback quand une notification locale est tapée
   void _onNotificationTapped(NotificationResponse response) {
     print('👆 Notification tapée: ${response.payload}');
-    // TODO: Gérer le tap selon le payload
+
+    if (response.payload == null || response.payload!.isEmpty) {
+      print('⚠️ Payload vide');
+      return;
+    }
+
+    try {
+      // Parser le JSON du payload
+      final Map<String, dynamic> data = jsonDecode(response.payload!);
+      print('📦 Payload parsé: $data');
+
+      // Utiliser la même logique que _handleMessageData
+      _handleMessageData(data);
+    } catch (e) {
+      print('❌ Erreur lors du parsing du payload: $e');
+    }
   }
 
   /// S'abonne à un topic
