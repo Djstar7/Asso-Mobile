@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../data/providers/conversation_service.dart';
@@ -10,6 +11,7 @@ import '../../../data/providers/order_service.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../home/controllers/home_controller.dart';
+import '../../chat/controllers/chat_controller.dart';
 
 class ProductController extends GetxController {
   final RxInt currentImageIndex = 0.obs;
@@ -36,10 +38,24 @@ class ProductController extends GetxController {
   final RxList<Map<String, dynamic>> similarProducts = <Map<String, dynamic>>[].obs;
   final RxBool isLoadingSimilarProducts = false.obs;
 
+  // Stocker le productId pour le rechargement après sélection manuelle
+  int? currentProductId;
+
   @override
   void onInit() {
     super.onInit();
     _initializeProduct();
+
+    // Écouter les changements d'adresse de livraison pour réactualiser les partenaires
+    ever(currentLocation, (location) {
+      final product = Get.arguments as Map<String, dynamic>?;
+      if (product != null && location.isNotEmpty && !location.contains('Récupération')) {
+        final productId = product['id'] as int?;
+        if (productId != null) {
+          loadDeliveryPartners(productId);
+        }
+      }
+    });
   }
 
   @override
@@ -62,6 +78,9 @@ class ProductController extends GetxController {
 
       // Set favorite status
       isFavorite.value = product['is_favorite'] ?? false;
+
+      // Stocker le productId pour le rechargement après sélection manuelle
+      currentProductId = product['id'] as int?;
 
       // Load similar products based on category
       final categoryId = product['category']?['id'];
@@ -171,12 +190,94 @@ class ProductController extends GetxController {
 
       clientLatitude = position.latitude;
       clientLongitude = position.longitude;
-      currentLocation.value = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+
+      // Faire du reverse geocoding pour obtenir l'adresse
+      try {
+        print('🔄 Reverse geocoding: ${position.latitude}, ${position.longitude}');
+
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          final placemark = placemarks.first;
+
+          // Construire une adresse lisible
+          final parts = <String>[];
+
+          if (placemark.locality != null && placemark.locality!.isNotEmpty) {
+            parts.add(placemark.locality!); // Ville
+          } else if (placemark.subAdministrativeArea != null && placemark.subAdministrativeArea!.isNotEmpty) {
+            parts.add(placemark.subAdministrativeArea!);
+          } else if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+            parts.add(placemark.administrativeArea!);
+          }
+
+          if (placemark.subLocality != null && placemark.subLocality!.isNotEmpty) {
+            parts.add(placemark.subLocality!); // Quartier
+          }
+
+          currentLocation.value = parts.isNotEmpty
+              ? parts.join(', ')
+              : '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+
+          print('✅ Adresse trouvée: ${currentLocation.value}');
+          print('   Détails placemark:');
+          print('   - locality: ${placemark.locality}');
+          print('   - subLocality: ${placemark.subLocality}');
+          print('   - administrativeArea: ${placemark.administrativeArea}');
+          print('   - subAdministrativeArea: ${placemark.subAdministrativeArea}');
+          print('   - country: ${placemark.country}');
+        } else {
+          print('⚠️ Aucun placemark trouvé, utilisation des coordonnées');
+          currentLocation.value = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+        }
+      } catch (reverseGeoError) {
+        print('❌ Erreur reverse geocoding: $reverseGeoError');
+        currentLocation.value = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+      }
     } catch (e) {
+      print('❌ Erreur fetchCurrentLocation: $e');
       currentLocation.value = 'Position non disponible';
     } finally {
       isLoadingLocation.value = false;
     }
+  }
+
+  /// Extraire le nom de la ville depuis l'adresse complète
+  String? _extractCityFromAddress(String address) {
+    if (address.isEmpty || address.contains('Récupération') || address.contains('Position non disponible')) {
+      return null;
+    }
+
+    // Format exemples: "Douala, Bonapriso" -> "Douala"
+    //                  "Yaoundé - Centre Ville" -> "Yaoundé"
+    //                  "Bafoussam, Quartier..." -> "Bafoussam"
+
+    // Extraire avec des séparateurs communs
+    final separators = [',', '-', '–', '|', '/'];
+    for (final separator in separators) {
+      if (address.contains(separator)) {
+        final parts = address.split(separator);
+        if (parts.isNotEmpty && parts[0].trim().isNotEmpty) {
+          return parts[0].trim();
+        }
+      }
+    }
+
+    // Si pas de séparateur, prendre les 3 premiers mots max
+    final words = address.split(' ');
+    if (words.length > 3) {
+      return words.take(2).join(' ');
+    }
+
+    // Retourner l'adresse si courte (moins de 30 caractères)
+    if (address.length <= 30) {
+      return address;
+    }
+
+    return null;
   }
 
   /// Charger les partenaires de livraison avec prix calculé pour un produit
@@ -187,17 +288,80 @@ class ProductController extends GetxController {
     deliveryPrice.value = 0;
 
     try {
+      print('');
+      print('═══════════════════════════════════════════════════════════════');
+      print('🚚 CHARGEMENT DES PARTENAIRES DE LIVRAISON');
+      print('═══════════════════════════════════════════════════════════════');
+
+      // Extraire la ville de l'adresse de livraison
+      final city = _extractCityFromAddress(currentLocation.value);
+
+      print('📍 MA POSITION / ADRESSE DE LIVRAISON:');
+      print('   Adresse complète: ${currentLocation.value}');
+      print('   Ville extraite: ${city ?? "NON DÉTECTÉE"}');
+      print('   Latitude: ${clientLatitude ?? "NON DÉFINIE"}');
+      print('   Longitude: ${clientLongitude ?? "NON DÉFINIE"}');
+      print('');
+
       final response = await DeliveryService.getDeliveryPartnersWithPricing(
         productId: productId,
         latitude: clientLatitude,
         longitude: clientLongitude,
+        city: city,
       );
+
+      print('📦 RÉPONSE API:');
+      print('   Success: ${response.success}');
+      print('   Message: ${response.message}');
 
       if (response.success && response.data != null) {
         final partners = response.data!['partners'] as List<dynamic>? ?? [];
+        print('   Nombre de partenaires reçus: ${partners.length}');
+        print('');
+
+        if (partners.isEmpty) {
+          print('⚠️ AUCUN PARTENAIRE TROUVÉ');
+          print('   Raison possible: Aucun partenaire ne dessert la ville "$city"');
+        } else {
+          print('✅ PARTENAIRES TROUVÉS:');
+          print('───────────────────────────────────────────────────────────────');
+          for (var i = 0; i < partners.length; i++) {
+            final partner = partners[i] as Map<String, dynamic>;
+            print('   ${i + 1}. ${partner['company_name']}');
+            print('      └─ Zone: ${partner['zone_name']}');
+            print('      └─ Ville zone: ${partner['city'] ?? "NON DÉFINIE"}');
+            print('      └─ Prix livraison: ${partner['delivery_price']} FCFA');
+            print('      └─ Distance: ${partner['distance_km'] ?? "N/A"} km');
+            print('      └─ Type tarification: ${partner['pricing_type']}');
+
+            // Comparaison ville
+            final partnerCity = partner['city']?.toString().toLowerCase();
+            final myCity = city?.toLowerCase();
+            if (partnerCity != null && myCity != null) {
+              final match = partnerCity.contains(myCity) || myCity.contains(partnerCity);
+              print('      └─ Correspondance ville: ${match ? "✅ OUI" : "❌ NON"} (${partnerCity} vs ${myCity})');
+            }
+            print('');
+          }
+        }
+
         deliveryPartners.value = partners.cast<Map<String, dynamic>>();
+
+        print('📊 RÉSUMÉ:');
+        print('   Ville recherchée: ${city ?? "AUCUNE"}');
+        print('   Partenaires affichés: ${deliveryPartners.length}');
+      } else {
+        print('❌ ERREUR API: ${response.message}');
       }
+
+      print('═══════════════════════════════════════════════════════════════');
+      print('');
     } catch (e) {
+      print('');
+      print('❌ EXCEPTION lors du chargement des partenaires:');
+      print('   Erreur: $e');
+      print('');
+
       Get.snackbar(
         'Erreur',
         'Impossible de charger les partenaires de livraison',
@@ -363,7 +527,7 @@ class ProductController extends GetxController {
         }
 
         // Naviguer vers chatdetail avec les infos de conversation
-        Get.toNamed(
+        await Get.toNamed(
           '/chatdetail',
           arguments: {
             'id': conversation['id'] ?? conversation['conversation_id'] ?? '',
@@ -373,6 +537,10 @@ class ProductController extends GetxController {
             'product': product,
           },
         );
+
+        // Rafraîchir la liste des conversations après être revenu du chat
+        // pour que la nouvelle conversation apparaisse instantanément
+        _refreshChatList();
       } else {
         Get.snackbar(
           'Erreur',
@@ -388,6 +556,18 @@ class ProductController extends GetxController {
       );
     } finally {
       isStartingConversation.value = false;
+    }
+  }
+
+  /// Rafraîchir la liste des conversations dans le ChatController
+  void _refreshChatList() {
+    try {
+      // Essayer de trouver le ChatController et rafraîchir les conversations
+      final chatController = Get.find<ChatController>();
+      chatController.refreshConversations();
+    } catch (e) {
+      // Le ChatController n'est pas chargé, ce n'est pas grave
+      // La conversation apparaîtra au prochain chargement de la page chat
     }
   }
 }

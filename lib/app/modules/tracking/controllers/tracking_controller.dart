@@ -60,14 +60,30 @@ class TrackingController extends GetxController {
 
       if (response.success && response.data != null) {
         final ordersList = response.data!['orders'] as List? ?? [];
-        shipments.value = ordersList
+        final newShipments = ordersList
             .map((o) => _mapOrderToShipment(Map<String, dynamic>.from(o)))
             .where((s) => s != null)
             .cast<Map<String, dynamic>>()
             .toList();
+
+        // Force update pour déclencher la réactivité
+        shipments.value = [];
+        shipments.value = newShipments;
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Impossible de charger les commandes',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
       }
     } catch (e) {
-      // Silently fail
+      Get.snackbar(
+        'Erreur de connexion',
+        'Impossible de rafraîchir les commandes',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
     } finally {
       isLoading.value = false;
     }

@@ -457,6 +457,22 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     });
   }
 
+  String _getPaymentButtonText() {
+    switch (_selectedMethod) {
+      case 'om':
+      case 'momo':
+        return 'Confirmer la recharge';
+      case 'visa':
+        return 'Payer avec VISA';
+      case 'mastercard':
+        return 'Payer avec MasterCard';
+      case 'paypal':
+        return 'Payer avec PayPal';
+      default:
+        return 'Confirmer le paiement';
+    }
+  }
+
   /// Step 2: Formulaire de paiement
   Widget _buildStep2PaymentForm(BuildContext context) {
     return Form(
@@ -533,9 +549,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                       ),
                     )
                   : Text(
-                      _selectedMethod == 'om' || _selectedMethod == 'momo'
-                          ? 'Confirmer la recharge'
-                          : 'Payer avec PayPal',
+                      _getPaymentButtonText(),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

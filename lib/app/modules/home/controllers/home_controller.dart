@@ -29,6 +29,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     'Messages',
     'Portefeuille',
     'Tracking',
+    'My Voice',
     'Profile',
   ];
 

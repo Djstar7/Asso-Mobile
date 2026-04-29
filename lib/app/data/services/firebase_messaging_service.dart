@@ -139,6 +139,28 @@ class FirebaseMessagingService extends GetxService {
   /// Obtient le token FCM
   Future<void> _getFCMToken() async {
     try {
+      // Sur iOS, il faut d'abord s'assurer que le token APNS est disponible
+      if (Platform.isIOS) {
+        print('📱 iOS détecté - Attente du token APNS...');
+        try {
+          final apnsToken = await _firebaseMessaging.getAPNSToken();
+          if (apnsToken != null) {
+            print('✅ Token APNS obtenu: ${apnsToken.substring(0, 20)}...');
+          } else {
+            print('⚠️ Token APNS non disponible, attente de 2 secondes...');
+            await Future.delayed(const Duration(seconds: 2));
+            final retryApnsToken = await _firebaseMessaging.getAPNSToken();
+            if (retryApnsToken != null) {
+              print('✅ Token APNS obtenu après retry');
+            } else {
+              print('⚠️ Token APNS toujours non disponible');
+            }
+          }
+        } catch (apnsError) {
+          print('⚠️ Erreur lors de l\'obtention du token APNS: $apnsError');
+        }
+      }
+
       final token = await _firebaseMessaging.getToken();
       fcmToken.value = token;
 

@@ -96,7 +96,12 @@ class ProfileView extends GetView<ProfileController> {
     final profile = controller.userProfile;
 
     return Container(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+      padding: EdgeInsets.only(
+        left: AppThemeSystem.getHorizontalPadding(context),
+        right: AppThemeSystem.getHorizontalPadding(context),
+        top: MediaQuery.of(context).padding.top + AppThemeSystem.getHorizontalPadding(context),
+        bottom: AppThemeSystem.getHorizontalPadding(context),
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -120,12 +125,24 @@ class ProfileView extends GetView<ProfileController> {
                   color: Colors.white,
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.edit_rounded,
-                  color: Colors.white,
+              GestureDetector(
+                onTap: () {
+                  print('✏️ Edit button tapped!'); // Debug
+                  controller.editProfile();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                onPressed: controller.editProfile,
               ),
             ],
           ),

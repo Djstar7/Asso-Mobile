@@ -1,8 +1,10 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/markdown_bottom_sheet.dart';
 import '../controllers/welcomer_controller.dart';
 
 class WelcomerView extends GetView<WelcomerController> {
@@ -115,6 +117,56 @@ class WelcomerView extends GetView<WelcomerController> {
                       },
                       style: context.textStyle(FontSizeType.body1),
                     ),
+
+                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+
+                    // Checkbox d'acceptation de la Politique de Confidentialité
+                    Obx(() => Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: controller.termsAccepted.value,
+                          onChanged: (value) {
+                            controller.termsAccepted.value = value ?? false;
+                          },
+                          activeColor: AppThemeSystem.primaryColor,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: RichText(
+                              text: TextSpan(
+                                style: context.textStyle(
+                                  FontSizeType.caption,
+                                  color: context.secondaryTextColor,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'En continuant, vous acceptez notre '),
+                                  TextSpan(
+                                    text: 'Politique de Confidentialité',
+                                    style: TextStyle(
+                                      color: AppThemeSystem.primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        MarkdownBottomSheet.show(
+                                          context: context,
+                                          title: 'Politique de Confidentialité',
+                                          assetPath: 'Politique de confidentialité.md',
+                                        );
+                                      },
+                                  ),
+                                  const TextSpan(text: '.'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )),
 
                     SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 

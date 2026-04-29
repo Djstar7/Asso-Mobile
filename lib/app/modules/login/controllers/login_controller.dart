@@ -85,33 +85,129 @@ class LoginController extends GetxController {
 
       if (response.success) {
         final isNewUser = response.data?['is_new_user'] ?? false;
+        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
+
         developer.log(
           'OTP sent successfully',
           name: 'LoginController',
-          error: 'Is new user: $isNewUser',
+          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
         );
 
-        Get.snackbar(
-          'Code envoyé',
-          'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        // Check if OTP bypass is enabled for this phone number
+        if (bypassEnabled) {
+          developer.log(
+            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
+            name: 'LoginController',
+            error: 'Phone: ${fullPhoneNumber.value}',
+          );
 
-        await Future.delayed(const Duration(milliseconds: 500));
+          Get.snackbar(
+            'Connexion en cours',
+            'Bienvenue',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
 
-        developer.log('Navigating to OTP screen', name: 'LoginController');
-        Get.toNamed(
-          Routes.OTP,
-          arguments: {
-            'phoneNumber': fullPhoneNumber.value,
-            'isNewUser': isNewUser,
-          },
-        );
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Automatically verify with a dummy OTP code
+          developer.log(
+            'Auto-verifying OTP with bypass',
+            name: 'LoginController',
+            error: 'Phone: ${fullPhoneNumber.value}',
+          );
+
+          final verifyResponse = await AuthService.verifyOtp(
+            fullPhone: fullPhoneNumber.value,
+            otpCode: '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
+          );
+
+          developer.log(
+            'Auto-verify response',
+            name: 'LoginController',
+            error: 'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
+          );
+
+          if (verifyResponse.success) {
+            developer.log(
+              '✅ BYPASS LOGIN SUCCESS',
+              name: 'LoginController',
+              error: 'Navigating to home...',
+            );
+
+            Get.snackbar(
+              'Succès',
+              'Connexion réussie via WhatsApp',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.primary,
+              colorText: Get.theme.colorScheme.onPrimary,
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            // Navigate based on profile completeness
+            final isNew = verifyResponse.data?['is_new_user'] ?? false;
+            developer.log(
+              'Bypass navigation decision',
+              name: 'LoginController',
+              error: 'Is new user: $isNew',
+            );
+
+            if (isNew) {
+              developer.log('Navigating to PREFERENCES (bypass)', name: 'LoginController');
+              Get.offAllNamed(Routes.PREFERENCES);
+            } else {
+              developer.log('Navigating to HOME (bypass)', name: 'LoginController');
+              Get.offAllNamed(Routes.HOME);
+            }
+          } else {
+            developer.log(
+              '❌ Bypass auto-verify failed',
+              name: 'LoginController',
+              error: verifyResponse.message,
+            );
+            Get.snackbar(
+              'Erreur',
+              'Échec de la connexion automatique: ${verifyResponse.message}',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.error,
+              colorText: Get.theme.colorScheme.onError,
+              duration: const Duration(seconds: 3),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+          }
+        } else {
+          // Normal flow - show OTP screen
+          Get.snackbar(
+            'Code envoyé',
+            'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          developer.log('Navigating to OTP screen', name: 'LoginController');
+          Get.toNamed(
+            Routes.OTP,
+            arguments: {
+              'phoneNumber': fullPhoneNumber.value,
+              'isNewUser': isNewUser,
+            },
+          );
+        }
       } else {
         developer.log(
           'OTP send failed',

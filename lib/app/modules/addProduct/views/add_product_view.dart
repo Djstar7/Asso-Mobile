@@ -85,7 +85,10 @@ class AddProductView extends GetView<AddProductController> {
           children: [
             // Section Images
             _buildImagesSection(context),
-            SizedBox(height: context.sectionSpacing),
+            SizedBox(height: context.elementSpacing),
+            // Bouton d'analyse AI
+            // _buildAIAnalysisButton(context),
+            // SizedBox(height: context.sectionSpacing),
             // Nom du produit
             _buildNameSection(context),
             SizedBox(height: context.sectionSpacing),
@@ -187,6 +190,64 @@ class AddProductView extends GetView<AddProductController> {
         }),
       ],
     );
+  }
+
+  /// Bouton d'analyse AI avec Gemini
+  Widget _buildAIAnalysisButton(BuildContext context) {
+    return Obx(() {
+      final hasImages = controller.productImages.isNotEmpty;
+      final isAnalyzing = controller.isAnalyzing.value;
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        child: ElevatedButton.icon(
+          onPressed: hasImages && !isAnalyzing
+              ? controller.analyzeProductImage
+              : null,
+          icon: isAnalyzing
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      hasImages ? Colors.white : Colors.grey,
+                    ),
+                  ),
+                )
+              : Icon(
+                  Icons.auto_awesome,
+                  size: 20,
+                  color: hasImages ? Colors.white : Colors.grey,
+                ),
+          label: Text(
+            isAnalyzing
+                ? 'Analyse en cours...'
+                : hasImages
+                    ? 'Analyser avec l\'IA'
+                    : 'Ajoutez une image pour analyser',
+            style: context.body1.copyWith(
+              color: hasImages ? Colors.white : Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: hasImages
+                ? AppThemeSystem.primaryColor
+                : AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(
+              horizontal: context.horizontalPadding,
+              vertical: context.verticalPadding,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+            ),
+            elevation: hasImages ? 2 : 0,
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildAddImageButton(
@@ -1064,7 +1125,9 @@ class AddProductView extends GetView<AddProductController> {
       final selectedWeight = controller.selectedWeightType.value;
       final weightLabel = selectedWeight != null
           ? (selectedWeight == 'custom'
-              ? '${controller.weightKgController.text.trim()} KG'
+              ? controller.customWeightValue.value.isNotEmpty
+                  ? '${controller.customWeightValue.value} kg'
+                  : 'Saisir le poids personnalisé'
               : '$selectedWeight (${controller.weightTypes[selectedWeight]})')
           : null;
 

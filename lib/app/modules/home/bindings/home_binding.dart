@@ -5,6 +5,7 @@ import '../../chat/controllers/chat_controller.dart';
 import '../../tracking/controllers/tracking_controller.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../wallet/controllers/wallet_controller.dart';
+import '../../myVoice/controllers/my_voice_controller.dart';
 import '../../../data/services/wallet_service.dart';
 
 class HomeBinding extends Bindings {
@@ -39,6 +40,12 @@ class HomeBinding extends Bindings {
       permanent: true,
     );
     print('  └─ ✅ TrackingController created (permanent)');
+
+    Get.put<MyVoiceController>(
+      MyVoiceController(),
+      permanent: true,
+    );
+    print('  └─ ✅ MyVoiceController created (permanent)');
 
     Get.put<ProfileController>(
       ProfileController(),

@@ -11,11 +11,15 @@ class WelcomerController extends GetxController {
   final RxString rawPhone = ''.obs;
   final RxBool isLoading = false.obs;
   final RxBool isPhoneValid = false.obs;
+  final RxBool termsAccepted = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    developer.log('========== WELCOMER CONTROLLER INIT ==========', name: 'WelcomerController');
+    developer.log(
+      '========== WELCOMER CONTROLLER INIT ==========',
+      name: 'WelcomerController',
+    );
     ever(rawPhone, (_) => _validatePhone());
   }
 
@@ -61,6 +65,21 @@ class WelcomerController extends GetxController {
       return;
     }
 
+    if (!termsAccepted.value) {
+      developer.log('Terms not accepted', name: 'WelcomerController');
+      Get.snackbar(
+        'Politique requise',
+        'Veuillez accepter notre Politique de Confidentialité pour continuer',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -68,7 +87,8 @@ class WelcomerController extends GetxController {
       developer.log(
         'Sending OTP via AuthService',
         name: 'WelcomerController',
-        error: 'Raw phone: ${rawPhone.value}, Country code: ${countryCode.value}',
+        error:
+            'Raw phone: ${rawPhone.value}, Country code: ${countryCode.value}',
       );
 
       final response = await AuthService.sendOtp(
@@ -84,33 +104,137 @@ class WelcomerController extends GetxController {
 
       if (response.success) {
         final isNewUser = response.data?['is_new_user'] ?? true;
+        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
+
         developer.log(
           'OTP sent successfully for registration',
           name: 'WelcomerController',
-          error: 'Is new user: $isNewUser',
+          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
         );
 
-        Get.snackbar(
-          'Code envoyé',
-          'Un code de vérification a été envoyé au ${phoneNumber.value}',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        // Check if OTP bypass is enabled for this phone number
+        if (bypassEnabled) {
+          developer.log(
+            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
+            name: 'WelcomerController',
+            error: 'Phone: ${phoneNumber.value}',
+          );
 
-        await Future.delayed(const Duration(milliseconds: 500));
+          Get.snackbar(
+            'Connexion en cours',
+            'Bienvenue',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
 
-        developer.log('Navigating to OTP screen', name: 'WelcomerController');
-        Get.toNamed(
-          Routes.OTP,
-          arguments: {
-            'phoneNumber': phoneNumber.value,
-            'isNewUser': isNewUser,
-          },
-        );
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Automatically verify with a dummy OTP code
+          developer.log(
+            'Auto-verifying OTP with bypass',
+            name: 'WelcomerController',
+            error: 'Phone: ${phoneNumber.value}',
+          );
+
+          final verifyResponse = await AuthService.verifyOtp(
+            fullPhone: phoneNumber.value,
+            otpCode:
+                '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
+          );
+
+          developer.log(
+            'Auto-verify response',
+            name: 'WelcomerController',
+            error:
+                'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
+          );
+
+          if (verifyResponse.success) {
+            developer.log(
+              '✅ BYPASS LOGIN SUCCESS',
+              name: 'WelcomerController',
+              error: 'Navigating to home...',
+            );
+
+            Get.snackbar(
+              'Succès',
+              'Connexion réussie via WhatsApp',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.primary,
+              colorText: Get.theme.colorScheme.onPrimary,
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            // Navigate based on profile completeness
+            final isNew = verifyResponse.data?['is_new_user'] ?? false;
+            developer.log(
+              'Bypass navigation decision',
+              name: 'WelcomerController',
+              error: 'Is new user: $isNew',
+            );
+
+            if (isNew) {
+              developer.log(
+                'Navigating to PREFERENCES (bypass)',
+                name: 'WelcomerController',
+              );
+              Get.offAllNamed(Routes.PREFERENCES);
+            } else {
+              developer.log(
+                'Navigating to HOME (bypass)',
+                name: 'WelcomerController',
+              );
+              Get.offAllNamed(Routes.HOME);
+            }
+          } else {
+            developer.log(
+              '❌ Bypass auto-verify failed',
+              name: 'WelcomerController',
+              error: verifyResponse.message,
+            );
+            Get.snackbar(
+              'Erreur',
+              'Échec de la connexion automatique: ${verifyResponse.message}',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.error,
+              colorText: Get.theme.colorScheme.onError,
+              duration: const Duration(seconds: 3),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+          }
+        } else {
+          // Normal flow - show OTP screen
+          Get.snackbar(
+            'Code envoyé',
+            'Un code de vérification a été envoyé au ${phoneNumber.value}',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          developer.log('Navigating to OTP screen', name: 'WelcomerController');
+          Get.toNamed(
+            Routes.OTP,
+            arguments: {
+              'phoneNumber': phoneNumber.value,
+              'isNewUser': isNewUser,
+            },
+          );
+        }
       } else {
         developer.log(
           'OTP send failed',
@@ -173,7 +297,10 @@ class WelcomerController extends GetxController {
   }
 
   void continueAsGuest() {
-    developer.log('Continue as guest - going to HOME', name: 'WelcomerController');
+    developer.log(
+      'Continue as guest - going to HOME',
+      name: 'WelcomerController',
+    );
     Get.offAllNamed(Routes.HOME);
   }
 

@@ -258,6 +258,19 @@ class FcmService extends GetxService {
   /// Récupérer le token FCM
   Future<String?> _getToken() async {
     try {
+      // Sur iOS, il faut d'abord s'assurer que le token APNS est disponible
+      try {
+        final apnsToken = await _firebaseMessaging.getAPNSToken();
+        if (apnsToken != null) {
+          print('[FCM] ✅ APNS token available');
+        } else {
+          print('[FCM] ⚠️ APNS token not available, waiting...');
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      } catch (apnsError) {
+        print('[FCM] ⚠️ Error getting APNS token (may be Android): $apnsError');
+      }
+
       final token = await _firebaseMessaging.getToken();
       print('[FCM] FCM Token: $token');
 

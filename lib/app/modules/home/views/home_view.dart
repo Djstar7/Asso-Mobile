@@ -12,6 +12,7 @@ import '../../chat/views/chat_view.dart';
 import '../../tracking/views/tracking_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../wallet/views/wallet_view.dart';
+import '../../myVoice/views/my_voice_view.dart';
 import '../../notification/controllers/notification_controller.dart';
 import '../controllers/home_controller.dart';
 
@@ -146,18 +147,6 @@ class HomeView extends GetView<HomeController> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Search icon
-                          _buildCompactIconButton(
-                            context: context,
-                            icon: Icon(
-                              Icons.search_rounded,
-                              color: AppThemeSystem.getPrimaryTextColor(context),
-                            ),
-                            onPressed: () {
-                              Get.toNamed('/search');
-                            },
-                          ),
-
                           // Camera icon for image search - hide on very small screens
                           if (MediaQuery.of(context).size.width > 360)
                             _buildCompactIconButton(
@@ -222,7 +211,7 @@ class HomeView extends GetView<HomeController> {
               ),
               bottom: PreferredSize(
                 preferredSize: Size.fromHeight(
-                  deviceType == DeviceType.mobile ? 72 : 80,
+                  deviceType == DeviceType.mobile ? 120 : 128,
                 ),
                 child: Container(
                   decoration: BoxDecoration(
@@ -238,11 +227,71 @@ class HomeView extends GetView<HomeController> {
                       ),
                     ),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
-                  ),
-                  child: controller.isSafe
-                      ? TabBar(
+                  child: Column(
+                    children: [
+                      // Search Bar
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppThemeSystem.getHorizontalPadding(context),
+                          vertical: 8,
+                        ),
+                        child: GestureDetector(
+                          onTap: () => Get.toNamed('/search'),
+                          child: Container(
+                            height: deviceType == DeviceType.mobile ? 44 : 48,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppThemeSystem.grey800.withValues(alpha: 0.3)
+                                  : AppThemeSystem.grey100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppThemeSystem.grey700.withValues(alpha: 0.5)
+                                    : AppThemeSystem.grey300.withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search_rounded,
+                                  color: isDark
+                                      ? AppThemeSystem.grey400
+                                      : AppThemeSystem.grey600,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Rechercher des produits...',
+                                    style: context.textStyle(FontSizeType.caption).copyWith(
+                                      color: isDark
+                                          ? AppThemeSystem.grey400
+                                          : AppThemeSystem.grey600,
+                                      fontSize: deviceType == DeviceType.mobile ? 14 : 15,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.tune_rounded,
+                                  color: isDark
+                                      ? AppThemeSystem.grey400
+                                      : AppThemeSystem.grey600,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // TabBar
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
+                        ),
+                        child: controller.isSafe
+                            ? TabBar(
                           controller: controller.tabController,
                           onTap: controller.handleTabTap,
                           indicatorColor: AppThemeSystem.primaryColor,
@@ -263,40 +312,43 @@ class HomeView extends GetView<HomeController> {
                           tabs: [
                             // Accueil
                             Tab(
-                              height: deviceType == DeviceType.mobile ? 64 : 72,
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.home_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                              text: controller.tabNames[0],
                             ),
                             // Messages
                             Tab(
-                              height: deviceType == DeviceType.mobile ? 64 : 72,
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.chat_bubble_outline_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                              text: controller.tabNames[1],
                             ),
                             // Portefeuille
                             Tab(
-                              height: deviceType == DeviceType.mobile ? 64 : 72,
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.account_balance_wallet_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                              text: controller.tabNames[2],
                             ),
                             // Tracking
                             Tab(
-                              height: deviceType == DeviceType.mobile ? 64 : 72,
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.local_shipping_outlined, size: deviceType == DeviceType.mobile ? 24 : 28),
-                              text: controller.tabNames[3],
+                            ),
+                            // My Voice
+                            Tab(
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
+                              icon: Icon(Icons.campaign_outlined, size: deviceType == DeviceType.mobile ? 24 : 28),
                             ),
                             // Profile
                             Tab(
-                              height: deviceType == DeviceType.mobile ? 64 : 72,
+                              height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.person_outline_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                              text: controller.tabNames[4],
                             ),
                           ],
                         )
                       : SizedBox(
-                          height: deviceType == DeviceType.mobile ? 72 : 80,
+                          height: deviceType == DeviceType.mobile ? 48 : 56,
                           child: const Center(child: CircularProgressIndicator()),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -310,6 +362,7 @@ class HomeView extends GetView<HomeController> {
                   ChatView(),
                   WalletView(),
                   TrackingView(),
+                  MyVoiceView(),
                   ProfileView(),
                 ],
               )
@@ -527,9 +580,18 @@ class HomeView extends GetView<HomeController> {
                 _buildSectionHeader(context, 'Modes'),
                 _buildDrawerItem(
                   context: context,
+                  icon: Icons.flight_takeoff_rounded,
+                  title: 'Mode Diaspora',
+                  badge: 'Nouveau',
+                  onTap: () {
+                    Get.back();
+                    Get.toNamed('/diaspo');
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
                   icon: Icons.delivery_dining_rounded,
                   title: 'Mode Livreur',
-                  badge: 'Nouveau',
                   onTap: () {
                     Get.back();
                     AuthGuard.navigateIfAuthenticated(
@@ -1092,6 +1154,11 @@ class HomeItemView extends GetView<HomeController> {
               child: _buildBannerCarousel(context),
             ),
 
+            // DIASPO EXCHANGE Promo Card
+            SliverToBoxAdapter(
+              child: _buildDiaspoPromoCard(context),
+            ),
+
             // Catégories horizontales
             SliverToBoxAdapter(
               child: _buildCategories(context),
@@ -1470,6 +1537,120 @@ class HomeItemView extends GetView<HomeController> {
             : const Color(0xFF666666),
       );
     }
+  }
+
+  /// DIASPO EXCHANGE Promo Card
+  Widget _buildDiaspoPromoCard(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+        vertical: 16,
+      ),
+      child: GestureDetector(
+        onTap: () => Get.toNamed('/diaspo'),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF1E88E5),
+                const Color(0xFF1565C0),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1E88E5).withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Icon and badge
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.flight_takeoff_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'DIASPO EXCHANGE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'NEW',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Vendez ou achetez des kilos de bagage pour vos envois internationaux',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white.withValues(alpha: 0.8),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildBannerCarousel(BuildContext context) {

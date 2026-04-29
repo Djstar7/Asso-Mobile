@@ -193,27 +193,6 @@ class LoginView extends GetView<LoginController> {
           ),
         ),
 
-        SizedBox(height: context.elementSpacing * 0.5),
-
-        // Info
-        Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              size: AppThemeSystem.getFontSize(context, FontSizeType.caption),
-              color: context.secondaryTextColor,
-            ),
-            SizedBox(width: context.elementSpacing * 0.5),
-            Expanded(
-              child: Text(
-                'Nous vous enverrons un code de vérification par SMS',
-                style: context.caption.copyWith(
-                  color: context.secondaryTextColor,
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }

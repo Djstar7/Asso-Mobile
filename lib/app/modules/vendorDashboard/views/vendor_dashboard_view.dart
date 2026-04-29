@@ -459,18 +459,23 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           }
         }),
         SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-        _buildActionButton(
-          context,
-          icon: Icons.list_alt,
-          title: 'Gérer les commandes',
-          subtitle: 'Consultez vos commandes',
-          onTap: () {
-            Get.to(
-              () => const OrderManagementView(),
-              binding: OrderManagementBinding(),
-            );
-          },
-        ),
+        Obx(() {
+          return _buildActionButton(
+            context,
+            icon: Icons.list_alt,
+            title: 'Gérer les commandes',
+            subtitle: 'Consultez vos commandes',
+            badge: controller.pendingOrders.value,
+            onTap: () async {
+              await Get.to(
+                () => const OrderManagementView(),
+                binding: OrderManagementBinding(),
+              );
+              // Rafraîchir le dashboard au retour
+              await controller.refreshData();
+            },
+          );
+        }),
         SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
         _buildActionButton(
           context,
@@ -528,7 +533,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   ),
                 ),
                 // Badge
-                if (badge != null && badge > 0)
+                if (badge != null)
                   Positioned(
                     top: -2,
                     right: 2,

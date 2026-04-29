@@ -28,8 +28,14 @@ class WebSocketService extends GetxService {
 
   // Configuration Reverb (Laravel)
   static const String appKey = '9r0idxmfd6d9lc9e055h';
-  static const String host = '10.193.76.109';
+
+  // Local (commenté)
+  static const String host = '10.104.185.129';
   static const int wsPort = 8080;
+
+  // Production
+  // static const String host = 'asso-dashboard.sbs';
+  // static const int wsPort = 8085;
 
   // Channels actifs
   final Set<String> _subscribedChannels = {};
@@ -50,8 +56,10 @@ class WebSocketService extends GetxService {
       }
 
       // Connexion WebSocket Pusher/Reverb
+      // Local: ws://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0
+      // Production: wss://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0
       final uri = Uri.parse(
-        'ws://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0',
+        'wss://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0',
       );
 
       print('🔌 [WebSocket] Attempting to connect to: $uri');

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../data/providers/storage_service.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
 import 'map_selection_view.dart';
 
@@ -174,6 +178,9 @@ class ProductView extends GetView<ProductController> {
                 // Description
                 _buildDescriptionSection(context, product),
 
+                // Caractéristiques du produit (stock à gauche, poids à droite)
+                _buildProductCharacteristics(context, product),
+
                 Divider(height: 32),
 
                 // Info vendeur
@@ -288,6 +295,149 @@ class ProductView extends GetView<ProductController> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProductCharacteristics(BuildContext context, Map<String, dynamic> product) {
+    // Extraire le stock
+    final stock = product['stock'];
+    final stockValue = stock is int ? stock : int.tryParse(stock.toString()) ?? 0;
+    final hasStock = stockValue > 0;
+
+    // Extraire le poids (PRIORITÉ au poids personnalisé, sinon weight_category)
+    final weightCategory = product['weight_category']?.toString();
+    final customWeight = product['weight']?.toString();
+
+    String? weightDisplay;
+
+    // PRIORITÉ 1 : Poids personnalisé (weight)
+    if (customWeight != null && customWeight.isNotEmpty && customWeight != '0' && customWeight != 'null') {
+      // Utiliser le poids personnalisé
+      weightDisplay = customWeight.contains('kg') || customWeight.contains('KG')
+          ? customWeight
+          : '$customWeight kg';
+    }
+    // PRIORITÉ 2 : Catégorie de poids prédéfinie (weight_category)
+    else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
+      // Utiliser la catégorie de poids
+      final weightMap = {
+        'X-small': '~5 kg',
+        '30 Deep': '~30 kg',
+        '50 Deep': '~50 kg',
+        '60 Deep': '~60 kg',
+        'Rainbow XL': '~100 kg',
+        'Pallet': '~500 kg',
+      };
+      weightDisplay = weightMap[weightCategory] ?? weightCategory;
+    }
+
+    final hasWeight = weightDisplay != null;
+
+    // Si aucune caractéristique n'est disponible, ne rien afficher
+    if (!hasStock && !hasWeight) {
+      return SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+        vertical: 16,
+      ),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppThemeSystem.getBorderColor(context),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Stock à gauche
+            if (hasStock)
+              Expanded(
+                child: _buildCharacteristicItem(
+                  context: context,
+                  icon: Icons.inventory_2_rounded,
+                  label: 'Stock disponible',
+                  value: '$stockValue unité${stockValue > 1 ? "s" : ""}',
+                ),
+              ),
+
+            // Séparateur si les deux sont présents
+            if (hasStock && hasWeight)
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                width: 1,
+                height: 50,
+                color: AppThemeSystem.getBorderColor(context),
+              ),
+
+            // Poids à droite
+            if (hasWeight)
+              Expanded(
+                child: _buildCharacteristicItem(
+                  context: context,
+                  icon: Icons.scale_rounded,
+                  label: 'Poids',
+                  value: weightDisplay,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharacteristicItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String? value,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: AppThemeSystem.primaryColor,
+            size: 22,
+          ),
+        ),
+        SizedBox(width: 12),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  color: AppThemeSystem.grey600,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value ?? '',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -730,6 +880,12 @@ class ProductView extends GetView<ProductController> {
   Widget _buildBottomBar(BuildContext context, Map<String, dynamic> product) {
     final isDark = AppThemeSystem.isDarkMode(context);
 
+    // Vérifier si c'est le produit de l'utilisateur connecté
+    final currentUser = StorageService.getUser();
+    final seller = product['seller'] as Map<String, dynamic>?;
+    final sellerId = int.tryParse(seller?['id']?.toString() ?? '');
+    final isMyProduct = currentUser != null && sellerId != null && currentUser.id == sellerId;
+
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -743,66 +899,15 @@ class ProductView extends GetView<ProductController> {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            // Bouton Message
-            Expanded(
-              child: Obx(() => OutlinedButton.icon(
-                onPressed: controller.isStartingConversation.value
-                    ? null
-                    : () {
-                        AuthGuard.requireAuth(
-                          context,
-                          onAuthenticated: () {
-                            controller.openConversationWithSeller(
-                              product: product,
-                            );
-                          },
-                          featureName: 'la messagerie',
-                        );
-                      },
-                icon: controller.isStartingConversation.value
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppThemeSystem.primaryColor,
-                          ),
-                        ),
-                      )
-                    : Icon(Icons.chat_bubble_outline_rounded),
-                label: Text(controller.isStartingConversation.value
-                    ? 'Ouverture...'
-                    : 'Message'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemeSystem.primaryColor,
-                  side: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              )),
-            ),
-            SizedBox(width: 12),
-            // Bouton Commander
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
+        child: isMyProduct
+            ? // Bouton pour gérer mes produits
+            ElevatedButton.icon(
                 onPressed: () {
-                  AuthGuard.requireAuth(
-                    context,
-                    onAuthenticated: () {
-                      _showOrderDialog(context, product);
-                    },
-                    featureName: 'passer une commande',
-                  );
+                  Get.toNamed(Routes.PRODUCT_MANAGEMENT);
                 },
-                icon: Icon(Icons.shopping_cart_rounded, color: Colors.white),
+                icon: Icon(Icons.edit_rounded, color: Colors.white),
                 label: Text(
-                  'Commander',
+                  'Gérer mes produits',
                   style: context.textStyle(
                     FontSizeType.body1,
                     fontWeight: FontWeight.bold,
@@ -817,10 +922,85 @@ class ProductView extends GetView<ProductController> {
                   ),
                   elevation: 4,
                 ),
+              )
+            : Row(
+                children: [
+                  // Bouton Message
+                  Expanded(
+                    child: Obx(() => OutlinedButton.icon(
+                      onPressed: controller.isStartingConversation.value
+                          ? null
+                          : () {
+                              AuthGuard.requireAuth(
+                                context,
+                                onAuthenticated: () {
+                                  controller.openConversationWithSeller(
+                                    product: product,
+                                  );
+                                },
+                                featureName: 'la messagerie',
+                              );
+                            },
+                      icon: controller.isStartingConversation.value
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppThemeSystem.primaryColor,
+                                ),
+                              ),
+                            )
+                          : Icon(Icons.chat_bubble_outline_rounded),
+                      label: Text(controller.isStartingConversation.value
+                          ? 'Ouverture...'
+                          : 'Message'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppThemeSystem.primaryColor,
+                        side: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )),
+                  ),
+                  SizedBox(width: 12),
+                  // Bouton Commander
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        AuthGuard.requireAuth(
+                          context,
+                          onAuthenticated: () {
+                            _showOrderDialog(context, product);
+                          },
+                          featureName: 'passer une commande',
+                        );
+                      },
+                      icon: Icon(Icons.shopping_cart_rounded, color: Colors.white),
+                      label: Text(
+                        'Commander',
+                        style: context.textStyle(
+                          FontSizeType.body1,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppThemeSystem.primaryColor,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1194,22 +1374,36 @@ class ProductView extends GetView<ProductController> {
       return;
     }
 
-    // Note: In a real implementation, you would use url_launcher package
-    // For now, just show a message
-    Get.snackbar(
-      'Google Maps',
-      'Ouverture de Google Maps à la position: $lat, $lng',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: Duration(seconds: 3),
-      backgroundColor: AppThemeSystem.successColor,
-      colorText: Colors.white,
-    );
+    // Ouvrir Google Maps avec les coordonnées
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
 
-    // TODO: Implement actual Google Maps opening with url_launcher
-    // final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
-    // if (await canLaunchUrl(Uri.parse(url))) {
-    //   await launchUrl(Uri.parse(url));
-    // }
+    try {
+      final canLaunch = await canLaunchUrl(url);
+      if (canLaunch) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible d\'ouvrir Google Maps',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.errorColor,
+          colorText: Colors.white,
+          duration: Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue lors de l\'ouverture de Google Maps',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+    }
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
@@ -1309,55 +1503,84 @@ class ProductView extends GetView<ProductController> {
                     SizedBox(height: 20),
 
                     // Adresse de livraison
-                    Obx(() => InkWell(
-                      onTap: () => _showChangeAddressDialog(context),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                    Obx(() {
+                      final isLoading = controller.isLoadingLocation.value || controller.isLoadingPartners.value;
+
+                      return Opacity(
+                        opacity: isLoading ? 0.6 : 1.0,
+                        child: InkWell(
+                          onTap: isLoading ? null : () => _showChangeAddressDialog(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isLoading
+                                  ? AppThemeSystem.grey200
+                                  : AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isLoading
+                                    ? AppThemeSystem.grey400
+                                    : AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isLoading
+                                        ? AppThemeSystem.grey300
+                                        : AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: controller.isLoadingLocation.value
+                                      ? SizedBox(
+                                          width: 20, height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.location_on_rounded,
+                                          color: isLoading ? AppThemeSystem.grey600 : AppThemeSystem.primaryColor,
+                                          size: 20
+                                        ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Adresse de livraison',
+                                        style: context.textStyle(
+                                          FontSizeType.caption,
+                                          color: isLoading ? AppThemeSystem.grey500 : AppThemeSystem.grey600
+                                        )
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        controller.currentLocation.value,
+                                        style: context.textStyle(
+                                          FontSizeType.body2,
+                                          fontWeight: FontWeight.w600,
+                                          color: isLoading ? AppThemeSystem.grey700 : null,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (!isLoading)
+                                  Icon(Icons.edit_outlined, color: AppThemeSystem.primaryColor, size: 20),
+                              ],
+                            ),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: controller.isLoadingLocation.value
-                                  ? SizedBox(
-                                      width: 20, height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
-                                      ),
-                                    )
-                                  : Icon(Icons.location_on_rounded, color: AppThemeSystem.primaryColor, size: 20),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Adresse de livraison',
-                                    style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
-                                  SizedBox(height: 4),
-                                  Text(controller.currentLocation.value,
-                                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
-                                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                                ],
-                              ),
-                            ),
-                            if (!controller.isLoadingLocation.value)
-                              Icon(Icons.edit_outlined, color: AppThemeSystem.primaryColor, size: 20),
-                          ],
-                        ),
-                      ),
-                    )),
+                      );
+                    }),
 
                     SizedBox(height: 20),
 
@@ -1366,7 +1589,7 @@ class ProductView extends GetView<ProductController> {
                       'Choisir un partenaire de livraison',
                       style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 16),
 
                     Obx(() {
                       if (controller.isLoadingPartners.value) {
@@ -1396,63 +1619,250 @@ class ProductView extends GetView<ProductController> {
                             border: Border.all(color: AppThemeSystem.getBorderColor(context)),
                           ),
                           child: Center(
-                            child: Text('Aucun partenaire de livraison disponible',
-                              style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
+                            child: Text('Aucun partenaire de livraison disponible à ${controller.currentLocation.value}',
+                              style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600, fontWeight: FontWeight.bold)),
                           ),
                         );
                       }
 
-                      return Column(
-                        children: controller.deliveryPartners.map((partner) {
-                          final isSelected = controller.selectedPartner.value?['company_id'] == partner['company_id']
-                              && controller.selectedPartner.value?['zone_id'] == partner['zone_id'];
-                          final price = (partner['delivery_price'] as num?)?.toDouble() ?? 0;
+                      // Carousel horizontal de partenaires
+                      return SizedBox(
+                        height: AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 230 : 250,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: controller.deliveryPartners.length,
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          itemBuilder: (context, index) {
+                            final partner = controller.deliveryPartners[index];
+                            final price = (partner['delivery_price'] as num?)?.toDouble() ?? 0;
+                            final distance = partner['distance_km']?.toString() ?? '';
+                            final logo = partner['company_logo'];
+                            final zoneName = partner['zone_name']?.toString() ?? '';
 
-                          return GestureDetector(
-                            onTap: () {
-                              controller.selectPartner(partner);
-                              controller.withDelivery.value = true;
-                            },
-                            child: Container(
-                              margin: EdgeInsets.only(bottom: 10),
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            // Dimensions responsives
+                            final deviceType = AppThemeSystem.getDeviceType(context);
+                            final cardWidth = deviceType == DeviceType.mobile ? 160.0 : 180.0;
+                            final logoSize = deviceType == DeviceType.mobile ? 60.0 : 70.0;
+                            final cardPadding = AppThemeSystem.getElementSpacing(context);
+                            final borderRadius = AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium);
+
+                            // Wrapper Obx pour réagir aux changements de sélection
+                            return Obx(() {
+                              final isSelected = controller.selectedPartner.value?['company_id'] == partner['company_id']
+                                  && controller.selectedPartner.value?['zone_id'] == partner['zone_id'];
+
+                              return AnimatedContainer(
+                              duration: Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                              width: cardWidth,
+                              margin: EdgeInsets.only(
+                                right: cardPadding,
+                                bottom: 4,
+                                top: 4
+                              ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
+                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.12)
                                     : AppThemeSystem.getSurfaceColor(context),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(borderRadius),
                                 border: Border.all(
                                   color: isSelected
                                       ? AppThemeSystem.primaryColor
                                       : AppThemeSystem.getBorderColor(context),
-                                  width: isSelected ? 2 : 1,
+                                  width: isSelected ? 2.5 : 1,
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  if (isSelected)
-                                    Padding(
-                                      padding: EdgeInsets.only(right: 10),
-                                      child: Icon(Icons.check_circle_rounded, color: AppThemeSystem.primaryColor, size: 22),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      partner['company_name'] ?? 'Partenaire',
-                                      style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600),
-                                    ),
+                                boxShadow: isSelected ? [
+                                  BoxShadow(
+                                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    offset: Offset(0, 4),
                                   ),
-                                  Text(
-                                    '${price.toStringAsFixed(0)} FCFA',
-                                    style: context.textStyle(FontSizeType.body1,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected ? AppThemeSystem.primaryColor : null,
-                                    ),
+                                ] : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        }).toList(),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    controller.selectPartner(partner);
+                                    controller.withDelivery.value = true;
+                                  },
+                                  borderRadius: BorderRadius.circular(borderRadius),
+                                  splashColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                                  highlightColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(cardPadding),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                      // Logo dans un cercle
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Container(
+                                            width: logoSize,
+                                            height: logoSize,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isSelected
+                                                  ? AppThemeSystem.primaryColor.withValues(alpha: 0.15)
+                                                  : AppThemeSystem.grey200,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.3)
+                                                    : Colors.transparent,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: ClipOval(
+                                              child: logo != null && logo.isNotEmpty
+                                                  ? Image.network(
+                                                      logo,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        return Icon(
+                                                          Icons.local_shipping_rounded,
+                                                          size: logoSize * 0.47,
+                                                          color: isSelected
+                                                              ? AppThemeSystem.primaryColor
+                                                              : AppThemeSystem.grey600,
+                                                        );
+                                                      },
+                                                    )
+                                                  : Icon(
+                                                      Icons.local_shipping_rounded,
+                                                      size: logoSize * 0.47,
+                                                      color: isSelected
+                                                          ? AppThemeSystem.primaryColor
+                                                          : AppThemeSystem.grey600,
+                                                    ),
+                                            ),
+                                          ),
+                                          if (isSelected)
+                                            Positioned(
+                                              top: 0,
+                                              right: 0,
+                                              child: Container(
+                                                padding: EdgeInsets.all(2),
+                                                decoration: BoxDecoration(
+                                                  color: AppThemeSystem.primaryColor,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.check,
+                                                  size: 12,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+
+                                      SizedBox(height: 6),
+
+                                      // Nom du partenaire et zone
+                                      Expanded(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 4),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                partner['company_name'] ?? 'Partenaire',
+                                                style: context.textStyle(
+                                                  FontSizeType.body2,
+                                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                                  color: isSelected ? AppThemeSystem.primaryColor : null,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              if (zoneName.isNotEmpty) ...[
+                                                SizedBox(height: 3),
+                                                Flexible(
+                                                  child: Text(
+                                                    zoneName,
+                                                    style: context.textStyle(
+                                                      FontSizeType.caption,
+                                                      color: isSelected
+                                                          ? AppThemeSystem.primaryColor.withValues(alpha: 0.8)
+                                                          : AppThemeSystem.grey600,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                      SizedBox(height: 6),
+
+                                      // Prix
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: cardPadding * 0.83,
+                                          vertical: cardPadding * 0.42
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? AppThemeSystem.primaryColor
+                                              : AppThemeSystem.grey100,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${price.toStringAsFixed(0)} F',
+                                          style: context.textStyle(
+                                            FontSizeType.body2,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected ? Colors.white : AppThemeSystem.grey800,
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Distance (si disponible)
+                                      if (distance.isNotEmpty) ...[
+                                        SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.location_on,
+                                              size: 11,
+                                              color: AppThemeSystem.grey600,
+                                            ),
+                                            SizedBox(width: 2),
+                                            Text(
+                                              '$distance km',
+                                              style: context.textStyle(
+                                                FontSizeType.caption,
+                                                color: AppThemeSystem.grey600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                ),
+                              ),
+                              );
+                            });
+                          },
+                        ),
                       );
                     }),
 
@@ -1529,7 +1939,7 @@ class ProductView extends GetView<ProductController> {
                                   ? SizedBox(width: 20, height: 20,
                                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                   : Icon(Icons.phone_android_rounded, color: Colors.white),
-                              label: Text('Payer avec FreeMoPay',
+                              label: Text('Payer avec Mobile Money',
                                 style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold, color: Colors.white)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400,
@@ -1608,6 +2018,132 @@ class ProductView extends GetView<ProductController> {
   }
 
   Future<void> _showChangeAddressDialog(BuildContext context) async {
+    // Ouvrir directement la carte
+    final result = await Get.to<Map<String, dynamic>>(
+      () => MapSelectionView(),
+      transition: Transition.rightToLeft,
+    );
+
+    if (result != null) {
+      print('');
+      print('═══════════════════════════════════════════════════════════════');
+      print('📍 NOUVELLE POSITION SÉLECTIONNÉE SUR LA CARTE');
+      print('═══════════════════════════════════════════════════════════════');
+
+      // Récupérer les coordonnées
+      final lat = result['latitude'] as double?;
+      final lon = result['longitude'] as double?;
+
+      print('📍 Coordonnées reçues:');
+      print('   Latitude: $lat');
+      print('   Longitude: $lon');
+      print('   Adresse brute: ${result['address']}');
+
+      if (lat != null && lon != null) {
+        // Mettre à jour les coordonnées GPS
+        controller.clientLatitude = lat;
+        controller.clientLongitude = lon;
+
+        print('');
+        print('🔍 MISE À JOUR DES COORDONNÉES GPS:');
+        print('   controller.clientLatitude: ${controller.clientLatitude}');
+        print('   controller.clientLongitude: ${controller.clientLongitude}');
+
+        // Faire du reverse geocoding pour obtenir l'adresse lisible
+        try {
+          controller.isLoadingLocation.value = true;
+
+          print('');
+          print('🔄 Reverse geocoding en cours...');
+          final placemarks = await placemarkFromCoordinates(lat, lon);
+
+          if (placemarks.isNotEmpty) {
+            final placemark = placemarks.first;
+
+            // Construire une adresse lisible
+            final parts = <String>[];
+
+            if (placemark.locality != null && placemark.locality!.isNotEmpty) {
+              parts.add(placemark.locality!); // Ville
+            } else if (placemark.subAdministrativeArea != null && placemark.subAdministrativeArea!.isNotEmpty) {
+              parts.add(placemark.subAdministrativeArea!);
+            } else if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+              parts.add(placemark.administrativeArea!);
+            }
+
+            if (placemark.subLocality != null && placemark.subLocality!.isNotEmpty) {
+              parts.add(placemark.subLocality!); // Quartier
+            }
+
+            controller.currentLocation.value = parts.isNotEmpty
+                ? parts.join(', ')
+                : result['address'] ?? '$lat, $lon';
+
+            print('✅ Adresse formatée: ${controller.currentLocation.value}');
+            print('   Détails placemark:');
+            print('   - locality: ${placemark.locality}');
+            print('   - subLocality: ${placemark.subLocality}');
+            print('   - administrativeArea: ${placemark.administrativeArea}');
+            print('   - subAdministrativeArea: ${placemark.subAdministrativeArea}');
+          } else {
+            controller.currentLocation.value = result['address'] ?? '$lat, $lon';
+            print('⚠️ Pas de placemark trouvé, utilisation de l\'adresse brute');
+          }
+        } catch (e) {
+          print('❌ Erreur reverse geocoding: $e');
+          controller.currentLocation.value = result['address'] ?? '$lat, $lon';
+        } finally {
+          controller.isLoadingLocation.value = false;
+        }
+
+        // Recharger les partenaires de livraison avec la nouvelle position
+        print('');
+        print('═══════════════════════════════════════════════════════════════');
+        print('🔍 VÉRIFICATION AVANT RECHARGEMENT DES PARTENAIRES');
+        print('═══════════════════════════════════════════════════════════════');
+        print('📦 controller.currentProductId: ${controller.currentProductId}');
+        print('📍 Nouvelle position: ${controller.currentLocation.value}');
+        print('📍 GPS: ${controller.clientLatitude}, ${controller.clientLongitude}');
+
+        if (controller.currentProductId != null) {
+          print('');
+          print('✅ ProductId trouvé, rechargement en cours...');
+          print('🔄 Rechargement des partenaires avec la nouvelle position...');
+          print('═══════════════════════════════════════════════════════════════');
+          await controller.loadDeliveryPartners(controller.currentProductId!);
+          print('');
+          print('✅ RECHARGEMENT DES PARTENAIRES TERMINÉ');
+          print('   Nombre de partenaires: ${controller.deliveryPartners.length}');
+          print('═══════════════════════════════════════════════════════════════');
+        } else {
+          print('');
+          print('❌ IMPOSSIBLE DE RECHARGER LES PARTENAIRES');
+          print('   Raison: controller.currentProductId est NULL');
+          print('   Get.arguments disponible: ${Get.arguments != null}');
+          if (Get.arguments != null) {
+            final product = Get.arguments as Map<String, dynamic>?;
+            print('   Get.arguments[\'id\']: ${product?['id']}');
+          }
+          print('═══════════════════════════════════════════════════════════════');
+        }
+
+        Get.snackbar(
+          'Position mise à jour',
+          'Votre position de livraison a été modifiée',
+          snackPosition: SnackPosition.BOTTOM,
+          icon: Icon(Icons.check_circle_rounded, color: Colors.green),
+        );
+      } else {
+        print('❌ Coordonnées invalides reçues du MapSelectionView');
+        controller.currentLocation.value = result['address'] ?? 'Position invalide';
+      }
+    } else {
+      print('ℹ️ Aucune position sélectionnée (annulé)');
+    }
+  }
+
+  // Ancienne fonction - conservée au cas où (à supprimer plus tard)
+  Future<void> _showChangeAddressDialogOLD(BuildContext context) async {
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(

@@ -26,6 +26,7 @@ class VendorDashboardController extends GetxController {
 
   // Statistiques
   final totalOrders = 0.obs;
+  final pendingOrders = 0.obs; // Commandes en attente
   final totalSales = 0.0.obs;
   final totalProducts = 0.obs;
   final rating = 0.0.obs;
@@ -54,6 +55,7 @@ class VendorDashboardController extends GetxController {
   /// Charge les données du vendeur depuis l'API
   void _loadVendorData() {
     _fetchVendorStats();
+    // _fetchPendingOrdersCount() est maintenant inclus dans _fetchVendorStats via l'API dashboard
   }
 
   /// Récupère les statistiques du vendeur depuis l'API
@@ -101,10 +103,12 @@ class VendorDashboardController extends GetxController {
         if (data['stats'] != null) {
           final stats = data['stats'];
           totalOrders.value = stats['total_orders'] ?? 0;
+          pendingOrders.value = stats['pending_orders'] ?? 0;
           totalSales.value = (stats['total_sales'] ?? 0).toDouble();
           totalProducts.value = stats['total_products'] ?? 0;
           rating.value = (stats['rating'] ?? 0).toDouble();
           print('  └─ Total Orders: ${totalOrders.value}');
+          print('  └─ Pending Orders: ${pendingOrders.value}');
           print('  └─ Total Sales: ${totalSales.value}');
           print('  └─ Total Products: ${totalProducts.value}');
           print('  └─ Rating: ${rating.value}');
@@ -190,6 +194,46 @@ class VendorDashboardController extends GetxController {
     }
   }
 
+  /// Récupère le nombre de commandes en attente
+  Future<void> _fetchPendingOrdersCount() async {
+    if (_isDisposed) return;
+
+    print('');
+    print('========================================');
+    print('📦 VENDOR DASHBOARD: FETCH PENDING ORDERS COUNT');
+    print('========================================');
+
+    try {
+      print('🌐 VENDOR DASHBOARD: Calling pending orders API...');
+      final response = await VendorService.getVendorOrders(status: 'pending', page: 1);
+
+      if (_isDisposed) return;
+
+      print('📥 VENDOR DASHBOARD: Pending orders API response received');
+      print('  └─ Success: ${response.success}');
+
+      if (response.success && response.data != null) {
+        final data = response.data!['data'];
+        if (data is Map && data['data'] is List) {
+          final orders = data['data'] as List;
+          pendingOrders.value = orders.length;
+          print('  └─ Pending Orders Count: ${pendingOrders.value}');
+        } else if (data is List) {
+          pendingOrders.value = data.length;
+          print('  └─ Pending Orders Count: ${pendingOrders.value}');
+        }
+      } else {
+        print('  └─ ⚠️ Failed to fetch pending orders');
+      }
+      print('========================================');
+    } catch (e) {
+      print('💥 VENDOR DASHBOARD: Exception fetching pending orders!');
+      print('  └─ Error: $e');
+      print('========================================');
+      // Ne pas bloquer si cette requête échoue
+    }
+  }
+
   /// Données fictives de secours
   void _loadMockData() {
     shopName.value = 'Boutique Kira';
@@ -208,6 +252,8 @@ class VendorDashboardController extends GetxController {
 
   /// Rafraîchit les données
   Future<void> refreshData() async {
+    // checkVerificationStatus appelle déjà _fetchVendorStats qui récupère
+    // toutes les données incluant pending_orders
     await checkVerificationStatus();
   }
 

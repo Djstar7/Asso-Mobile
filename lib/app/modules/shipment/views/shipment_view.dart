@@ -69,6 +69,9 @@ class ShipmentView extends GetView<MyOrderController> {
       height: 50,
       padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
       child: Obx(() {
+        // Access observable immediately to register dependency
+        final selectedStatus = controller.selectedStatus.value;
+
         final filters = [
           {'label': 'Tout', 'value': 'all'},
           {'label': 'En attente', 'value': 'pending'},
@@ -84,7 +87,7 @@ class ShipmentView extends GetView<MyOrderController> {
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
             final filter = filters[index];
-            final isSelected = controller.selectedStatus.value == filter['value'];
+            final isSelected = selectedStatus == filter['value'];
 
             return FilterChip(
               label: Text(filter['label'] as String),

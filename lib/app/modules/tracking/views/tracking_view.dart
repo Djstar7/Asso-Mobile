@@ -51,7 +51,12 @@ class TrackingView extends GetView<TrackingController> {
   Widget _buildHeader(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     return Container(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+      padding: EdgeInsets.only(
+        left: AppThemeSystem.getHorizontalPadding(context),
+        right: AppThemeSystem.getHorizontalPadding(context),
+        // top: MediaQuery.of(context).padding.top + 8,
+        bottom: AppThemeSystem.getHorizontalPadding(context),
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         border: Border(
@@ -63,9 +68,26 @@ class TrackingView extends GetView<TrackingController> {
           Text('Suivi de commandes',
             style: context.textStyle(FontSizeType.h4, fontWeight: FontWeight.bold)),
           const Spacer(),
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppThemeSystem.primaryColor),
-            onPressed: () => controller.loadOrders(),
+          GestureDetector(
+            onTap: () async {
+              print('🔄 Refresh button tapped!'); // Debug
+              await controller.loadOrders();
+              Get.snackbar(
+                'Actualisé',
+                'Liste des commandes mise à jour',
+                snackPosition: SnackPosition.BOTTOM,
+                duration: const Duration(seconds: 1),
+              );
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Icon(Icons.refresh_rounded, color: AppThemeSystem.primaryColor, size: 24),
+            ),
           ),
         ],
       ),

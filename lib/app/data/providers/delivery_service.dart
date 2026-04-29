@@ -29,12 +29,14 @@ class DeliveryService {
     required int productId,
     double? latitude,
     double? longitude,
+    String? city,
   }) async {
     final params = <String, dynamic>{
       'product_id': productId,
     };
     if (latitude != null) params['latitude'] = latitude;
     if (longitude != null) params['longitude'] = longitude;
+    if (city != null && city.isNotEmpty) params['city'] = city;
 
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }

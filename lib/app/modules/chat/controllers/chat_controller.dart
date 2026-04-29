@@ -21,6 +21,7 @@ class ChatController extends GetxController {
     }
   }
 
+
   Future<void> _loadConversations({bool refresh = false}) async {
     if (refresh) {
       _currentPage = 1;

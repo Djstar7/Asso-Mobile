@@ -5,8 +5,12 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  //  // 10.144.156.28 maps to host localhost from Android emulator
-  static const String baseUrl = 'http://10.193.76.109:8001/api';
+  // Local (commenté)
+  static const String baseUrl = 'http://10.104.185.129:8001/api';
+
+  // Production
+  // static const String baseUrl = 'https://asso-dashboard.sbs/api';
+
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Storage Keys

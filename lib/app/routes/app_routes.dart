@@ -45,6 +45,13 @@ abstract class Routes {
   static const INVENTORY_LIST = _Paths.INVENTORY_LIST;
   static const INVOICES = _Paths.INVOICES;
   static const VENDOR_DETAILS = _Paths.VENDOR_DETAILS;
+  static const MY_VOICE = _Paths.MY_VOICE;
+  static const POST_DETAIL = _Paths.POST_DETAIL;
+  static const DIASPO = _Paths.DIASPO;
+  static const DIASPO_CREATE = _Paths.DIASPO_CREATE;
+  static const DIASPO_EDIT = _Paths.DIASPO_EDIT;
+  static const DIASPO_DETAIL = _Paths.DIASPO_DETAIL;
+  static const DIASPO_BOOKING = _Paths.DIASPO_BOOKING;
 }
 
 abstract class _Paths {
@@ -91,4 +98,11 @@ abstract class _Paths {
   static const INVENTORY_LIST = '/inventory-list';
   static const INVOICES = '/invoices';
   static const VENDOR_DETAILS = '/vendor-details';
+  static const MY_VOICE = '/my-voice';
+  static const POST_DETAIL = '/post-detail';
+  static const DIASPO = '/diaspo';
+  static const DIASPO_CREATE = '/diaspo/create';
+  static const DIASPO_EDIT = '/diaspo/edit';
+  static const DIASPO_DETAIL = '/diaspo/detail';
+  static const DIASPO_BOOKING = '/diaspo/booking';
 }

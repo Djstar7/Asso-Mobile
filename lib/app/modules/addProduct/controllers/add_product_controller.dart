@@ -43,6 +43,7 @@ class AddProductController extends GetxController {
 
   // Poids du produit
   final selectedWeightType = Rx<String?>(null); // 'X-small', '30 Deep', '50 Deep', '60 Deep', 'Rainbow XL', 'Pallet', 'custom'
+  final customWeightValue = ''.obs; // Pour suivre les changements du poids personnalisé
   final weightTypes = <String, String>{
     'X-small': '~5 kg',
     '30 Deep': '~30 kg',
@@ -104,6 +105,11 @@ class AddProductController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Ajouter un listener au weightKgController pour suivre les changements
+    weightKgController.addListener(() {
+      customWeightValue.value = weightKgController.text.trim();
+    });
 
     // Check if we're in edit mode
     final args = Get.arguments as Map<String, dynamic>?;
@@ -363,35 +369,36 @@ class AddProductController extends GetxController {
         }
       }
 
-      // Weight - check multiple possible field names
-      final weight = product['weight'] ?? product['weight_kg'] ?? product['product_weight'];
-      if (weight != null) {
-        final weightStr = weight.toString().trim();
-        print('📝 ADD_PRODUCT: Weight found: $weightStr');
+      // Weight - PRIORITÉ au poids personnalisé (weight), sinon weight_category
+      final weightCategory = product['weight_category']?.toString().trim();
+      final customWeight = product['weight']?.toString().trim();
 
-        // Check if it matches one of our predefined weights
-        bool foundWeight = false;
-        for (var entry in weightTypes.entries) {
-          // Match exact key or check if the weight string contains the key
-          if (entry.key == weightStr || weightStr == entry.key) {
-            selectedWeightType.value = entry.key;
-            foundWeight = true;
-            print('📝 ADD_PRODUCT: Weight set to predefined: ${entry.key}');
-            break;
-          }
-        }
+      print('📝 ADD_PRODUCT: Weight data from API:');
+      print('   └─ weight_category: $weightCategory');
+      print('   └─ weight: $customWeight');
 
-        // If not found, it's a custom weight
-        if (!foundWeight) {
-          selectedWeightType.value = 'custom';
-          // Remove " kg" suffix if present
-          final cleanWeight = weightStr.replaceAll(RegExp(r'\s*kg\s*$', caseSensitive: false), '');
-          weightKgController.text = cleanWeight;
-          print('📝 ADD_PRODUCT: Custom weight set: $cleanWeight kg');
+      // PRIORITÉ 1 : Poids personnalisé
+      if (customWeight != null && customWeight.isNotEmpty && customWeight != 'null' && customWeight != '0') {
+        // Poids personnalisé
+        selectedWeightType.value = 'custom';
+        // Remove " kg" or " KG" suffix if present
+        final cleanWeight = customWeight.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
+        weightKgController.text = cleanWeight;
+        customWeightValue.value = cleanWeight; // Mettre à jour la valeur observable
+        print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg (from: "$customWeight")');
+      }
+      // PRIORITÉ 2 : Catégorie de poids prédéfinie
+      else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
+        // Vérifier si c'est une catégorie prédéfinie
+        if (weightTypes.containsKey(weightCategory)) {
+          selectedWeightType.value = weightCategory;
+          print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
+        } else {
+          print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
         }
       } else {
         print('⚠️ ADD_PRODUCT: No weight found in product data');
-        print('📝 ADD_PRODUCT: Available keys: ${product.keys.where((k) => k.toLowerCase().contains('weight')).toList()}');
+        print('📝 ADD_PRODUCT: Available weight keys: ${product.keys.where((k) => k.toLowerCase().contains('weight')).toList()}');
       }
 
       // Download images from URLs and track existing image IDs
@@ -596,6 +603,130 @@ class AddProductController extends GetxController {
     primaryImageIndex.value = index;
   }
 
+  /// Analyser l'image du produit avec Gemini AI
+  final isAnalyzing = false.obs;
+
+  Future<void> analyzeProductImage() async {
+    // Validation: au moins une image
+    if (productImages.isEmpty) {
+      Get.snackbar(
+        'Aucune image',
+        'Veuillez ajouter au moins une image avant l\'analyse',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppThemeSystem.warningColor,
+        colorText: Colors.white,
+        icon: const Icon(Icons.warning, color: Colors.white),
+      );
+      return;
+    }
+
+    isAnalyzing.value = true;
+
+    try {
+      print('🤖 Starting Gemini AI analysis...');
+
+      // Analyser l'image primaire
+      final primaryImage = productImages[primaryImageIndex.value];
+      print('   └─ Analyzing image: ${primaryImage.path}');
+
+      // Appeler l'API d'analyse
+      final response = await ProductService.analyzeProductImage(primaryImage.path);
+
+      if (response.success && response.data != null) {
+        final analysis = response.data!['suggested_data'] as Map<String, dynamic>?;
+        final confidence = response.data!['confidence'] as Map<String, dynamic>?;
+
+        if (analysis != null) {
+          print('✅ Analysis completed successfully!');
+          print('   └─ Suggested name: ${analysis['name']}');
+          print('   └─ Category ID: ${analysis['category_id']}');
+
+          // Pré-remplir les champs avec les résultats
+          _applyAnalysisResults(analysis, confidence ?? {});
+
+          // Afficher un snackbar de succès
+          Get.snackbar(
+            'Analyse terminée',
+            'Les informations ont été pré-remplies avec succès',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: AppThemeSystem.successColor,
+            colorText: Colors.white,
+            icon: const Icon(Icons.auto_awesome, color: Colors.white),
+            duration: const Duration(seconds: 3),
+          );
+        } else {
+          throw Exception('Données d\'analyse invalides');
+        }
+      } else {
+        throw Exception(response.message ?? 'Erreur lors de l\'analyse');
+      }
+    } catch (e) {
+      print('❌ Analysis error: $e');
+      Get.snackbar(
+        'Erreur d\'analyse',
+        'Impossible d\'analyser l\'image: $e',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+        icon: const Icon(Icons.error, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
+    } finally {
+      isAnalyzing.value = false;
+    }
+  }
+
+  /// Appliquer les résultats de l'analyse aux champs du formulaire
+  void _applyAnalysisResults(Map<String, dynamic> analysis, Map<String, dynamic> confidence) {
+    print('📝 Applying analysis results to form...');
+
+    // Nom du produit
+    if (analysis['name'] != null && (confidence['name'] ?? 0) > 0.3) {
+      nameController.text = analysis['name'];
+      print('   └─ Name applied: ${analysis['name']}');
+    }
+
+    // Description
+    if (analysis['description'] != null && (confidence['description'] ?? 0) > 0.3) {
+      descriptionController.text = analysis['description'];
+      print('   └─ Description applied');
+    }
+
+    // Type de produit
+    if (analysis['type'] != null) {
+      articleType.value = analysis['type'];
+      print('   └─ Type applied: ${analysis['type']}');
+    }
+
+    // Catégorie et sous-catégorie
+    if (analysis['category_id'] != null) {
+      final categoryId = analysis['category_id'].toString();
+      final subcategoryId = analysis['subcategory_id']?.toString();
+
+      // Chercher la catégorie correspondante dans allSubcategories
+      final matchingSubcat = allSubcategories.firstWhereOrNull(
+        (subcat) => subcat['id'] == (subcategoryId ?? categoryId)
+      );
+
+      if (matchingSubcat != null) {
+        selectedSubcategoryId.value = matchingSubcat['id'];
+        selectedSubcategory.value = matchingSubcat['name'];
+        selectedCategory.value = matchingSubcat['category'];
+        print('   └─ Category/Subcategory applied: ${matchingSubcat['name']}');
+      } else {
+        print('   └─ Warning: Could not find matching category/subcategory');
+      }
+    }
+
+    // Poids
+    if (analysis['weight_category'] != null && weightTypes.containsKey(analysis['weight_category'])) {
+      selectedWeightType.value = analysis['weight_category'];
+      print('   └─ Weight category applied: ${analysis['weight_category']}');
+    }
+
+    print('✅ Analysis results applied successfully!');
+  }
+
   /// Naviguer vers la page de souscription de package
   void addNewStorage() {
     Get.toNamed('/package-subscription');
@@ -783,16 +914,33 @@ class AddProductController extends GetxController {
       }
 
       // Ajouter weight si disponible
+      print('📦 ADD_PRODUCT: Processing weight data...');
+      print('   └─ selectedWeightType: ${selectedWeightType.value}');
+      print('   └─ weightKgController: "${weightKgController.text.trim()}"');
+
       if (selectedWeightType.value != null) {
         if (selectedWeightType.value == 'custom') {
           // Poids personnalisé en KG
-          if (weightKgController.text.trim().isNotEmpty) {
-            fieldsMap['weight'] = '${weightKgController.text.trim()} kg';
+          final customWeightText = weightKgController.text.trim();
+          if (customWeightText.isNotEmpty) {
+            // S'assurer que "kg" est ajouté une seule fois
+            final cleanWeight = customWeightText.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
+            fieldsMap['weight'] = '$cleanWeight kg';
+            fieldsMap['weight_category'] = ''; // Nettoyer weight_category si on utilise weight
+            print('📦 ADD_PRODUCT: ✅ Adding custom weight: "${fieldsMap['weight']}"');
+            print('📦 ADD_PRODUCT: ✅ Clearing weight_category');
+          } else {
+            print('⚠️ ADD_PRODUCT: Custom weight selected but no value entered');
           }
         } else {
-          // Poids prédéfini
-          fieldsMap['weight'] = selectedWeightType.value!;
+          // Catégorie de poids prédéfinie (X-small, 30 Deep, etc.)
+          fieldsMap['weight_category'] = selectedWeightType.value!;
+          fieldsMap['weight'] = ''; // Nettoyer weight si on utilise weight_category
+          print('📦 ADD_PRODUCT: ✅ Adding weight_category: "${fieldsMap['weight_category']}"');
+          print('📦 ADD_PRODUCT: ✅ Clearing weight');
         }
+      } else {
+        print('⚠️ ADD_PRODUCT: No weight selected');
       }
 
       // Note: storage_id n'est pas encore supporté par l'API

@@ -12,6 +12,7 @@ class RegisterController extends GetxController {
   final isLoading = false.obs;
   final isPhoneValid = false.obs;
   final fullPhoneNumber = ''.obs;
+  final termsAccepted = false.obs;
 
   @override
   void onInit() {
@@ -69,6 +70,21 @@ class RegisterController extends GetxController {
       return;
     }
 
+    if (!termsAccepted.value) {
+      developer.log('Terms not accepted', name: 'RegisterController');
+      Get.snackbar(
+        'Politique requise',
+        'Veuillez accepter notre Politique de Confidentialité pour continuer',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -86,33 +102,129 @@ class RegisterController extends GetxController {
 
       if (response.success) {
         final isNewUser = response.data?['is_new_user'] ?? true;
+        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
+
         developer.log(
           'OTP sent successfully for registration',
           name: 'RegisterController',
-          error: 'Is new user: $isNewUser',
+          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
         );
 
-        Get.snackbar(
-          'Code envoyé',
-          'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        // Check if OTP bypass is enabled for this phone number
+        if (bypassEnabled) {
+          developer.log(
+            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
+            name: 'RegisterController',
+            error: 'Phone: ${fullPhoneNumber.value}',
+          );
 
-        await Future.delayed(const Duration(milliseconds: 500));
+          Get.snackbar(
+            'Connexion en cours',
+            'Bienvenue',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
 
-        developer.log('Navigating to OTP screen', name: 'RegisterController');
-        Get.toNamed(
-          Routes.OTP,
-          arguments: {
-            'phoneNumber': fullPhoneNumber.value,
-            'isNewUser': isNewUser,
-          },
-        );
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Automatically verify with a dummy OTP code
+          developer.log(
+            'Auto-verifying OTP with bypass',
+            name: 'RegisterController',
+            error: 'Phone: ${fullPhoneNumber.value}',
+          );
+
+          final verifyResponse = await AuthService.verifyOtp(
+            fullPhone: fullPhoneNumber.value,
+            otpCode: '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
+          );
+
+          developer.log(
+            'Auto-verify response',
+            name: 'RegisterController',
+            error: 'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
+          );
+
+          if (verifyResponse.success) {
+            developer.log(
+              '✅ BYPASS LOGIN SUCCESS',
+              name: 'RegisterController',
+              error: 'Navigating to home...',
+            );
+
+            Get.snackbar(
+              'Succès',
+              'Connexion réussie via WhatsApp',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.primary,
+              colorText: Get.theme.colorScheme.onPrimary,
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            // Navigate based on profile completeness
+            final isNew = verifyResponse.data?['is_new_user'] ?? false;
+            developer.log(
+              'Bypass navigation decision',
+              name: 'RegisterController',
+              error: 'Is new user: $isNew',
+            );
+
+            if (isNew) {
+              developer.log('Navigating to PREFERENCES (bypass)', name: 'RegisterController');
+              Get.offAllNamed(Routes.PREFERENCES);
+            } else {
+              developer.log('Navigating to HOME (bypass)', name: 'RegisterController');
+              Get.offAllNamed(Routes.HOME);
+            }
+          } else {
+            developer.log(
+              '❌ Bypass auto-verify failed',
+              name: 'RegisterController',
+              error: verifyResponse.message,
+            );
+            Get.snackbar(
+              'Erreur',
+              'Échec de la connexion automatique: ${verifyResponse.message}',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.error,
+              colorText: Get.theme.colorScheme.onError,
+              duration: const Duration(seconds: 3),
+              margin: const EdgeInsets.all(16),
+              borderRadius: 12,
+            );
+          }
+        } else {
+          // Normal flow - show OTP screen
+          Get.snackbar(
+            'Code envoyé',
+            'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          developer.log('Navigating to OTP screen', name: 'RegisterController');
+          Get.toNamed(
+            Routes.OTP,
+            arguments: {
+              'phoneNumber': fullPhoneNumber.value,
+              'isNewUser': isNewUser,
+            },
+          );
+        }
       } else {
         developer.log(
           'OTP send failed',

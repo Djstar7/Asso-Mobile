@@ -28,12 +28,25 @@ class AuthService {
       error: 'Success: ${response.success}, Message: ${response.message}',
     );
 
-    // Log OTP code in development mode
-    if (response.success && response.data != null && response.data!.containsKey('otp_code')) {
-      developer.log(
-        '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
-        name: 'AuthService',
-      );
+    // Check if bypass is enabled
+    if (response.success && response.data != null) {
+      final bypassEnabled = response.data!['bypass_enabled'] ?? false;
+
+      if (bypassEnabled) {
+        developer.log(
+          '🔓 OTP BYPASS DETECTED IN RESPONSE',
+          name: 'AuthService',
+          error: 'Phone: $countryCode$phone, Channel: ${response.data!['channel']}',
+        );
+      }
+
+      // Log OTP code in development mode (only if not bypass)
+      if (!bypassEnabled && response.data!.containsKey('otp_code')) {
+        developer.log(
+          '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
+          name: 'AuthService',
+        );
+      }
     }
 
     return response;
@@ -62,10 +75,16 @@ class AuthService {
     );
 
     if (response.success && response.data != null) {
+      final bypassMode = response.data!['bypass_mode'] ?? false;
+
       print('');
       print('========================================');
-      print('✅ OTP VERIFICATION SUCCESS');
-      developer.log('✓ OTP Verification SUCCESS', name: 'AuthService');
+      print('✅ OTP VERIFICATION SUCCESS${bypassMode ? ' (BYPASS MODE)' : ''}');
+      developer.log(
+        '✓ OTP Verification SUCCESS${bypassMode ? ' (BYPASS MODE)' : ''}',
+        name: 'AuthService',
+        error: 'Bypass: $bypassMode',
+      );
 
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;

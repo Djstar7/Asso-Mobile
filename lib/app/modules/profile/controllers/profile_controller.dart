@@ -146,7 +146,16 @@ class ProfileController extends GetxController {
   }
 
   void editProfile() {
-    Get.toNamed(Routes.COMPLETE_PROFILE);
+    try {
+      Get.toNamed(Routes.COMPLETE_PROFILE);
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'ouvrir l\'éditeur de profil',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    }
   }
 
   void goToMyProducts() {

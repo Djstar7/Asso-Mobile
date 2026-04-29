@@ -72,4 +72,24 @@ class ProductService {
       'limit': limit,
     });
   }
+
+  /// Analyze product image using Gemini AI
+  static Future<ApiResponse> analyzeProductImage(String imagePath) async {
+    return await ApiProvider.multipart(
+      '${AppConstants.productsUrl}/analyze',
+      files: {
+        'image': imagePath,
+      },
+    );
+  }
+
+  /// Get available categories with subcategories
+  static Future<ApiResponse> getCategoriesForAnalysis() async {
+    return await ApiProvider.get('${AppConstants.productsUrl}/categories');
+  }
+
+  /// Health check for Gemini service
+  static Future<ApiResponse> checkGeminiHealth() async {
+    return await ApiProvider.get('${AppConstants.productsUrl}/analyze/health');
+  }
 }

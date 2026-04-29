@@ -1,4 +1,14 @@
 import 'package:asso/app/modules/invoices/views/invoices_view.dart';
+import 'package:asso/app/modules/diaspoList/bindings/diaspo_list_binding.dart';
+import 'package:asso/app/modules/diaspoList/views/diaspo_list_view.dart';
+import 'package:asso/app/modules/diaspoCreate/bindings/diaspo_create_binding.dart';
+import 'package:asso/app/modules/diaspoCreate/views/diaspo_create_view.dart';
+import 'package:asso/app/modules/diaspoEdit/bindings/diaspo_edit_binding.dart';
+import 'package:asso/app/modules/diaspoEdit/views/diaspo_edit_view.dart';
+import 'package:asso/app/modules/diaspoDetail/bindings/diaspo_detail_binding.dart';
+import 'package:asso/app/modules/diaspoDetail/views/diaspo_detail_view.dart';
+import 'package:asso/app/modules/diaspoBooking/bindings/diaspo_booking_binding.dart';
+import 'package:asso/app/modules/diaspoBooking/views/diaspo_booking_view.dart';
 import 'package:get/get.dart';
 
 import '../modules/about/bindings/about_binding.dart';
@@ -80,6 +90,10 @@ import '../modules/inventoryList/views/inventory_list_view.dart';
 import '../modules/invoices/bindings/invoices_binding.dart';
 import '../modules/vendorDetails/bindings/vendor_details_binding.dart';
 import '../modules/vendorDetails/views/vendor_details_view.dart';
+import '../modules/myVoice/bindings/my_voice_binding.dart';
+import '../modules/myVoice/views/my_voice_view.dart';
+import '../modules/postDetail/bindings/post_detail_binding.dart';
+import '../modules/postDetail/views/post_detail_view.dart';
 
 part 'app_routes.dart';
 
@@ -293,6 +307,41 @@ class AppPages {
       name: _Paths.VENDOR_DETAILS,
       page: () => const VendorDetailsView(),
       binding: VendorDetailsBinding(),
+    ),
+    GetPage(
+      name: _Paths.MY_VOICE,
+      page: () => const MyVoiceView(),
+      binding: MyVoiceBinding(),
+    ),
+    GetPage(
+      name: _Paths.POST_DETAIL,
+      page: () => const PostDetailView(),
+      binding: PostDetailBinding(),
+    ),
+    GetPage(
+      name: _Paths.DIASPO,
+      page: () => const DiaspoListView(),
+      binding: DiaspoListBinding(),
+    ),
+    GetPage(
+      name: _Paths.DIASPO_CREATE,
+      page: () => const DiaspoCreateView(),
+      binding: DiaspoCreateBinding(),
+    ),
+    GetPage(
+      name: _Paths.DIASPO_EDIT,
+      page: () => const DiaspoEditView(),
+      binding: DiaspoEditBinding(),
+    ),
+    GetPage(
+      name: _Paths.DIASPO_DETAIL,
+      page: () => const DiaspoDetailView(),
+      binding: DiaspoDetailBinding(),
+    ),
+    GetPage(
+      name: _Paths.DIASPO_BOOKING,
+      page: () => const DiaspoBookingView(),
+      binding: DiaspoBookingBinding(),
     ),
   ];
 }

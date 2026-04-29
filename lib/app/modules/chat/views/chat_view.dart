@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/storage_service.dart';
 import '../controllers/chat_controller.dart';
 
-class ChatView extends GetView<ChatController> {
+class ChatView extends StatefulWidget {
   const ChatView({super.key});
+
+  @override
+  State<ChatView> createState() => _ChatViewState();
+}
+
+class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
+  ChatController get controller => Get.find<ChatController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Rafraîchir quand l'app revient au premier plan
+    if (state == AppLifecycleState.resumed && StorageService.isAuthenticated) {
+      controller.refreshConversations();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
