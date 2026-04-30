@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/utils/string_utils.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/delivery_service.dart';
@@ -544,13 +545,17 @@ class ProductController extends GetxController {
           }
         }
 
+        // Utiliser other_user du backend s'il est présent, sinon utiliser seller
+        final otherUser = conversation['other_user'] as Map<String, dynamic>?;
+        final userName = otherUser?['name'] ?? seller?['name'] ?? 'Vendeur';
+
         // Naviguer vers chatdetail avec les infos de conversation
         await Get.toNamed(
           '/chatdetail',
           arguments: {
             'id': conversation['id'] ?? conversation['conversation_id'] ?? '',
-            'name': seller?['name'] ?? 'Vendeur',
-            'avatar': seller?['avatar'] ?? 'V',
+            'name': userName,
+            'avatar': StringUtils.getInitials(userName),
             'isOnline': false,
             'product': product,
           },

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/chatdetail_controller.dart';
 
@@ -100,30 +102,6 @@ class ChatdetailView extends GetView<ChatdetailController> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.phone_rounded,
-              color: AppThemeSystem.getPrimaryTextColor(context),
-            ),
-            onPressed: () {
-              Get.snackbar(
-                'Appel',
-                'Fonction d\'appel en cours de développement',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.more_vert_rounded,
-              color: AppThemeSystem.getPrimaryTextColor(context),
-            ),
-            onPressed: () {
-              _showOptionsMenu(context);
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -154,6 +132,13 @@ class ChatdetailView extends GetView<ChatdetailController> {
   }
 
   Widget _buildMessageBubble(BuildContext context, Map<String, dynamic> message) {
+    final isSystem = message['isSystem'] as bool? ?? false;
+
+    // Si c'est un message système, afficher dans un style spécial
+    if (isSystem) {
+      return _buildSystemMessage(context, message);
+    }
+
     final isSentByMe = message['isSentByMe'] as bool;
 
     return Padding(
@@ -227,15 +212,24 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       isSentByMe,
                     ),
 
-                  Text(
-                    message['text'],
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      color: isSentByMe
-                          ? Colors.white
-                          : AppThemeSystem.getPrimaryTextColor(context),
+                  // Afficher l'image si présente
+                  if (message['image_path'] != null)
+                    _buildMessageImage(
+                      context,
+                      message['image_path'],
                     ),
-                  ),
+
+                  // Afficher le texte seulement s'il est présent
+                  if (message['text'] != null && message['text'].toString().isNotEmpty)
+                    Text(
+                      message['text'],
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        color: isSentByMe
+                            ? Colors.white
+                            : AppThemeSystem.getPrimaryTextColor(context),
+                      ),
+                    ),
                   SizedBox(height: 4),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -270,6 +264,66 @@ class ChatdetailView extends GetView<ChatdetailController> {
           if (isSentByMe) SizedBox(width: 40),
           if (!isSentByMe) SizedBox(width: 40),
         ],
+      ),
+    );
+  }
+
+  /// Widget pour afficher une image dans un message
+  Widget _buildMessageImage(BuildContext context, String imagePath) {
+    final isLocalPath = !imagePath.startsWith('http');
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      constraints: BoxConstraints(
+        maxWidth: 250,
+        maxHeight: 300,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: isLocalPath
+            ? Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 150,
+                    color: AppThemeSystem.grey200,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: AppThemeSystem.grey600,
+                        size: 48,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : CachedNetworkImage(
+                imageUrl: imagePath,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 150,
+                  color: AppThemeSystem.grey200,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppThemeSystem.primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 150,
+                  color: AppThemeSystem.grey200,
+                  child: Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: AppThemeSystem.grey600,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -475,12 +529,12 @@ class ChatdetailView extends GetView<ChatdetailController> {
               children: [
                 IconButton(
                   icon: Icon(
-                    Icons.add_circle_rounded,
+                    Icons.camera_alt_rounded,
                     color: AppThemeSystem.primaryColor,
                     size: 28,
                   ),
                   onPressed: () {
-                    _showProductSelectionDialog(context);
+                    _showImageSourceDialog(context);
                   },
                 ),
                 SizedBox(width: 8),
@@ -528,6 +582,132 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Dialog pour sélectionner la source de l'image
+  void _showImageSourceDialog(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getBackgroundColor(context),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.grey300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Envoyer une image',
+                  style: context.textStyle(
+                    FontSizeType.h6,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildImageSourceOption(
+                    context,
+                    Icons.camera_alt_rounded,
+                    'Caméra',
+                    AppThemeSystem.primaryColor,
+                    () {
+                      Get.back();
+                      controller.pickImageFromCamera();
+                    },
+                  ),
+                  _buildImageSourceOption(
+                    context,
+                    Icons.photo_library_rounded,
+                    'Galerie',
+                    Colors.purple,
+                    () {
+                      Get.back();
+                      controller.pickImageFromGallery();
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSourceOption(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 140,
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              label,
+              style: context.textStyle(
+                FontSizeType.body1,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -619,9 +799,8 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 Icons.delete_rounded,
                 'Supprimer la conversation',
                 () {
-                  Get.back();
-                  Get.back();
-                  Get.snackbar('Suppression', 'Conversation supprimée');
+                  Get.back(); // Fermer le menu
+                  controller.hideConversation(); // Cacher la conversation
                 },
                 isDestructive: true,
               ),
@@ -1048,6 +1227,206 @@ class ChatdetailView extends GetView<ChatdetailController> {
   }
 
   /// Widget pour afficher l'offre Diaspo comme une citation dans le message (style WhatsApp)
+  /// Widget pour afficher un message système (message d'avertissement de sécurité)
+  Widget _buildSystemMessage(BuildContext context, Map<String, dynamic> message) {
+    final text = message['text'] as String;
+    final parts = text.split('→ En savoir plus');
+    final mainText = parts[0].trim();
+    final hasLearnMore = parts.length > 1;
+    final isDark = AppThemeSystem.isDarkMode(context);
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      Color(0xFF2D3748).withValues(alpha: 0.7),
+                      Color(0xFF1A202C).withValues(alpha: 0.7),
+                    ]
+                  : [
+                      Color(0xFFFFF9E6),
+                      Color(0xFFFFF4D6),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? AppThemeSystem.primaryColor.withValues(alpha: 0.3)
+                  : Color(0xFFFFE4B3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // En-tête avec badge "Sécurité ASSO"
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppThemeSystem.primaryColor.withValues(alpha: 0.2)
+                      : Color(0xFFFFE4B3),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.primaryColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.shield_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Sécurité ASSO',
+                      style: context.textStyle(
+                        FontSizeType.subtitle2,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppThemeSystem.primaryColor
+                            : Color(0xFFD97706),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contenu du message
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Titre principal avec icône d'alerte
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Color(0xFFFBBF24).withValues(alpha: 0.15)
+                                : Color(0xFFFBBF24).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            color: isDark ? Color(0xFFFBBF24) : Color(0xFFD97706),
+                            size: 24,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            mainText.split('\n\n')[0],
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Color(0xFFFBBF24)
+                                  : Color(0xFFD97706),
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Texte explicatif
+                    if (mainText.split('\n\n').length > 1) ...[
+                      SizedBox(height: 16),
+                      Container(
+                        padding: EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Color(0xFFFFE4B3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          mainText.split('\n\n').sublist(1).join('\n\n'),
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            color: AppThemeSystem.getPrimaryTextColor(context),
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Footer avec timestamp
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Color(0xFFFFE4B3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  message['timestamp'] ?? '',
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDiaspoOfferQuote(
     BuildContext context,
     Map<String, dynamic> diaspoOffer,

@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/string_utils.dart';
 
 class ChatController extends GetxController {
   final RxList<Map<String, dynamic>> conversations = <Map<String, dynamic>>[].obs;
@@ -40,11 +43,32 @@ class ChatController extends GetxController {
 
         final converted = convList.map((c) {
           final conv = Map<String, dynamic>.from(c);
+
+          // Gérer le dernier message (peut être un String ou un Map)
+          String lastMessageText = '';
+          final lastMsg = conv['last_message'];
+
+          if (lastMsg is Map) {
+            // Le backend retourne un objet message complet
+            final msgText = lastMsg['message'];
+            final hasImage = lastMsg['image_path'] != null;
+
+            if (msgText != null && msgText.toString().isNotEmpty) {
+              lastMessageText = msgText.toString();
+            } else if (hasImage) {
+              lastMessageText = '📷 Image';
+            } else {
+              lastMessageText = '';
+            }
+          } else if (lastMsg is String) {
+            lastMessageText = lastMsg;
+          }
+
           return <String, dynamic>{
             'id': conv['id']?.toString() ?? '',
             'name': conv['other_user']?['name'] ?? conv['name'] ?? 'Utilisateur',
-            'avatar': _getInitials(conv['other_user']?['name'] ?? conv['name'] ?? ''),
-            'lastMessage': conv['last_message']?['message'] ?? conv['last_message'] ?? '',
+            'avatar': StringUtils.getInitials(conv['other_user']?['name'] ?? conv['name'] ?? ''),
+            'lastMessage': lastMessageText,
             'timestamp': _formatTimestamp(conv['updated_at'] ?? conv['last_message_at']),
             'unreadCount': conv['unread_count'] ?? 0,
             'isOnline': conv['other_user']?['is_online'] ?? false,
@@ -76,15 +100,6 @@ class ChatController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  String _getInitials(String name) {
-    if (name.isEmpty) return '?';
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name[0].toUpperCase();
   }
 
   String _formatTimestamp(dynamic dateStr) {
@@ -134,11 +149,16 @@ class ChatController extends GetxController {
 
       if (response.success && response.data != null) {
         final conv = response.data!['conversation'] ?? response.data!;
+        final otherUser = conv['other_user'];
+        final userName = otherUser?['name'] ?? 'Utilisateur';
+
         Get.toNamed('/chatdetail', arguments: {
           'id': conv['id']?.toString(),
-          'name': conv['other_user']?['name'] ?? 'Conversation',
+          'name': userName,
+          'avatar': StringUtils.getInitials(userName),
           'userId': userId,
           'productId': productId,
+          'isOnline': false, // On ne connaît pas le statut au démarrage
         });
       }
     } catch (e) {
@@ -150,5 +170,54 @@ class ChatController extends GetxController {
 
   Future<void> refreshConversations() async {
     await _loadConversations(refresh: true);
+  }
+
+  /// Supprimer (cacher) une conversation
+  Future<void> deleteConversation(Map<String, dynamic> conversation) async {
+    try {
+      final conversationId = int.tryParse(conversation['id']?.toString() ?? '');
+
+      if (conversationId == null) {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de supprimer la conversation',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      // Retirer immédiatement de la liste (UI optimiste)
+      conversations.removeWhere((c) => c['id'] == conversation['id']);
+
+      // Appeler l'API pour cacher la conversation
+      final response = await ConversationService.hideConversation(conversationId);
+
+      if (response.success) {
+        Get.snackbar(
+          'Succès',
+          'Conversation supprimée',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.primaryColor,
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      } else {
+        // En cas d'échec, recharger la liste
+        Get.snackbar(
+          'Erreur',
+          'Impossible de supprimer la conversation',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        await _loadConversations(refresh: true);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      // Recharger la liste en cas d'erreur
+      await _loadConversations(refresh: true);
+    }
   }
 }

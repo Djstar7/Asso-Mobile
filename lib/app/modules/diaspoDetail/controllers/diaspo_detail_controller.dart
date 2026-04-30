@@ -5,6 +5,7 @@ import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../core/utils/string_utils.dart';
 import '../../diaspoList/controllers/diaspo_list_controller.dart';
 
 class DiaspoDetailController extends GetxController {
@@ -68,12 +69,14 @@ class DiaspoDetailController extends GetxController {
 
       if (response.success && response.data != null) {
         final conversationData = response.data!['conversation'];
+        final otherUser = conversationData['other_user'];
+        final userName = otherUser?['name'] ?? 'Utilisateur';
 
         // Naviguer vers le chat avec les données de la conversation et l'offre Diaspo
         Get.toNamed('/chatdetail', arguments: {
           'id': conversationData['id'].toString(),
-          'name': conversationData['other_user']['name'] ?? 'Utilisateur',
-          'avatar': (conversationData['other_user']['name'] ?? 'U')[0].toUpperCase(),
+          'name': userName,
+          'avatar': StringUtils.getInitials(userName),
           'isOnline': false,
           'diaspo_offer': {
             'id': offer.value!.id,

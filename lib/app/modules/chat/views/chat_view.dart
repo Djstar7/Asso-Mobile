@@ -174,6 +174,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => controller.openConversation(conversation),
+        onLongPress: () => _showDeleteConversationDialog(context, conversation),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppThemeSystem.getHorizontalPadding(context),
@@ -447,6 +448,137 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ================================
+  // DELETE CONVERSATION DIALOG
+  // ================================
+
+  void _showDeleteConversationDialog(
+    BuildContext context,
+    Map<String, dynamic> conversation,
+  ) {
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getBackgroundColor(context),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.grey300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 24),
+
+              // Icône et titre
+              Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red,
+                size: 48,
+              ),
+              SizedBox(height: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Supprimer cette conversation ?',
+                  style: context.textStyle(
+                    FontSizeType.h6,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 8),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'La conversation sera masquée de votre liste. L\'autre personne pourra toujours la voir.',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 32),
+
+              // Boutons
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    // Annuler
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Get.back(),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: AppThemeSystem.grey300,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          'Annuler',
+                          style: context.textStyle(
+                            FontSizeType.button,
+                            fontWeight: FontWeight.w600,
+                            color: AppThemeSystem.getPrimaryTextColor(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    // Supprimer
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.back(); // Fermer le dialog
+                          controller.deleteConversation(conversation);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Supprimer',
+                          style: context.textStyle(
+                            FontSizeType.button,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

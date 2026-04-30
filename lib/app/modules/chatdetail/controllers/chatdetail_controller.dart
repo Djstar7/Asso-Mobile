@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/services/websocket_service.dart';
 import '../../../data/models/message_model.dart';
@@ -177,15 +179,21 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
     isLoading.value = true;
 
     try {
+      print('📥 [CHAT] Loading messages for conversation $_conversationId (page: $_currentPage)');
+
       final response = await ConversationService.getMessages(
         _conversationId!,
         page: _currentPage,
       );
 
+      print('📊 [CHAT] Response received: success=${response.success}, statusCode=${response.statusCode}');
+
       if (response.success && response.data != null) {
         final msgList = response.data!['messages'] as List? ??
             response.data!['data'] as List? ??
             [];
+
+        print('📝 [CHAT] Received ${msgList.length} messages from backend');
 
         final converted = msgList.map((m) {
           final msg = Map<String, dynamic>.from(m);
@@ -193,7 +201,9 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
           return <String, dynamic>{
             'id': msg['id']?.toString() ?? '',
             'text': msg['message'] ?? msg['text'] ?? '',
+            'image_path': msg['image_path'],
             'isSentByMe': msg['is_mine'] ?? msg['is_sent_by_me'] ?? false,
+            'isSystem': msg['is_system'] ?? false,
             'timestamp': _formatTime(msg['created_at']),
             'isRead': msg['is_read'] ?? false,
             // Charger le produit depuis le message (nouveau système)
@@ -203,10 +213,15 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
           };
         }).toList();
 
+        // Inverser l'ordre pour avoir les anciens messages en haut (comme WhatsApp)
+        // L'API retourne du plus récent au plus ancien, on veut l'inverse
+        final reversedMessages = converted.reversed.toList();
+
         if (refresh || _currentPage == 1) {
-          messages.value = converted;
+          messages.value = reversedMessages;
         } else {
-          messages.insertAll(0, converted);
+          // Pour la pagination, ajouter les anciens messages en haut
+          messages.insertAll(0, reversedMessages);
         }
 
         final pagination = response.data!['pagination'] as Map<String, dynamic>?;
@@ -368,5 +383,181 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       return 'FCFA';
     }
     return CurrencyService.to.currencySymbol;
+  }
+
+  // ================================
+  // IMAGE SENDING
+  // ================================
+
+  final ImagePicker _picker = ImagePicker();
+
+  /// Ouvrir la caméra pour prendre une photo
+  Future<void> pickImageFromCamera() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1080,
+      );
+
+      if (photo != null) {
+        await _sendImageMessage(File(photo.path));
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'accéder à la caméra',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  /// Ouvrir la galerie pour sélectionner une image
+  Future<void> pickImageFromGallery() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1080,
+      );
+
+      if (image != null) {
+        await _sendImageMessage(File(image.path));
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'accéder à la galerie',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  /// Envoyer un message avec une image
+  Future<void> _sendImageMessage(File imageFile) async {
+    if (_conversationId == null) return;
+
+    final text = messageController.text.trim();
+
+    // Récupérer les IDs si des éléments sont sélectionnés (conversion sûre)
+    int? productId;
+    if (selectedProduct.value != null) {
+      final id = selectedProduct.value!['id'];
+      if (id is int) {
+        productId = id;
+      } else if (id is String) {
+        productId = int.tryParse(id);
+      }
+    }
+
+    int? diaspoOfferId;
+    if (selectedDiaspoOffer.value != null) {
+      final id = selectedDiaspoOffer.value!['id'];
+      if (id is int) {
+        diaspoOfferId = id;
+      } else if (id is String) {
+        diaspoOfferId = int.tryParse(id);
+      }
+    }
+
+    // Ajouter temporairement le message avec l'image dans l'UI
+    final tempMessage = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'text': text.isNotEmpty ? text : null,
+      'image_path': imageFile.path, // Chemin local temporaire
+      'isSentByMe': true,
+      'timestamp': _getCurrentTime(),
+      'isRead': false,
+      'product': selectedProduct.value,
+      'diaspo_offer': selectedDiaspoOffer.value,
+    };
+
+    messages.add(tempMessage);
+    messageController.clear();
+    selectedProduct.value = null;
+    selectedDiaspoOffer.value = null;
+    _scrollToBottom();
+
+    // Envoyer via API
+    try {
+      final response = await ConversationService.sendMessageWithImage(
+        _conversationId!,
+        message: text.isNotEmpty ? text : null,
+        imageFile: imageFile,
+        productId: productId,
+        diaspoOfferId: diaspoOfferId,
+      );
+
+      if (!response.success) {
+        Get.snackbar(
+          'Erreur',
+          'Impossible d\'envoyer l\'image',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        // Retirer le message temporaire en cas d'échec
+        messages.removeWhere((m) => m['id'] == tempMessage['id']);
+      } else {
+        // Remplacer le message temporaire par le vrai message du serveur
+        final serverMessage = response.data?['message'];
+        if (serverMessage != null) {
+          final index = messages.indexWhere((m) => m['id'] == tempMessage['id']);
+          if (index != -1) {
+            messages[index] = {
+              'id': serverMessage['id']?.toString(),
+              'text': serverMessage['message'],
+              'image_path': serverMessage['image_path'],
+              'isSentByMe': true,
+              'timestamp': _formatTime(serverMessage['created_at']),
+              'isRead': false,
+              'product': serverMessage['product'],
+              'diaspo_offer': serverMessage['diaspo_offer'],
+            };
+          }
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Erreur lors de l\'envoi de l\'image',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      messages.removeWhere((m) => m['id'] == tempMessage['id']);
+    }
+  }
+
+  // ================================
+  // HIDE CONVERSATION
+  // ================================
+
+  /// Cacher la conversation (ne la supprime pas, la cache juste)
+  Future<void> hideConversation() async {
+    if (_conversationId == null) return;
+
+    try {
+      final response = await ConversationService.hideConversation(_conversationId!);
+
+      if (response.success) {
+        Get.back(); // Retour à la liste des conversations
+        Get.snackbar(
+          'Succès',
+          'Conversation masquée',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de masquer la conversation',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 }
