@@ -566,7 +566,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
   ) {
     final primaryImage = product['primary_image']?.toString();
     final name = product['name']?.toString() ?? 'Produit';
-    final formattedPrice = product['formatted_price']?.toString() ?? '';
+    final price = double.tryParse(product['price']?.toString() ?? '0') ?? 0.0;
     final location = product['location']?.toString() ?? '';
 
     return GestureDetector(
@@ -636,7 +636,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      formattedPrice,
+                      controller.formatPrice(price),
                       style: context.textStyle(
                         FontSizeType.body2,
                         fontWeight: FontWeight.bold,

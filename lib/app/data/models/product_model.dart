@@ -1,3 +1,6 @@
+import 'package:get/get.dart';
+import '../providers/currency_service.dart';
+
 /// Modèle de données pour un produit dans l'application
 class ProductModel {
   final String id;
@@ -118,10 +121,26 @@ class ProductModel {
   }
 
   /// Prix formaté avec la devise
-  String get formattedPrice => '$price $currency';
+  String get formattedPrice {
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        return CurrencyService.to.formatPrice(price);
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
+    return '$price $currency';
+  }
 
   /// Prix formaté avec séparateur de milliers
   String get formattedPriceWithSeparator {
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        return CurrencyService.to.formatPrice(price);
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
     final priceStr = price.toStringAsFixed(0);
     final regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
     final result = priceStr.replaceAllMapped(regex, (Match m) => '${m[1]} ');

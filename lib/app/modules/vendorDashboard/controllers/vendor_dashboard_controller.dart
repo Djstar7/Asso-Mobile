@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 
 class VendorDashboardController extends GetxController {
@@ -303,6 +304,26 @@ class VendorDashboardController extends GetxController {
       // Refresh dashboard after managing products
       refreshData();
     });
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 
   @override

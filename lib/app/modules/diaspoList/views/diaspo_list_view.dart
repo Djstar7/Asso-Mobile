@@ -554,7 +554,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         ),
                       ),
                       Text(
-                        '${offer.pricePerKg} ${offer.currency}/kg',
+                        '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -712,36 +712,96 @@ class DiaspoListView extends GetView<DiaspoListController> {
               ],
             ),
 
-            // Confirmation code for buyer
-            if (isBuyer && booking.status == 'pending') ...[
+            // Confirmation code for buyer (for paid and pending bookings)
+            if (isBuyer && (booking.status == 'paid' || booking.status == 'pending')) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blue.shade50,
+                      Colors.indigo.shade50,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.shade300,
+                    width: 2,
+                  ),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.key, color: Colors.amber, size: 20),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        const Text(
-                          'Code de confirmation',
-                          style: TextStyle(fontSize: 12),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.key,
+                            color: Colors.blue.shade700,
+                            size: 20,
+                          ),
                         ),
-                        Text(
-                          booking.confirmationCode,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Votre code secret',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                booking.confirmationCode,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 4,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Donnez ce code au vendeur lors de la livraison',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade900,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/providers/product_service.dart';
+import '../../../data/providers/currency_service.dart';
 
 class SearchController extends GetxController {
   // ================================
@@ -586,6 +587,26 @@ class SearchController extends GetxController {
     if (sort != null) sortBy.value = sort;
     if (order != null) sortOrder.value = order;
     _performSearch();
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }
 

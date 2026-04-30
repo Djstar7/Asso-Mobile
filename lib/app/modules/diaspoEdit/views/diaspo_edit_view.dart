@@ -303,10 +303,10 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Prix par kilo (€)',
+                labelText: 'Prix par kilo (${controller.currencySymbol})',
                 hintText: 'Ex: 13.00',
                 prefixIcon: const Icon(Icons.euro),
-                suffixText: 'EUR/kg',
+                suffixText: '${controller.currencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               onChanged: (value) {
@@ -377,7 +377,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                     child: Obx(() {
                       final total = controller.pricePerKg.value * controller.availableKg.value;
                       return Text(
-                        '${total.toStringAsFixed(2)} EUR',
+                        '${total.toStringAsFixed(2)} ${controller.currencySymbol}',
                         style: AppThemeSystem.getTextStyle(
                           context,
                           FontSizeType.h4,
@@ -494,7 +494,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   _buildSummaryRow(
                     context,
                     'Prix par kilo',
-                    '${controller.pricePerKgController.text} EUR/kg',
+                    '${controller.pricePerKgController.text} ${controller.currencySymbol}/kg',
                     Icons.euro,
                   ),
                   SizedBox(height: elementSpacing * 0.5),

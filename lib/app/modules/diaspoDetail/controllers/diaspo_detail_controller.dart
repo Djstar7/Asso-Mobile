@@ -4,6 +4,7 @@ import '../../../data/models/diaspo_offer.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/conversation_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../diaspoList/controllers/diaspo_list_controller.dart';
 
 class DiaspoDetailController extends GetxController {
@@ -210,5 +211,25 @@ class DiaspoDetailController extends GetxController {
     } finally {
       isDeleting.value = false;
     }
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

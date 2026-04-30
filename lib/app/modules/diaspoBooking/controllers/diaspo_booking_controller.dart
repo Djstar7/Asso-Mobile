@@ -4,7 +4,9 @@ import '../../../data/models/diaspo_offer.dart';
 import '../../../data/models/diaspo_booking.dart';
 import '../../../data/models/wallet_model.dart';
 import '../../../data/providers/diaspo_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/services/wallet_service.dart';
+import '../widgets/payment_method_bottom_sheet.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -105,7 +107,7 @@ class DiaspoBookingController extends GetxController {
   }
 
   Future<void> submitBooking() async {
-    if (offer.value == null) return;
+    if (offer.value == null || wallet.value == null) return;
 
     // Validation
     if (kgBooked.value < minKg) {
@@ -128,12 +130,40 @@ class DiaspoBookingController extends GetxController {
       return;
     }
 
+    // Show payment method selection bottom sheet
+    _showPaymentMethodSelection();
+  }
+
+  void _showPaymentMethodSelection() {
+    if (wallet.value == null) return;
+
+    Get.bottomSheet(
+      PaymentMethodBottomSheet(
+        wallet: wallet.value!,
+        totalAmount: totalPrice.value,
+        onFreemopaySelected: () {
+          Get.back();
+          _processBooking('freemopay');
+        },
+        onPaypalSelected: () {
+          Get.back();
+          _processBooking('paypal');
+        },
+      ),
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+    );
+  }
+
+  Future<void> _processBooking(String paymentMethod) async {
     isSubmitting.value = true;
 
     try {
       final booking = await _diaspoService.bookOffer(
         offerId: offer.value!.id,
         kgBooked: kgBooked.value,
+        paymentMethod: paymentMethod,
       );
 
       isSubmitting.value = false;
@@ -242,5 +272,25 @@ class DiaspoBookingController extends GetxController {
       ),
       barrierDismissible: false,
     );
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

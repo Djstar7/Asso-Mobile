@@ -207,7 +207,7 @@ class ShipmentView extends GetView<MyOrderController> {
                       child: Text('${item.productName} x${item.quantity}',
                         style: context.body2, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
-                    Text('${numberFormat.format(item.totalPrice)} FCFA',
+                    Text(controller.formatPrice(item.totalPrice),
                       style: context.body2.copyWith(fontWeight: FontWeight.w600)),
                   ],
                 ),
@@ -228,7 +228,7 @@ class ShipmentView extends GetView<MyOrderController> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Livraison', style: context.caption),
-                    Text('${numberFormat.format(order.deliveryFee)} FCFA', style: context.caption),
+                    Text(controller.formatPrice(order.deliveryFee), style: context.caption),
                   ],
                 ),
                 if (order.deliveryCompanyName != null) ...[
@@ -246,7 +246,7 @@ class ShipmentView extends GetView<MyOrderController> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Total', style: context.body1.copyWith(fontWeight: FontWeight.bold)),
-                    Text('${numberFormat.format(order.total)} FCFA',
+                    Text(controller.formatPrice(order.total),
                       style: context.body1.copyWith(fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor)),
                   ],
                 ),

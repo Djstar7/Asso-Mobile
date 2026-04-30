@@ -31,22 +31,22 @@ class SettingsView extends GetView<SettingsController> {
             SizedBox(height: context.sectionSpacing),
 
             // Section Compte
-            _buildSectionTitle(context, 'Compte'),
-            SizedBox(height: context.elementSpacing),
-            _buildSettingsCard(
-              context,
-              children: [
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.phone_outlined,
-                  title: 'Changer le numéro de téléphone',
-                  subtitle: 'Modifier votre numéro de téléphone',
-                  onTap: controller.changePhoneNumber,
-                ),
-              ],
-            ),
+            // _buildSectionTitle(context, 'Compte'),
+            // SizedBox(height: context.elementSpacing),
+            // _buildSettingsCard(
+            //   context,
+            //   children: [
+            //     _buildSettingsTile(
+            //       context,
+            //       icon: Icons.phone_outlined,
+            //       title: 'Changer le numéro de téléphone',
+            //       subtitle: 'Modifier votre numéro de téléphone',
+            //       onTap: controller.changePhoneNumber,
+            //     ),
+            //   ],
+            // ),
 
-            SizedBox(height: context.sectionSpacing),
+            // SizedBox(height: context.sectionSpacing),
 
             // Section Application
             _buildSectionTitle(context, 'Application'),

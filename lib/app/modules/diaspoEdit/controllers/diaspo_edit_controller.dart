@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/providers/diaspo_service.dart';
+import '../../../data/providers/currency_service.dart';
 
 class DiaspoEditController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -264,5 +265,25 @@ class DiaspoEditController extends GetxController {
   String formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return 'Sélectionner';
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

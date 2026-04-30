@@ -94,6 +94,8 @@ import '../modules/myVoice/bindings/my_voice_binding.dart';
 import '../modules/myVoice/views/my_voice_view.dart';
 import '../modules/postDetail/bindings/post_detail_binding.dart';
 import '../modules/postDetail/views/post_detail_view.dart';
+import '../modules/countrySelection/bindings/country_selection_binding.dart';
+import '../modules/countrySelection/views/country_selection_view.dart';
 
 part 'app_routes.dart';
 
@@ -342,6 +344,11 @@ class AppPages {
       name: _Paths.DIASPO_BOOKING,
       page: () => const DiaspoBookingView(),
       binding: DiaspoBookingBinding(),
+    ),
+    GetPage(
+      name: _Paths.COUNTRY_SELECTION,
+      page: () => const CountrySelectionView(),
+      binding: CountrySelectionBinding(),
     ),
   ];
 }

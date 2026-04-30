@@ -9,6 +9,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/currency_service.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -327,11 +328,14 @@ class AddProductController extends GetxController {
       nameController.text = product['name'] ?? '';
       descriptionController.text = product['description'] ?? '';
 
-      // Price - remove formatting if present
+      // Price - convert from XOF to user's currency for display
       final price = product['price'];
       if (price != null) {
-        priceController.text = price.toString();
-        print('📝 ADD_PRODUCT: Price set: $price');
+        final priceInXOF = double.tryParse(price.toString()) ?? 0;
+        final convertedPrice = _convertFromXOFForDisplay(priceInXOF);
+        priceController.text = convertedPrice.toStringAsFixed(0);
+        print('📝 ADD_PRODUCT: Price in XOF: $priceInXOF');
+        print('📝 ADD_PRODUCT: Price converted to ${currencySymbol}: $convertedPrice');
       } else {
         print('⚠️ ADD_PRODUCT: No price found in product data');
       }
@@ -866,12 +870,20 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: category_id = $categoryId');
       print('📦 ADD_PRODUCT: subcategory_id = ${selectedSubcategoryId.value}');
 
+      // Convert price from user's currency back to XOF for backend
+      final priceInUserCurrency = double.tryParse(priceController.text.trim()) ?? 0;
+      final priceInXOF = _convertToXOFForSaving(priceInUserCurrency);
+
+      print('📦 ADD_PRODUCT: Price conversion for saving:');
+      print('   └─ Price entered by user (${currencySymbol}): $priceInUserCurrency');
+      print('   └─ Price to send to backend (XOF): $priceInXOF');
+
       // Préparer les champs (selon ce qu'attend l'API)
       final fieldsMap = <String, String>{
         'name': nameController.text.trim(),
         'description': descriptionController.text.trim(),
         'type': articleType.value,
-        'price': priceController.text.trim(),
+        'price': priceInXOF.toStringAsFixed(0),
         'condition': 'new', // L'API requiert ce champ
       };
 
@@ -926,18 +938,18 @@ class AddProductController extends GetxController {
             // S'assurer que "kg" est ajouté une seule fois
             final cleanWeight = customWeightText.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
             fieldsMap['weight'] = '$cleanWeight kg';
-            fieldsMap['weight_category'] = ''; // Nettoyer weight_category si on utilise weight
+            // Ne pas envoyer weight_category du tout (pas de chaîne vide pour éviter NOT NULL constraint)
             print('📦 ADD_PRODUCT: ✅ Adding custom weight: "${fieldsMap['weight']}"');
-            print('📦 ADD_PRODUCT: ✅ Clearing weight_category');
+            print('📦 ADD_PRODUCT: ✅ Not sending weight_category (using custom weight)');
           } else {
             print('⚠️ ADD_PRODUCT: Custom weight selected but no value entered');
           }
         } else {
           // Catégorie de poids prédéfinie (X-small, 30 Deep, etc.)
           fieldsMap['weight_category'] = selectedWeightType.value!;
-          fieldsMap['weight'] = ''; // Nettoyer weight si on utilise weight_category
+          // Ne pas envoyer weight du tout (pas de chaîne vide)
           print('📦 ADD_PRODUCT: ✅ Adding weight_category: "${fieldsMap['weight_category']}"');
-          print('📦 ADD_PRODUCT: ✅ Clearing weight');
+          print('📦 ADD_PRODUCT: ✅ Not sending weight (using weight_category)');
         }
       } else {
         print('⚠️ ADD_PRODUCT: No weight selected');
@@ -1110,5 +1122,41 @@ class AddProductController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
+  }
+
+  /// Convert price from XOF to user's currency for display in form
+  double _convertFromXOFForDisplay(double priceInXOF) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return priceInXOF;
+    }
+    return CurrencyService.to.convertFromXOF(priceInXOF);
+  }
+
+  /// Convert price from user's currency back to XOF for saving to backend
+  double _convertToXOFForSaving(double priceInUserCurrency) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return priceInUserCurrency;
+    }
+    return CurrencyService.to.convertToXOF(priceInUserCurrency);
   }
 }

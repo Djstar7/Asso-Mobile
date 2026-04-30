@@ -213,6 +213,202 @@ class AuthService {
     return response;
   }
 
+  /// Register with email and password (sends OTP to email)
+  static Future<ApiResponse> registerWithEmail({
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? firstName,
+    String? lastName,
+  }) async {
+    developer.log(
+      '========== REGISTER WITH EMAIL ==========',
+      name: 'AuthService',
+      error: 'Email: $email',
+    );
+
+    final response = await ApiProvider.post(AppConstants.registerEmailUrl, body: {
+      'email': email,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+    });
+
+    developer.log(
+      'Register with email response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}, Message: ${response.message}',
+    );
+
+    // Log OTP code in development mode
+    if (response.success && response.data != null && response.data!.containsKey('otp_code')) {
+      developer.log(
+        '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
+        name: 'AuthService',
+      );
+    }
+
+    return response;
+  }
+
+  /// Login with email and password (no OTP required)
+  static Future<ApiResponse> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    developer.log(
+      '========== LOGIN WITH EMAIL ==========',
+      name: 'AuthService',
+      error: 'Email: $email',
+    );
+
+    final response = await ApiProvider.post(AppConstants.loginEmailUrl, body: {
+      'email': email,
+      'password': password,
+    });
+
+    developer.log(
+      'Login with email response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}, Message: ${response.message}',
+    );
+
+    if (response.success && response.data != null) {
+      final token = response.data!['token'] as String?;
+      final userData = response.data!['user'] as Map<String, dynamic>?;
+
+      if (token != null && userData != null) {
+        developer.log(
+          'Email login successful - saving session',
+          name: 'AuthService',
+        );
+
+        final user = UserModel.fromJson(userData);
+        StorageService.saveAuthSession(token, user);
+
+        developer.log(
+          'Session saved',
+          name: 'AuthService',
+          error: 'User: ${user.toString()}',
+        );
+      } else {
+        developer.log(
+          'Invalid response data - missing token or user',
+          name: 'AuthService',
+          error: 'Token: ${token != null}, User: ${userData != null}',
+        );
+      }
+    } else {
+      developer.log(
+        'Email login failed',
+        name: 'AuthService',
+        error: 'Message: ${response.message}',
+      );
+    }
+
+    return response;
+  }
+
+  /// Verify OTP sent to email after registration
+  static Future<ApiResponse> verifyEmailOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    developer.log(
+      '========== VERIFY EMAIL OTP ==========',
+      name: 'AuthService',
+      error: 'Email: $email, OTP: $otpCode',
+    );
+
+    final response = await ApiProvider.post(AppConstants.verifyEmailOtpUrl, body: {
+      'email': email,
+      'otp_code': otpCode,
+    });
+
+    developer.log(
+      'Email OTP verification response',
+      name: 'AuthService',
+      error: 'Success: ${response.success}, Message: ${response.message}',
+    );
+
+    if (response.success && response.data != null) {
+      print('');
+      print('========================================');
+      print('✅ EMAIL OTP VERIFICATION SUCCESS');
+      developer.log(
+        '✓ Email OTP Verification SUCCESS',
+        name: 'AuthService',
+      );
+
+      final token = response.data!['token'] as String?;
+      final userData = response.data!['user'] as Map<String, dynamic>?;
+      final isNewUser = response.data!['is_new_user'] as bool? ?? false;
+
+      print('📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}');
+      developer.log(
+        'Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
+        name: 'AuthService',
+      );
+
+      if (token != null && userData != null) {
+        print('💾 Saving auth session to storage (isNewUser: $isNewUser)');
+        developer.log(
+          '→ Saving auth session to storage',
+          name: 'AuthService',
+          error: 'Is new user: $isNewUser',
+        );
+
+        final user = UserModel.fromJson(userData);
+        print('👤 User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}');
+        developer.log(
+          'User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}',
+          name: 'AuthService',
+        );
+
+        StorageService.saveAuthSession(token, user);
+
+        print('✅ Session saved successfully');
+        developer.log(
+          '✓ Session saved successfully',
+          name: 'AuthService',
+          error: 'User: ${user.toString()}',
+        );
+
+        // Verify it was actually saved
+        final savedToken = StorageService.getToken();
+        final savedUser = StorageService.getUser();
+        print('🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}');
+        developer.log(
+          'Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
+          name: 'AuthService',
+        );
+        print('========================================');
+        print('');
+      } else {
+        print('❌ Invalid response data - missing token or user');
+        print('   Token: ${token != null}, User: ${userData != null}');
+        developer.log(
+          '✗ Invalid response data - missing token or user',
+          name: 'AuthService',
+          error: 'Token: ${token != null}, User: ${userData != null}',
+        );
+        print('========================================');
+        print('');
+      }
+    } else {
+      print('❌ Email OTP verification failed');
+      print('   Success: ${response.success}, Message: ${response.message}');
+      developer.log(
+        '✗ Email OTP verification failed',
+        name: 'AuthService',
+        error: 'Success: ${response.success}, Message: ${response.message}',
+      );
+    }
+
+    return response;
+  }
+
   /// Get user profile from API
   static Future<ApiResponse> getProfile() async {
     developer.log('========== GET PROFILE ==========', name: 'AuthService');

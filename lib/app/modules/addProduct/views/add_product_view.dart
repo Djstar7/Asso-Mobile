@@ -1057,7 +1057,7 @@ class AddProductView extends GetView<AddProductController> {
             filled: true,
             fillColor: context.inputFieldColor,
             prefixIcon: const Icon(Icons.payments_outlined),
-            suffixText: 'XAF',
+            suffixText: controller.currencySymbol,
             border: OutlineInputBorder(
               borderRadius: context.borderRadius(BorderRadiusType.medium),
               borderSide: BorderSide(color: context.borderColor),

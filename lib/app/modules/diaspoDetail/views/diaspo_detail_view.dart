@@ -279,7 +279,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                 ),
               ),
               Text(
-                '${offer.pricePerKg} ${offer.currency}/kg',
+                '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

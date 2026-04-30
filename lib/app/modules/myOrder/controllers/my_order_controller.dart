@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/wallet_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../models/customer_order_models.dart';
 
 class MyOrderController extends GetxController {
@@ -252,5 +253,25 @@ class MyOrderController extends GetxController {
         ],
       ),
     );
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

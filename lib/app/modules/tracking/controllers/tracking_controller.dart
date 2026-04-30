@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/services/fcm_service.dart';
 
 class TrackingController extends GetxController {
@@ -222,7 +223,6 @@ class TrackingController extends GetxController {
     }
 
     final total = double.tryParse(order['total']?.toString() ?? '0') ?? 0;
-    final numberFormat = NumberFormat('#,###', 'fr_FR');
 
     return {
       'id': order['order_number'] ?? 'CMD-${order['id']}',
@@ -236,7 +236,7 @@ class TrackingController extends GetxController {
       'currentLocation': currentLocation,
       'trackingSteps': trackingSteps,
       'seller': '',
-      'price': '${numberFormat.format(total)} FCFA',
+      'price': formatPrice(total),
       'deliveryAddress': order['delivery_address'] ?? '',
       'deliveryCompany': deliveryCompany?['name'] ?? '',
       'deliveryPersonName': deliveryPerson?['name'],
@@ -283,5 +283,25 @@ class TrackingController extends GetxController {
       'Fonction de contact support en développement',
       snackPosition: SnackPosition.BOTTOM,
     );
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

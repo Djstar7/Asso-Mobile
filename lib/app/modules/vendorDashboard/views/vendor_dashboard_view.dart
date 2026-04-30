@@ -328,7 +328,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 context,
                 icon: Icons.trending_up,
                 title: 'Ventes',
-                value: '${formatter.format(controller.totalSales.value)} XAF',
+                value: controller.formatPrice(controller.totalSales.value),
                 isCompact: true,
                 onTap: () {
                   Get.to(
@@ -715,7 +715,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
       // A un package : afficher les infos complètes
       final packageData = controller.packageInfo.value;
       final packageName = packageData?['package']?['name'] ?? 'Package';
-      final packagePrice = packageData?['package']?['formatted_price'] ?? '';
+      final packagePriceRaw = double.tryParse(packageData?['package']?['price']?.toString() ?? '0') ?? 0.0;
+      final packagePrice = packagePriceRaw > 0 ? controller.formatPrice(packagePriceRaw) : (packageData?['package']?['formatted_price'] ?? '');
       final expiresAt = controller.packageExpiresAt.value;
 
       return Column(

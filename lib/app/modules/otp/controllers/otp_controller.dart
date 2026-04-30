@@ -11,11 +11,13 @@ class OtpController extends GetxController {
   late List<FocusNode> focusNodes;
 
   final phoneNumber = ''.obs;
+  final email = ''.obs;
   final secondsRemaining = 120.obs;
   final isLoading = false.obs;
   final isOtpComplete = false.obs;
   final isNewUser = false.obs;
   final isPhoneChange = false.obs;
+  final isEmailAuth = false.obs;
   final newPhone = ''.obs;
 
   Timer? _timer;
@@ -27,13 +29,15 @@ class OtpController extends GetxController {
 
     if (Get.arguments != null) {
       phoneNumber.value = Get.arguments['phoneNumber'] ?? '';
+      email.value = Get.arguments['email'] ?? '';
       isNewUser.value = Get.arguments['isNewUser'] ?? false;
       isPhoneChange.value = Get.arguments['isPhoneChange'] ?? false;
+      isEmailAuth.value = Get.arguments['isEmailAuth'] ?? false;
       newPhone.value = Get.arguments['newPhone'] ?? '';
       developer.log(
         'Arguments received',
         name: 'OtpController',
-        error: 'Phone: ${phoneNumber.value}, Is new user: ${isNewUser.value}, Is phone change: ${isPhoneChange.value}',
+        error: 'Phone: ${phoneNumber.value}, Email: ${email.value}, Is new user: ${isNewUser.value}, Is phone change: ${isPhoneChange.value}, Is email auth: ${isEmailAuth.value}',
       );
     }
 
@@ -256,17 +260,10 @@ class OtpController extends GetxController {
           focusNodes[0].requestFocus();
         }
       } else {
-        // Normal OTP verification for login
-        developer.log(
-          'Verifying OTP for login',
-          name: 'OtpController',
-          error: 'Phone: ${phoneNumber.value}, Code: $otpCode, Is new user: ${isNewUser.value}',
-        );
-
-        final response = await AuthService.verifyOtp(
-          fullPhone: phoneNumber.value,
-          otpCode: otpCode,
-        );
+        // Normal OTP verification for login (phone or email)
+        final response = isEmailAuth.value
+            ? await _verifyEmailOtp(otpCode)
+            : await _verifyPhoneOtp(otpCode);
 
         developer.log(
           'Verify OTP response',
@@ -365,5 +362,31 @@ class OtpController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<dynamic> _verifyEmailOtp(String otpCode) async {
+    developer.log(
+      'Verifying OTP for email login',
+      name: 'OtpController',
+      error: 'Email: ${email.value}, Code: $otpCode, Is new user: ${isNewUser.value}',
+    );
+
+    return await AuthService.verifyEmailOtp(
+      email: email.value,
+      otpCode: otpCode,
+    );
+  }
+
+  Future<dynamic> _verifyPhoneOtp(String otpCode) async {
+    developer.log(
+      'Verifying OTP for phone login',
+      name: 'OtpController',
+      error: 'Phone: ${phoneNumber.value}, Code: $otpCode, Is new user: ${isNewUser.value}',
+    );
+
+    return await AuthService.verifyOtp(
+      fullPhone: phoneNumber.value,
+      otpCode: otpCode,
+    );
   }
 }

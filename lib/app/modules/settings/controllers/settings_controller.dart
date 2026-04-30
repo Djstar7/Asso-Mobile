@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/currency_service.dart';
+import '../../../data/providers/api_provider.dart';
+import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
 
 class SettingsController extends GetxController {
@@ -18,11 +21,19 @@ class SettingsController extends GetxController {
   final selectedLanguage = 'Français'.obs;
   final notificationsEnabled = true.obs;
 
+  // Pays et devise
+  final selectedCountry = ''.obs;
+  final selectedCurrency = ''.obs;
+  final RxList<Map<String, dynamic>> allCountries = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> filteredCountries = <Map<String, dynamic>>[].obs;
+  final RxString searchQuery = ''.obs;
+
   @override
   void onInit() {
     super.onInit();
     _loadUserData();
     _loadPreferences();
+    _loadCurrentCountryAndCurrency();
   }
 
   /// Charge les données utilisateur
@@ -1159,6 +1170,91 @@ class SettingsController extends GetxController {
 
                   SizedBox(height: context.elementSpacing),
 
+                  // Section Pays et Devise
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                    child: Text(
+                      'Pays et Devise',
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        fontWeight: FontWeight.bold,
+                        color: AppThemeSystem.grey600,
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: context.elementSpacing * 0.75),
+
+                  // Country and currency selection
+                  Container(
+                    margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: openCountrySelection,
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        child: Container(
+                          padding: EdgeInsets.all(context.elementSpacing),
+                          decoration: BoxDecoration(
+                            color: context.surfaceColor,
+                            borderRadius: context.borderRadius(BorderRadiusType.medium),
+                            border: Border.all(color: context.borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(context.elementSpacing * 0.6),
+                                decoration: BoxDecoration(
+                                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: context.borderRadius(BorderRadiusType.small),
+                                ),
+                                child: Icon(
+                                  Icons.public,
+                                  color: AppThemeSystem.primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(width: context.elementSpacing),
+                              Expanded(
+                                child: Obx(() => Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          selectedCountry.value.isEmpty
+                                              ? 'Sélectionner un pays'
+                                              : selectedCountry.value,
+                                          style: context.textStyle(
+                                            FontSizeType.body1,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(height: context.elementSpacing * 0.25),
+                                        Text(
+                                          selectedCurrency.value.isEmpty
+                                              ? 'Aucune devise sélectionnée'
+                                              : selectedCurrency.value,
+                                          style: context.textStyle(
+                                            FontSizeType.caption,
+                                            color: AppThemeSystem.grey600,
+                                          ),
+                                        ),
+                                      ],
+                                    )),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: AppThemeSystem.grey400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: context.sectionSpacing),
+
                   // Section Langue
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
@@ -1441,6 +1537,403 @@ class SettingsController extends GetxController {
   /// Naviguer vers À propos
   void goToAbout() {
     Get.toNamed('/about');
+  }
+
+  /// Charger le pays et la devise actuels
+  void _loadCurrentCountryAndCurrency() {
+    if (Get.isRegistered<CurrencyService>()) {
+      final country = CurrencyService.to.detectedCountry;
+      final currency = CurrencyService.to.userCurrency;
+
+      if (country != null && country.isNotEmpty) {
+        selectedCountry.value = country;
+      }
+
+      if (currency != null) {
+        selectedCurrency.value = '${currency.code} (${currency.symbol})';
+      }
+    }
+  }
+
+  /// Ouvrir le bottom sheet de sélection de pays
+  void openCountrySelection() {
+    // Fetch countries first
+    fetchAllCountriesWithCurrencies();
+
+    Get.bottomSheet(
+      Builder(
+        builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: AppThemeSystem.getSurfaceColor(context),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(
+                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+              ),
+              topRight: Radius.circular(
+                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+              ),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header avec poignée
+              Center(
+                child: Container(
+                  margin: EdgeInsets.only(
+                    top: context.elementSpacing,
+                    bottom: context.elementSpacing * 0.5,
+                  ),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.grey300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Titre
+              Padding(
+                padding: EdgeInsets.all(context.horizontalPadding),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(context.elementSpacing * 0.75),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                      ),
+                      child: Icon(
+                        Icons.public,
+                        color: AppThemeSystem.primaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: context.elementSpacing),
+                    Expanded(
+                      child: Text(
+                        'Sélectionnez votre pays',
+                        style: context.textStyle(
+                          FontSizeType.h5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Search bar
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                child: TextField(
+                  onChanged: filterCountries,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un pays ou une devise...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: context.borderRadius(BorderRadiusType.medium),
+                    ),
+                    filled: true,
+                    fillColor: context.inputFieldColor,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: context.elementSpacing),
+
+              // Loading or country list
+              Expanded(
+                child: Obx(() {
+                  if (isLoading.value && allCountries.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  if (filteredCountries.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: AppThemeSystem.grey400,
+                          ),
+                          SizedBox(height: context.elementSpacing),
+                          Text(
+                            'Aucun pays trouvé',
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              color: AppThemeSystem.grey600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: filteredCountries.length,
+                    padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                    itemBuilder: (context, index) {
+                      final item = filteredCountries[index];
+                      final String country = item['country'];
+                      final CurrencyModel currency = item['currency'];
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                          child: Text(
+                            currency.symbol,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          country,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${currency.code} - ${currency.name}',
+                          style: TextStyle(
+                            color: AppThemeSystem.grey600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: AppThemeSystem.grey400,
+                        ),
+                        onTap: () => _showCountryConfirmationDialog(context, item),
+                      );
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  /// Fetch all countries with their currencies from backend
+  Future<void> fetchAllCountriesWithCurrencies() async {
+    try {
+      isLoading.value = true;
+      print('🌍 Fetching all countries and currencies from API...');
+
+      final response = await ApiProvider.get('/v1/currencies/all-with-countries');
+
+      print('📡 API Response - Success: ${response.success}');
+      print('📡 API Response - Data null?: ${response.data == null}');
+
+      if (response.success && response.data != null) {
+        final List currencies = response.data!['data'];
+        print('💱 Received ${currencies.length} currencies from API');
+
+        // Transform data to country list with currency info
+        List<Map<String, dynamic>> countries = [];
+
+        for (var currency in currencies) {
+          final currencyModel = CurrencyModel.fromJson(currency);
+          print('   Processing: ${currencyModel.code} with ${currencyModel.countries.length} countries');
+
+          // Add each country from this currency
+          for (var country in currencyModel.countries) {
+            countries.add({
+              'country': country,
+              'currency': currencyModel,
+            });
+          }
+        }
+
+        print('📋 Total countries created: ${countries.length}');
+
+        // Sort countries alphabetically
+        countries.sort((a, b) =>
+          (a['country'] as String).compareTo(b['country'] as String)
+        );
+
+        allCountries.value = countries;
+        filteredCountries.value = countries;
+        print('✅ Countries loaded successfully!');
+      } else {
+        print('❌ API call failed or no data');
+        print('   Message: ${response.message}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error fetching countries: $e');
+      print('Stack trace: $stackTrace');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger la liste des pays',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Filter countries based on search query
+  void filterCountries(String query) {
+    searchQuery.value = query;
+
+    if (query.isEmpty) {
+      filteredCountries.value = allCountries;
+    } else {
+      filteredCountries.value = allCountries.where((item) {
+        final country = (item['country'] as String).toLowerCase();
+        final currency = (item['currency'] as CurrencyModel);
+        final currencyCode = currency.code.toLowerCase();
+        final currencyName = currency.name.toLowerCase();
+        final search = query.toLowerCase();
+
+        return country.contains(search) ||
+               currencyCode.contains(search) ||
+               currencyName.contains(search);
+      }).toList();
+    }
+  }
+
+  /// Show confirmation dialog for country selection
+  void _showCountryConfirmationDialog(BuildContext context, Map<String, dynamic> countryData) {
+    final String country = countryData['country'];
+    final CurrencyModel currency = countryData['currency'];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirmer votre choix'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pays : $country',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Devise : ${currency.code} (${currency.symbol})',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                currency.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Les prix seront affichés en ${currency.code}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                selectCountry(countryData);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirmer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Select a country and its currency
+  Future<void> selectCountry(Map<String, dynamic> countryData) async {
+    try {
+      final CurrencyModel currency = countryData['currency'];
+      final String country = countryData['country'];
+
+      isLoading.value = true;
+
+      // Set the currency using CurrencyService
+      await CurrencyService.to.setCountryAndCurrency(country, currency);
+
+      // Update local state
+      selectedCountry.value = country;
+      selectedCurrency.value = '${currency.code} (${currency.symbol})';
+
+      // Close the bottom sheet
+      Get.back();
+
+      Get.snackbar(
+        'Succès',
+        'Pays et devise mis à jour : $country - ${currency.code}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.successColor,
+        colorText: Colors.white,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      print('Error selecting country: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de définir le pays sélectionné',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   /// Helper widget pour afficher un item d'avertissement

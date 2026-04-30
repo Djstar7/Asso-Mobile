@@ -74,9 +74,21 @@ class CacheManager {
     _storage.remove('cache_$key');
   }
 
-  /// Clear all cache
+  /// Clear all cache (memory and persistent)
   void clearAll() {
     _memoryCache.clear();
+
+    // Clear all persistent cache entries
+    try {
+      final allKeys = _storage.getKeys();
+      for (var key in allKeys) {
+        if (key.toString().startsWith('cache_')) {
+          _storage.remove(key);
+        }
+      }
+    } catch (_) {
+      // Ignore errors during cleanup
+    }
   }
 
   /// Clear expired entries

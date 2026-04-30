@@ -7,6 +7,8 @@ import '../../../core/values/constants.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/currency_service.dart';
+import '../../../widgets/currency_debug_widget.dart';
 import '../../../routes/app_pages.dart';
 import '../../chat/views/chat_view.dart';
 import '../../tracking/views/tracking_view.dart';
@@ -47,11 +49,13 @@ class HomeView extends GetView<HomeController> {
       );
     }
 
-    return Scaffold(
-      // Supprimé key pour éviter le problème de GlobalKey duplicate
-      backgroundColor: isDark ? AppThemeSystem.darkCardColor : const Color(0xFFF7F8FA),
-      drawer: _buildDrawer(context),
-      body: NestedScrollView(
+    return Stack(
+      children: [
+        Scaffold(
+          // Supprimé key pour éviter le problème de GlobalKey duplicate
+          backgroundColor: isDark ? AppThemeSystem.darkCardColor : const Color(0xFFF7F8FA),
+          drawer: _buildDrawer(context),
+          body: NestedScrollView(
         controller: controller.nestedScrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -367,7 +371,11 @@ class HomeView extends GetView<HomeController> {
                 ],
               )
             : const Center(child: CircularProgressIndicator()),
-      ),
+          ),
+        ),
+        // Widget de debug pour afficher les infos de devise
+        // const CurrencyDebugWidget(),
+      ],
     );
   }
 
@@ -434,61 +442,33 @@ class HomeView extends GetView<HomeController> {
                         final user = StorageService.getUser();
                         final isAuthenticated = StorageService.isAuthenticated;
 
-                        if (isAuthenticated && user != null && user.phone != null) {
-                          // Extract country code and phone number
-                          String phone = user.phone!;
-                          String countryCode = '+237';
-                          String phoneNumber = phone;
-
-                          if (phone.startsWith('+')) {
-                            final parts = phone.substring(1).split(RegExp(r'(?<=^\d{3})'));
-                            if (parts.length > 1) {
-                              countryCode = '+${parts[0]}';
-                              phoneNumber = parts.sublist(1).join();
-                            }
-                          }
-
+                        if (isAuthenticated && user != null && user.email.isNotEmpty) {
                           return Row(
                             children: [
-                              // Flag Cameroun
+                              // Email icon
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
+                                padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: context.borderRadius(BorderRadiusType.small),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '🇨🇲',
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      countryCode,
-                                      style: context.textStyle(
-                                        FontSizeType.caption,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                child: Icon(
+                                  Icons.email_outlined,
+                                  color: Colors.white,
+                                  size: 16,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  phoneNumber,
+                                  user.email,
                                   style: context.textStyle(
                                     FontSizeType.body2,
                                     color: Colors.white.withValues(alpha: 0.95),
                                     fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ],
@@ -1859,18 +1839,31 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
-  /// Format price for display
+  /// Format price for display (with currency conversion)
   String _formatPrice(Map<String, dynamic> product) {
-    final formattedPrice = product['formatted_price'];
-    if (formattedPrice != null) return formattedPrice.toString();
-
     final price = product['price'];
+
     if (price != null) {
+      double priceValue = 0.0;
       if (price is num) {
-        return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
+        priceValue = price.toDouble();
+      } else if (price is String) {
+        priceValue = double.tryParse(price) ?? 0.0;
       }
-      return '$price FCFA';
+
+      // Utiliser CurrencyService pour la conversion
+      try {
+        if (Get.isRegistered<CurrencyService>()) {
+          return CurrencyService.to.formatPrice(priceValue);
+        }
+      } catch (e) {
+        print('Error using CurrencyService in _formatPrice: $e');
+      }
+
+      // Fallback: affichage sans conversion
+      return '${priceValue.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
     }
+
     return 'Prix non défini';
   }
 

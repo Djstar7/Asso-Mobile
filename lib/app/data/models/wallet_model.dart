@@ -1,8 +1,15 @@
+import 'package:get/get.dart';
+import '../providers/currency_service.dart';
+
 /// Wallet model matching backend structure
 class WalletModel {
   final double currentBalance;
   final double freemopayBalance;
   final double paypalBalance;
+  final double lockedFreemopayBalance;
+  final double lockedPaypalBalance;
+  final double totalLockedBalance;
+  final double availableBalance;
   final double totalCredits;
   final double totalDebits;
   final int totalTransactions;
@@ -12,6 +19,10 @@ class WalletModel {
     required this.currentBalance,
     required this.freemopayBalance,
     required this.paypalBalance,
+    required this.lockedFreemopayBalance,
+    required this.lockedPaypalBalance,
+    required this.totalLockedBalance,
+    required this.availableBalance,
     required this.totalCredits,
     required this.totalDebits,
     required this.totalTransactions,
@@ -23,6 +34,10 @@ class WalletModel {
       currentBalance: _parseDouble(json['current_balance']),
       freemopayBalance: _parseDouble(json['freemopay_balance']),
       paypalBalance: _parseDouble(json['paypal_balance']),
+      lockedFreemopayBalance: _parseDouble(json['locked_freemopay_balance']),
+      lockedPaypalBalance: _parseDouble(json['locked_paypal_balance']),
+      totalLockedBalance: _parseDouble(json['total_locked_balance']),
+      availableBalance: _parseDouble(json['available_balance']),
       totalCredits: _parseDouble(json['total_credits']),
       totalDebits: _parseDouble(json['total_debits']),
       totalTransactions: json['total_transactions'] ?? 0,
@@ -35,6 +50,10 @@ class WalletModel {
       'current_balance': currentBalance,
       'freemopay_balance': freemopayBalance,
       'paypal_balance': paypalBalance,
+      'locked_freemopay_balance': lockedFreemopayBalance,
+      'locked_paypal_balance': lockedPaypalBalance,
+      'total_locked_balance': totalLockedBalance,
+      'available_balance': availableBalance,
       'total_credits': totalCredits,
       'total_debits': totalDebits,
       'total_transactions': totalTransactions,
@@ -43,11 +62,48 @@ class WalletModel {
   }
 
   String get formattedBalance {
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        return CurrencyService.to.formatPrice(currentBalance);
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
     return '${currentBalance.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]} ',
         )} FCFA';
   }
+
+  String get formattedLockedBalance {
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        return CurrencyService.to.formatPrice(totalLockedBalance);
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
+    return '${totalLockedBalance.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]} ',
+        )} FCFA';
+  }
+
+  String get formattedAvailableBalance {
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        return CurrencyService.to.formatPrice(availableBalance);
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
+    return '${availableBalance.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]} ',
+        )} FCFA';
+  }
+
+  bool get hasLockedFunds => totalLockedBalance > 0;
 
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
@@ -62,12 +118,12 @@ class WalletModel {
 class WalletTransactionModel {
   final int id;
   final int userId;
-  final String type; // credit, debit, refund, bonus, adjustment
+  final String type; // credit, debit, refund, bonus, adjustment, lock, unlock, escrow_release
   final double amount;
   final String? paymentProvider; // freemopay, paypal
   final String status; // pending, completed, failed
   final String description;
-  final String? referenceType; // order, subscription, withdrawal, recharge
+  final String? referenceType; // order, subscription, withdrawal, recharge, diaspo_booking
   final int? referenceId;
   final Map<String, dynamic>? metadata;
   final DateTime createdAt;
@@ -129,10 +185,24 @@ class WalletTransactionModel {
   /// Check if transaction is a credit (incoming money)
   bool get isCredit => type == 'credit' || type == 'refund' || type == 'bonus';
 
+  /// Check if transaction is escrow-related
+  bool get isEscrow => type == 'lock' || type == 'unlock' || type == 'escrow_release';
+
   /// Get formatted amount with sign
   String get formattedAmount {
     final sign = isCredit ? '+' : '-';
     final absAmount = amount.abs();
+
+    try {
+      if (Get.isRegistered<CurrencyService>()) {
+        final formattedPrice = CurrencyService.to.formatPrice(absAmount, showSymbol: false);
+        final symbol = CurrencyService.to.currencySymbol;
+        return '$sign $formattedPrice $symbol';
+      }
+    } catch (e) {
+      // Fallback si CurrencyService n'est pas encore initialisé
+    }
+
     return '$sign ${absAmount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]} ',
@@ -152,6 +222,12 @@ class WalletTransactionModel {
         return 'Bonus';
       case 'adjustment':
         return 'Ajustement';
+      case 'lock':
+        return 'Fonds bloqués';
+      case 'unlock':
+        return 'Fonds débloqués';
+      case 'escrow_release':
+        return 'Paiement libéré';
       default:
         return 'Transaction';
     }
@@ -170,6 +246,12 @@ class WalletTransactionModel {
         return '🎁';
       case 'adjustment':
         return '⚙️';
+      case 'lock':
+        return '🔒';
+      case 'unlock':
+        return '🔓';
+      case 'escrow_release':
+        return '✅';
       default:
         return '💰';
     }

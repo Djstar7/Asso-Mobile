@@ -33,9 +33,17 @@ class AppConstants {
   static const String logoPath = 'assets/images/logo.png';
 
   // API Endpoints
+  // Phone-based authentication
   static const String sendOtpUrl = '/v1/auth/send-otp';
   static const String verifyOtpUrl = '/v1/auth/verify-otp';
   static const String loginUrl = '/v1/auth/login';
+
+  // Email-based authentication
+  static const String registerEmailUrl = '/v1/auth/register-email';
+  static const String loginEmailUrl = '/v1/auth/login-email';
+  static const String verifyEmailOtpUrl = '/v1/auth/verify-email-otp';
+
+  // Profile & Auth management
   static const String profileUrl = '/v1/auth/profile';
   static const String getPreferencesUrl = '/v1/auth/preferences';
   static const String updatePreferencesUrl = '/v1/auth/preferences';

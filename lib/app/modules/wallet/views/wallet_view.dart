@@ -5,6 +5,7 @@ import '../controllers/wallet_controller.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../widgets/withdrawal_bottom_sheet.dart';
 import '../widgets/recharge_bottom_sheet.dart';
+import '../widgets/quick_confirm_code_dialog.dart';
 
 class WalletView extends GetView<WalletController> {
   const WalletView({super.key});
@@ -73,6 +74,22 @@ class WalletView extends GetView<WalletController> {
                 _buildQuickActions(context),
 
                 const SizedBox(height: 24),
+
+                // Fonds en attente DIASPO EXPRESS - only if has locked diaspo bookings OR diaspo locked funds
+                // Ne pas afficher pour les autres types de locks (commandes, abonnements, etc.)
+                Obx(() {
+                  final hasLockedDiaspo = controller.lockedBookings.isNotEmpty;
+
+                  if (hasLockedDiaspo) {
+                    return Column(
+                      children: [
+                        _buildLockedFundsSection(context),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
 
                 // Soldes par méthode de paiement
                 _buildBalancesByProvider(context),
@@ -562,6 +579,279 @@ class WalletView extends GetView<WalletController> {
   }
 
   /// Soldes par provider (Mobile Money et Bank Cards)
+  /// Section des fonds bloqués en escrow (DIASPO UNIQUEMENT)
+  Widget _buildLockedFundsSection(BuildContext context) {
+    return Obx(() {
+      final bookings = controller.lockedBookings;
+
+      // Calculer le total des fonds bloqués pour les diaspo uniquement
+      final lockedBalance = bookings.fold<double>(
+        0.0,
+        (sum, booking) => sum + (booking['subtotal'] as double),
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.lock_clock, size: 20, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text(
+                  'Fonds en Attente',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppThemeSystem.getPrimaryTextColor(context),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    controller.formatPrice(lockedBalance),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Affichage horizontal scrollable des bookings
+            if (bookings.isEmpty)
+              // Si pas de bookings détaillés, afficher une card générique
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.orange.shade50,
+                      Colors.amber.shade50,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.orange.shade200,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.orange.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Vous avez des fonds bloqués qui seront débloqués après confirmation de livraison',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showEnterCodeForUnlock(context),
+                        icon: const Icon(Icons.lock_open, size: 20),
+                        label: const Text('Débloquer avec code'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeSystem.primaryColor,
+                          foregroundColor: AppThemeSystem.whiteColor,
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // Afficher les bookings individuellement avec scroll horizontal
+              SizedBox(
+                height: 195,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: bookings.length,
+                  itemBuilder: (context, index) {
+                    final booking = bookings[index];
+                    return _buildLockedBookingCard(context, booking);
+                  },
+                ),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Card individuelle pour un booking avec fonds bloqués
+  Widget _buildLockedBookingCard(BuildContext context, Map<String, dynamic> booking) {
+    final subtotal = booking['subtotal'] as double;
+    final kgBooked = booking['kg_booked'] as double;
+    final buyerName = booking['buyer_name'] ?? 'Client';
+
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.shade50,
+            Colors.amber.shade50,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.shade200,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '🔒',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      buyerName,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${kgBooked.toStringAsFixed(1)} kg',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Montant',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                Text(
+                  controller.formatPrice(subtotal),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showEnterCodeForUnlock(context),
+              icon: const Icon(Icons.lock_open, size: 16),
+              label: const Text(
+                'Débloquer',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                foregroundColor: AppThemeSystem.whiteColor,
+                minimumSize: const Size(double.infinity, 38),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEnterCodeForUnlock(BuildContext context) {
+    // Show dialog to enter code directly
+    Get.dialog(
+      QuickConfirmCodeDialog(
+        onSuccess: () {
+          // Refresh wallet, balances and transactions after successful unlock
+          controller.refresh();
+        },
+      ),
+      barrierDismissible: true,
+    );
+  }
+
   Widget _buildBalancesByProvider(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -694,7 +984,7 @@ class WalletView extends GetView<WalletController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${balance.toStringAsFixed(0)} F',
+                controller.formatPrice(balance),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -702,7 +992,7 @@ class WalletView extends GetView<WalletController> {
                 ),
               ),
               Text(
-                'CFA',
+                '',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -886,7 +1176,7 @@ class WalletView extends GetView<WalletController> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${balance.toStringAsFixed(0)} FCFA disponible',
+                    '${controller.formatPrice(balance)} disponible',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

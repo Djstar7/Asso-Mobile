@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:get/get.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
@@ -16,6 +17,64 @@ class SplashController extends GetxController {
     print('🎬 SPLASH CONTROLLER: onInit CALLED');
     print('========================================');
     developer.log('========== SPLASH STARTED ==========', name: 'SplashController');
+    _initializeCurrencyAndNavigate();
+  }
+
+  /// Initialise la devise et les conversions avant de naviguer
+  Future<void> _initializeCurrencyAndNavigate() async {
+    print('');
+    print('========================================');
+    print('💱 INITIALIZING CURRENCY SYSTEM');
+    print('========================================');
+    developer.log('========== INITIALIZING CURRENCY ==========', name: 'SplashController');
+
+    try {
+      // Vérifier si l'utilisateur a déjà sélectionné un pays
+      final hasSelectedCountry = StorageService.hasSelectedCountry;
+      print('🌍 User has selected country: $hasSelectedCountry');
+
+      if (!hasSelectedCountry) {
+        print('⚠️ No country selected - will navigate to country selection');
+        developer.log('No country selected yet', name: 'SplashController');
+      } else {
+        final savedCountry = StorageService.getCountry();
+        print('✅ Saved country: $savedCountry');
+
+        // Vérifier si CurrencyService est déjà initialisé
+        if (Get.isRegistered<CurrencyService>()) {
+          print('💱 CurrencyService already registered, loading saved currency...');
+          developer.log('CurrencyService already registered', name: 'SplashController');
+
+          final currency = CurrencyService.to.userCurrency;
+          if (currency != null) {
+            print('✅ Currency loaded: ${currency.code} (${currency.symbol})');
+            print('🌍 Country: ${CurrencyService.to.detectedCountry}');
+            print('💵 Exchange rate to XOF: ${CurrencyService.to.exchangeRateToXOF}');
+            developer.log(
+              'Currency loaded: ${currency.code} - ${currency.name}',
+              name: 'SplashController',
+              error: 'Rate to XOF: ${CurrencyService.to.exchangeRateToXOF}',
+            );
+          }
+        } else {
+          print('⚠️ CurrencyService not registered yet');
+          developer.log('CurrencyService not registered', name: 'SplashController');
+        }
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error initializing currency: $e');
+      developer.log(
+        'Error initializing currency',
+        name: 'SplashController',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    print('========================================');
+    print('');
+
+    // Continuer avec la navigation normale
     _startNavigation();
   }
 
@@ -45,7 +104,44 @@ class SplashController extends GetxController {
       return;
     }
 
+    // Check if user has selected a country
+    final hasSelectedCountry = StorageService.hasSelectedCountry;
+    if (!hasSelectedCountry) {
+      print('🌍 No country selected - navigating to country selection');
+      developer.log('Navigating to COUNTRY_SELECTION', name: 'SplashController');
+      Get.offAllNamed(Routes.COUNTRY_SELECTION);
+      return;
+    }
+
     try {
+      // Check if user is in guest mode
+      final isGuestMode = StorageService.isGuestMode;
+      print('👻 Guest mode: $isGuestMode');
+      developer.log('Guest mode: $isGuestMode', name: 'SplashController');
+
+      if (isGuestMode) {
+        print('✅ USER IS IN GUEST MODE - Going to HOME');
+        developer.log('✓ USER IS IN GUEST MODE - Going to HOME', name: 'SplashController');
+
+        // S'abonner au topic des annonces en mode invité
+        developer.log('📱 Subscribing to announcements topic for guest...', name: 'SplashController');
+        try {
+          FirebaseMessagingService.to.subscribeToAnnouncementsTopic().then((_) {
+            developer.log('✅ Subscribed to announcements topic', name: 'SplashController');
+          }).catchError((e) {
+            developer.log('Error subscribing to announcements topic', name: 'SplashController', error: e);
+          });
+        } catch (e) {
+          developer.log('Error in guest subscription', name: 'SplashController', error: e);
+        }
+
+        print('➡️ Navigating to HOME (guest mode)');
+        Get.offAllNamed(Routes.HOME);
+        print('========================================');
+        print('');
+        return;
+      }
+
       // Check for token
       final token = StorageService.getToken();
       print('🔑 Token from storage: ${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}');

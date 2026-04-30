@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/login_controller.dart';
 
@@ -32,8 +31,12 @@ class LoginView extends GetView<LoginController> {
 
               SizedBox(height: context.sectionSpacing * 1.5),
 
-              // Formulaire de téléphone avec country picker
-              _buildPhoneForm(context),
+              // Formulaire email et mot de passe
+              _buildEmailForm(context),
+
+              SizedBox(height: context.elementSpacing),
+
+              _buildPasswordForm(context),
 
               SizedBox(height: context.sectionSpacing),
 
@@ -135,14 +138,14 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  /// Formulaire de téléphone avec country picker
-  Widget _buildPhoneForm(BuildContext context) {
+  /// Formulaire email
+  Widget _buildEmailForm(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Label
         Text(
-          'Numéro de téléphone',
+          'Email',
           style: context.subtitle1.copyWith(
             color: context.primaryTextColor,
             fontWeight: FontWeight.w600,
@@ -151,11 +154,13 @@ class LoginView extends GetView<LoginController> {
 
         SizedBox(height: context.elementSpacing),
 
-        // Champ de téléphone avec country picker
-        IntlPhoneField(
-          controller: controller.phoneController,
+        // Champ email
+        TextField(
+          controller: controller.emailController,
+          keyboardType: TextInputType.emailAddress,
+          onChanged: (value) => controller.email.value = value,
           decoration: InputDecoration(
-            hintText: 'Entrez votre numéro',
+            hintText: 'exemple@email.com',
             hintStyle: context.body1.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -181,18 +186,75 @@ class LoginView extends GetView<LoginController> {
               vertical: context.verticalPadding * 0.75,
             ),
           ),
-          initialCountryCode: 'CM', // Cameroun par défaut
-          onChanged: (phone) {
-            controller.onPhoneChanged(phone.number, phone.countryCode);
-          },
           style: context.body1.copyWith(
             color: context.primaryTextColor,
           ),
-          dropdownTextStyle: context.body2.copyWith(
+        ),
+      ],
+    );
+  }
+
+  /// Formulaire mot de passe
+  Widget _buildPasswordForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          'Mot de passe',
+          style: context.subtitle1.copyWith(
             color: context.primaryTextColor,
+            fontWeight: FontWeight.w600,
           ),
         ),
 
+        SizedBox(height: context.elementSpacing),
+
+        // Champ mot de passe
+        Obx(() => TextField(
+          controller: controller.passwordController,
+          obscureText: controller.obscurePassword.value,
+          onChanged: (value) => controller.password.value = value,
+          decoration: InputDecoration(
+            hintText: 'Votre mot de passe',
+            hintStyle: context.body1.copyWith(
+              color: context.secondaryTextColor,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                controller.obscurePassword.value
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                color: context.secondaryTextColor,
+              ),
+              onPressed: controller.togglePasswordVisibility,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+              borderSide: BorderSide(color: context.borderColor, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+              borderSide: BorderSide(color: context.borderColor, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+              borderSide: const BorderSide(
+                color: AppThemeSystem.primaryColor,
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: context.inputFieldColor,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: context.horizontalPadding,
+              vertical: context.verticalPadding * 0.75,
+            ),
+          ),
+          style: context.body1.copyWith(
+            color: context.primaryTextColor,
+          ),
+        )),
       ],
     );
   }
@@ -201,7 +263,7 @@ class LoginView extends GetView<LoginController> {
   Widget _buildLoginButton(BuildContext context) {
     return Obx(() {
       final isLoading = controller.isLoading.value;
-      final isValid = controller.isPhoneValid.value;
+      final isValid = controller.isFormValid.value;
 
       return SizedBox(
         width: double.infinity,

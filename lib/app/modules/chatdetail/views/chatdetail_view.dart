@@ -1038,10 +1038,11 @@ class ChatdetailView extends GetView<ChatdetailController> {
   String _formatPrice(Map<String, dynamic> product) {
     final price = product['price'];
     if (price != null) {
-      if (price is num) {
-        return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
+      final priceValue = price is num ? price.toDouble() : double.tryParse(price.toString());
+      if (priceValue != null) {
+        return controller.formatPrice(priceValue);
       }
-      return '$price FCFA';
+      return '$price ${controller.currencySymbol}';
     }
     return 'Prix non défini';
   }
@@ -1124,7 +1125,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    '${diaspoOffer['price_per_kg']} ${diaspoOffer['currency']}/kg',
+                    '${controller.formatPrice(double.tryParse(diaspoOffer['price_per_kg']?.toString() ?? '0') ?? 0)}/kg',
                     style: context.textStyle(
                       FontSizeType.caption,
                       color: isSentByMe

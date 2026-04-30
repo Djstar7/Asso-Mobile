@@ -428,9 +428,13 @@ class FavoritesView extends GetView<FavoritesController> {
     final price = product['price'];
     if (price != null) {
       if (price is num) {
-        return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
+        return controller.formatPrice(price.toDouble());
       }
-      return '$price FCFA';
+      final priceValue = double.tryParse(price.toString());
+      if (priceValue != null) {
+        return controller.formatPrice(priceValue);
+      }
+      return '$price ${controller.currencySymbol}';
     }
     return 'Prix non défini';
   }

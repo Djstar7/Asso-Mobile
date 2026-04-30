@@ -683,7 +683,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '${productPrice} FCFA',
+                      controller.formatPrice(double.tryParse(productPrice.toString()) ?? 0),
                       style: context.textStyle(
                         FontSizeType.body1,
                         fontWeight: FontWeight.bold,

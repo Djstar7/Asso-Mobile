@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/markdown_bottom_sheet.dart';
@@ -89,11 +88,14 @@ class WelcomerView extends GetView<WelcomerController> {
 
                     SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-                    // Input numéro de téléphone avec country picker
-                    IntlPhoneField(
-                      controller: controller.phoneController,
+                    // Input email
+                    TextField(
+                      controller: controller.emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      onChanged: (value) => controller.email.value = value,
                       decoration: InputDecoration(
-                        labelText: 'Numéro de téléphone',
+                        labelText: 'Email',
+                        hintText: 'exemple@email.com',
                         border: OutlineInputBorder(
                           borderRadius: context.borderRadius(BorderRadiusType.medium),
                           borderSide: BorderSide(color: AppThemeSystem.grey300),
@@ -109,14 +111,80 @@ class WelcomerView extends GetView<WelcomerController> {
                         filled: true,
                         fillColor: AppThemeSystem.getSurfaceColor(context),
                       ),
-                      initialCountryCode: 'CM', // Cameroun par défaut
-                      onChanged: (phone) {
-                        controller.phoneNumber.value = phone.completeNumber;
-                        controller.countryCode.value = phone.countryCode;
-                        controller.rawPhone.value = phone.number;
-                      },
                       style: context.textStyle(FontSizeType.body1),
                     ),
+
+                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+
+                    // Input password
+                    Obx(() => TextField(
+                      controller: controller.passwordController,
+                      obscureText: controller.obscurePassword.value,
+                      onChanged: (value) => controller.password.value = value,
+                      decoration: InputDecoration(
+                        labelText: 'Mot de passe',
+                        hintText: 'Minimum 6 caractères',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            controller.obscurePassword.value
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: controller.togglePasswordVisibility,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.grey300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.grey300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: AppThemeSystem.getSurfaceColor(context),
+                      ),
+                      style: context.textStyle(FontSizeType.body1),
+                    )),
+
+                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+
+                    // Input confirm password
+                    Obx(() => TextField(
+                      controller: controller.confirmPasswordController,
+                      obscureText: controller.obscureConfirmPassword.value,
+                      onChanged: (value) => controller.confirmPassword.value = value,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmer le mot de passe',
+                        hintText: 'Retapez votre mot de passe',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            controller.obscureConfirmPassword.value
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: controller.toggleConfirmPasswordVisibility,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.grey300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.grey300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: AppThemeSystem.getSurfaceColor(context),
+                      ),
+                      style: context.textStyle(FontSizeType.body1),
+                    )),
 
                     SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 
@@ -173,13 +241,13 @@ class WelcomerView extends GetView<WelcomerController> {
                     // Bouton principal "Créer mon compte"
                     Obx(() {
                       final isLoading = controller.isLoading.value;
-                      final isValid = controller.isPhoneValid.value;
+                      final isValid = controller.isFormValid.value;
 
                       return SizedBox(
                         width: double.infinity,
                         height: AppThemeSystem.getButtonHeight(context),
                         child: ElevatedButton(
-                          onPressed: (isValid && !isLoading) ? controller.createAccountWithPhone : null,
+                          onPressed: (isValid && !isLoading) ? controller.createAccountWithEmail : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppThemeSystem.primaryColor,
                             foregroundColor: Colors.white,
@@ -231,30 +299,30 @@ class WelcomerView extends GetView<WelcomerController> {
                       ],
                     ),
 
-                    SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
+                    // SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-                    // Lien "Continuer en tant qu'invité"
-                    TextButton(
-                      onPressed: controller.continueAsGuest,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.person_outline_rounded,
-                            size: 18,
-                            color: context.secondaryTextColor,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Continuer en tant qu\'invité',
-                            style: context.textStyle(
-                              FontSizeType.body2,
-                              color: context.secondaryTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // // Lien "Continuer en tant qu'invité"
+                    // TextButton(
+                    //   onPressed: controller.continueAsGuest,
+                    //   child: Row(
+                    //     mainAxisSize: MainAxisSize.min,
+                    //     children: [
+                    //       Icon(
+                    //         Icons.person_outline_rounded,
+                    //         size: 18,
+                    //         color: context.secondaryTextColor,
+                    //       ),
+                    //       SizedBox(width: 6),
+                    //       Text(
+                    //         'Continuer en tant qu\'invité',
+                    //         style: context.textStyle(
+                    //           FontSizeType.body2,
+                    //           color: context.secondaryTextColor,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
 
                     SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 

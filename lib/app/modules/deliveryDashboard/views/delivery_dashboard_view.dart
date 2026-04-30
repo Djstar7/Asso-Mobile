@@ -600,7 +600,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                       context,
                       icon: Icons.account_balance_wallet,
                       label: 'Commissions',
-                      value: '${NumberFormat('#,###').format(stats.totalCommissions)} XAF',
+                      value: controller.formatPrice(stats.totalCommissions),
                       color: AppThemeSystem.primaryColor,
                       isCompact: true,
                     ),
@@ -809,7 +809,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${request.commission.toStringAsFixed(0)} XAF',
+                  controller.formatPrice(request.commission),
                   style: TextStyle(
                     color: AppThemeSystem.successColor,
                     fontWeight: FontWeight.bold,

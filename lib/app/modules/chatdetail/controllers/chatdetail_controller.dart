@@ -5,6 +5,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../../data/services/websocket_service.dart';
 import '../../../data/models/message_model.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/base/safe_controller_mixin.dart';
 
 class ChatdetailController extends GetxController with SafeControllerMixin {
@@ -347,5 +348,25 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
   Future<void> refreshMessages() async {
     await _loadMessages(refresh: true);
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

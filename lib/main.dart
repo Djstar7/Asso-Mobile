@@ -11,6 +11,8 @@ import 'app/core/utils/app_theme_system.dart';
 import 'app/core/controllers/app_config_controller.dart';
 import 'app/data/services/websocket_service.dart';
 import 'app/data/services/firebase_messaging_service.dart';
+import 'app/data/providers/diaspo_service.dart';
+import 'app/data/providers/currency_service.dart';
 import 'app/modules/notification/controllers/notification_controller.dart';
 
 void main() async {
@@ -42,6 +44,14 @@ void main() async {
   // Initialiser le WebSocketService comme service global
   Get.put(WebSocketService(), permanent: true);
   print('✅ WebSocketService initialized');
+
+  // Initialiser le DiaspoService comme service global
+  Get.put(DiaspoService(), permanent: true);
+  print('✅ DiaspoService initialized');
+
+  // Initialiser le CurrencyService pour la conversion automatique des devises
+  Get.put(CurrencyService(), permanent: true);
+  print('✅ CurrencyService initialized');
 
   // Initialiser AppConfigController pour charger les paramètres de l'app
   final appConfigController = Get.put(AppConfigController(), permanent: true);

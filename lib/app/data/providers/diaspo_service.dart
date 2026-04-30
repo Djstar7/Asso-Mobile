@@ -273,6 +273,7 @@ class DiaspoService extends GetxService {
     required int offerId,
     required double kgBooked,
     String? notes,
+    String? paymentMethod, // 'freemopay' or 'paypal'
   }) async {
     try {
       final response = await _dio.post(
@@ -280,6 +281,7 @@ class DiaspoService extends GetxService {
         data: {
           'kg_booked': kgBooked,
           if (notes != null) 'notes': notes,
+          if (paymentMethod != null) 'payment_method': paymentMethod,
         },
       );
 
@@ -306,6 +308,61 @@ class DiaspoService extends GetxService {
       return DiaspoBooking.fromJson(response.data['data']);
     } catch (e) {
       print('Error confirming receipt: $e');
+      rethrow;
+    }
+  }
+
+  /// Seller confirms delivery with confirmation code (unlocks funds)
+  Future<DiaspoBooking> sellerConfirmDelivery({
+    required int bookingId,
+    required String confirmationCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/v1/diaspo/bookings/$bookingId/seller-confirm-code',
+        data: {
+          'confirmation_code': confirmationCode,
+        },
+      );
+
+      return DiaspoBooking.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      print('❌ Error confirming delivery: ${e.message}');
+      print('   Response: ${e.response?.data}');
+
+      if (e.response?.data != null && e.response!.data['message'] != null) {
+        throw Exception(e.response!.data['message']);
+      }
+      throw Exception('Impossible de confirmer la livraison');
+    } catch (e) {
+      print('❌ Unexpected error confirming delivery: $e');
+      rethrow;
+    }
+  }
+
+  /// Seller confirms delivery using only confirmation code (finds booking automatically)
+  Future<DiaspoBooking> confirmDeliveryByCode({
+    required String confirmationCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/v1/diaspo/confirm-by-code',
+        data: {
+          'confirmation_code': confirmationCode,
+        },
+      );
+
+      return DiaspoBooking.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      print('❌ Error confirming delivery by code: ${e.message}');
+      print('   Response: ${e.response?.data}');
+
+      if (e.response?.data != null && e.response!.data['message'] != null) {
+        throw Exception(e.response!.data['message']);
+      }
+      throw Exception('Impossible de confirmer la livraison avec ce code');
+    } catch (e) {
+      print('❌ Unexpected error confirming delivery by code: $e');
       rethrow;
     }
   }

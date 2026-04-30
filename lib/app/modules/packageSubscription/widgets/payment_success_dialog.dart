@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/currency_service.dart';
 import '../views/invoice_webview.dart';
 import '../../vendorDashboard/controllers/vendor_dashboard_controller.dart';
 import '../../storeManagement/controllers/store_management_controller.dart';
@@ -74,10 +75,15 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
     super.dispose();
   }
 
+  String _formatPrice(double priceInXOF) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat('#,###', 'fr_FR');
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: ScaleTransition(
@@ -178,7 +184,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                       _buildDetailRow(
                         context,
                         'Montant',
-                        '${currencyFormat.format(widget.amount)} FCFA',
+                        _formatPrice(widget.amount),
                         isHighlight: true,
                       ),
                       const SizedBox(height: 12),

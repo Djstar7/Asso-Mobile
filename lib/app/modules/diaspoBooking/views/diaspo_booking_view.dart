@@ -113,7 +113,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 ),
               ),
               Text(
-                '${offer.pricePerKg} ${offer.currency}/kg',
+                '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -251,19 +251,19 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
               const SizedBox(height: 16),
               _buildPriceRow(
                 'Sous-total',
-                '${controller.subtotal.value.toStringAsFixed(0)} ${controller.offer.value?.currency ?? 'EUR'}',
+                controller.formatPrice(controller.subtotal.value),
                 isDark,
               ),
               const SizedBox(height: 8),
               _buildPriceRow(
                 'Commission (${controller.commissionPercent.value.toStringAsFixed(0)}%)',
-                '${controller.commissionAmount.value.toStringAsFixed(0)} ${controller.offer.value?.currency ?? 'EUR'}',
+                controller.formatPrice(controller.commissionAmount.value),
                 isDark,
               ),
               const Divider(height: 24),
               _buildPriceRow(
                 'TOTAL',
-                '${controller.totalPrice.value.toStringAsFixed(0)} ${controller.offer.value?.currency ?? 'EUR'}',
+                controller.formatPrice(controller.totalPrice.value),
                 isDark,
                 isTotal: true,
               ),
@@ -334,7 +334,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${controller.walletBalance.toStringAsFixed(0)} FCFA',
+                    controller.formatPrice(controller.walletBalance),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -401,7 +401,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                       ),
                     )
                   : Text(
-                      'Confirmer la réservation (${controller.totalPrice.value.toStringAsFixed(0)} ${controller.offer.value?.currency ?? 'EUR'})',
+                      'Confirmer la réservation (${controller.formatPrice(controller.totalPrice.value)})',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

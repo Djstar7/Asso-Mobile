@@ -216,7 +216,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      packageData?['formatted_price'] ?? '',
+                      controller.formatCurrency((packageData?['price'] ?? 0).toDouble()),
                       style: context.subtitle1.copyWith(
                         color: AppThemeSystem.primaryColor,
                         fontWeight: FontWeight.w600,
@@ -371,7 +371,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
     final isPopular = package['is_popular'] ?? false;
     final benefits = package['benefits'] as List?;
     final name = package['name'] ?? '';
-    final price = package['formatted_price'] ?? '';
+    final price = (package['price'] ?? 0).toDouble();
     final storage = package['formatted_storage_size'] ?? '';
     final duration = package['formatted_duration'] ?? '';
 
@@ -489,7 +489,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    price,
+                    controller.formatCurrency(price),
                     style: context.h4.copyWith(
                       color: AppThemeSystem.primaryColor,
                       fontWeight: FontWeight.bold,

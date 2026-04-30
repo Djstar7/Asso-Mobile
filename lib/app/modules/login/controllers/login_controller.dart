@@ -6,60 +6,61 @@ import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
 class LoginController extends GetxController {
-  late TextEditingController phoneController;
+  late TextEditingController emailController;
+  late TextEditingController passwordController;
 
-  final phoneNumber = ''.obs;
-  final countryCode = '+237'.obs;
+  final email = ''.obs;
+  final password = ''.obs;
   final isLoading = false.obs;
-  final isPhoneValid = false.obs;
-  final fullPhoneNumber = ''.obs;
+  final isFormValid = false.obs;
+  final obscurePassword = true.obs;
 
   @override
   void onInit() {
     super.onInit();
     developer.log('========== LOGIN CONTROLLER INIT ==========', name: 'LoginController');
-    phoneController = TextEditingController();
-    ever(phoneNumber, (_) => _validatePhone());
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+    ever(email, (_) => _validateForm());
+    ever(password, (_) => _validateForm());
   }
 
   @override
   void onClose() {
-    phoneController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.onClose();
   }
 
-  void _validatePhone() {
-    isPhoneValid.value = phoneNumber.value.length >= 8;
+  void _validateForm() {
+    final emailValid = GetUtils.isEmail(email.value);
+    final passwordValid = password.value.length >= 6;
+
+    isFormValid.value = emailValid && passwordValid;
+
     developer.log(
-      'Phone validation',
+      'Form validation',
       name: 'LoginController',
-      error: 'Phone: ${phoneNumber.value}, Valid: ${isPhoneValid.value}',
+      error: 'Email: $emailValid, Password: $passwordValid, Valid: ${isFormValid.value}',
     );
   }
 
-  void onPhoneChanged(String phone, String dialCode) {
-    phoneNumber.value = phone;
-    countryCode.value = dialCode;
-    fullPhoneNumber.value = dialCode + phone;
-    developer.log(
-      'Phone changed',
-      name: 'LoginController',
-      error: 'Full phone: ${fullPhoneNumber.value}',
-    );
+  void togglePasswordVisibility() {
+    obscurePassword.value = !obscurePassword.value;
   }
 
   Future<void> login() async {
     developer.log(
       '========== LOGIN ATTEMPT ==========',
       name: 'LoginController',
-      error: 'Phone: ${fullPhoneNumber.value}',
+      error: 'Email: ${email.value}',
     );
 
-    if (!isPhoneValid.value) {
-      developer.log('Invalid phone number', name: 'LoginController');
+    if (!isFormValid.value) {
+      developer.log('Invalid form', name: 'LoginController');
       Get.snackbar(
-        'Numéro invalide',
-        'Veuillez entrer un numéro de téléphone valide',
+        'Formulaire invalide',
+        'Veuillez vérifier vos identifiants',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -73,163 +74,62 @@ class LoginController extends GetxController {
     isLoading.value = true;
 
     try {
-      final response = await AuthService.sendOtp(
-        phone: phoneNumber.value,
-        countryCode: countryCode.value,
+      // Login with email - direct login without OTP
+      final response = await AuthService.loginWithEmail(
+        email: email.value,
+        password: password.value,
       );
 
       developer.log(
-        'Send OTP response',
+        'Login response',
         name: 'LoginController',
         error: 'Success: ${response.success}, Message: ${response.message}',
       );
 
       if (response.success) {
-        final isNewUser = response.data?['is_new_user'] ?? false;
-        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
-
         developer.log(
-          'OTP sent successfully',
+          '✅ LOGIN SUCCESS',
           name: 'LoginController',
-          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
+          error: 'Email: ${email.value}',
         );
 
-        // Check if OTP bypass is enabled for this phone number
-        if (bypassEnabled) {
+        Get.snackbar(
+          'Succès',
+          'Connexion réussie',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Envoyer le token FCM au backend ET s'abonner au topic des annonces
+        developer.log('📱 Registering device and subscribing to topics...', name: 'LoginController');
+        try {
+          final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
           developer.log(
-            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
+            'FCM registration result',
             name: 'LoginController',
-            error: 'Phone: ${fullPhoneNumber.value}',
+            error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
           );
-
-          Get.snackbar(
-            'Connexion en cours',
-            'Bienvenue',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
-
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          // Automatically verify with a dummy OTP code
+        } catch (e) {
           developer.log(
-            'Auto-verifying OTP with bypass',
+            'Error registering device/subscribing to topics',
             name: 'LoginController',
-            error: 'Phone: ${fullPhoneNumber.value}',
+            error: e,
           );
-
-          final verifyResponse = await AuthService.verifyOtp(
-            fullPhone: fullPhoneNumber.value,
-            otpCode: '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
-          );
-
-          developer.log(
-            'Auto-verify response',
-            name: 'LoginController',
-            error: 'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
-          );
-
-          if (verifyResponse.success) {
-            developer.log(
-              '✅ BYPASS LOGIN SUCCESS',
-              name: 'LoginController',
-              error: 'Navigating to home...',
-            );
-
-            Get.snackbar(
-              'Succès',
-              'Connexion réussie via WhatsApp',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.primary,
-              colorText: Get.theme.colorScheme.onPrimary,
-              duration: const Duration(seconds: 2),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            // Envoyer le token FCM au backend ET s'abonner au topic des annonces
-            developer.log('📱 Registering device and subscribing to topics...', name: 'LoginController');
-            try {
-              final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
-              developer.log(
-                'FCM registration result',
-                name: 'LoginController',
-                error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
-              );
-            } catch (e) {
-              developer.log(
-                'Error registering device/subscribing to topics',
-                name: 'LoginController',
-                error: e,
-              );
-              // On ne bloque pas la navigation même si l'opération échoue
-            }
-
-            // Navigate based on profile completeness
-            final isNew = verifyResponse.data?['is_new_user'] ?? false;
-            developer.log(
-              'Bypass navigation decision',
-              name: 'LoginController',
-              error: 'Is new user: $isNew',
-            );
-
-            if (isNew) {
-              developer.log('Navigating to PREFERENCES (bypass)', name: 'LoginController');
-              Get.offAllNamed(Routes.PREFERENCES);
-            } else {
-              developer.log('Navigating to HOME (bypass)', name: 'LoginController');
-              Get.offAllNamed(Routes.HOME);
-            }
-          } else {
-            developer.log(
-              '❌ Bypass auto-verify failed',
-              name: 'LoginController',
-              error: verifyResponse.message,
-            );
-            Get.snackbar(
-              'Erreur',
-              'Échec de la connexion automatique: ${verifyResponse.message}',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.error,
-              colorText: Get.theme.colorScheme.onError,
-              duration: const Duration(seconds: 3),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-          }
-        } else {
-          // Normal flow - show OTP screen
-          Get.snackbar(
-            'Code envoyé',
-            'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
-
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          developer.log('Navigating to OTP screen', name: 'LoginController');
-          Get.toNamed(
-            Routes.OTP,
-            arguments: {
-              'phoneNumber': fullPhoneNumber.value,
-              'isNewUser': isNewUser,
-            },
-          );
+          // On ne bloque pas la navigation même si l'opération échoue
         }
+
+        // Navigate to home
+        developer.log('Navigating to HOME', name: 'LoginController');
+        Get.offAllNamed(Routes.HOME);
       } else {
         developer.log(
-          'OTP send failed',
+          'Login failed',
           name: 'LoginController',
           error: response.message,
         );

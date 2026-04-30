@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../data/providers/conversation_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/product_service.dart';
@@ -422,6 +423,23 @@ class ProductController extends GetxController {
       return productPrice + deliveryPrice.value;
     }
     return productPrice;
+  }
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      // Fallback to XOF if CurrencyService not available
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 
   /// Générer un message initial aléatoire concernant le produit

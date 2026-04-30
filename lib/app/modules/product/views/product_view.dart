@@ -275,14 +275,14 @@ class ProductView extends GetView<ProductController> {
                 ),
               ],
             ),
-            child: Text(
-              '${product['price']} FCFA',
+            child: Obx(() => Text(
+              controller.formatPrice(double.tryParse(product['price'].toString()) ?? 0),
               style: context.textStyle(
                 FontSizeType.h3,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
-            ),
+            )),
           ),
           SizedBox(height: 16),
           // Nom du produit
@@ -1486,7 +1486,7 @@ class ProductView extends GetView<ProductController> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                '${product['name']} — ${productPrice.toStringAsFixed(0)} FCFA',
+                                '${product['name']} — ${controller.formatPrice(productPrice)}',
                                 style: context.textStyle(
                                   FontSizeType.caption,
                                   color: AppThemeSystem.grey600,
@@ -1823,7 +1823,7 @@ class ProductView extends GetView<ProductController> {
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
-                                          '${price.toStringAsFixed(0)} F',
+                                          controller.formatPrice(price),
                                           style: context.textStyle(
                                             FontSizeType.body2,
                                             fontWeight: FontWeight.bold,
@@ -1889,7 +1889,7 @@ class ProductView extends GetView<ProductController> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text('Prix du produit', style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
-                              Text('${productPrice.toStringAsFixed(0)} FCFA', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
+                              Text(controller.formatPrice(productPrice), style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           if (controller.withDelivery.value && controller.selectedPartner.value != null) ...[
@@ -1902,7 +1902,7 @@ class ProductView extends GetView<ProductController> {
                                     style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600),
                                     overflow: TextOverflow.ellipsis),
                                 ),
-                                Text('${controller.deliveryPrice.value.toStringAsFixed(0)} FCFA',
+                                Text(controller.formatPrice(controller.deliveryPrice.value),
                                   style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppThemeSystem.primaryColor)),
                               ],
                             ),
@@ -1912,7 +1912,7 @@ class ProductView extends GetView<ProductController> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text('Total', style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
-                              Text('${controller.calculateTotal(productPrice).toStringAsFixed(0)} FCFA',
+                              Text(controller.formatPrice(controller.calculateTotal(productPrice)),
                                 style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor)),
                             ],
                           ),
@@ -2821,7 +2821,7 @@ class ProductView extends GetView<ProductController> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '${productPrice} FCFA',
+                    controller.formatPrice(double.tryParse(productPrice.toString()) ?? 0),
                     style: context.textStyle(
                       FontSizeType.body2,
                       fontWeight: FontWeight.bold,

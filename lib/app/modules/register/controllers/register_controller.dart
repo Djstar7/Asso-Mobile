@@ -6,68 +6,114 @@ import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
 class RegisterController extends GetxController {
-  late TextEditingController phoneController;
+  late TextEditingController emailController;
+  late TextEditingController passwordController;
+  late TextEditingController confirmPasswordController;
 
-  final phoneNumber = ''.obs;
-  final countryCode = '+237'.obs;
+  final email = ''.obs;
+  final password = ''.obs;
+  final confirmPassword = ''.obs;
   final isLoading = false.obs;
-  final isPhoneValid = false.obs;
-  final fullPhoneNumber = ''.obs;
+  final isFormValid = false.obs;
   final termsAccepted = false.obs;
+  final obscurePassword = true.obs;
+  final obscureConfirmPassword = true.obs;
 
   @override
   void onInit() {
     super.onInit();
     developer.log('========== REGISTER CONTROLLER INIT ==========', name: 'RegisterController');
-    phoneController = TextEditingController();
-    ever(phoneNumber, (_) => _validatePhone());
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+    confirmPasswordController = TextEditingController();
+
+    ever(email, (_) => _validateForm());
+    ever(password, (_) => _validateForm());
+    ever(confirmPassword, (_) => _validateForm());
   }
 
   @override
   void onClose() {
-    phoneController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 
-  void _validatePhone() {
-    isPhoneValid.value = phoneNumber.value.length >= 8;
+  void _validateForm() {
+    final emailValid = GetUtils.isEmail(email.value);
+    final passwordValid = password.value.length >= 6;
+    final passwordsMatch = password.value == confirmPassword.value;
+
+    isFormValid.value = emailValid && passwordValid && passwordsMatch;
+
     developer.log(
-      'Phone validation',
+      'Form validation',
       name: 'RegisterController',
-      error: 'Phone: ${phoneNumber.value}, Valid: ${isPhoneValid.value}',
+      error: 'Email: $emailValid, Password: $passwordValid, Match: $passwordsMatch, Valid: ${isFormValid.value}',
     );
   }
 
-  void onPhoneChanged(String phone, String dialCode) {
-    phoneNumber.value = phone;
-    countryCode.value = dialCode;
-    fullPhoneNumber.value = dialCode + phone;
-    developer.log(
-      'Phone changed',
-      name: 'RegisterController',
-      error: 'Full phone: ${fullPhoneNumber.value}',
-    );
+  void togglePasswordVisibility() {
+    obscurePassword.value = !obscurePassword.value;
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    obscureConfirmPassword.value = !obscureConfirmPassword.value;
   }
 
   Future<void> register() async {
     developer.log(
       '========== REGISTER ATTEMPT ==========',
       name: 'RegisterController',
-      error: 'Phone: ${fullPhoneNumber.value}',
+      error: 'Email: ${email.value}',
     );
 
-    if (!isPhoneValid.value) {
-      developer.log('Invalid phone number', name: 'RegisterController');
-      Get.snackbar(
-        'Numéro invalide',
-        'Veuillez entrer un numéro de téléphone valide',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+    if (!isFormValid.value) {
+      developer.log('Invalid form', name: 'RegisterController');
+
+      if (!GetUtils.isEmail(email.value)) {
+        Get.snackbar(
+          'Email invalide',
+          'Veuillez entrer une adresse email valide',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
+      if (password.value.length < 6) {
+        Get.snackbar(
+          'Mot de passe trop court',
+          'Le mot de passe doit contenir au moins 6 caractères',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
+      if (password.value != confirmPassword.value) {
+        Get.snackbar(
+          'Mots de passe différents',
+          'Les mots de passe ne correspondent pas',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
       return;
     }
 
@@ -89,164 +135,51 @@ class RegisterController extends GetxController {
     isLoading.value = true;
 
     try {
-      // Send OTP for registration
-      final response = await AuthService.sendOtp(
-        phone: phoneNumber.value,
-        countryCode: countryCode.value,
+      // Register with email
+      final response = await AuthService.registerWithEmail(
+        email: email.value,
+        password: password.value,
+        passwordConfirmation: confirmPassword.value,
       );
 
       developer.log(
-        'Send OTP response',
+        'Register response',
         name: 'RegisterController',
         error: 'Success: ${response.success}, Message: ${response.message}',
       );
 
       if (response.success) {
-        final isNewUser = response.data?['is_new_user'] ?? true;
-        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
-
         developer.log(
-          'OTP sent successfully for registration',
+          'Registration successful - OTP sent to email',
           name: 'RegisterController',
-          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
+          error: 'Email: ${email.value}',
         );
 
-        // Check if OTP bypass is enabled for this phone number
-        if (bypassEnabled) {
-          developer.log(
-            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
-            name: 'RegisterController',
-            error: 'Phone: ${fullPhoneNumber.value}',
-          );
+        Get.snackbar(
+          'Code envoyé',
+          'Un code de vérification a été envoyé à ${email.value}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
 
-          Get.snackbar(
-            'Connexion en cours',
-            'Bienvenue',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
+        await Future.delayed(const Duration(milliseconds: 500));
 
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          // Automatically verify with a dummy OTP code
-          developer.log(
-            'Auto-verifying OTP with bypass',
-            name: 'RegisterController',
-            error: 'Phone: ${fullPhoneNumber.value}',
-          );
-
-          final verifyResponse = await AuthService.verifyOtp(
-            fullPhone: fullPhoneNumber.value,
-            otpCode: '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
-          );
-
-          developer.log(
-            'Auto-verify response',
-            name: 'RegisterController',
-            error: 'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
-          );
-
-          if (verifyResponse.success) {
-            developer.log(
-              '✅ BYPASS LOGIN SUCCESS',
-              name: 'RegisterController',
-              error: 'Navigating to home...',
-            );
-
-            Get.snackbar(
-              'Succès',
-              'Connexion réussie via WhatsApp',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.primary,
-              colorText: Get.theme.colorScheme.onPrimary,
-              duration: const Duration(seconds: 2),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            // Envoyer le token FCM au backend ET s'abonner au topic des annonces
-            developer.log('📱 Registering device and subscribing to topics...', name: 'RegisterController');
-            try {
-              final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
-              developer.log(
-                'FCM registration result',
-                name: 'RegisterController',
-                error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
-              );
-            } catch (e) {
-              developer.log(
-                'Error registering device/subscribing to topics',
-                name: 'RegisterController',
-                error: e,
-              );
-              // On ne bloque pas la navigation même si l'opération échoue
-            }
-
-            // Navigate based on profile completeness
-            final isNew = verifyResponse.data?['is_new_user'] ?? false;
-            developer.log(
-              'Bypass navigation decision',
-              name: 'RegisterController',
-              error: 'Is new user: $isNew',
-            );
-
-            if (isNew) {
-              developer.log('Navigating to PREFERENCES (bypass)', name: 'RegisterController');
-              Get.offAllNamed(Routes.PREFERENCES);
-            } else {
-              developer.log('Navigating to HOME (bypass)', name: 'RegisterController');
-              Get.offAllNamed(Routes.HOME);
-            }
-          } else {
-            developer.log(
-              '❌ Bypass auto-verify failed',
-              name: 'RegisterController',
-              error: verifyResponse.message,
-            );
-            Get.snackbar(
-              'Erreur',
-              'Échec de la connexion automatique: ${verifyResponse.message}',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.error,
-              colorText: Get.theme.colorScheme.onError,
-              duration: const Duration(seconds: 3),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-          }
-        } else {
-          // Normal flow - show OTP screen
-          Get.snackbar(
-            'Code envoyé',
-            'Un code de vérification a été envoyé au ${fullPhoneNumber.value}',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
-
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          developer.log('Navigating to OTP screen', name: 'RegisterController');
-          Get.toNamed(
-            Routes.OTP,
-            arguments: {
-              'phoneNumber': fullPhoneNumber.value,
-              'isNewUser': isNewUser,
-            },
-          );
-        }
+        developer.log('Navigating to OTP screen', name: 'RegisterController');
+        Get.toNamed(
+          Routes.OTP,
+          arguments: {
+            'email': email.value,
+            'isNewUser': true,
+            'isEmailAuth': true,
+          },
+        );
       } else {
         developer.log(
-          'OTP send failed',
+          'Registration failed',
           name: 'RegisterController',
           error: response.message,
         );

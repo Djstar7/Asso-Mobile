@@ -2,17 +2,23 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../data/providers/storage_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
 class WelcomerController extends GetxController {
-  final phoneController = TextEditingController();
-  final RxString phoneNumber = ''.obs;
-  final RxString countryCode = '+237'.obs;
-  final RxString rawPhone = ''.obs;
-  final RxBool isLoading = false.obs;
-  final RxBool isPhoneValid = false.obs;
-  final RxBool termsAccepted = false.obs;
+  late TextEditingController emailController;
+  late TextEditingController passwordController;
+  late TextEditingController confirmPasswordController;
+
+  final email = ''.obs;
+  final password = ''.obs;
+  final confirmPassword = ''.obs;
+  final isLoading = false.obs;
+  final isFormValid = false.obs;
+  final termsAccepted = false.obs;
+  final obscurePassword = true.obs;
+  final obscureConfirmPassword = true.obs;
 
   @override
   void onInit() {
@@ -21,26 +27,51 @@ class WelcomerController extends GetxController {
       '========== WELCOMER CONTROLLER INIT ==========',
       name: 'WelcomerController',
     );
-    ever(rawPhone, (_) => _validatePhone());
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+    confirmPasswordController = TextEditingController();
+
+    ever(email, (_) => _validateForm());
+    ever(password, (_) => _validateForm());
+    ever(confirmPassword, (_) => _validateForm());
   }
 
-  void _validatePhone() {
-    isPhoneValid.value = rawPhone.value.length >= 8;
+  void _validateForm() {
+    final emailValid = GetUtils.isEmail(email.value);
+    final passwordValid = password.value.length >= 6;
+    final passwordsMatch = password.value == confirmPassword.value;
+
+    isFormValid.value = emailValid && passwordValid && passwordsMatch;
+
     developer.log(
-      'Phone validation',
+      'Form validation',
       name: 'WelcomerController',
-      error: 'Raw phone: ${rawPhone.value}, Valid: ${isPhoneValid.value}',
+      error: 'Email: $emailValid, Password: $passwordValid, Match: $passwordsMatch, Valid: ${isFormValid.value}',
     );
+  }
+
+  void togglePasswordVisibility() {
+    obscurePassword.value = !obscurePassword.value;
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    obscureConfirmPassword.value = !obscureConfirmPassword.value;
   }
 
   @override
   void onClose() {
-    phoneController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 
   void skipWelcome() async {
-    developer.log('Skip welcome - going to HOME', name: 'WelcomerController');
+    developer.log('Skip welcome - going to GUEST MODE', name: 'WelcomerController');
+
+    // Enable guest mode
+    developer.log('🔓 Enabling guest mode', name: 'WelcomerController');
+    StorageService.enableGuestMode();
 
     // S'abonner au topic des annonces même en mode invité
     developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');
@@ -56,28 +87,68 @@ class WelcomerController extends GetxController {
       // On ne bloque pas la navigation même si l'opération échoue
     }
 
-    Get.offAllNamed(Routes.HOME);
+    // Check if user has selected a country
+    if (!StorageService.hasSelectedCountry) {
+      developer.log('No country selected - navigating to COUNTRY_SELECTION', name: 'WelcomerController');
+      Get.offAllNamed(Routes.COUNTRY_SELECTION);
+    } else {
+      developer.log('Country already selected - navigating to HOME', name: 'WelcomerController');
+      Get.offAllNamed(Routes.HOME);
+    }
   }
 
-  Future<void> createAccountWithPhone() async {
+  Future<void> createAccountWithEmail() async {
     developer.log(
-      '========== CREATE ACCOUNT WITH PHONE ==========',
+      '========== CREATE ACCOUNT WITH EMAIL ==========',
       name: 'WelcomerController',
-      error: 'Full phone: ${phoneNumber.value}, Raw: ${rawPhone.value}',
+      error: 'Email: ${email.value}',
     );
 
-    if (!isPhoneValid.value || phoneNumber.value.isEmpty) {
-      developer.log('Invalid phone number', name: 'WelcomerController');
-      Get.snackbar(
-        'Numéro invalide',
-        'Veuillez entrer un numéro de téléphone valide',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+    if (!isFormValid.value) {
+      developer.log('Invalid form', name: 'WelcomerController');
+
+      if (!GetUtils.isEmail(email.value)) {
+        Get.snackbar(
+          'Email invalide',
+          'Veuillez entrer une adresse email valide',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
+      if (password.value.length < 6) {
+        Get.snackbar(
+          'Mot de passe trop court',
+          'Le mot de passe doit contenir au moins 6 caractères',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
+      if (password.value != confirmPassword.value) {
+        Get.snackbar(
+          'Mots de passe différents',
+          'Les mots de passe ne correspondent pas',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+        return;
+      }
+
       return;
     }
 
@@ -99,179 +170,51 @@ class WelcomerController extends GetxController {
     isLoading.value = true;
 
     try {
-      // Send OTP for registration via /v1/auth/send-otp
-      developer.log(
-        'Sending OTP via AuthService',
-        name: 'WelcomerController',
-        error:
-            'Raw phone: ${rawPhone.value}, Country code: ${countryCode.value}',
-      );
-
-      final response = await AuthService.sendOtp(
-        phone: rawPhone.value,
-        countryCode: countryCode.value,
+      // Register with email
+      final response = await AuthService.registerWithEmail(
+        email: email.value,
+        password: password.value,
+        passwordConfirmation: confirmPassword.value,
       );
 
       developer.log(
-        'Send OTP response',
+        'Register response',
         name: 'WelcomerController',
         error: 'Success: ${response.success}, Message: ${response.message}',
       );
 
       if (response.success) {
-        final isNewUser = response.data?['is_new_user'] ?? true;
-        final bypassEnabled = response.data?['bypass_enabled'] ?? false;
-
         developer.log(
-          'OTP sent successfully for registration',
+          'Registration successful - OTP sent to email',
           name: 'WelcomerController',
-          error: 'Is new user: $isNewUser, Bypass enabled: $bypassEnabled',
+          error: 'Email: ${email.value}',
         );
 
-        // Check if OTP bypass is enabled for this phone number
-        if (bypassEnabled) {
-          developer.log(
-            '🔓 OTP BYPASS ENABLED - Auto-login via WhatsApp',
-            name: 'WelcomerController',
-            error: 'Phone: ${phoneNumber.value}',
-          );
+        Get.snackbar(
+          'Code envoyé',
+          'Un code de vérification a été envoyé à ${email.value}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
 
-          Get.snackbar(
-            'Connexion en cours',
-            'Bienvenue',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
+        await Future.delayed(const Duration(milliseconds: 500));
 
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          // Automatically verify with a dummy OTP code
-          developer.log(
-            'Auto-verifying OTP with bypass',
-            name: 'WelcomerController',
-            error: 'Phone: ${phoneNumber.value}',
-          );
-
-          final verifyResponse = await AuthService.verifyOtp(
-            fullPhone: phoneNumber.value,
-            otpCode:
-                '000000', // Dummy code - backend will accept any 6-digit code for bypass numbers
-          );
-
-          developer.log(
-            'Auto-verify response',
-            name: 'WelcomerController',
-            error:
-                'Success: ${verifyResponse.success}, Message: ${verifyResponse.message}',
-          );
-
-          if (verifyResponse.success) {
-            developer.log(
-              '✅ BYPASS LOGIN SUCCESS',
-              name: 'WelcomerController',
-              error: 'Navigating to home...',
-            );
-
-            Get.snackbar(
-              'Succès',
-              'Connexion réussie via WhatsApp',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.primary,
-              colorText: Get.theme.colorScheme.onPrimary,
-              duration: const Duration(seconds: 2),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            // Envoyer le token FCM au backend ET s'abonner au topic des annonces
-            developer.log('📱 Registering device and subscribing to topics...', name: 'WelcomerController');
-            try {
-              final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
-              developer.log(
-                'FCM registration result',
-                name: 'WelcomerController',
-                error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
-              );
-            } catch (e) {
-              developer.log(
-                'Error registering device/subscribing to topics',
-                name: 'WelcomerController',
-                error: e,
-              );
-              // On ne bloque pas la navigation même si l'opération échoue
-            }
-
-            // Navigate based on profile completeness
-            final isNew = verifyResponse.data?['is_new_user'] ?? false;
-            developer.log(
-              'Bypass navigation decision',
-              name: 'WelcomerController',
-              error: 'Is new user: $isNew',
-            );
-
-            if (isNew) {
-              developer.log(
-                'Navigating to PREFERENCES (bypass)',
-                name: 'WelcomerController',
-              );
-              Get.offAllNamed(Routes.PREFERENCES);
-            } else {
-              developer.log(
-                'Navigating to HOME (bypass)',
-                name: 'WelcomerController',
-              );
-              Get.offAllNamed(Routes.HOME);
-            }
-          } else {
-            developer.log(
-              '❌ Bypass auto-verify failed',
-              name: 'WelcomerController',
-              error: verifyResponse.message,
-            );
-            Get.snackbar(
-              'Erreur',
-              'Échec de la connexion automatique: ${verifyResponse.message}',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Get.theme.colorScheme.error,
-              colorText: Get.theme.colorScheme.onError,
-              duration: const Duration(seconds: 3),
-              margin: const EdgeInsets.all(16),
-              borderRadius: 12,
-            );
-          }
-        } else {
-          // Normal flow - show OTP screen
-          Get.snackbar(
-            'Code envoyé',
-            'Un code de vérification a été envoyé au ${phoneNumber.value}',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Get.theme.colorScheme.primary,
-            colorText: Get.theme.colorScheme.onPrimary,
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-          );
-
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          developer.log('Navigating to OTP screen', name: 'WelcomerController');
-          Get.toNamed(
-            Routes.OTP,
-            arguments: {
-              'phoneNumber': phoneNumber.value,
-              'isNewUser': isNewUser,
-            },
-          );
-        }
+        developer.log('Navigating to OTP screen', name: 'WelcomerController');
+        Get.toNamed(
+          Routes.OTP,
+          arguments: {
+            'email': email.value,
+            'isNewUser': true,
+            'isEmailAuth': true,
+          },
+        );
       } else {
         developer.log(
-          'OTP send failed',
+          'Registration failed',
           name: 'WelcomerController',
           error: response.message,
         );
@@ -332,9 +275,13 @@ class WelcomerController extends GetxController {
 
   void continueAsGuest() async {
     developer.log(
-      'Continue as guest - going to HOME',
+      'Continue as guest - going to HOME in GUEST MODE',
       name: 'WelcomerController',
     );
+
+    // Enable guest mode
+    developer.log('🔓 Enabling guest mode', name: 'WelcomerController');
+    StorageService.enableGuestMode();
 
     // S'abonner au topic des annonces même en mode invité
     developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');

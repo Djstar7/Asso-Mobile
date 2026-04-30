@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:get_storage/get_storage.dart';
 import '../../core/values/constants.dart';
 import '../models/user_model.dart';
+import 'cache_manager.dart';
 
 /// Service for managing local storage (tokens, user data, preferences)
 class StorageService {
@@ -13,7 +14,11 @@ class StorageService {
       _storage.read('test');
       return true;
     } catch (e) {
-      print('❌ StorageService NOT initialized: $e');
+      developer.log(
+        'StorageService NOT initialized',
+        name: 'StorageService',
+        error: e,
+      );
       return false;
     }
   }
@@ -207,6 +212,26 @@ class StorageService {
     clearToken();
     clearUser();
     clearPreferences();
+    clearCurrency(); // Clear currency selection
+    clearCountry(); // Clear country selection
+    disableGuestMode(); // Also disable guest mode on logout
+
+    // Clear all cache data
+    try {
+      CacheManager().clearAll();
+      developer.log('Cache cleared successfully', name: 'StorageService');
+    } catch (e) {
+      developer.log(
+        'Error clearing cache',
+        name: 'StorageService',
+        error: e,
+      );
+    }
+
+    developer.log(
+      'All user data cleared: token, user, preferences, currency, country, cache',
+      name: 'StorageService',
+    );
   }
 
   /// Clear all storage data
@@ -227,6 +252,7 @@ class StorageService {
     );
     saveToken(token);
     saveUser(user);
+    disableGuestMode(); // Disable guest mode when user logs in
   }
 
   /// Clear auth session (token + user)
@@ -237,5 +263,107 @@ class StorageService {
     );
     _storage.remove(AppConstants.keyToken);
     _storage.remove(AppConstants.keyUser);
+  }
+
+  // ==================== Currency Management ====================
+
+  /// Save user currency
+  static void saveCurrency(Map<String, dynamic> currency) {
+    developer.log(
+      'Saving currency data',
+      name: 'StorageService',
+      error: 'Currency: $currency',
+    );
+    _storage.write('user_currency', currency);
+  }
+
+  /// Get saved currency
+  static Map<String, dynamic>? getCurrency() {
+    try {
+      final data = _storage.read('user_currency');
+      if (data == null) {
+        developer.log('No cached currency found', name: 'StorageService');
+        return null;
+      }
+
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      developer.log(
+        'Error getting cached currency',
+        name: 'StorageService',
+        error: e,
+      );
+      return null;
+    }
+  }
+
+  /// Clear currency data
+  static void clearCurrency() {
+    developer.log('Clearing currency data', name: 'StorageService');
+    _storage.remove('user_currency');
+  }
+
+  // ==================== Country Management ====================
+
+  /// Save user selected country
+  static void saveCountry(String country) {
+    developer.log(
+      'Saving selected country',
+      name: 'StorageService',
+      error: 'Country: $country',
+    );
+    _storage.write('user_country', country);
+  }
+
+  /// Get saved country
+  static String? getCountry() {
+    try {
+      final country = _storage.read('user_country');
+      if (country == null) {
+        developer.log('No saved country found', name: 'StorageService');
+        return null;
+      }
+      return country as String;
+    } catch (e) {
+      developer.log(
+        'Error getting saved country',
+        name: 'StorageService',
+        error: e,
+      );
+      return null;
+    }
+  }
+
+  /// Clear country data
+  static void clearCountry() {
+    developer.log('Clearing country data', name: 'StorageService');
+    _storage.remove('user_country');
+  }
+
+  /// Check if user has selected a country
+  static bool get hasSelectedCountry => getCountry() != null;
+
+  // ==================== Guest Mode Management ====================
+
+  /// Enable guest mode (skip authentication)
+  static void enableGuestMode() {
+    developer.log('Enabling guest mode', name: 'StorageService');
+    _storage.write('guest_mode', true);
+  }
+
+  /// Disable guest mode
+  static void disableGuestMode() {
+    developer.log('Disabling guest mode', name: 'StorageService');
+    _storage.remove('guest_mode');
+  }
+
+  /// Check if user is in guest mode
+  static bool get isGuestMode {
+    final isGuest = _storage.read('guest_mode') ?? false;
+    developer.log('Guest mode: $isGuest', name: 'StorageService');
+    return isGuest;
   }
 }

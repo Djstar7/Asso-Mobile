@@ -302,7 +302,7 @@ class MyOrderView extends GetView<MyOrderController> {
 
           // Prix
           Text(
-            '${numberFormat.format(item.totalPrice)} FCFA',
+            controller.formatPrice(item.totalPrice),
             style: context.body2.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
@@ -359,16 +359,16 @@ class MyOrderView extends GetView<MyOrderController> {
           const SizedBox(height: 16),
 
           // Totaux
-          _buildPriceRow(context, 'Sous-total', numberFormat.format(order.subtotal)),
+          _buildPriceRow(context, 'Sous-total', order.subtotal),
           const SizedBox(height: 8),
-          _buildPriceRow(context, 'Frais de livraison', numberFormat.format(order.deliveryFee)),
+          _buildPriceRow(context, 'Frais de livraison', order.deliveryFee),
           const SizedBox(height: 8),
           Divider(color: context.borderColor),
           const SizedBox(height: 8),
           _buildPriceRow(
             context,
             'Total',
-            numberFormat.format(order.total),
+            order.total,
             isTotal: true,
           ),
         ],
@@ -404,7 +404,7 @@ class MyOrderView extends GetView<MyOrderController> {
     );
   }
 
-  Widget _buildPriceRow(BuildContext context, String label, String value, {bool isTotal = false}) {
+  Widget _buildPriceRow(BuildContext context, String label, double value, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -415,7 +415,7 @@ class MyOrderView extends GetView<MyOrderController> {
               : context.body2,
         ),
         Text(
-          '$value FCFA',
+          controller.formatPrice(value),
           style: isTotal
               ? context.body1.copyWith(
                   fontWeight: FontWeight.bold,

@@ -5,6 +5,8 @@ import '../../../data/models/wallet_model.dart';
 import '../../../data/services/wallet_service.dart';
 import '../../../data/services/fcm_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/providers/diaspo_service.dart';
+import '../../../data/providers/currency_service.dart';
 
 class WalletController extends GetxController {
   final WalletService _walletService = Get.find<WalletService>();
@@ -25,6 +27,7 @@ class WalletController extends GetxController {
   // Données du wallet
   final wallet = Rxn<WalletModel>();
   final transactions = <WalletTransactionModel>[].obs;
+  final lockedBookings = <Map<String, dynamic>>[].obs; // Bookings avec fonds bloqués
 
   // Soldes de retrait séparés par provider
   final freemopayBalance = 0.0.obs;
@@ -68,6 +71,7 @@ class WalletController extends GetxController {
       loadWallet();
       loadTransactions(); // Charger l'historique dès l'ouverture
       loadWithdrawalBalances(); // Charger les soldes de retrait
+      loadLockedBookings(); // Charger les réservations avec fonds bloqués
 
       // NOTE: Deposit polling is no longer needed!
       // The backend now processes deposits asynchronously using:
@@ -165,6 +169,18 @@ class WalletController extends GetxController {
             colorText: Get.theme.colorScheme.onError,
             duration: const Duration(seconds: 5),
           );
+        } else if (type == 'wallet_unlocked') {
+          // Fonds débloqués après confirmation de livraison diaspo
+          print('[WalletController] Funds unlocked - refreshing wallet');
+          refresh();
+
+          Get.snackbar(
+            '💰 Fonds débloqués!',
+            'Vous avez reçu ${data['amount']} FCFA. Les fonds sont maintenant disponibles dans votre wallet.',
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            duration: const Duration(seconds: 4),
+          );
         }
       });
 
@@ -189,6 +205,12 @@ class WalletController extends GetxController {
 
       if (result != null) {
         wallet.value = result;
+        print('[WalletController] 💰 Wallet loaded:');
+        print('  - Current Balance: ${result.currentBalance}');
+        print('  - Total Locked: ${result.totalLockedBalance}');
+        print('  - Locked Freemopay: ${result.lockedFreemopayBalance}');
+        print('  - Locked Paypal: ${result.lockedPaypalBalance}');
+        print('  - Has Locked Funds: ${result.hasLockedFunds}');
       } else {
         errorMessage.value = 'Impossible de charger le wallet';
       }
@@ -248,7 +270,79 @@ class WalletController extends GetxController {
       loadWallet(),
       loadTransactions(),
       loadWithdrawalBalances(),
+      loadLockedBookings(),
     ]);
+  }
+
+  /// Charge les réservations avec fonds bloqués (pour le seller)
+  Future<void> loadLockedBookings() async {
+    if (_isDisposed) return;
+
+    try {
+      // Import DiaspoService
+      final diaspoService = Get.find<DiaspoService>();
+
+      // Récupérer les bookings en tant que seller avec status 'paid'
+      final result = await diaspoService.getBookings(
+        role: 'seller',
+        status: 'paid', // paid = payé, en attente de confirmation de livraison par le seller
+        perPage: 100, // Récupérer tous les bookings payés en attente
+      );
+
+      if (_isDisposed) return;
+
+      if (result['success'] == true && result['data'] != null) {
+        // L'API retourne un objet avec pagination {current_page, data: [...], ...}
+        final responseData = result['data'];
+
+        List<dynamic> bookingsData;
+        if (responseData is List) {
+          // Si c'est déjà une liste
+          bookingsData = responseData;
+        } else if (responseData is Map && responseData['data'] != null) {
+          // Si c'est un objet avec pagination
+          bookingsData = responseData['data'] as List<dynamic>;
+        } else {
+          bookingsData = [];
+        }
+
+        // Filtrer pour ne garder que ceux avec des fonds bloqués (status = 'paid')
+        lockedBookings.value = bookingsData
+            .where((booking) => booking['status'] == 'paid')
+            .map((booking) {
+                  // Parser correctement les valeurs numériques qui peuvent être String ou num
+                  final subtotalRaw = booking['subtotal'];
+                  final subtotal = subtotalRaw is String
+                      ? double.tryParse(subtotalRaw) ?? 0.0
+                      : (subtotalRaw is num ? subtotalRaw.toDouble() : 0.0);
+
+                  final kgBookedRaw = booking['kg_booked'];
+                  final kgBooked = kgBookedRaw is String
+                      ? double.tryParse(kgBookedRaw) ?? 0.0
+                      : (kgBookedRaw is num ? kgBookedRaw.toDouble() : 0.0);
+
+                  return {
+                    'id': booking['id'],
+                    'confirmation_code': booking['confirmation_code'],
+                    'subtotal': subtotal,
+                    'kg_booked': kgBooked,
+                    'buyer_name': booking['buyer']?['name'] ?? 'Client',
+                    'created_at': booking['created_at'],
+                  };
+                })
+            .toList();
+
+        print('[WalletController] 🔒 Locked bookings loaded: ${lockedBookings.length} bookings');
+        for (var booking in lockedBookings) {
+          print('  - Booking #${booking['id']}: ${booking['subtotal']} FCFA (${booking['kg_booked']} kg)');
+        }
+      } else {
+        lockedBookings.value = [];
+      }
+    } catch (e) {
+      print('[WalletController] Error loading locked bookings: $e');
+      lockedBookings.value = [];
+    }
   }
 
   /// Initie une recharge du wallet
@@ -773,5 +867,25 @@ class WalletController extends GetxController {
         'per_page': perPage,
       };
     }
+  }
+
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format price with user's currency
+  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 }

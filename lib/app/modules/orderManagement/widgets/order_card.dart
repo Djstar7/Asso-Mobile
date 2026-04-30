@@ -26,7 +26,7 @@ class OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR');
-    final numberFormat = NumberFormat('#,###', 'fr_FR');
+    final controller = Get.find<OrderManagementController>();
 
     return InkWell(
       onTap: onTap,
@@ -124,7 +124,7 @@ class OrderCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    '${numberFormat.format(order.totalAmount)} XAF',
+                    controller.formatPrice(order.totalAmount),
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppThemeSystem.primaryColor,

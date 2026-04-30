@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import '../../../data/providers/package_service.dart';
 import '../../../data/providers/wallet_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/models/wallet_model.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../widgets/payment_loading_dialog.dart';
@@ -269,12 +270,24 @@ class PackageSubscriptionController extends GetxController {
     ]);
   }
 
-  /// Format currency
-  String formatCurrency(double amount) {
-    return '${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
+  // ================================
+  // CURRENCY FORMATTING
+  // ================================
+
+  /// Format currency (using CurrencyService)
+  String formatCurrency(double priceInXOF) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return '${priceInXOF.toStringAsFixed(0)} FCFA';
+    }
+    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: true);
+  }
+
+  /// Get currency symbol
+  String get currencySymbol {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return 'FCFA';
+    }
+    return CurrencyService.to.currencySymbol;
   }
 
   @override
