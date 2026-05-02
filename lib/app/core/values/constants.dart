@@ -6,10 +6,10 @@ class AppConstants {
 
   // API Configuration
   // Local (commenté)
-  static const String baseUrl = 'http://10.104.185.129:8001/api';
+  // static const String baseUrl = 'http://10.100.175.129:8001/api';
 
   // Production
-  // static const String baseUrl = 'https://asso-dashboard.sbs/api';
+  static const String baseUrl = 'https://asso-dashboard.sbs/api';
 
   static const Duration apiTimeout = Duration(seconds: 30);
 

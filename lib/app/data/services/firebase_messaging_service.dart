@@ -332,6 +332,25 @@ class FirebaseMessagingService extends GetxService {
     print('🔔 Type de notification: $type');
 
     switch (type) {
+      case 'new_message':
+        // Navigation vers les détails de la conversation
+        final conversationId = data['conversation_id'];
+        final senderName = data['sender_name'];
+
+        if (conversationId != null) {
+          print('💬 Navigation vers la conversation $conversationId (de $senderName)');
+          Get.toNamed(Routes.CHATDETAIL, arguments: {
+            'id': conversationId,
+            'name': senderName ?? 'Utilisateur',
+            'avatar': senderName?[0]?.toUpperCase() ?? 'U',
+          });
+        } else {
+          // Si pas d'ID, naviguer vers la liste des conversations
+          print('💬 Navigation vers la liste des conversations');
+          Get.toNamed(Routes.CHAT);
+        }
+        break;
+
       case 'new_product':
         // Navigation vers les détails du produit
         final productId = data['product_id'];

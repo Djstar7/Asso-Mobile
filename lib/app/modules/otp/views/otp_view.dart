@@ -89,16 +89,7 @@ class OtpView extends GetView<OtpController> {
                   ),
                   children: [
                     const TextSpan(
-                      text: 'Nous avons envoyé un code de vérification à\n',
-                    ),
-                    TextSpan(
-                      text: phoneNumber.isNotEmpty
-                          ? phoneNumber
-                          : '+33 6 XX XX XX XX',
-                      style: context.body1.copyWith(
-                        color: context.primaryTextColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      text: 'Nous avons envoyé un code de vérification sur votre e-mail\n',
                     ),
                   ],
                 ),
@@ -126,7 +117,7 @@ class OtpView extends GetView<OtpController> {
                       ),
                       SizedBox(width: context.elementSpacing * 0.25),
                       Text(
-                        'Modifier le numéro',
+                        'Modifier mon adresse e-mail',
                         style: context.caption.copyWith(
                           color: AppThemeSystem.primaryColor,
                           fontWeight: FontWeight.w600,

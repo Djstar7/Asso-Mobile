@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/storage_service.dart';
 import '../controllers/chat_controller.dart';
@@ -339,19 +340,38 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                       BorderRadiusType.small,
                     ),
                   ),
-                  child: Image.asset(
-                    conversation['productImage'],
+                  child: CachedNetworkImage(
+                    imageUrl: conversation['productImage'],
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 48,
-                        height: 48,
-                        color: AppThemeSystem.grey200,
-                        child: const Icon(Icons.image, size: 24),
-                      );
-                    },
+                    placeholder: (context, url) => Container(
+                      width: 48,
+                      height: 48,
+                      color: AppThemeSystem.grey200,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppThemeSystem.primaryColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 48,
+                      height: 48,
+                      color: AppThemeSystem.grey200,
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 24,
+                        color: AppThemeSystem.grey600,
+                      ),
+                    ),
                   ),
                 ),
               ],

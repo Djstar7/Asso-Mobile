@@ -30,12 +30,12 @@ class WebSocketService extends GetxService {
   static const String appKey = '9r0idxmfd6d9lc9e055h';
 
   // Local (commenté)
-  static const String host = '10.104.185.129';
-  static const int wsPort = 8080;
+  // static const String host = '10.100.175.129';
+  // static const int wsPort = 8080;
 
   // Production
-  // static const String host = 'asso-dashboard.sbs';
-  // static const int wsPort = 8085;
+  static const String host = 'asso-dashboard.sbs';
+  static const int wsPort = 8085;
 
   // Channels actifs
   final Set<String> _subscribedChannels = {};
