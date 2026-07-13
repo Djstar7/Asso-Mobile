@@ -30,7 +30,7 @@ class WalletController extends GetxController {
   final lockedBookings = <Map<String, dynamic>>[].obs; // Bookings avec fonds bloqués
 
   // Soldes de retrait séparés par provider
-  final freemopayBalance = 0.0.obs;
+  final kpayBalance = 0.0.obs;
   final paypalBalance = 0.0.obs;
   final totalWithdrawableBalance = 0.0.obs;
 
@@ -75,7 +75,7 @@ class WalletController extends GetxController {
 
       // NOTE: Deposit polling is no longer needed!
       // The backend now processes deposits asynchronously using:
-      // - Background jobs that check FreeMoPay API every 30 seconds
+      // - Background jobs that check KPay API every 30 seconds
       // - FCM notifications sent to user when payment completes
       // Users no longer wait on a screen - they receive a notification instead
 
@@ -208,7 +208,7 @@ class WalletController extends GetxController {
         print('[WalletController] 💰 Wallet loaded:');
         print('  - Current Balance: ${result.currentBalance}');
         print('  - Total Locked: ${result.totalLockedBalance}');
-        print('  - Locked Freemopay: ${result.lockedFreemopayBalance}');
+        print('  - Locked KPay: ${result.lockedKPayBalance}');
         print('  - Locked Paypal: ${result.lockedPaypalBalance}');
         print('  - Has Locked Funds: ${result.hasLockedFunds}');
       } else {
@@ -347,11 +347,12 @@ class WalletController extends GetxController {
 
   /// Initie une recharge du wallet
   /// Retourne l'URL de paiement si succès
-  /// phoneNumber: requis pour freemopay
+  /// phoneNumber: requis pour kpay
   Future<Map<String, dynamic>> initiateRecharge({
     required double amount,
-    required String paymentMethod, // 'freemopay' ou 'paypal'
-    String? phoneNumber, // Requis pour freemopay
+    required String paymentMethod, // 'kpay' ou 'paypal'
+    String? provider, // code opérateur KPay (ex. MTN_MOMO_CMR) — requis pour kpay
+    String? phoneNumber, // format international sans '+' — requis pour kpay
   }) async {
     if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
 
@@ -363,6 +364,7 @@ class WalletController extends GetxController {
       final result = await _walletService.rechargeWallet(
         amount: amount,
         paymentMethod: paymentMethod,
+        provider: provider,
         phoneNumber: phoneNumber,
       );
 
@@ -371,8 +373,8 @@ class WalletController extends GetxController {
       if (result['success'] == true) {
         successMessage.value = result['message'] ?? 'Recharge initiée avec succès';
 
-        // Si c'est FreeMoPay et que le wallet est déjà crédité, rafraîchir
-        if (paymentMethod == 'freemopay' && result['status'] == 'completed') {
+        // Si c'est KPay et que le wallet est déjà crédité, rafraîchir
+        if (paymentMethod == 'kpay' && result['status'] == 'completed') {
           await Future.wait([
             loadWallet(),
             loadWithdrawalBalances(),
@@ -523,7 +525,7 @@ class WalletController extends GetxController {
     required String description,
     required String referenceType,
     required int referenceId,
-    required String paymentProvider, // 'freemopay' ou 'paypal'
+    required String paymentProvider, // 'kpay' ou 'paypal'
   }) async {
     if (_isDisposed) return false;
 
@@ -662,7 +664,7 @@ class WalletController extends GetxController {
 
       if (result['success'] == true) {
         // Parse safely - handle both string and numeric responses
-        freemopayBalance.value = _parseBalance(result['freemopay_balance']);
+        kpayBalance.value = _parseBalance(result['kpay_wallet_balance']);
         paypalBalance.value = _parseBalance(result['paypal_balance']);
         totalWithdrawableBalance.value = _parseBalance(result['total_balance']);
       }
@@ -693,10 +695,10 @@ class WalletController extends GetxController {
     }
   }
 
-  /// Initie un retrait FreeMoPay
-  Future<Map<String, dynamic>> initiateFreeMoPayWithdrawal({
+  /// Initie un retrait KPay
+  Future<Map<String, dynamic>> initiateKpayWithdrawal({
     required double amount,
-    required String paymentMethod, // 'om' ou 'momo'
+    required String provider, // code opérateur KPay (ex. MTN_MOMO_CMR)
     required String phoneNumber,
     String? notes,
   }) async {
@@ -705,9 +707,9 @@ class WalletController extends GetxController {
     successMessage.value = '';
 
     try {
-      final result = await _walletService.initiateFreeMoPayWithdrawal(
+      final result = await _walletService.initiateKpayWithdrawal(
         amount: amount,
-        paymentMethod: paymentMethod,
+        provider: provider,
         phoneNumber: phoneNumber,
         notes: notes,
       );
@@ -718,8 +720,8 @@ class WalletController extends GetxController {
         // ⚠️ CRITIQUE: Mettre à jour le solde IMMÉDIATEMENT avec la valeur retournée
         // Le backend a déjà débité le solde, il faut refléter ça côté frontend
         if (result['data'] != null && result['data']['new_balance'] != null) {
-          freemopayBalance.value = _parseBalance(result['data']['new_balance']);
-          print('[WalletController] ✅ Balance updated immediately: ${freemopayBalance.value} FCFA');
+          kpayBalance.value = _parseBalance(result['data']['new_balance']);
+          print('[WalletController] ✅ Balance updated immediately: ${kpayBalance.value} FCFA');
         }
 
         // Rafraîchir le solde complet et les soldes de retrait en arrière-plan
@@ -733,7 +735,7 @@ class WalletController extends GetxController {
         return result;
       }
     } catch (e) {
-      print('[WalletController] Error initiating FreeMoPay withdrawal: $e');
+      print('[WalletController] Error initiating KPay withdrawal: $e');
       errorMessage.value = 'Erreur lors de l\'initiation du retrait';
       return {'success': false, 'message': errorMessage.value};
     } finally {
@@ -788,25 +790,25 @@ class WalletController extends GetxController {
   }
 
   /// Méthode wrapper générique pour initier un retrait
-  /// Provider: 'freemopay' ou 'paypal'
+  /// walletPocket: 'kpay' ou 'paypal' (poche wallet à débiter)
   Future<Map<String, dynamic>> initiateWithdrawal({
-    required String provider,
+    required String provider, // poche wallet : 'kpay' ou 'paypal'
     required double amount,
-    String? paymentMethod, // Pour FreeMoPay: 'om' ou 'momo'
-    String? phoneNumber, // Pour FreeMoPay
+    String? kpayProvider, // code opérateur KPay (ex. MTN_MOMO_CMR) — pour kpay
+    String? phoneNumber, // pour kpay (format international sans '+')
     String? paypalEmail, // Pour PayPal
     String? notes,
   }) async {
-    if (provider == 'freemopay') {
-      if (paymentMethod == null || phoneNumber == null) {
+    if (provider == 'kpay') {
+      if (kpayProvider == null || phoneNumber == null) {
         return {
           'success': false,
-          'message': 'Méthode de paiement et numéro de téléphone requis pour FreeMoPay',
+          'message': 'Opérateur et numéro de téléphone requis pour KPay',
         };
       }
-      return await initiateFreeMoPayWithdrawal(
+      return await initiateKpayWithdrawal(
         amount: amount,
-        paymentMethod: paymentMethod,
+        provider: kpayProvider,
         phoneNumber: phoneNumber,
         notes: notes,
       );

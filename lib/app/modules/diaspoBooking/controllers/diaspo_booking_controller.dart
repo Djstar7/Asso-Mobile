@@ -141,9 +141,9 @@ class DiaspoBookingController extends GetxController {
       PaymentMethodBottomSheet(
         wallet: wallet.value!,
         totalAmount: totalPrice.value,
-        onFreemopaySelected: () {
+        onKPaySelected: () {
           Get.back();
-          _processBooking('freemopay');
+          _processBooking('kpay');
         },
         onPaypalSelected: () {
           Get.back();

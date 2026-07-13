@@ -8,22 +8,22 @@ import '../../../data/providers/currency_service.dart';
 class PaymentMethodBottomSheet extends StatelessWidget {
   final WalletModel wallet;
   final double totalAmount;
-  final VoidCallback onFreemopaySelected;
+  final VoidCallback onKPaySelected;
   final VoidCallback onPaypalSelected;
 
   const PaymentMethodBottomSheet({
     super.key,
     required this.wallet,
     required this.totalAmount,
-    required this.onFreemopaySelected,
+    required this.onKPaySelected,
     required this.onPaypalSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final freemopayAvailable = wallet.freemopayBalance;
+    final kpayAvailable = wallet.kpayBalance;
     final paypalAvailable = wallet.paypalBalance;
-    final canPayWithFreemopay = freemopayAvailable >= totalAmount;
+    final canPayWithKPay = kpayAvailable >= totalAmount;
     final canPayWithPaypal = paypalAvailable >= totalAmount;
 
     return Container(
@@ -98,10 +98,10 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                 emoji: '📱',
                 title: 'Mobile Money',
                 subtitle: 'Orange Money & MTN MoMo',
-                balance: freemopayAvailable,
-                canPay: canPayWithFreemopay,
-                color: AppThemeSystem.freemopayColor,
-                onTap: canPayWithFreemopay ? onFreemopaySelected : null,
+                balance: kpayAvailable,
+                canPay: canPayWithKPay,
+                color: AppThemeSystem.kpayColor,
+                onTap: canPayWithKPay ? onKPaySelected : null,
               ),
 
               const SizedBox(height: 16),
@@ -122,7 +122,7 @@ class PaymentMethodBottomSheet extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Help text
-              if (!canPayWithFreemopay && !canPayWithPaypal)
+              if (!canPayWithKPay && !canPayWithPaypal)
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(

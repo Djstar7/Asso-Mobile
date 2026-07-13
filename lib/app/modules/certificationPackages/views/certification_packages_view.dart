@@ -635,16 +635,16 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
 
               return Column(
                 children: [
-                  // FreeMoPay Wallet Option
+                  // KPay Wallet Option
                   _buildWalletOption(
                     context,
-                    title: 'Wallet FreeMoPay',
-                    balance: controller.wallet.value?.freemopayBalance ?? 0,
+                    title: 'Wallet KPay',
+                    balance: controller.wallet.value?.kpayBalance ?? 0,
                     price: price,
                     icon: Icons.phone_android_rounded,
-                    color: AppThemeSystem.freemopayColor,
+                    color: AppThemeSystem.kpayColor,
                     onTap: () {
-                      controller.subscribeWithWallet('freemopay');
+                      controller.subscribeWithWallet('kpay');
                     },
                   ),
                   SizedBox(height: context.elementSpacing),

@@ -48,7 +48,7 @@ class AppThemeSystem {
   static const Color infoColor = Color(0xFF2196F3);
 
   // Couleurs des providers de paiement
-  static const Color freemopayColor = Color(0xFFFF6F00); // Orange
+  static const Color kpayColor = Color(0xFFFF6F00); // Orange
   static const Color paypalColor = Color(0xFF0070ba); // Bleu PayPal
 
   // ================================

@@ -23,16 +23,18 @@ class WalletService {
     return await ApiProvider.get('${AppConstants.walletTransactionsUrl}?$query');
   }
 
-  /// Recharge wallet via FreeMoPay or PayPal
+  /// Recharge wallet via KPay (Mobile Money) ou PayPal
   static Future<ApiResponse> recharge({
     required double amount,
-    required String paymentMethod, // 'freemopay' ou 'paypal'
-    String? phoneNumber, // Requis pour freemopay
+    required String paymentMethod, // 'kpay' ou 'paypal'
+    String? provider, // code opérateur KPay (ex. MTN_MOMO_CMR) — requis pour kpay
+    String? phoneNumber, // format international sans '+' (ex. 237670000001) — requis pour kpay
   }) async {
     final data = <String, dynamic>{
       'amount': amount,
       'payment_method': paymentMethod,
     };
+    if (provider != null) data['provider'] = provider;
     if (phoneNumber != null) data['phone_number'] = phoneNumber;
 
     return await ApiProvider.post(AppConstants.walletRechargeUrl, body: data);
@@ -47,13 +49,13 @@ class WalletService {
   }
 
   /// Pay with wallet
-  /// paymentProvider: 'freemopay' ou 'paypal' (indique d'où déduire le montant)
+  /// paymentProvider: 'kpay' ou 'paypal' (indique d'où déduire le montant)
   static Future<ApiResponse> pay({
     required double amount,
     required String description,
     required String referenceType, // 'order', 'subscription', etc.
     required int referenceId,
-    required String paymentProvider, // 'freemopay' ou 'paypal'
+    required String paymentProvider, // 'kpay' ou 'paypal'
   }) async {
     return await ApiProvider.post(AppConstants.walletPayUrl, body: {
       'amount': amount,
@@ -69,22 +71,22 @@ class WalletService {
     return await ApiProvider.get(AppConstants.walletWithdrawalBalancesUrl);
   }
 
-  /// Initiate FreeMoPay withdrawal (Mobile Money)
-  static Future<ApiResponse> withdrawFreemopay({
+  /// Initiate KPay withdrawal (Mobile Money)
+  static Future<ApiResponse> withdrawKpay({
     required double amount,
-    required String paymentMethod, // 'om' ou 'momo'
-    required String phoneNumber,
+    required String provider, // code opérateur KPay (ex. MTN_MOMO_CMR)
+    required String phoneNumber, // format international sans '+' (ex. 237670000001)
     String? notes,
   }) async {
     final data = <String, dynamic>{
       'amount': amount,
-      'payment_method': paymentMethod,
+      'provider': provider,
       'phone': phoneNumber,
     };
     if (notes != null) data['notes'] = notes;
 
     return await ApiProvider.post(
-      AppConstants.walletWithdrawFreemopayUrl,
+      AppConstants.walletWithdrawKpayUrl,
       body: data,
     );
   }
@@ -111,7 +113,7 @@ class WalletService {
   static Future<ApiResponse> getWithdrawalHistory({
     int page = 1,
     int perPage = 20,
-    String? provider, // 'freemopay' ou 'paypal'
+    String? provider, // 'kpay' ou 'paypal'
     String? status, // 'pending', 'processing', 'completed', 'failed', 'cancelled'
   }) async {
     final params = <String, String>{

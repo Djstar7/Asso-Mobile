@@ -34,7 +34,7 @@ class PackageService {
   }
 
   /// Subscribe to a package with wallet type selection
-  /// walletType: 'freemopay' or 'paypal'
+  /// walletType: 'kpay' or 'paypal'
   static Future<ApiResponse> subscribeToPackage(
     int packageId, {
     required String walletType,
