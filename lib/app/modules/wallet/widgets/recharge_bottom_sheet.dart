@@ -516,6 +516,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               onChanged: ({
                 required String? providerCode,
                 required String? phoneNumber,
+                required String currency,
                 required bool isValid,
               }) {
                 _kpayProvider = providerCode;
