@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
+import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import 'kpay_phone_selector.dart';
 
@@ -53,10 +54,41 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   bool _kpayValid = false;
   bool _isProcessing = false;
 
+  // Aperçu de conversion (ex. "≈ 3 ZMW")
+  String? _convertedText;
+  static const String _baseCurrency = 'XAF';
+
   /// Solde disponible pour le retrait : devise de l'opérateur (KPay) ou PayPal.
   double get _availableBalance => isKpay
       ? walletController.kpayAvailableFor(_kpayCurrency)
       : widget.availableBalance;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController.addListener(_updateConvertedPreview);
+  }
+
+  /// Met à jour l'aperçu du montant converti dans la devise de l'opérateur.
+  Future<void> _updateConvertedPreview() async {
+    final amount = double.tryParse(_amountController.text.trim());
+    if (!isKpay || _kpayCurrency == _baseCurrency || amount == null || amount <= 0) {
+      if (_convertedText != null && mounted) setState(() => _convertedText = null);
+      return;
+    }
+    final response = await ApiProvider.get('/v1/currencies/convert', queryParams: {
+      'from': _baseCurrency,
+      'to': _kpayCurrency,
+      'amount': amount,
+    });
+    if (!mounted) return;
+    if (response.success && response.data?['data'] != null) {
+      final data = response.data!['data'];
+      setState(() => _convertedText = '≈ ${data['converted']} $_kpayCurrency');
+    } else {
+      setState(() => _convertedText = null);
+    }
+  }
 
   WalletController get walletController => Get.find<WalletController>();
   AppConfigController get appConfig => Get.find<AppConfigController>();
@@ -205,6 +237,38 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   },
                 ),
 
+                // Encart de conversion (montant envoyé dans la devise de l'opérateur)
+                if (isKpay && _convertedText != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF7900).withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF7900).withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.swap_horiz, color: Color(0xFFFF7900), size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Montant envoyé au bénéficiaire',
+                                  style: TextStyle(fontSize: 11, color: AppThemeSystem.getSecondaryTextColor(context))),
+                              const SizedBox(height: 2),
+                              Text(_convertedText!,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF7900))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 16),
 
                 // Champs spécifiques à KPay
@@ -219,11 +283,11 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       _kpayProvider = providerCode;
                       _kpayPhone = phoneNumber;
                       _kpayValid = isValid;
-                      // Rafraîchir le solde affiché si la devise change
-                      if (currency != _kpayCurrency && mounted) {
-                        setState(() => _kpayCurrency = currency);
-                      } else {
+                      // Rafraîchir le solde + l'aperçu de conversion si la devise change
+                      if (currency != _kpayCurrency) {
                         _kpayCurrency = currency;
+                        if (mounted) setState(() {});
+                        _updateConvertedPreview();
                       }
                     },
                   ),
