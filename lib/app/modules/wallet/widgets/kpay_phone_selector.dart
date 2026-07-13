@@ -11,6 +11,7 @@ class KpayPhoneSelector extends StatefulWidget {
   final void Function({
     required String? providerCode,
     required String? phoneNumber,
+    required String currency,
     required bool isValid,
   }) onChanged;
 
@@ -53,6 +54,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
     widget.onChanged(
       providerCode: _operator.providerCode,
       phoneNumber: _isValid ? _fullPhone : null,
+      currency: _country.currency,
       isValid: _isValid,
     );
   }

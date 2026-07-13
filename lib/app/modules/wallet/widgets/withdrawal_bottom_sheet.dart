@@ -49,8 +49,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   // Sélection KPay (renseignée par KpayPhoneSelector)
   String? _kpayProvider; // code opérateur (ex. MTN_MOMO_CMR)
   String? _kpayPhone; // numéro international sans '+'
+  String _kpayCurrency = 'XAF'; // devise de l'opérateur sélectionné
   bool _kpayValid = false;
   bool _isProcessing = false;
+
+  /// Solde disponible pour le retrait : devise de l'opérateur (KPay) ou PayPal.
+  double get _availableBalance => isKpay
+      ? walletController.kpayAvailableFor(_kpayCurrency)
+      : widget.availableBalance;
 
   WalletController get walletController => Get.find<WalletController>();
   AppConfigController get appConfig => Get.find<AppConfigController>();
@@ -130,14 +136,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Solde $providerLabel',
+                        isKpay ? 'Solde $_kpayCurrency' : 'Solde $providerLabel',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppThemeSystem.getSecondaryTextColor(context),
                         ),
                       ),
                       Text(
-                        '${widget.availableBalance.toStringAsFixed(0)} FCFA',
+                        '${_availableBalance.toStringAsFixed(0)} ${isKpay ? _kpayCurrency : "FCFA"}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -189,11 +195,10 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       return 'Veuillez entrer un montant';
                     }
                     final amount = double.tryParse(value);
-                    print('Validating amount: $minAmount, available: ${widget.availableBalance}, entered: $amount');
                     if (amount == null || amount < minAmount) {
                       return 'Le montant minimum est de ${minAmount.toStringAsFixed(0)} FCFA';
                     }
-                    if (amount > widget.availableBalance) {
+                    if (amount > _availableBalance) {
                       return 'Solde insuffisant';
                     }
                     return null;
@@ -208,11 +213,18 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                     onChanged: ({
                       required String? providerCode,
                       required String? phoneNumber,
+                      required String currency,
                       required bool isValid,
                     }) {
                       _kpayProvider = providerCode;
                       _kpayPhone = phoneNumber;
                       _kpayValid = isValid;
+                      // Rafraîchir le solde affiché si la devise change
+                      if (currency != _kpayCurrency && mounted) {
+                        setState(() => _kpayCurrency = currency);
+                      } else {
+                        _kpayCurrency = currency;
+                      }
                     },
                   ),
                 ],

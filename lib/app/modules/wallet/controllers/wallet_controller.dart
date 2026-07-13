@@ -30,9 +30,16 @@ class WalletController extends GetxController {
   final lockedBookings = <Map<String, dynamic>>[].obs; // Bookings avec fonds bloqués
 
   // Soldes de retrait séparés par provider
-  final kpayBalance = 0.0.obs;
+  final kpayBalance = 0.0.obs; // KPay XAF (compat)
   final paypalBalance = 0.0.obs;
   final totalWithdrawableBalance = 0.0.obs;
+
+  // Soldes KPay disponibles par devise (multi-devise) : {'XOF': 20000.0, ...}
+  final kpayBalancesByCurrency = <String, double>{}.obs;
+
+  /// Solde KPay disponible dans une devise donnée.
+  double kpayAvailableFor(String currency) =>
+      kpayBalancesByCurrency[currency] ?? 0.0;
 
   // Pagination des transactions
   final currentPage = 1.obs;
@@ -667,6 +674,19 @@ class WalletController extends GetxController {
         kpayBalance.value = _parseBalance(result['kpay_wallet_balance']);
         paypalBalance.value = _parseBalance(result['paypal_balance']);
         totalWithdrawableBalance.value = _parseBalance(result['total_balance']);
+
+        // Soldes KPay par devise (available)
+        final byCurrency = <String, double>{};
+        final list = result['kpay_balances'];
+        if (list is List) {
+          for (final item in list) {
+            if (item is Map && item['currency'] != null) {
+              byCurrency[item['currency'].toString()] =
+                  _parseBalance(item['available']);
+            }
+          }
+        }
+        kpayBalancesByCurrency.value = byCurrency;
       }
     } catch (e) {
       print('[WalletController] Error loading withdrawal balances: $e');
