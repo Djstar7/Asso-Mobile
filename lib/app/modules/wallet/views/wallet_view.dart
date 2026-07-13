@@ -868,15 +868,15 @@ class WalletView extends GetView<WalletController> {
           ),
           const SizedBox(height: 16),
 
-          // Mobile Money (Orange Money + MTN MoMo)
+          // KPay (Mobile Money multi-opérateurs)
           Obx(() {
             final balance = controller.wallet.value?.kpayBalance ?? 0.0;
             return _buildProviderCard(
               context: context,
               iconData: Icons.phone_android_rounded,
               emoji: '📱',
-              title: 'Mobile Money',
-              subtitle: 'Orange Money & MTN MoMo',
+              title: 'KPay',
+              subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
               balance: balance,
               color: AppThemeSystem.kpayColor,
             );
@@ -1047,13 +1047,13 @@ class WalletView extends GetView<WalletController> {
               ),
               SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-              // Mobile Money Option
+              // KPay Option
               _buildWithdrawalOption(
                 context: context,
                 iconData: Icons.phone_android_rounded,
                 emoji: '📱',
-                title: 'Mobile Money',
-                subtitle: 'Orange Money & MTN MoMo',
+                title: 'KPay',
+                subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
                 balance: controller.wallet.value?.kpayBalance ?? 0.0,
                 color: AppThemeSystem.kpayColor,
                 onTap: () async {
