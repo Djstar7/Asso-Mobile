@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// WebView générique pour les paiements (FreeMoPay et PayPal)
+/// WebView générique pour les paiements (KPay et PayPal)
 class PaymentWebView extends StatefulWidget {
   final String paymentUrl;
-  final String paymentMethod; // 'freemopay' ou 'paypal'
+  final String paymentMethod; // 'kpay' ou 'paypal'
   final int paymentId;
   final Function(bool success, String message)? onPaymentComplete;
 
@@ -92,14 +92,14 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   void _checkPaymentCompletion(String url) {
     print('[PaymentWebView] Checking URL: $url');
 
-    // Pour FreeMoPay
-    if (widget.paymentMethod == 'freemopay') {
+    // Pour KPay
+    if (widget.paymentMethod == 'kpay') {
       if (url.contains('/payment/success') || url.contains('status=success')) {
-        _handlePaymentSuccess('Paiement FreeMoPay réussi');
+        _handlePaymentSuccess('Paiement KPay réussi');
       } else if (url.contains('/payment/cancel') ||
                  url.contains('/payment/failed') ||
                  url.contains('status=failed')) {
-        _handlePaymentFailure('Paiement FreeMoPay annulé ou échoué');
+        _handlePaymentFailure('Paiement KPay annulé ou échoué');
       }
     }
 

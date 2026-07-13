@@ -126,12 +126,12 @@ class PackageSubscriptionController extends GetxController {
       if (_isDisposed) return;
 
       if (response.success && response.data != null) {
-        // Backend returns: {success: true, data: {freemopay_balance: ..., paypal_balance: ...}}
+        // Backend returns: {success: true, data: {kpay_balance: ..., paypal_balance: ...}}
         // So we need to access response.data['data'] to get the wallet stats
         final walletData = response.data!['data'] ?? response.data!;
         wallet.value = WalletModel.fromJson(walletData);
         print('✅ Wallet loaded');
-        print('  └─ FreeMoPay: ${wallet.value!.freemopayBalance} FCFA');
+        print('  └─ KPay: ${wallet.value!.kpayBalance} FCFA');
         print('  └─ PayPal: ${wallet.value!.paypalBalance} FCFA');
         print('  └─ Total: ${wallet.value!.currentBalance} FCFA');
       } else {
@@ -168,14 +168,14 @@ class PackageSubscriptionController extends GetxController {
 
     // Check wallet balance
     final price = (selectedPackage.value!['price'] ?? 0).toDouble();
-    final walletBalance = walletType == 'freemopay'
-        ? wallet.value?.freemopayBalance ?? 0
+    final walletBalance = walletType == 'kpay'
+        ? wallet.value?.kpayBalance ?? 0
         : wallet.value?.paypalBalance ?? 0;
 
     if (walletBalance < price) {
       Get.snackbar(
         'Solde insuffisant',
-        'Votre ${walletType == 'freemopay' ? 'wallet FreeMoPay' : 'wallet PayPal'} n\'a pas un solde suffisant. Solde actuel: ${walletBalance.toStringAsFixed(0)} FCFA, Prix: ${price.toStringAsFixed(0)} FCFA',
+        'Votre ${walletType == 'kpay' ? 'wallet KPay' : 'wallet PayPal'} n\'a pas un solde suffisant. Solde actuel: ${walletBalance.toStringAsFixed(0)} FCFA, Prix: ${price.toStringAsFixed(0)} FCFA',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,

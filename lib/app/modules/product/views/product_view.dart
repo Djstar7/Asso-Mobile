@@ -1922,19 +1922,19 @@ class ProductView extends GetView<ProductController> {
 
                     SizedBox(height: 20),
 
-                    // Boutons Wallet (FreeMoPay / PayPal)
+                    // Boutons Wallet (KPay / PayPal)
                     Obx(() {
                       final hasPartner = controller.selectedPartner.value != null;
 
                       return Column(
                         children: [
-                          // Bouton FreeMoPay
+                          // Bouton KPay
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: !hasPartner || controller.isCreatingOrder.value
                                   ? null
-                                  : () => _confirmOrder(context, product, productId, 'freemopay'),
+                                  : () => _confirmOrder(context, product, productId, 'kpay'),
                               icon: controller.isCreatingOrder.value
                                   ? SizedBox(width: 20, height: 20,
                                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

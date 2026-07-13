@@ -870,7 +870,7 @@ class WalletView extends GetView<WalletController> {
 
           // Mobile Money (Orange Money + MTN MoMo)
           Obx(() {
-            final balance = controller.wallet.value?.freemopayBalance ?? 0.0;
+            final balance = controller.wallet.value?.kpayBalance ?? 0.0;
             return _buildProviderCard(
               context: context,
               iconData: Icons.phone_android_rounded,
@@ -878,7 +878,7 @@ class WalletView extends GetView<WalletController> {
               title: 'Mobile Money',
               subtitle: 'Orange Money & MTN MoMo',
               balance: balance,
-              color: AppThemeSystem.freemopayColor,
+              color: AppThemeSystem.kpayColor,
             );
           }),
 
@@ -1054,13 +1054,13 @@ class WalletView extends GetView<WalletController> {
                 emoji: '📱',
                 title: 'Mobile Money',
                 subtitle: 'Orange Money & MTN MoMo',
-                balance: controller.wallet.value?.freemopayBalance ?? 0.0,
-                color: AppThemeSystem.freemopayColor,
+                balance: controller.wallet.value?.kpayBalance ?? 0.0,
+                color: AppThemeSystem.kpayColor,
                 onTap: () async {
                   Get.back();
                   final result = await WithdrawalBottomSheet.show(
-                    provider: 'freemopay',
-                    availableBalance: controller.wallet.value?.freemopayBalance ?? 0.0,
+                    provider: 'kpay',
+                    availableBalance: controller.wallet.value?.kpayBalance ?? 0.0,
                   );
                   if (result == true) {
                     controller.refresh();

@@ -191,8 +191,8 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                       _buildDetailRow(
                         context,
                         'Méthode',
-                        widget.paymentMethod == 'freemopay'
-                            ? 'FreeMoPay'
+                        widget.paymentMethod == 'kpay'
+                            ? 'KPay'
                             : 'PayPal',
                       ),
                       const SizedBox(height: 12),

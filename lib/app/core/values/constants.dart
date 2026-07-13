@@ -94,8 +94,8 @@ class AppConstants {
   static const String walletPayUrl = '/v1/wallet/pay';
   static const String walletWithdrawalBalancesUrl =
       '/v1/wallet/withdrawal-balances';
-  static const String walletWithdrawFreemopayUrl =
-      '/v1/wallet/withdraw/freemopay';
+  static const String walletWithdrawKpayUrl =
+      '/v1/wallet/withdraw/kpay';
   static const String walletWithdrawPaypalUrl = '/v1/wallet/withdraw/paypal';
   static const String walletWithdrawalsUrl = '/v1/wallet/withdrawals';
   static const String walletWithdrawalStatusUrl =

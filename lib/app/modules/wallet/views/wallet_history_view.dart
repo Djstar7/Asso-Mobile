@@ -345,15 +345,15 @@ class WalletHistoryView extends GetView<WalletController> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  transaction.paymentProvider == 'freemopay'
+                                  transaction.paymentProvider == 'kpay'
                                       ? '📱'
                                       : '💳',
                                   style: const TextStyle(fontSize: 12),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  transaction.paymentProvider == 'freemopay'
-                                      ? 'FreeMoPay'
+                                  transaction.paymentProvider == 'kpay'
+                                      ? 'KPay'
                                       : 'PayPal',
                                   style: const TextStyle(
                                     fontSize: 11,

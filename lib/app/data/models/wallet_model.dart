@@ -4,9 +4,9 @@ import '../providers/currency_service.dart';
 /// Wallet model matching backend structure
 class WalletModel {
   final double currentBalance;
-  final double freemopayBalance;
+  final double kpayBalance;
   final double paypalBalance;
-  final double lockedFreemopayBalance;
+  final double lockedKPayBalance;
   final double lockedPaypalBalance;
   final double totalLockedBalance;
   final double availableBalance;
@@ -17,9 +17,9 @@ class WalletModel {
 
   WalletModel({
     required this.currentBalance,
-    required this.freemopayBalance,
+    required this.kpayBalance,
     required this.paypalBalance,
-    required this.lockedFreemopayBalance,
+    required this.lockedKPayBalance,
     required this.lockedPaypalBalance,
     required this.totalLockedBalance,
     required this.availableBalance,
@@ -32,9 +32,9 @@ class WalletModel {
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     return WalletModel(
       currentBalance: _parseDouble(json['current_balance']),
-      freemopayBalance: _parseDouble(json['freemopay_balance']),
+      kpayBalance: _parseDouble(json['kpay_balance']),
       paypalBalance: _parseDouble(json['paypal_balance']),
-      lockedFreemopayBalance: _parseDouble(json['locked_freemopay_balance']),
+      lockedKPayBalance: _parseDouble(json['locked_kpay_balance']),
       lockedPaypalBalance: _parseDouble(json['locked_paypal_balance']),
       totalLockedBalance: _parseDouble(json['total_locked_balance']),
       availableBalance: _parseDouble(json['available_balance']),
@@ -48,9 +48,9 @@ class WalletModel {
   Map<String, dynamic> toJson() {
     return {
       'current_balance': currentBalance,
-      'freemopay_balance': freemopayBalance,
+      'kpay_balance': kpayBalance,
       'paypal_balance': paypalBalance,
-      'locked_freemopay_balance': lockedFreemopayBalance,
+      'locked_kpay_balance': lockedKPayBalance,
       'locked_paypal_balance': lockedPaypalBalance,
       'total_locked_balance': totalLockedBalance,
       'available_balance': availableBalance,
@@ -120,7 +120,7 @@ class WalletTransactionModel {
   final int userId;
   final String type; // credit, debit, refund, bonus, adjustment, lock, unlock, escrow_release
   final double amount;
-  final String? paymentProvider; // freemopay, paypal
+  final String? paymentProvider; // kpay, paypal
   final String status; // pending, completed, failed
   final String description;
   final String? referenceType; // order, subscription, withdrawal, recharge, diaspo_booking

@@ -273,7 +273,7 @@ class DiaspoService extends GetxService {
     required int offerId,
     required double kgBooked,
     String? notes,
-    String? paymentMethod, // 'freemopay' or 'paypal'
+    String? paymentMethod, // 'kpay' or 'paypal'
   }) async {
     try {
       final response = await _dio.post(

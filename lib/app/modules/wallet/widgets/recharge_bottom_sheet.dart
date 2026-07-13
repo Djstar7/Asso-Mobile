@@ -7,6 +7,7 @@ import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/wallet_controller.dart';
 import '../views/paypal_native_webview.dart';
+import 'kpay_phone_selector.dart';
 
 /// Bottom sheet pour recharger le wallet en 2 étapes
 /// Step 1: Choix de la méthode de paiement
@@ -32,11 +33,15 @@ class RechargeBottomSheet extends StatefulWidget {
 class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   int _currentStep = 1; // 1 = choix méthode, 2 = formulaire
   String?
-  _selectedMethod; // 'om', 'momo', 'visa', 'mastercard', 'paypal', 'crypto'
+  _selectedMethod; // 'kpay', 'visa', 'mastercard', 'paypal', 'crypto'
+
+  // Sélection KPay (renseignée par KpayPhoneSelector)
+  String? _kpayProvider; // code opérateur (ex. MTN_MOMO_CMR)
+  String? _kpayPhone; // numéro international sans '+'
+  bool _kpayValid = false;
 
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  final _phoneController = TextEditingController();
 
   bool _isProcessing = false;
 
@@ -46,7 +51,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   @override
   void dispose() {
     _amountController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -258,25 +262,14 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   Widget _buildStep1MethodSelection(BuildContext context) {
     return Column(
       children: [
-        // Mobile Money
-        _buildMethodOption(
-          context: context,
-          logoPath: 'assets/images/orange-money.png',
-          title: 'Orange Money',
-          subtitle: 'Paiement via Orange Money',
-          color: const Color(0xFFFF7900),
-          onTap: () => _selectMethod('om'),
-        ),
-
-        const SizedBox(height: 12),
-
+        // Mobile Money (KPay) — pays + opérateur choisis à l'étape suivante
         _buildMethodOption(
           context: context,
           logoPath: 'assets/images/mtn-money.png',
-          title: 'MTN MoMo',
-          subtitle: 'Paiement via MTN Mobile Money',
-          color: const Color(0xFFFFCC00),
-          onTap: () => _selectMethod('momo'),
+          title: 'Mobile Money',
+          subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
+          color: const Color(0xFFFF7900),
+          onTap: () => _selectMethod('kpay'),
         ),
 
         const SizedBox(height: 12),
@@ -459,8 +452,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
   String _getPaymentButtonText() {
     switch (_selectedMethod) {
-      case 'om':
-      case 'momo':
+      case 'kpay':
         return 'Confirmer la recharge';
       case 'visa':
         return 'Payer avec VISA';
@@ -519,8 +511,18 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           const SizedBox(height: 16),
 
           // Champs spécifiques selon la méthode
-          if (_selectedMethod == 'om' || _selectedMethod == 'momo')
-            ..._buildMobileMoneyFields(context),
+          if (_selectedMethod == 'kpay')
+            KpayPhoneSelector(
+              onChanged: ({
+                required String? providerCode,
+                required String? phoneNumber,
+                required bool isValid,
+              }) {
+                _kpayProvider = providerCode;
+                _kpayPhone = phoneNumber;
+                _kpayValid = isValid;
+              },
+            ),
 
           // Pour VISA, MasterCard et PayPal, on n'affiche PAS de champs supplémentaires
           // PayPal WebView gérera tout
@@ -562,63 +564,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     );
   }
 
-  List<Widget> _buildMobileMoneyFields(BuildContext context) {
-    return [
-      TextFormField(
-        controller: _phoneController,
-        keyboardType: TextInputType.phone,
-        style: TextStyle(
-          color: AppThemeSystem.getPrimaryTextColor(context),
-        ),
-        decoration: InputDecoration(
-          labelText: 'Numéro de téléphone',
-          hintText: '651826475',
-          prefixIcon: const Icon(Icons.phone),
-          filled: true,
-          fillColor: AppThemeSystem.getSurfaceColor(context),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Veuillez entrer votre numéro';
-          }
-          final cleaned = value.replaceAll(RegExp(r'[^\d]'), '');
-          if (cleaned.length != 9 && cleaned.length != 12) {
-            return 'Format invalide (9 ou 12 chiffres)';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: 12),
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.infoColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: AppThemeSystem.infoColor,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Vous recevrez un code USSD pour valider le paiement',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppThemeSystem.getSecondaryTextColor(context),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ];
-  }
-
   Future<void> _handleRecharge() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -629,20 +574,23 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     try {
       final amount = double.parse(_amountController.text);
 
-      // Déterminer le payment method et provider
-      String paymentMethod;
-      String? phoneNumber;
+      if (_selectedMethod == 'kpay') {
+        // Mobile Money via KPay (pays + opérateur choisis dans le sélecteur)
+        if (!_kpayValid || _kpayProvider == null || _kpayPhone == null) {
+          Get.snackbar(
+            'Champs requis',
+            'Sélectionnez votre opérateur et saisissez un numéro valide.',
+            backgroundColor: AppThemeSystem.errorColor,
+            colorText: AppThemeSystem.whiteColor,
+          );
+          return;
+        }
 
-      if (_selectedMethod == 'om' || _selectedMethod == 'momo') {
-        // Mobile Money via FreeMoPay
-        paymentMethod = 'freemopay';
-        phoneNumber = _phoneController.text.trim();
-
-        // Initier la recharge
         final result = await walletController.initiateRecharge(
           amount: amount,
-          paymentMethod: paymentMethod,
-          phoneNumber: phoneNumber,
+          paymentMethod: 'kpay',
+          provider: _kpayProvider,
+          phoneNumber: _kpayPhone,
         );
 
         if (!mounted) return;
@@ -655,8 +603,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           await _showUssdInstructionDialog(
             context,
             amount,
-            phoneNumber,
-            _selectedMethod == 'om' ? 'orange' : 'mtn',
+            _kpayPhone!,
+            'kpay',
           );
 
           // Rafraîchir le wallet et naviguer vers l'historique
@@ -674,7 +622,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         }
       } else {
         // PayPal (VISA, MasterCard, PayPal)
-        paymentMethod = 'paypal';
 
         // Créer l'ordre PayPal natif
         final result = await walletController.initiateNativePayPalPayment(

@@ -78,12 +78,14 @@ class WalletService {
   Future<Map<String, dynamic>> rechargeWallet({
     required double amount,
     required String paymentMethod,
+    String? provider, // code opérateur KPay (ex. MTN_MOMO_CMR)
     String? phoneNumber,
   }) async {
     try {
       final response = await wallet_provider.WalletService.recharge(
         amount: amount,
         paymentMethod: paymentMethod,
+        provider: provider,
         phoneNumber: phoneNumber,
       );
 
@@ -192,7 +194,7 @@ class WalletService {
 
       return {
         'success': false,
-        'freemopay_balance': 0.0,
+        'kpay_wallet_balance': 0.0,
         'paypal_balance': 0.0,
         'total_balance': 0.0,
       };
@@ -200,24 +202,24 @@ class WalletService {
       print('[WalletService] Error getting withdrawal balances: $e');
       return {
         'success': false,
-        'freemopay_balance': 0.0,
+        'kpay_wallet_balance': 0.0,
         'paypal_balance': 0.0,
         'total_balance': 0.0,
       };
     }
   }
 
-  /// Initiate FreeMoPay withdrawal
-  Future<Map<String, dynamic>> initiateFreeMoPayWithdrawal({
+  /// Initiate KPay withdrawal
+  Future<Map<String, dynamic>> initiateKpayWithdrawal({
     required double amount,
-    required String paymentMethod,
+    required String provider, // code opérateur KPay (ex. MTN_MOMO_CMR)
     required String phoneNumber,
     String? notes,
   }) async {
     try {
-      final response = await wallet_provider.WalletService.withdrawFreemopay(
+      final response = await wallet_provider.WalletService.withdrawKpay(
         amount: amount,
-        paymentMethod: paymentMethod,
+        provider: provider,
         phoneNumber: phoneNumber,
         notes: notes,
       );
@@ -235,7 +237,7 @@ class WalletService {
         'message': response.data?['message'] ?? 'Échec du retrait',
       };
     } catch (e) {
-      print('[WalletService] Error initiating FreeMoPay withdrawal: $e');
+      print('[WalletService] Error initiating KPay withdrawal: $e');
       return {
         'success': false,
         'message': 'Erreur lors de l\'initiation du retrait',
