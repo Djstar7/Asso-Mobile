@@ -42,10 +42,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   String _kpayCurrency = 'XAF'; // devise de l'opérateur sélectionné
   bool _kpayValid = false;
 
-  // Aperçu de conversion (ex. "≈ 3 ZMW")
-  String? _convertedText;
-  static const String _baseCurrency = 'XAF';
-
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
 
@@ -55,38 +51,28 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   AppConfigController get appConfig => Get.find<AppConfigController>();
 
   @override
-  void initState() {
-    super.initState();
-    _amountController.addListener(_updateConvertedPreview);
-  }
-
-  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
   }
 
-  /// Met à jour l'aperçu du montant converti dans la devise de l'opérateur.
-  Future<void> _updateConvertedPreview() async {
+  /// Libellé de devise affiché (FCFA pour XAF/XOF, sinon le code ISO).
+  String _currencyLabel(String c) =>
+      (c == 'XAF' || c == 'XOF') ? '$c (FCFA)' : c;
+
+  /// Convertit le montant déjà saisi lorsqu'on change de devise d'opérateur.
+  Future<void> _convertFieldToCurrency(String from, String to) async {
     final amount = double.tryParse(_amountController.text.trim());
-    if (_selectedMethod != 'kpay' ||
-        _kpayCurrency == _baseCurrency ||
-        amount == null ||
-        amount <= 0) {
-      if (_convertedText != null && mounted) setState(() => _convertedText = null);
-      return;
-    }
+    if (from == to || amount == null || amount <= 0) return;
     final response = await ApiProvider.get('/v1/currencies/convert', queryParams: {
-      'from': _baseCurrency,
-      'to': _kpayCurrency,
+      'from': from,
+      'to': to,
       'amount': amount,
     });
     if (!mounted) return;
     if (response.success && response.data?['data'] != null) {
-      final data = response.data!['data'];
-      setState(() => _convertedText = '≈ ${data['converted']} $_kpayCurrency');
-    } else {
-      setState(() => _convertedText = null);
+      final converted = response.data!['data']['converted'];
+      _amountController.text = converted.toString();
     }
   }
 
@@ -517,7 +503,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              labelText: 'Montant (FCFA)',
+              labelText: _selectedMethod == 'kpay'
+                  ? 'Montant (${_currencyLabel(_kpayCurrency)})'
+                  : 'Montant (FCFA)',
               hintText: '10000',
               prefixIcon: const Icon(Icons.attach_money),
               filled: true,
@@ -534,58 +522,12 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                 return 'Veuillez entrer un montant';
               }
               final amount = double.tryParse(value);
-              print(
-                'Validating amount: ${appConfig.minDepositAmount}, entered: $amount',
-              );
-              if (amount == null || amount < appConfig.minDepositAmount) {
-                return 'Le montant minimum est de ${appConfig.minDepositAmount.toStringAsFixed(0)} FCFA';
+              if (amount == null || amount <= 0) {
+                return 'Montant invalide';
               }
               return null;
             },
           ),
-
-          // Encart de conversion (montant débité dans la devise de l'opérateur)
-          if (_selectedMethod == 'kpay' && _convertedText != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF7900).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFF7900).withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.swap_horiz, color: Color(0xFFFF7900), size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sera débité chez l\'opérateur',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppThemeSystem.getSecondaryTextColor(context),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _convertedText!,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFFF7900),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
 
           const SizedBox(height: 16),
 
@@ -602,8 +544,10 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                 _kpayPhone = phoneNumber;
                 _kpayValid = isValid;
                 if (currency != _kpayCurrency) {
+                  final old = _kpayCurrency;
                   _kpayCurrency = currency;
-                  _updateConvertedPreview();
+                  if (mounted) setState(() {}); // met à jour le libellé de devise
+                  _convertFieldToCurrency(old, currency); // convertit le montant saisi
                 }
               },
             ),
