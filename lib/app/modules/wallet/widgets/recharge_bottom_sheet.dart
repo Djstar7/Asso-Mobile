@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
+import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import '../views/paypal_native_webview.dart';
 import 'kpay_phone_selector.dart';
@@ -38,7 +39,12 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   // Sélection KPay (renseignée par KpayPhoneSelector)
   String? _kpayProvider; // code opérateur (ex. MTN_MOMO_CMR)
   String? _kpayPhone; // numéro international sans '+'
+  String _kpayCurrency = 'XAF'; // devise de l'opérateur sélectionné
   bool _kpayValid = false;
+
+  // Aperçu de conversion (ex. "≈ 3 ZMW")
+  String? _convertedText;
+  static const String _baseCurrency = 'XAF';
 
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
@@ -49,9 +55,40 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   AppConfigController get appConfig => Get.find<AppConfigController>();
 
   @override
+  void initState() {
+    super.initState();
+    _amountController.addListener(_updateConvertedPreview);
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
+  }
+
+  /// Met à jour l'aperçu du montant converti dans la devise de l'opérateur.
+  Future<void> _updateConvertedPreview() async {
+    final amount = double.tryParse(_amountController.text.trim());
+    if (_selectedMethod != 'kpay' ||
+        _kpayCurrency == _baseCurrency ||
+        amount == null ||
+        amount <= 0) {
+      if (_convertedText != null && mounted) setState(() => _convertedText = null);
+      return;
+    }
+    final response = await ApiProvider.get('/v1/currencies/convert', queryParams: {
+      'from': _baseCurrency,
+      'to': _kpayCurrency,
+      'amount': amount,
+    });
+    if (!mounted) return;
+    if (response.success && response.data?['data'] != null) {
+      final data = response.data!['data'];
+      setState(() => _convertedText =
+          '≈ ${data['converted']} $_kpayCurrency (taux ${data['rate']})');
+    } else {
+      setState(() => _convertedText = null);
+    }
   }
 
   @override
@@ -262,11 +299,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   Widget _buildStep1MethodSelection(BuildContext context) {
     return Column(
       children: [
-        // Mobile Money (KPay) — pays + opérateur choisis à l'étape suivante
+        // KPay — pays + opérateur choisis à l'étape suivante
         _buildMethodOption(
           context: context,
-          logoPath: 'assets/images/mtn-money.png',
-          title: 'Mobile Money',
+          logoPath: 'assets/images/kpay.png',
+          title: 'KPay',
           subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
           color: const Color(0xFFFF7900),
           onTap: () => _selectMethod('kpay'),
@@ -522,7 +559,31 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                 _kpayProvider = providerCode;
                 _kpayPhone = phoneNumber;
                 _kpayValid = isValid;
+                if (currency != _kpayCurrency) {
+                  _kpayCurrency = currency;
+                  _updateConvertedPreview();
+                }
               },
+            ),
+          if (_selectedMethod == 'kpay' && _convertedText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.swap_horiz, size: 16, color: Colors.orange),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Montant débité : $_convertedText',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
           // Pour VISA, MasterCard et PayPal, on n'affiche PAS de champs supplémentaires
