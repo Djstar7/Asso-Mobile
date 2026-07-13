@@ -52,6 +52,15 @@ class UserModel {
     required this.createdAt,
   });
 
+  /// Parse une valeur numérique pouvant arriver en num, String (colonnes
+  /// `decimal` de Laravel renvoyées en chaîne) ou null.
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   /// Create from JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -68,23 +77,15 @@ class UserModel {
       avatar: json['avatar'] as String?,
       country: json['country'] as String?,
       address: json['address'] as String?,
-      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
-      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
       isProfileComplete: json['is_profile_complete'] == true,
       preferences: json['preferences'] as Map<String, dynamic>?,
       referralCode: json['referral_code'] as String?,
       companyName: json['company_name'] as String?,
       companyLogo: json['company_logo'] as String?,
-      totalEarnings: json['total_earnings'] != null
-          ? (json['total_earnings'] is String
-              ? double.tryParse(json['total_earnings'])
-              : (json['total_earnings'] as num).toDouble())
-          : null,
-      pendingEarnings: json['pending_earnings'] != null
-          ? (json['pending_earnings'] is String
-              ? double.tryParse(json['pending_earnings'])
-              : (json['pending_earnings'] as num).toDouble())
-          : null,
+      totalEarnings: _parseDouble(json['total_earnings']),
+      pendingEarnings: _parseDouble(json['pending_earnings']),
       deliverySerialNumber: json['delivery_serial_number'] as String?,
       createdAt: json['created_at'] as String? ?? DateTime.now().toIso8601String(),
     );
