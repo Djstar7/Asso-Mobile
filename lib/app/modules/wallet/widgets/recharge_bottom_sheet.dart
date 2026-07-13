@@ -84,8 +84,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     if (!mounted) return;
     if (response.success && response.data?['data'] != null) {
       final data = response.data!['data'];
-      setState(() => _convertedText =
-          '≈ ${data['converted']} $_kpayCurrency (taux ${data['rate']})');
+      setState(() => _convertedText = '≈ ${data['converted']} $_kpayCurrency');
     } else {
       setState(() => _convertedText = null);
     }
@@ -545,6 +544,49 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             },
           ),
 
+          // Encart de conversion (montant débité dans la devise de l'opérateur)
+          if (_selectedMethod == 'kpay' && _convertedText != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF7900).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFF7900).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.swap_horiz, color: Color(0xFFFF7900), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sera débité chez l\'opérateur',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppThemeSystem.getSecondaryTextColor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _convertedText!,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF7900),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
 
           // Champs spécifiques selon la méthode
@@ -564,26 +606,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                   _updateConvertedPreview();
                 }
               },
-            ),
-          if (_selectedMethod == 'kpay' && _convertedText != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Row(
-                children: [
-                  const Icon(Icons.swap_horiz, size: 16, color: Colors.orange),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Montant débité : $_convertedText',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
 
           // Pour VISA, MasterCard et PayPal, on n'affiche PAS de champs supplémentaires
