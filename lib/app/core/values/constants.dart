@@ -6,7 +6,8 @@ class AppConstants {
 
   // API Configuration
   // Local (commenté)
-  static const String baseUrl = 'http://192.168.1.213:8001/api';
+  // static const String baseUrl = 'http://192.168.1.213:8001/api';
+  static const String baseUrl = 'http://192.168.1.132:8000/api';
 
   // Production
   // static const String baseUrl = 'https://asso-dashboard.sbs/api';
