@@ -54,39 +54,27 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   bool _kpayValid = false;
   bool _isProcessing = false;
 
-  // Aperçu de conversion (ex. "≈ 3 ZMW")
-  String? _convertedText;
-  static const String _baseCurrency = 'XAF';
-
   /// Solde disponible pour le retrait : devise de l'opérateur (KPay) ou PayPal.
   double get _availableBalance => isKpay
       ? walletController.kpayAvailableFor(_kpayCurrency)
       : widget.availableBalance;
 
-  @override
-  void initState() {
-    super.initState();
-    _amountController.addListener(_updateConvertedPreview);
-  }
+  /// Libellé de devise affiché (FCFA pour XAF/XOF, sinon le code ISO).
+  String _currencyLabel(String c) =>
+      (c == 'XAF' || c == 'XOF') ? '$c (FCFA)' : c;
 
-  /// Met à jour l'aperçu du montant converti dans la devise de l'opérateur.
-  Future<void> _updateConvertedPreview() async {
+  /// Convertit le montant déjà saisi lorsqu'on change de devise d'opérateur.
+  Future<void> _convertFieldToCurrency(String from, String to) async {
     final amount = double.tryParse(_amountController.text.trim());
-    if (!isKpay || _kpayCurrency == _baseCurrency || amount == null || amount <= 0) {
-      if (_convertedText != null && mounted) setState(() => _convertedText = null);
-      return;
-    }
+    if (from == to || amount == null || amount <= 0) return;
     final response = await ApiProvider.get('/v1/currencies/convert', queryParams: {
-      'from': _baseCurrency,
-      'to': _kpayCurrency,
+      'from': from,
+      'to': to,
       'amount': amount,
     });
     if (!mounted) return;
     if (response.success && response.data?['data'] != null) {
-      final data = response.data!['data'];
-      setState(() => _convertedText = '≈ ${data['converted']} $_kpayCurrency');
-    } else {
-      setState(() => _convertedText = null);
+      _amountController.text = response.data!['data']['converted'].toString();
     }
   }
 
@@ -197,7 +185,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                     color: AppThemeSystem.getPrimaryTextColor(context),
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Montant à retirer (FCFA)',
+                    labelText: isKpay
+                        ? 'Montant à retirer (${_currencyLabel(_kpayCurrency)})'
+                        : 'Montant à retirer (FCFA)',
                     hintText: 'Ex: ${minAmount.toStringAsFixed(0)}',
                     prefixIcon: const Icon(Icons.attach_money),
                     filled: true,
@@ -237,38 +227,6 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   },
                 ),
 
-                // Encart de conversion (montant envoyé dans la devise de l'opérateur)
-                if (isKpay && _convertedText != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF7900).withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFF7900).withOpacity(0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.swap_horiz, color: Color(0xFFFF7900), size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Montant envoyé au bénéficiaire',
-                                  style: TextStyle(fontSize: 11, color: AppThemeSystem.getSecondaryTextColor(context))),
-                              const SizedBox(height: 2),
-                              Text(_convertedText!,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF7900))),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
                 const SizedBox(height: 16),
 
                 // Champs spécifiques à KPay
@@ -283,11 +241,12 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       _kpayProvider = providerCode;
                       _kpayPhone = phoneNumber;
                       _kpayValid = isValid;
-                      // Rafraîchir le solde + l'aperçu de conversion si la devise change
+                      // Rafraîchir le solde + convertir le montant saisi si la devise change
                       if (currency != _kpayCurrency) {
+                        final old = _kpayCurrency;
                         _kpayCurrency = currency;
                         if (mounted) setState(() {});
-                        _updateConvertedPreview();
+                        _convertFieldToCurrency(old, currency);
                       }
                     },
                   ),
