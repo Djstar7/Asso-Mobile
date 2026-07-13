@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
-import '../../../data/providers/storage_service.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
 
@@ -108,14 +107,8 @@ class CountrySelectionController extends GetxController {
       // Set the currency using CurrencyService
       await CurrencyService.to.setCountryAndCurrency(country, currency);
 
-      // Navigate to next screen based on user state
-      // If user is not authenticated, enable guest mode before going to HOME
-      if (!StorageService.isAuthenticated && !StorageService.isGuestMode) {
-        print('🔓 User not authenticated - enabling guest mode');
-        StorageService.enableGuestMode();
-      }
-
-      Get.offAllNamed(Routes.HOME);
+      // Navigate to the onboarding flow after country selection
+      Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {
       print('Error selecting country: $e');
       Get.snackbar(

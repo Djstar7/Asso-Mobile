@@ -273,6 +273,16 @@ class ApiProvider {
 
   /// Handle unauthorized - clear session and redirect to login
   static void _handleUnauthorized() {
+    // En mode vitrine/invité l'utilisateur n'est pas connecté : un 401 sur un
+    // endpoint protégé est attendu et ne doit PAS le rediriger vers le login.
+    if (StorageService.isGuestMode || !StorageService.isAuthenticated) {
+      developer.log(
+        'Guest/unauthenticated user - ignoring 401 (no redirect)',
+        name: 'ApiProvider',
+      );
+      return;
+    }
+
     developer.log('Clearing session and redirecting to login', name: 'ApiProvider');
     StorageService.clearAuth();
     // Navigate to login
