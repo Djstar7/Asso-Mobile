@@ -6,7 +6,7 @@ import '../../../data/models/wallet_model.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/services/wallet_service.dart';
-import '../widgets/payment_method_bottom_sheet.dart';
+import '../../wallet/widgets/kpay_payment_sheet.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -120,53 +120,31 @@ class DiaspoBookingController extends GetxController {
       return;
     }
 
-    if (hasInsufficientFunds) {
-      Get.snackbar(
-        'Solde insuffisant',
-        'Veuillez recharger votre portefeuille',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    // Show payment method selection bottom sheet
-    _showPaymentMethodSelection();
-  }
-
-  void _showPaymentMethodSelection() {
-    if (wallet.value == null) return;
-
-    Get.bottomSheet(
-      PaymentMethodBottomSheet(
-        wallet: wallet.value!,
-        totalAmount: totalPrice.value,
-        onKPaySelected: () {
-          Get.back();
-          _processBooking('kpay');
-        },
-        onPaypalSelected: () {
-          Get.back();
-          _processBooking('paypal');
-        },
-      ),
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
+    // Paiement KPay DIRECT (plus de solde wallet) : pays → opérateur → numéro
+    final selection = await KpayDirectPaymentSheet.show(
+      amount: totalPrice.value,
+      amountLabel: 'Total à payer',
     );
+    if (selection == null) return; // annulé
+
+    await _processBooking(selection['provider']!, selection['phone']!);
   }
 
-  Future<void> _processBooking(String paymentMethod) async {
+  Future<void> _processBooking(String provider, String phone) async {
     isSubmitting.value = true;
 
     try {
       final booking = await _diaspoService.bookOffer(
         offerId: offer.value!.id,
         kgBooked: kgBooked.value,
-        paymentMethod: paymentMethod,
+        provider: provider,
+        phoneNumber: phone,
       );
 
       isSubmitting.value = false;
+
+      // Suivi du paiement en arrière-plan (polling 5 s)
+      _pollBookingPayment(booking.id);
 
       // Show success dialog
       _showSuccessDialog(booking);
@@ -178,6 +156,25 @@ class DiaspoBookingController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    }
+  }
+
+  /// Suit le paiement KPay d'une réservation (polling 5 s) et notifie.
+  void _pollBookingPayment(int bookingId) async {
+    for (int i = 0; i < 120; i++) {
+      await Future.delayed(const Duration(seconds: 5));
+      final status = await _diaspoService.bookingPaymentStatus(bookingId);
+      if (status == 'paid') {
+        Get.snackbar('✅ Paiement confirmé', 'Votre réservation est payée.',
+            backgroundColor: Colors.green, colorText: Colors.white,
+            duration: const Duration(seconds: 4));
+        return;
+      } else if (status == 'failed') {
+        Get.snackbar('❌ Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
+            backgroundColor: Colors.red, colorText: Colors.white,
+            duration: const Duration(seconds: 5));
+        return;
+      }
     }
   }
 
