@@ -403,12 +403,12 @@ class WalletController extends GetxController {
   }
 
   /// Vérifie le statut d'un paiement avec polling
-  /// maxAttempts: nombre max de tentatives (défaut 120 = 6 minutes avec interval 3s)
-  /// pollInterval: intervalle entre les tentatives en secondes (défaut 3s)
+  /// maxAttempts: nombre max de tentatives (défaut 120 = 10 minutes avec interval 5s)
+  /// pollInterval: intervalle entre les tentatives en secondes (défaut 5s)
   Future<Map<String, dynamic>> pollPaymentStatus({
     required int paymentId,
     int maxAttempts = 120,
-    int pollInterval = 3,
+    int pollInterval = 5,
     Function(String status)? onStatusUpdate,
   }) async {
     int attempts = 0;
@@ -505,6 +505,64 @@ class WalletController extends GetxController {
         'success': false,
         'message': 'Erreur lors de la vérification du statut',
       };
+    }
+  }
+
+  /// Suit un DÉPÔT en arrière-plan (polling 5 s) et notifie à la fin.
+  /// À appeler en fire-and-forget après l'initiation d'une recharge KPay.
+  void trackDepositInBackground(int transactionId) {
+    pollPaymentStatus(paymentId: transactionId, pollInterval: 5).then((res) {
+      if (_isDisposed) return;
+      final status = res['status'];
+      if (status == 'completed') {
+        refresh();
+        Get.snackbar(
+          '💰 Recharge confirmée',
+          'Votre dépôt a été crédité dans votre wallet.',
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 4),
+        );
+      } else if (status == 'failed' || status == 'cancelled') {
+        Get.snackbar(
+          '❌ Recharge échouée',
+          res['message'] ?? 'Le paiement n\'a pas abouti.',
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 5),
+        );
+      }
+    });
+  }
+
+  /// Suit un RETRAIT en arrière-plan (polling 5 s via checkWithdrawalStatus) et notifie.
+  void trackWithdrawalInBackground(int withdrawalId) async {
+    for (int i = 0; i < 120; i++) {
+      await Future.delayed(const Duration(seconds: 5));
+      if (_isDisposed) return;
+      final res = await checkWithdrawalStatus(withdrawalId);
+      final status = res['data']?['status'] ?? res['status'];
+      if (status == 'completed') {
+        refresh();
+        Get.snackbar(
+          '💸 Retrait effectué',
+          'Votre retrait a été envoyé au bénéficiaire.',
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      } else if (status == 'failed' || status == 'cancelled') {
+        refresh();
+        Get.snackbar(
+          '⚠️ Retrait échoué',
+          'Le montant a été remboursé dans votre wallet.',
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          duration: const Duration(seconds: 5),
+        );
+        return;
+      }
     }
   }
 

@@ -624,6 +624,12 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         if (!mounted) return;
 
         if (result['success'] == true) {
+          // Lancer le suivi du statut en arrière-plan (polling 5 s + notification)
+          final txId = result['data']?['transaction_id'];
+          if (txId is int) {
+            walletController.trackDepositInBackground(txId);
+          }
+
           // Fermer le bottom sheet
           Navigator.of(context).pop();
 
