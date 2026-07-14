@@ -98,6 +98,9 @@ class AddProductView extends GetView<AddProductController> {
             // Sous-catégorie (Bottom sheet)
             _buildSubcategorySelector(context),
             SizedBox(height: context.sectionSpacing),
+            // Pays d'origine (produits importés)
+            _buildOriginCountrySelector(context),
+            SizedBox(height: context.sectionSpacing),
             // Prix
             _buildPriceSection(context),
             SizedBox(height: context.sectionSpacing),
@@ -490,6 +493,159 @@ class AddProductView extends GetView<AddProductController> {
         ],
       );
     });
+  }
+
+  /// Sélecteur de pays d'origine (produits importés : Chine, Turquie, Dubaï).
+  /// Optionnel : par défaut le produit est considéré comme local.
+  Widget _buildOriginCountrySelector(BuildContext context) {
+    return Obx(() {
+      final selected = controller.selectedOriginCountry.value;
+      final current = controller.originCountries
+          .firstWhereOrNull((c) => c['code'] == selected);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Pays d\'origine',
+                style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: context.secondaryTextColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Optionnel',
+                  style: context.caption.copyWith(
+                    color: context.secondaryTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: context.elementSpacing * 0.5),
+          Text(
+            'Sélectionnez le pays d\'importation pour l\'afficher dans l\'onglet Import. Laissez « Produit local » sinon.',
+            style: context.caption.copyWith(color: context.secondaryTextColor),
+          ),
+          SizedBox(height: context.elementSpacing),
+          GestureDetector(
+            onTap: () => _showOriginCountryBottomSheet(context),
+            child: Container(
+              padding: EdgeInsets.all(context.horizontalPadding),
+              decoration: BoxDecoration(
+                color: current != null
+                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
+                    : context.surfaceColor,
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                border: Border.all(
+                  color: current != null
+                      ? AppThemeSystem.primaryColor
+                      : context.borderColor,
+                  width: current != null ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  current != null
+                      ? Text(current['flag']!,
+                          style: const TextStyle(fontSize: 22))
+                      : Icon(Icons.public_outlined,
+                          color: context.secondaryTextColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      current != null ? current['name']! : 'Produit local',
+                      style: context.body1.copyWith(
+                        color: current != null
+                            ? AppThemeSystem.primaryColor
+                            : context.secondaryTextColor,
+                        fontWeight: current != null
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: current != null
+                        ? AppThemeSystem.primaryColor
+                        : context.secondaryTextColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// Bottom sheet de sélection du pays d'origine
+  void _showOriginCountryBottomSheet(BuildContext context) {
+    final options = <Map<String, String?>>[
+      {'code': null, 'name': 'Produit local', 'flag': null},
+      ...controller.originCountries,
+    ];
+
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+              child: Text(
+                'Pays d\'origine',
+                style: context.h5.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...options.map((opt) {
+              final isSelected =
+                  controller.selectedOriginCountry.value == opt['code'];
+              return ListTile(
+                leading: opt['flag'] != null
+                    ? Text(opt['flag']!, style: const TextStyle(fontSize: 24))
+                    : Icon(Icons.public_outlined,
+                        color: context.secondaryTextColor),
+                title: Text(
+                  opt['name']!,
+                  style: context.body1.copyWith(
+                    fontWeight:
+                        isSelected ? FontWeight.w700 : FontWeight.normal,
+                    color:
+                        isSelected ? AppThemeSystem.primaryColor : null,
+                  ),
+                ),
+                trailing: isSelected
+                    ? Icon(Icons.check_circle,
+                        color: AppThemeSystem.primaryColor)
+                    : null,
+                onTap: () {
+                  controller.selectedOriginCountry.value = opt['code'];
+                  Get.back();
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
   }
 
   /// Sélecteur de sous-catégorie avec bottom sheet
