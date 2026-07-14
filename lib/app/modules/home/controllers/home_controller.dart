@@ -27,7 +27,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final List<String> tabNames = [
     'Accueil',
     'Messages',
-    'Portefeuille',
+    'Import',
     'Tracking',
     'My Voice',
     'Profile',
@@ -546,7 +546,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
     // Tabs protégés : Messages (1), Portefeuille (2), Tracking (3), Profile (4)
     // Tab Accueil (0) est accessible sans connexion
-    final protectedTabs = [1, 2, 3, 4];
+    // Import (index 2) est public ; Messages/Tracking/MyVoice restent protégés
+    final protectedTabs = [1, 3, 4];
     final tabFeatureNames = {
       1: 'la messagerie',
       2: 'le portefeuille',

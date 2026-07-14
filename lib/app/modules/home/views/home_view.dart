@@ -13,7 +13,7 @@ import '../../../routes/app_pages.dart';
 import '../../chat/views/chat_view.dart';
 import '../../tracking/views/tracking_view.dart';
 import '../../profile/views/profile_view.dart';
-import '../../wallet/views/wallet_view.dart';
+import '../../import/views/import_view.dart';
 import '../../myVoice/views/my_voice_view.dart';
 import '../../notification/controllers/notification_controller.dart';
 import '../controllers/home_controller.dart';
@@ -324,10 +324,10 @@ class HomeView extends GetView<HomeController> {
                               height: deviceType == DeviceType.mobile ? 48 : 56,
                               icon: Icon(Icons.chat_bubble_outline_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
                             ),
-                            // Portefeuille
+                            // Import (produits importés)
                             Tab(
                               height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.account_balance_wallet_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
+                              icon: Icon(Icons.travel_explore_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
                             ),
                             // Tracking
                             Tab(
@@ -364,7 +364,7 @@ class HomeView extends GetView<HomeController> {
                 children: const [
                   HomeItemView(),
                   ChatView(),
-                  WalletView(),
+                  const ImportView(),
                   TrackingView(),
                   MyVoiceView(),
                   ProfileView(),

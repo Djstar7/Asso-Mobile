@@ -10,6 +10,7 @@ class ProductService {
     int? categoryId,
     int? subcategoryId,
     String? type,
+    String? originCountry,
     double? minPrice,
     double? maxPrice,
     String sortBy = 'created_at',
@@ -25,6 +26,7 @@ class ProductService {
     if (categoryId != null) params['category_id'] = categoryId;
     if (subcategoryId != null) params['subcategory_id'] = subcategoryId;
     if (type != null) params['type'] = type;
+    if (originCountry != null) params['origin_country'] = originCountry;
     if (minPrice != null) params['min_price'] = minPrice;
     if (maxPrice != null) params['max_price'] = maxPrice;
 
