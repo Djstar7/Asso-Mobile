@@ -268,20 +268,22 @@ class DiaspoService extends GetxService {
     }
   }
 
-  /// Book kilos (create booking)
+  /// Book kilos (create booking) — paiement KPay direct
   Future<DiaspoBooking> bookOffer({
     required int offerId,
     required double kgBooked,
+    required String provider,    // code opérateur KPay (ex. MTN_MOMO_CMR)
+    required String phoneNumber, // numéro international sans '+'
     String? notes,
-    String? paymentMethod, // 'kpay' or 'paypal'
   }) async {
     try {
       final response = await _dio.post(
         '/v1/diaspo/offers/$offerId/book',
         data: {
           'kg_booked': kgBooked,
+          'provider': provider,
+          'phone_number': phoneNumber,
           if (notes != null) 'notes': notes,
-          if (paymentMethod != null) 'payment_method': paymentMethod,
         },
       );
 
@@ -289,6 +291,17 @@ class DiaspoService extends GetxService {
     } catch (e) {
       print('Error booking offer: $e');
       rethrow;
+    }
+  }
+
+  /// Statut de paiement d'une réservation (re-vérifie chez KPay). Renvoie
+  /// 'pending' | 'paid' | 'failed'.
+  Future<String> bookingPaymentStatus(int bookingId) async {
+    try {
+      final response = await _dio.get('/v1/diaspo/bookings/$bookingId/payment-status');
+      return response.data['data']?['payment_status']?.toString() ?? 'pending';
+    } catch (e) {
+      return 'pending';
     }
   }
 
