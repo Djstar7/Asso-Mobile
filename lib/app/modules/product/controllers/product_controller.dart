@@ -379,6 +379,9 @@ class ProductController extends GetxController {
     required int productId,
     required int quantity,
     required String walletProvider,
+    String paymentMode = 'wallet', // 'wallet' ou 'kpay_direct'
+    String? kpayProvider,
+    String? kpayPhone,
     String? notes,
   }) async {
     if (withDelivery.value && selectedPartner.value == null) {
@@ -397,6 +400,9 @@ class ProductController extends GetxController {
         deliveryCompanyId: selectedPartner.value?['company_id'],
         deliveryZoneId: selectedPartner.value?['zone_id'],
         walletProvider: walletProvider,
+        paymentMode: paymentMode,
+        kpayProvider: kpayProvider,
+        kpayPhone: kpayPhone,
         deliveryAddress: withDelivery.value ? currentLocation.value : null,
         deliveryLatitude: clientLatitude,
         deliveryLongitude: clientLongitude,
@@ -404,6 +410,11 @@ class ProductController extends GetxController {
       );
 
       if (response.success) {
+        // Paiement direct KPay : suivre le statut de la commande en arrière-plan
+        if (paymentMode == 'kpay_direct') {
+          final orderId = response.data?['order_id'];
+          if (orderId is int) _pollOrderPayment(orderId);
+        }
         return true;
       } else {
         Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
@@ -416,6 +427,33 @@ class ProductController extends GetxController {
       return false;
     } finally {
       isCreatingOrder.value = false;
+    }
+  }
+
+  /// Suit le paiement KPay direct d'une commande (polling 5 s) et notifie.
+  void _pollOrderPayment(int orderId) async {
+    for (int i = 0; i < 120; i++) {
+      await Future.delayed(const Duration(seconds: 5));
+      try {
+        final res = await OrderService.orderPaymentStatus(orderId);
+        final status = res.data?['data']?['payment_status'];
+        if (status == 'paid') {
+          Get.snackbar('✅ Paiement confirmé',
+              'Votre commande a été payée. En attente de validation du vendeur.',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.primary,
+              colorText: Get.theme.colorScheme.onPrimary,
+              duration: const Duration(seconds: 4));
+          return;
+        } else if (status == 'failed') {
+          Get.snackbar('❌ Paiement échoué', 'Le paiement de la commande n\'a pas abouti.',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Get.theme.colorScheme.error,
+              colorText: Get.theme.colorScheme.onError,
+              duration: const Duration(seconds: 5));
+          return;
+        }
+      } catch (_) {}
     }
   }
 

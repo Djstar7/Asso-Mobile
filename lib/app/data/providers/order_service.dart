@@ -22,12 +22,17 @@ class OrderService {
     return await ApiProvider.get('${AppConstants.ordersUrl}/$id');
   }
 
-  /// Create order with escrow (wallet lock)
+  /// Create order.
+  /// paymentMode: 'wallet' (escrow depuis solde) ou 'kpay_direct' (PayIn KPay).
+  /// En mode kpay_direct, fournir [kpayProvider] (code opérateur) et [kpayPhone].
   static Future<ApiResponse> createOrder({
     required List<Map<String, dynamic>> items,
     int? deliveryCompanyId,
     int? deliveryZoneId,
-    required String walletProvider,
+    String walletProvider = 'kpay',
+    String paymentMode = 'wallet',
+    String? kpayProvider,
+    String? kpayPhone,
     String? deliveryAddress,
     double? deliveryLatitude,
     double? deliveryLongitude,
@@ -37,12 +42,20 @@ class OrderService {
       'items': items,
       'delivery_company_id': deliveryCompanyId,
       'delivery_zone_id': deliveryZoneId,
+      'payment_mode': paymentMode,
       'wallet_provider': walletProvider,
+      if (kpayProvider != null) 'provider': kpayProvider,
+      if (kpayPhone != null) 'phone_number': kpayPhone,
       'delivery_address': deliveryAddress,
       'delivery_latitude': deliveryLatitude,
       'delivery_longitude': deliveryLongitude,
       'notes': notes,
     });
+  }
+
+  /// Statut de paiement d'une commande (mode kpay_direct) — re-vérifie chez KPay.
+  static Future<ApiResponse> orderPaymentStatus(int orderId) async {
+    return await ApiProvider.get('${AppConstants.ordersUrl}/$orderId/payment-status');
   }
 
   /// Cancel order

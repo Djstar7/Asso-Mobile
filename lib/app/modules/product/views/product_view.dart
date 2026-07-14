@@ -7,6 +7,7 @@ import '../../../core/utils/auth_guard.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
+import '../../wallet/widgets/kpay_payment_sheet.dart';
 import 'map_selection_view.dart';
 
 class ProductView extends GetView<ProductController> {
@@ -1996,6 +1997,42 @@ class ProductView extends GetView<ProductController> {
 
   /// Confirmer et créer la commande
   void _confirmOrder(BuildContext context, Map<String, dynamic> product, int productId, String walletProvider) async {
+    // Paiement Mobile Money = KPay DIRECT (plus de solde wallet) : pays → opérateur → numéro
+    if (walletProvider == 'kpay') {
+      final price = double.tryParse(product['price'].toString()) ?? 0;
+      final total = controller.calculateTotal(price);
+
+      final selection = await KpayDirectPaymentSheet.show(
+        amount: total,
+        amountLabel: 'Total à payer',
+      );
+      if (selection == null) return; // paiement annulé
+
+      final success = await controller.createOrder(
+        productId: productId,
+        quantity: 1,
+        walletProvider: 'kpay',
+        paymentMode: 'kpay_direct',
+        kpayProvider: selection['provider'],
+        kpayPhone: selection['phone'],
+      );
+
+      if (success) {
+        Get.back(); // Fermer le bottomsheet de commande
+        Get.snackbar(
+          'Commande créée !',
+          'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        Get.toNamed('/shipment');
+      }
+      return;
+    }
+
+    // PayPal / carte : flux existant (solde wallet)
     final success = await controller.createOrder(
       productId: productId,
       quantity: 1,
@@ -2003,16 +2040,15 @@ class ProductView extends GetView<ProductController> {
     );
 
     if (success) {
-      Get.back(); // Fermer le bottomsheet
+      Get.back();
       Get.snackbar(
         'Commande créée !',
         'Vos fonds sont bloqués en attente de validation du vendeur.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       );
-      // Naviguer vers mes commandes
       Get.toNamed('/shipment');
     }
   }
