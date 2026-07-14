@@ -1,16 +1,50 @@
+import 'package:flutter/foundation.dart';
+
 /// Application constants
 class AppConstants {
   // App Info
   static const String appName = 'Asso';
   static const String appVersion = '1.0.0';
 
+  // ==========================================================================
   // API Configuration
-  // Local (commenté)
-  // static const String baseUrl = 'http://192.168.1.213:8001/api';
-  static const String baseUrl = 'http://192.168.1.132:8000/api';
+  // --------------------------------------------------------------------------
+  // L'URL est déterminée AUTOMATIQUEMENT selon la plateforme pour éviter de
+  // devoir modifier le code à chaque changement d'IP réseau.
+  //
+  //  • Web (Chrome) / desktop        -> http://localhost:8000/api
+  //  • Émulateur Android             -> http://10.0.2.2:8000/api (alias hôte)
+  //  • iOS simulateur                -> http://localhost:8000/api
+  //
+  // TÉLÉPHONE PHYSIQUE ou serveur distant : surcharger sans toucher au code :
+  //   flutter run --dart-define=API_BASE_URL=http://192.168.1.50:8000/api
+  //   flutter run --dart-define=API_BASE_URL=https://asso-dashboard.sbs/api
+  //
+  // Assurez-vous que le serveur écoute sur toutes les interfaces :
+  //   php artisan serve --host=0.0.0.0 --port=8000
+  // ==========================================================================
 
-  // Production
-  // static const String baseUrl = 'https://asso-dashboard.sbs/api';
+  /// Surcharge optionnelle passée au build (prioritaire sur tout le reste).
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  /// Port du serveur backend en local.
+  static const String _localPort = '8000';
+
+  static String get baseUrl {
+    // 1) Surcharge explicite au build (téléphone physique / prod)
+    if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
+
+    // 2) Web (Chrome) & desktop : le serveur tourne sur la même machine
+    if (kIsWeb) return 'http://localhost:$_localPort/api';
+
+    // 3) Émulateur Android : 10.0.2.2 redirige vers le localhost de l'hôte
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:$_localPort/api';
+    }
+
+    // 4) iOS simulateur & autres : localhost
+    return 'http://localhost:$_localPort/api';
+  }
 
   static const Duration apiTimeout = Duration(seconds: 30);
 
