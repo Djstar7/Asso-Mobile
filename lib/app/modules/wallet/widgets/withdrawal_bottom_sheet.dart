@@ -453,6 +453,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
       if (!mounted) return;
 
       if (result['success'] == true) {
+        // Suivi du statut en arrière-plan (polling 5 s + notification) pour KPay
+        if (isKpay) {
+          final wId = result['data']?['withdrawal_id'];
+          if (wId is int) {
+            walletController.trackWithdrawalInBackground(wId);
+          }
+        }
+
         // Fermer le bottom sheet
         Get.back(result: true);
 
