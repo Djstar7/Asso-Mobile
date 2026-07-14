@@ -52,6 +52,14 @@ class ProfileView extends GetView<ProfileController> {
                         subtitle: 'Historique d\'achats',
                         onTap: controller.goToOrders,
                       ),
+                      _MenuItem(
+                        icon: Icons.account_balance_wallet_rounded,
+                        title: 'Portefeuille',
+                        subtitle: isVendor
+                            ? 'Solde, retraits et gains'
+                            : 'Solde et remboursements',
+                        onTap: () => Get.toNamed('/wallet'),
+                      ),
                     ],
                   );
                 }),
