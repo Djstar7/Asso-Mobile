@@ -39,6 +39,15 @@ class AddProductController extends GetxController {
   // Type d'article
   final articleType = 'article'.obs; // 'article' ou 'service'
 
+  // Pays d'origine (produits importés) : null = produit local, sinon CN/TR/AE
+  final selectedOriginCountry = Rx<String?>(null);
+  // Options disponibles pour le pays d'origine (alignées sur l'onglet Import)
+  final originCountries = const <Map<String, String>>[
+    {'code': 'CN', 'name': 'Chine', 'flag': '🇨🇳'},
+    {'code': 'TR', 'name': 'Turquie', 'flag': '🇹🇷'},
+    {'code': 'AE', 'name': 'Dubaï', 'flag': '🇦🇪'},
+  ];
+
   // Type de prix
   final priceType = 'fixed'.obs; // 'fixed', 'discover', 'visit'
 
@@ -371,6 +380,13 @@ class AddProductController extends GetxController {
           selectedCategory.value = catName;
           print('📝 ADD_PRODUCT: Category set: $catName');
         }
+      }
+
+      // Pays d'origine (produit importé)
+      final originCountry = product['origin_country']?.toString().trim().toUpperCase();
+      if (originCountry != null && originCountry.isNotEmpty && originCountry != 'NULL') {
+        selectedOriginCountry.value = originCountry;
+        print('📝 ADD_PRODUCT: Origin country set: $originCountry');
       }
 
       // Weight - PRIORITÉ au poids personnalisé (weight), sinon weight_category
@@ -918,6 +934,15 @@ class AddProductController extends GetxController {
       // Ajouter subcategory_id si disponible
       if (selectedSubcategoryId.value != null && selectedSubcategoryId.value!.isNotEmpty) {
         fieldsMap['subcategory_id'] = selectedSubcategoryId.value!;
+      }
+
+      // Pays d'origine (produits importés). En édition, '' permet de repasser en produit local.
+      if (selectedOriginCountry.value != null && selectedOriginCountry.value!.isNotEmpty) {
+        fieldsMap['origin_country'] = selectedOriginCountry.value!;
+        print('📦 ADD_PRODUCT: ✅ origin_country: ${selectedOriginCountry.value}');
+      } else if (isEditMode.value) {
+        fieldsMap['origin_country'] = '';
+        print('📦 ADD_PRODUCT: ✅ origin_country cleared (produit local)');
       }
 
       // Ajouter stock si disponible
