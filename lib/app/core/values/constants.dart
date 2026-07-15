@@ -90,6 +90,7 @@ class AppConstants {
   static const String aboutUrl = '/v1/app/about';
   static const String versionUrl = '/v1/app/version';
   static const String productsUrl = '/v1/products';
+  static const String importCountriesUrl = '/v1/import-countries';
   static const String categoriesUrl = '/v1/categories';
   static const String bannersUrl = '/v1/banners';
   static const String favoritesUrl = '/v1/favorites';
