@@ -20,11 +20,31 @@ class _ImportCountry {
 }
 
 class _ImportViewState extends State<ImportView> {
-  static const _countries = [
-    _ImportCountry('CN', 'Chine', '🇨🇳', [Color(0xFFDE2910), Color(0xFFFF6B4A)]),
-    _ImportCountry('TR', 'Turquie', '🇹🇷', [Color(0xFFE30A17), Color(0xFFFF5C68)]),
-    _ImportCountry('AE', 'Dubaï', '🇦🇪', [Color(0xFF00843D), Color(0xFF2FB56E)]),
+  // Palette de dégradés attribuée par index : un pays ajouté en base reçoit
+  // automatiquement un dégradé, sans modification de code.
+  static const _gradients = <List<Color>>[
+    [Color(0xFFDE2910), Color(0xFFFF6B4A)],
+    [Color(0xFFE30A17), Color(0xFFFF5C68)],
+    [Color(0xFF00843D), Color(0xFF2FB56E)],
+    [Color(0xFF1D4ED8), Color(0xFF60A5FA)],
+    [Color(0xFF7C3AED), Color(0xFFA78BFA)],
+    [Color(0xFFB45309), Color(0xFFFBBF24)],
   ];
+
+  static List<_ImportCountry> _mapCountries(List<Map<String, String>> raw) {
+    return [
+      for (var i = 0; i < raw.length; i++)
+        _ImportCountry(
+          raw[i]['code'] ?? '',
+          raw[i]['name'] ?? '',
+          (raw[i]['flag'] ?? '').isNotEmpty ? raw[i]['flag']! : '🏳️',
+          _gradients[i % _gradients.length],
+        ),
+    ];
+  }
+
+  // Initialisé avec le fallback pour que le 1er rendu fonctionne, puis rechargé depuis l'API.
+  List<_ImportCountry> _countries = _mapCountries(ProductService.importCountriesFallback);
 
   String _selected = 'CN';
   bool _loading = true;
@@ -33,15 +53,30 @@ class _ImportViewState extends State<ImportView> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _selected = _countries.isNotEmpty ? _countries.first.code : 'CN';
+    _init();
+  }
+
+  /// Charge la liste des pays depuis le backend, puis les produits du pays sélectionné.
+  Future<void> _init() async {
+    final loaded = await ProductService.getImportCountries();
+    if (mounted && loaded.isNotEmpty) {
+      setState(() {
+        _countries = _mapCountries(loaded);
+        if (!_countries.any((c) => c.code == _selected)) {
+          _selected = _countries.first.code;
+        }
+      });
+    }
+    await _load();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
       final res = await ProductService.getProducts(originCountry: _selected, perPage: 30);
-      final data = res.data?['data'];
-      final list = (data is Map ? data['data'] : data) ?? [];
+      // GET /v1/products renvoie { success, products: [...], pagination }
+      final list = res.data?['products'] ?? res.data?['data'] ?? [];
       _products = list is List ? list : [];
     } catch (_) {
       _products = [];

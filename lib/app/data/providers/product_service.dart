@@ -38,6 +38,36 @@ class ProductService {
     return await ApiProvider.get('${AppConstants.productsUrl}/$id');
   }
 
+  /// Liste des pays d'origine des produits importés (Chine/Turquie/Dubaï…),
+  /// gérée côté backend. Retourne une liste de {code, name, flag}.
+  /// Fallback local si l'API échoue, pour ne jamais casser l'UI.
+  static const List<Map<String, String>> importCountriesFallback = [
+    {'code': 'CN', 'name': 'Chine', 'flag': '🇨🇳'},
+    {'code': 'TR', 'name': 'Turquie', 'flag': '🇹🇷'},
+    {'code': 'AE', 'name': 'Dubaï', 'flag': '🇦🇪'},
+  ];
+
+  static Future<List<Map<String, String>>> getImportCountries() async {
+    try {
+      final res = await ApiProvider.get(AppConstants.importCountriesUrl);
+      final list = res.data?['countries'];
+      if (res.success && list is List && list.isNotEmpty) {
+        return list
+            .whereType<Map>()
+            .map((c) => {
+                  'code': (c['code'] ?? '').toString(),
+                  'name': (c['name'] ?? '').toString(),
+                  'flag': (c['flag'] ?? '').toString(),
+                })
+            .where((c) => c['code']!.isNotEmpty)
+            .toList();
+      }
+    } catch (_) {
+      // ignore : on retombe sur le fallback
+    }
+    return importCountriesFallback;
+  }
+
   /// Toggle favorite
   static Future<ApiResponse> toggleFavorite(int productId) async {
     return await ApiProvider.post('${AppConstants.productsUrl}/$productId/favorite');

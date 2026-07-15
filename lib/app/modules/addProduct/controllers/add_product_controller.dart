@@ -41,12 +41,10 @@ class AddProductController extends GetxController {
 
   // Pays d'origine (produits importés) : null = produit local, sinon CN/TR/AE
   final selectedOriginCountry = Rx<String?>(null);
-  // Options disponibles pour le pays d'origine (alignées sur l'onglet Import)
-  final originCountries = const <Map<String, String>>[
-    {'code': 'CN', 'name': 'Chine', 'flag': '🇨🇳'},
-    {'code': 'TR', 'name': 'Turquie', 'flag': '🇹🇷'},
-    {'code': 'AE', 'name': 'Dubaï', 'flag': '🇦🇪'},
-  ];
+  // Pays d'origine gérés côté backend (rechargés dans onInit). Initialisés avec
+  // le fallback pour que le formulaire fonctionne même si l'API échoue.
+  final originCountries =
+      List<Map<String, String>>.from(ProductService.importCountriesFallback).obs;
 
   // Type de prix
   final priceType = 'fixed'.obs; // 'fixed', 'discover', 'visit'
@@ -140,6 +138,16 @@ class AddProductController extends GetxController {
     _buildAllSubcategoriesFromHardcoded();
     // Puis charger depuis l'API
     _initializeData();
+    // Charger la liste des pays d'origine depuis le backend
+    _loadOriginCountries();
+  }
+
+  /// Recharge la liste des pays d'origine (produits importés) depuis le backend.
+  Future<void> _loadOriginCountries() async {
+    final loaded = await ProductService.getImportCountries();
+    if (loaded.isNotEmpty) {
+      originCountries.assignAll(loaded);
+    }
   }
 
   /// Initialise les données (catégories et stockage)
