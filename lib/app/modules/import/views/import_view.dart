@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
+import '../../../core/utils/app_theme_system.dart';
 
-/// Section « Produits importés » : Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪.
+/// Section « Produits importés » : pays d'origine gérés côté backend
+/// (Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪, Inde 🇮🇳…).
 /// Filtre les produits par pays d'origine (origin_country).
 class ImportView extends StatefulWidget {
   const ImportView({super.key});
@@ -25,10 +27,10 @@ class _ImportViewState extends State<ImportView> {
   static const _gradients = <List<Color>>[
     [Color(0xFFDE2910), Color(0xFFFF6B4A)],
     [Color(0xFFE30A17), Color(0xFFFF5C68)],
-    [Color(0xFF00843D), Color(0xFF2FB56E)],
+    [Color(0xFF0B6B3A), Color(0xFF2FB56E)],
     [Color(0xFF1D4ED8), Color(0xFF60A5FA)],
     [Color(0xFF7C3AED), Color(0xFFA78BFA)],
-    [Color(0xFFB45309), Color(0xFFFBBF24)],
+    [Color(0xFFB45309), Color(0xFFF59E0B)],
   ];
 
   static List<_ImportCountry> _mapCountries(List<Map<String, String>> raw) {
@@ -84,82 +86,150 @@ class _ImportViewState extends State<ImportView> {
     if (mounted) setState(() => _loading = false);
   }
 
+  _ImportCountry get _current =>
+      _countries.firstWhere((c) => c.code == _selected, orElse: () => _countries.first);
+
   @override
   Widget build(BuildContext context) {
-    final country = _countries.firstWhere((c) => c.code == _selected);
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: _load,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader(country)),
-            SliverToBoxAdapter(child: _buildCountrySelector()),
-            if (_loading)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_products.isEmpty)
-              SliverFillRemaining(hasScrollBody: false, child: _buildEmpty(country))
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.72,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) => _buildProductCard(_products[i]),
-                    childCount: _products.length,
+    final country = _current;
+    return Container(
+      color: const Color(0xFFF7F8FA),
+      child: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: country.gradient.first,
+          onRefresh: _load,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader(country)),
+              SliverToBoxAdapter(child: _buildCountrySelector()),
+              SliverToBoxAdapter(child: _buildSectionLabel(country)),
+              if (_loading)
+                _buildSkeletonGrid()
+              else if (_products.isEmpty)
+                SliverFillRemaining(hasScrollBody: false, child: _buildEmpty(country))
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.66,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => _buildProductCard(_products[i], country),
+                      childCount: _products.length,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ─────────────────────────── Hero header ───────────────────────────
   Widget _buildHeader(_ImportCountry c) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: c.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: c.gradient.first.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
+        gradient: LinearGradient(
+          colors: c.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(color: c.gradient.first.withValues(alpha: 0.35), blurRadius: 22, offset: const Offset(0, 10)),
+        ],
       ),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(c.flag, style: const TextStyle(fontSize: 44)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Produits importés',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
-                Text('Made in ${c.name}',
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-              ],
-            ),
+          // Motif décoratif discret
+          Positioned(
+            right: -18,
+            top: -22,
+            child: Icon(Icons.public_rounded, size: 120, color: Colors.white.withValues(alpha: 0.10)),
           ),
-          const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 30),
+          Row(
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.5),
+                ),
+                child: Text(c.flag, style: const TextStyle(fontSize: 32)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.flight_takeoff_rounded, color: Colors.white70, size: 15),
+                        const SizedBox(width: 6),
+                        Text('PRODUITS IMPORTÉS',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Made in ${c.name}',
+                        style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 8),
+                    _headerCountChip(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
+  Widget _headerCountChip() {
+    final label = _loading
+        ? 'Chargement…'
+        : '${_products.length} produit${_products.length > 1 ? 's' : ''} disponible${_products.length > 1 ? 's' : ''}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.20),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 13),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────── Sélecteur de pays ───────────────────────────
   Widget _buildCountrySelector() {
     return SizedBox(
-      height: 46,
+      height: 50,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
         itemCount: _countries.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
@@ -173,13 +243,22 @@ class _ImportViewState extends State<ImportView> {
               }
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: selected ? c.gradient.first : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: selected ? c.gradient.first : Colors.grey.shade300),
+                gradient: selected
+                    ? LinearGradient(colors: c.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight)
+                    : null,
+                color: selected ? null : Colors.white,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: selected ? Colors.transparent : const Color(0xFFE6E9EE),
+                ),
+                boxShadow: selected
+                    ? [BoxShadow(color: c.gradient.first.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))]
+                    : null,
               ),
               child: Row(
                 children: [
@@ -187,8 +266,9 @@ class _ImportViewState extends State<ImportView> {
                   const SizedBox(width: 8),
                   Text(c.name,
                       style: TextStyle(
-                          color: selected ? Colors.white : Colors.black87,
-                          fontWeight: selected ? FontWeight.bold : FontWeight.w500)),
+                          color: selected ? Colors.white : const Color(0xFF33404A),
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                          fontSize: 14)),
                 ],
               ),
             ),
@@ -198,71 +278,230 @@ class _ImportViewState extends State<ImportView> {
     );
   }
 
-  Widget _buildEmpty(_ImportCountry c) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(c.flag, style: const TextStyle(fontSize: 56)),
-        const SizedBox(height: 12),
-        Text('Aucun produit importé de ${c.name} pour le moment',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 15)),
-      ],
+  Widget _buildSectionLabel(_ImportCountry c) {
+    if (_loading || _products.isEmpty) return const SizedBox(height: 4);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+      child: Row(
+        children: [
+          Text('Sélection ${c.name}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1B2530))),
+          const Spacer(),
+          Text('${_products.length} article${_products.length > 1 ? 's' : ''}',
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF8A97A3), fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
-  Widget _buildProductCard(dynamic p) {
+  // ─────────────────────────── Skeleton de chargement ───────────────────────────
+  Widget _buildSkeletonGrid() {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.66,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (_, __) => _skeletonCard(),
+          childCount: 6,
+        ),
+      ),
+    );
+  }
+
+  Widget _skeletonCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEDEFF3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFEFF1F4),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(height: 12, width: double.infinity, color: const Color(0xFFEFF1F4)),
+                const SizedBox(height: 8),
+                Container(height: 12, width: 90, color: const Color(0xFFEFF1F4)),
+                const SizedBox(height: 12),
+                Container(height: 14, width: 70, color: const Color(0xFFEFF1F4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────── État vide ───────────────────────────
+  Widget _buildEmpty(_ImportCountry c) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: c.gradient.first.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Text(c.flag, style: const TextStyle(fontSize: 46)),
+          ),
+          const SizedBox(height: 18),
+          Text('Aucun produit ${c.name} pour l\'instant',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2A3540))),
+          const SizedBox(height: 6),
+          Text('Reviens bientôt : de nouveaux articles importés de ${c.name} arrivent régulièrement.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13.5, color: Colors.grey.shade600, height: 1.4)),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: c.gradient.first,
+              side: BorderSide(color: c.gradient.first.withValues(alpha: 0.5)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            label: const Text('Actualiser'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────── Carte produit ───────────────────────────
+  Widget _buildProductCard(dynamic p, _ImportCountry c) {
     final name = p['name']?.toString() ?? '';
     final price = p['price']?.toString() ?? '0';
     String? image;
     final primary = p['primary_image'] ?? p['primaryImage'];
-    if (primary is Map) image = primary['url']?.toString() ?? primary['image_url']?.toString();
+    if (primary is Map) {
+      image = primary['url']?.toString() ?? primary['image_url']?.toString();
+    } else if (primary is String) {
+      image = primary;
+    }
     image ??= (p['images'] is List && (p['images'] as List).isNotEmpty)
         ? ((p['images'][0] is Map) ? p['images'][0]['url']?.toString() : null)
         : null;
 
-    return GestureDetector(
-      onTap: () => Get.toNamed('/product', arguments: p),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                child: image != null && image.isNotEmpty
-                    ? Image.network(image, width: double.infinity, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _imgPlaceholder())
-                    : _imgPlaceholder(),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Get.toNamed('/product', arguments: p),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFEDEFF3)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: (image != null && image.isNotEmpty)
+                          ? Image.network(image, fit: BoxFit.cover,
+                              loadingBuilder: (ctx, child, prog) =>
+                                  prog == null ? child : Container(color: const Color(0xFFF1F2F5)),
+                              errorBuilder: (_, __, ___) => _imgPlaceholder())
+                          : _imgPlaceholder(),
+                    ),
+                    // Badge drapeau pays (origine)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6)],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(c.flag, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 4),
+                            Text(c.code,
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF33404A))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text('$price FCFA',
-                      style: const TextStyle(color: Color(0xFFFF7900), fontWeight: FontWeight.bold, fontSize: 14)),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(11, 10, 11, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.25, color: Color(0xFF23303B))),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text('$price FCFA',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                        ),
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: AppThemeSystem.primaryColor,
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(Icons.add_rounded, color: Colors.white, size: 19),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _imgPlaceholder() => Container(
-        color: Colors.grey.shade100,
+        color: const Color(0xFFF1F2F5),
         child: Icon(Icons.image_outlined, color: Colors.grey.shade400, size: 40),
       );
 }

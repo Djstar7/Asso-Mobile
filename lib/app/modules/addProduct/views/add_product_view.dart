@@ -605,35 +605,74 @@ class AddProductView extends GetView<AddProductController> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-              child: Text(
-                'Pays d\'origine',
-                style: context.h5.copyWith(fontWeight: FontWeight.bold),
+            // Poignée de glissement
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: context.secondaryTextColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pays d\'origine',
+                    style: context.h5.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Où le produit est-il importé ? Il apparaîtra dans l\'onglet « Import » de ce pays.',
+                    style: context.caption.copyWith(color: context.secondaryTextColor),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
             ...options.map((opt) {
               final isSelected =
                   controller.selectedOriginCountry.value == opt['code'];
+              final isLocal = opt['code'] == null;
               return ListTile(
-                leading: opt['flag'] != null
-                    ? Text(opt['flag']!, style: const TextStyle(fontSize: 24))
-                    : Icon(Icons.public_outlined,
-                        color: context.secondaryTextColor),
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppThemeSystem.primaryColor.withValues(alpha: 0.12)
+                        : context.secondaryTextColor.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: opt['flag'] != null
+                      ? Text(opt['flag']!, style: const TextStyle(fontSize: 22))
+                      : Icon(Icons.public_outlined,
+                          color: context.secondaryTextColor, size: 22),
+                ),
                 title: Text(
                   opt['name']!,
                   style: context.body1.copyWith(
                     fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.normal,
+                        isSelected ? FontWeight.w700 : FontWeight.w500,
                     color:
                         isSelected ? AppThemeSystem.primaryColor : null,
                   ),
                 ),
+                subtitle: Text(
+                  isLocal ? 'Vendu localement (aucun pays)' : 'Code ${opt['code']}',
+                  style: context.caption.copyWith(color: context.secondaryTextColor),
+                ),
                 trailing: isSelected
                     ? Icon(Icons.check_circle,
                         color: AppThemeSystem.primaryColor)
-                    : null,
+                    : Icon(Icons.chevron_right,
+                        color: context.secondaryTextColor.withValues(alpha: 0.4)),
                 onTap: () {
                   controller.selectedOriginCountry.value = opt['code'];
                   Get.back();
