@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../widgets/withdrawal_bottom_sheet.dart';
-import '../widgets/recharge_bottom_sheet.dart';
 import '../widgets/quick_confirm_code_dialog.dart';
 
 class WalletView extends GetView<WalletController> {
@@ -459,25 +458,12 @@ class WalletView extends GetView<WalletController> {
     );
   }
 
-  /// Actions rapides (Recharger, Retirer, Historique)
+  /// Actions rapides (Retirer, Historique)
   Widget _buildQuickActions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(
-            child: _buildActionButton(
-              context: context,
-              icon: Icons.add_circle_outline_rounded,
-              label: 'Recharger',
-              color: AppThemeSystem.successColor,
-              onTap: () async {
-                await RechargeBottomSheet.show(context);
-                controller.refresh();
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: _buildActionButton(
               context: context,
