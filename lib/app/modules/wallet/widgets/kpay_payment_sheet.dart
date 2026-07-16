@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'kpay_phone_selector.dart';
+import '../../../data/providers/api_provider.dart';
 
 /// Bottom sheet de paiement KPay direct (achat produit, diaspo…).
 /// Affiche le montant à payer + le sélecteur pays→opérateur→numéro et renvoie
@@ -39,6 +40,36 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
   String? _phone;
   bool _valid = false;
 
+  String _currency = 'XAF';
+  double? _converted; // montant converti dans la devise de l'opérateur
+  bool _converting = false;
+
+  /// Convertit le montant (XAF) dans la devise de l'opérateur sélectionné.
+  /// Purement pour l'affichage : la conversion débitée est refaite côté serveur.
+  Future<void> _convertFor(String currency) async {
+    if (currency == 'XAF' || currency.isEmpty) {
+      if (mounted) setState(() { _currency = 'XAF'; _converted = null; _converting = false; });
+      return;
+    }
+    setState(() { _currency = currency; _converting = true; });
+    try {
+      final res = await ApiProvider.get('/v1/currencies/convert', queryParams: {
+        'from': 'XAF',
+        'to': currency,
+        'amount': widget.amount,
+      });
+      final value = res.data?['data']?['converted'];
+      if (mounted) {
+        setState(() {
+          _converted = (value is num) ? value.toDouble() : double.tryParse('$value');
+          _converting = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _converted = null; _converting = false; });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -76,16 +107,48 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                 color: const Color(0xFFFF7900).withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Text(widget.amountLabel,
-                      style: TextStyle(color: Colors.grey.shade700)),
-                  Text('${widget.amount.toStringAsFixed(0)} FCFA',
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF7900))),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(widget.amountLabel,
+                          style: TextStyle(color: Colors.grey.shade700)),
+                      Text('${widget.amount.toStringAsFixed(0)} FCFA',
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFF7900))),
+                    ],
+                  ),
+                  // Montant converti dans la devise de l'opérateur (affichage)
+                  if (_currency != 'XAF' && (_converting || _converted != null)) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(height: 1),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.sync_alt_rounded, size: 15, color: Colors.grey.shade600),
+                            const SizedBox(width: 6),
+                            Text('Débité par votre opérateur',
+                                style: TextStyle(color: Colors.grey.shade700, fontSize: 12.5)),
+                          ],
+                        ),
+                        _converting
+                            ? const SizedBox(
+                                width: 14, height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text('≈ ${_converted!.toStringAsFixed(0)} $_currency',
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1B2530))),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -103,6 +166,10 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                   _phone = phoneNumber;
                   _valid = isValid;
                 });
+                // Convertir l'affichage dès que la devise de l'opérateur change
+                if (currency != _currency) {
+                  _convertFor(currency);
+                }
               },
             ),
             const SizedBox(height: 24),
