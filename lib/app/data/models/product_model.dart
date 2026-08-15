@@ -7,6 +7,10 @@ class ProductModel {
   final String name;
   final String description;
   final double price;
+
+  /// Prix canonique converti en XAF/XOF par le backend (valeur de référence
+  /// pour l'affichage/conversion). Fallback sur [price] si absent.
+  final double priceXaf;
   final String currency;
   final String category;
   final String location;
@@ -24,6 +28,7 @@ class ProductModel {
     required this.name,
     required this.description,
     required this.price,
+    double? priceXaf,
     this.currency = 'FCFA',
     required this.category,
     required this.location,
@@ -35,7 +40,7 @@ class ProductModel {
     this.isFavorite = false,
     required this.seller,
     this.tags = const [],
-  });
+  }) : priceXaf = priceXaf ?? price;
 
   /// Constructeur à partir d'un Map (pour la compatibilité avec les données hardcodées)
   factory ProductModel.fromMap(Map<String, dynamic> map) {
@@ -44,6 +49,7 @@ class ProductModel {
       name: map['name'] ?? '',
       description: map['description'] ?? '',
       price: _parsePrice(map['price']),
+      priceXaf: map['price_xaf'] != null ? _parsePrice(map['price_xaf']) : null,
       currency: map['currency'] ?? 'FCFA',
       category: map['category'] ?? 'Tous',
       location: map['location'] ?? '',
@@ -124,7 +130,7 @@ class ProductModel {
   String get formattedPrice {
     try {
       if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(price);
+        return CurrencyService.to.formatPrice(priceXaf);
       }
     } catch (e) {
       // Fallback si CurrencyService n'est pas encore initialisé
@@ -136,7 +142,7 @@ class ProductModel {
   String get formattedPriceWithSeparator {
     try {
       if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(price);
+        return CurrencyService.to.formatPrice(priceXaf);
       }
     } catch (e) {
       // Fallback si CurrencyService n'est pas encore initialisé

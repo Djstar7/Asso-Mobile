@@ -277,7 +277,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
 
                         // Price
                         Text(
-                          controller.formatPrice(double.tryParse(product['price']?.toString() ?? '0') ?? 0),
+                          controller.formatPrice(double.tryParse((product['price_xaf'] ?? product['price'])?.toString() ?? '0') ?? 0),
                           style: context.h6.copyWith(
                             color: AppThemeSystem.primaryColor,
                             fontWeight: FontWeight.bold,
