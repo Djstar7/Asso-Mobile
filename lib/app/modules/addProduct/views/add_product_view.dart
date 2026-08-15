@@ -1244,34 +1244,85 @@ class AddProductView extends GetView<AddProductController> {
           ),
         ),
         SizedBox(height: context.elementSpacing),
-        TextField(
-          controller: controller.priceController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: 'Entrez le prix',
-            filled: true,
-            fillColor: context.inputFieldColor,
-            prefixIcon: const Icon(Icons.payments_outlined),
-            suffixText: controller.currencySymbol,
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Obx(() => TextField(
+                    controller: controller.priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Entrez le prix',
+                      filled: true,
+                      fillColor: context.inputFieldColor,
+                      prefixIcon: const Icon(Icons.payments_outlined),
+                      suffixText: controller.selectedCurrencySymbol,
+                      border: OutlineInputBorder(
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        borderSide: BorderSide(color: context.borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        borderSide: BorderSide(color: context.borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        borderSide: const BorderSide(
+                          color: AppThemeSystem.primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  )),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: const BorderSide(
-                color: AppThemeSystem.primaryColor,
-                width: 2,
-              ),
-            ),
-          ),
+            SizedBox(width: context.elementSpacing),
+            _buildCurrencySelector(context),
+          ],
+        ),
+        SizedBox(height: context.elementSpacing / 2),
+        Text(
+          'Le prix est affiché aux acheteurs dans leur devise.',
+          style: context.caption.copyWith(color: context.secondaryTextColor),
         ),
       ],
     );
+  }
+
+  /// Sélecteur de devise du prix (le vendeur peut fixer un prix en devise ≠ XAF).
+  Widget _buildCurrencySelector(BuildContext context) {
+    return Obx(() {
+      final currencies = controller.availableCurrencies;
+      // Toujours proposer au moins XAF si la liste n'est pas encore chargée
+      final codes = currencies.isNotEmpty
+          ? currencies.map((c) => c.code).toList()
+          : <String>['XAF'];
+      final value = codes.contains(controller.selectedCurrency.value)
+          ? controller.selectedCurrency.value
+          : codes.first;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: context.inputFieldColor,
+          borderRadius: context.borderRadius(BorderRadiusType.medium),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isDense: true,
+            items: codes
+                .map((code) => DropdownMenuItem<String>(
+                      value: code,
+                      child: Text(code, style: context.subtitle1),
+                    ))
+                .toList(),
+            onChanged: (code) {
+              if (code != null) controller.selectedCurrency.value = code;
+            },
+          ),
+        ),
+      );
+    });
   }
 
   /// Section Description

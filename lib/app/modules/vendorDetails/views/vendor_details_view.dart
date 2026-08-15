@@ -569,7 +569,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
 
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
     final productName = product['name']?.toString() ?? 'Produit';
-    final productPrice = product['price'] ?? 0;
+    final productPrice = product['price_xaf'] ?? product['price'] ?? 0;
     final productStock = product['stock'] ?? 0;
 
     // Get images - prioritize primary_image, then try images array
