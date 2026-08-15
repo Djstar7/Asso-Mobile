@@ -220,7 +220,7 @@ class OrderManagementController extends GetxController {
         AlertDialog(
           title: const Text('Valider la commande'),
           content: Text(
-            'Voulez-vous valider la commande #${order.id} de ${order.clientName} ?\n\nLes fonds seront crédités sur votre wallet (bloqués jusqu\'à livraison).',
+            'Voulez-vous valider la commande #${order.id} de ${order.clientName} ?\n\nLes fonds seront crédités sur votre wallet et disponibles immédiatement.',
           ),
           actions: [
             TextButton(
@@ -247,7 +247,7 @@ class OrderManagementController extends GetxController {
           await loadOrders(); // Recharger depuis l'API
           Get.snackbar(
             'Commande validée',
-            'Fonds crédités et bloqués. Le livreur a été notifié.',
+            'Fonds crédités et disponibles. Le livreur a été notifié.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
@@ -286,7 +286,7 @@ class OrderManagementController extends GetxController {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLes fonds du client seront débloqués.',
+                'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLe client sera intégralement remboursé.',
               ),
               const SizedBox(height: 16),
               TextField(
@@ -328,7 +328,7 @@ class OrderManagementController extends GetxController {
           await loadOrders();
           Get.snackbar(
             'Commande refusée',
-            'Le client a été notifié et ses fonds débloqués.',
+            'Le client a été notifié et remboursé.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.orange,
             colorText: Colors.white,
