@@ -566,7 +566,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
   ) {
     final primaryImage = product['primary_image']?.toString();
     final name = product['name']?.toString() ?? 'Produit';
-    final price = double.tryParse(product['price']?.toString() ?? '0') ?? 0.0;
+    final price = double.tryParse((product['price_xaf'] ?? product['price'])?.toString() ?? '0') ?? 0.0;
     final location = product['location']?.toString() ?? '';
 
     return GestureDetector(

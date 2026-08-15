@@ -277,7 +277,7 @@ class ProductView extends GetView<ProductController> {
               ],
             ),
             child: Obx(() => Text(
-              controller.formatPrice(double.tryParse(product['price'].toString()) ?? 0),
+              controller.formatPrice(double.tryParse((product['price_xaf'] ?? product['price']).toString()) ?? 0),
               style: context.textStyle(
                 FontSizeType.h3,
                 fontWeight: FontWeight.bold,
@@ -1408,7 +1408,7 @@ class ProductView extends GetView<ProductController> {
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
-    final productPrice = double.tryParse(product['price'].toString().replaceAll(' ', '')) ?? 0.0;
+    final productPrice = double.tryParse((product['price_xaf'] ?? product['price']).toString().replaceAll(' ', '')) ?? 0.0;
     final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
 
     // Réinitialiser les valeurs
@@ -2723,7 +2723,7 @@ class ProductView extends GetView<ProductController> {
   /// Build similar product card
   Widget _buildSimilarProductCard(BuildContext context, Map<String, dynamic> product) {
     final productName = product['name']?.toString() ?? 'Produit';
-    final productPrice = product['price'] ?? 0;
+    final productPrice = product['price_xaf'] ?? product['price'] ?? 0;
     final productStock = product['stock'] ?? 0;
 
     // Get product image
