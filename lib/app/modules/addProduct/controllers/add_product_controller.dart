@@ -10,6 +10,7 @@ import '../../../data/providers/product_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../data/models/currency_model.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -48,6 +49,12 @@ class AddProductController extends GetxController {
 
   // Type de prix
   final priceType = 'fixed'.obs; // 'fixed', 'discover', 'visit'
+
+  // Devise dans laquelle le vendeur fixe le prix (défaut = sa devise d'affichage).
+  // Le prix est envoyé tel quel au backend avec ce code devise ; le backend calcule
+  // la valeur canonique XAF (price_xaf). Plus de reconversion forcée vers XOF ici.
+  final selectedCurrency = 'XAF'.obs;
+  final availableCurrencies = <CurrencyModel>[].obs;
 
   // Poids du produit
   final selectedWeightType = Rx<String?>(null); // 'X-small', '30 Deep', '50 Deep', '60 Deep', 'Rainbow XL', 'Pallet', 'custom'
@@ -140,6 +147,32 @@ class AddProductController extends GetxController {
     _initializeData();
     // Charger la liste des pays d'origine depuis le backend
     _loadOriginCountries();
+    // Charger les devises disponibles pour le sélecteur de prix
+    _loadCurrencies();
+  }
+
+  /// Charge les devises actives et fixe la devise par défaut du formulaire.
+  /// En création : la devise d'affichage du vendeur ; en édition : celle du produit.
+  Future<void> _loadCurrencies() async {
+    // Défaut immédiat = devise du vendeur (avant même le retour de l'API)
+    if (!isEditMode.value) {
+      final userCode = Get.isRegistered<CurrencyService>()
+          ? CurrencyService.to.currencyCode
+          : 'XAF';
+      selectedCurrency.value = userCode.isNotEmpty ? userCode : 'XAF';
+    }
+
+    if (Get.isRegistered<CurrencyService>()) {
+      final list = await CurrencyService.to.getAllCurrencies();
+      if (list.isNotEmpty) {
+        availableCurrencies.assignAll(list.where((c) => c.isActive));
+        // Sécuriser : si la devise sélectionnée n'est pas dans la liste, retomber sur XAF
+        if (!availableCurrencies.any((c) => c.code == selectedCurrency.value)) {
+          final hasXaf = availableCurrencies.any((c) => c.code == 'XAF');
+          selectedCurrency.value = hasXaf ? 'XAF' : (availableCurrencies.first.code);
+        }
+      }
+    }
   }
 
   /// Recharge la liste des pays d'origine (produits importés) depuis le backend.
@@ -345,14 +378,16 @@ class AddProductController extends GetxController {
       nameController.text = product['name'] ?? '';
       descriptionController.text = product['description'] ?? '';
 
-      // Price - convert from XOF to user's currency for display
+      // Devise + prix SOURCE du produit (plus de reconversion XOF : on édite la valeur
+      // telle que le vendeur l'a fixée, dans sa devise d'origine).
+      final productCurrency = (product['currency']?.toString() ?? 'XAF').toUpperCase();
+      selectedCurrency.value = productCurrency.isNotEmpty ? productCurrency : 'XAF';
+
       final price = product['price'];
       if (price != null) {
-        final priceInXOF = double.tryParse(price.toString()) ?? 0;
-        final convertedPrice = _convertFromXOFForDisplay(priceInXOF);
-        priceController.text = convertedPrice.toStringAsFixed(0);
-        print('📝 ADD_PRODUCT: Price in XOF: $priceInXOF');
-        print('📝 ADD_PRODUCT: Price converted to ${currencySymbol}: $convertedPrice');
+        final sourcePrice = double.tryParse(price.toString()) ?? 0;
+        priceController.text = sourcePrice.toStringAsFixed(0);
+        print('📝 ADD_PRODUCT: Prix source: $sourcePrice ${selectedCurrency.value}');
       } else {
         print('⚠️ ADD_PRODUCT: No price found in product data');
       }
@@ -894,20 +929,19 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: category_id = $categoryId');
       print('📦 ADD_PRODUCT: subcategory_id = ${selectedSubcategoryId.value}');
 
-      // Convert price from user's currency back to XOF for backend
-      final priceInUserCurrency = double.tryParse(priceController.text.trim()) ?? 0;
-      final priceInXOF = _convertToXOFForSaving(priceInUserCurrency);
+      // Prix envoyé tel quel dans la devise choisie par le vendeur (plus de conversion
+      // XOF côté mobile). Le backend calcule price_xaf (valeur canonique).
+      final price = double.tryParse(priceController.text.trim()) ?? 0;
 
-      print('📦 ADD_PRODUCT: Price conversion for saving:');
-      print('   └─ Price entered by user (${currencySymbol}): $priceInUserCurrency');
-      print('   └─ Price to send to backend (XOF): $priceInXOF');
+      print('📦 ADD_PRODUCT: Prix envoyé: $price ${selectedCurrency.value}');
 
       // Préparer les champs (selon ce qu'attend l'API)
       final fieldsMap = <String, String>{
         'name': nameController.text.trim(),
         'description': descriptionController.text.trim(),
         'type': articleType.value,
-        'price': priceInXOF.toStringAsFixed(0),
+        'price': price.toStringAsFixed(0),
+        'currency': selectedCurrency.value,
         'condition': 'new', // L'API requiert ce champ
       };
 
@@ -1169,27 +1203,11 @@ class AddProductController extends GetxController {
     return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
   }
 
-  /// Get currency symbol
-  String get currencySymbol {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return 'FCFA';
-    }
-    return CurrencyService.to.currencySymbol;
-  }
-
-  /// Convert price from XOF to user's currency for display in form
-  double _convertFromXOFForDisplay(double priceInXOF) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return priceInXOF;
-    }
-    return CurrencyService.to.convertFromXOF(priceInXOF);
-  }
-
-  /// Convert price from user's currency back to XOF for saving to backend
-  double _convertToXOFForSaving(double priceInUserCurrency) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return priceInUserCurrency;
-    }
-    return CurrencyService.to.convertToXOF(priceInUserCurrency);
+  /// Symbole de la devise actuellement sélectionnée dans le formulaire.
+  String get selectedCurrencySymbol {
+    final code = selectedCurrency.value.toUpperCase();
+    if (code == 'XAF' || code == 'XOF') return 'FCFA';
+    final match = availableCurrencies.firstWhereOrNull((c) => c.code == code);
+    return match?.symbol ?? code;
   }
 }

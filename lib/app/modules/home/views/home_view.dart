@@ -1841,7 +1841,7 @@ class HomeItemView extends GetView<HomeController> {
 
   /// Format price for display (with currency conversion)
   String _formatPrice(Map<String, dynamic> product) {
-    final price = product['price'];
+    final price = product['price_xaf'] ?? product['price'];
 
     if (price != null) {
       double priceValue = 0.0;

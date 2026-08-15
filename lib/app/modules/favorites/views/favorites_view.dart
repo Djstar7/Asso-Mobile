@@ -422,10 +422,7 @@ class FavoritesView extends GetView<FavoritesController> {
   }
 
   String _formatPrice(Map<String, dynamic> product) {
-    final formattedPrice = product['formatted_price'];
-    if (formattedPrice != null) return formattedPrice.toString();
-
-    final price = product['price'];
+    final price = product['price_xaf'] ?? product['price'];
     if (price != null) {
       if (price is num) {
         return controller.formatPrice(price.toDouble());
