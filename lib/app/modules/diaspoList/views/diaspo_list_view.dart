@@ -249,21 +249,21 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         ),
                         const SizedBox(height: 16),
                         _buildInfoItem(
-                          '📦',
+                          Icons.flight_takeoff_rounded,
                           'Publiez votre offre',
                           'Indiquez votre itinéraire et le poids disponible',
                           isDark,
                         ),
                         const SizedBox(height: 12),
                         _buildInfoItem(
-                          '🛒',
+                          Icons.inventory_2_outlined,
                           'Recevez des réservations',
                           'Les acheteurs réservent des kilos sur votre trajet',
                           isDark,
                         ),
                         const SizedBox(height: 12),
                         _buildInfoItem(
-                          '💰',
+                          Icons.payments_outlined,
                           'Gagnez de l\'argent',
                           'Rentabilisez votre voyage en transportant des colis',
                           isDark,
@@ -700,7 +700,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                       ),
                     ),
                     Text(
-                      '${booking.totalPrice.toStringAsFixed(0)} €',
+                      booking.formattedTotal,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -792,7 +792,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Donnez ce code au vendeur lors de la livraison',
+                              'Donnez ce code au voyageur au moment de la remise',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.blue.shade900,
@@ -807,8 +807,180 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 ),
               ),
             ],
+
+            // Voyageur (vendeur d'espace) : valider le code remis par l'acheteur.
+            if (!isBuyer && booking.status == 'paid') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showValidateCodeDialog(context, booking),
+                  icon: const Icon(Icons.verified_outlined),
+                  label: const Text('Valider le code de livraison'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppThemeSystem.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            // Voyageur : code déjà validé, colis en transit.
+            if (!isBuyer && booking.status == 'confirmed') ...[
+              const SizedBox(height: 12),
+              _buildInlineNote(
+                Icons.check_circle_outline,
+                AppThemeSystem.infoColor,
+                'Code validé. En attente de la confirmation de réception par l\'acheteur.',
+              ),
+            ],
+
+            // Acheteur : confirmer la réception (libère les fonds au voyageur).
+            if (isBuyer && booking.status == 'confirmed') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _confirmReceipt(context, booking),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('J\'ai bien reçu mon colis'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppThemeSystem.successColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// Petite note d'information inline (icône + texte) aux couleurs de la marque.
+  Widget _buildInlineNote(IconData icon, Color color, String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12, color: color, height: 1.3),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dialogue de saisie du code par le voyageur (validation de la livraison).
+  void _showValidateCodeDialog(BuildContext context, dynamic booking) {
+    final codeController = TextEditingController();
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.verified_outlined, color: AppThemeSystem.primaryColor),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Valider la livraison')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Saisissez le code à 6 chiffres que l\'acheteur vous a communiqué.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: codeController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              autofocus: true,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, letterSpacing: 6, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '••••••',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Annuler')),
+          Obx(() => ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: controller.isValidatingCode.value
+                    ? null
+                    : () async {
+                        final code = codeController.text.trim();
+                        if (code.length != 6) {
+                          Get.snackbar('Code invalide', 'Le code doit contenir 6 chiffres',
+                              snackPosition: SnackPosition.BOTTOM);
+                          return;
+                        }
+                        await controller.sellerConfirmCode(booking.id, code);
+                      },
+                child: controller.isValidatingCode.value
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      )
+                    : const Text('Valider'),
+              )),
+        ],
+      ),
+    );
+  }
+
+  /// L'acheteur confirme avoir reçu son colis (libère les fonds au voyageur).
+  void _confirmReceipt(BuildContext context, dynamic booking) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirmer la réception'),
+        content: const Text(
+          'Confirmez-vous avoir bien reçu votre colis ? Le voyageur sera crédité et la réservation sera clôturée.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Pas encore')),
+          Obx(() => ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.successColor,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: controller.isValidatingCode.value
+                    ? null
+                    : () async => controller.confirmReceipt(booking.id, booking.confirmationCode),
+                child: const Text('Oui, confirmer'),
+              )),
+        ],
       ),
     );
   }
@@ -816,37 +988,54 @@ class DiaspoListView extends GetView<DiaspoListController> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'completed':
-        return Colors.green;
+        return AppThemeSystem.successColor;
+      case 'confirmed':
+        return AppThemeSystem.infoColor;
+      case 'paid':
+        return AppThemeSystem.primaryColor;
       case 'pending':
-        return Colors.orange;
+        return AppThemeSystem.warningColor;
       case 'cancelled':
-        return Colors.red;
+        return AppThemeSystem.errorColor;
+      case 'refunded':
+        return AppThemeSystem.grey600;
       default:
-        return Colors.grey;
+        return AppThemeSystem.grey500;
     }
   }
 
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
-        return 'Complété';
+        return 'Terminé';
+      case 'confirmed':
+        return 'En transit';
+      case 'paid':
+        return 'Payé';
       case 'pending':
-        return 'En attente';
+        return 'En attente de paiement';
       case 'cancelled':
         return 'Annulé';
+      case 'refunded':
+        return 'Remboursé';
       default:
         return status;
     }
   }
 
   /// Build info item for empty state
-  Widget _buildInfoItem(String emoji, String title, String description, bool isDark) {
+  Widget _buildInfoItem(IconData icon, String title, String description, bool isDark) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          emoji,
-          style: const TextStyle(fontSize: 24),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppThemeSystem.primaryColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppThemeSystem.primaryColor, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(

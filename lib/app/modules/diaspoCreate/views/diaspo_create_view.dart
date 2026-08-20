@@ -130,21 +130,26 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               ],
             ),
             SizedBox(height: elementSpacing),
-            TextFormField(
-              controller: controller.departureCountryController,
-              decoration: InputDecoration(
-                labelText: 'Pays de départ',
-                hintText: 'Ex: France',
-                prefixIcon: const Icon(Icons.flag),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le pays de départ';
-                }
-                return null;
-              },
-            ),
+            Obx(() => TextFormField(
+                  controller: controller.departureCountryController,
+                  readOnly: true,
+                  onTap: () => controller.pickCountry(isDeparture: true),
+                  decoration: InputDecoration(
+                    labelText: 'Pays de départ',
+                    hintText: 'Sélectionnez un pays',
+                    prefixIcon: const Icon(Icons.flag),
+                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                    helperText:
+                        'Devise de l\'offre : ${controller.selectedCurrencyCode.value} (${controller.selectedCurrencySymbol.value})',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Veuillez sélectionner le pays de départ';
+                    }
+                    return null;
+                  },
+                )),
             SizedBox(height: elementSpacing),
             TextFormField(
               controller: controller.departureCityController,
@@ -201,10 +206,13 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             SizedBox(height: elementSpacing),
             TextFormField(
               controller: controller.arrivalCountryController,
+              readOnly: true,
+              onTap: () => controller.pickCountry(isDeparture: false),
               decoration: InputDecoration(
                 labelText: 'Pays d\'arrivée',
-                hintText: 'Ex: Cameroun',
+                hintText: 'Sélectionnez un pays',
                 prefixIcon: const Icon(Icons.flag),
+                suffixIcon: const Icon(Icons.arrow_drop_down),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
@@ -303,10 +311,10 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Prix par kilo (${controller.currencySymbol})',
+                labelText: 'Prix par kilo (${controller.offerCurrencySymbol})',
                 hintText: 'Ex: 13.00',
                 prefixIcon: const Icon(Icons.euro),
-                suffixText: '${controller.currencySymbol}/kg',
+                suffixText: '${controller.offerCurrencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               onChanged: (value) {
@@ -377,7 +385,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                     child: Obx(() {
                       final total = controller.pricePerKg.value * controller.availableKg.value;
                       return Text(
-                        '${total.toStringAsFixed(2)} ${controller.currencySymbol}',
+                        '${total.toStringAsFixed(2)} ${controller.offerCurrencySymbol}',
                         style: AppThemeSystem.getTextStyle(
                           context,
                           FontSizeType.h4,
@@ -494,7 +502,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   _buildSummaryRow(
                     context,
                     'Prix par kilo',
-                    '${controller.pricePerKgController.text} ${controller.currencySymbol}/kg',
+                    '${controller.pricePerKgController.text} ${controller.offerCurrencySymbol}/kg',
                     Icons.euro,
                   ),
                   SizedBox(height: elementSpacing * 0.5),

@@ -192,6 +192,71 @@ class DiaspoListController extends GetxController {
     }
   }
 
+  // Validation de code (voyageur) / confirmation de réception (acheteur)
+  final isValidatingCode = false.obs;
+
+  /// Le voyageur valide le code de livraison remis par l'acheteur.
+  Future<void> sellerConfirmCode(int bookingId, String code) async {
+    if (isValidatingCode.value) return;
+    isValidatingCode.value = true;
+    try {
+      await _diaspoService.sellerConfirmDelivery(
+        bookingId: bookingId,
+        confirmationCode: code,
+      );
+      Get.back(); // fermer le dialogue
+      Get.snackbar(
+        'Code validé',
+        'La livraison est confirmée. L\'acheteur doit maintenant confirmer la réception.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.successColor,
+        colorText: Colors.white,
+      );
+      await loadMyBookingsAsSeller();
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
+    } finally {
+      isValidatingCode.value = false;
+    }
+  }
+
+  /// L'acheteur confirme la réception de son colis (libère les fonds au voyageur).
+  Future<void> confirmReceipt(int bookingId, String code) async {
+    if (isValidatingCode.value) return;
+    isValidatingCode.value = true;
+    try {
+      await _diaspoService.confirmReceipt(
+        bookingId: bookingId,
+        confirmationCode: code,
+      );
+      Get.back();
+      Get.snackbar(
+        'Réception confirmée',
+        'Merci ! Le voyageur a été crédité.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.successColor,
+        colorText: Colors.white,
+      );
+      await loadMyBookingsAsBuyer();
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
+    } finally {
+      isValidatingCode.value = false;
+    }
+  }
+
   /// Change tab and load data
   void changeTab(int index) {
     selectedTab.value = index;
