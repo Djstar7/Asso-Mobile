@@ -273,12 +273,18 @@ class DiaspoService extends GetxService {
     }
   }
 
-  /// Book kilos (create booking) — paiement KPay direct
-  Future<DiaspoBooking> bookOffer({
+  /// Crée une réservation et initie l'encaissement selon le moyen choisi.
+  ///
+  /// [paymentMethod] ∈ kpay | paypal | stripe. Pour kpay, [provider] (code
+  /// opérateur) et [phoneNumber] sont requis. Renvoie un map contenant :
+  ///   - 'booking' : DiaspoBooking
+  ///   - 'payment' : bloc décrivant le sous-parcours (flow, approval_url, …)
+  Future<Map<String, dynamic>> bookOffer({
     required int offerId,
     required double kgBooked,
-    required String provider,    // code opérateur KPay (ex. MTN_MOMO_CMR)
-    required String phoneNumber, // numéro international sans '+'
+    required String paymentMethod,
+    String? provider,    // code opérateur KPay (ex. MTN_MOMO_CMR) — requis si kpay
+    String? phoneNumber, // numéro international sans '+' — requis si kpay
     String? notes,
   }) async {
     try {
@@ -286,25 +292,39 @@ class DiaspoService extends GetxService {
         '/v1/diaspo/offers/$offerId/book',
         data: {
           'kg_booked': kgBooked,
-          'provider': provider,
-          'phone_number': phoneNumber,
+          'payment_method': paymentMethod,
+          if (provider != null) 'provider': provider,
+          if (phoneNumber != null) 'phone_number': phoneNumber,
           if (notes != null) 'notes': notes,
         },
       );
 
-      return DiaspoBooking.fromJson(response.data['data']);
+      return {
+        'booking': DiaspoBooking.fromJson(response.data['data']),
+        'payment': Map<String, dynamic>.from(response.data['payment'] ?? {}),
+      };
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map ? e.response?.data['message'] : null;
+      if (msg != null) throw Exception(msg.toString());
+      print('Error booking offer: ${e.message}');
+      rethrow;
     } catch (e) {
       print('Error booking offer: $e');
       rethrow;
     }
   }
 
-  /// Statut de paiement d'une réservation (re-vérifie chez KPay). Renvoie
-  /// 'pending' | 'paid' | 'failed'.
+  /// Statut de paiement d'une réservation (re-vérifie côté serveur selon le rail).
+  /// Normalise en 'pending' | 'paid' | 'failed'.
   Future<String> bookingPaymentStatus(int bookingId) async {
     try {
       final response = await _dio.get('/v1/diaspo/bookings/$bookingId/payment-status');
-      return response.data['data']?['payment_status']?.toString() ?? 'pending';
+      final data = response.data['data'] ?? {};
+      final paymentStatus = data['payment_status']?.toString() ?? 'pending';
+      final status = data['status']?.toString() ?? 'pending';
+      if (paymentStatus == 'completed') return 'paid';
+      if (status == 'cancelled') return 'failed';
+      return 'pending';
     } catch (e) {
       return 'pending';
     }

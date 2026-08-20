@@ -92,19 +92,18 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   void _checkPaymentCompletion(String url) {
     print('[PaymentWebView] Checking URL: $url');
 
-    // Pour KPay
-    if (widget.paymentMethod == 'kpay') {
-      if (url.contains('/payment/success') || url.contains('status=success')) {
-        _handlePaymentSuccess('Paiement KPay réussi');
-      } else if (url.contains('/payment/cancel') ||
-                 url.contains('/payment/failed') ||
-                 url.contains('status=failed')) {
-        _handlePaymentFailure('Paiement KPay annulé ou échoué');
-      }
+    // Détection générique des URLs de retour, valable pour TOUS les rails de
+    // redirection (KPay, PayPal, Stripe Checkout). La confirmation réelle du
+    // paiement se fait côté serveur (webhook + polling) ; ici on ne fait que
+    // clôturer la WebView au bon moment.
+    if (url.contains('/payment/success') || url.contains('status=success')) {
+      _handlePaymentSuccess('Paiement effectué');
+    } else if (url.contains('/payment/cancel') ||
+        url.contains('/payment/failed') ||
+        url.contains('status=failed') ||
+        url.contains('status=cancel')) {
+      _handlePaymentFailure('Paiement annulé ou échoué');
     }
-
-    // Pour PayPal - Le backend gère maintenant l'exécution automatiquement
-    // La page success/cancel communiquera via JavaScript Bridge
   }
 
   /// Handle JavaScript messages from payment result pages
@@ -238,7 +237,13 @@ class _PaymentWebViewState extends State<PaymentWebView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.paymentMethod == 'paypal' ? 'Paiement PayPal' : 'Paiement Mobile Money'),
+        title: Text(
+          widget.paymentMethod == 'paypal'
+              ? 'Paiement PayPal'
+              : widget.paymentMethod == 'stripe'
+                  ? 'Paiement par carte'
+                  : 'Paiement Mobile Money',
+        ),
         centerTitle: true,
         backgroundColor: AppThemeSystem.primaryColor,
         foregroundColor: AppThemeSystem.whiteColor,
