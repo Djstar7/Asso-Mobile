@@ -107,6 +107,10 @@ class AppConstants {
   static const String vendorOrdersUrl = '/v1/vendor/orders';
   static const String deliveryPersonsUrl = '/v1/vendor/orders/delivery-persons';
 
+  // Stripe Connect (compte de virement IBAN vendeur)
+  static const String stripeConnectSubmitUrl = '/v1/stripe/connect/submit';
+  static const String stripeConnectStatusUrl = '/v1/stripe/connect/status';
+
   // Delivery management
   static const String deliveryPendingUrl = '/v1/delivery/pending';
   static const String deliveryActiveUrl = '/v1/delivery/active';

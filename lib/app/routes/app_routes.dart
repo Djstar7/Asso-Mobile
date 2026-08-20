@@ -28,6 +28,7 @@ abstract class Routes {
   static const VENDOR_DASHBOARD = _Paths.VENDOR_DASHBOARD;
   static const WALLET = _Paths.WALLET;
   static const VENDOR_CONFIG = _Paths.VENDOR_CONFIG;
+  static const STRIPE_CONNECT = _Paths.STRIPE_CONNECT;
   static const ORDER_MANAGEMENT = _Paths.ORDER_MANAGEMENT;
   static const STORE_MANAGEMENT = _Paths.STORE_MANAGEMENT;
   static const SHIP_CONFIG = _Paths.SHIP_CONFIG;
@@ -82,6 +83,7 @@ abstract class _Paths {
   static const VENDOR_DASHBOARD = '/vendor-dashboard';
   static const WALLET = '/wallet';
   static const VENDOR_CONFIG = '/vendor-config';
+  static const STRIPE_CONNECT = '/stripe-connect';
   static const ORDER_MANAGEMENT = '/order-management';
   static const STORE_MANAGEMENT = '/store-management';
   static const SHIP_CONFIG = '/ship-config';
