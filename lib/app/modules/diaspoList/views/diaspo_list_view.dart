@@ -466,145 +466,162 @@ class DiaspoListView extends GetView<DiaspoListController> {
   Widget _buildOfferCard(BuildContext context, offer, bool isDark, {bool isMyOffer = false}) {
     // Check if this is the user's own offer (in "Tous" tab)
     final isOwnOffer = controller.isMyOffer(offer);
+    final showMine = isMyOffer || isOwnOffer;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-      child: InkWell(
-        onTap: () => Get.toNamed('/diaspo/detail', arguments: {'offer': offer}),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Route with "My Offer" badge
-              Row(
-                children: [
-                  const Icon(Icons.flight_takeoff, color: Colors.green, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${offer.departureCity}, ${offer.departureCountry}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+    final muted = isDark ? Colors.white70 : const Color(0xFF6B7280);
+    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFECECEF),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.toNamed('/diaspo/detail', arguments: {'offer': offer}),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Trajet compact : Départ → Arrivée + badge éventuel
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.flight_takeoff, color: Color(0xFF16A34A), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${offer.departureCity}, ${offer.departureCountry}',
+                                  style: TextStyle(fontWeight: FontWeight.w700, color: titleColor),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Container(
+                              width: 2,
+                              height: 14,
+                              margin: const EdgeInsets.symmetric(vertical: 3),
+                              color: muted.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              const Icon(Icons.flight_land, color: Color(0xFFDC2626), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${offer.arrivalCity}, ${offer.arrivalCountry}',
+                                  style: TextStyle(fontWeight: FontWeight.w700, color: titleColor),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  // Show badge for own offers in "Tous" tab
-                  if (isOwnOffer && !isMyOffer) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppThemeSystem.primaryColor,
-                          width: 1.5,
+                    if (showMine) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.person, size: 13, color: AppThemeSystem.primaryColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Mon offre',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppThemeSystem.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Divider(color: muted.withValues(alpha: 0.15), height: 1),
+                ),
+                // Prix + disponibilité
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Prix par kilo', style: TextStyle(fontSize: 12, color: muted)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppThemeSystem.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.person,
-                            size: 14,
-                            color: AppThemeSystem.primaryColor,
-                          ),
-                          const SizedBox(width: 4),
+                          const Icon(Icons.inventory_2_outlined, size: 15, color: Color(0xFF16A34A)),
+                          const SizedBox(width: 6),
                           Text(
-                            'Moi',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppThemeSystem.primaryColor,
+                            '${offer.remainingKg.toStringAsFixed(1)} kg dispo',
+                            style: const TextStyle(
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
+                              color: Color(0xFF16A34A),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.flight_land, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${offer.arrivalCity}, ${offer.arrivalCountry}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-
-              // Price and availability
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Prix par kilo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
-                      Text(
-                        '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Disponible',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
-                      Text(
-                        '${offer.remainingKg.toStringAsFixed(1)} kg',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              if (isMyOffer) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Mon offre',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue[700],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
