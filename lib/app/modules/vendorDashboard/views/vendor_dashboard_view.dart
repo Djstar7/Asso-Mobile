@@ -489,6 +489,16 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             );
           },
         ),
+        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
+        _buildActionButton(
+          context,
+          icon: Icons.account_balance,
+          title: 'Compte de virement',
+          subtitle: 'Enregistrez votre IBAN pour être payé',
+          onTap: () {
+            Get.toNamed('/stripe-connect');
+          },
+        ),
       ],
     );
   }
