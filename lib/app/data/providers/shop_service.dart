@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
 import 'api_provider.dart';
 
@@ -40,7 +40,7 @@ class ShopService {
     double? shopLatitude,
     double? shopLongitude,
     List<String>? categories,
-    File? shopLogo,
+    XFile? shopLogo,
   }) async {
     print('');
     print('========================================');
@@ -70,13 +70,13 @@ class ShopService {
 
     print('  └─ Total fields: ${fields.length}');
 
-    // Build files map with file paths
-    final Map<String, String> files = {};
+    // Build media files map (XFile) — compatible web ET mobile.
+    final Map<String, XFile> mediaFiles = {};
     if (shopLogo != null) {
-      files['shop_logo'] = shopLogo.path;
-      print('  └─ Shop logo: ${shopLogo.path}');
+      mediaFiles['shop_logo'] = shopLogo;
+      print('  └─ Shop logo: ${shopLogo.name}');
     }
-    print('  └─ Total files: ${files.length}');
+    print('  └─ Total files: ${mediaFiles.length}');
 
     // Laravel doesn't parse multipart for PUT, so use POST with _method=PUT
     fields['_method'] = 'PUT';
@@ -90,7 +90,7 @@ class ShopService {
       final response = await ApiProvider.multipart(
         AppConstants.vendorShopUrl,
         fields: fields,
-        files: files.isNotEmpty ? files : null,
+        mediaFiles: mediaFiles.isNotEmpty ? mediaFiles : null,
         method: 'POST',  // Changed from PUT to POST
       );
 

@@ -109,6 +109,22 @@ class WalletService {
     );
   }
 
+  /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
+  static Future<ApiResponse> withdrawStripe({
+    required double amount,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'amount': amount,
+    };
+    if (notes != null) data['notes'] = notes;
+
+    return await ApiProvider.post(
+      AppConstants.walletWithdrawStripeUrl,
+      body: data,
+    );
+  }
+
   /// Get withdrawal history with filters
   static Future<ApiResponse> getWithdrawalHistory({
     int page = 1,

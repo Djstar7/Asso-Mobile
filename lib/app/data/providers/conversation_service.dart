@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../providers/api_provider.dart';
@@ -78,7 +78,7 @@ class ConversationService {
   static Future<ApiResponse> sendMessageWithImage(
     int conversationId, {
     String? message,
-    File? imageFile,
+    XFile? imageFile,
     int? productId,
     int? diaspoOfferId,
   }) async {
@@ -113,16 +113,17 @@ class ConversationService {
         request.fields['diaspo_offer_id'] = diaspoOfferId.toString();
       }
 
-      // Ajouter l'image si fournie
+      // Ajouter l'image si fournie (via octets — compatible web ET mobile)
       if (imageFile != null) {
-        final imageStream = http.ByteStream(imageFile.openRead());
-        final imageLength = await imageFile.length();
+        final bytes = await imageFile.readAsBytes();
+        final filename = imageFile.name.isNotEmpty
+            ? imageFile.name
+            : 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        final multipartFile = http.MultipartFile(
+        final multipartFile = http.MultipartFile.fromBytes(
           'image',
-          imageStream,
-          imageLength,
-          filename: imageFile.path.split('/').last,
+          bytes,
+          filename: filename,
           contentType: MediaType('image', 'jpeg'),
         );
 

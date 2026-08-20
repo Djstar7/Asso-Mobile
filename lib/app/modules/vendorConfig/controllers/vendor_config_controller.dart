@@ -1,12 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
+import '../../../core/utils/media_helper.dart';
 import '../../../routes/app_pages.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/storage_service.dart';
@@ -43,7 +41,7 @@ class VendorConfigController extends GetxController {
   final selectedAccountType = 'Particulier'.obs;
   final accountTypes = ['Particulier', 'Entreprise'];
 
-  final profileImage = Rx<File?>(null);
+  final profileImage = Rx<XFile?>(null);
   final isPickingProfileImage = false.obs;
   final locationPermissionGranted = false.obs;
   final userLocation = ''.obs;
@@ -57,7 +55,7 @@ class VendorConfigController extends GetxController {
   final shopNameText = ''.obs;
   final shopDescriptionText = ''.obs;
 
-  final shopLogo = Rx<File?>(null);
+  final shopLogo = Rx<XFile?>(null);
   final isPickingShopLogo = false.obs;
   final shopLocation = ''.obs;
   final shopLatitude = 0.0.obs;
@@ -78,8 +76,6 @@ class VendorConfigController extends GetxController {
 
   // Validation
   final isLoading = false.obs;
-
-  final ImagePicker _picker = ImagePicker();
 
   // Scroll controllers for each step
   final ScrollController step1ScrollController = ScrollController();
@@ -304,211 +300,47 @@ class VendorConfigController extends GetxController {
     }
   }
 
-  /// Sélectionne une photo de profil
+  /// Sélectionne une photo de profil (picker de marque, compatible web + mobile)
   Future<void> pickProfileImage() async {
+    isPickingProfileImage.value = true;
     try {
-      // Afficher le choix caméra ou galerie
-      final source = await Get.bottomSheet<ImageSource>(
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Get.theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Titre
-              Text(
-                'Choisir une photo',
-                style: Get.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Bouton Caméra
-              ListTile(
-                leading: const Icon(Icons.camera_alt, size: 30),
-                title: const Text('Prendre une photo'),
-                onTap: () => Get.back(result: ImageSource.camera),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Bouton Galerie
-              ListTile(
-                leading: const Icon(Icons.photo_library, size: 30),
-                title: const Text('Choisir depuis la galerie'),
-                onTap: () => Get.back(result: ImageSource.gallery),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Bouton Annuler
-              ListTile(
-                leading: const Icon(Icons.close, size: 30),
-                title: const Text('Annuler'),
-                onTap: () => Get.back(),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-        isDismissible: true,
+      final XFile? image = await MediaHelper.pickBrandedImage(
+        title: 'Photo de profil',
+        subtitle: 'Ajoutez une photo qui vous représente',
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
       );
 
-      if (source != null) {
-        isPickingProfileImage.value = true;
-
-        try {
-          final XFile? image = await _picker.pickImage(
-            source: source,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            imageQuality: 85,
-          );
-
-          if (image != null) {
-            print('📸 Profile image picked: ${image.path}');
-
-            // Copier vers un emplacement permanent pour éviter la suppression du cache
-            final permanentFile = await _copyToAppDirectory(
-              image.path,
-              'profile_${DateTime.now().millisecondsSinceEpoch}.jpg'
-            );
-            profileImage.value = permanentFile;
-
-            print('✅ Profile image set successfully');
-          }
-        } finally {
-          isPickingProfileImage.value = false;
-        }
+      if (image != null) {
+        print('📸 Profile image picked: ${image.name}');
+        profileImage.value = image;
+        print('✅ Profile image set successfully');
       }
-    } catch (e) {
+    } finally {
       isPickingProfileImage.value = false;
-      print('❌ Error picking profile image: $e');
-      Get.snackbar(
-        'Erreur',
-        'Impossible de sélectionner l\'image',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-      );
     }
   }
 
-  /// Sélectionne le logo de la boutique
+  /// Sélectionne le logo de la boutique (picker de marque, compatible web + mobile)
   Future<void> pickShopLogo() async {
+    isPickingShopLogo.value = true;
     try {
-      // Afficher le choix caméra ou galerie
-      final source = await Get.bottomSheet<ImageSource>(
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Get.theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Titre
-              Text(
-                'Choisir un logo',
-                style: Get.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Bouton Caméra
-              ListTile(
-                leading: const Icon(Icons.camera_alt, size: 30),
-                title: const Text('Prendre une photo'),
-                onTap: () => Get.back(result: ImageSource.camera),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Bouton Galerie
-              ListTile(
-                leading: const Icon(Icons.photo_library, size: 30),
-                title: const Text('Choisir depuis la galerie'),
-                onTap: () => Get.back(result: ImageSource.gallery),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Bouton Annuler
-              ListTile(
-                leading: const Icon(Icons.close, size: 30),
-                title: const Text('Annuler'),
-                onTap: () => Get.back(),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-        isDismissible: true,
+      final XFile? image = await MediaHelper.pickBrandedImage(
+        title: 'Logo de la boutique',
+        subtitle: 'Choisissez le logo qui identifiera votre boutique',
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
       );
 
-      if (source != null) {
-        isPickingShopLogo.value = true;
-
-        try {
-          final XFile? image = await _picker.pickImage(
-            source: source,
-            maxWidth: 512,
-            maxHeight: 512,
-            imageQuality: 85,
-          );
-
-          if (image != null) {
-            print('📸 Shop logo picked: ${image.path}');
-
-            // Copier vers un emplacement permanent pour éviter la suppression du cache
-            final permanentFile = await _copyToAppDirectory(
-              image.path,
-              'shop_logo_${DateTime.now().millisecondsSinceEpoch}.jpg'
-            );
-            shopLogo.value = permanentFile;
-
-            print('✅ Shop logo set successfully');
-          }
-        } finally {
-          isPickingShopLogo.value = false;
-        }
+      if (image != null) {
+        print('📸 Shop logo picked: ${image.name}');
+        shopLogo.value = image;
+        print('✅ Shop logo set successfully');
       }
-    } catch (e) {
+    } finally {
       isPickingShopLogo.value = false;
-      print('❌ Error picking shop logo: $e');
-      Get.snackbar(
-        'Erreur',
-        'Impossible de sélectionner le logo',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-      );
     }
   }
 
@@ -1244,42 +1076,5 @@ class VendorConfigController extends GetxController {
   void navigateToShop() {
     // Naviguer vers le dashboard vendeur
     Get.offAllNamed(Routes.VENDOR_DASHBOARD);
-  }
-
-  /// Copie un fichier du cache vers le répertoire de l'application
-  Future<File> _copyToAppDirectory(String sourcePath, String fileName) async {
-    try {
-      final sourceFile = File(sourcePath);
-
-      // Vérifier que le fichier source existe
-      if (!await sourceFile.exists()) {
-        print('⚠️ Source file does not exist: $sourcePath');
-        throw Exception('Source file does not exist');
-      }
-
-      final appDir = await getApplicationDocumentsDirectory();
-      final newPath = path.join(appDir.path, fileName);
-
-      // Copier le fichier immédiatement
-      final copiedFile = await sourceFile.copy(newPath);
-
-      print('📁 File copied to permanent location:');
-      print('  └─ From: $sourcePath');
-      print('  └─ To: $newPath');
-      print('  └─ Size: ${await copiedFile.length()} bytes');
-
-      return copiedFile;
-    } catch (e) {
-      print('❌ Error copying file: $e');
-      // Si la copie échoue, essayer de retourner le fichier original si il existe toujours
-      final sourceFile = File(sourcePath);
-      if (await sourceFile.exists()) {
-        print('  └─ Returning original file as fallback');
-        return sourceFile;
-      }
-
-      // Si même le fichier source n'existe pas, propager l'erreur
-      rethrow;
-    }
   }
 }

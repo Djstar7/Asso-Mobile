@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,10 +7,10 @@ import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 
 class DiaspoListController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
-  final ImagePicker _picker = ImagePicker();
 
   // Data
   final offers = <DiaspoOffer>[].obs;
@@ -30,8 +29,8 @@ class DiaspoListController extends GetxController {
 
   // Document upload
   final Rx<String?> selectedDocumentType = Rx<String?>(null); // 'cni' or 'passport'
-  final Rx<File?> documentFrontImage = Rx<File?>(null);
-  final Rx<File?> documentBackImage = Rx<File?>(null);
+  final Rx<XFile?> documentFrontImage = Rx<XFile?>(null);
+  final Rx<XFile?> documentBackImage = Rx<XFile?>(null);
   final isUploadingDocument = false.obs;
 
   // Pagination
@@ -860,7 +859,7 @@ class DiaspoListController extends GetxController {
                           title: 'Recto',
                           icon: Icons.badge,
                           image: documentFrontImage.value,
-                          onUpload: () => _showImageSourceDialog(isBack: false),
+                          onUpload: () => _pickDocumentImage(isBack: false),
                           onRemove: () => documentFrontImage.value = null,
                         ),
                         const SizedBox(height: 16),
@@ -870,7 +869,7 @@ class DiaspoListController extends GetxController {
                           title: 'Verso',
                           icon: Icons.badge_outlined,
                           image: documentBackImage.value,
-                          onUpload: () => _showImageSourceDialog(isBack: true),
+                          onUpload: () => _pickDocumentImage(isBack: true),
                           onRemove: () => documentBackImage.value = null,
                         ),
                       ],
@@ -928,7 +927,7 @@ class DiaspoListController extends GetxController {
   Widget _buildDocumentUploadCard({
     required String title,
     required IconData icon,
-    required File? image,
+    required XFile? image,
     required VoidCallback onUpload,
     required VoidCallback onRemove,
   }) {
@@ -970,7 +969,7 @@ class DiaspoListController extends GetxController {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
+                  child: MediaHelper.buildImagePreview(
                     image,
                     height: 120,
                     width: double.infinity,
@@ -1016,79 +1015,21 @@ class DiaspoListController extends GetxController {
     );
   }
 
-  /// Show image source dialog (Camera or Gallery)
-  void _showImageSourceDialog({required bool isBack}) {
-    Get.bottomSheet(
-      Container(
-        decoration: BoxDecoration(
-          color: AppThemeSystem.isDarkMode(Get.context!)
-              ? AppThemeSystem.darkCardColor
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Choisir la source',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Camera
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.blue),
-              title: const Text('Appareil photo'),
-              subtitle: const Text('Prendre une photo'),
-              onTap: () {
-                Get.back();
-                _pickImage(ImageSource.camera, isBack: isBack);
-              },
-            ),
-            const SizedBox(height: 8),
-
-            // Gallery
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.green),
-              title: const Text('Galerie'),
-              subtitle: const Text('Sélectionner depuis la galerie'),
-              onTap: () {
-                Get.back();
-                _pickImage(ImageSource.gallery, isBack: isBack);
-              },
-            ),
-          ],
-        ),
-      ),
+  /// Sélectionne l'image d'un document (recto/verso) via le picker de marque
+  /// partagé (appareil photo / galerie aux couleurs Asso), compatible web + mobile.
+  Future<void> _pickDocumentImage({required bool isBack}) async {
+    final XFile? image = await MediaHelper.pickBrandedImage(
+      title: isBack ? 'Verso du document' : 'Recto du document',
+      subtitle: 'Photo nette, lisible et sans reflet',
+      imageQuality: 85,
     );
-  }
 
-  /// Pick image from camera or gallery
-  Future<void> _pickImage(ImageSource source, {required bool isBack}) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        final file = File(image.path);
-        if (isBack) {
-          documentBackImage.value = file;
-        } else {
-          documentFrontImage.value = file;
-        }
+    if (image != null) {
+      if (isBack) {
+        documentBackImage.value = image;
+      } else {
+        documentFrontImage.value = image;
       }
-    } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de sélectionner l\'image',
-        snackPosition: SnackPosition.BOTTOM,
-      );
     }
   }
 

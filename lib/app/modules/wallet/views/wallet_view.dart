@@ -1077,6 +1077,26 @@ class WalletView extends GetView<WalletController> {
                 },
               ),
 
+              // Virement bancaire (IBAN via Stripe) — uniquement si le compte est validé
+              if (controller.stripeWithdrawEligible.value) ...[
+                SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+                _buildWithdrawalOption(
+                  context: context,
+                  iconData: Icons.account_balance_rounded,
+                  emoji: '🏦',
+                  title: 'Virement bancaire (IBAN)',
+                  subtitle: controller.stripeIbanLast4.value != null
+                      ? 'IBAN ••••${controller.stripeIbanLast4.value}'
+                      : 'Vers votre compte bancaire',
+                  balance: controller.stripeWithdrawAvailable.value,
+                  color: AppThemeSystem.primaryColor,
+                  onTap: () {
+                    Get.back();
+                    _showStripeWithdrawalDialog(context);
+                  },
+                ),
+              ],
+
               SizedBox(height: AppThemeSystem.getElementSpacing(context)),
             ],
           ),
@@ -1084,6 +1104,125 @@ class WalletView extends GetView<WalletController> {
       ),
       isDismissible: true,
       enableDrag: true,
+    );
+  }
+
+  /// Dialogue de retrait par virement bancaire (Stripe Connect).
+  /// Pas de numéro/email à saisir : uniquement le montant (débité dans la devise
+  /// du payout, ex. EUR) puis virement vers l'IBAN validé.
+  void _showStripeWithdrawalDialog(BuildContext context) {
+    final amountController = TextEditingController();
+    final currency = controller.stripeWithdrawCurrency.value;
+    final available = controller.stripeWithdrawAvailable.value;
+    final last4 = controller.stripeIbanLast4.value;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: AppThemeSystem.getSurfaceColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Text('🏦', style: TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Virement bancaire',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppThemeSystem.getPrimaryTextColor(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (last4 != null)
+              Text(
+                'Vers votre IBAN ••••$last4',
+                style: TextStyle(color: AppThemeSystem.getSecondaryTextColor(context)),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              'Disponible : ${available.toStringAsFixed(2)} $currency',
+              style: TextStyle(
+                color: AppThemeSystem.getSecondaryTextColor(context),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Montant ($currency)',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.euro_rounded),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Les fonds arrivent sous 1 à 3 jours ouvrés.',
+              style: TextStyle(
+                color: AppThemeSystem.getSecondaryTextColor(context),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Annuler'),
+          ),
+          Obx(() => ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: controller.isProcessingPayment.value
+                    ? null
+                    : () async {
+                        final amount =
+                            double.tryParse(amountController.text.trim().replaceAll(',', '.')) ?? 0;
+                        if (amount <= 0) {
+                          Get.snackbar('Montant invalide', 'Saisissez un montant valide',
+                              snackPosition: SnackPosition.BOTTOM);
+                          return;
+                        }
+                        if (amount > available) {
+                          Get.snackbar('Solde insuffisant',
+                              'Disponible : ${available.toStringAsFixed(2)} $currency',
+                              snackPosition: SnackPosition.BOTTOM);
+                          return;
+                        }
+                        final result = await controller.withdrawStripe(amount: amount);
+                        Get.back();
+                        Get.snackbar(
+                          result['success'] == true ? 'Virement en cours' : 'Erreur',
+                          result['message']?.toString() ?? '',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: result['success'] == true
+                              ? AppThemeSystem.successColor
+                              : AppThemeSystem.errorColor,
+                          colorText: Colors.white,
+                        );
+                      },
+                child: controller.isProcessingPayment.value
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      )
+                    : const Text('Retirer'),
+              )),
+        ],
+      ),
     );
   }
 

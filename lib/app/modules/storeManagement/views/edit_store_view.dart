@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 import '../controllers/store_management_controller.dart';
 
 class EditStoreView extends GetView<StoreManagementController> {
@@ -117,7 +118,7 @@ class EditStoreView extends GetView<StoreManagementController> {
                           ),
                           image: controller.selectedLogo.value != null
                               ? DecorationImage(
-                                  image: FileImage(
+                                  image: MediaHelper.imageProviderFor(
                                     controller.selectedLogo.value!,
                                   ),
                                   fit: BoxFit.cover,

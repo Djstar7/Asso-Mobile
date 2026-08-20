@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../models/diaspo_offer.dart';
 import '../models/diaspo_booking.dart';
 import '../../core/values/constants.dart';
@@ -42,22 +42,27 @@ class DiaspoService extends GetxService {
   // ============================================
 
   /// Upload verification document (CNI or Passport) - Recto/Verso
+  ///
+  /// Utilise des [XFile] et un upload via octets (`fromBytes`) afin d'être
+  /// compatible mobile ET web (Chrome), où `dart:io File` n'existe pas.
   Future<Map<String, dynamic>> uploadVerificationDocument({
-    required File frontImage,
-    required File backImage,
+    required XFile frontImage,
+    required XFile backImage,
     String documentType = 'cni', // 'cni' or 'passport'
   }) async {
     try {
-      String frontFileName = frontImage.path.split('/').last;
-      String backFileName = backImage.path.split('/').last;
+      final frontFileName =
+          frontImage.name.isNotEmpty ? frontImage.name : 'document_front.jpg';
+      final backFileName =
+          backImage.name.isNotEmpty ? backImage.name : 'document_back.jpg';
 
       FormData formData = FormData.fromMap({
-        'document_front': await MultipartFile.fromFile(
-          frontImage.path,
+        'document_front': MultipartFile.fromBytes(
+          await frontImage.readAsBytes(),
           filename: frontFileName,
         ),
-        'document_back': await MultipartFile.fromFile(
-          backImage.path,
+        'document_back': MultipartFile.fromBytes(
+          await backImage.readAsBytes(),
           filename: backFileName,
         ),
         'document_type': documentType,

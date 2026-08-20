@@ -41,6 +41,13 @@ class WalletController extends GetxController {
   double kpayAvailableFor(String currency) =>
       kpayBalancesByCurrency[currency] ?? 0.0;
 
+  // Virement bancaire (IBAN via Stripe Connect)
+  final stripeWithdrawEligible = false.obs; // compte IBAN validé (approved)
+  final stripeWithdrawStatus = RxnString(); // null|pending|approved|rejected
+  final stripeWithdrawCurrency = 'EUR'.obs;
+  final stripeWithdrawAvailable = 0.0.obs; // solde disponible dans la devise du payout
+  final stripeIbanLast4 = RxnString();
+
   // Pagination des transactions
   final currentPage = 1.obs;
   final lastPage = 1.obs;
@@ -745,6 +752,17 @@ class WalletController extends GetxController {
           }
         }
         kpayBalancesByCurrency.value = byCurrency;
+
+        // Éligibilité virement bancaire (Stripe Connect)
+        final stripe = result['stripe'];
+        if (stripe is Map) {
+          stripeWithdrawEligible.value = stripe['eligible'] == true;
+          stripeWithdrawStatus.value = stripe['status']?.toString();
+          stripeWithdrawCurrency.value =
+              (stripe['currency']?.toString() ?? 'EUR');
+          stripeWithdrawAvailable.value = _parseBalance(stripe['available']);
+          stripeIbanLast4.value = stripe['iban_last4']?.toString();
+        }
       }
     } catch (e) {
       print('[WalletController] Error loading withdrawal balances: $e');
@@ -861,6 +879,48 @@ class WalletController extends GetxController {
     } catch (e) {
       print('[WalletController] Error initiating PayPal withdrawal: $e');
       errorMessage.value = 'Erreur lors de l\'initiation du retrait PayPal';
+      return {'success': false, 'message': errorMessage.value};
+    } finally {
+      isProcessingPayment.value = false;
+    }
+  }
+
+  /// Initie un retrait par virement bancaire (Stripe Connect) vers l'IBAN validé.
+  Future<Map<String, dynamic>> withdrawStripe({
+    required double amount,
+    String? notes,
+  }) async {
+    isProcessingPayment.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      final result = await _walletService.initiateStripeWithdrawal(
+        amount: amount,
+        notes: notes,
+      );
+
+      if (result['success'] == true) {
+        successMessage.value = result['message'] ?? 'Virement initié avec succès';
+
+        // Refléter immédiatement le débit côté UI (le backend a déjà débité).
+        final newBalance = result['data']?['new_balance'] ?? result['new_balance'];
+        if (newBalance != null) {
+          stripeWithdrawAvailable.value = _parseBalance(newBalance);
+        }
+
+        await Future.wait([
+          loadWallet(),
+          loadWithdrawalBalances(),
+        ]);
+        return result;
+      } else {
+        errorMessage.value = result['message'] ?? 'Échec du virement';
+        return result;
+      }
+    } catch (e) {
+      print('[WalletController] Error initiating Stripe withdrawal: $e');
+      errorMessage.value = 'Erreur lors de l\'initiation du virement';
       return {'success': false, 'message': errorMessage.value};
     } finally {
       isProcessingPayment.value = false;

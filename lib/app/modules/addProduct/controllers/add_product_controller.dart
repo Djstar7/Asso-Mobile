@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
@@ -20,8 +17,8 @@ class AddProductController extends GetxController {
   final TextEditingController stockController = TextEditingController();
   final TextEditingController weightKgController = TextEditingController();
 
-  // Images
-  final productImages = <File>[].obs;
+  // Images — XFile pour compatibilité web ET mobile (pas de dart:io).
+  final productImages = <XFile>[].obs;
   final primaryImageIndex = 0.obs;
 
   // Track existing images (from server) vs new images (added by user)
@@ -200,25 +197,10 @@ class AddProductController extends GetxController {
     isLoading.value = false;
   }
 
-  /// Nettoyer les images temporaires
-  Future<void> _cleanupTemporaryImages() async {
-    try {
-      for (var imageFile in productImages) {
-        if (await imageFile.exists()) {
-          await imageFile.delete();
-          print('🗑️ ADD_PRODUCT: Image temporaire supprimée: ${imageFile.path}');
-        }
-      }
-    } catch (e) {
-      print('⚠️ ADD_PRODUCT: Erreur lors du nettoyage des images: $e');
-    }
-  }
-
   @override
   void onClose() {
-    // Nettoyer les images temporaires quand on quitte la page
-    _cleanupTemporaryImages();
-
+    // Les images sont des XFile (mémoire/cache géré par la plateforme) :
+    // aucun nettoyage manuel de fichiers n'est nécessaire (et impossible sur le web).
     nameController.dispose();
     descriptionController.dispose();
     priceController.dispose();
@@ -518,30 +500,21 @@ class AddProductController extends GetxController {
     }
   }
 
-  /// Download an image from URL to local file
-  Future<File?> _downloadImage(String url) async {
+  /// Télécharge une image depuis une URL et la conserve en mémoire (XFile).
+  /// Compatible web ET mobile (aucune écriture sur disque).
+  Future<XFile?> _downloadImage(String url) async {
     try {
-      // Download image from URL
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        // Create a temporary file
-        final Directory appDir = await getApplicationDocumentsDirectory();
-        final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(url)}';
-        final String filePath = path.join(appDir.path, 'product_images', fileName);
-
-        // Create directory if it doesn't exist
-        final Directory imageDir = Directory(path.join(appDir.path, 'product_images'));
-        if (!await imageDir.exists()) {
-          await imageDir.create(recursive: true);
-        }
-
-        // Write the file
-        final File file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${url.split('/').last}';
         print('📷 ADD_PRODUCT: Image downloaded: $fileName');
-        return file;
+        return XFile.fromData(
+          response.bodyBytes,
+          name: fileName,
+          mimeType: response.headers['content-type'],
+        );
       } else {
         print('❌ ADD_PRODUCT: Failed to download image. Status: ${response.statusCode}');
       }
@@ -551,33 +524,7 @@ class AddProductController extends GetxController {
     return null;
   }
 
-  /// Copier une image dans un répertoire permanent
-  Future<File> _copyImageToPermanentStorage(XFile image) async {
-    try {
-      final Directory appDir = await getApplicationDocumentsDirectory();
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(image.path)}';
-      final String newPath = path.join(appDir.path, 'product_images', fileName);
-
-      // Créer le dossier s'il n'existe pas
-      final Directory imageDir = Directory(path.join(appDir.path, 'product_images'));
-      if (!await imageDir.exists()) {
-        await imageDir.create(recursive: true);
-      }
-
-      // Copier le fichier
-      final File sourceFile = File(image.path);
-      final File newFile = await sourceFile.copy(newPath);
-
-      print('📷 ADD_PRODUCT: Image copiée vers: $newPath');
-      return newFile;
-    } catch (e) {
-      print('❌ ADD_PRODUCT: Erreur lors de la copie de l\'image: $e');
-      // En cas d'erreur, retourner le fichier original
-      return File(image.path);
-    }
-  }
-
-  /// Ajouter des images
+  /// Ajouter des images (galerie, sélection multiple)
   Future<void> pickImages() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage(
@@ -585,11 +532,7 @@ class AddProductController extends GetxController {
       );
 
       if (images.isNotEmpty) {
-        for (var image in images) {
-          // Copier l'image dans un emplacement permanent
-          final File permanentFile = await _copyImageToPermanentStorage(image);
-          productImages.add(permanentFile);
-        }
+        productImages.addAll(images);
         print('📷 ADD_PRODUCT: ${images.length} images sélectionnées depuis la galerie');
       }
     } catch (e) {
@@ -611,9 +554,7 @@ class AddProductController extends GetxController {
       );
 
       if (image != null) {
-        // Copier l'image dans un emplacement permanent
-        final File permanentFile = await _copyImageToPermanentStorage(image);
-        productImages.add(permanentFile);
+        productImages.add(image);
         print('📷 ADD_PRODUCT: Photo prise depuis la caméra');
       }
     } catch (e) {
@@ -690,10 +631,10 @@ class AddProductController extends GetxController {
 
       // Analyser l'image primaire
       final primaryImage = productImages[primaryImageIndex.value];
-      print('   └─ Analyzing image: ${primaryImage.path}');
+      print('   └─ Analyzing image: ${primaryImage.name}');
 
       // Appeler l'API d'analyse
-      final response = await ProductService.analyzeProductImage(primaryImage.path);
+      final response = await ProductService.analyzeProductImage(primaryImage);
 
       if (response.success && response.data != null) {
         final analysis = response.data!['suggested_data'] as Map<String, dynamic>?;
@@ -886,7 +827,7 @@ class AddProductController extends GetxController {
 
     try {
       // Déterminer quelles images envoyer
-      List<File> imagesToUpload;
+      List<XFile> imagesToUpload;
       if (isEditMode.value) {
         // En mode édition, n'envoyer que les NOUVELLES images
         imagesToUpload = productImages.sublist(newImageStartIndex.value);
@@ -910,10 +851,10 @@ class AddProductController extends GetxController {
 
       print('📦 ADD_PRODUCT: Total images size: ${totalSizeMb.toStringAsFixed(2)} MB');
 
-      // Préparer les fichiers pour l'upload
-      final filesMap = <String, String>{};
+      // Préparer les fichiers pour l'upload (XFile → octets, web ET mobile)
+      final filesMap = <String, XFile>{};
       for (int i = 0; i < imagesToUpload.length; i++) {
-        filesMap['images[$i]'] = imagesToUpload[i].path;
+        filesMap['images[$i]'] = imagesToUpload[i];
       }
 
       // Récupérer le category_id depuis les données de la sous-catégorie sélectionnée
@@ -1041,12 +982,12 @@ class AddProductController extends GetxController {
               '/v1/vendor/products/${editProductId.value}',
               method: 'POST', // POST avec _method=PUT dans les fields
               fields: fieldsMap,
-              files: filesMap,
+              mediaFiles: filesMap,
             )
           : await ApiProvider.multipart(
               '/v1/products',
               fields: fieldsMap,
-              files: filesMap,
+              mediaFiles: filesMap,
             );
 
       print('📦 ADD_PRODUCT: Réponse reçue - success: ${response.success}');

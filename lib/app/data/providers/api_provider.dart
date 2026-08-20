@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
 import 'storage_service.dart';
 
@@ -165,10 +167,19 @@ class ApiProvider {
   }
 
   /// Multipart POST (for file uploads)
+  ///
+  /// [files] : map champ → chemin local (mobile uniquement, ignoré sur le web
+  /// car `dart:io File` n'y existe pas).
+  /// [mediaFiles] : map champ → [XFile] pour un fichier unique. Compatible web
+  /// ET mobile (upload via octets), à privilégier pour tout nouveau code.
+  /// [mediaFileLists] : map champ → liste d'[XFile] pour les champs multi-fichiers
+  /// (ex. `images[]`). Compatible web ET mobile.
   static Future<ApiResponse> multipart(
     String endpoint, {
     Map<String, String>? fields,
     Map<String, String>? files,
+    Map<String, XFile>? mediaFiles,
+    Map<String, List<XFile>>? mediaFileLists,
     String method = 'POST',
   }) async {
     final uri = _buildUri(endpoint);
@@ -186,7 +197,9 @@ class ApiProvider {
         request.fields.addAll(fields);
       }
 
-      if (files != null) {
+      // Fichiers par chemin local — mobile/desktop uniquement (dart:io).
+      // Ignoré sur le web : les appelants doivent alors utiliser [mediaFiles].
+      if (files != null && !kIsWeb) {
         for (var entry in files.entries) {
           final file = File(entry.value);
           if (await file.exists()) {
@@ -197,6 +210,22 @@ class ApiProvider {
               name: 'ApiProvider',
               error: 'Skipping missing file',
             );
+          }
+        }
+      }
+
+      // Fichiers XFile — via octets, compatibles web ET mobile.
+      if (mediaFiles != null) {
+        for (var entry in mediaFiles.entries) {
+          request.files.add(await _multipartFromXFile(entry.key, entry.value));
+        }
+      }
+
+      // Champs multi-fichiers (ex. images[]) — via octets, web ET mobile.
+      if (mediaFileLists != null) {
+        for (var entry in mediaFileLists.entries) {
+          for (final xfile in entry.value) {
+            request.files.add(await _multipartFromXFile(entry.key, xfile));
           }
         }
       }
@@ -215,6 +244,19 @@ class ApiProvider {
       developer.log('MULTIPART error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
     }
+  }
+
+  /// Construit un [http.MultipartFile] à partir d'un [XFile] via ses octets.
+  /// Fonctionne sur le web (URL blob) comme sur mobile (fichier local).
+  static Future<http.MultipartFile> _multipartFromXFile(
+    String field,
+    XFile xfile,
+  ) async {
+    final bytes = await xfile.readAsBytes();
+    final filename = xfile.name.isNotEmpty
+        ? xfile.name
+        : 'upload_${DateTime.now().millisecondsSinceEpoch}';
+    return http.MultipartFile.fromBytes(field, bytes, filename: filename);
   }
 
   /// Handle response
