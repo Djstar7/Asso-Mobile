@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dotted_border/dotted_border.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 import '../controllers/add_product_controller.dart';
 
 class AddProductView extends GetView<AddProductController> {
@@ -331,7 +332,7 @@ class AddProductView extends GetView<AddProductController> {
               ),
               child: ClipRRect(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
-                child: Image.file(
+                child: MediaHelper.buildImagePreview(
                   controller.productImages[index],
                   fit: BoxFit.cover,
                 ),

@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
 import 'api_provider.dart';
 
@@ -105,12 +106,12 @@ class ProductService {
     });
   }
 
-  /// Analyze product image using Gemini AI
-  static Future<ApiResponse> analyzeProductImage(String imagePath) async {
+  /// Analyze product image using Gemini AI (XFile — compatible web ET mobile)
+  static Future<ApiResponse> analyzeProductImage(XFile image) async {
     return await ApiProvider.multipart(
       '${AppConstants.productsUrl}/analyze',
-      files: {
-        'image': imagePath,
+      mediaFiles: {
+        'image': image,
       },
     );
   }

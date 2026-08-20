@@ -2,7 +2,7 @@ import 'package:asso/app/routes/app_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import '../../../core/utils/media_helper.dart';
 import '../models/store_models.dart';
 import '../../../data/providers/shop_service.dart';
 import '../../../data/providers/delivery_service.dart';
@@ -40,8 +40,7 @@ class StoreManagementController extends GetxController {
   final RxInt currentBannerIndex = 0.obs;
 
   // Image picker
-  final ImagePicker _picker = ImagePicker();
-  final Rx<File?> selectedLogo = Rx<File?>(null);
+  final Rx<XFile?> selectedLogo = Rx<XFile?>(null);
 
   // Location change requests
   final RxList<dynamic> locationRequests = <dynamic>[].obs;
@@ -307,106 +306,23 @@ class StoreManagementController extends GetxController {
         .toList();
   }
 
-  /// Sélectionne une image pour le logo
+  /// Sélectionne une image pour le logo (picker de marque partagé, web + mobile)
   Future<void> pickLogo() async {
-    // Show bottom sheet to choose source
-    final ImageSource? source = await Get.bottomSheet<ImageSource>(
-      Container(
-        decoration: BoxDecoration(
-          color: Get.theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Choisir une source',
-                style: Get.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.photo_library,
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                ),
-                title: const Text('Galerie'),
-                subtitle: const Text('Choisir une photo existante'),
-                onTap: () => Get.back(result: ImageSource.gallery),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                ),
-                title: const Text('Caméra'),
-                subtitle: const Text('Prendre une nouvelle photo'),
-                onTap: () => Get.back(result: ImageSource.camera),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-      isDismissible: true,
-      enableDrag: true,
+    final XFile? image = await MediaHelper.pickBrandedImage(
+      title: 'Logo de la boutique',
+      subtitle: 'Choisissez le logo qui identifiera votre boutique',
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
     );
 
-    if (source == null) return;
-
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        selectedLogo.value = File(image.path);
-        Get.snackbar(
-          'Succès',
-          'Logo sélectionné. N\'oubliez pas de sauvegarder.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppThemeSystem.successColor,
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
+    if (image != null) {
+      selectedLogo.value = image;
       Get.snackbar(
-        'Erreur',
-        'Impossible de sélectionner l\'image',
+        'Succès',
+        'Logo sélectionné. N\'oubliez pas de sauvegarder.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
+        backgroundColor: AppThemeSystem.successColor,
         colorText: Colors.white,
       );
     }

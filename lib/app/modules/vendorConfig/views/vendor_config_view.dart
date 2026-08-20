@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 import '../controllers/vendor_config_controller.dart';
 
 class VendorConfigView extends GetView<VendorConfigController> {
@@ -197,7 +198,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                             )
                           : controller.profileImage.value != null
                               ? ClipOval(
-                                  child: Image.file(
+                                  child: MediaHelper.buildImagePreview(
                                     controller.profileImage.value!,
                                     fit: BoxFit.cover,
                                   ),
@@ -566,7 +567,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                           : controller.shopLogo.value != null
                               ? ClipRRect(
                                   borderRadius: context.borderRadius(BorderRadiusType.large),
-                                  child: Image.file(
+                                  child: MediaHelper.buildImagePreview(
                                     controller.shopLogo.value!,
                                     fit: BoxFit.cover,
                                   ),

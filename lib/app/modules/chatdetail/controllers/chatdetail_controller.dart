@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -402,7 +401,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       );
 
       if (photo != null) {
-        await _sendImageMessage(File(photo.path));
+        await _sendImageMessage(photo);
       }
     } catch (e) {
       Get.snackbar(
@@ -424,7 +423,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       );
 
       if (image != null) {
-        await _sendImageMessage(File(image.path));
+        await _sendImageMessage(image);
       }
     } catch (e) {
       Get.snackbar(
@@ -436,7 +435,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   }
 
   /// Envoyer un message avec une image
-  Future<void> _sendImageMessage(File imageFile) async {
+  Future<void> _sendImageMessage(XFile imageFile) async {
     if (_conversationId == null) return;
 
     final text = messageController.text.trim();

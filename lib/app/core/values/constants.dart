@@ -136,6 +136,7 @@ class AppConstants {
   static const String walletWithdrawKpayUrl =
       '/v1/wallet/withdraw/kpay';
   static const String walletWithdrawPaypalUrl = '/v1/wallet/withdraw/paypal';
+  static const String walletWithdrawStripeUrl = '/v1/wallet/withdraw/stripe';
   static const String walletWithdrawalsUrl = '/v1/wallet/withdrawals';
   static const String walletWithdrawalStatusUrl =
       '/v1/wallet/withdrawal-status';

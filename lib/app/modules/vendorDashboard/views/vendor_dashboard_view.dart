@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 import '../controllers/vendor_dashboard_controller.dart';
 import '../../addProduct/views/add_product_view.dart';
 import '../../addProduct/bindings/add_product_binding.dart';
@@ -168,7 +169,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   else if (controller.shopLogo.value != null) {
                     return ClipRRect(
                       borderRadius: context.borderRadius(BorderRadiusType.medium),
-                      child: Image.file(
+                      child: MediaHelper.buildImagePreview(
                         controller.shopLogo.value!,
                         fit: BoxFit.cover,
                       ),

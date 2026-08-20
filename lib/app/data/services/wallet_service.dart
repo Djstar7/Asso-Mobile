@@ -279,6 +279,40 @@ class WalletService {
     }
   }
 
+  /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
+  Future<Map<String, dynamic>> initiateStripeWithdrawal({
+    required double amount,
+    String? notes,
+  }) async {
+    try {
+      final response = await wallet_provider.WalletService.withdrawStripe(
+        amount: amount,
+        notes: notes,
+      );
+
+      if (response.success) {
+        return {
+          'success': true,
+          'message': response.data?['message'] ?? 'Virement initié avec succès',
+          ...?response.data,
+        };
+      }
+
+      return {
+        'success': false,
+        'message': response.message.isNotEmpty
+            ? response.message
+            : (response.data?['message'] ?? 'Échec du virement'),
+      };
+    } catch (e) {
+      print('[WalletService] Error initiating Stripe withdrawal: $e');
+      return {
+        'success': false,
+        'message': 'Erreur lors de l\'initiation du virement',
+      };
+    }
+  }
+
   /// Check withdrawal status
   Future<Map<String, dynamic>> checkWithdrawalStatus(int withdrawalId) async {
     try {

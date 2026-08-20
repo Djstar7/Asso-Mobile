@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -281,23 +282,43 @@ class ChatdetailView extends GetView<ChatdetailController> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: isLocalPath
-            ? Image.file(
-                File(imagePath),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 150,
-                    color: AppThemeSystem.grey200,
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: AppThemeSystem.grey600,
-                        size: 48,
-                      ),
-                    ),
-                  );
-                },
-              )
+            // Sur le web, un fichier local sélectionné est une URL blob :
+            // on la charge via Image.network. Sur mobile, via Image.file (dart:io).
+            ? (kIsWeb
+                ? Image.network(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: AppThemeSystem.grey200,
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: AppThemeSystem.grey600,
+                            size: 48,
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : Image.file(
+                    File(imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: AppThemeSystem.grey200,
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: AppThemeSystem.grey600,
+                            size: 48,
+                          ),
+                        ),
+                      );
+                    },
+                  ))
             : CachedNetworkImage(
                 imageUrl: imagePath,
                 fit: BoxFit.cover,

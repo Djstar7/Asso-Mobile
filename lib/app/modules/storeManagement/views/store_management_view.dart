@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/media_helper.dart';
 import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
 import 'edit_store_view.dart';
@@ -1164,7 +1165,7 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                               ? ClipRRect(
                                   borderRadius:
                                       context.borderRadius(BorderRadiusType.small),
-                                  child: Image.file(
+                                  child: MediaHelper.buildImagePreview(
                                     controller.selectedLogo.value!,
                                     fit: BoxFit.cover,
                                   ),

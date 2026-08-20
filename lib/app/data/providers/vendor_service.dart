@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
 import 'api_provider.dart';
 
@@ -16,8 +16,8 @@ class VendorService {
     String? gender,
     String? accountType,
     String? companyName,
-    File? shopLogo,
-    File? profileImage,
+    XFile? shopLogo,
+    XFile? profileImage,
   }) async {
     print('');
     print('========================================');
@@ -51,17 +51,17 @@ class VendorService {
 
     print('  └─ Total fields: ${fields.length}');
 
-    // Build files map with file paths
-    final Map<String, String> files = {};
+    // Build media files map (XFile) — compatible web ET mobile.
+    final Map<String, XFile> mediaFiles = {};
     if (shopLogo != null) {
-      files['shop_logo'] = shopLogo.path;
-      print('  └─ Shop logo: ${shopLogo.path}');
+      mediaFiles['shop_logo'] = shopLogo;
+      print('  └─ Shop logo: ${shopLogo.name}');
     }
     if (profileImage != null) {
-      files['avatar'] = profileImage.path;
-      print('  └─ Avatar: ${profileImage.path}');
+      mediaFiles['avatar'] = profileImage;
+      print('  └─ Avatar: ${profileImage.name}');
     }
-    print('  └─ Total files: ${files.length}');
+    print('  └─ Total files: ${mediaFiles.length}');
 
     print('🌐 VENDOR SERVICE: Calling API (multipart)...');
     print('  └─ Endpoint: ${AppConstants.vendorApplyUrl}');
@@ -71,7 +71,7 @@ class VendorService {
       final response = await ApiProvider.multipart(
         AppConstants.vendorApplyUrl,
         fields: fields,
-        files: files.isNotEmpty ? files : null,
+        mediaFiles: mediaFiles.isNotEmpty ? mediaFiles : null,
       );
 
       print('✅ VENDOR SERVICE: API call completed');

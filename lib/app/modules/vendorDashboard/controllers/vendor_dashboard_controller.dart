@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart' show XFile;
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -20,7 +20,7 @@ class VendorDashboardController extends GetxController {
   // Données du vendeur
   final shopName = ''.obs;
   final shopDescription = ''.obs;
-  final shopLogo = Rx<File?>(null);
+  final shopLogo = Rx<XFile?>(null);
   final shopLogoUrl = Rx<String?>(null); // Logo URL from backend
   final shopId = Rx<int?>(null);
   final selectedCategories = <String>[].obs;
