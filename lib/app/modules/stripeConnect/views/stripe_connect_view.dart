@@ -1,0 +1,228 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../controllers/stripe_connect_controller.dart';
+
+/// Écran vendeur : saisir son IBAN pour être payé par virement, et suivre le
+/// statut de validation par ASSO.
+class StripeConnectView extends GetView<StripeConnectController> {
+  const StripeConnectView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Compte de virement'),
+      ),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return RefreshIndicator(
+          onRefresh: controller.loadStatus,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _intro(context),
+              const SizedBox(height: 16),
+              if (controller.status.value != null) ...[
+                _statusBanner(context),
+                const SizedBox(height: 16),
+              ],
+              if (controller.isApproved)
+                _approvedCard(context)
+              else
+                _form(context),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _intro(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.account_balance, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              "Enregistrez votre IBAN pour recevoir vos paiements par virement bancaire. "
+              "Vos informations sont vérifiées par notre équipe avant activation.",
+              style: TextStyle(fontSize: 13.5, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBanner(BuildContext context) {
+    final (Color color, IconData icon, String label, String detail) = switch (controller.status.value) {
+      'approved' => (
+          Colors.green,
+          Icons.verified,
+          'Compte validé',
+          'Vous pouvez être payé par virement sur cet IBAN.'
+        ),
+      'rejected' => (
+          Colors.red,
+          Icons.cancel,
+          'Compte rejeté',
+          controller.rejectionReason.value ?? 'Veuillez corriger vos informations et renvoyer.'
+        ),
+      _ => (
+          Colors.orange,
+          Icons.hourglass_top,
+          'En attente de validation',
+          'Votre IBAN est en cours de vérification (24-48h).'
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+                const SizedBox(height: 4),
+                Text(detail, style: const TextStyle(fontSize: 13, height: 1.3)),
+                if (controller.ibanLast4.value != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'IBAN : •••• ${controller.ibanLast4.value}'
+                    '${controller.bankCountry.value != null ? '  (${controller.bankCountry.value})' : ''}',
+                    style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _approvedCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Vos informations bancaires',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 12),
+            _readonlyRow('Titulaire', controller.holderName.value ?? '—'),
+            _readonlyRow('IBAN', '•••• ${controller.ibanLast4.value ?? '????'}'),
+            _readonlyRow('Pays', controller.bankCountry.value ?? '—'),
+            const SizedBox(height: 8),
+            const Text(
+              "Pour modifier votre IBAN validé, contactez le support.",
+              style: TextStyle(fontSize: 12.5, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _readonlyRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(width: 90, child: Text(label, style: const TextStyle(color: Colors.black54))),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
+  }
+
+  Widget _form(BuildContext context) {
+    return Form(
+      key: controller.formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (controller.isRejected)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Corrigez vos informations puis renvoyez.',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          TextFormField(
+            controller: controller.holderController,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Nom du titulaire du compte',
+              hintText: 'Ex. : Jean Dupont',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validateHolder,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.ibanController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'IBAN',
+              hintText: 'FR76 3000 6000 0112 3456 7890 189',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validateIban,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.countryController,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 2,
+            decoration: const InputDecoration(
+              labelText: 'Pays du compte (code à 2 lettres)',
+              hintText: 'FR',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validateCountry,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: Obx(() => ElevatedButton(
+                  onPressed: controller.isSubmitting.value ? null : controller.submit,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: controller.isSubmitting.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(controller.isPending ? 'Mettre à jour mon IBAN' : 'Enregistrer mon IBAN'),
+                )),
+          ),
+        ],
+      ),
+    );
+  }
+}
