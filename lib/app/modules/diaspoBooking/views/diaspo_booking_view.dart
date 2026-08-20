@@ -12,10 +12,13 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
+      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : const Color(0xFFF5F6F8),
       appBar: AppBar(
         title: const Text('Réserver des kilos'),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: isDark ? Colors.white : Colors.black,
       ),
       body: Obx(() {
         if (controller.offer.value == null) {
@@ -26,27 +29,21 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Offer summary
-                    _buildOfferSummary(context, isDark),
-
-                    // Kg selector
+                    _buildRouteCard(context, isDark),
+                    const SizedBox(height: 16),
                     _buildKgSelector(context, isDark),
-
-                    // Price breakdown
+                    const SizedBox(height: 16),
                     _buildPriceBreakdown(context, isDark),
-
-                    // Wallet balance
-                    _buildWalletBalance(context, isDark),
-
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 12),
+                    _buildInfoNote(context, isDark),
                   ],
                 ),
               ),
             ),
-
-            // Confirm button
             _buildConfirmButton(context, isDark),
           ],
         );
@@ -54,89 +51,105 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     );
   }
 
-  /// Offer summary card
-  Widget _buildOfferSummary(BuildContext context, bool isDark) {
+  Color _card(bool isDark) => isDark ? AppThemeSystem.darkCardColor : Colors.white;
+  Color _muted(bool isDark) => isDark ? Colors.white70 : const Color(0xFF6B7280);
+  Color _title(bool isDark) => isDark ? Colors.white : const Color(0xFF111827);
+
+  BoxDecoration _cardDeco(bool isDark) => BoxDecoration(
+        color: _card(isDark),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFECECEF),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      );
+
+  Widget _sectionTitle(String text, bool isDark) => Text(
+        text,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: _title(isDark),
+        ),
+      );
+
+  /// Carte trajet départ → arrivée + prix/dispo
+  Widget _buildRouteCard(BuildContext context, bool isDark) {
     final offer = controller.offer.value!;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: _cardDeco(isDark),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Résumé de l\'offre',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black,
-            ),
+          // Timeline départ → arrivée
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  const Icon(Icons.flight_takeoff, color: Color(0xFF16A34A), size: 20),
+                  Container(
+                    width: 2,
+                    height: 26,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: _muted(isDark).withValues(alpha: 0.3),
+                  ),
+                  const Icon(Icons.flight_land, color: Color(0xFFDC2626), size: 20),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Départ', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${offer.departureCity}, ${offer.departureCountry}',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: _title(isDark)),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('Arrivée', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${offer.arrivalCity}, ${offer.arrivalCountry}',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: _title(isDark)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+          Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
+          const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.flight_takeoff, color: Colors.green, size: 20),
-              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  '${offer.departureCity}, ${offer.departureCountry}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                child: _statTile(
+                  isDark,
+                  label: 'Prix par kilo',
+                  value: '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}',
+                  valueColor: AppThemeSystem.primaryColor,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.flight_land, color: Colors.red, size: 20),
-              const SizedBox(width: 8),
+              Container(width: 1, height: 34, color: _muted(isDark).withValues(alpha: 0.15)),
               Expanded(
-                child: Text(
-                  '${offer.arrivalCity}, ${offer.arrivalCountry}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Prix par kilo',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.grey[600],
-                ),
-              ),
-              Text(
-                '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppThemeSystem.primaryColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Disponible',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.grey[600],
-                ),
-              ),
-              Text(
-                '${offer.remainingKg.toStringAsFixed(1)} kg',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green,
+                child: _statTile(
+                  isDark,
+                  label: 'Disponible',
+                  value: '${offer.remainingKg.toStringAsFixed(1)} kg',
+                  valueColor: const Color(0xFF16A34A),
                 ),
               ),
             ],
@@ -146,81 +159,60 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     );
   }
 
-  /// Kg selector
+  Widget _statTile(bool isDark, {required String label, required String value, required Color valueColor}) {
+    return Column(
+      children: [
+        Text(label, style: TextStyle(fontSize: 12, color: _muted(isDark))),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor)),
+      ],
+    );
+  }
+
+  /// Sélecteur de kilos
   Widget _buildKgSelector(BuildContext context, bool isDark) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: _cardDeco(isDark),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Nombre de kilos',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
+          _sectionTitle('Nombre de kilos', isDark),
           const SizedBox(height: 16),
           Row(
             children: [
-              // Decrement button
-              IconButton(
-                onPressed: controller.decrementKg,
-                icon: const Icon(Icons.remove_circle_outline),
-                iconSize: 40,
-                color: AppThemeSystem.primaryColor,
-              ),
-              const SizedBox(width: 16),
-
-              // Kg input
+              _roundBtn(Icons.remove, controller.decrementKg, isDark),
+              const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   controller: controller.kgController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: _title(isDark)),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
                   ],
                   decoration: InputDecoration(
-                    suffix: const Text('kg'),
+                    suffixText: 'kg',
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF5F6F8),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-
-              // Increment button
-              IconButton(
-                onPressed: controller.incrementKg,
-                icon: const Icon(Icons.add_circle_outline),
-                iconSize: 40,
-                color: AppThemeSystem.primaryColor,
-              ),
+              const SizedBox(width: 12),
+              _roundBtn(Icons.add, controller.incrementKg, isDark),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Min: ${controller.minKg.toStringAsFixed(1)} kg - Max: ${controller.remainingKg.toStringAsFixed(1)} kg',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark ? Colors.white70 : Colors.grey[600],
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              'Min ${controller.minKg.toStringAsFixed(1)} kg · Max ${controller.remainingKg.toStringAsFixed(1)} kg',
+              style: TextStyle(fontSize: 12, color: _muted(isDark)),
             ),
           ),
         ],
@@ -228,184 +220,140 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     );
   }
 
-  /// Price breakdown
+  Widget _roundBtn(IconData icon, VoidCallback onTap, bool isDark) {
+    return Material(
+      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, color: AppThemeSystem.primaryColor, size: 26),
+        ),
+      ),
+    );
+  }
+
+  /// Détails du paiement
   Widget _buildPriceBreakdown(BuildContext context, bool isDark) {
     return Obx(() => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          padding: const EdgeInsets.all(18),
+          decoration: _cardDeco(isDark),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Détails du paiement',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
+              _sectionTitle('Détails du paiement', isDark),
               const SizedBox(height: 16),
-              _buildPriceRow(
-                'Sous-total',
-                controller.formatPrice(controller.subtotal.value),
-                isDark,
-              ),
-              const SizedBox(height: 8),
-              _buildPriceRow(
+              _priceRow('Sous-total', controller.formatPrice(controller.subtotal.value), isDark),
+              const SizedBox(height: 10),
+              _priceRow(
                 'Commission (${controller.commissionPercent.value.toStringAsFixed(0)}%)',
                 controller.formatPrice(controller.commissionAmount.value),
                 isDark,
               ),
-              const Divider(height: 24),
-              _buildPriceRow(
-                'TOTAL',
-                controller.formatPrice(controller.totalPrice.value),
-                isDark,
-                isTotal: true,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
               ),
+              _priceRow('Total', controller.formatPrice(controller.totalPrice.value), isDark, isTotal: true),
             ],
           ),
         ));
   }
 
-  Widget _buildPriceRow(String label, String value, bool isDark, {bool isTotal = false}) {
+  Widget _priceRow(String label, String value, bool isDark, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: TextStyle(
-            fontSize: isTotal ? 18 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isDark ? (isTotal ? Colors.white : Colors.white70) : (isTotal ? Colors.black : Colors.grey[600]),
+            fontSize: isTotal ? 16 : 14,
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+            color: isTotal ? _title(isDark) : _muted(isDark),
           ),
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: isTotal ? 20 : 14,
-            fontWeight: FontWeight.bold,
-            color: isTotal ? AppThemeSystem.primaryColor : (isDark ? Colors.white : Colors.black),
+            fontWeight: FontWeight.w700,
+            color: isTotal ? AppThemeSystem.primaryColor : _title(isDark),
           ),
         ),
       ],
     );
   }
 
-  /// Wallet balance
-  Widget _buildWalletBalance(BuildContext context, bool isDark) {
-    return Obx(() {
-      final hasInsufficientFunds = controller.hasInsufficientFunds;
-
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: hasInsufficientFunds
-              ? Colors.orange.withOpacity(0.1)
-              : (isDark ? AppThemeSystem.darkCardColor : Colors.white),
-          borderRadius: BorderRadius.circular(12),
-          border: hasInsufficientFunds
-              ? Border.all(color: Colors.orange, width: 2)
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              hasInsufficientFunds ? Icons.warning_amber : Icons.account_balance_wallet,
-              color: hasInsufficientFunds ? Colors.orange : AppThemeSystem.primaryColor,
-              size: 32,
+  Widget _buildInfoNote(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline, size: 18, color: AppThemeSystem.primaryColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Vous recevrez un code de confirmation à remettre au voyageur. '
+              'Les fonds ne sont débloqués qu\'à la confirmation de réception.',
+              style: TextStyle(fontSize: 12, color: _muted(isDark), height: 1.4),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Solde du portefeuille',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white70 : Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    controller.formatPrice(controller.walletBalance),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: hasInsufficientFunds ? Colors.orange : (isDark ? Colors.white : Colors.black),
-                    ),
-                  ),
-                  if (hasInsufficientFunds) ...[
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Solde insuffisant',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (hasInsufficientFunds)
-              TextButton(
-                onPressed: () => Get.toNamed('/wallet'),
-                child: const Text('Recharger'),
-              ),
-          ],
-        ),
-      );
-    });
+          ),
+        ],
+      ),
+    );
   }
 
-  /// Confirm button
+  /// Bouton de confirmation (ouvre le sélecteur de paiement)
   Widget _buildConfirmButton(BuildContext context, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        color: _card(isDark),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: Obx(() => SizedBox(
             width: double.infinity,
+            height: 54,
             child: ElevatedButton(
               onPressed: controller.isSubmitting.value ? null : controller.submitBooking,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeSystem.primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: controller.isSubmitting.value
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 22,
+                      width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : Text(
-                      'Confirmer la réservation (${controller.formatPrice(controller.totalPrice.value)})',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock_outline, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Payer ${controller.formatPrice(controller.totalPrice.value)}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
             ),
           )),

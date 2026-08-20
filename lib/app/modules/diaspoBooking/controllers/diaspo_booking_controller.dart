@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/models/diaspo_booking.dart';
-import '../../../data/models/wallet_model.dart';
+import '../../../data/models/payment_method_option.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/currency_service.dart';
-import '../../../data/services/wallet_service.dart';
+import '../../wallet/views/payment_webview.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../payment/widgets/payment_method_selector.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
-  final WalletService _walletService = Get.find<WalletService>();
 
   final offer = Rx<DiaspoOffer?>(null);
-  final wallet = Rxn<WalletModel>();
   final isLoading = false.obs;
   final isSubmitting = false.obs;
 
@@ -30,14 +29,12 @@ class DiaspoBookingController extends GetxController {
 
   double get remainingKg => offer.value?.remainingKg ?? 0;
   double get pricePerKg => offer.value?.pricePerKg ?? 0;
-  double get walletBalance => wallet.value?.currentBalance ?? 0;
-  bool get hasInsufficientFunds => totalPrice.value > walletBalance;
+  String get currency => offer.value?.currency ?? 'XAF';
 
   @override
   void onInit() {
     super.onInit();
     _loadOffer();
-    _loadWallet();
 
     // Initialize kg
     kgController.text = '1.0';
@@ -70,18 +67,6 @@ class DiaspoBookingController extends GetxController {
     }
   }
 
-  Future<void> _loadWallet() async {
-    isLoading.value = true;
-    try {
-      final response = await _walletService.getWalletStats();
-      wallet.value = response;
-    } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de charger le portefeuille');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   void _calculatePrices() {
     subtotal.value = kgBooked.value * pricePerKg;
     commissionAmount.value = subtotal.value * (commissionPercent.value / 100);
@@ -107,7 +92,7 @@ class DiaspoBookingController extends GetxController {
   }
 
   Future<void> submitBooking() async {
-    if (offer.value == null || wallet.value == null) return;
+    if (offer.value == null) return;
 
     // Validation
     if (kgBooked.value < minKg) {
@@ -120,57 +105,109 @@ class DiaspoBookingController extends GetxController {
       return;
     }
 
-    // Paiement KPay DIRECT (plus de solde wallet) : pays → opérateur → numéro
-    final selection = await KpayDirectPaymentSheet.show(
+    // 1) Choix du moyen de paiement (tous affichés, grisés si trop faible,
+    //    jamais masqués selon le pays, sans solde wallet).
+    final method = await PaymentMethodSelector.show(
       amount: totalPrice.value,
+      currency: currency,
       amountLabel: 'Total à payer',
     );
-    if (selection == null) return; // annulé
+    if (method == null) return; // annulé
 
-    await _processBooking(selection['provider']!, selection['phone']!);
-  }
-
-  Future<void> _processBooking(String provider, String phone) async {
-    isSubmitting.value = true;
-
-    try {
-      final booking = await _diaspoService.bookOffer(
-        offerId: offer.value!.id,
-        kgBooked: kgBooked.value,
-        provider: provider,
-        phoneNumber: phone,
+    // 2) Sous-parcours selon le rail choisi.
+    if (method.code == 'kpay') {
+      // Mobile Money : sélecteur pays → opérateur → numéro.
+      final selection = await KpayDirectPaymentSheet.show(
+        amount: totalPrice.value,
+        amountLabel: 'Total à payer',
       );
-
-      isSubmitting.value = false;
-
-      // Suivi du paiement en arrière-plan (polling 5 s)
-      _pollBookingPayment(booking.id);
-
-      // Show success dialog
-      _showSuccessDialog(booking);
-    } catch (e) {
-      isSubmitting.value = false;
-      Get.snackbar(
-        'Erreur',
-        e.toString().replaceAll('Exception: ', ''),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (selection == null) return; // annulé
+      await _processKpayBooking(selection['provider']!, selection['phone']!);
+    } else {
+      // PayPal / carte (Stripe Checkout) : redirection WebView.
+      await _processRedirectBooking(method);
     }
   }
 
-  /// Suit le paiement KPay d'une réservation (polling 5 s) et notifie.
+  /// Réservation payée par Mobile Money (KPay direct).
+  Future<void> _processKpayBooking(String provider, String phone) async {
+    isSubmitting.value = true;
+    try {
+      final result = await _diaspoService.bookOffer(
+        offerId: offer.value!.id,
+        kgBooked: kgBooked.value,
+        paymentMethod: 'kpay',
+        provider: provider,
+        phoneNumber: phone,
+      );
+      final booking = result['booking'] as DiaspoBooking;
+
+      isSubmitting.value = false;
+      _pollBookingPayment(booking.id);
+      _showSuccessDialog(booking);
+    } catch (e) {
+      isSubmitting.value = false;
+      _showError(e);
+    }
+  }
+
+  /// Réservation payée par redirection (PayPal, carte Stripe) via WebView.
+  Future<void> _processRedirectBooking(PaymentMethodOption method) async {
+    isSubmitting.value = true;
+    try {
+      final result = await _diaspoService.bookOffer(
+        offerId: offer.value!.id,
+        kgBooked: kgBooked.value,
+        paymentMethod: method.code,
+      );
+      final booking = result['booking'] as DiaspoBooking;
+      final payment = result['payment'] as Map<String, dynamic>;
+      final approvalUrl = payment['approval_url']?.toString();
+
+      isSubmitting.value = false;
+
+      if (approvalUrl == null || approvalUrl.isEmpty) {
+        _showError(Exception('Lien de paiement indisponible. Réessayez.'));
+        return;
+      }
+
+      // Ouvre la page de paiement hébergée ; la confirmation réelle se fait
+      // côté serveur (webhook), suivie par le polling.
+      await Get.to(() => PaymentWebView(
+            paymentUrl: approvalUrl,
+            paymentMethod: method.code,
+            paymentId: booking.id,
+          ));
+
+      _pollBookingPayment(booking.id);
+      _showSuccessDialog(booking);
+    } catch (e) {
+      isSubmitting.value = false;
+      _showError(e);
+    }
+  }
+
+  void _showError(Object e) {
+    Get.snackbar(
+      'Erreur',
+      e.toString().replaceAll('Exception: ', ''),
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  }
+
+  /// Suit le paiement d'une réservation (polling 5 s) et notifie.
   void _pollBookingPayment(int bookingId) async {
     for (int i = 0; i < 120; i++) {
       await Future.delayed(const Duration(seconds: 5));
       final status = await _diaspoService.bookingPaymentStatus(bookingId);
       if (status == 'paid') {
-        Get.snackbar('✅ Paiement confirmé', 'Votre réservation est payée.',
+        Get.snackbar('Paiement confirmé', 'Votre réservation est payée.',
             backgroundColor: Colors.green, colorText: Colors.white,
             duration: const Duration(seconds: 4));
         return;
       } else if (status == 'failed') {
-        Get.snackbar('❌ Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
+        Get.snackbar('Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
             backgroundColor: Colors.red, colorText: Colors.white,
             duration: const Duration(seconds: 5));
         return;
