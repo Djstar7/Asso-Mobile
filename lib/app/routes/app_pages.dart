@@ -73,6 +73,8 @@ import '../modules/vendorDashboard/bindings/vendor_dashboard_binding.dart';
 import '../modules/vendorDashboard/views/vendor_dashboard_view.dart';
 import '../modules/wallet/bindings/wallet_binding.dart';
 import '../modules/wallet/views/wallet_view.dart';
+import '../modules/stripeConnect/bindings/stripe_connect_binding.dart';
+import '../modules/stripeConnect/views/stripe_connect_view.dart';
 import '../modules/wallet/views/ussd_waiting_view.dart';
 import '../modules/wallet/views/wallet_history_view.dart';
 import '../modules/welcomer/bindings/welcomer_binding.dart';
@@ -219,6 +221,11 @@ class AppPages {
       name: _Paths.WALLET,
       page: () => const WalletView(),
       binding: WalletBinding(),
+    ),
+    GetPage(
+      name: _Paths.STRIPE_CONNECT,
+      page: () => const StripeConnectView(),
+      binding: StripeConnectBinding(),
     ),
     GetPage(
       name: _Paths.VENDOR_CONFIG,
