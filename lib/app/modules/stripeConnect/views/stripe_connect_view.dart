@@ -25,12 +25,16 @@ class StripeConnectView extends GetView<StripeConnectController> {
             children: [
               _intro(context),
               const SizedBox(height: 16),
-              if (controller.status.value != null) ...[
+              // La bannière n'est utile qu'au-dessus du formulaire (cas rejeté).
+              // Les états « validé » et « en attente » ont leur propre carte plein écran.
+              if (controller.isRejected) ...[
                 _statusBanner(context),
                 const SizedBox(height: 16),
               ],
               if (controller.isApproved)
                 _approvedCard(context)
+              else if (controller.isPending)
+                _pendingCard(context)
               else
                 _form(context),
             ],
@@ -118,6 +122,77 @@ class StripeConnectView extends GetView<StripeConnectController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Page d'attente affichée quand un IBAN a été soumis et est en cours de
+  /// vérification : plus de formulaire, seulement le rappel des informations
+  /// (IBAN masqué + titulaire) et le statut.
+  Widget _pendingCard(BuildContext context) {
+    const orange = Colors.orange;
+    final holder = controller.holderName.value;
+    final last4 = controller.ibanLast4.value;
+    final country = controller.bankCountry.value;
+
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: orange.withOpacity(0.12),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.hourglass_top, size: 44, color: orange),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Vérification en cours',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            "Votre IBAN a bien été enregistré. Notre équipe le vérifie avant "
+            "d'activer les virements sur votre compte (généralement sous 24-48h).",
+            style: TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Informations enregistrées',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 12),
+                _readonlyRow('Titulaire', (holder ?? '').isNotEmpty ? holder! : '—'),
+                _readonlyRow('IBAN', last4 != null ? '•••• •••• $last4' : '••••'),
+                _readonlyRow('Pays', country ?? '—'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: const [
+            Icon(Icons.info_outline, size: 18, color: Colors.black45),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "Vous ne pouvez pas modifier votre IBAN pendant la vérification. "
+                "Tirez vers le bas pour actualiser le statut.",
+                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -218,7 +293,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(controller.isPending ? 'Mettre à jour mon IBAN' : 'Enregistrer mon IBAN'),
+                      : Text(controller.isRejected ? 'Renvoyer mon IBAN' : 'Enregistrer mon IBAN'),
                 )),
           ),
         ],

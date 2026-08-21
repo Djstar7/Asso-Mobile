@@ -100,9 +100,7 @@ class StripeConnectController extends GetxController {
       } else {
         Get.snackbar(
           'Erreur',
-          res.message.isNotEmpty
-              ? res.message
-              : "Impossible d'enregistrer vos informations.",
+          _friendlyError(res.message),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -119,6 +117,48 @@ class StripeConnectController extends GetxController {
     } finally {
       isSubmitting.value = false;
     }
+  }
+
+  /// Nettoie un message d'erreur venant du serveur : si du texte technique brut
+  /// (erreur Stripe, hôte réseau, code errno…) fuit encore, on le remplace par un
+  /// message clair. Filet de sécurité pour les backends pas encore à jour.
+  String _friendlyError(String message) {
+    final raw = message.trim();
+    if (raw.isEmpty) return "Impossible d'enregistrer vos informations bancaires. Réessayez.";
+
+    final low = raw.toLowerCase();
+    const technicalMarkers = [
+      'stripe.com',
+      'could not connect',
+      'could not resolve host',
+      'network error',
+      'errno',
+      'http',
+      'connection',
+      'timeout',
+      'ssl',
+      'curl',
+      'exception',
+    ];
+    final looksTechnical = technicalMarkers.any(low.contains);
+
+    if (looksTechnical) {
+      if (low.contains('resolve host') ||
+          low.contains('could not connect') ||
+          low.contains('network') ||
+          low.contains('timeout') ||
+          low.contains('connection')) {
+        return "Le service de virement bancaire est momentanément indisponible. "
+            "Vérifiez votre connexion et réessayez dans quelques instants.";
+      }
+      if (low.contains('iban') || low.contains('bank') || low.contains('account_number')) {
+        return "L'IBAN saisi semble invalide. Vérifiez-le puis réessayez.";
+      }
+      return "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer plus tard.";
+    }
+
+    // Message déjà propre (renvoyé par le backend à jour) : on l'affiche tel quel.
+    return raw;
   }
 
   // ---- Validateurs ----
