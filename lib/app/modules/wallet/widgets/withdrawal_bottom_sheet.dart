@@ -453,12 +453,12 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
       if (!mounted) return;
 
       if (result['success'] == true) {
-        // Suivi du statut en arrière-plan (polling 5 s + notification) pour KPay
-        if (isKpay) {
-          final wId = result['data']?['withdrawal_id'];
-          if (wId is int) {
-            walletController.trackWithdrawalInBackground(wId);
-          }
+        // Suivi du statut en arrière-plan (polling 5 s + notification) pour tous les
+        // rails : le retrait ne passe 'completed' qu'une fois le versement réellement
+        // réglé (KPay, PayPal Payouts, Stripe payout).
+        final wId = result['data']?['withdrawal_id'];
+        if (wId is int) {
+          walletController.trackWithdrawalInBackground(wId);
         }
 
         // Fermer le bottom sheet

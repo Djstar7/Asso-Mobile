@@ -205,10 +205,15 @@ class WalletHistoryView extends GetView<WalletController> {
       case 'completed':
         statusColor = AppThemeSystem.successColor;
         break;
+      case 'processing':
+        statusColor = AppThemeSystem.infoColor;
+        break;
       case 'pending':
         statusColor = AppThemeSystem.warningColor;
         break;
       case 'failed':
+      case 'cancelled':
+      case 'canceled':
         statusColor = AppThemeSystem.errorColor;
         break;
       default:

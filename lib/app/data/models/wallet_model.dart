@@ -262,10 +262,15 @@ class WalletTransactionModel {
     switch (status) {
       case 'completed':
         return 'Complété';
+      case 'processing':
+        return 'En cours';
       case 'pending':
         return 'En attente';
       case 'failed':
         return 'Échoué';
+      case 'cancelled':
+      case 'canceled':
+        return 'Annulé';
       default:
         return status;
     }
