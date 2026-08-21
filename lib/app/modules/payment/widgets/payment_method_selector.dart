@@ -132,6 +132,24 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     }
   }
 
+  /// Tap sur un moyen indisponible : notifier la raison au lieu d'ignorer le clic.
+  void _notifyUnavailable(PaymentMethodOption m, String? hint) {
+    final reason = (hint != null && hint.trim().isNotEmpty)
+        ? hint
+        : "Ce moyen n'est pas disponible pour le moment.";
+    Get.snackbar(
+      m.label,
+      reason,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(12),
+      borderRadius: 12,
+      duration: const Duration(seconds: 3),
+      backgroundColor: AppThemeSystem.errorColor.withValues(alpha: 0.12),
+      colorText: AppThemeSystem.errorColor,
+      icon: Icon(Icons.info_outline_rounded, color: AppThemeSystem.errorColor),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -248,7 +266,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     return Opacity(
       opacity: canPay ? 1.0 : 0.5,
       child: InkWell(
-        onTap: canPay ? () => Get.back(result: m) : null,
+        // Indisponible : on ne bloque pas le tap en silence, on NOTIFIE la raison.
+        onTap: canPay ? () => Get.back(result: m) : () => _notifyUnavailable(m, hint),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
