@@ -19,24 +19,36 @@ class PaymentMethodSelector extends StatefulWidget {
   final double amount;
   final String currency;
   final String amountLabel;
+  final String title;
+
+  /// Options pré-construites. Si fourni, le widget les affiche telles quelles au
+  /// lieu d'interroger `/v1/payments/methods` — permet de réutiliser EXACTEMENT ce
+  /// sélecteur pour le RETRAIT (rails KPay / PayPal / IBAN) à partir des soldes.
+  final List<PaymentMethodOption>? options;
 
   const PaymentMethodSelector({
     super.key,
     required this.amount,
     required this.currency,
     this.amountLabel = 'Montant à payer',
+    this.title = 'Choisir un moyen de paiement',
+    this.options,
   });
 
   static Future<PaymentMethodOption?> show({
     required double amount,
     required String currency,
     String amountLabel = 'Montant à payer',
+    String title = 'Choisir un moyen de paiement',
+    List<PaymentMethodOption>? options,
   }) {
     return Get.bottomSheet<PaymentMethodOption>(
       PaymentMethodSelector(
         amount: amount,
         currency: currency,
         amountLabel: amountLabel,
+        title: title,
+        options: options,
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -59,6 +71,16 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   }
 
   Future<void> _load() async {
+    // Mode RETRAIT : options fournies directement (aucun appel réseau).
+    if (widget.options != null) {
+      _methods.assignAll(widget.options!);
+      if (widget.options!.isEmpty) {
+        _error.value = 'Aucune méthode disponible pour le moment.';
+      }
+      _loading.value = false;
+      return;
+    }
+
     _loading.value = true;
     _error.value = '';
     try {
@@ -144,7 +166,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Choisir un moyen de paiement',
+                            widget.title,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -210,14 +232,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     final color = _colorFor(m.code);
     final canPay = m.available;
 
-    // Ligne secondaire : montant converti (si dispo) ou raison d'indisponibilité.
-    String? hint;
-    if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
-      hint = 'Minimum ${_fmt(m.minAmount!, m.minCurrency)}';
-    } else if (!canPay && m.unavailableReason == 'disabled') {
-      hint = 'Indisponible';
-    } else if (canPay && m.convertedAmount != null && m.targetCurrency != null) {
-      hint = '≈ ${_fmt(m.convertedAmount!, m.targetCurrency!)}';
+    // Ligne secondaire : hint explicite (ex. solde disponible en mode retrait) sinon
+    // montant converti (si dispo) ou raison d'indisponibilité.
+    String? hint = m.hint;
+    if (hint == null) {
+      if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
+        hint = 'Minimum ${_fmt(m.minAmount!, m.minCurrency)}';
+      } else if (!canPay && m.unavailableReason == 'disabled') {
+        hint = 'Indisponible';
+      } else if (canPay && m.convertedAmount != null && m.targetCurrency != null) {
+        hint = '≈ ${_fmt(m.convertedAmount!, m.targetCurrency!)}';
+      }
     }
 
     return Opacity(

@@ -16,6 +16,7 @@ class PaymentMethodOption {
   final String minCurrency;
   final String? targetCurrency; // devise d'encaissement du rail (null pour kpay)
   final double? convertedAmount; // montant converti dans targetCurrency (null pour kpay)
+  final String? hint; // libellé secondaire explicite (ex. solde disponible) — prioritaire
 
   const PaymentMethodOption({
     required this.code,
@@ -29,6 +30,7 @@ class PaymentMethodOption {
     this.minAmount,
     this.targetCurrency,
     this.convertedAmount,
+    this.hint,
   });
 
   factory PaymentMethodOption.fromJson(Map<String, dynamic> json) {
