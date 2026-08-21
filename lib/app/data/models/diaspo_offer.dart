@@ -27,6 +27,8 @@ class DiaspoOffer {
   // Metadata
   final int viewsCount;
   final int bookingsCount;
+  // Suppression autorisée seulement si aucune réservation payée/confirmée (backend).
+  final bool canDelete;
 
   // Computed
   final String formattedPrice;
@@ -58,6 +60,7 @@ class DiaspoOffer {
     required this.currency,
     required this.viewsCount,
     required this.bookingsCount,
+    this.canDelete = true,
     required this.formattedPrice,
     required this.isAvailable,
     this.tripDurationHours,
@@ -87,6 +90,7 @@ class DiaspoOffer {
       currency: json['currency'] ?? 'EUR',
       viewsCount: json['views_count'] ?? 0,
       bookingsCount: json['bookings_count'] ?? 0,
+      canDelete: json['can_delete'] ?? true,
       formattedPrice: json['formatted_price'] ?? '',
       isAvailable: json['is_available'] ?? false,
       tripDurationHours: json['trip_duration_hours'] != null
@@ -119,6 +123,7 @@ class DiaspoOffer {
       'currency': currency,
       'views_count': viewsCount,
       'bookings_count': bookingsCount,
+      'can_delete': canDelete,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -157,6 +162,7 @@ class DiaspoOffer {
     String? currency,
     int? viewsCount,
     int? bookingsCount,
+    bool? canDelete,
     String? formattedPrice,
     bool? isAvailable,
     double? tripDurationHours,
@@ -184,6 +190,7 @@ class DiaspoOffer {
       currency: currency ?? this.currency,
       viewsCount: viewsCount ?? this.viewsCount,
       bookingsCount: bookingsCount ?? this.bookingsCount,
+      canDelete: canDelete ?? this.canDelete,
       formattedPrice: formattedPrice ?? this.formattedPrice,
       isAvailable: isAvailable ?? this.isAvailable,
       tripDurationHours: tripDurationHours ?? this.tripDurationHours,

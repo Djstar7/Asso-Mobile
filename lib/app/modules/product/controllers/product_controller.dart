@@ -24,6 +24,7 @@ class ProductController extends GetxController {
   final RxBool isLoadingLocation = false.obs;
   final RxBool isLoadingPartners = false.obs;
   final RxBool isCreatingOrder = false.obs;
+  final RxInt orderQuantity = 1.obs; // quantité choisie au checkout (produit normal)
   final RxString currentLocation = 'Récupération de votre position...'.obs;
   final RxDouble deliveryPrice = 0.0.obs;
   final RxBool isStartingConversation = false.obs;
@@ -430,7 +431,66 @@ class ProductController extends GetxController {
     }
   }
 
-  /// Suit le paiement KPay direct d'une commande (polling 5 s) et notifie.
+  /// Crée une commande en mode « redirect » (checkout WebView : PayPal ou carte Stripe).
+  /// [paymentMode] = 'paypal_direct' ou 'stripe_direct'.
+  /// Retourne `{order_id, approval_url}` à ouvrir dans la WebView, ou null si échec.
+  /// La capture se fait côté serveur au polling (voir [pollOrderPayment]).
+  Future<Map<String, dynamic>?> createRedirectOrder({
+    required int productId,
+    required int quantity,
+    required String paymentMode,
+    String? notes,
+  }) async {
+    if (withDelivery.value && selectedPartner.value == null) {
+      Get.snackbar('Erreur', 'Veuillez choisir un partenaire de livraison',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    }
+
+    isCreatingOrder.value = true;
+
+    try {
+      final response = await OrderService.createOrder(
+        items: [
+          {'product_id': productId, 'quantity': quantity},
+        ],
+        deliveryCompanyId: selectedPartner.value?['company_id'],
+        deliveryZoneId: selectedPartner.value?['zone_id'],
+        walletProvider: paymentMode == 'paypal_direct' ? 'paypal' : 'kpay',
+        paymentMode: paymentMode,
+        deliveryAddress: withDelivery.value ? currentLocation.value : null,
+        deliveryLatitude: clientLatitude,
+        deliveryLongitude: clientLongitude,
+        notes: notes,
+      );
+
+      if (response.success) {
+        final orderId = response.data?['order_id'];
+        final approvalUrl = response.data?['approval_url'];
+        if (orderId is int && approvalUrl is String && approvalUrl.isNotEmpty) {
+          return {'order_id': orderId, 'approval_url': approvalUrl};
+        }
+        Get.snackbar('Erreur', 'Lien de paiement indisponible',
+            snackPosition: SnackPosition.BOTTOM);
+        return null;
+      } else {
+        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+            snackPosition: SnackPosition.BOTTOM);
+        return null;
+      }
+    } catch (e) {
+      Get.snackbar('Erreur', 'Une erreur est survenue',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    } finally {
+      isCreatingOrder.value = false;
+    }
+  }
+
+  /// Démarre le suivi du paiement d'une commande (utilisé après le retour WebView PayPal).
+  void pollOrderPayment(int orderId) => _pollOrderPayment(orderId);
+
+  /// Suit le paiement direct d'une commande (KPay/PayPal — polling 5 s) et notifie.
   void _pollOrderPayment(int orderId) async {
     for (int i = 0; i < 120; i++) {
       await Future.delayed(const Duration(seconds: 5));
@@ -457,11 +517,15 @@ class ProductController extends GetxController {
     }
   }
 
+  /// Sous-total produit = prix unitaire × quantité choisie.
+  double subtotal(double unitPrice) => unitPrice * orderQuantity.value;
+
   double calculateTotal(double productPrice) {
+    final sub = subtotal(productPrice);
     if (withDelivery.value && selectedPartner.value != null) {
-      return productPrice + deliveryPrice.value;
+      return sub + deliveryPrice.value;
     }
-    return productPrice;
+    return sub;
   }
 
   /// Format price with user's currency

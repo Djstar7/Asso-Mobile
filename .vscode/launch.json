@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Asso (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "args": [
+        "--web-browser-flag=--remote-allow-origins=*"
+      ]
+    },
+    {
+      "name": "Asso (Chrome - profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "deviceId": "chrome",
+      "args": [
+        "--web-browser-flag=--remote-allow-origins=*"
+      ]
+    },
+    {
+      "name": "Asso (Android)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "android"
+    }
+  ]
+}

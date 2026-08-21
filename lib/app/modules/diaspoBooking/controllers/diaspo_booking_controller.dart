@@ -143,8 +143,16 @@ class DiaspoBookingController extends GetxController {
       final booking = result['booking'] as DiaspoBooking;
 
       isSubmitting.value = false;
-      _pollBookingPayment(booking.id);
-      _showSuccessDialog(booking);
+      // La réservation n'est PAS encore confirmée : le paiement Mobile Money doit être
+      // validé sur le téléphone. On informe, puis on n'affiche le succès (+ code) qu'au
+      // statut « payé » (voir _pollBookingPayment).
+      Get.snackbar(
+        'Paiement en attente',
+        'Validez le paiement sur votre téléphone (USSD). La réservation sera confirmée ensuite.',
+        backgroundColor: Colors.orange, colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+      _pollBookingPayment(booking);
     } catch (e) {
       isSubmitting.value = false;
       _showError(e);
@@ -172,15 +180,15 @@ class DiaspoBookingController extends GetxController {
       }
 
       // Ouvre la page de paiement hébergée ; la confirmation réelle se fait
-      // côté serveur (webhook), suivie par le polling.
+      // côté serveur (webhook), suivie par le polling. Le succès (+ code) n'est
+      // affiché qu'une fois le statut « payé » confirmé (voir _pollBookingPayment).
       await Get.to(() => PaymentWebView(
             paymentUrl: approvalUrl,
             paymentMethod: method.code,
             paymentId: booking.id,
           ));
 
-      _pollBookingPayment(booking.id);
-      _showSuccessDialog(booking);
+      _pollBookingPayment(booking);
     } catch (e) {
       isSubmitting.value = false;
       _showError(e);
@@ -196,15 +204,14 @@ class DiaspoBookingController extends GetxController {
     );
   }
 
-  /// Suit le paiement d'une réservation (polling 5 s) et notifie.
-  void _pollBookingPayment(int bookingId) async {
+  /// Suit le paiement d'une réservation (polling 5 s). Le succès (dialog + code de
+  /// confirmation) n'est affiché QU'AU statut « payé » — jamais à la simple création.
+  void _pollBookingPayment(DiaspoBooking booking) async {
     for (int i = 0; i < 120; i++) {
       await Future.delayed(const Duration(seconds: 5));
-      final status = await _diaspoService.bookingPaymentStatus(bookingId);
+      final status = await _diaspoService.bookingPaymentStatus(booking.id);
       if (status == 'paid') {
-        Get.snackbar('Paiement confirmé', 'Votre réservation est payée.',
-            backgroundColor: Colors.green, colorText: Colors.white,
-            duration: const Duration(seconds: 4));
+        _showSuccessDialog(booking); // réservation réellement confirmée → on révèle le code
         return;
       } else if (status == 'failed') {
         Get.snackbar('Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
@@ -213,6 +220,11 @@ class DiaspoBookingController extends GetxController {
         return;
       }
     }
+    // Délai dépassé sans confirmation : on reste prudent, pas de « confirmée ».
+    Get.snackbar('Paiement en attente',
+        "La confirmation n'est pas encore arrivée. Vérifiez dans « Mes Achats ».",
+        backgroundColor: Colors.orange, colorText: Colors.white,
+        duration: const Duration(seconds: 5));
   }
 
   void _showSuccessDialog(DiaspoBooking booking) {

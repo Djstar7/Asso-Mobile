@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
+import '../../../data/providers/import_service.dart';
+import '../../../data/models/wholesale_models.dart';
 import '../../../core/utils/app_theme_system.dart';
+import 'wholesale_order_sheet.dart';
 
 /// Section « Produits importés » : pays d'origine gérés côté backend
 /// (Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪, Inde 🇮🇳…).
@@ -50,7 +53,8 @@ class _ImportViewState extends State<ImportView> {
 
   String _selected = 'CN';
   bool _loading = true;
-  List<dynamic> _products = [];
+  List<WholesaleProduct> _products = [];
+  List<ShippingOption> _shipping = [];
 
   @override
   void initState() {
@@ -76,12 +80,13 @@ class _ImportViewState extends State<ImportView> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ProductService.getProducts(originCountry: _selected, perPage: 30);
-      // GET /v1/products renvoie { success, products: [...], pagination }
-      final list = res.data?['products'] ?? res.data?['data'] ?? [];
-      _products = list is List ? list : [];
+      // Catalogue GROS du pays : produits à paliers (cota) + options d'expédition.
+      final catalog = await ImportService.getCatalog(_selected);
+      _products = catalog?.products ?? [];
+      _shipping = catalog?.shippingOptions ?? [];
     } catch (_) {
       _products = [];
+      _shipping = [];
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -392,26 +397,17 @@ class _ImportViewState extends State<ImportView> {
   }
 
   // ─────────────────────────── Carte produit ───────────────────────────
-  Widget _buildProductCard(dynamic p, _ImportCountry c) {
-    final name = p['name']?.toString() ?? '';
-    final price = p['price']?.toString() ?? '0';
-    String? image;
-    final primary = p['primary_image'] ?? p['primaryImage'];
-    if (primary is Map) {
-      image = primary['url']?.toString() ?? primary['image_url']?.toString();
-    } else if (primary is String) {
-      image = primary;
-    }
-    image ??= (p['images'] is List && (p['images'] as List).isNotEmpty)
-        ? ((p['images'][0] is Map) ? p['images'][0]['url']?.toString() : null)
-        : null;
+  Widget _buildProductCard(WholesaleProduct p, _ImportCountry c) {
+    final name = p.name;
+    final entry = p.entryTier;
+    final image = p.image;
 
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Get.toNamed('/product', arguments: p),
+        onTap: () => WholesaleOrderSheet.show(product: p, shippingOptions: _shipping, countryFlag: c.flag),
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -468,17 +464,33 @@ class _ImportViewState extends State<ImportView> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.25, color: Color(0xFF23303B))),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+                    // Prix d'entrée (« à partir de ») + quantité minimale (cota)
+                    Text(
+                      entry != null ? 'À partir de ${entry.formattedPrice}' : 'Sur devis',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w800, fontSize: 13.5),
+                    ),
+                    const SizedBox(height: 6),
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
-                          child: Text('$price FCFA',
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              entry != null ? 'GROS · min ${entry.minQuantity}' : 'GROS',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                              style: const TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700, fontSize: 10.5),
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 6),
                         Container(
                           width: 30,
                           height: 30,
