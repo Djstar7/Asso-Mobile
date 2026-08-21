@@ -5,6 +5,8 @@ import '../controllers/wallet_controller.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../widgets/withdrawal_bottom_sheet.dart';
 import '../widgets/quick_confirm_code_dialog.dart';
+import '../../payment/widgets/payment_method_selector.dart';
+import '../../../data/models/payment_method_option.dart';
 
 class WalletView extends GetView<WalletController> {
   const WalletView({super.key});
@@ -993,152 +995,92 @@ class WalletView extends GetView<WalletController> {
   }
 
   /// Affiche les options de retrait
-  void _showWithdrawalOptions(BuildContext context) {
-    Get.bottomSheet(
-      Container(
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getBackgroundColor(context),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.grey300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+  /// Sélecteur de méthode de retrait — réutilise EXACTEMENT le widget de paiement
+  /// (PaymentMethodSelector) avec des options construites depuis les soldes de retrait.
+  /// Les trois rails (KPay / Cartes-PayPal / Virement IBAN) sont toujours affichés,
+  /// grisés + non cliquables quand indisponibles (aucun solde, ou IBAN non validé).
+  void _showWithdrawalOptions(BuildContext context) async {
+    final kpayBal = controller.wallet.value?.kpayBalance ?? 0.0;
+    final paypalBal = controller.wallet.value?.paypalBalance ?? 0.0;
+    final stripeEligible = controller.stripeWithdrawEligible.value;
+    final stripeBal = controller.stripeWithdrawAvailable.value;
+    final stripeLast4 = controller.stripeIbanLast4.value;
+    final stripeCurrency = controller.stripeWithdrawCurrency.value;
 
-              // En-tête (même style que le sélecteur de moyens de paiement)
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.account_balance_wallet_rounded,
-                        color: AppThemeSystem.primaryColor, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Choisir une méthode de retrait',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppThemeSystem.getPrimaryTextColor(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Retirez vos gains vers le moyen de votre choix',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppThemeSystem.getSecondaryTextColor(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Get.back(),
-                    icon: const Icon(Icons.close),
-                    color: AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-              // KPay Option
-              _buildWithdrawalOption(
-                context: context,
-                iconData: Icons.phone_android_rounded,
-                emoji: '📱',
-                title: 'KPay',
-                subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
-                balance: controller.wallet.value?.kpayBalance ?? 0.0,
-                color: AppThemeSystem.kpayColor,
-                onTap: () async {
-                  Get.back();
-                  final result = await WithdrawalBottomSheet.show(
-                    provider: 'kpay',
-                    availableBalance: controller.wallet.value?.kpayBalance ?? 0.0,
-                  );
-                  if (result == true) {
-                    controller.refresh();
-                  }
-                },
-              ),
-
-              SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-              // Bank Cards Option
-              _buildWithdrawalOption(
-                context: context,
-                iconData: Icons.credit_card_rounded,
-                emoji: '💳',
-                title: 'Cartes Bancaires',
-                subtitle: 'VISA, MasterCard, PayPal',
-                balance: controller.wallet.value?.paypalBalance ?? 0.0,
-                color: AppThemeSystem.paypalColor,
-                onTap: () async {
-                  Get.back();
-                  final result = await WithdrawalBottomSheet.show(
-                    provider: 'paypal',
-                    availableBalance: controller.wallet.value?.paypalBalance ?? 0.0,
-                  );
-                  if (result == true) {
-                    controller.refresh();
-                  }
-                },
-              ),
-
-              // Virement bancaire (IBAN via Stripe) — uniquement si le compte est validé
-              if (controller.stripeWithdrawEligible.value) ...[
-                SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-                _buildWithdrawalOption(
-                  context: context,
-                  iconData: Icons.account_balance_rounded,
-                  emoji: '🏦',
-                  title: 'Virement bancaire (IBAN)',
-                  subtitle: controller.stripeIbanLast4.value != null
-                      ? 'IBAN ••••${controller.stripeIbanLast4.value}'
-                      : 'Vers votre compte bancaire',
-                  balance: controller.stripeWithdrawAvailable.value,
-                  color: AppThemeSystem.primaryColor,
-                  onTap: () {
-                    Get.back();
-                    _showStripeWithdrawalDialog(context);
-                  },
-                ),
-              ],
-
-              SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-            ],
-          ),
-        ),
+    final options = <PaymentMethodOption>[
+      PaymentMethodOption(
+        code: 'kpay',
+        label: 'KPay',
+        subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
+        flow: 'phone',
+        enabled: true,
+        available: kpayBal > 0,
+        minCurrency: 'XAF',
+        unavailableReason: kpayBal > 0 ? null : 'disabled',
+        hint: kpayBal > 0
+            ? '${controller.formatPrice(kpayBal)} disponible'
+            : 'Aucun solde à retirer',
       ),
-      isDismissible: true,
-      enableDrag: true,
+      PaymentMethodOption(
+        code: 'paypal',
+        label: 'Cartes Bancaires',
+        subtitle: 'VISA, MasterCard, PayPal',
+        flow: 'redirect',
+        enabled: true,
+        available: paypalBal > 0,
+        minCurrency: 'XAF',
+        unavailableReason: paypalBal > 0 ? null : 'disabled',
+        hint: paypalBal > 0
+            ? '${controller.formatPrice(paypalBal)} disponible'
+            : 'Aucun solde à retirer',
+      ),
+      PaymentMethodOption(
+        code: 'stripe',
+        label: 'Virement bancaire (IBAN)',
+        subtitle: stripeLast4 != null
+            ? 'IBAN ••••$stripeLast4'
+            : 'Vers votre compte bancaire',
+        flow: 'redirect',
+        enabled: true,
+        available: stripeEligible && stripeBal > 0,
+        minCurrency: 'EUR',
+        unavailableReason: (stripeEligible && stripeBal > 0) ? null : 'disabled',
+        hint: !stripeEligible
+            ? 'IBAN non validé'
+            : (stripeBal > 0
+                ? '${stripeBal.toStringAsFixed(2)} $stripeCurrency disponible'
+                : 'Aucun solde à retirer'),
+      ),
+    ];
+
+    final selected = await PaymentMethodSelector.show(
+      amount: kpayBal + paypalBal,
+      currency: 'FCFA',
+      amountLabel: 'Solde disponible',
+      title: 'Choisir une méthode de retrait',
+      options: options,
     );
+    if (selected == null || !context.mounted) return;
+
+    switch (selected.code) {
+      case 'kpay':
+        final result = await WithdrawalBottomSheet.show(
+          provider: 'kpay',
+          availableBalance: kpayBal,
+        );
+        if (result == true) controller.refresh();
+        break;
+      case 'paypal':
+        final result = await WithdrawalBottomSheet.show(
+          provider: 'paypal',
+          availableBalance: paypalBal,
+        );
+        if (result == true) controller.refresh();
+        break;
+      case 'stripe':
+        _showStripeWithdrawalDialog(context);
+        break;
+    }
   }
 
   /// Dialogue de retrait par virement bancaire (Stripe Connect).
@@ -1256,112 +1198,6 @@ class WalletView extends GetView<WalletController> {
                     : const Text('Retirer'),
               )),
         ],
-      ),
-    );
-  }
-
-  /// Option de retrait
-  /// Carte de méthode de retrait — même template visuel que le sélecteur de moyens
-  /// de paiement (PaymentMethodSelector), adapté au retrait : solde disponible mis
-  /// en avant, méthode GRISÉE + non cliquable quand aucun solde n'est retirable.
-  Widget _buildWithdrawalOption({
-    required BuildContext context,
-    required IconData iconData,
-    required String emoji,
-    required String title,
-    required String subtitle,
-    required double balance,
-    required Color color,
-    required VoidCallback onTap,
-    bool enabled = true,
-  }) {
-    final canWithdraw = enabled && balance > 0;
-
-    return Opacity(
-      opacity: canWithdraw ? 1.0 : 0.5,
-      child: InkWell(
-        onTap: canWithdraw ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppThemeSystem.getSurfaceColor(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: canWithdraw ? color.withValues(alpha: 0.3) : AppThemeSystem.getBorderColor(context),
-              width: canWithdraw ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Icône (carré teinté) + emoji, comme le template de paiement
-              Stack(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: canWithdraw
-                          ? color.withValues(alpha: 0.1)
-                          : AppThemeSystem.getBorderColor(context),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      iconData,
-                      color: canWithdraw ? color : AppThemeSystem.getSecondaryTextColor(context),
-                      size: 26,
-                    ),
-                  ),
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Text(emoji, style: const TextStyle(fontSize: 16)),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.getPrimaryTextColor(context),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      canWithdraw
-                          ? '${controller.formatPrice(balance)} disponible'
-                          : 'Aucun solde à retirer',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: canWithdraw ? color : AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: AppThemeSystem.getSecondaryTextColor(context),
-                size: 18,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
