@@ -308,26 +308,31 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
           );
 
       if (controller.isMyOffer.value) {
+        // La suppression est masquée dès qu'une réservation payée/confirmée existe
+        // (drapeau can_delete du backend) : on ne peut plus supprimer une offre achetée.
+        final canDelete = controller.offer.value?.canDelete ?? true;
         return wrap(Row(
           children: [
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: controller.isDeleting.value ? null : controller.deleteOffer,
-                  icon: controller.isDeleting.value
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.delete_outline, color: Colors.red),
-                  label: Text('Supprimer',
-                      style: TextStyle(color: controller.isDeleting.value ? Colors.grey : Colors.red)),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: controller.isDeleting.value ? Colors.grey : Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            if (canDelete) ...[
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: controller.isDeleting.value ? null : controller.deleteOffer,
+                    icon: controller.isDeleting.value
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.delete_outline, color: Colors.red),
+                    label: Text('Supprimer',
+                        style: TextStyle(color: controller.isDeleting.value ? Colors.grey : Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: controller.isDeleting.value ? Colors.grey : Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
+              const SizedBox(width: 14),
+            ],
             Expanded(
               flex: 2,
               child: SizedBox(

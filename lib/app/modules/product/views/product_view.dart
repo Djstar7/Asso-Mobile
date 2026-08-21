@@ -8,6 +8,8 @@ import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../wallet/views/payment_webview.dart';
+import '../../payment/widgets/payment_method_selector.dart';
 import 'map_selection_view.dart';
 
 class ProductView extends GetView<ProductController> {
@@ -1416,6 +1418,7 @@ class ProductView extends GetView<ProductController> {
     controller.selectedPartner.value = null;
     controller.deliveryPrice.value = 0;
     controller.deliveryPartners.clear();
+    controller.orderQuantity.value = 1; // réinitialiser la quantité à chaque ouverture
 
     // Charger la position + partenaires
     controller.fetchCurrentLocation().then((_) {
@@ -1886,11 +1889,57 @@ class ProductView extends GetView<ProductController> {
                       ),
                       child: Obx(() => Column(
                         children: [
+                          // Sélecteur de quantité (produit normal)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Prix du produit', style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
-                              Text(controller.formatPrice(productPrice), style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
+                              Text('Quantité', style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      if (controller.orderQuantity.value > 1) controller.orderQuantity.value--;
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      width: 34, height: 34,
+                                      decoration: BoxDecoration(
+                                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(Icons.remove, size: 18, color: AppThemeSystem.primaryColor),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text('${controller.orderQuantity.value}',
+                                        style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+                                  ),
+                                  InkWell(
+                                    onTap: () => controller.orderQuantity.value++,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      width: 34, height: 34,
+                                      decoration: BoxDecoration(
+                                        color: AppThemeSystem.primaryColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.add, size: 18, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Prix du produit${controller.orderQuantity.value > 1 ? ' (×${controller.orderQuantity.value})' : ''}',
+                                  style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
+                              Text(controller.formatPrice(controller.subtotal(productPrice)),
+                                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           if (controller.withDelivery.value && controller.selectedPartner.value != null) ...[
@@ -1929,47 +1978,25 @@ class ProductView extends GetView<ProductController> {
 
                       return Column(
                         children: [
-                          // Bouton KPay
+                          // Bouton unique : ouvre le sélecteur STANDARD de moyen de paiement
+                          // (Mobile Money / PayPal / Carte), commun à toutes les pages de paiement.
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: !hasPartner || controller.isCreatingOrder.value
                                   ? null
-                                  : () => _confirmOrder(context, product, productId, 'kpay'),
+                                  : () => _choosePaymentAndOrder(context, product, productId),
                               icon: controller.isCreatingOrder.value
                                   ? SizedBox(width: 20, height: 20,
                                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : Icon(Icons.phone_android_rounded, color: Colors.white),
-                              label: Text('Payer avec Mobile Money',
+                                  : Icon(Icons.account_balance_wallet_rounded, color: Colors.white),
+                              label: Text('Choisir un moyen de paiement',
                                 style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold, color: Colors.white)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400,
                                 padding: EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: hasPartner ? 4 : 0,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          // Bouton PayPal
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: !hasPartner || controller.isCreatingOrder.value
-                                  ? null
-                                  : () => _confirmOrder(context, product, productId, 'paypal'),
-                              icon: Icon(Icons.credit_card_rounded,
-                                color: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400),
-                              label: Text('Payer avec PayPal / Carte',
-                                style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600)),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppThemeSystem.primaryColor,
-                                side: BorderSide(
-                                  color: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey300,
-                                  width: 2,
-                                ),
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
                           ),
@@ -1995,59 +2022,137 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  /// Confirmer et créer la commande
-  void _confirmOrder(BuildContext context, Map<String, dynamic> product, int productId, String walletProvider) async {
-    // Paiement Mobile Money = KPay DIRECT (plus de solde wallet) : pays → opérateur → numéro
-    if (walletProvider == 'kpay') {
-      final price = double.tryParse(product['price'].toString()) ?? 0;
-      final total = controller.calculateTotal(price);
+  /// Ouvre le sélecteur STANDARD de moyen de paiement puis lance le sous-parcours
+  /// correspondant au rail choisi (identique à toutes les pages de paiement).
+  void _choosePaymentAndOrder(BuildContext context, Map<String, dynamic> product, int productId) async {
+    final price = double.tryParse(product['price'].toString()) ?? 0;
+    final total = controller.calculateTotal(price);
 
-      final selection = await KpayDirectPaymentSheet.show(
-        amount: total,
-        amountLabel: 'Total à payer',
-      );
-      if (selection == null) return; // paiement annulé
+    final method = await PaymentMethodSelector.show(
+      amount: total,
+      currency: 'XAF',
+      amountLabel: 'Total à payer',
+    );
+    if (method == null) return; // annulé
 
-      final success = await controller.createOrder(
-        productId: productId,
-        quantity: 1,
-        walletProvider: 'kpay',
-        paymentMode: 'kpay_direct',
-        kpayProvider: selection['provider'],
-        kpayPhone: selection['phone'],
-      );
-
-      if (success) {
-        Get.back(); // Fermer le bottomsheet de commande
+    switch (method.code) {
+      case 'kpay':
+        await _confirmOrder(context, product, productId, 'kpay');
+        break;
+      case 'paypal':
+        await _payViaRedirect(product, productId, 'paypal_direct', 'paypal');
+        break;
+      case 'stripe':
+        await _payViaRedirect(product, productId, 'stripe_direct', 'stripe');
+        break;
+      default:
         Get.snackbar(
-          'Commande créée !',
-          'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
+          'Indisponible',
+          "Ce moyen de paiement n'est pas encore disponible pour les commandes.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+    }
+  }
+
+  /// Sous-parcours de paiement par redirection (PayPal / carte Stripe) : crée la
+  /// commande, ouvre le checkout hébergé en WebView, puis suit la confirmation serveur.
+  Future<void> _payViaRedirect(
+      Map<String, dynamic> product, int productId, String paymentMode, String methodCode) async {
+    final data = await controller.createRedirectOrder(
+      productId: productId,
+      quantity: controller.orderQuantity.value,
+      paymentMode: paymentMode,
+    );
+    if (data == null) return; // échec / lien indisponible (snackbar déjà affiché)
+
+    final orderId = data['order_id'] as int;
+    final approvalUrl = data['approval_url'] as String;
+
+    Get.back(); // fermer le bottomsheet de commande
+
+    // La WebView intégrée n'est disponible que sur mobile (Android/iOS). Sur les
+    // plateformes non supportées (desktop Linux/Windows, web), on ouvre le checkout
+    // dans le navigateur système : la confirmation se fait de toute façon côté serveur
+    // (polling), ce qui rend le paiement fonctionnel partout.
+    if (!(GetPlatform.isAndroid || GetPlatform.isIOS)) {
+      final launched = await launchUrl(Uri.parse(approvalUrl), mode: LaunchMode.externalApplication);
+      if (launched) {
+        controller.pollOrderPayment(orderId);
+        Get.snackbar(
+          'Paiement ouvert dans le navigateur',
+          'Terminez le paiement, la confirmation est automatique.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 6),
         );
         Get.toNamed('/shipment');
+      } else {
+        Get.snackbar('Erreur', "Impossible d'ouvrir la page de paiement.",
+            snackPosition: SnackPosition.BOTTOM);
       }
       return;
     }
 
-    // PayPal / carte : flux existant (solde wallet)
-    final success = await controller.createOrder(
-      productId: productId,
-      quantity: 1,
-      walletProvider: walletProvider,
+    final result = await Get.to<Map<String, dynamic>>(
+      () => PaymentWebView(
+        paymentUrl: approvalUrl,
+        paymentMethod: methodCode,
+        paymentId: orderId,
+      ),
     );
 
-    if (success) {
-      Get.back();
+    if (result != null && result['success'] == true) {
+      controller.pollOrderPayment(orderId);
       Get.snackbar(
-        'Commande créée !',
-        'Vos fonds sont bloqués en attente de validation du vendeur.',
+        'Paiement en cours',
+        'Votre paiement est en cours de confirmation. Vous serez notifié.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+      Get.toNamed('/shipment');
+    } else {
+      Get.snackbar(
+        'Paiement annulé',
+        'Le paiement n\'a pas été finalisé. Votre commande reste en attente.',
+        snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  /// Confirmer et créer la commande — paiement Mobile Money (KPay direct, USSD).
+  /// Les paiements par redirection (PayPal / carte Stripe) passent par [_payViaRedirect].
+  Future<void> _confirmOrder(BuildContext context, Map<String, dynamic> product, int productId, String walletProvider) async {
+    final price = double.tryParse(product['price'].toString()) ?? 0;
+    final total = controller.calculateTotal(price);
+
+    final selection = await KpayDirectPaymentSheet.show(
+      amount: total,
+      amountLabel: 'Total à payer',
+    );
+    if (selection == null) return; // paiement annulé
+
+    final success = await controller.createOrder(
+      productId: productId,
+      quantity: controller.orderQuantity.value,
+      walletProvider: 'kpay',
+      paymentMode: 'kpay_direct',
+      kpayProvider: selection['provider'],
+      kpayPhone: selection['phone'],
+    );
+
+    if (success) {
+      Get.back(); // Fermer le bottomsheet de commande
+      Get.snackbar(
+        'Commande créée !',
+        'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
       Get.toNamed('/shipment');
     }

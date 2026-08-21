@@ -1022,14 +1022,48 @@ class WalletView extends GetView<WalletController> {
                 ),
               ),
 
-              // Title
-              Text(
-                'Choisir une méthode de retrait',
-                style: TextStyle(
-                  fontSize: AppThemeSystem.getFontSize(context, FontSizeType.h4),
-                  fontWeight: FontWeight.bold,
-                  color: AppThemeSystem.getPrimaryTextColor(context),
-                ),
+              // En-tête (même style que le sélecteur de moyens de paiement)
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.account_balance_wallet_rounded,
+                        color: AppThemeSystem.primaryColor, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Choisir une méthode de retrait',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppThemeSystem.getPrimaryTextColor(context),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Retirez vos gains vers le moyen de votre choix',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppThemeSystem.getSecondaryTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.close),
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                ],
               ),
               SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
@@ -1227,6 +1261,9 @@ class WalletView extends GetView<WalletController> {
   }
 
   /// Option de retrait
+  /// Carte de méthode de retrait — même template visuel que le sélecteur de moyens
+  /// de paiement (PaymentMethodSelector), adapté au retrait : solde disponible mis
+  /// en avant, méthode GRISÉE + non cliquable quand aucun solde n'est retirable.
   Widget _buildWithdrawalOption({
     required BuildContext context,
     required IconData iconData,
@@ -1236,87 +1273,94 @@ class WalletView extends GetView<WalletController> {
     required double balance,
     required Color color,
     required VoidCallback onTap,
+    bool enabled = true,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppThemeSystem.getBorderColor(context),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Icône avec emoji
-            Stack(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    iconData,
-                    color: color,
-                    size: 24,
-                  ),
-                ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
+    final canWithdraw = enabled && balance > 0;
+
+    return Opacity(
+      opacity: canWithdraw ? 1.0 : 0.5,
+      child: InkWell(
+        onTap: canWithdraw ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppThemeSystem.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: canWithdraw ? color.withValues(alpha: 0.3) : AppThemeSystem.getBorderColor(context),
+              width: canWithdraw ? 2 : 1,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          child: Row(
+            children: [
+              // Icône (carré teinté) + emoji, comme le template de paiement
+              Stack(
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.getPrimaryTextColor(context),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: canWithdraw
+                          ? color.withValues(alpha: 0.1)
+                          : AppThemeSystem.getBorderColor(context),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      iconData,
+                      color: canWithdraw ? color : AppThemeSystem.getSecondaryTextColor(context),
+                      size: 26,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppThemeSystem.getSecondaryTextColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${controller.formatPrice(balance)} disponible',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Text(emoji, style: const TextStyle(fontSize: 16)),
                   ),
                 ],
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: AppThemeSystem.getSecondaryTextColor(context),
-              size: 18,
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppThemeSystem.getPrimaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      canWithdraw
+                          ? '${controller.formatPrice(balance)} disponible'
+                          : 'Aucun solde à retirer',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: canWithdraw ? color : AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: AppThemeSystem.getSecondaryTextColor(context),
+                size: 18,
+              ),
+            ],
+          ),
         ),
       ),
     );

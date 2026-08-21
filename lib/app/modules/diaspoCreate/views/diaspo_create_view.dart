@@ -516,32 +516,6 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               ),
             ),
           ),
-          SizedBox(height: sectionSpacing),
-
-          // Warning
-          Container(
-            padding: EdgeInsets.all(elementSpacing),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(color: Colors.orange),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.orange),
-                SizedBox(width: elementSpacing),
-                Expanded(
-                  child: Text(
-                    'Votre offre sera vérifiée par notre équipe avant publication (24-48h)',
-                    style: AppThemeSystem.getTextStyle(
-                      context,
-                      FontSizeType.body2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
