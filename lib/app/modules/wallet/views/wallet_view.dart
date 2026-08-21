@@ -1007,32 +1007,42 @@ class WalletView extends GetView<WalletController> {
     final stripeLast4 = controller.stripeIbanLast4.value;
     final stripeCurrency = controller.stripeWithdrawCurrency.value;
 
+    // Un moyen non configuré côté plateforme est grisé (raison affichée au tap),
+    // pour éviter que l'utilisateur tente un retrait qui échouerait par une erreur.
+    final kpayConfigured = controller.kpayConfigured.value;
+    final paypalConfigured = controller.paypalConfigured.value;
+    final stripeConfigured = controller.stripeConfigured.value;
+
     final options = <PaymentMethodOption>[
       PaymentMethodOption(
         code: 'kpay',
         label: 'KPay',
         subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
         flow: 'phone',
-        enabled: true,
-        available: kpayBal > 0,
+        enabled: kpayConfigured,
+        available: kpayConfigured && kpayBal > 0,
         minCurrency: 'XAF',
-        unavailableReason: kpayBal > 0 ? null : 'disabled',
-        hint: kpayBal > 0
-            ? '${controller.formatPrice(kpayBal)} disponible'
-            : 'Aucun solde à retirer',
+        unavailableReason: (kpayConfigured && kpayBal > 0) ? null : 'disabled',
+        hint: !kpayConfigured
+            ? 'Momentanément indisponible'
+            : (kpayBal > 0
+                ? '${controller.formatPrice(kpayBal)} disponible'
+                : 'Aucun solde à retirer'),
       ),
       PaymentMethodOption(
         code: 'paypal',
         label: 'Cartes Bancaires',
         subtitle: 'VISA, MasterCard, PayPal',
         flow: 'redirect',
-        enabled: true,
-        available: paypalBal > 0,
+        enabled: paypalConfigured,
+        available: paypalConfigured && paypalBal > 0,
         minCurrency: 'XAF',
-        unavailableReason: paypalBal > 0 ? null : 'disabled',
-        hint: paypalBal > 0
-            ? '${controller.formatPrice(paypalBal)} disponible'
-            : 'Aucun solde à retirer',
+        unavailableReason: (paypalConfigured && paypalBal > 0) ? null : 'disabled',
+        hint: !paypalConfigured
+            ? 'Momentanément indisponible'
+            : (paypalBal > 0
+                ? '${controller.formatPrice(paypalBal)} disponible'
+                : 'Aucun solde à retirer'),
       ),
       PaymentMethodOption(
         code: 'stripe',
@@ -1041,15 +1051,18 @@ class WalletView extends GetView<WalletController> {
             ? 'IBAN ••••$stripeLast4'
             : 'Vers votre compte bancaire',
         flow: 'redirect',
-        enabled: true,
-        available: stripeEligible && stripeBal > 0,
+        enabled: stripeConfigured,
+        available: stripeConfigured && stripeEligible && stripeBal > 0,
         minCurrency: 'EUR',
-        unavailableReason: (stripeEligible && stripeBal > 0) ? null : 'disabled',
-        hint: !stripeEligible
-            ? 'IBAN non validé'
-            : (stripeBal > 0
-                ? '${stripeBal.toStringAsFixed(2)} $stripeCurrency disponible'
-                : 'Aucun solde à retirer'),
+        unavailableReason:
+            (stripeConfigured && stripeEligible && stripeBal > 0) ? null : 'disabled',
+        hint: !stripeConfigured
+            ? 'Momentanément indisponible'
+            : (!stripeEligible
+                ? 'IBAN non validé'
+                : (stripeBal > 0
+                    ? '${stripeBal.toStringAsFixed(2)} $stripeCurrency disponible'
+                    : 'Aucun solde à retirer')),
       ),
     ];
 
