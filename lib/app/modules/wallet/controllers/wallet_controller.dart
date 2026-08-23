@@ -48,6 +48,12 @@ class WalletController extends GetxController {
   final stripeWithdrawAvailable = 0.0.obs; // solde disponible dans la devise du payout
   final stripeIbanLast4 = RxnString();
 
+  // Configuration des rails côté plateforme (clés API présentes). Défaut = true pour
+  // rester compatible avec un backend qui ne renvoie pas encore le bloc `methods`.
+  final kpayConfigured = true.obs;
+  final paypalConfigured = true.obs;
+  final stripeConfigured = true.obs;
+
   // Pagination des transactions
   final currentPage = 1.obs;
   final lastPage = 1.obs;
@@ -762,6 +768,17 @@ class WalletController extends GetxController {
               (stripe['currency']?.toString() ?? 'EUR');
           stripeWithdrawAvailable.value = _parseBalance(stripe['available']);
           stripeIbanLast4.value = stripe['iban_last4']?.toString();
+        }
+
+        // Configuration par rail (grise un moyen non configuré côté plateforme).
+        final methods = result['methods'];
+        if (methods is Map) {
+          final k = methods['kpay'];
+          if (k is Map) kpayConfigured.value = k['configured'] == true;
+          final p = methods['paypal'];
+          if (p is Map) paypalConfigured.value = p['configured'] == true;
+          final s = methods['stripe'];
+          if (s is Map) stripeConfigured.value = s['configured'] == true;
         }
       }
     } catch (e) {
