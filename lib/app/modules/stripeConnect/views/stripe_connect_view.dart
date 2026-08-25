@@ -31,11 +31,22 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 _statusBanner(context),
                 const SizedBox(height: 16),
               ],
-              if (controller.isApproved)
+              // Statut inconnu : ne PAS afficher le formulaire, qui laisserait
+              // croire qu'aucun IBAN n'est enregistré.
+              if (controller.loadError.value != null && controller.status.value == null)
+                _loadErrorCard(context)
+              else if (controller.isApproved)
                 _approvedCard(context)
-              else if (controller.isPending)
-                _pendingCard(context)
-              else
+              else if (controller.isPending) ...[
+                // Dossier en cours d'examen : plus aucune saisie possible. Si le
+                // partenaire réclame des précisions, le bandeau l'annonce et la
+                // correction passe par le support (qui rouvre le formulaire).
+                if (controller.needsMoreInfo) ...[
+                  _moreInfoBanner(context),
+                  const SizedBox(height: 16),
+                ],
+                _pendingCard(context),
+              ] else
                 _form(context),
             ],
           ),
@@ -65,6 +76,101 @@ class StripeConnectView extends GetView<StripeConnectController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Bandeau « informations complémentaires demandées », au-dessus du formulaire.
+  Widget _moreInfoBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.assignment_late_outlined, color: Colors.orange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Informations complémentaires demandées',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  controller.partnerVerification.value ??
+                      "Notre partenaire bancaire a besoin de précisions avant d'autoriser "
+                          'vos virements.',
+                  style: const TextStyle(fontSize: 13, height: 1.3),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Notre équipe va vous recontacter pour compléter votre dossier. '
+                  'Vos informations restent enregistrées.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// État indisponible : on l'annonce et on propose de réessayer.
+  Widget _loadErrorCard(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.cloud_off_rounded, size: 40, color: Colors.orange),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'État du compte indisponible',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            controller.loadError.value ?? '',
+            style: const TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            "Si vous avez déjà enregistré un IBAN, il est toujours là : "
+            "cet écran n'a pas pu le récupérer.",
+            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: controller.loadStatus,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Réessayer'),
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          ),
+        ),
+      ],
     );
   }
 
@@ -161,7 +267,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        _partnerStateNotice(),
+        const SizedBox(height: 4),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -196,28 +304,138 @@ class StripeConnectView extends GetView<StripeConnectController> {
     );
   }
 
+  /// Compte validé : plus aucun formulaire, une page de confirmation.
+  ///
+  /// Le vendeur n'a plus rien à saisir — lui reproposer les champs laisse croire
+  /// que sa demande n'a pas abouti.
   Widget _approvedCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Vos informations bancaires',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 12),
-            _readonlyRow('Titulaire', controller.holderName.value ?? '—'),
-            _readonlyRow('IBAN', '•••• ${controller.ibanLast4.value ?? '????'}'),
-            _readonlyRow('Pays', controller.bankCountry.value ?? '—'),
-            const SizedBox(height: 8),
-            const Text(
-              "Pour modifier votre IBAN validé, contactez le support.",
-              style: TextStyle(fontSize: 12.5, color: Colors.black54),
+    const green = Color(0xFF16A34A);
+    final holder = controller.holderName.value;
+    final last4 = controller.ibanLast4.value;
+    final country = controller.bankCountry.value;
+
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: green.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.verified_rounded, size: 44, color: green),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Compte de virement validé',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            "Vos paiements peuvent désormais être virés sur ce compte bancaire. "
+            "Le montant est converti depuis votre portefeuille au moment du retrait.",
+            style: TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Informations enregistrées',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 12),
+                _readonlyRow('Titulaire', (holder ?? '').isNotEmpty ? holder! : '—'),
+                _readonlyRow('IBAN', last4 != null ? '•••• •••• $last4' : '••••'),
+                _readonlyRow('Pays', country ?? '—'),
+                _partnerStateNotice(),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => Get.back(),
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            label: const Text('Retour au portefeuille'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: const [
+            Icon(Icons.lock_outline, size: 18, color: Colors.black45),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "Pour modifier un IBAN déjà validé, contactez le support.",
+                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
+  }
+
+  /// Avertissement quand le partenaire bancaire n'a pas (encore) activé le compte.
+  ///
+  /// Un compte peut être validé par ASSO et pourtant refusé par le partenaire
+  /// (vérification en cours, pièce manquante) : le vendeur doit le savoir avant de
+  /// demander un virement qui serait rejeté.
+  Widget _partnerStateNotice() {
+    return Obx(() {
+      if (controller.partnerReady.value) return const SizedBox.shrink();
+
+      final message = controller.partnerVerification.value ??
+          "Vérification bancaire en cours.";
+      final missing = controller.partnerRequirements;
+
+      return Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message,
+                      style: const TextStyle(fontSize: 12.5, height: 1.35)),
+                  if (missing.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Les virements resteront indisponibles tant que ce point '
+                      "n'est pas réglé.",
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.orange.shade900, height: 1.3),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _readonlyRow(String label, String value) {
@@ -279,7 +497,96 @@ class StripeConnectView extends GetView<StripeConnectController> {
             ),
             validator: controller.validateCountry,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 22),
+          const Text(
+            "Vos informations d'identité",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Exigées par notre partenaire bancaire pour autoriser les virements. "
+            "Elles ne sont pas conservées par l'application.",
+            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          // La date n'est pas saisie au clavier : sélecteur borné à 18 ans.
+          Obx(() => InkWell(
+                onTap: () => controller.pickBirthDate(context),
+                borderRadius: BorderRadius.circular(4),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Date de naissance',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                    errorText: controller.birthDate.value == null &&
+                            controller.isSubmitting.value
+                        ? 'Date de naissance requise'
+                        : null,
+                  ),
+                  child: Text(
+                    controller.birthDateLabel.isEmpty
+                        ? 'JJ/MM/AAAA'
+                        : controller.birthDateLabel,
+                    style: TextStyle(
+                      color: controller.birthDateLabel.isEmpty
+                          ? Colors.black45
+                          : Colors.black87,
+                    ),
+                  ),
+                ),
+              )),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Téléphone',
+              hintText: '+33 6 12 34 56 78',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validatePhone,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.addressLine1Controller,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Adresse',
+              hintText: '12 rue de la Paix',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validateAddressLine,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: controller.addressCityController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Ville',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: controller.validateCity,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: controller.addressPostalController,
+                  decoration: const InputDecoration(
+                    labelText: 'Code postal',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: controller.validatePostalCode,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: Obx(() => ElevatedButton(

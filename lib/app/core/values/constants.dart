@@ -137,6 +137,8 @@ class AppConstants {
       '/v1/wallet/withdraw/kpay';
   static const String walletWithdrawPaypalUrl = '/v1/wallet/withdraw/paypal';
   static const String walletWithdrawStripeUrl = '/v1/wallet/withdraw/stripe';
+  // Devis d'un virement IBAN : montant converti vers la devise du compte bancaire.
+  static const String walletStripeQuoteUrl = '/v1/wallet/withdraw/stripe/quote';
   static const String walletWithdrawalsUrl = '/v1/wallet/withdrawals';
   static const String walletWithdrawalStatusUrl =
       '/v1/wallet/withdrawal-status';
