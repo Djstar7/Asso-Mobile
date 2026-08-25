@@ -9,6 +9,7 @@ import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../widgets/payment_loading_dialog.dart';
 import '../widgets/payment_success_dialog.dart';
+import '../../../data/services/stripe_native_service.dart';
 
 class PackageSubscriptionController extends GetxController {
   // State management
@@ -146,7 +147,7 @@ class PackageSubscriptionController extends GetxController {
         await _subscribeViaRedirect(package, price, 'paypal_direct', 'paypal');
         break;
       case 'stripe':
-        await _subscribeViaRedirect(package, price, 'stripe_direct', 'stripe');
+        await _subscribeViaCard(package, price);
         break;
       default:
         Get.snackbar(
@@ -201,6 +202,79 @@ class PackageSubscriptionController extends GetxController {
     } catch (e) {
       PaymentLoadingDialog.hide();
       _showSubscriptionError('Une erreur est survenue: $e');
+    } finally {
+      isSubscribing.value = false;
+    }
+  }
+
+  /// Abonnement payé par CARTE (Payment Sheet Stripe native).
+  Future<void> _subscribeViaCard(Map<String, dynamic> package, double price) async {
+    if (!StripeNativeService.isSupported) {
+      Get.snackbar(
+        'Indisponible',
+        "Le paiement par carte est disponible sur l'application mobile.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    isSubscribing.value = true;
+    PaymentLoadingDialog.show(message: 'Préparation du paiement...');
+
+    try {
+      final response = await PackageService.subscribePackageDirect(
+        package['id'] as int,
+        paymentMode: 'stripe_direct',
+      );
+
+      if (_isDisposed) return;
+      PaymentLoadingDialog.hide();
+
+      final subscriptionId = _subscriptionIdFrom(response);
+      final clientSecret = response.data?['client_secret']?.toString();
+      final publishableKey = response.data?['publishable_key']?.toString();
+
+      if (!response.success || subscriptionId == null) {
+        _showSubscriptionError(response.message);
+        return;
+      }
+      if (clientSecret == null || clientSecret.isEmpty ||
+          publishableKey == null || publishableKey.isEmpty) {
+        _showSubscriptionError('Données de paiement carte indisponibles. Réessayez.');
+        return;
+      }
+
+      final ok = await StripeNativeService().payWithCard(
+        publishableKey: publishableKey,
+        clientSecret: clientSecret,
+      );
+      if (_isDisposed) return;
+
+      if (!ok) {
+        Get.snackbar(
+          'Paiement annulé',
+          "Le paiement n'a pas été finalisé.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.warningColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+
+      Get.snackbar(
+        'Paiement en cours',
+        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+
+      _pollSubscriptionPayment(subscriptionId, package, price, 'stripe');
+    } catch (e) {
+      PaymentLoadingDialog.hide();
+      _showSubscriptionError(e.toString().replaceAll('Exception: ', ''));
     } finally {
       isSubscribing.value = false;
     }

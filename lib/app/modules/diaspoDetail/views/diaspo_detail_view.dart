@@ -229,7 +229,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             children: [
               Text('Prix par kilo', style: TextStyle(fontSize: 14, color: _muted(isDark))),
               Text(
-                '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
+                '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor),
               ),
             ],

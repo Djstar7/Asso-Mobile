@@ -91,24 +91,6 @@ class WalletService {
     );
   }
 
-  /// Initiate PayPal withdrawal (Payout)
-  static Future<ApiResponse> withdrawPaypal({
-    required double amount,
-    required String paypalEmail,
-    String? notes,
-  }) async {
-    final data = <String, dynamic>{
-      'amount': amount,
-      'paypal_email': paypalEmail,
-    };
-    if (notes != null) data['notes'] = notes;
-
-    return await ApiProvider.post(
-      AppConstants.walletWithdrawPaypalUrl,
-      body: data,
-    );
-  }
-
   /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
   static Future<ApiResponse> withdrawStripe({
     required double amount,

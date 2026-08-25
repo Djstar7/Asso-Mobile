@@ -22,6 +22,42 @@ class CurrencyService extends GetxService {
   String get currencyCode => _userCurrency.value?.code ?? 'XOF';
   String get currencySymbol => _userCurrency.value?.symbol ?? 'FCFA';
 
+  /// Fallback synchrone code -> symbole (pour l'affichage d'une devise
+  /// indépendante de la devise utilisateur, ex: devise réelle d'une offre Diaspo).
+  static const Map<String, String> fallbackSymbols = {
+    'XAF': 'FCFA',
+    'XOF': 'FCFA',
+    'EUR': '€',
+    'USD': '\$',
+    'GBP': '£',
+    'CAD': 'CA\$',
+    'CHF': 'CHF',
+    'CNY': '¥',
+    'JPY': '¥',
+    'MAD': 'DH',
+    'DZD': 'DA',
+    'TND': 'DT',
+    'NGN': '₦',
+    'GHS': 'GH₵',
+    'ZAR': 'R',
+    'AED': 'AED',
+  };
+
+  /// Retourne le symbole associé à un code devise donné.
+  /// Cherche d'abord dans la devise utilisateur chargée (si le code correspond),
+  /// puis dans la table de fallback, sinon renvoie le code lui-même.
+  static String getSymbolForCode(String code) {
+    if (code.isEmpty) return 'FCFA';
+    final upper = code.toUpperCase();
+    if (Get.isRegistered<CurrencyService>()) {
+      final uc = CurrencyService.to.userCurrency;
+      if (uc != null && uc.code.toUpperCase() == upper && uc.symbol.isNotEmpty) {
+        return uc.symbol;
+      }
+    }
+    return fallbackSymbols[upper] ?? code;
+  }
+
   @override
   Future<void> onInit() async {
     super.onInit();

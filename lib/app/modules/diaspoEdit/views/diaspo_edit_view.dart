@@ -305,7 +305,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               decoration: InputDecoration(
                 labelText: 'Prix par kilo (${controller.currencySymbol})',
                 hintText: 'Ex: 13.00',
-                prefixIcon: const Icon(Icons.euro),
+                prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: '${controller.currencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
@@ -495,7 +495,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                     context,
                     'Prix par kilo',
                     '${controller.pricePerKgController.text} ${controller.currencySymbol}/kg',
-                    Icons.euro,
+                    Icons.payments_outlined,
                   ),
                   SizedBox(height: elementSpacing * 0.5),
                   _buildSummaryRow(

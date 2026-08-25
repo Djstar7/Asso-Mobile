@@ -9,9 +9,9 @@ import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import 'kpay_phone_selector.dart';
 
-/// Bottom sheet pour initier un retrait depuis KPay ou PayPal
+/// Bottom sheet pour initier un retrait Mobile Money (KPay)
 class WithdrawalBottomSheet extends StatefulWidget {
-  final String provider; // 'kpay' ou 'paypal'
+  final String provider; // 'kpay'
   final double availableBalance;
 
   const WithdrawalBottomSheet({
@@ -44,7 +44,6 @@ class WithdrawalBottomSheet extends StatefulWidget {
 class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  final _emailController = TextEditingController();
   final _notesController = TextEditingController();
 
   // Sélection KPay (renseignée par KpayPhoneSelector)
@@ -84,16 +83,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   @override
   void dispose() {
     _amountController.dispose();
-    _emailController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
   bool get isKpay => widget.provider == 'kpay';
-  bool get isPayPal => widget.provider == 'paypal';
 
-  String get title => isKpay ? 'Retrait Mobile Money' : 'Retrait PayPal';
-  String get providerLabel => isKpay ? 'KPay' : 'PayPal';
+  String get title => 'Retrait Mobile Money';
+  String get providerLabel => 'KPay';
 
   double get minAmount => appConfig.minWithdrawalAmount;
 
@@ -252,52 +249,6 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   ),
                 ],
 
-                // Champs spécifiques à PayPal
-                if (isPayPal) ...[
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: TextStyle(
-                      color: AppThemeSystem.getPrimaryTextColor(context),
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Email PayPal',
-                      hintText: 'votre.email@exemple.com',
-                      prefixIcon: const Icon(Icons.email),
-                      filled: true,
-                      fillColor: AppThemeSystem.getSurfaceColor(context),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: AppThemeSystem.getBorderColor(context),
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: AppThemeSystem.getBorderColor(context),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppThemeSystem.primaryColor,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer votre email PayPal';
-                      }
-                      if (!value.contains('@') || !value.contains('.')) {
-                        return 'Email invalide';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-
                 const SizedBox(height: 16),
 
                 // Notes (optionnel)
@@ -391,9 +342,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          isKpay
-                              ? 'Le retrait sera traité dans les 24-48h ouvrables.'
-                              : 'Le retrait PayPal sera traité dans les 3-5 jours ouvrables.',
+                          'Le retrait sera traité dans les 24-48h ouvrables.',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppThemeSystem.getSecondaryTextColor(context),
@@ -431,24 +380,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
     try {
       final amount = double.parse(_amountController.text);
-      Map<String, dynamic> result;
 
-      if (isKpay) {
-        result = await walletController.initiateWithdrawal(
-          provider: 'kpay',
-          amount: amount,
-          kpayProvider: _kpayProvider,
-          phoneNumber: _kpayPhone,
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        );
-      } else {
-        result = await walletController.initiateWithdrawal(
-          provider: 'paypal',
-          amount: amount,
-          paypalEmail: _emailController.text.trim(),
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        );
-      }
+      final result = await walletController.initiateWithdrawal(
+        provider: 'kpay',
+        amount: amount,
+        kpayProvider: _kpayProvider,
+        phoneNumber: _kpayPhone,
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      );
 
       if (!mounted) return;
 

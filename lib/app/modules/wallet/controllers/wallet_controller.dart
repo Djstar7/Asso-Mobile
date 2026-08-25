@@ -31,7 +31,6 @@ class WalletController extends GetxController {
 
   // Soldes de retrait séparés par provider
   final kpayBalance = 0.0.obs; // KPay XAF (compat)
-  final paypalBalance = 0.0.obs;
   final totalWithdrawableBalance = 0.0.obs;
 
   // Soldes KPay disponibles par devise (multi-devise) : {'XOF': 20000.0, ...}
@@ -63,7 +62,6 @@ class WalletController extends GetxController {
   // Configuration des rails côté plateforme (clés API présentes). Défaut = true pour
   // rester compatible avec un backend qui ne renvoie pas encore le bloc `methods`.
   final kpayConfigured = true.obs;
-  final paypalConfigured = true.obs;
   final stripeConfigured = true.obs;
 
   // Pagination des transactions
@@ -657,75 +655,6 @@ class WalletController extends GetxController {
     }
   }
 
-  /// Initie un paiement PayPal natif
-  Future<Map<String, dynamic>> initiateNativePayPalPayment({
-    required double amount,
-  }) async {
-    isProcessingPayment.value = true;
-    errorMessage.value = '';
-    successMessage.value = '';
-
-    try {
-      final result = await _walletService.createNativePayPalOrder(amount: amount);
-
-      if (result['success'] == true) {
-        successMessage.value = 'Ordre PayPal créé avec succès';
-        return result;
-      } else {
-        errorMessage.value = result['message'] ?? 'Échec de la création de l\'ordre PayPal';
-        return {'success': false, 'message': errorMessage.value};
-      }
-    } catch (e) {
-      print('[WalletController] Error initiating native PayPal payment: $e');
-      errorMessage.value = 'Erreur lors de la création de l\'ordre PayPal';
-      return {'success': false, 'message': errorMessage.value};
-    } finally {
-      isProcessingPayment.value = false;
-    }
-  }
-
-  /// Capture un paiement PayPal natif après approbation
-  Future<Map<String, dynamic>> captureNativePayPalPayment({
-    required int paymentId,
-    required String orderId,
-  }) async {
-    if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
-
-    isProcessingPayment.value = true;
-    errorMessage.value = '';
-    successMessage.value = '';
-
-    try {
-      final result = await _walletService.captureNativePayPalOrder(
-        paymentId: paymentId,
-        orderId: orderId,
-      );
-
-      if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
-
-      if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Paiement effectué avec succès';
-
-        // Rafraîchir le wallet et les soldes de retrait après paiement
-        await Future.wait([
-          loadWallet(),
-          loadWithdrawalBalances(),
-        ]);
-
-        return result;
-      } else {
-        errorMessage.value = result['message'] ?? 'Échec de la capture du paiement';
-        return {'success': false, 'message': errorMessage.value};
-      }
-    } catch (e) {
-      print('[WalletController] Error capturing native PayPal payment: $e');
-      errorMessage.value = 'Erreur lors de la capture du paiement';
-      return {'success': false, 'message': errorMessage.value};
-    } finally {
-      isProcessingPayment.value = false;
-    }
-  }
-
   /// Getter pour le solde actuel
   double get currentBalance => wallet.value?.currentBalance ?? 0.0;
 
@@ -755,7 +684,6 @@ class WalletController extends GetxController {
       if (result['success'] == true) {
         // Parse safely - handle both string and numeric responses
         kpayBalance.value = _parseBalance(result['kpay_wallet_balance']);
-        paypalBalance.value = _parseBalance(result['paypal_balance']);
         totalWithdrawableBalance.value = _parseBalance(result['total_balance']);
 
         // Soldes KPay par devise (available)
@@ -797,8 +725,6 @@ class WalletController extends GetxController {
         if (methods is Map) {
           final k = methods['kpay'];
           if (k is Map) kpayConfigured.value = k['configured'] == true;
-          final p = methods['paypal'];
-          if (p is Map) paypalConfigured.value = p['configured'] == true;
           final s = methods['stripe'];
           if (s is Map) stripeConfigured.value = s['configured'] == true;
         }
@@ -872,52 +798,6 @@ class WalletController extends GetxController {
     } catch (e) {
       print('[WalletController] Error initiating KPay withdrawal: $e');
       errorMessage.value = 'Erreur lors de l\'initiation du retrait';
-      return {'success': false, 'message': errorMessage.value};
-    } finally {
-      isProcessingPayment.value = false;
-    }
-  }
-
-  /// Initie un retrait PayPal Payout
-  Future<Map<String, dynamic>> initiatePayPalWithdrawal({
-    required double amount,
-    required String paypalEmail,
-    String? notes,
-  }) async {
-    isProcessingPayment.value = true;
-    errorMessage.value = '';
-    successMessage.value = '';
-
-    try {
-      final result = await _walletService.initiatePayPalWithdrawal(
-        amount: amount,
-        paypalEmail: paypalEmail,
-        notes: notes,
-      );
-
-      if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Retrait PayPal initié avec succès';
-
-        // ⚠️ CRITIQUE: Mettre à jour le solde IMMÉDIATEMENT avec la valeur retournée
-        // Le backend a déjà débité le solde, il faut refléter ça côté frontend
-        if (result['data'] != null && result['data']['new_balance'] != null) {
-          paypalBalance.value = _parseBalance(result['data']['new_balance']);
-          print('[WalletController] ✅ PayPal balance updated immediately: ${paypalBalance.value} FCFA');
-        }
-
-        // Rafraîchir le solde complet et les soldes de retrait en arrière-plan
-        await Future.wait([
-          loadWallet(),
-          loadWithdrawalBalances(),
-        ]);
-        return result;
-      } else {
-        errorMessage.value = result['message'] ?? 'Échec de l\'initiation du retrait PayPal';
-        return result;
-      }
-    } catch (e) {
-      print('[WalletController] Error initiating PayPal withdrawal: $e');
-      errorMessage.value = 'Erreur lors de l\'initiation du retrait PayPal';
       return {'success': false, 'message': errorMessage.value};
     } finally {
       isProcessingPayment.value = false;
@@ -1003,13 +883,12 @@ class WalletController extends GetxController {
   }
 
   /// Méthode wrapper générique pour initier un retrait
-  /// walletPocket: 'kpay' ou 'paypal' (poche wallet à débiter)
+  /// walletPocket: 'kpay' (poche wallet à débiter)
   Future<Map<String, dynamic>> initiateWithdrawal({
-    required String provider, // poche wallet : 'kpay' ou 'paypal'
+    required String provider, // poche wallet : 'kpay'
     required double amount,
     String? kpayProvider, // code opérateur KPay (ex. MTN_MOMO_CMR) — pour kpay
     String? phoneNumber, // pour kpay (format international sans '+')
-    String? paypalEmail, // Pour PayPal
     String? notes,
   }) async {
     if (provider == 'kpay') {
@@ -1023,18 +902,6 @@ class WalletController extends GetxController {
         amount: amount,
         provider: kpayProvider,
         phoneNumber: phoneNumber,
-        notes: notes,
-      );
-    } else if (provider == 'paypal') {
-      if (paypalEmail == null) {
-        return {
-          'success': false,
-          'message': 'Email PayPal requis',
-        };
-      }
-      return await initiatePayPalWithdrawal(
-        amount: amount,
-        paypalEmail: paypalEmail,
         notes: notes,
       );
     } else {

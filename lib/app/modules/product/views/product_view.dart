@@ -10,6 +10,7 @@ import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
 
 class ProductView extends GetView<ProductController> {
@@ -2043,7 +2044,7 @@ class ProductView extends GetView<ProductController> {
         await _payViaRedirect(product, productId, 'paypal_direct', 'paypal');
         break;
       case 'stripe':
-        await _payViaRedirect(product, productId, 'stripe_direct', 'stripe');
+        await _payViaCard(product, productId);
         break;
       default:
         Get.snackbar(
@@ -2120,6 +2121,56 @@ class ProductView extends GetView<ProductController> {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
       );
+    }
+  }
+
+  /// Sous-parcours de paiement par CARTE (Payment Sheet Stripe native) : crée la
+  /// commande en mode stripe_direct, présente la Payment Sheet, puis suit la
+  /// confirmation serveur (polling + webhook).
+  Future<void> _payViaCard(Map<String, dynamic> product, int productId) async {
+    if (!StripeNativeService.isSupported) {
+      Get.snackbar('Indisponible',
+          "Le paiement par carte est disponible sur l'application mobile.",
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final data = await controller.createCardOrder(
+      productId: productId,
+      quantity: controller.orderQuantity.value,
+    );
+    if (data == null) return; // échec (snackbar déjà affiché)
+
+    final orderId = data['order_id'] as int;
+
+    try {
+      final ok = await StripeNativeService().payWithCard(
+        publishableKey: data['publishable_key'] as String,
+        clientSecret: data['client_secret'] as String,
+      );
+
+      if (!ok) {
+        // Annulation utilisateur : la commande reste en attente.
+        Get.snackbar('Paiement annulé',
+            "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 4));
+        return;
+      }
+
+      Get.back(); // fermer le bottomsheet de commande
+      controller.pollOrderPayment(orderId);
+      Get.snackbar('Paiement en cours',
+          'Votre paiement est en cours de confirmation. Vous serez notifié.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green, colorText: Colors.white,
+          duration: const Duration(seconds: 5));
+      Get.toNamed('/shipment');
+    } catch (e) {
+      Get.snackbar('Erreur',
+          e.toString().replaceAll('Exception: ', ''),
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4));
     }
   }
 

@@ -245,40 +245,6 @@ class WalletService {
     }
   }
 
-  /// Initiate PayPal withdrawal
-  Future<Map<String, dynamic>> initiatePayPalWithdrawal({
-    required double amount,
-    required String paypalEmail,
-    String? notes,
-  }) async {
-    try {
-      final response = await wallet_provider.WalletService.withdrawPaypal(
-        amount: amount,
-        paypalEmail: paypalEmail,
-        notes: notes,
-      );
-
-      if (response.success) {
-        return {
-          'success': true,
-          'message': response.data?['message'] ?? 'Retrait PayPal initié avec succès',
-          ...?response.data,
-        };
-      }
-
-      return {
-        'success': false,
-        'message': response.data?['message'] ?? 'Échec du retrait PayPal',
-      };
-    } catch (e) {
-      print('[WalletService] Error initiating PayPal withdrawal: $e');
-      return {
-        'success': false,
-        'message': 'Erreur lors de l\'initiation du retrait PayPal',
-      };
-    }
-  }
-
   /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
   Future<Map<String, dynamic>> initiateStripeWithdrawal({
     required double amount,
@@ -445,69 +411,4 @@ class WalletService {
     }
   }
 
-  /// Create native PayPal order (for PayPal SDK)
-  Future<Map<String, dynamic>> createNativePayPalOrder({
-    required double amount,
-  }) async {
-    try {
-      final response = await ApiProvider.post(
-        AppConstants.walletPayPalCreateNativeOrderUrl,
-        body: {'amount': amount},
-      );
-
-      if (response.success) {
-        return {
-          'success': true,
-          'message': 'Ordre PayPal créé',
-          ...?response.data,
-        };
-      }
-
-      return {
-        'success': false,
-        'message': response.data?['message'] ?? 'Échec de la création de l\'ordre',
-      };
-    } catch (e) {
-      print('[WalletService] Error creating PayPal order: $e');
-      return {
-        'success': false,
-        'message': 'Erreur lors de la création de l\'ordre PayPal',
-      };
-    }
-  }
-
-  /// Capture native PayPal order
-  Future<Map<String, dynamic>> captureNativePayPalOrder({
-    required int paymentId,
-    required String orderId,
-  }) async {
-    try {
-      final response = await ApiProvider.post(
-        AppConstants.walletPayPalCaptureNativeOrderUrl,
-        body: {
-          'payment_id': paymentId,
-          'order_id': orderId,
-        },
-      );
-
-      if (response.success) {
-        return {
-          'success': true,
-          'message': response.data?['message'] ?? 'Paiement capturé avec succès',
-          ...?response.data,
-        };
-      }
-
-      return {
-        'success': false,
-        'message': response.data?['message'] ?? 'Échec de la capture du paiement',
-      };
-    } catch (e) {
-      print('[WalletService] Error capturing PayPal order: $e');
-      return {
-        'success': false,
-        'message': 'Erreur lors de la capture du paiement',
-      };
-    }
-  }
 }

@@ -469,7 +469,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(
               labelText: 'Nom du titulaire du compte',
-              hintText: 'Ex. : Jean Dupont',
+              hintText: 'Nom complet du titulaire du compte',
               border: OutlineInputBorder(),
             ),
             validator: controller.validateHolder,

@@ -587,7 +587,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         Text('Prix par kilo', style: TextStyle(fontSize: 12, color: muted)),
                         const SizedBox(height: 2),
                         Text(
-                          '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}/kg',
+                          '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

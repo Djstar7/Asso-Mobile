@@ -1083,7 +1083,7 @@ class SettingsController extends GetxController {
         StorageService.clearAuth();
       }
 
-      Get.offAllNamed('/login');
+      Get.offAllNamed(Routes.LOGIN);
     } catch (e) {
       Get.snackbar(
         'Erreur',

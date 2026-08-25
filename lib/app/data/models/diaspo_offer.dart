@@ -87,7 +87,7 @@ class DiaspoOffer {
       pricePerKg: double.parse(json['price_per_kg'].toString()),
       availableKg: double.parse(json['available_kg'].toString()),
       remainingKg: double.parse(json['remaining_kg'].toString()),
-      currency: json['currency'] ?? 'EUR',
+      currency: json['currency'] ?? 'XAF',
       viewsCount: json['views_count'] ?? 0,
       bookingsCount: json['bookings_count'] ?? 0,
       canDelete: json['can_delete'] ?? true,
@@ -127,6 +127,24 @@ class DiaspoOffer {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
+  }
+
+  /// Symbole de la devise RÉELLE de l'offre (et non celle de l'utilisateur).
+  String get currencySymbol => CurrencyService.getSymbolForCode(currency);
+
+  /// Prix par kilo formaté SANS reconversion, dans la devise réelle de l'offre.
+  /// Ajoute un séparateur de milliers et ne garde les décimales que si utiles.
+  String get formattedPricePerKg {
+    final hasDecimals = pricePerKg != pricePerKg.roundToDouble();
+    final raw = hasDecimals
+        ? pricePerKg.toStringAsFixed(2)
+        : pricePerKg.toStringAsFixed(0);
+    final parts = raw.split('.');
+    parts[0] = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
+    return parts.join('.');
   }
 
   /// Prix formaté avec conversion de devise

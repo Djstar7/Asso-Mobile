@@ -2,12 +2,12 @@ import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/app_theme_system.dart';
 import '../../../core/models/notification_model.dart';
 import '../../../data/services/notification_service.dart';
+import '../../../routes/app_pages.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 
-class NotificationController extends GetxController {
+class NotificationController extends GetxController with WidgetsBindingObserver {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   // Liste des notifications (synchronisées avec le backend)
@@ -21,8 +21,29 @@ class NotificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Observer le cycle de vie pour resynchroniser au retour au premier plan.
+    WidgetsBinding.instance.addObserver(this);
     _setupFCMListeners();
     fetchNotifications(); // Charger l'historique depuis le backend
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Toujours resynchroniser le badge au retour au premier plan.
+      updateUnreadCount();
+      // Si l'écran des notifications est affiché, recharger aussi la liste.
+      if (Get.currentRoute == Routes.NOTIFICATION) {
+        fetchNotifications(refresh: true);
+      }
+    }
   }
 
   /// Configure les listeners FCM
@@ -44,32 +65,41 @@ class NotificationController extends GetxController {
     final data = message.data;
     final notification = message.notification;
 
-    // Ajouter localement (elle sera aussi dans le backend)
-    _addLocalNotification(NotificationModel(
-      id: DateTime.now().millisecondsSinceEpoch, // ID temporaire
-      userId: 0, // Sera remplacé par le backend
-      title: notification?.title ?? 'Notification',
-      body: notification?.body ?? '',
-      type: data['type'] as String?,
-      data: data,
-      isRead: false,
-      sentAt: DateTime.now(),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ));
+    // Affichage : on NE montre PAS de snackbar ici. En foreground, la
+    // notification locale (heads-up) est déjà affichée par
+    // FirebaseMessagingService. Afficher aussi un snackbar créait un doublon
+    // visuel : on garde donc uniquement la notification locale.
 
-    // Afficher un snackbar
-    _showNotificationSnackbar(
-      title: notification?.title ?? 'Notification',
-      message: notification?.body ?? '',
-      data: data,
-    );
+    // Insertion dans la liste : ne jamais utiliser d'ID temporaire
+    // (DateTime.now()) sous peine de doublons et d'échecs de markAsRead sur un
+    // ID inexistant côté backend.
+    final rawId = data['notification_id'];
+    final int? realId = rawId is int ? rawId : int.tryParse('${rawId ?? ''}');
 
-    // Gérer les actions selon le type
+    if (realId != null) {
+      // Le backend a fourni le vrai ID : insertion avec déduplication.
+      _addLocalNotification(NotificationModel(
+        id: realId,
+        userId: 0,
+        title: notification?.title ?? 'Notification',
+        body: notification?.body ?? '',
+        type: data['type'] as String?,
+        data: data,
+        isRead: false,
+        sentAt: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+      // Reconcilier le compteur avec le backend.
+      updateUnreadCount();
+    } else {
+      // Pas d'ID réel : on recharge depuis le backend pour récupérer l'entrée
+      // authentique (avec son ID) plutôt que d'inventer un ID local.
+      fetchNotifications(refresh: true);
+    }
+
+    // Gérer les actions selon le type (rafraîchissement wallet, etc.).
     _handleNotificationAction(data);
-
-    // Rafraîchir depuis le backend pour avoir l'ID réel
-    updateUnreadCount();
   }
 
   /// Gère le clic sur une notification en arrière-plan
@@ -92,57 +122,6 @@ class NotificationController extends GetxController {
       print('🚀 [FCM] App ouverte via notification: ${message.data}');
       _handleBackgroundMessageClick(message);
     }
-  }
-
-  /// Affiche un snackbar pour la notification
-  void _showNotificationSnackbar({
-    required String title,
-    required String message,
-    required Map<String, dynamic> data,
-  }) {
-    Color backgroundColor;
-    IconData icon;
-
-    // Déterminer la couleur et l'icône selon le type
-    final type = data['type'] as String?;
-    switch (type) {
-      case 'wallet_credit':
-      case 'wallet_deposit_success':
-        backgroundColor = AppThemeSystem.successColor;
-        icon = Icons.check_circle_rounded;
-        break;
-      case 'wallet_credit_failed':
-      case 'wallet_deposit_failed':
-        backgroundColor = AppThemeSystem.errorColor;
-        icon = Icons.error_rounded;
-        break;
-      case 'wallet_withdrawal_success':
-        backgroundColor = AppThemeSystem.infoColor;
-        icon = Icons.arrow_circle_up_rounded;
-        break;
-      default:
-        backgroundColor = AppThemeSystem.primaryColor;
-        icon = Icons.notifications_rounded;
-    }
-
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: backgroundColor,
-      colorText: AppThemeSystem.whiteColor,
-      icon: Icon(icon, color: AppThemeSystem.whiteColor),
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 4),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      isDismissible: true,
-      dismissDirection: DismissDirection.horizontal,
-      forwardAnimationCurve: Curves.easeOutBack,
-      onTap: (_) {
-        // Cliquer sur la snackbar exécute l'action
-        _handleNotificationAction(data, fromClick: true);
-      },
-    );
   }
 
   /// Gère les actions selon le type de notification
@@ -289,8 +268,10 @@ class NotificationController extends GetxController {
     }
   }
 
-  /// Ajoute une notification locale (depuis FCM)
+  /// Ajoute une notification locale (depuis FCM), avec déduplication par ID
+  /// pour éviter d'afficher deux fois la même notification.
   void _addLocalNotification(NotificationModel notification) {
+    if (notifications.any((n) => n.id == notification.id)) return;
     notifications.insert(0, notification);
     if (!notification.isRead) {
       unreadCount.value++;

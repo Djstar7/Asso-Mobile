@@ -35,11 +35,16 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   Timer? _typingTimer;
   int get _currentUserId => StorageService.getUser()?.id ?? 0;
 
+  /// True lorsque la conversation est un chat avec le support (ex: commande en gros).
+  /// Dans ce cas, l'envoi d'images est désactivé.
+  bool isSupport = false;
+
   @override
   void onInit() {
     super.onInit();
     conversation = Get.arguments ?? {};
     _conversationId = int.tryParse(conversation['id']?.toString() ?? '');
+    isSupport = (Get.arguments?['is_support'] == true);
 
     // Si une offre Diaspo est passée en argument, la sélectionner automatiquement
     if (conversation['diaspo_offer'] != null) {

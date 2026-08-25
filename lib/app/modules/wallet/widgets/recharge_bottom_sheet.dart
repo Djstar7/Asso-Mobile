@@ -7,7 +7,7 @@ import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
-import '../views/paypal_native_webview.dart';
+import '../../../data/services/stripe_native_service.dart';
 import 'kpay_phone_selector.dart';
 
 /// Bottom sheet pour recharger le wallet en 2 étapes
@@ -33,8 +33,7 @@ class RechargeBottomSheet extends StatefulWidget {
 
 class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   int _currentStep = 1; // 1 = choix méthode, 2 = formulaire
-  String?
-  _selectedMethod; // 'kpay', 'visa', 'mastercard', 'paypal', 'crypto'
+  String? _selectedMethod; // 'kpay', 'card', 'crypto'
 
   // Sélection KPay (renseignée par KpayPhoneSelector)
   String? _kpayProvider; // code opérateur (ex. MTN_MOMO_CMR)
@@ -296,36 +295,14 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
         const SizedBox(height: 12),
 
-        // Cartes bancaires
+        // Carte bancaire (VISA / MasterCard) via Stripe natif (Payment Sheet)
         _buildMethodOption(
           context: context,
           logoPath: 'assets/images/visa.png',
-          title: 'VISA',
-          subtitle: 'Paiement par carte VISA',
+          title: 'Carte bancaire',
+          subtitle: 'VISA, MasterCard',
           color: const Color(0xFF1A1F71),
-          onTap: () => _selectMethod('visa'),
-        ),
-
-        const SizedBox(height: 12),
-
-        _buildMethodOption(
-          context: context,
-          logoPath: 'assets/images/mastercard.png',
-          title: 'MasterCard',
-          subtitle: 'Paiement par carte MasterCard',
-          color: const Color(0xFFEB001B),
-          onTap: () => _selectMethod('mastercard'),
-        ),
-
-        const SizedBox(height: 12),
-
-        _buildMethodOption(
-          context: context,
-          logoPath: 'assets/images/paypal.png',
-          title: 'PayPal',
-          subtitle: 'Paiement via PayPal',
-          color: const Color(0xFF0070BA),
-          onTap: () => _selectMethod('paypal'),
+          onTap: () => _selectMethod('card'),
         ),
 
         const SizedBox(height: 12),
@@ -476,12 +453,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     switch (_selectedMethod) {
       case 'kpay':
         return 'Confirmer la recharge';
-      case 'visa':
-        return 'Payer avec VISA';
-      case 'mastercard':
-        return 'Payer avec MasterCard';
-      case 'paypal':
-        return 'Payer avec PayPal';
+      case 'card':
+        return 'Payer par carte';
       default:
         return 'Confirmer le paiement';
     }
@@ -552,8 +525,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               },
             ),
 
-          // Pour VISA, MasterCard et PayPal, on n'affiche PAS de champs supplémentaires
-          // PayPal WebView gérera tout
+          // Pour la carte bancaire, aucun champ supplémentaire : la Payment Sheet
+          // Stripe native recueille les informations de carte.
           const SizedBox(height: 24),
 
           // Bouton de confirmation
@@ -655,88 +628,87 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           );
         }
       } else {
-        // PayPal (VISA, MasterCard, PayPal)
+        // Carte bancaire — recharge via Stripe natif (Payment Sheet).
+        if (!StripeNativeService.isSupported) {
+          Get.snackbar(
+            'Indisponible',
+            "Le paiement par carte est disponible sur l'application mobile.",
+            backgroundColor: AppThemeSystem.warningColor,
+            colorText: AppThemeSystem.whiteColor,
+          );
+          return;
+        }
 
-        // Créer l'ordre PayPal natif
-        final result = await walletController.initiateNativePayPalPayment(
+        // Créer l'intention de recharge carte (montant en XAF).
+        final result = await walletController.initiateRecharge(
           amount: amount,
+          paymentMethod: 'stripe',
         );
 
         if (!mounted) return;
 
-        if (result['success'] == true) {
-          // Fermer le bottom sheet avant d'ouvrir PayPal
-          Navigator.of(context).pop();
-
-          final data = result['data'] as Map<String, dynamic>?;
-          final approvalUrl = data?['approval_url'] as String?;
-          final orderId = data?['order_id'] as String?;
-          final paymentId = data?['payment_id'] as int?;
-
-          if (approvalUrl == null || orderId == null || paymentId == null) {
-            Get.snackbar(
-              'Erreur',
-              'Données PayPal manquantes',
-              backgroundColor: AppThemeSystem.errorColor,
-              colorText: AppThemeSystem.whiteColor,
-            );
-            return;
-          }
-
-          // Ouvrir PayPal WebView
-          final paypalResult = await Get.to<Map<String, dynamic>>(
-            () => PayPalNativeWebView(
-              approvalUrl: approvalUrl,
-              orderId: orderId,
-              paymentId: paymentId,
-              amount: amount,
-            ),
-          );
-
-          if (paypalResult != null && paypalResult['success'] == true) {
-            // L'utilisateur a approuvé, capturer le paiement
-            final captureResult = await walletController
-                .captureNativePayPalPayment(
-                  paymentId: paymentId,
-                  orderId: orderId,
-                );
-
-            if (captureResult['success'] == true) {
-              Get.snackbar(
-                'Succès',
-                captureResult['message'] ?? 'Paiement PayPal réussi',
-                backgroundColor: AppThemeSystem.successColor,
-                colorText: AppThemeSystem.whiteColor,
-              );
-
-              // Rafraîchir le wallet et naviguer vers l'historique
-              await walletController.refresh();
-              Get.toNamed(Routes.WALLET_HISTORY);
-            } else {
-              Get.snackbar(
-                'Erreur',
-                captureResult['message'] ?? 'Échec de la capture du paiement',
-                backgroundColor: AppThemeSystem.errorColor,
-                colorText: AppThemeSystem.whiteColor,
-              );
-            }
-          } else if (paypalResult != null &&
-              paypalResult['cancelled'] == true) {
-            Get.snackbar(
-              'Annulé',
-              'Paiement PayPal annulé',
-              backgroundColor: AppThemeSystem.warningColor,
-              colorText: AppThemeSystem.whiteColor,
-            );
-          }
-        } else {
+        if (result['success'] != true) {
           Get.snackbar(
             'Erreur',
             result['message'] ?? 'Échec de la recharge',
             backgroundColor: AppThemeSystem.errorColor,
             colorText: AppThemeSystem.whiteColor,
           );
+          return;
         }
+
+        final data = result['data'] as Map<String, dynamic>?;
+        final txId = data?['transaction_id'];
+        final clientSecret = data?['client_secret']?.toString();
+        final publishableKey = data?['publishable_key']?.toString();
+
+        if (txId == null ||
+            clientSecret == null || clientSecret.isEmpty ||
+            publishableKey == null || publishableKey.isEmpty) {
+          Get.snackbar(
+            'Erreur',
+            'Données de paiement carte indisponibles',
+            backgroundColor: AppThemeSystem.errorColor,
+            colorText: AppThemeSystem.whiteColor,
+          );
+          return;
+        }
+
+        // Présenter la Payment Sheet native.
+        final ok = await StripeNativeService().payWithCard(
+          publishableKey: publishableKey,
+          clientSecret: clientSecret,
+        );
+
+        if (!mounted) return;
+
+        if (!ok) {
+          Get.snackbar(
+            'Annulé',
+            'Paiement par carte annulé',
+            backgroundColor: AppThemeSystem.warningColor,
+            colorText: AppThemeSystem.whiteColor,
+          );
+          return;
+        }
+
+        // Suivre le crédit du solde XAF en arrière-plan (polling + notification).
+        if (txId is int) {
+          walletController.trackDepositInBackground(txId);
+        }
+
+        // Fermer le bottom sheet et informer.
+        Navigator.of(context).pop();
+        Get.snackbar(
+          'Paiement en cours',
+          'Votre recharge est en cours de confirmation. Vous serez notifié.',
+          backgroundColor: AppThemeSystem.successColor,
+          colorText: AppThemeSystem.whiteColor,
+          duration: const Duration(seconds: 5),
+        );
+
+        await walletController.refresh();
+        Get.toNamed(Routes.WALLET_HISTORY);
       }
     } catch (e) {
       print('[RechargeBottomSheet] Error: $e');

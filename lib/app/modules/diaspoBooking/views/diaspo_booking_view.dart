@@ -139,7 +139,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 child: _statTile(
                   isDark,
                   label: 'Prix par kilo',
-                  value: '${controller.formatPrice(offer.pricePerKg, showSymbol: false)} ${controller.currencySymbol}',
+                  value: '${offer.formattedPricePerKg} ${offer.currencySymbol}',
                   valueColor: AppThemeSystem.primaryColor,
                 ),
               ),
@@ -245,18 +245,18 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
             children: [
               _sectionTitle('Détails du paiement', isDark),
               const SizedBox(height: 16),
-              _priceRow('Sous-total', controller.formatPrice(controller.subtotal.value), isDark),
+              _priceRow('Sous-total', controller.formatOfferAmount(controller.subtotal.value), isDark),
               const SizedBox(height: 10),
               _priceRow(
                 'Commission (${controller.commissionPercent.value.toStringAsFixed(0)}%)',
-                controller.formatPrice(controller.commissionAmount.value),
+                controller.formatOfferAmount(controller.commissionAmount.value),
                 isDark,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
               ),
-              _priceRow('Total', controller.formatPrice(controller.totalPrice.value), isDark, isTotal: true),
+              _priceRow('Total', controller.formatOfferAmount(controller.totalPrice.value), isDark, isTotal: true),
             ],
           ),
         ));
@@ -350,7 +350,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                         const Icon(Icons.lock_outline, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          'Payer ${controller.formatPrice(controller.totalPrice.value)}',
+                          'Payer ${controller.formatOfferAmount(controller.totalPrice.value)}',
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ],
