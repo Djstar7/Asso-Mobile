@@ -9,6 +9,10 @@ class StripeConnectController extends GetxController {
   final isLoading = true.obs;
   final isSubmitting = false.obs;
 
+  /// Statut non chargé (réseau, session expirée, serveur). Sans cela, un échec
+  /// silencieux affichait le formulaire vierge : le vendeur croyait son IBAN perdu.
+  final loadError = RxnString();
+
   // Statut renvoyé par le serveur.
   final status = RxnString(); // null | pending | approved | rejected
   final rejectionReason = RxnString();
@@ -97,12 +101,17 @@ class StripeConnectController extends GetxController {
   Future<void> loadStatus() async {
     try {
       isLoading.value = true;
+      loadError.value = null;
       final res = await StripeConnectService.getStatus();
       if (res.success && res.data != null) {
         _applyStatus(res.data!);
+      } else {
+        loadError.value = res.message.isNotEmpty
+            ? res.message
+            : "Impossible de récupérer l'état de votre compte de virement.";
       }
     } catch (_) {
-      // Silencieux : on laisse simplement le formulaire vierge.
+      loadError.value = "Connexion au serveur impossible. Vérifiez votre réseau puis réessayez.";
     } finally {
       isLoading.value = false;
     }

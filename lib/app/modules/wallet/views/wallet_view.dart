@@ -886,6 +886,38 @@ class WalletView extends GetView<WalletController> {
               color: AppThemeSystem.paypalColor,
             );
           }),
+
+          const SizedBox(height: 12),
+
+          // Virement bancaire (IBAN) : le montant est exprimé dans la devise du
+          // compte bancaire, pas en FCFA — il vient de la conversion du portefeuille.
+          Obx(() {
+            final status = controller.stripeWithdrawStatus.value;
+            final last4 = controller.stripeIbanLast4.value;
+            final currency = controller.stripeWithdrawCurrency.value;
+            final available = controller.stripeWithdrawAvailable.value;
+
+            final subtitle = switch (status) {
+              'approved' => last4 != null ? 'IBAN ••••$last4' : 'Vers votre compte bancaire',
+              'pending' => 'IBAN en cours de vérification',
+              'rejected' => 'IBAN refusé — à renvoyer',
+              _ => 'Aucun IBAN enregistré',
+            };
+
+            return _buildProviderCard(
+              context: context,
+              iconData: Icons.account_balance_rounded,
+              emoji: '🏦',
+              title: 'Virement bancaire (IBAN)',
+              subtitle: subtitle,
+              balance: available,
+              color: AppThemeSystem.bankColor,
+              // Montant déjà exprimé dans la devise du compte bancaire.
+              balanceLabel: status == 'approved'
+                  ? '${available.toStringAsFixed(2)} $currency'
+                  : '—',
+            );
+          }),
         ],
       ),
     );
@@ -899,6 +931,7 @@ class WalletView extends GetView<WalletController> {
     required String subtitle,
     required double balance,
     required Color color,
+    String? balanceLabel,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -973,7 +1006,9 @@ class WalletView extends GetView<WalletController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                controller.formatPrice(balance),
+                // `formatPrice` convertit depuis le FCFA : un montant déjà exprimé
+                // dans une autre devise passe par `balanceLabel`.
+                balanceLabel ?? controller.formatPrice(balance),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

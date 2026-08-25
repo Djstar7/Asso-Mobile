@@ -50,6 +50,7 @@ class AppThemeSystem {
   // Couleurs des providers de paiement
   static const Color kpayColor = Color(0xFFFF6F00); // Orange
   static const Color paypalColor = Color(0xFF0070ba); // Bleu PayPal
+  static const Color bankColor = Color(0xFF16A34A); // Vert virement bancaire (IBAN)
 
   // ================================
   // BREAKPOINTS RESPONSIVE
