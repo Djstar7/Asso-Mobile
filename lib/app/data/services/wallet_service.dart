@@ -328,7 +328,12 @@ class WalletService {
       );
 
       if (response.success && response.data != null) {
-        return {'success': true, ...response.data!};
+        // `ApiResponse.data` porte le corps complet : le devis est sous `data`.
+        final payload = response.data!['data'];
+        return {
+          'success': true,
+          ...(payload is Map<String, dynamic> ? payload : response.data!),
+        };
       }
 
       return {'success': false, 'message': response.message};

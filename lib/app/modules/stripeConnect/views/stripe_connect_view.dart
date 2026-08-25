@@ -37,7 +37,13 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 _loadErrorCard(context)
               else if (controller.isApproved)
                 _approvedCard(context)
-              else if (controller.isPending)
+              // Informations réclamées par le partenaire : on redonne le formulaire
+              // plutôt que de laisser le vendeur devant une page d'attente sans issue.
+              else if (controller.needsMoreInfo) ...[
+                _moreInfoBanner(context),
+                const SizedBox(height: 16),
+                _form(context),
+              ] else if (controller.isPending)
                 _pendingCard(context)
               else
                 _form(context),
@@ -65,6 +71,48 @@ class StripeConnectView extends GetView<StripeConnectController> {
               "Enregistrez votre IBAN pour recevoir vos paiements par virement bancaire. "
               "Vos informations sont vérifiées par notre équipe avant activation.",
               style: TextStyle(fontSize: 13.5, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bandeau « informations complémentaires demandées », au-dessus du formulaire.
+  Widget _moreInfoBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.assignment_late_outlined, color: Colors.orange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Informations complémentaires demandées',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  controller.partnerVerification.value ??
+                      "Notre partenaire bancaire a besoin de précisions avant d'autoriser "
+                          'vos virements.',
+                  style: const TextStyle(fontSize: 13, height: 1.3),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Renvoyez le formulaire ci-dessous en vérifiant chaque champ.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.3),
+                ),
+              ],
             ),
           ),
         ],
@@ -550,7 +598,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(controller.isRejected ? 'Renvoyer mon IBAN' : 'Enregistrer mon IBAN'),
+                      : Text(controller.isRejected || controller.needsMoreInfo
+                          ? 'Renvoyer mes informations'
+                          : 'Enregistrer mon IBAN'),
                 )),
           ),
         ],

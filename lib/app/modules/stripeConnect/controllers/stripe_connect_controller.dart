@@ -47,6 +47,15 @@ class StripeConnectController extends GetxController {
   /// Un compte validé est verrouillé (on ne change pas l'IBAN librement).
   bool get canEdit => !isApproved;
 
+  /// Le partenaire bancaire réclame des informations complémentaires.
+  ///
+  /// Sans ce cas, un compte « en vérification » bloqué chez Stripe était une
+  /// impasse : le vendeur n'avait plus de formulaire, et l'admin ne pouvait pas
+  /// valider un compte que Stripe refuse. On lui rend la main pour renvoyer son
+  /// dossier immédiatement.
+  bool get needsMoreInfo =>
+      isPending && !partnerReady.value && partnerRequirements.isNotEmpty;
+
   @override
   void onInit() {
     super.onInit();
@@ -117,7 +126,15 @@ class StripeConnectController extends GetxController {
     }
   }
 
-  void _applyStatus(Map<String, dynamic> data) {
+  /// Applique le statut renvoyé par le serveur.
+  ///
+  /// ⚠️ `ApiResponse.data` porte le corps COMPLET (`{success, message, data}`) et
+  /// non le sous-objet `data` : sans ce déballage, `status` restait null et l'écran
+  /// réaffichait le formulaire alors que l'IBAN était bien enregistré.
+  void _applyStatus(Map<String, dynamic> body) {
+    final raw = body['data'];
+    final data = raw is Map<String, dynamic> ? raw : body;
+
     status.value = data['status'] as String?;
     rejectionReason.value = data['rejection_reason'] as String?;
     ibanLast4.value = data['iban_last4'] as String?;
