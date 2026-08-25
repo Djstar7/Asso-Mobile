@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_pages.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../data/providers/storage_service.dart';
 
 class PreferencesController extends GetxController {
   // Catégories d'intérêt avec sous-catégories
@@ -144,6 +145,13 @@ class PreferencesController extends GetxController {
   }
 
   Future<void> _loadPreferences() async {
+    // Mode vitrine (invite): pas de token, on n'appelle pas l'API et on laisse
+    // l'utilisateur parcourir/selectionner ses centres d'interet librement.
+    if (!StorageService.isAuthenticated) {
+      print('ℹ️ Mode invité: chargement des préférences distant ignoré');
+      return;
+    }
+
     try {
       isLoading.value = true;
       print('📥 Loading preferences from backend...');

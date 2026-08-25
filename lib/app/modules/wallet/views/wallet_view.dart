@@ -16,7 +16,10 @@ class WalletView extends GetView<WalletController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
-      body: RefreshIndicator(
+      // SafeArea: pas d'AppBar ici, on ajoute le padding de la status bar
+      // pour que le contenu ne colle pas sous l'encoche.
+      body: SafeArea(
+        child: RefreshIndicator(
         onRefresh: () => controller.refresh(),
         child: Obx(() {
           if (controller.isLoading.value) {
@@ -101,6 +104,7 @@ class WalletView extends GetView<WalletController> {
             ),
           );
         }),
+      ),
       ),
     );
   }

@@ -528,11 +528,8 @@ class HomeView extends GetView<HomeController> {
                   title: 'Mes préférences',
                   onTap: () {
                     Get.back();
-                    AuthGuard.navigateIfAuthenticated(
-                      context,
-                      Routes.PREFERENCES,
-                      featureName: 'vos préférences',
-                    );
+                    // Préférences accessibles en mode vitrine (sans connexion).
+                    Get.toNamed(Routes.PREFERENCES);
                   },
                 ),
                 _buildDrawerItem(
@@ -565,7 +562,14 @@ class HomeView extends GetView<HomeController> {
                   badge: 'Nouveau',
                   onTap: () {
                     Get.back();
-                    Get.toNamed('/diaspo');
+                    if (AuthGuard.isGuest) {
+                      AppDialogs.showLoginRequiredDialog(
+                        context,
+                        featureName: 'le mode Diaspora',
+                      );
+                    } else {
+                      Get.toNamed('/diaspo');
+                    }
                   },
                 ),
                 _buildDrawerItem(
@@ -708,7 +712,11 @@ class HomeView extends GetView<HomeController> {
                   title: 'Paramètres',
                   onTap: () {
                     Get.back();
-                    Get.toNamed('/settings');
+                    AuthGuard.navigateIfAuthenticated(
+                      context,
+                      '/settings',
+                      featureName: 'les paramètres',
+                    );
                   },
                 ),
                 _buildDrawerItem(
@@ -1527,7 +1535,16 @@ class HomeItemView extends GetView<HomeController> {
         vertical: 16,
       ),
       child: GestureDetector(
-        onTap: () => Get.toNamed('/diaspo'),
+        onTap: () {
+          if (AuthGuard.isGuest) {
+            AppDialogs.showLoginRequiredDialog(
+              context,
+              featureName: 'le mode Diaspora',
+            );
+          } else {
+            Get.toNamed('/diaspo');
+          }
+        },
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

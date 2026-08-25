@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
+import '../../profile/controllers/profile_controller.dart';
 
 class LoginController extends GetxController {
   late TextEditingController emailController;
@@ -124,6 +125,11 @@ class LoginController extends GetxController {
           // On ne bloque pas la navigation même si l'opération échoue
         }
 
+        // Rafraichir l'etat d'auth des controllers persistants (permanent:true)
+        // afin que le profil/menus refletent immediatement l'utilisateur connecte
+        // sans redemarrer l'app.
+        _refreshAuthState();
+
         // Navigate to home
         developer.log('Navigating to HOME', name: 'LoginController');
         Get.offAllNamed(Routes.HOME);
@@ -163,6 +169,15 @@ class LoginController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Met a jour les controllers persistants dependant de l'authentification.
+  /// HomeController lit l'etat d'auth en direct (StorageService), seul
+  /// ProfileController memorise isGuest a l'init : on le rafraichit ici.
+  void _refreshAuthState() {
+    if (Get.isRegistered<ProfileController>()) {
+      Get.find<ProfileController>().refreshAuthState();
     }
   }
 

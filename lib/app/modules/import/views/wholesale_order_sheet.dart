@@ -4,9 +4,13 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/auth_guard.dart';
+import '../../../core/utils/string_utils.dart';
+import '../../../core/controllers/app_config_controller.dart';
 import '../../../data/models/wholesale_models.dart';
 import '../../../data/providers/import_service.dart';
 import '../../../data/providers/order_service.dart';
+import '../../../data/providers/conversation_service.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
@@ -47,6 +51,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
   int _quantity = 0;
   double _weightOrCbm = 0;
   bool _submitting = false;
+  bool _contactingSupport = false;
 
   @override
   void initState() {
@@ -163,6 +168,28 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
               const SizedBox(height: 20),
               _summary(context),
               const SizedBox(height: 16),
+              // Contacter le support ASSO à propos de cette commande en gros.
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _contactingSupport ? null : _contactSupport,
+                  icon: _contactingSupport
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+                        )
+                      : Icon(Icons.chat_bubble_outline_rounded, color: AppThemeSystem.primaryColor),
+                  label: Text('Écrire un message',
+                      style: TextStyle(color: AppThemeSystem.primaryColor, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppThemeSystem.primaryColor, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -456,6 +483,65 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
           return;
         }
       } catch (_) {}
+    }
+  }
+
+  // ─────────────────────────── Support ───────────────────────────
+  /// Démarre une conversation avec le compte support ASSO et ouvre le chat avec
+  /// un message pré-rempli (nom du produit + quantité).
+  Future<void> _contactSupport() async {
+    // Fonctionnalité réservée aux utilisateurs connectés (messagerie).
+    if (!AuthGuard.checkAuthWithAlert(context, featureName: 'la messagerie')) {
+      return;
+    }
+
+    setState(() => _contactingSupport = true);
+    try {
+      // 1) Identifiant du compte support (cache app sinon /v1/app/support).
+      final appConfig = Get.isRegistered<AppConfigController>()
+          ? Get.find<AppConfigController>()
+          : Get.put(AppConfigController(), permanent: true);
+      final supportUserId = await appConfig.ensureSupportUserId();
+
+      if (supportUserId == null) {
+        Get.snackbar(
+          'Support indisponible',
+          "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      // 2) Créer ou récupérer la conversation (sans productId : modèle wholesale).
+      final response = await ConversationService.startConversation(userId: supportUserId);
+      if (!response.success || response.data == null) {
+        Get.snackbar('Erreur', 'Impossible de démarrer la conversation avec le support.',
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final conversationData = response.data!['conversation'];
+      final conversationId = conversationData?['id'];
+      if (conversationId == null) {
+        Get.snackbar('Erreur', 'Conversation indisponible.', snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final supportName = appConfig.supportName;
+
+      // 3) Ouvrir le chat avec un message pré-rempli (nom produit + quantité).
+      Get.back(); // fermer le sheet de commande
+      Get.toNamed('/chatdetail', arguments: {
+        'id': conversationId.toString(),
+        'name': supportName,
+        'avatar': StringUtils.getInitials(supportName),
+        'isOnline': false,
+        'default_message': '${widget.product.name} - quantité: $_quantity',
+      });
+    } catch (e) {
+      Get.snackbar('Erreur', 'Une erreur est survenue: $e', snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _contactingSupport = false);
     }
   }
 }

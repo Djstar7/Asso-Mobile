@@ -75,6 +75,20 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
     super.dispose();
   }
 
+  /// Libellé lisible du rail de paiement (accepte kpay / paypal / stripe).
+  String _paymentMethodLabel(String method) {
+    switch (method) {
+      case 'kpay':
+        return 'KPay';
+      case 'paypal':
+        return 'PayPal';
+      case 'stripe':
+        return 'Carte bancaire';
+      default:
+        return method;
+    }
+  }
+
   String _formatPrice(double priceInXOF) {
     if (!Get.isRegistered<CurrencyService>()) {
       return '${priceInXOF.toStringAsFixed(0)} FCFA';
@@ -191,9 +205,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                       _buildDetailRow(
                         context,
                         'Méthode',
-                        widget.paymentMethod == 'kpay'
-                            ? 'KPay'
-                            : 'PayPal',
+                        _paymentMethodLabel(widget.paymentMethod),
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(

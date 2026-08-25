@@ -1,4 +1,5 @@
 import 'api_provider.dart';
+import '../../core/values/constants.dart';
 
 class PackageService {
   /// Get all available storage packages
@@ -75,6 +76,80 @@ class PackageService {
       print('  └─ Stack trace:');
       print(stackTrace.toString().split('\n').take(3).join('\n'));
       print('========================================');
+      rethrow;
+    }
+  }
+
+  /// Souscrire à un package de stockage via un rail de paiement DIRECT
+  /// (identique au parcours acheteur : KPay Mobile Money / PayPal / Stripe).
+  ///
+  ///  - kpay_direct  : nécessite [provider] + [phoneNumber] (fournis par le
+  ///    KpayDirectPaymentSheet, mêmes valeurs que les commandes).
+  ///  - paypal_direct / stripe_direct : aucune donnée supplémentaire ; la réponse
+  ///    contient une [approval_url] à ouvrir en WebView.
+  ///
+  /// Réponse 201 : { success, message, payment_mode, subscription_id,
+  ///                 status:"pending", payment_reference, approval_url }
+  static Future<ApiResponse> subscribePackageDirect(
+    int packageId, {
+    required String paymentMode,
+    String? provider,
+    String? phoneNumber,
+  }) async {
+    print('');
+    print('========================================');
+    print('💳 PACKAGE SERVICE: Subscribe (direct) START');
+    print('========================================');
+    print('  └─ Package ID: $packageId');
+    print('  └─ Payment mode: $paymentMode');
+
+    try {
+      final body = <String, dynamic>{
+        'package_id': packageId,
+        'payment_mode': paymentMode,
+      };
+      if (paymentMode == 'kpay_direct') {
+        body['provider'] = provider;
+        body['phone_number'] = phoneNumber;
+      }
+
+      final response = await ApiProvider.post(
+        AppConstants.subscribePackageUrl,
+        body: body,
+      );
+
+      print('✅ PACKAGE SERVICE: API call completed');
+      print('  └─ Success: ${response.success}');
+      print('  └─ Status: ${response.statusCode}');
+      print('  └─ Subscription ID: ${response.data?['subscription_id']}');
+      print('  └─ Approval URL: ${response.data?['approval_url']}');
+      print('========================================');
+
+      return response;
+    } catch (e, stackTrace) {
+      print('💥 PACKAGE SERVICE: Exception!');
+      print('  └─ Error: $e');
+      print(stackTrace.toString().split('\n').take(3).join('\n'));
+      print('========================================');
+      rethrow;
+    }
+  }
+
+  /// Statut de paiement d'un abonnement (à POLLER tant que status == "pending").
+  ///
+  /// Réponse : { success, data:{ subscription_id, status:"pending|paid|failed",
+  ///             payment_mode, payment_reference, vendor_package_id,
+  ///             vendor_package:{...}|null } }
+  static Future<ApiResponse> getSubscriptionPaymentStatus(
+    int subscriptionId,
+  ) async {
+    try {
+      final response = await ApiProvider.get(
+        '${AppConstants.packageSubscriptionUrl}/$subscriptionId/payment-status',
+      );
+      return response;
+    } catch (e) {
+      print('💥 PACKAGE SERVICE: subscription payment-status exception: $e');
       rethrow;
     }
   }
