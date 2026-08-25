@@ -37,15 +37,16 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 _loadErrorCard(context)
               else if (controller.isApproved)
                 _approvedCard(context)
-              // Informations réclamées par le partenaire : on redonne le formulaire
-              // plutôt que de laisser le vendeur devant une page d'attente sans issue.
-              else if (controller.needsMoreInfo) ...[
-                _moreInfoBanner(context),
-                const SizedBox(height: 16),
-                _form(context),
-              ] else if (controller.isPending)
-                _pendingCard(context)
-              else
+              else if (controller.isPending) ...[
+                // Dossier en cours d'examen : plus aucune saisie possible. Si le
+                // partenaire réclame des précisions, le bandeau l'annonce et la
+                // correction passe par le support (qui rouvre le formulaire).
+                if (controller.needsMoreInfo) ...[
+                  _moreInfoBanner(context),
+                  const SizedBox(height: 16),
+                ],
+                _pendingCard(context),
+              ] else
                 _form(context),
             ],
           ),
@@ -109,7 +110,8 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Renvoyez le formulaire ci-dessous en vérifiant chaque champ.',
+                  'Notre équipe va vous recontacter pour compléter votre dossier. '
+                  'Vos informations restent enregistrées.',
                   style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.3),
                 ),
               ],
@@ -598,9 +600,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(controller.isRejected || controller.needsMoreInfo
-                          ? 'Renvoyer mes informations'
-                          : 'Enregistrer mon IBAN'),
+                      : Text(controller.isRejected ? 'Renvoyer mon IBAN' : 'Enregistrer mon IBAN'),
                 )),
           ),
         ],
