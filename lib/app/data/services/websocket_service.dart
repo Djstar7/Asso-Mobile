@@ -29,13 +29,15 @@ class WebSocketService extends GetxService {
   // Configuration Reverb (Laravel)
   static const String appKey = '9r0idxmfd6d9lc9e055h';
 
-  // Local (commenté)
-  static const String host = '192.168.1.213';
-  static const int wsPort = 8080;
-
-  // Production
-  // static const String host = 'asso-dashboard.sbs';
-  // static const int wsPort = 8085;
+  // Serveur de diffusion (Reverb). Surchargeable au build, comme l'API :
+  //   flutter build apk --dart-define=WS_HOST=asso-dashboard.sbs --dart-define=WS_PORT=8080
+  // Le défaut vise la production : un APK distribué ne doit jamais pointer vers
+  // une IP de réseau local, injoignable pour le testeur.
+  static const String host = String.fromEnvironment(
+    'WS_HOST',
+    defaultValue: 'asso-dashboard.sbs',
+  );
+  static const int wsPort = int.fromEnvironment('WS_PORT', defaultValue: 8080);
 
   // Channels actifs
   final Set<String> _subscribedChannels = {};
