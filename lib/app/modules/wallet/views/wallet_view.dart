@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/wallet_controller.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/storage_service.dart';
 import '../widgets/withdrawal_bottom_sheet.dart';
 import '../widgets/quick_confirm_code_dialog.dart';
 import '../../payment/widgets/payment_method_selector.dart';
@@ -73,6 +74,9 @@ class WalletView extends GetView<WalletController> {
                 // Carte bancaire style VISA/ASSO
                 _buildAssoCard(context),
 
+                // Bannière "chaude" : IBAN vendeur non encore synchronisé
+                _buildIbanSyncBanner(context),
+
                 const SizedBox(height: 24),
 
                 // Actions rapides
@@ -107,6 +111,93 @@ class WalletView extends GetView<WalletController> {
       ),
       ),
     );
+  }
+
+  /// Bannière "chaude" invitant le vendeur à synchroniser son IBAN
+  /// (compte de virement Stripe Connect) tant qu'il n'est pas approuvé.
+  Widget _buildIbanSyncBanner(BuildContext context) {
+    return Obx(() {
+      // Réservé aux vendeurs : un acheteur n'a pas d'IBAN de versement.
+      final isVendor = StorageService.getUser()?.isVendor ?? false;
+      final status = controller.stripeWithdrawStatus.value; // null|pending|approved|rejected
+      // Afficher uniquement quand l'IBAN est absent ou refusé (pas "en cours").
+      final bool rejected = status == 'rejected';
+      final bool absent = status == null || status.isEmpty;
+      if (!isVendor || !(absent || rejected)) {
+        return const SizedBox.shrink();
+      }
+
+      const Color accent = Color(0xFFC62828); // rouge (à faire / refusé)
+      final Color bg = accent.withValues(alpha: 0.10);
+
+      final String title =
+          rejected ? 'IBAN refusé - à corriger' : 'IBAN non configuré';
+      final String subtitle = rejected
+          ? 'Vos informations bancaires ont été refusées. Configurez votre IBAN dans les paramètres vendeur pour être payé.'
+          : 'Votre IBAN se configure dans les paramètres vendeur. Appuyez pour l\'ajouter et recevoir vos paiements.';
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => Get.toNamed('/stripe-connect'),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_rounded,
+                      color: accent,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.3,
+                            color: AppThemeSystem.getSecondaryTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: accent),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   /// Carte bancaire ASSO (style VISA)
@@ -877,7 +968,8 @@ class WalletView extends GetView<WalletController> {
 
           const SizedBox(height: 12),
 
-          // Bank Cards (VISA, MasterCard, PayPal)
+          // Cartes Bancaires (VISA, MasterCard) — recharge via Stripe natif.
+          // Pas de poche de retrait dédiée : la recharge carte crédite le solde XAF.
           Obx(() {
             final balance = controller.wallet.value?.paypalBalance ?? 0.0;
             return _buildProviderCard(
@@ -885,7 +977,7 @@ class WalletView extends GetView<WalletController> {
               iconData: Icons.credit_card_rounded,
               emoji: '💳',
               title: 'Cartes Bancaires',
-              subtitle: 'VISA, MasterCard, PayPal',
+              subtitle: 'VISA, MasterCard',
               balance: balance,
               color: AppThemeSystem.paypalColor,
             );
@@ -1037,11 +1129,10 @@ class WalletView extends GetView<WalletController> {
   /// Affiche les options de retrait
   /// Sélecteur de méthode de retrait — réutilise EXACTEMENT le widget de paiement
   /// (PaymentMethodSelector) avec des options construites depuis les soldes de retrait.
-  /// Les trois rails (KPay / Cartes-PayPal / Virement IBAN) sont toujours affichés,
+  /// Les deux rails (KPay / Virement IBAN) sont toujours affichés,
   /// grisés + non cliquables quand indisponibles (aucun solde, ou IBAN non validé).
   void _showWithdrawalOptions(BuildContext context) async {
     final kpayBal = controller.wallet.value?.kpayBalance ?? 0.0;
-    final paypalBal = controller.wallet.value?.paypalBalance ?? 0.0;
     final stripeEligible = controller.stripeWithdrawEligible.value;
     final stripeBal = controller.stripeWithdrawAvailable.value;
     final stripeLast4 = controller.stripeIbanLast4.value;
@@ -1050,7 +1141,6 @@ class WalletView extends GetView<WalletController> {
     // Un moyen non configuré côté plateforme est grisé (raison affichée au tap),
     // pour éviter que l'utilisateur tente un retrait qui échouerait par une erreur.
     final kpayConfigured = controller.kpayConfigured.value;
-    final paypalConfigured = controller.paypalConfigured.value;
     final stripeConfigured = controller.stripeConfigured.value;
 
     final options = <PaymentMethodOption>[
@@ -1067,21 +1157,6 @@ class WalletView extends GetView<WalletController> {
             ? 'Momentanément indisponible'
             : (kpayBal > 0
                 ? '${controller.formatPrice(kpayBal)} disponible'
-                : 'Aucun solde à retirer'),
-      ),
-      PaymentMethodOption(
-        code: 'paypal',
-        label: 'Cartes Bancaires',
-        subtitle: 'VISA, MasterCard, PayPal',
-        flow: 'redirect',
-        enabled: paypalConfigured,
-        available: paypalConfigured && paypalBal > 0,
-        minCurrency: 'XAF',
-        unavailableReason: (paypalConfigured && paypalBal > 0) ? null : 'disabled',
-        hint: !paypalConfigured
-            ? 'Momentanément indisponible'
-            : (paypalBal > 0
-                ? '${controller.formatPrice(paypalBal)} disponible'
                 : 'Aucun solde à retirer'),
       ),
       PaymentMethodOption(
@@ -1107,7 +1182,7 @@ class WalletView extends GetView<WalletController> {
     ];
 
     final selected = await PaymentMethodSelector.show(
-      amount: kpayBal + paypalBal,
+      amount: kpayBal,
       currency: 'FCFA',
       amountLabel: 'Solde disponible',
       title: 'Choisir une méthode de retrait',
@@ -1120,13 +1195,6 @@ class WalletView extends GetView<WalletController> {
         final result = await WithdrawalBottomSheet.show(
           provider: 'kpay',
           availableBalance: kpayBal,
-        );
-        if (result == true) controller.refresh();
-        break;
-      case 'paypal':
-        final result = await WithdrawalBottomSheet.show(
-          provider: 'paypal',
-          availableBalance: paypalBal,
         );
         if (result == true) controller.refresh();
         break;

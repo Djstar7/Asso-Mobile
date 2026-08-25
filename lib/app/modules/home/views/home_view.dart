@@ -151,23 +151,6 @@ class HomeView extends GetView<HomeController> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Camera icon for image search - hide on very small screens
-                          if (MediaQuery.of(context).size.width > 360)
-                            _buildCompactIconButton(
-                              context: context,
-                              icon: Icon(
-                                Icons.camera_alt_rounded,
-                                color: AppThemeSystem.getPrimaryTextColor(context),
-                              ),
-                              onPressed: () {
-                                Get.snackbar(
-                                  'Recherche par image',
-                                  'Prenez une photo pour rechercher des produits similaires',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                );
-                              },
-                            ),
-
                           // Wishlist icon
                           _buildCompactIconButton(
                             context: context,
@@ -853,7 +836,7 @@ class HomeView extends GetView<HomeController> {
                             onPressed: () async {
                               Get.back();
                               await AuthService.logout();
-                              Get.offAllNamed('/login');
+                              Get.offAllNamed(Routes.LOGIN);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppThemeSystem.errorColor,

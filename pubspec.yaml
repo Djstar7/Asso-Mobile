@@ -69,6 +69,8 @@ dependencies:
   flutter_markdown: ^0.7.4+1
   dio: ^5.9.2
   http_parser: ^4.0.2
+  # Paiement carte natif (Payment Sheet) — remplace l'ancien parcours stripe_direct WebView
+  flutter_stripe: ^11.5.0
 
 dev_dependencies:
   flutter_test:

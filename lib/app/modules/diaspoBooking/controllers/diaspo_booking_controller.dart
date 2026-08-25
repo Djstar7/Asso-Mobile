@@ -8,6 +8,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../../data/services/stripe_native_service.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -123,9 +124,58 @@ class DiaspoBookingController extends GetxController {
       );
       if (selection == null) return; // annulé
       await _processKpayBooking(selection['provider']!, selection['phone']!);
+    } else if (method.code == 'stripe') {
+      // Carte : Payment Sheet Stripe native.
+      await _processCardBooking();
     } else {
-      // PayPal / carte (Stripe Checkout) : redirection WebView.
+      // PayPal : redirection WebView.
       await _processRedirectBooking(method);
+    }
+  }
+
+  /// Réservation payée par CARTE (Payment Sheet Stripe native).
+  Future<void> _processCardBooking() async {
+    if (!StripeNativeService.isSupported) {
+      Get.snackbar('Indisponible',
+          "Le paiement par carte est disponible sur l'application mobile.");
+      return;
+    }
+    isSubmitting.value = true;
+    try {
+      final result = await _diaspoService.bookOffer(
+        offerId: offer.value!.id,
+        kgBooked: kgBooked.value,
+        paymentMethod: 'stripe',
+      );
+      final booking = result['booking'] as DiaspoBooking;
+      final payment = result['payment'] as Map<String, dynamic>;
+      final clientSecret = payment['client_secret']?.toString();
+      final publishableKey = payment['publishable_key']?.toString();
+
+      isSubmitting.value = false;
+
+      if (clientSecret == null || clientSecret.isEmpty ||
+          publishableKey == null || publishableKey.isEmpty) {
+        _showError(Exception('Données de paiement carte indisponibles. Réessayez.'));
+        return;
+      }
+
+      final ok = await StripeNativeService().payWithCard(
+        publishableKey: publishableKey,
+        clientSecret: clientSecret,
+      );
+      if (!ok) {
+        Get.snackbar('Paiement annulé', "Le paiement n'a pas été finalisé.",
+            backgroundColor: Colors.orange, colorText: Colors.white,
+            duration: const Duration(seconds: 4));
+        return;
+      }
+
+      // La confirmation réelle se fait côté serveur (webhook), suivie par le polling.
+      _pollBookingPayment(booking);
+    } catch (e) {
+      isSubmitting.value = false;
+      _showError(e);
     }
   }
 
@@ -332,11 +382,22 @@ class DiaspoBookingController extends GetxController {
     return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
   }
 
-  /// Get currency symbol
-  String get currencySymbol {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return 'FCFA';
-    }
-    return CurrencyService.to.currencySymbol;
+  /// Symbole de la devise réelle de l'offre (pas celle de l'utilisateur).
+  String get currencySymbol => CurrencyService.getSymbolForCode(currency);
+
+  /// Formate un montant DÉJÀ exprimé dans la devise de l'offre, SANS reconversion.
+  /// Les sous-total/commission/total sont calculés à partir de `pricePerKg`
+  /// (devise de l'offre), il ne faut donc pas les reconvertir vers la devise user.
+  String formatOfferAmount(double amount) {
+    final hasDecimals = amount != amount.roundToDouble();
+    final raw = hasDecimals
+        ? amount.toStringAsFixed(2)
+        : amount.toStringAsFixed(0);
+    final parts = raw.split('.');
+    parts[0] = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
+    return '${parts.join('.')} $currencySymbol';
   }
 }

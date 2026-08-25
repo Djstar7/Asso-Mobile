@@ -14,6 +14,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
+import '../../../data/services/stripe_native_service.dart';
 
 /// Fiche produit GROS + tunnel de commande : palier (cota) → quantité → expédition
 /// → moyen de paiement (sélecteur unifié). Réservé aux commandes en gros.
@@ -384,6 +385,11 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
 
   // ─────────────────────────── Paiement ───────────────────────────
   Future<void> _pay() async {
+    // En mode invité, ne pas ouvrir un sélecteur vide ("aucun moyen disponible") :
+    // exiger la connexion d'abord.
+    if (!AuthGuard.checkAuthWithAlert(context, featureName: 'le paiement')) {
+      return;
+    }
     final tier = _tier, shipping = _shipping;
     if (tier == null || shipping == null) {
       Get.snackbar('Erreur', 'Choisissez un conditionnement et une expédition.', snackPosition: SnackPosition.BOTTOM);
@@ -411,8 +417,10 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       final sel = await KpayDirectPaymentSheet.show(amount: _total, amountLabel: 'Total à payer');
       if (sel == null) return;
       await _create('kpay_direct', items, shipping.id, weight, cbm, provider: sel['provider'], phone: sel['phone']);
-    } else if (method.code == 'paypal' || method.code == 'stripe') {
-      await _create(method.code == 'paypal' ? 'paypal_direct' : 'stripe_direct', items, shipping.id, weight, cbm);
+    } else if (method.code == 'stripe') {
+      await _createCard(items, shipping.id, weight, cbm);
+    } else if (method.code == 'paypal') {
+      await _create('paypal_direct', items, shipping.id, weight, cbm);
     } else {
       Get.snackbar('Indisponible', "Ce moyen n'est pas disponible pour les commandes en gros.", snackPosition: SnackPosition.BOTTOM);
     }
@@ -461,6 +469,50 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
           backgroundColor: Colors.green, colorText: Colors.white, duration: const Duration(seconds: 5), snackPosition: SnackPosition.BOTTOM);
     } catch (_) {
       Get.snackbar('Erreur', 'Une erreur est survenue.', snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Commande en gros payée par CARTE (Payment Sheet Stripe native).
+  Future<void> _createCard(List<Map<String, dynamic>> items, int shippingId, double? weight, double? cbm) async {
+    if (!StripeNativeService.isSupported) {
+      Get.snackbar('Indisponible', "Le paiement par carte est disponible sur l'application mobile.", snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final res = await ImportService.createOrder(
+        items: items,
+        shippingOptionId: shippingId,
+        shippingWeightKg: weight,
+        shippingCbm: cbm,
+        paymentMode: 'stripe_direct',
+      );
+      if (!res.success) {
+        Get.snackbar('Erreur', res.message.isNotEmpty ? res.message : 'Échec de la commande', snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      final orderId = res.data?['order_id'] as int?;
+      final clientSecret = res.data?['client_secret']?.toString();
+      final publishableKey = res.data?['publishable_key']?.toString();
+      if (orderId == null || clientSecret == null || clientSecret.isEmpty || publishableKey == null || publishableKey.isEmpty) {
+        Get.snackbar('Erreur', 'Données de paiement carte indisponibles.', snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final ok = await StripeNativeService().payWithCard(publishableKey: publishableKey, clientSecret: clientSecret);
+      if (!ok) {
+        Get.snackbar('Paiement annulé', "Le paiement n'a pas été finalisé. Votre commande reste en attente.", snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      Get.back(); // fermer le sheet
+      _pollOrder(orderId);
+      Get.snackbar('Paiement en cours', 'La confirmation est automatique. Vous serez notifié.',
+          backgroundColor: Colors.green, colorText: Colors.white, duration: const Duration(seconds: 5), snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('Erreur', e.toString().replaceAll('Exception: ', ''), snackPosition: SnackPosition.BOTTOM);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -537,6 +589,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         'avatar': StringUtils.getInitials(supportName),
         'isOnline': false,
         'default_message': '${widget.product.name} - quantité: $_quantity',
+        'is_support': true,
       });
     } catch (e) {
       Get.snackbar('Erreur', 'Une erreur est survenue: $e', snackPosition: SnackPosition.BOTTOM);

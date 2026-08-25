@@ -313,7 +313,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               decoration: InputDecoration(
                 labelText: 'Prix par kilo (${controller.offerCurrencySymbol})',
                 hintText: 'Ex: 13.00',
-                prefixIcon: const Icon(Icons.euro),
+                prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: '${controller.offerCurrencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),

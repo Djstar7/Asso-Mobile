@@ -1,5 +1,7 @@
 package com.asso.asso
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// flutter_stripe exige que l'Activity hôte étende FlutterFragmentActivity
+// (et non FlutterActivity) pour présenter la Payment Sheet native.
+class MainActivity : FlutterFragmentActivity()

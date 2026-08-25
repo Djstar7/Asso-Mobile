@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/auth_guard.dart';
 import '../controllers/tracking_controller.dart';
 
 class TrackingView extends GetView<TrackingController> {
@@ -308,12 +309,17 @@ class TrackingView extends GetView<TrackingController> {
 
                 const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Voir le suivi',
-                      style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, size: 16, color: AppThemeSystem.primaryColor),
+                    _buildChatButton(context, shipment),
+                    Row(
+                      children: [
+                        Text('Voir le suivi',
+                          style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_rounded, size: 16, color: AppThemeSystem.primaryColor),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -322,6 +328,52 @@ class TrackingView extends GetView<TrackingController> {
         ),
       ),
     );
+  }
+
+  /// Bouton discret pour écrire un message à propos de la commande.
+  /// Ouvre une conversation avec le vendeur si disponible, sinon avec le
+  /// support ASSO. Réservé aux utilisateurs connectés (garde défensive).
+  Widget _buildChatButton(BuildContext context, Map<String, dynamic> shipment) {
+    return Obx(() {
+      final isLoading = controller.openingChatOrderId.value == (shipment['id']?.toString() ?? '');
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: isLoading
+              ? null
+              : () {
+                  // Garde d'auth défensive même si la page est réservée aux connectés.
+                  if (!AuthGuard.checkAuthWithAlert(context, featureName: 'la messagerie')) {
+                    return;
+                  }
+                  controller.openConversationForOrder(shipment);
+                },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLoading)
+                  SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+                  )
+                else
+                  Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppThemeSystem.primaryColor),
+                const SizedBox(width: 6),
+                Text('Message',
+                  style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildProductImage(String? imageUrl, double size) {

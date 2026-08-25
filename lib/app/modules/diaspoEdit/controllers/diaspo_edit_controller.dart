@@ -279,11 +279,9 @@ class DiaspoEditController extends GetxController {
     return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
   }
 
-  /// Get currency symbol
+  /// Symbole de la devise RÉELLE de l'offre (et non la devise de l'utilisateur).
+  /// Dérivé du code `offer.currency` via la table de correspondance.
   String get currencySymbol {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return 'FCFA';
-    }
-    return CurrencyService.to.currencySymbol;
+    return CurrencyService.getSymbolForCode(offer.currency);
   }
 }

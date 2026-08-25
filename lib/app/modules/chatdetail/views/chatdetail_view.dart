@@ -548,16 +548,20 @@ class ChatdetailView extends GetView<ChatdetailController> {
             // Barre de saisie
             Row(
               children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.camera_alt_rounded,
-                    color: AppThemeSystem.primaryColor,
-                    size: 28,
-                  ),
-                  onPressed: () {
-                    _showImageSourceDialog(context);
-                  },
-                ),
+                // Le chat support ne permet pas l'envoi d'images.
+                if (!controller.isSupport)
+                  IconButton(
+                    icon: Icon(
+                      Icons.camera_alt_rounded,
+                      color: AppThemeSystem.primaryColor,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      _showImageSourceDialog(context);
+                    },
+                  )
+                else
+                  const SizedBox.shrink(),
                 SizedBox(width: 8),
                 Expanded(
                   child: Container(
@@ -861,18 +865,21 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildAttachmentOption(
-                      context,
-                      Icons.image_rounded,
-                      'Photo',
-                      AppThemeSystem.primaryColor,
-                    ),
-                    _buildAttachmentOption(
-                      context,
-                      Icons.camera_alt_rounded,
-                      'Caméra',
-                      Colors.pink,
-                    ),
+                    // Le chat support ne permet pas l'envoi d'images (Photo/Caméra).
+                    if (!controller.isSupport)
+                      _buildAttachmentOption(
+                        context,
+                        Icons.image_rounded,
+                        'Photo',
+                        AppThemeSystem.primaryColor,
+                      ),
+                    if (!controller.isSupport)
+                      _buildAttachmentOption(
+                        context,
+                        Icons.camera_alt_rounded,
+                        'Caméra',
+                        Colors.pink,
+                      ),
                     _buildAttachmentOption(
                       context,
                       Icons.insert_drive_file_rounded,

@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../data/providers/conversation_service.dart';
 import '../../../data/services/fcm_service.dart';
+import '../../../core/controllers/app_config_controller.dart';
+import '../../../core/utils/string_utils.dart';
 
 class TrackingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
@@ -13,6 +16,10 @@ class TrackingController extends GetxController {
   final RxString selectedFilter = 'Tous'.obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
+
+  /// Identifiant (numéro) de la commande dont la conversation est en cours
+  /// d'ouverture. Sert à afficher un indicateur de chargement sur la bonne carte.
+  final RxString openingChatOrderId = ''.obs;
 
   final List<String> filters = ['Tous', 'En attente livreur', 'En livraison', 'Livré', 'Annulé'];
 
@@ -142,10 +149,38 @@ class TrackingController extends GetxController {
     final items = order['items'] as List? ?? [];
     String productName = 'Commande';
     String productImage = '';
+
+    // Vendeur associé à la commande (si l'API l'expose). À défaut de vendeur,
+    // la conversation basculera sur le compte support ASSO (commande en gros
+    // ou vendeur indisponible).
+    int? sellerId;
+    String sellerName = '';
+    int? firstProductId;
+
+    final orderSeller = order['seller'] as Map<String, dynamic>?;
+    if (orderSeller != null) {
+      sellerId = int.tryParse(orderSeller['id']?.toString() ?? '');
+      sellerName = orderSeller['name']?.toString() ?? '';
+    }
+
     if (items.isNotEmpty) {
       final firstItem = items[0] as Map<String, dynamic>;
       productName = firstItem['product_name'] ?? 'Produit';
       productImage = firstItem['product_image'] ?? '';
+      firstProductId = int.tryParse(firstItem['product_id']?.toString() ?? '');
+
+      // Fallback: certains payloads exposent le vendeur au niveau de l'item.
+      if (sellerId == null) {
+        sellerId = int.tryParse(firstItem['seller_id']?.toString() ?? '');
+        final itemSeller = firstItem['seller'] as Map<String, dynamic>?;
+        if (sellerId == null && itemSeller != null) {
+          sellerId = int.tryParse(itemSeller['id']?.toString() ?? '');
+        }
+        if (sellerName.isEmpty && itemSeller != null) {
+          sellerName = itemSeller['name']?.toString() ?? '';
+        }
+      }
+
       if (items.length > 1) {
         productName += ' +${items.length - 1} autre${items.length > 2 ? 's' : ''}';
       }
@@ -235,7 +270,10 @@ class TrackingController extends GetxController {
       'estimatedDelivery': '',
       'currentLocation': currentLocation,
       'trackingSteps': trackingSteps,
-      'seller': '',
+      'seller': sellerName,
+      'sellerId': sellerId,
+      'sellerName': sellerName,
+      'firstProductId': firstProductId,
       'price': formatPrice(total),
       'deliveryAddress': order['delivery_address'] ?? '',
       'deliveryCompany': deliveryCompany?['name'] ?? '',
@@ -275,6 +313,121 @@ class TrackingController extends GetxController {
 
   void selectFilter(String filter) {
     selectedFilter.value = filter;
+  }
+
+  /// Ouvre (ou démarre) une conversation à propos d'une commande.
+  ///
+  /// - Si la commande expose un vendeur, la conversation est démarrée avec ce
+  ///   vendeur (en taguant le produit lorsqu'il est disponible).
+  /// - Sinon (commande en gros ou vendeur indisponible), on bascule sur le
+  ///   compte support ASSO, comme le fait le module d'import.
+  ///
+  /// Le champ [openingChatOrderId] permet à la vue d'afficher un indicateur de
+  /// chargement sur la carte concernée. La garde d'authentification doit être
+  /// effectuée par l'appelant (qui dispose du BuildContext).
+  Future<void> openConversationForOrder(Map<String, dynamic> shipment) async {
+    final orderKey = shipment['id']?.toString() ?? '';
+    // Empêche l'ouverture simultanée de plusieurs conversations.
+    if (openingChatOrderId.value.isNotEmpty) return;
+
+    openingChatOrderId.value = orderKey;
+    try {
+      final orderRef = shipment['id']?.toString() ?? '';
+      final sellerId = shipment['sellerId'] as int?;
+      final productId = shipment['firstProductId'] as int?;
+      // Message pré-rempli repris par chatdetail_controller (default_message).
+      final defaultMessage = 'Commande $orderRef : ';
+
+      if (sellerId != null) {
+        // ── Conversation avec le vendeur ──
+        final response = await ConversationService.startConversation(
+          userId: sellerId,
+          productId: productId,
+        );
+
+        if (!response.success || response.data == null) {
+          Get.snackbar(
+            'Erreur',
+            'Impossible de démarrer la conversation avec le vendeur.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+
+        final conversation = response.data!['conversation'] ?? response.data!;
+        final conversationId =
+            conversation['id'] ?? conversation['conversation_id'];
+        if (conversationId == null) {
+          Get.snackbar('Erreur', 'Conversation indisponible.',
+              snackPosition: SnackPosition.BOTTOM);
+          return;
+        }
+
+        final otherUser = conversation['other_user'] as Map<String, dynamic>?;
+        final sellerNameRaw = shipment['sellerName']?.toString() ?? '';
+        final userName = (otherUser?['name']?.toString().isNotEmpty == true)
+            ? otherUser!['name'].toString()
+            : (sellerNameRaw.isNotEmpty ? sellerNameRaw : 'Vendeur');
+
+        Get.toNamed('/chatdetail', arguments: {
+          'id': conversationId.toString(),
+          'name': userName,
+          'avatar': StringUtils.getInitials(userName),
+          'isOnline': false,
+          'default_message': defaultMessage,
+        });
+        return;
+      }
+
+      // ── Fallback: compte support ASSO ──
+      final appConfig = Get.isRegistered<AppConfigController>()
+          ? Get.find<AppConfigController>()
+          : Get.put(AppConfigController(), permanent: true);
+      final supportUserId = await appConfig.ensureSupportUserId();
+
+      if (supportUserId == null) {
+        Get.snackbar(
+          'Support indisponible',
+          "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      final response =
+          await ConversationService.startConversation(userId: supportUserId);
+      if (!response.success || response.data == null) {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de démarrer la conversation avec le support.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      final conversation = response.data!['conversation'];
+      final conversationId = conversation?['id'];
+      if (conversationId == null) {
+        Get.snackbar('Erreur', 'Conversation indisponible.',
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final supportName = appConfig.supportName;
+      Get.toNamed('/chatdetail', arguments: {
+        'id': conversationId.toString(),
+        'name': supportName,
+        'avatar': StringUtils.getInitials(supportName),
+        'isOnline': false,
+        'default_message': defaultMessage,
+        'is_support': true,
+      });
+    } catch (e) {
+      Get.snackbar('Erreur', 'Une erreur est survenue: $e',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      openingChatOrderId.value = '';
+    }
   }
 
   void contactSupport() {

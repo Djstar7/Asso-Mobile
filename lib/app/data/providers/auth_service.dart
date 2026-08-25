@@ -3,6 +3,7 @@ import '../../core/values/constants.dart';
 import '../models/user_model.dart';
 import 'api_provider.dart';
 import 'storage_service.dart';
+import '../../core/utils/session_reset.dart';
 
 /// Authentication service with OTP support
 class AuthService {
@@ -638,6 +639,11 @@ class AuthService {
 
     // Clear local session regardless of API response
     StorageService.clearAuth();
+
+    // Réinitialiser l'état applicatif lié à l'ancien compte (controllers GetX
+    // permanents, WebSocket) pour éviter que les données d'un utilisateur
+    // ne persistent au logout ou au changement de compte.
+    SessionReset.clearControllers();
 
     developer.log('Local session cleared', name: 'AuthService');
 

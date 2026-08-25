@@ -130,38 +130,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   ),
                 ),
               ),
-
-              // Bouton recherche par image
-              const SizedBox(width: 8),
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppThemeSystem.primaryColor,
-                      AppThemeSystem.tertiaryColor,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.photo_camera_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                  onPressed: controller.searchByImage,
-                  tooltip: 'Rechercher par image',
-                ),
-              ),
             ],
           ),
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/currency_service.dart';
 
@@ -10,7 +9,6 @@ class SearchController extends GetxController {
   // SERVICES ET STORAGE
   // ================================
   final _storage = GetStorage();
-  final _imagePicker = ImagePicker();
   final TextEditingController searchTextController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
 
@@ -43,7 +41,6 @@ class SearchController extends GetxController {
   final RxString selectedLocation = 'Toutes les villes'.obs;
   final RxString sortBy = 'created_at'.obs;
   final RxString sortOrder = 'desc'.obs;
-  final RxBool isImageSearchMode = false.obs;
 
   // ================================
   // TRI
@@ -333,53 +330,8 @@ class SearchController extends GetxController {
     searchQuery.value = '';
     searchTextController.clear();
     isSearching.value = false;
-    isImageSearchMode.value = false;
     suggestions.clear();
     searchResults.clear();
-  }
-
-  /// Lance la recherche par image
-  Future<void> searchByImage() async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        isImageSearchMode.value = true;
-        isLoading.value = true;
-
-        // TODO: Implémenter l'appel API pour la recherche par image
-        // Pour l'instant, on affiche un message
-        Get.snackbar(
-          'Recherche par image',
-          'Image sélectionnée : ${image.name}',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-          duration: const Duration(seconds: 2),
-        );
-
-        // Simuler une recherche (à remplacer par l'appel API réel)
-        await Future.delayed(const Duration(seconds: 1));
-        isLoading.value = false;
-
-        // Note: Quand l'API sera prête, envoyer l'image et récupérer les résultats
-        // final bytes = await image.readAsBytes();
-        // final response = await ProductService.searchByImage(bytes);
-        // searchResults.value = response.data...
-      }
-    } catch (e) {
-      isLoading.value = false;
-      Get.snackbar('Erreur', 'Impossible de sélectionner l\'image',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-    }
   }
 
   // ================================

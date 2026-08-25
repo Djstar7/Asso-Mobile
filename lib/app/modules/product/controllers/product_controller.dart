@@ -487,6 +487,69 @@ class ProductController extends GetxController {
     }
   }
 
+  /// Crée une commande payée par CARTE (Payment Sheet Stripe native).
+  /// [paymentMode] = 'stripe_direct'. Retourne les champs carte
+  /// `{order_id, client_secret, payment_intent_id, publishable_key}` ou null si échec.
+  /// La confirmation se fait au polling (voir [pollOrderPayment]) + webhook serveur.
+  Future<Map<String, dynamic>?> createCardOrder({
+    required int productId,
+    required int quantity,
+    String? notes,
+  }) async {
+    if (withDelivery.value && selectedPartner.value == null) {
+      Get.snackbar('Erreur', 'Veuillez choisir un partenaire de livraison',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    }
+
+    isCreatingOrder.value = true;
+
+    try {
+      final response = await OrderService.createOrder(
+        items: [
+          {'product_id': productId, 'quantity': quantity},
+        ],
+        deliveryCompanyId: selectedPartner.value?['company_id'],
+        deliveryZoneId: selectedPartner.value?['zone_id'],
+        walletProvider: 'kpay',
+        paymentMode: 'stripe_direct',
+        deliveryAddress: withDelivery.value ? currentLocation.value : null,
+        deliveryLatitude: clientLatitude,
+        deliveryLongitude: clientLongitude,
+        notes: notes,
+      );
+
+      if (response.success) {
+        final orderId = response.data?['order_id'];
+        final clientSecret = response.data?['client_secret']?.toString();
+        final publishableKey = response.data?['publishable_key']?.toString();
+        if (orderId is int &&
+            clientSecret != null && clientSecret.isNotEmpty &&
+            publishableKey != null && publishableKey.isNotEmpty) {
+          return {
+            'order_id': orderId,
+            'client_secret': clientSecret,
+            'payment_intent_id': response.data?['payment_intent_id']?.toString(),
+            'publishable_key': publishableKey,
+          };
+        }
+        Get.snackbar('Erreur', 'Données de paiement carte indisponibles',
+            snackPosition: SnackPosition.BOTTOM);
+        return null;
+      } else {
+        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+            snackPosition: SnackPosition.BOTTOM);
+        return null;
+      }
+    } catch (e) {
+      Get.snackbar('Erreur', 'Une erreur est survenue',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    } finally {
+      isCreatingOrder.value = false;
+    }
+  }
+
   /// Démarre le suivi du paiement d'une commande (utilisé après le retour WebView PayPal).
   void pollOrderPayment(int orderId) => _pollOrderPayment(orderId);
 

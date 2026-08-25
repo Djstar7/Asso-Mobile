@@ -110,8 +110,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     switch (code) {
       case 'kpay':
         return Icons.phone_android_rounded;
-      case 'paypal':
-        return Icons.account_balance_wallet_rounded;
       case 'stripe':
         return Icons.credit_card_rounded;
       default:
@@ -123,8 +121,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     switch (code) {
       case 'kpay':
         return AppThemeSystem.kpayColor;
-      case 'paypal':
-        return AppThemeSystem.paypalColor;
       case 'stripe':
         return AppThemeSystem.primaryColor;
       default:

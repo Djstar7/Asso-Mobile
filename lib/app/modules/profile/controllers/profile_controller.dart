@@ -242,6 +242,6 @@ class ProfileController extends GetxController {
       // Even if API fails, clear local data
       ApiProvider.clearAuth();
     }
-    Get.offAllNamed(Routes.WELCOMER);
+    Get.offAllNamed(Routes.LOGIN);
   }
 }
