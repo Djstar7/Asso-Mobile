@@ -161,7 +161,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        _partnerStateNotice(),
+        const SizedBox(height: 4),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -214,10 +216,61 @@ class StripeConnectView extends GetView<StripeConnectController> {
               "Pour modifier votre IBAN validé, contactez le support.",
               style: TextStyle(fontSize: 12.5, color: Colors.black54),
             ),
+            _partnerStateNotice(),
           ],
         ),
       ),
     );
+  }
+
+  /// Avertissement quand le partenaire bancaire n'a pas (encore) activé le compte.
+  ///
+  /// Un compte peut être validé par ASSO et pourtant refusé par le partenaire
+  /// (vérification en cours, pièce manquante) : le vendeur doit le savoir avant de
+  /// demander un virement qui serait rejeté.
+  Widget _partnerStateNotice() {
+    return Obx(() {
+      if (controller.partnerReady.value) return const SizedBox.shrink();
+
+      final message = controller.partnerVerification.value ??
+          "Vérification bancaire en cours.";
+      final missing = controller.partnerRequirements;
+
+      return Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message,
+                      style: const TextStyle(fontSize: 12.5, height: 1.35)),
+                  if (missing.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Les virements resteront indisponibles tant que ce point '
+                      "n'est pas réglé.",
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.orange.shade900, height: 1.3),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _readonlyRow(String label, String value) {
@@ -279,7 +332,96 @@ class StripeConnectView extends GetView<StripeConnectController> {
             ),
             validator: controller.validateCountry,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 22),
+          const Text(
+            "Vos informations d'identité",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Exigées par notre partenaire bancaire pour autoriser les virements. "
+            "Elles ne sont pas conservées par l'application.",
+            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          // La date n'est pas saisie au clavier : sélecteur borné à 18 ans.
+          Obx(() => InkWell(
+                onTap: () => controller.pickBirthDate(context),
+                borderRadius: BorderRadius.circular(4),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Date de naissance',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                    errorText: controller.birthDate.value == null &&
+                            controller.isSubmitting.value
+                        ? 'Date de naissance requise'
+                        : null,
+                  ),
+                  child: Text(
+                    controller.birthDateLabel.isEmpty
+                        ? 'JJ/MM/AAAA'
+                        : controller.birthDateLabel,
+                    style: TextStyle(
+                      color: controller.birthDateLabel.isEmpty
+                          ? Colors.black45
+                          : Colors.black87,
+                    ),
+                  ),
+                ),
+              )),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Téléphone',
+              hintText: '+33 6 12 34 56 78',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validatePhone,
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: controller.addressLine1Controller,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Adresse',
+              hintText: '12 rue de la Paix',
+              border: OutlineInputBorder(),
+            ),
+            validator: controller.validateAddressLine,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: controller.addressCityController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Ville',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: controller.validateCity,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: controller.addressPostalController,
+                  decoration: const InputDecoration(
+                    labelText: 'Code postal',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: controller.validatePostalCode,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: Obx(() => ElevatedButton(

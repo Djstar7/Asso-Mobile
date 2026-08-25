@@ -17,11 +17,24 @@ class StripeConnectController extends GetxController {
   final holderName = RxnString();
   final hasAccount = false.obs;
 
+  // État de vérification chez le partenaire bancaire (bloc `stripe` du statut) :
+  // un compte peut être validé par ASSO tout en restant bloqué côté partenaire.
+  final partnerReady = true.obs;
+  final partnerVerification = RxnString();
+  final partnerRequirements = <String>[].obs;
+
   // Formulaire.
   final formKey = GlobalKey<FormState>();
   final countryController = TextEditingController(text: 'FR');
   final ibanController = TextEditingController();
   final holderController = TextEditingController();
+
+  // Identité exigée par le partenaire bancaire (non conservée par l'application).
+  final phoneController = TextEditingController();
+  final addressLine1Controller = TextEditingController();
+  final addressCityController = TextEditingController();
+  final addressPostalController = TextEditingController();
+  final birthDate = Rxn<DateTime>();
 
   bool get isApproved => status.value == 'approved';
   bool get isPending => status.value == 'pending';
@@ -41,7 +54,44 @@ class StripeConnectController extends GetxController {
     countryController.dispose();
     ibanController.dispose();
     holderController.dispose();
+    phoneController.dispose();
+    addressLine1Controller.dispose();
+    addressCityController.dispose();
+    addressPostalController.dispose();
     super.onClose();
+  }
+
+  /// Date de naissance formatée pour l'API (AAAA-MM-JJ).
+  String get birthDateIso {
+    final d = birthDate.value;
+    if (d == null) return '';
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Date de naissance affichée dans le formulaire (JJ/MM/AAAA).
+  String get birthDateLabel {
+    final d = birthDate.value;
+    if (d == null) return '';
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  /// Sélecteur de date borné à la majorité (18 ans), refusée par le partenaire.
+  Future<void> pickBirthDate(BuildContext context) async {
+    final now = DateTime.now();
+    final majority = DateTime(now.year - 18, now.month, now.day);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: birthDate.value ?? DateTime(now.year - 30, 1, 1),
+      firstDate: DateTime(now.year - 100),
+      lastDate: majority,
+      helpText: 'Date de naissance',
+    );
+
+    if (picked != null) birthDate.value = picked;
   }
 
   Future<void> loadStatus() async {
@@ -72,10 +122,32 @@ class StripeConnectController extends GetxController {
     if ((bankCountry.value ?? '').isNotEmpty) {
       countryController.text = bankCountry.value!;
     }
+
+    // Bloc optionnel : absent si le partenaire n'est pas configuré côté serveur.
+    final partner = data['stripe'];
+    if (partner is Map) {
+      partnerReady.value = partner['ready'] == true;
+      partnerVerification.value = partner['verification']?.toString();
+      partnerRequirements.value = (partner['requirements_due'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
+    }
   }
 
   Future<void> submit() async {
     if (!(formKey.currentState?.validate() ?? false)) return;
+
+    if (birthDate.value == null) {
+      Get.snackbar(
+        'Date de naissance requise',
+        'Notre partenaire bancaire exige votre date de naissance pour activer les virements.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
     try {
       isSubmitting.value = true;
@@ -83,6 +155,11 @@ class StripeConnectController extends GetxController {
         country: countryController.text.trim().toUpperCase(),
         iban: ibanController.text.replaceAll(' ', '').toUpperCase(),
         accountHolderName: holderController.text.trim(),
+        birthDate: birthDateIso,
+        phone: phoneController.text.trim(),
+        addressLine1: addressLine1Controller.text.trim(),
+        addressCity: addressCityController.text.trim(),
+        addressPostalCode: addressPostalController.text.trim(),
       );
 
       if (res.success) {
@@ -178,6 +255,28 @@ class StripeConnectController extends GetxController {
 
   String? validateHolder(String? v) {
     if (v == null || v.trim().isEmpty) return 'Nom du titulaire requis';
+    return null;
+  }
+
+  String? validatePhone(String? v) {
+    final phone = (v ?? '').trim();
+    if (phone.isEmpty) return 'Téléphone requis';
+    if (phone.replaceAll(RegExp(r'[^0-9]'), '').length < 8) return 'Numéro incomplet';
+    return null;
+  }
+
+  String? validateAddressLine(String? v) {
+    if (v == null || v.trim().length < 4) return 'Adresse requise';
+    return null;
+  }
+
+  String? validateCity(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Ville requise';
+    return null;
+  }
+
+  String? validatePostalCode(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Code postal requis';
     return null;
   }
 }
