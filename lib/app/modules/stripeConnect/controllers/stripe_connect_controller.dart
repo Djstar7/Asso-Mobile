@@ -99,7 +99,9 @@ class StripeConnectController extends GetxController {
     final picked = await showDatePicker(
       context: context,
       initialDate: birthDate.value ?? DateTime(now.year - 30, 1, 1),
-      firstDate: DateTime(now.year - 100),
+      // 1900 : une borne à 100 ans rendait inaccessibles les dates de vérification
+      // utilisées en environnement de test (01/01/1901).
+      firstDate: DateTime(1900),
       lastDate: majority,
       helpText: 'Date de naissance',
     );
