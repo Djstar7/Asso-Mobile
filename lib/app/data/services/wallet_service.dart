@@ -282,11 +282,13 @@ class WalletService {
   /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
   Future<Map<String, dynamic>> initiateStripeWithdrawal({
     required double amount,
+    String? currency,
     String? notes,
   }) async {
     try {
       final response = await wallet_provider.WalletService.withdrawStripe(
         amount: amount,
+        currency: currency,
         notes: notes,
       );
 
@@ -310,6 +312,29 @@ class WalletService {
         'success': false,
         'message': 'Erreur lors de l\'initiation du virement',
       };
+    }
+  }
+
+
+  /// Devis d'un virement IBAN : montant converti vers la devise du compte bancaire.
+  Future<Map<String, dynamic>> getStripeWithdrawalQuote({
+    required double amount,
+    String? currency,
+  }) async {
+    try {
+      final response = await wallet_provider.WalletService.stripeWithdrawalQuote(
+        amount: amount,
+        currency: currency,
+      );
+
+      if (response.success && response.data != null) {
+        return {'success': true, ...response.data!};
+      }
+
+      return {'success': false, 'message': response.message};
+    } catch (e) {
+      print('[WalletService] Error fetching Stripe quote: $e');
+      return {'success': false, 'message': 'Conversion indisponible'};
     }
   }
 

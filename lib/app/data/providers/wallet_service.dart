@@ -112,16 +112,34 @@ class WalletService {
   /// Initiate Stripe withdrawal (virement bancaire vers l'IBAN validé)
   static Future<ApiResponse> withdrawStripe({
     required double amount,
+    String? currency,
     String? notes,
   }) async {
     final data = <String, dynamic>{
       'amount': amount,
     };
+    // Devise DÉBITÉE (celle du portefeuille) ; le serveur convertit vers la
+    // devise du compte bancaire.
+    if (currency != null) data['currency'] = currency;
     if (notes != null) data['notes'] = notes;
 
     return await ApiProvider.post(
       AppConstants.walletWithdrawStripeUrl,
       body: data,
+    );
+  }
+
+  /// Devis d'un virement IBAN : ce que le vendeur recevra réellement.
+  static Future<ApiResponse> stripeWithdrawalQuote({
+    required double amount,
+    String? currency,
+  }) async {
+    return await ApiProvider.post(
+      AppConstants.walletStripeQuoteUrl,
+      body: {
+        'amount': amount,
+        if (currency != null) 'currency': currency,
+      },
     );
   }
 

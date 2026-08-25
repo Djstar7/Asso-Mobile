@@ -45,8 +45,20 @@ class WalletController extends GetxController {
   final stripeWithdrawEligible = false.obs; // compte IBAN validé (approved)
   final stripeWithdrawStatus = RxnString(); // null|pending|approved|rejected
   final stripeWithdrawCurrency = 'EUR'.obs;
-  final stripeWithdrawAvailable = 0.0.obs; // solde disponible dans la devise du payout
+  final stripeWithdrawAvailable = 0.0.obs; // montant versable, converti dans la devise du payout
   final stripeIbanLast4 = RxnString();
+
+  // Solde du PORTEFEUILLE utilisé pour financer le virement (ex. XAF) : c'est
+  // dans cette devise que le vendeur saisit son montant, la conversion vers la
+  // devise de son compte bancaire étant faite (et affichée) par le serveur.
+  final stripeSourceCurrency = RxnString();
+  final stripeSourceAvailable = 0.0.obs;
+  final stripeSourceRate = 0.0.obs;
+
+  // Devis en cours d'affichage dans le dialogue de retrait.
+  final stripeQuoteAmount = 0.0.obs; // montant qui arrivera sur le compte
+  final stripeQuoteMessage = RxnString(); // motif d'un virement impossible
+  final isQuotingStripe = false.obs;
 
   // Configuration des rails côté plateforme (clés API présentes). Défaut = true pour
   // rester compatible avec un backend qui ne renvoie pas encore le bloc `methods`.
@@ -762,6 +774,16 @@ class WalletController extends GetxController {
         // Éligibilité virement bancaire (Stripe Connect)
         final stripe = result['stripe'];
         if (stripe is Map) {
+          final source = stripe['source'];
+          if (source is Map) {
+            stripeSourceCurrency.value = source['currency']?.toString();
+            stripeSourceAvailable.value = _parseBalance(source['available']);
+            stripeSourceRate.value = _parseBalance(source['rate']);
+          } else {
+            stripeSourceCurrency.value = null;
+            stripeSourceAvailable.value = 0.0;
+            stripeSourceRate.value = 0.0;
+          }
           stripeWithdrawEligible.value = stripe['eligible'] == true;
           stripeWithdrawStatus.value = stripe['status']?.toString();
           stripeWithdrawCurrency.value =
@@ -903,8 +925,43 @@ class WalletController extends GetxController {
   }
 
   /// Initie un retrait par virement bancaire (Stripe Connect) vers l'IBAN validé.
+  /// Demande au serveur ce que donnera un virement de [amount] (devise du
+  /// portefeuille) : montant réellement versé sur le compte bancaire.
+  Future<void> quoteStripeWithdrawal(double amount) async {
+    if (amount <= 0) {
+      stripeQuoteAmount.value = 0;
+      stripeQuoteMessage.value = null;
+      return;
+    }
+
+    try {
+      isQuotingStripe.value = true;
+      final res = await _walletService.getStripeWithdrawalQuote(
+        amount: amount,
+        currency: stripeSourceCurrency.value,
+      );
+
+      if (res['success'] == true) {
+        stripeQuoteAmount.value = _parseBalance(res['payout_amount']);
+        stripeQuoteMessage.value = res['message']?.toString();
+        final rate = _parseBalance(res['rate']);
+        if (rate > 0) stripeSourceRate.value = rate;
+      } else {
+        stripeQuoteAmount.value = 0;
+        stripeQuoteMessage.value = res['message']?.toString();
+      }
+    } catch (e) {
+      print('[WalletController] Error quoting Stripe withdrawal: $e');
+      stripeQuoteAmount.value = 0;
+      stripeQuoteMessage.value = 'Conversion indisponible pour le moment';
+    } finally {
+      isQuotingStripe.value = false;
+    }
+  }
+
   Future<Map<String, dynamic>> withdrawStripe({
     required double amount,
+    String? currency,
     String? notes,
   }) async {
     isProcessingPayment.value = true;
@@ -914,6 +971,7 @@ class WalletController extends GetxController {
     try {
       final result = await _walletService.initiateStripeWithdrawal(
         amount: amount,
+        currency: currency ?? stripeSourceCurrency.value,
         notes: notes,
       );
 

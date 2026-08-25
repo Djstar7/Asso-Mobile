@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -1097,13 +1098,44 @@ class WalletView extends GetView<WalletController> {
   }
 
   /// Dialogue de retrait par virement bancaire (Stripe Connect).
-  /// Pas de numéro/email à saisir : uniquement le montant (débité dans la devise
-  /// du payout, ex. EUR) puis virement vers l'IBAN validé.
+  ///
+  /// Le vendeur saisit un montant dans la devise de SON PORTEFEUILLE (ex. FCFA) ;
+  /// la conversion vers la devise de son compte bancaire (ex. EUR) est calculée par
+  /// le serveur et affichée en direct sous le champ, avant toute validation.
   void _showStripeWithdrawalDialog(BuildContext context) {
     final amountController = TextEditingController();
-    final currency = controller.stripeWithdrawCurrency.value;
-    final available = controller.stripeWithdrawAvailable.value;
+    final payoutCurrency = controller.stripeWithdrawCurrency.value;
+    final payoutAvailable = controller.stripeWithdrawAvailable.value;
     final last4 = controller.stripeIbanLast4.value;
+
+    // Devise débitée : celle du portefeuille (repli sur la devise du compte
+    // bancaire si le serveur n'a pas encore renvoyé le détail).
+    final sourceCurrency = controller.stripeSourceCurrency.value ?? payoutCurrency;
+    final available = controller.stripeSourceAvailable.value > 0
+        ? controller.stripeSourceAvailable.value
+        : payoutAvailable;
+    final converts = sourceCurrency != payoutCurrency;
+
+    // Formatage explicite : `formatPrice` reconvertirait le montant dans la devise
+    // d'affichage de l'app, ce qui fausserait un solde déjà exprimé en devise source.
+    String money(double value, String currency) {
+      final decimals = (currency == 'XAF' || currency == 'XOF') ? 0 : 2;
+      return '${value.toStringAsFixed(decimals)} $currency';
+    }
+
+    // Le devis est redemandé au serveur après chaque saisie, pas à chaque frappe.
+    Timer? debounce;
+    controller.stripeQuoteAmount.value = 0;
+    controller.stripeQuoteMessage.value = null;
+    amountController.addListener(() {
+      debounce?.cancel();
+      final amount = double.tryParse(
+              amountController.text.trim().replaceAll(' ', '').replaceAll(',', '.')) ??
+          0;
+      debounce = Timer(const Duration(milliseconds: 450), () {
+        controller.quoteStripeWithdrawal(amount);
+      });
+    });
 
     Get.dialog(
       AlertDialog(
@@ -1135,7 +1167,10 @@ class WalletView extends GetView<WalletController> {
               ),
             const SizedBox(height: 4),
             Text(
-              'Disponible : ${available.toStringAsFixed(2)} $currency',
+              converts
+                  ? 'Disponible : ${money(available, sourceCurrency)} '
+                      '(≈ ${money(payoutAvailable, payoutCurrency)})'
+                  : 'Disponible : ${money(available, payoutCurrency)}',
               style: TextStyle(
                 color: AppThemeSystem.getSecondaryTextColor(context),
                 fontSize: 13,
@@ -1147,11 +1182,92 @@ class WalletView extends GetView<WalletController> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Montant ($currency)',
+                labelText: 'Montant ($sourceCurrency)',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.euro_rounded),
+                prefixIcon: Icon(
+                  converts ? Icons.account_balance_wallet_outlined : Icons.euro_rounded,
+                ),
               ),
             ),
+            // Conversion affichée AVANT validation : le vendeur voit exactement
+            // ce qui arrivera sur son compte bancaire.
+            if (converts) ...[
+              const SizedBox(height: 10),
+              Obx(() {
+                if (controller.isQuotingStripe.value) {
+                  return Row(
+                    children: [
+                      const SizedBox(
+                          height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Conversion en cours…',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: AppThemeSystem.getSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                final quote = controller.stripeQuoteAmount.value;
+                final warning = controller.stripeQuoteMessage.value;
+
+                if (quote <= 0 && warning == null) {
+                  return Text(
+                    'Saisissez un montant pour voir le total converti.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppThemeSystem.getSecondaryTextColor(context),
+                    ),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (quote > 0)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vous recevrez ${money(quote, payoutCurrency)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppThemeSystem.primaryColor,
+                              ),
+                            ),
+                            if (controller.stripeSourceRate.value > 0)
+                              Text(
+                                '1 $sourceCurrency = '
+                                '${controller.stripeSourceRate.value.toStringAsFixed(6)} $payoutCurrency',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppThemeSystem.getSecondaryTextColor(context),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (warning != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        warning,
+                        style: TextStyle(fontSize: 12, color: AppThemeSystem.errorColor),
+                      ),
+                    ],
+                  ],
+                );
+              }),
+            ],
             const SizedBox(height: 8),
             Text(
               'Les fonds arrivent sous 1 à 3 jours ouvrés.',
@@ -1183,12 +1299,17 @@ class WalletView extends GetView<WalletController> {
                           return;
                         }
                         if (amount > available) {
-                          Get.snackbar('Solde insuffisant',
-                              'Disponible : ${available.toStringAsFixed(2)} $currency',
+                          Get.snackbar(
+                              'Solde insuffisant',
+                              'Disponible : ${money(available, converts ? sourceCurrency : payoutCurrency)}',
                               snackPosition: SnackPosition.BOTTOM);
                           return;
                         }
-                        final result = await controller.withdrawStripe(amount: amount);
+                        debounce?.cancel();
+                        final result = await controller.withdrawStripe(
+                          amount: amount,
+                          currency: sourceCurrency,
+                        );
                         Get.back();
                         Get.snackbar(
                           result['success'] == true ? 'Virement en cours' : 'Erreur',
