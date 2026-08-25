@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import '../../../core/utils/auth_guard.dart';
+import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
@@ -146,6 +148,22 @@ class ProfileController extends GetxController {
   }
 
   void editProfile() {
+    // Garde: l'edition du profil necessite une connexion (mode invite bloque).
+    if (AuthGuard.isGuest) {
+      final ctx = Get.context;
+      if (ctx != null) {
+        AppDialogs.showLoginRequiredDialog(
+          ctx,
+          featureName: 'la modification du profil',
+        );
+      } else {
+        AppDialogs.showLoginRequiredSnackbar(
+          featureName: 'la modification du profil',
+        );
+      }
+      return;
+    }
+
     try {
       Get.toNamed(Routes.COMPLETE_PROFILE);
     } catch (e) {
@@ -155,6 +173,23 @@ class ProfileController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
+    }
+  }
+
+  /// Navigation vers les preferences (vitrine) : accessible sans connexion.
+  void goToPreferences() {
+    Get.toNamed(Routes.PREFERENCES);
+  }
+
+  /// Recalcule l'etat d'authentification et recharge le profil.
+  /// A appeler apres une connexion/deconnexion pour que la vue reflete
+  /// immediatement l'utilisateur courant sans redemarrer l'app.
+  void refreshAuthState() {
+    isGuest.value = !StorageService.isAuthenticated;
+    if (!isGuest.value) {
+      _loadProfile();
+    } else {
+      _setGuestProfile();
     }
   }
 

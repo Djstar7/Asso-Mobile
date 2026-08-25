@@ -35,12 +35,6 @@ class ProfileView extends GetView<ProfileController> {
                     'Mon compte',
                     [
                       _MenuItem(
-                        icon: isVendor ? Icons.inventory_rounded : Icons.store_rounded,
-                        title: isVendor ? 'Mes produits' : 'Devenir Vendeur',
-                        subtitle: isVendor ? 'Gérer mes annonces' : 'Vendez vos produits',
-                        onTap: isVendor ? controller.goToMyProducts : controller.goToBecomeVendor,
-                      ),
-                      _MenuItem(
                         icon: Icons.favorite_outline_rounded,
                         title: 'Mes favoris',
                         subtitle: 'Articles sauvegardés',
@@ -71,6 +65,12 @@ class ProfileView extends GetView<ProfileController> {
                   context,
                   'Support & Paramètres',
                   [
+                    _MenuItem(
+                      icon: Icons.tune_rounded,
+                      title: 'Préférences',
+                      subtitle: 'Vos centres d\'intérêt',
+                      onTap: controller.goToPreferences,
+                    ),
                     _MenuItem(
                       icon: Icons.help_outline_rounded,
                       title: 'Aide & Support',

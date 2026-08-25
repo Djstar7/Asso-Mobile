@@ -163,6 +163,12 @@ class AppConstants {
   static const String packagesUrl = '/v1/packages';
   static const String subscribePackageUrl = '/v1/packages/subscribe';
   static const String currentPackageUrl = '/v1/vendor/package/current';
+  // Statut de paiement d'un abonnement vendeur (polling) :
+  //   GET $packageSubscriptionUrl/{subscription_id}/payment-status
+  static const String packageSubscriptionUrl = '/v1/packages/subscription';
+
+  // Compte support ASSO (messagerie d'assistance)
+  static const String appSupportUrl = '/v1/app/support';
 
   // Vendor products management
   static const String vendorProductsUrl = '/v1/vendor/products';

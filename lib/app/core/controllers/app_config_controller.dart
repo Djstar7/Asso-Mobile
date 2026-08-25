@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 import '../../data/providers/app_config_service.dart';
+import '../../data/providers/api_provider.dart';
+import '../values/constants.dart';
 
 /// Contrôleur global pour gérer les paramètres de l'application
 class AppConfigController extends GetxController {
@@ -20,6 +22,15 @@ class AppConfigController extends GetxController {
   String get timezone => _timezone.value;
   String get defaultLanguage => _defaultLanguage.value;
   String get appName => _appName.value;
+
+  // Compte support ASSO (messagerie d'assistance), chargé à la demande.
+  final _supportUserId = Rxn<int>();
+  final _supportName = Rx<String>('Support ASSO');
+  final _supportAvatar = Rxn<String>();
+
+  int? get supportUserId => _supportUserId.value;
+  String get supportName => _supportName.value;
+  String? get supportAvatar => _supportAvatar.value;
 
   // Loading state
   final isLoading = RxBool(false);
@@ -95,5 +106,38 @@ class AppConfigController extends GetxController {
   /// Recharger les settings (utile après modification dans le panel admin)
   Future<void> refreshSettings() async {
     await loadSettings();
+  }
+
+  /// Récupère l'identifiant du compte support ASSO.
+  ///
+  /// Préfère la valeur déjà en cache (chargée précédemment) ; sinon interroge
+  /// `GET /v1/app/support` -> { success, support:{ support_user_id, name, avatar } }.
+  /// Retourne null si le support est indisponible (404 / erreur).
+  Future<int?> ensureSupportUserId() async {
+    if (_supportUserId.value != null) return _supportUserId.value;
+
+    try {
+      final response = await ApiProvider.get(AppConstants.appSupportUrl);
+      if (response.success && response.data != null) {
+        final support = response.data!['support'];
+        if (support is Map) {
+          final raw = support['support_user_id'];
+          final id = raw is int ? raw : int.tryParse('$raw');
+          if (id != null) {
+            _supportUserId.value = id;
+            if (support['name'] != null) {
+              _supportName.value = support['name'].toString();
+            }
+            if (support['avatar'] != null) {
+              _supportAvatar.value = support['avatar'].toString();
+            }
+          }
+          return _supportUserId.value;
+        }
+      }
+    } catch (e) {
+      print('[AppConfigController] Error loading support: $e');
+    }
+    return null;
   }
 }
