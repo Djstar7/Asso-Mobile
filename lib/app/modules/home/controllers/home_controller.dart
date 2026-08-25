@@ -66,9 +66,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   // Fallback banner images (local assets)
   final List<String> fallbackBanners = [
-    'assets/images/bann1.png',
-    'assets/images/bann2.png',
-    'assets/images/bann3.png',
+    'assets/images/bann1.webp',
+    'assets/images/bann2.webp',
+    'assets/images/bann3.webp',
   ];
 
   @override
