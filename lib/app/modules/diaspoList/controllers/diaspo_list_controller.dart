@@ -28,7 +28,9 @@ class DiaspoListController extends GetxController {
   final canCreateOffers = false.obs;
 
   // Document upload
-  final Rx<String?> selectedDocumentType = Rx<String?>(null); // 'cni' or 'passport'
+  final Rx<String?> selectedDocumentType = Rx<String?>(
+    null,
+  ); // 'cni' or 'passport'
   final Rx<XFile?> documentFrontImage = Rx<XFile?>(null);
   final Rx<XFile?> documentBackImage = Rx<XFile?>(null);
   final isUploadingDocument = false.obs;
@@ -40,15 +42,21 @@ class DiaspoListController extends GetxController {
   // Selected tab: 0 = Tous, 1 = Mes Offres, 2 = Mes Achats, 3 = Mes Ventes
   final selectedTab = 0.obs;
 
-  // Filters
-  final Rx<String?> filterDepartureCountry = Rx<String?>(null);
-  final Rx<String?> filterArrivalCountry = Rx<String?>(null);
-  final Rx<String?> filterDepartureCity = Rx<String?>(null);
-  final Rx<String?> filterArrivalCity = Rx<String?>(null);
-  final Rx<DateTime?> filterMinDate = Rx<DateTime?>(null);
-  final Rx<DateTime?> filterMaxDate = Rx<DateTime?>(null);
-  final Rx<double?> filterMaxPrice = Rx<double?>(null);
-  final hasActiveFilters = false.obs;
+  // 🔍 Recherche (remplace les filtres)
+  final searchQuery = ''.obs;
+
+  /// Liste filtrée selon le texte recherché
+  List<DiaspoOffer> get filteredOffers {
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) return offers;
+
+    return offers.where((offer) {
+      return offer.departureCity.toLowerCase().contains(query) ||
+          offer.departureCountry.toLowerCase().contains(query) ||
+          offer.arrivalCity.toLowerCase().contains(query) ||
+          offer.arrivalCountry.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   void onInit() {
@@ -67,7 +75,8 @@ class DiaspoListController extends GetxController {
     try {
       final response = await _diaspoService.getVerificationStatus();
       if (response['success']) {
-        verificationStatus.value = response['data']['verification_status'] ?? 'unverified';
+        verificationStatus.value =
+            response['data']['verification_status'] ?? 'unverified';
         canCreateOffers.value = response['data']['can_create_offers'] ?? false;
       }
     } catch (e) {
@@ -84,7 +93,9 @@ class DiaspoListController extends GetxController {
     }
 
     // Allow first load, but prevent duplicate requests after that
-    if (!_isInitialLoad && (isLoading.value || (isLoadingMore.value && !refresh))) return;
+    if (!_isInitialLoad &&
+        (isLoading.value || (isLoadingMore.value && !refresh)))
+      return;
 
     // Set loading state: use isLoading for initial/refresh, isLoadingMore for pagination
     if (_isInitialLoad || refresh) {
@@ -96,16 +107,7 @@ class DiaspoListController extends GetxController {
     _isInitialLoad = false; // Mark initial load as done
 
     try {
-      final response = await _diaspoService.getOffers(
-        page: currentPage,
-        departureCountry: filterDepartureCountry.value,
-        arrivalCountry: filterArrivalCountry.value,
-        departureCity: filterDepartureCity.value,
-        arrivalCity: filterArrivalCity.value,
-        minDate: filterMinDate.value?.toIso8601String(),
-        maxDate: filterMaxDate.value?.toIso8601String(),
-        maxPrice: filterMaxPrice.value,
-      );
+      final response = await _diaspoService.getOffers(page: currentPage);
 
       if (response['success']) {
         final data = response['data'];
@@ -301,289 +303,6 @@ class DiaspoListController extends GetxController {
     loadOffers();
   }
 
-  /// Apply filters
-  void applyFilters({
-    String? departureCountry,
-    String? arrivalCountry,
-    String? departureCity,
-    String? arrivalCity,
-    DateTime? minDate,
-    DateTime? maxDate,
-    double? maxPrice,
-  }) {
-    filterDepartureCountry.value = departureCountry;
-    filterArrivalCountry.value = arrivalCountry;
-    filterDepartureCity.value = departureCity;
-    filterArrivalCity.value = arrivalCity;
-    filterMinDate.value = minDate;
-    filterMaxDate.value = maxDate;
-    filterMaxPrice.value = maxPrice;
-
-    // Update active filters flag
-    hasActiveFilters.value = departureCountry != null ||
-        arrivalCountry != null ||
-        departureCity != null ||
-        arrivalCity != null ||
-        minDate != null ||
-        maxDate != null ||
-        maxPrice != null;
-
-    // Reload offers with filters
-    loadOffers(refresh: true);
-  }
-
-  /// Clear all filters
-  void clearFilters() {
-    filterDepartureCountry.value = null;
-    filterArrivalCountry.value = null;
-    filterDepartureCity.value = null;
-    filterArrivalCity.value = null;
-    filterMinDate.value = null;
-    filterMaxDate.value = null;
-    filterMaxPrice.value = null;
-    hasActiveFilters.value = false;
-
-    // Reload offers without filters
-    loadOffers(refresh: true);
-  }
-
-  /// Show filters bottom sheet
-  void showFiltersBottomSheet() {
-    Get.bottomSheet(
-      _buildFiltersBottomSheet(),
-      isScrollControlled: true,
-      enableDrag: true,
-    );
-  }
-
-  /// Build filters bottom sheet
-  Widget _buildFiltersBottomSheet() {
-    final isDark = AppThemeSystem.isDarkMode(Get.context!);
-
-    // Local controllers for filter inputs
-    final departureCountryController = TextEditingController(text: filterDepartureCountry.value);
-    final arrivalCountryController = TextEditingController(text: filterArrivalCountry.value);
-    final departureCityController = TextEditingController(text: filterDepartureCity.value);
-    final arrivalCityController = TextEditingController(text: filterArrivalCity.value);
-    final maxPriceController = TextEditingController(
-      text: filterMaxPrice.value?.toString() ?? '',
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                const Icon(Icons.filter_list, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Filtrer les offres',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    departureCountryController.clear();
-                    arrivalCountryController.clear();
-                    departureCityController.clear();
-                    arrivalCityController.clear();
-                    maxPriceController.clear();
-                    filterMinDate.value = null;
-                    filterMaxDate.value = null;
-                  },
-                  child: const Text('Réinitialiser'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Departure section
-            Text(
-              'Départ',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: departureCountryController,
-              decoration: InputDecoration(
-                labelText: 'Pays de départ',
-                prefixIcon: const Icon(Icons.public),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: departureCityController,
-              decoration: InputDecoration(
-                labelText: 'Ville de départ',
-                prefixIcon: const Icon(Icons.location_city),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Arrival section
-            Text(
-              'Arrivée',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: arrivalCountryController,
-              decoration: InputDecoration(
-                labelText: 'Pays d\'arrivée',
-                prefixIcon: const Icon(Icons.public),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: arrivalCityController,
-              decoration: InputDecoration(
-                labelText: 'Ville d\'arrivée',
-                prefixIcon: const Icon(Icons.location_city),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Date range
-            Text(
-              'Période de départ',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Obx(() => OutlinedButton.icon(
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: Get.context!,
-                            initialDate: filterMinDate.value ?? DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (date != null) {
-                            filterMinDate.value = date;
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_today, size: 20),
-                        label: Text(
-                          filterMinDate.value != null
-                              ? '${filterMinDate.value!.day}/${filterMinDate.value!.month}/${filterMinDate.value!.year}'
-                              : 'Du',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      )),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Obx(() => OutlinedButton.icon(
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: Get.context!,
-                            initialDate: filterMaxDate.value ?? DateTime.now().add(const Duration(days: 7)),
-                            firstDate: filterMinDate.value ?? DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (date != null) {
-                            filterMaxDate.value = date;
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_today, size: 20),
-                        label: Text(
-                          filterMaxDate.value != null
-                              ? '${filterMaxDate.value!.day}/${filterMaxDate.value!.month}/${filterMaxDate.value!.year}'
-                              : 'Au',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      )),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Apply button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  applyFilters(
-                    departureCountry: departureCountryController.text.isEmpty
-                        ? null
-                        : departureCountryController.text,
-                    arrivalCountry: arrivalCountryController.text.isEmpty
-                        ? null
-                        : arrivalCountryController.text,
-                    departureCity: departureCityController.text.isEmpty
-                        ? null
-                        : departureCityController.text,
-                    arrivalCity: arrivalCityController.text.isEmpty
-                        ? null
-                        : arrivalCityController.text,
-                    maxPrice: maxPriceController.text.isEmpty
-                        ? null
-                        : double.tryParse(maxPriceController.text),
-                    minDate: filterMinDate.value,
-                    maxDate: filterMaxDate.value,
-                  );
-                  Get.back();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Appliquer les filtres',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Check if an offer belongs to the current user
   bool isMyOffer(DiaspoOffer offer) {
@@ -626,10 +345,7 @@ class DiaspoListController extends GetxController {
               'Vous recevrez une notification dès que votre profil sera validé (généralement sous 24-48h).',
             ),
             actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('OK'),
-              ),
+              TextButton(onPressed: () => Get.back(), child: const Text('OK')),
             ],
           ),
         );
@@ -755,206 +471,214 @@ class DiaspoListController extends GetxController {
               const SizedBox(height: 8),
               Text(
                 'Sélectionnez votre type de document et téléchargez les photos recto/verso',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
 
               // Document type selection
               const Text(
                 'Type de document',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              Obx(() => Row(
-                    children: [
-                      // CNI option
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => selectedDocumentType.value = 'cni',
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
+              Obx(
+                () => Row(
+                  children: [
+                    // CNI option
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => selectedDocumentType.value = 'cni',
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: selectedDocumentType.value == 'cni'
+                                ? AppThemeSystem.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  )
+                                : Colors.grey[100],
+                            border: Border.all(
                               color: selectedDocumentType.value == 'cni'
-                                  ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                                  : Colors.grey[100],
-                              border: Border.all(
+                                  ? AppThemeSystem.primaryColor
+                                  : Colors.grey[300]!,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.credit_card,
+                                size: 36,
                                 color: selectedDocumentType.value == 'cni'
                                     ? AppThemeSystem.primaryColor
-                                    : Colors.grey[300]!,
-                                width: 2,
+                                    : Colors.grey[600],
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.credit_card,
-                                  size: 36,
+                              const SizedBox(height: 8),
+                              Text(
+                                'CNI',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                   color: selectedDocumentType.value == 'cni'
                                       ? AppThemeSystem.primaryColor
-                                      : Colors.grey[600],
+                                      : Colors.grey[700],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'CNI',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: selectedDocumentType.value == 'cni'
-                                        ? AppThemeSystem.primaryColor
-                                        : Colors.grey[700],
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Carte Nationale',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Carte Nationale',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                    ),
+                    const SizedBox(width: 12),
 
-                      // Passport option
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => selectedDocumentType.value = 'passport',
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
+                    // Passport option
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => selectedDocumentType.value = 'passport',
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: selectedDocumentType.value == 'passport'
+                                ? AppThemeSystem.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  )
+                                : Colors.grey[100],
+                            border: Border.all(
                               color: selectedDocumentType.value == 'passport'
-                                  ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                                  : Colors.grey[100],
-                              border: Border.all(
+                                  ? AppThemeSystem.primaryColor
+                                  : Colors.grey[300]!,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.card_travel,
+                                size: 36,
                                 color: selectedDocumentType.value == 'passport'
                                     ? AppThemeSystem.primaryColor
-                                    : Colors.grey[300]!,
-                                width: 2,
+                                    : Colors.grey[600],
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.card_travel,
-                                  size: 36,
-                                  color: selectedDocumentType.value == 'passport'
+                              const SizedBox(height: 8),
+                              Text(
+                                'Passeport',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      selectedDocumentType.value == 'passport'
                                       ? AppThemeSystem.primaryColor
-                                      : Colors.grey[600],
+                                      : Colors.grey[700],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Passeport',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: selectedDocumentType.value == 'passport'
-                                        ? AppThemeSystem.primaryColor
-                                        : Colors.grey[700],
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Passport',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Passport',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  )),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // Photos section (only show if document type is selected)
-              Obx(() => selectedDocumentType.value != null
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Photos du document',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+              Obx(
+                () => selectedDocumentType.value != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Photos du document',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Recto
-                        _buildDocumentUploadCard(
-                          title: 'Recto',
-                          icon: Icons.badge,
-                          image: documentFrontImage.value,
-                          onUpload: () => _pickDocumentImage(isBack: false),
-                          onRemove: () => documentFrontImage.value = null,
-                        ),
-                        const SizedBox(height: 16),
+                          // Recto
+                          _buildDocumentUploadCard(
+                            title: 'Recto',
+                            icon: Icons.badge,
+                            image: documentFrontImage.value,
+                            onUpload: () => _pickDocumentImage(isBack: false),
+                            onRemove: () => documentFrontImage.value = null,
+                          ),
+                          const SizedBox(height: 16),
 
-                        // Verso
-                        _buildDocumentUploadCard(
-                          title: 'Verso',
-                          icon: Icons.badge_outlined,
-                          image: documentBackImage.value,
-                          onUpload: () => _pickDocumentImage(isBack: true),
-                          onRemove: () => documentBackImage.value = null,
-                        ),
-                      ],
-                    )
-                  : const SizedBox()),
+                          // Verso
+                          _buildDocumentUploadCard(
+                            title: 'Verso',
+                            icon: Icons.badge_outlined,
+                            image: documentBackImage.value,
+                            onUpload: () => _pickDocumentImage(isBack: true),
+                            onRemove: () => documentBackImage.value = null,
+                          ),
+                        ],
+                      )
+                    : const SizedBox(),
+              ),
               const SizedBox(height: 24),
 
               // Submit button
-              Obx(() => SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (selectedDocumentType.value != null &&
-                              documentFrontImage.value != null &&
-                              documentBackImage.value != null &&
-                              !isUploadingDocument.value)
-                          ? _submitVerification
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemeSystem.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+              Obx(
+                () => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        (selectedDocumentType.value != null &&
+                            documentFrontImage.value != null &&
+                            documentBackImage.value != null &&
+                            !isUploadingDocument.value)
+                        ? _submitVerification
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppThemeSystem.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: isUploadingDocument.value
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Soumettre pour vérification',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                    ),
+                    child: isUploadingDocument.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
                             ),
-                    ),
-                  )),
+                          )
+                        : const Text(
+                            'Soumettre pour vérification',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -999,10 +723,7 @@ class DiaspoListController extends GetxController {
                   const SizedBox(height: 4),
                   Text(
                     'Appuyez pour ajouter',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -1095,7 +816,9 @@ class DiaspoListController extends GetxController {
       isUploadingDocument.value = false;
       Get.back(); // Close bottom sheet
 
-      final docTypeName = selectedDocumentType.value == 'cni' ? 'CNI' : 'Passeport';
+      final docTypeName = selectedDocumentType.value == 'cni'
+          ? 'CNI'
+          : 'Passeport';
       Get.snackbar(
         'Succès',
         'Votre $docTypeName a été soumis pour vérification. Vous recevrez une notification dans 24-48h.',

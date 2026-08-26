@@ -15,41 +15,12 @@ class DiaspoListView extends GetView<DiaspoListController> {
       appBar: AppBar(
         title: const Text('DIASPO EXCHANGE'),
         centerTitle: true,
-        actions: [
-          // Filter button with badge
-          Obx(() => Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.filter_list),
-                    onPressed: controller.showFiltersBottomSheet,
-                  ),
-                  if (controller.hasActiveFilters.value)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
-              )),
-          // Clear filters button (only show if filters are active)
-          Obx(() => controller.hasActiveFilters.value
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  tooltip: 'Effacer les filtres',
-                  onPressed: controller.clearFilters,
-                )
-              : const SizedBox()),
-        ],
-      ),
+        ),
       body: Column(
         children: [
+        // 🔍 Zone de recherche
+        _buildSearchBar(context, isDark),
+
           // Tabs horizontaux (comme les catégories)
           _buildTabs(context, isDark),
 
@@ -67,6 +38,48 @@ class DiaspoListView extends GetView<DiaspoListController> {
       ),
     );
   }
+
+  /// Barre de recherche (remplace les filtres)
+Widget _buildSearchBar(BuildContext context, bool isDark) {
+  return Container(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+    color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+    child: Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        onChanged: (value) => controller.searchQuery.value = value,
+        decoration: InputDecoration(
+          hintText: 'Rechercher par ville ou pays...',
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: isDark ? Colors.white54 : Colors.grey[500],
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: isDark ? Colors.white54 : Colors.grey[500],
+          ),
+          suffixIcon: Obx(
+            () => controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear,
+                      color: isDark ? Colors.white54 : Colors.grey[500],
+                    ),
+                    onPressed: () => controller.searchQuery.value = '',
+                  )
+                : const SizedBox.shrink(),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    ),
+  );
+}
 
   /// Tabs horizontaux
   Widget _buildTabs(BuildContext context, bool isDark) {
@@ -140,178 +153,100 @@ class DiaspoListView extends GetView<DiaspoListController> {
   }
 
   /// Tab 1: Tous (toutes les offres) - With lazy loading
-  Widget _buildAllOffers(BuildContext context, bool isDark) {
-    return RefreshIndicator(
-      onRefresh: controller.refresh,
-      child: Obx(() {
-        // Smart skeleton loader for initial load or refresh
-        final isInitialOrRefresh = controller.isLoading.value && controller.offers.isEmpty;
+Widget _buildAllOffers(BuildContext context, bool isDark) {
+  return RefreshIndicator(
+    onRefresh: controller.refresh,
+    child: Obx(() {
+      final displayedOffers = controller.filteredOffers;
+      final isInitialOrRefresh = controller.isLoading.value && controller.offers.isEmpty;
 
-        if (isInitialOrRefresh) {
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: 5, // Show 5 skeleton cards
-            itemBuilder: (context, index) => _buildSkeletonCard(isDark),
-          );
-        }
-
-        if (controller.offers.isEmpty) {
-          return ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.flight_takeoff_rounded,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Aucune offre disponible',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    controller.hasActiveFilters.value
-                        ? 'Aucune offre ne correspond à vos critères de recherche.'
-                        : 'Soyez le premier à publier une offre de transport!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (controller.hasActiveFilters.value)
-                    ElevatedButton.icon(
-                      onPressed: controller.clearFilters,
-                      icon: const Icon(Icons.clear),
-                      label: const Text('Effacer les filtres'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      onPressed: controller.handleCreateOffer,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Créer mon offre'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemeSystem.primaryColor,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 32),
-                  // Info card explaining the marketplace
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.blue.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: Colors.blue[700],
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Comment ça marche?',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInfoItem(
-                          Icons.flight_takeoff_rounded,
-                          'Publiez votre offre',
-                          'Indiquez votre itinéraire et le poids disponible',
-                          isDark,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildInfoItem(
-                          Icons.inventory_2_outlined,
-                          'Recevez des réservations',
-                          'Les acheteurs réservent des kilos sur votre trajet',
-                          isDark,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildInfoItem(
-                          Icons.payments_outlined,
-                          'Gagnez de l\'argent',
-                          'Rentabilisez votre voyage en transportant des colis',
-                          isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        }
-
-        return NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            // Detect when user scrolls to bottom
-            if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-              if (controller.hasMore && !controller.isLoadingMore.value) {
-                controller.loadMore();
-              }
-            }
-            return false;
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.offers.length + (controller.hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Loading indicator at the bottom
-              if (index == controller.offers.length) {
-                return Obx(() => controller.isLoadingMore.value
-                    ? const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : const SizedBox());
-              }
-
-              final offer = controller.offers[index];
-              return _buildOfferCard(context, offer, isDark);
-            },
-          ),
+      if (isInitialOrRefresh) {
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: 5,
+          itemBuilder: (context, index) => _buildSkeletonCard(isDark),
         );
-      }),
-    );
-  }
+      }
 
+      if (displayedOffers.isEmpty) {
+        return ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.flight_takeoff_rounded, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 24),
+                Text(
+                  controller.searchQuery.value.isNotEmpty
+                      ? 'Aucun résultat pour "${controller.searchQuery.value}"'
+                      : 'Aucune offre disponible',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  controller.searchQuery.value.isNotEmpty
+                      ? 'Essayez une autre ville ou un autre pays.'
+                      : 'Soyez le premier à publier une offre de transport!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 24),
+                if (controller.searchQuery.value.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () => controller.searchQuery.value = '',
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Effacer la recherche'),
+                  )
+                else
+                  ElevatedButton.icon(
+                    onPressed: controller.handleCreateOffer,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Créer mon offre'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppThemeSystem.primaryColor,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      }
+
+      return NotificationListener<ScrollNotification>(
+        onNotification: (scrollInfo) {
+          if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+            if (controller.hasMore && !controller.isLoadingMore.value &&
+                controller.searchQuery.value.isEmpty) {
+              controller.loadMore();
+            }
+          }
+          return false;
+        },
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: displayedOffers.length +
+              (controller.hasMore && controller.searchQuery.value.isEmpty ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == displayedOffers.length) {
+              return Obx(() => controller.isLoadingMore.value
+                  ? const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : const SizedBox());
+            }
+            return _buildOfferCard(context, displayedOffers[index], isDark);
+          },
+        ),
+      );
+    }),
+  );
+}
   /// Tab 2: Mes Offres
   Widget _buildMyOffers(BuildContext context, bool isDark) {
     return RefreshIndicator(
