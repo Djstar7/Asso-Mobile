@@ -1014,7 +1014,7 @@ class AddProductController extends GetxController {
 
         // Toast de succès avec style responsive
         Get.snackbar(
-          isEditMode.value ? '✅ Produit modifié !' : '✅ Produit créé !',
+          isEditMode.value ? 'Produit modifié !' : 'Produit créé !',
           isEditMode.value
               ? 'Votre produit a été modifié avec succès. Redirection vers la liste...'
               : 'Votre produit a été ajouté avec succès. Redirection vers la liste...',

@@ -476,29 +476,6 @@ class DiaspoListController extends GetxController {
             ),
             const SizedBox(height: 24),
 
-            // Price filter
-            Text(
-              'Prix maximum (par kg)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: maxPriceController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Prix max',
-                prefixIcon: const Icon(Icons.euro),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
             // Date range
             Text(
               'Période de départ',
