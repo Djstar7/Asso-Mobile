@@ -1,5 +1,6 @@
   import 'dart:async';
-  import 'package:flutter/material.dart';
+  import 'package:asso/app/core/utils/auth_guard.dart';
+import 'package:flutter/material.dart';
   import 'package:get/get.dart';
 
   import '../controllers/wallet_controller.dart';
@@ -9,6 +10,7 @@
   import '../widgets/quick_confirm_code_dialog.dart';
   import '../../payment/widgets/payment_method_selector.dart';
   import '../../../data/models/payment_method_option.dart';
+  
 
   class WalletView extends GetView<WalletController> {
     const WalletView({super.key});
@@ -1008,43 +1010,82 @@
       );
     }
     /// Petit lien texte discret sous la carte IBAN — pas de bouton
-    Widget _buildIbanConfigLink(BuildContext? context, String? status) {
-      final color = status == 'rejected'
-          ? const Color(0xFFC62828)
-          : AppThemeSystem.primaryColor;
+/// Petit lien texte discret sous la carte IBAN — pas de bouton
+Widget _buildIbanConfigLink(BuildContext context, String? status) {
+  final isVendor = StorageService.getUser()?.isVendor ?? false;
 
-      final label = switch (status) {
-        'pending' => 'IBAN en cours de vérification',
-        'rejected' => 'IBAN refusé — appuyez pour corriger',
-        _ => 'Configurer votre IBAN pour retirer',
-      };
-
-      return Padding(
-        padding: const EdgeInsets.only(top: 8, left: 4),
-        child: InkWell(
-          onTap: () => Get.toNamed('/stripe-connect'),
-          borderRadius: BorderRadius.circular(6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.info_outline_rounded, size: 13, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: color,
-                  decoration: TextDecoration.underline,
-                  decorationColor: color.withValues(alpha: 0.4),
-                ),
+  // Cas 1 : pas encore vendeur → on l'invite à activer le mode vendeur
+  if (!isVendor) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 4),
+      child: InkWell(
+        onTap: () {
+          if (AuthGuard.isGuest) {
+            AppDialogs.showLoginRequiredDialog(context, featureName: 'le mode vendeur');
+          } else {
+            controller.handleVendorModeNavigation();
+          }
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.store_rounded, size: 13, color: AppThemeSystem.primaryColor),
+            const SizedBox(width: 4),
+            Text(
+              'Devenez vendeur pour recevoir des paiements',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppThemeSystem.primaryColor,
+                decoration: TextDecoration.underline,
+                decorationColor: AppThemeSystem.primaryColor.withValues(alpha: 0.4),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  // Cas 2 : déjà vendeur, IBAN à configurer/corriger
+  if (status == 'approved') return const SizedBox.shrink();
+
+  final color = status == 'rejected'
+      ? const Color(0xFFC62828)
+      : AppThemeSystem.primaryColor;
+
+  final label = switch (status) {
+    'pending' => 'IBAN en cours de vérification',
+    'rejected' => 'IBAN refusé — appuyez pour corriger',
+    _ => 'Configurer votre IBAN pour retirer',
+  };
+
+  return Padding(
+    padding: const EdgeInsets.only(top: 8, left: 4),
+    child: InkWell(
+      onTap: () => Get.toNamed('/stripe-connect'),
+      borderRadius: BorderRadius.circular(6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+              decoration: TextDecoration.underline,
+              decorationColor: color.withValues(alpha: 0.4),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
     Widget _buildProviderCard({
       required BuildContext context,
       required IconData iconData,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:asso/app/routes/app_pages.dart';
 import 'package:get/get.dart';
 
 import '../../../data/models/wallet_model.dart';
@@ -251,6 +252,43 @@ class WalletController extends GetxController {
       isLoading.value = false;
     }
   }
+
+    void handleVendorModeNavigation() {
+    print('');
+    print('========================================');
+    print('🏪 HOME: VENDOR MODE NAVIGATION');
+    print('========================================');
+
+    final user = StorageService.getUser();
+
+    if (user == null) {
+      print('❌ HOME: No user found in storage');
+      Get.snackbar(
+        'Connexion requise',
+        'Veuillez vous connecter pour accéder au mode vendeur',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      print('========================================');
+      return;
+    }
+
+    print('👤 HOME: User found');
+    print('  └─ Name: ${user.fullName}');
+    print('  └─ Role: ${user.role}');
+    print('  └─ Is Vendor: ${user.isVendor}');
+
+    if (user.isVendor) {
+      print('✅ HOME: User is already a vendor, navigating to dashboard');
+      Get.toNamed(Routes.VENDOR_DASHBOARD);
+    } else {
+      print('📝 HOME: User is not a vendor, navigating to config');
+      Get.toNamed(Routes.VENDOR_CONFIG);
+    }
+
+    print('========================================');
+  }
+
+
 
   /// Charge l'historique des transactions
   Future<void> loadTransactions({bool loadMore = false}) async {

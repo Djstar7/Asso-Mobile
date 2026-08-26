@@ -262,7 +262,7 @@ class DiaspoCreateController extends GetxController {
     isSubmitting.value = true;
 
     try {
-      await _diaspoService.createOffer(
+      final createdOffer = await _diaspoService.createOffer(
         departureCountry: departureCountryController.text.trim(),
         departureCity: departureCityController.text.trim(),
         departureDateTime: departureDateTime.value!,
@@ -275,7 +275,7 @@ class DiaspoCreateController extends GetxController {
         currency: selectedCurrencyCode.value,
       );
 
-      Get.offNamed('/diaspo');
+      Get.offNamed('/diaspo/detail', arguments: {'offer': createdOffer});
       Get.snackbar(
         'Succès',
         'Votre offre a été créée avec succès. Elle sera vérifiée par notre équipe.',
