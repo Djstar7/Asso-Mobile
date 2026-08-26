@@ -65,9 +65,8 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
         // Affichage normal avec conversations
         return CustomScrollView(
           slivers: [
-            // Barre de recherche épinglée
+            // Barre de recherche épinglée et raflraichessemnt
             _buildStickySearchBar(context),
-
             // Liste des conversations
             SliverPadding(
               padding: const EdgeInsets.only(top: 8),
@@ -101,8 +100,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
   // ================================
   // BARRE DE RECHERCHE ÉPINGLÉE
   // ================================
-
-  Widget _buildStickySearchBar(BuildContext context) {
+    Widget _buildStickySearchBar(BuildContext context) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverAppBarDelegate(
@@ -111,57 +109,94 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
         child: Container(
           color: AppThemeSystem.getBackgroundColor(context),
           padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppThemeSystem.getSurfaceColor(context),
-              borderRadius: BorderRadius.circular(
-                AppThemeSystem.getBorderRadius(
-                  context,
-                  BorderRadiusType.medium,
+          child: Row(
+            children: [
+              // Barre de recherche (prend tout l'espace disponible)
+              Expanded(
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.getSurfaceColor(context),
+                    borderRadius: BorderRadius.circular(
+                      AppThemeSystem.getBorderRadius(
+                        context,
+                        BorderRadiusType.medium,
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    onChanged: (value) => controller.searchQuery.value = value,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher une conversation...',
+                      hintStyle: context.textStyle(
+                        FontSizeType.body2,
+                        color: AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                      suffixIcon: Obx(
+                        () => controller.searchQuery.value.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () => controller.searchQuery.value = '',
+                                color: AppThemeSystem.getSecondaryTextColor(context),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    style: context.textStyle(FontSizeType.body2),
+                  ),
                 ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+
+              const SizedBox(width: 8),
+
+              // Bouton de rafraîchissement, à côté
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.getSurfaceColor(context),
+                  borderRadius: BorderRadius.circular(
+                    AppThemeSystem.getBorderRadius(
+                      context,
+                      BorderRadiusType.medium,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: TextField(
-              onChanged: (value) => controller.searchQuery.value = value,
-              decoration: InputDecoration(
-                hintText: 'Rechercher une conversation...',
-                hintStyle: context.textStyle(
-                  FontSizeType.body2,
-                  color: AppThemeSystem.getSecondaryTextColor(context),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                  onPressed: () => controller.loadConversations(refresh: true),
+                  tooltip: 'Recharger',
                 ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: AppThemeSystem.getSecondaryTextColor(context),
-                ),
-                suffixIcon: Obx(
-                  () => controller.searchQuery.value.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => controller.searchQuery.value = '',
-                          color: AppThemeSystem.getSecondaryTextColor(context),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              style: context.textStyle(FontSizeType.body2),
-            ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  // ================================
+  }// ================================
   // ITEM DE CONVERSATION
   // ================================
 

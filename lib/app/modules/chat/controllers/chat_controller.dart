@@ -138,6 +138,14 @@ class ChatController extends GetxController {
     Get.toNamed('/chatdetail', arguments: conversation);
   }
 
+  /// Refresh the list of conversations, optionally forcing a reload from the server
+  Future<void> loadConversations({bool refresh = false}) async {
+    if (refresh) {
+      isLoading.value = true;
+    }
+    await _loadConversations(); // ta logique existante
+  }
+
   /// Start a new conversation with a user (optionally about a product)
   Future<void> startConversation({required int userId, int? productId}) async {
     try {
