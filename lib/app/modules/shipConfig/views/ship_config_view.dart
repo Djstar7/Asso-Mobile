@@ -11,12 +11,23 @@ class ShipConfigView extends GetView<ShipConfigController> {
     return Scaffold(
       backgroundColor: context.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: context.primaryTextColor,
+            ),
+            onPressed: () {
+              // Vérifier si on peut retourner en arrière
+              if (Navigator.of(context).canPop()) {
+                Get.back();
+              } else {
+                // Si pas de page précédente, retourner à Home
+                Get.offAllNamed('/home');
+              }
+            },
+          ),
         title: Text(
           'Devenir Livreur',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
