@@ -37,12 +37,6 @@ class AddProductController extends GetxController {
   // Type d'article
   final articleType = 'article'.obs; // 'article' ou 'service'
 
-  // Pays d'origine (produits importés) : null = produit local, sinon CN/TR/AE
-  final selectedOriginCountry = Rx<String?>(null);
-  // Pays d'origine gérés côté backend (rechargés dans onInit). Initialisés avec
-  // le fallback pour que le formulaire fonctionne même si l'API échoue.
-  final originCountries =
-      List<Map<String, String>>.from(ProductService.importCountriesFallback).obs;
 
   // Type de prix
   final priceType = 'fixed'.obs; // 'fixed', 'discover', 'visit'
@@ -142,8 +136,6 @@ class AddProductController extends GetxController {
     _buildAllSubcategoriesFromHardcoded();
     // Puis charger depuis l'API
     _initializeData();
-    // Charger la liste des pays d'origine depuis le backend
-    _loadOriginCountries();
     // Charger les devises disponibles pour le sélecteur de prix
     _loadCurrencies();
   }
@@ -172,13 +164,6 @@ class AddProductController extends GetxController {
     }
   }
 
-  /// Recharge la liste des pays d'origine (produits importés) depuis le backend.
-  Future<void> _loadOriginCountries() async {
-    final loaded = await ProductService.getImportCountries();
-    if (loaded.isNotEmpty) {
-      originCountries.assignAll(loaded);
-    }
-  }
 
   /// Initialise les données (catégories et stockage)
   Future<void> _initializeData() async {
@@ -406,13 +391,7 @@ class AddProductController extends GetxController {
           print('📝 ADD_PRODUCT: Category set: $catName');
         }
       }
-
-      // Pays d'origine (produit importé)
-      final originCountry = product['origin_country']?.toString().trim().toUpperCase();
-      if (originCountry != null && originCountry.isNotEmpty && originCountry != 'NULL') {
-        selectedOriginCountry.value = originCountry;
-        print('📝 ADD_PRODUCT: Origin country set: $originCountry');
-      }
+ 
 
       // Weight - PRIORITÉ au poids personnalisé (weight), sinon weight_category
       final weightCategory = product['weight_category']?.toString().trim();
@@ -917,15 +896,6 @@ class AddProductController extends GetxController {
       // Ajouter subcategory_id si disponible
       if (selectedSubcategoryId.value != null && selectedSubcategoryId.value!.isNotEmpty) {
         fieldsMap['subcategory_id'] = selectedSubcategoryId.value!;
-      }
-
-      // Pays d'origine (produits importés). En édition, '' permet de repasser en produit local.
-      if (selectedOriginCountry.value != null && selectedOriginCountry.value!.isNotEmpty) {
-        fieldsMap['origin_country'] = selectedOriginCountry.value!;
-        print('📦 ADD_PRODUCT: ✅ origin_country: ${selectedOriginCountry.value}');
-      } else if (isEditMode.value) {
-        fieldsMap['origin_country'] = '';
-        print('📦 ADD_PRODUCT: ✅ origin_country cleared (produit local)');
       }
 
       // Ajouter stock si disponible
