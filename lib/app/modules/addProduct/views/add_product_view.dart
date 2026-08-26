@@ -4,6 +4,7 @@ import 'package:dotted_border/dotted_border.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/add_product_controller.dart';
+import '../../../data/models/currency_model.dart';
 
 class AddProductView extends GetView<AddProductController> {
   const AddProductView({super.key});
@@ -125,74 +126,72 @@ class AddProductView extends GetView<AddProductController> {
   }
 
   /// Section Images avec sélection multiple et choix de l'image primaire
-  Widget _buildImagesSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Images du produit',
-              style: context.h5.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Obligatoire',
-                style: context.caption.copyWith(
-                  color: AppThemeSystem.errorColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: context.elementSpacing * 0.5),
-        Text(
-          'Ajoutez plusieurs images et sélectionnez l\'image principale',
-          style: context.caption.copyWith(
-            color: context.secondaryTextColor,
+Widget _buildImagesSection(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Text(
+            'Images du produit',
+            style: context.h5.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
-        SizedBox(height: context.elementSpacing),
-
-        Obx(() {
-          return SizedBox(
-            height: 120,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                // Bouton unique pour upload images
-                _buildAddImageButton(
-                  context,
-                  icon: Icons.add_photo_alternate,
-                  label: 'Upload Images',
-                  onTap: () => _showImageSourceBottomSheet(context),
-                ),
-                SizedBox(width: context.elementSpacing),
-
-                // Liste des images
-                ...List.generate(controller.productImages.length, (index) {
-                  return Padding(
-                    padding: EdgeInsets.only(right: context.elementSpacing),
-                    child: _buildImageThumbnail(context, index),
-                  );
-                }),
-              ],
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-          );
-        }),
-      ],
-    );
-  }
+            child: Text(
+              'Obligatoire',
+              style: context.caption.copyWith(
+                color: AppThemeSystem.errorColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: context.elementSpacing * 0.5),
+      Text(
+        'Ajoutez plusieurs images et sélectionnez l\'image principale',
+        style: context.caption.copyWith(color: context.secondaryTextColor),
+      ),
+      SizedBox(height: context.elementSpacing),
 
+      Obx(() {
+        final existingCount = controller.existingImages.length;
+        final newCount = controller.productImages.length;
+        final total = existingCount + newCount;
+
+        return SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildAddImageButton(
+                context,
+                icon: Icons.add_photo_alternate,
+                label: 'Upload Images',
+                onTap: () => _showImageSourceBottomSheet(context),
+              ),
+              SizedBox(width: context.elementSpacing),
+
+              // Liste combinée : images existantes (réseau) + nouvelles (locales)
+              ...List.generate(total, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(right: context.elementSpacing),
+                  child: _buildImageThumbnail(context, index),
+                );
+              }),
+            ],
+          ),
+        );
+      }),
+    ],
+  );
+}
   /// Bouton d'analyse AI avec Gemini
   Widget _buildAIAnalysisButton(BuildContext context) {
     return Obx(() {
@@ -308,82 +307,104 @@ class AddProductView extends GetView<AddProductController> {
     );
   }
 
-  Widget _buildImageThumbnail(BuildContext context, int index) {
-    return Obx(() {
-      final isPrimary = controller.primaryImageIndex.value == index;
+Widget _buildImageThumbnail(BuildContext context, int index) {
+  return Obx(() {
+    final existingCount = controller.existingImages.length;
+    final isExisting = index < existingCount;
+    final isPrimary = controller.primaryImageIndex.value == index;
 
-      return Stack(
-        children: [
-          GestureDetector(
-            onTap: () => controller.setPrimaryImage(index),
-            child: Container(
-              width: 100,
-              decoration: BoxDecoration(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                border: Border.all(
-                  color: isPrimary
-                      ? AppThemeSystem.successColor
-                      : context.borderColor,
-                  width: isPrimary ? 3 : 1,
-                ),
+    Widget imageWidget;
+    if (isExisting) {
+      final url = controller.existingImages[index]['url'] as String;
+      imageWidget = Image.network(
+        url,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: progress.expectedTotalBytes != null
+                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: context.surfaceColor,
+            child: Icon(Icons.broken_image, color: context.secondaryTextColor),
+          );
+        },
+      );
+    } else {
+      final newIndex = index - existingCount;
+      imageWidget = MediaHelper.buildImagePreview(
+        controller.productImages[newIndex],
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => controller.setPrimaryImage(index),
+          child: Container(
+            width: 100,
+            decoration: BoxDecoration(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+              border: Border.all(
+                color: isPrimary ? AppThemeSystem.successColor : context.borderColor,
+                width: isPrimary ? 3 : 1,
               ),
-              child: ClipRRect(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                child: MediaHelper.buildImagePreview(
-                  controller.productImages[index],
-                  fit: BoxFit.cover,
-                ),
-              ),
+            ),
+            child: ClipRRect(
+              borderRadius: context.borderRadius(BorderRadiusType.medium),
+              child: imageWidget,
             ),
           ),
+        ),
 
-          // Badge "Principale"
-          if (isPrimary)
-            Positioned(
-              top: 4,
-              left: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.successColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Principale',
-                  style: context.caption.copyWith(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-          // Bouton supprimer
+        if (isPrimary)
           Positioned(
             top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () => controller.removeImage(index),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.errorColor,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
+            left: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.successColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Principale',
+                style: context.caption.copyWith(
                   color: Colors.white,
-                  size: 16,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-        ],
-      );
-    });
-  }
 
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () => controller.removeImage(index),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.errorColor,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  });
+}
   /// Section Nom du produit
   Widget _buildNameSection(BuildContext context) {
     return Column(
@@ -1094,43 +1115,227 @@ class AddProductView extends GetView<AddProductController> {
     );
   }
 
-  /// Sélecteur de devise du prix (le vendeur peut fixer un prix en devise ≠ XAF).
-  Widget _buildCurrencySelector(BuildContext context) {
-    return Obx(() {
-      final currencies = controller.availableCurrencies;
-      // Toujours proposer au moins XAF si la liste n'est pas encore chargée
-      final codes = currencies.isNotEmpty
-          ? currencies.map((c) => c.code).toList()
-          : <String>['XAF'];
-      final value = codes.contains(controller.selectedCurrency.value)
-          ? controller.selectedCurrency.value
-          : codes.first;
-      return Container(
+/// Sélecteur de devise du prix — bottom sheet avec recherche (remplace le dropdown)
+Widget _buildCurrencySelector(BuildContext context) {
+  return Obx(() {
+    final currencies = controller.availableCurrencies;
+    final selectedCode = controller.selectedCurrency.value;
+    final selected = currencies.firstWhereOrNull((c) => c.code == selectedCode);
+
+    return GestureDetector(
+      onTap: () => _showCurrencyBottomSheet(context),
+      child: Container(
+        height: 56, // aligné avec la hauteur du TextField du prix
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: context.inputFieldColor,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           border: Border.all(color: context.borderColor),
         ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            isDense: true,
-            items: codes
-                .map((code) => DropdownMenuItem<String>(
-                      value: code,
-                      child: Text(code, style: context.subtitle1),
-                    ))
-                .toList(),
-            onChanged: (code) {
-              if (code != null) controller.selectedCurrency.value = code;
-            },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              selected?.code ?? selectedCode,
+              style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              color: context.secondaryTextColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  });
+}
+
+/// Bottom sheet pour sélectionner la devise, avec recherche (code ou nom)
+void _showCurrencyBottomSheet(BuildContext context) {
+  final searchController = TextEditingController();
+  final allCurrencies = controller.availableCurrencies.isNotEmpty
+      ? controller.availableCurrencies
+      : <CurrencyModel>[];
+  final filteredCurrencies = <CurrencyModel>[].obs;
+  filteredCurrencies.value = allCurrencies;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: context.backgroundColor,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(
+              AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+            ),
           ),
         ),
-      );
-    });
-  }
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: EdgeInsets.all(context.horizontalPadding),
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+                  ),
+                ),
+                border: Border(
+                  bottom: BorderSide(color: context.borderColor),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.borderColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  SizedBox(height: context.elementSpacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Sélectionner une devise',
+                          style: context.h5.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: context.elementSpacing),
+                  // Barre de recherche
+                  TextField(
+                    controller: searchController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher par code ou nom...',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: context.backgroundColor,
+                      border: OutlineInputBorder(
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: context.horizontalPadding,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (value.isEmpty) {
+                        filteredCurrencies.value = allCurrencies;
+                      } else {
+                        final query = value.toLowerCase();
+                        filteredCurrencies.value = allCurrencies.where((c) {
+                          return c.code.toLowerCase().contains(query) ||
+                              c.name.toLowerCase().contains(query);
+                        }).toList();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
 
+            // Liste des devises
+            Expanded(
+              child: Obx(() {
+                if (filteredCurrencies.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(context.horizontalPadding),
+                      child: Text(
+                        'Aucune devise trouvée',
+                        style: context.body1.copyWith(
+                          color: context.secondaryTextColor,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: EdgeInsets.only(
+                    left: context.horizontalPadding,
+                    right: context.horizontalPadding,
+                    top: context.horizontalPadding,
+                    bottom: context.bottomSheetPadding,
+                  ),
+                  itemCount: filteredCurrencies.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    color: context.borderColor,
+                  ),
+                  itemBuilder: (context, index) {
+                    final currency = filteredCurrencies[index];
+                    final isSelected = controller.selectedCurrency.value == currency.code;
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isSelected
+                            ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
+                            : context.surfaceColor,
+                        child: Text(
+                          currency.symbol,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? AppThemeSystem.primaryColor
+                                : context.secondaryTextColor,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        currency.code,
+                        style: context.body1.copyWith(
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? AppThemeSystem.primaryColor
+                              : context.primaryTextColor,
+                        ),
+                      ),
+                      subtitle: Text(
+                        currency.name,
+                        style: context.caption.copyWith(
+                          color: context.secondaryTextColor,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: AppThemeSystem.successColor,
+                            )
+                          : null,
+                      onTap: () {
+                        controller.selectedCurrency.value = currency.code;
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
   /// Section Description
   Widget _buildDescriptionSection(BuildContext context) {
     return Column(

@@ -26,6 +26,11 @@ class AddProductController extends GetxController {
   final newImageStartIndex = 0.obs; // Index à partir duquel les images sont nouvelles
   final deletedImageIds = <int>[].obs; // IDs des images supprimées par l'utilisateur
 
+
+  final existingImages = <Map<String, dynamic>>[].obs; // {id, url, isPrimary}
+  final newImages = <XFile>[].obs;
+
+  
   // Catégorie et sous-catégorie
   final selectedCategory = Rx<String?>(null);
   final selectedSubcategory = Rx<String?>(null);
@@ -107,6 +112,46 @@ class AddProductController extends GetxController {
       {'id': '20', 'name': 'Produits de santé'},
     ],
   };
+  /// Nombre total d'images (existantes + nouvelles)
+int get totalImagesCount => existingImages.length + productImages.length;
+
+/// Supprimer une image (existante ou nouvelle) via un index combiné
+void removeImage(int index) {
+  print('🗑️ Removing image at combined index $index');
+
+  if (index < existingImages.length) {
+    // C'est une image existante (déjà sur le serveur)
+    final removed = existingImages.removeAt(index);
+    final id = removed['id'] as int?;
+    if (id != null) {
+      deletedImageIds.add(id);
+      existingImageIds.remove(id);
+      print('   └─ Image existante supprimée, ID $id ajouté à deletedImageIds');
+    }
+    // Les nouvelles images "démarrent" toujours juste après les existantes restantes
+    newImageStartIndex.value = existingImages.length;
+  } else {
+    // C'est une nouvelle image (XFile local, pas encore uploadée)
+    final newIndex = index - existingImages.length;
+    productImages.removeAt(newIndex);
+    print('   └─ Nouvelle image supprimée (index local $newIndex)');
+  }
+
+  // Réajuster l'image primaire si nécessaire
+  final total = totalImagesCount;
+  if (total == 0) {
+    primaryImageIndex.value = 0;
+  } else if (primaryImageIndex.value >= total || primaryImageIndex.value == index) {
+    primaryImageIndex.value = 0;
+  }
+
+  print('   └─ Images restantes: $total (existantes: ${existingImages.length}, nouvelles: ${productImages.length})');
+}
+
+/// Définir l'image primaire (index combiné)
+void setPrimaryImage(int index) {
+  primaryImageIndex.value = index;
+}
 
   @override
   void onInit() {
@@ -281,6 +326,33 @@ class AddProductController extends GetxController {
     }
   }
 
+
+  Future<XFile?> _downloadImage(String url) async {
+  try {
+    final response = await http
+        .get(Uri.parse(url))
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => http.Response('', 408),
+        );
+
+    if (response.statusCode == 200) {
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${url.split('/').last}';
+      return XFile.fromData(
+        response.bodyBytes,
+        name: fileName,
+        mimeType: response.headers['content-type'],
+      );
+    } else {
+      print('❌ ADD_PRODUCT: Failed to download image. Status: ${response.statusCode} — URL: $url');
+    }
+  } catch (e) {
+    print('❌ ADD_PRODUCT: Error downloading image: $e — URL: $url');
+  }
+  return null;
+}
+
   /// Construit la liste de toutes les sous-catégories depuis les données hardcodées
   void _buildAllSubcategoriesFromHardcoded() {
     final List<Map<String, String>> allSubs = [];
@@ -335,174 +407,135 @@ class AddProductController extends GetxController {
   }
 
   /// Populate form with product data for editing
-  Future<void> _populateEditData(Map<String, dynamic> product) async {
-    try {
-      print('📝 ADD_PRODUCT: Populating edit data...');
-      print('📝 ADD_PRODUCT: Product data structure: ${product.keys.toList()}');
-      print('📝 ADD_PRODUCT: Full product data: $product');
-
-      // Populate text fields
-      nameController.text = product['name'] ?? '';
-      descriptionController.text = product['description'] ?? '';
-
-      // Devise + prix SOURCE du produit (plus de reconversion XOF : on édite la valeur
-      // telle que le vendeur l'a fixée, dans sa devise d'origine).
-      final productCurrency = (product['currency']?.toString() ?? 'XAF').toUpperCase();
-      selectedCurrency.value = productCurrency.isNotEmpty ? productCurrency : 'XAF';
-
-      final price = product['price'];
-      if (price != null) {
-        final sourcePrice = double.tryParse(price.toString()) ?? 0;
-        priceController.text = sourcePrice.toStringAsFixed(0);
-        print('📝 ADD_PRODUCT: Prix source: $sourcePrice ${selectedCurrency.value}');
-      } else {
-        print('⚠️ ADD_PRODUCT: No price found in product data');
-      }
-
-      // Stock - check multiple possible field names
-      final stock = product['stock'] ?? product['quantity'] ?? product['stock_quantity'];
-      if (stock != null) {
-        stockController.text = stock.toString();
-        print('📝 ADD_PRODUCT: Stock set: $stock');
-      } else {
-        print('⚠️ ADD_PRODUCT: No stock/quantity found in product data');
-        print('📝 ADD_PRODUCT: Available keys: ${product.keys.where((k) => k.toLowerCase().contains('stock') || k.toLowerCase().contains('quantity')).toList()}');
-      }
-
-      // Category and Subcategory
-      final subcategory = product['subcategory'];
-      final category = product['category'];
-
-      if (subcategory != null) {
-        final subcatId = subcategory['id']?.toString();
-        final subcatName = subcategory['name'];
-
-        if (subcatId != null && subcatName != null) {
-          selectedSubcategoryId.value = subcatId;
-          selectedSubcategory.value = subcatName;
-          print('📝 ADD_PRODUCT: Subcategory set: $subcatName (ID: $subcatId)');
-        }
-      }
-
-      if (category != null) {
-        final catName = category['name'];
-        if (catName != null) {
-          selectedCategory.value = catName;
-          print('📝 ADD_PRODUCT: Category set: $catName');
-        }
-      }
  
+Future<void> _populateEditData(Map<String, dynamic> product) async {
+  try {
+    print('📝 ADD_PRODUCT: Populating edit data...');
+    print('📝 ADD_PRODUCT: Product data structure: ${product.keys.toList()}');
 
-      // Weight - PRIORITÉ au poids personnalisé (weight), sinon weight_category
-      final weightCategory = product['weight_category']?.toString().trim();
-      final customWeight = product['weight']?.toString().trim();
+    // Champs texte
+    nameController.text = product['name'] ?? '';
+    descriptionController.text = product['description'] ?? '';
 
-      print('📝 ADD_PRODUCT: Weight data from API:');
-      print('   └─ weight_category: $weightCategory');
-      print('   └─ weight: $customWeight');
+    // Devise + prix source du produit
+    final productCurrency = (product['currency']?.toString() ?? 'XAF').toUpperCase();
+    selectedCurrency.value = productCurrency.isNotEmpty ? productCurrency : 'XAF';
 
-      // PRIORITÉ 1 : Poids personnalisé
-      if (customWeight != null && customWeight.isNotEmpty && customWeight != 'null' && customWeight != '0') {
-        // Poids personnalisé
-        selectedWeightType.value = 'custom';
-        // Remove " kg" or " KG" suffix if present
-        final cleanWeight = customWeight.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
-        weightKgController.text = cleanWeight;
-        customWeightValue.value = cleanWeight; // Mettre à jour la valeur observable
-        print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg (from: "$customWeight")');
-      }
-      // PRIORITÉ 2 : Catégorie de poids prédéfinie
-      else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
-        // Vérifier si c'est une catégorie prédéfinie
-        if (weightTypes.containsKey(weightCategory)) {
-          selectedWeightType.value = weightCategory;
-          print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
-        } else {
-          print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
-        }
-      } else {
-        print('⚠️ ADD_PRODUCT: No weight found in product data');
-        print('📝 ADD_PRODUCT: Available weight keys: ${product.keys.where((k) => k.toLowerCase().contains('weight')).toList()}');
-      }
-
-      // Download images from URLs and track existing image IDs
-      final images = product['images'] as List?;
-      if (images != null && images.isNotEmpty) {
-        print('📝 ADD_PRODUCT: Downloading ${images.length} images...');
-        existingImageIds.clear(); // Clear previous IDs
-
-        for (var i = 0; i < images.length; i++) {
-          final imageData = images[i] as Map<String, dynamic>;
-          final imageUrl = imageData['url'] as String?;
-          final imageId = imageData['id'] as int?;
-
-          if (imageUrl != null) {
-            try {
-              final imageFile = await _downloadImage(imageUrl);
-              if (imageFile != null) {
-                productImages.add(imageFile);
-
-                // Track this as an existing image
-                if (imageId != null) {
-                  existingImageIds.add(imageId);
-                }
-
-                // Set primary image if indicated
-                final isPrimary = imageData['is_primary'] ?? false;
-                if (isPrimary) {
-                  primaryImageIndex.value = i;
-                }
-              }
-            } catch (e) {
-              print('⚠️ ADD_PRODUCT: Failed to download image $i: $e');
-            }
-          }
-        }
-
-        // Mark where new images will start
-        newImageStartIndex.value = productImages.length;
-
-        print('✅ ADD_PRODUCT: Downloaded ${productImages.length} images');
-        print('📝 ADD_PRODUCT: Existing image IDs: $existingImageIds');
-        print('📝 ADD_PRODUCT: New images will start at index: ${newImageStartIndex.value}');
-      }
-
-      print('✅ ADD_PRODUCT: Edit data populated successfully');
-    } catch (e, stackTrace) {
-      print('❌ ADD_PRODUCT: Error populating edit data: $e');
-      print('Stack trace: $stackTrace');
-      Get.snackbar(
-        'Erreur',
-        'Impossible de charger les données du produit',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+    final price = product['price'];
+    if (price != null) {
+      final sourcePrice = double.tryParse(price.toString()) ?? 0;
+      priceController.text = sourcePrice.toStringAsFixed(0);
+      print('📝 ADD_PRODUCT: Prix source: $sourcePrice ${selectedCurrency.value}');
+    } else {
+      print('⚠️ ADD_PRODUCT: No price found in product data');
     }
-  }
 
-  /// Télécharge une image depuis une URL et la conserve en mémoire (XFile).
-  /// Compatible web ET mobile (aucune écriture sur disque).
-  Future<XFile?> _downloadImage(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${url.split('/').last}';
-        print('📷 ADD_PRODUCT: Image downloaded: $fileName');
-        return XFile.fromData(
-          response.bodyBytes,
-          name: fileName,
-          mimeType: response.headers['content-type'],
-        );
-      } else {
-        print('❌ ADD_PRODUCT: Failed to download image. Status: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ ADD_PRODUCT: Error downloading image: $e');
+    // Stock
+    final stock = product['stock'] ?? product['quantity'] ?? product['stock_quantity'];
+    if (stock != null) {
+      stockController.text = stock.toString();
+      print('📝 ADD_PRODUCT: Stock set: $stock');
+    } else {
+      print('⚠️ ADD_PRODUCT: No stock/quantity found in product data');
     }
-    return null;
-  }
 
+    // Catégorie et sous-catégorie
+    final subcategory = product['subcategory'];
+    final category = product['category'];
+
+    if (subcategory != null) {
+      final subcatId = subcategory['id']?.toString();
+      final subcatName = subcategory['name'];
+      if (subcatId != null && subcatName != null) {
+        selectedSubcategoryId.value = subcatId;
+        selectedSubcategory.value = subcatName;
+        print('📝 ADD_PRODUCT: Subcategory set: $subcatName (ID: $subcatId)');
+      }
+    }
+
+    if (category != null) {
+      final catName = category['name'];
+      if (catName != null) {
+        selectedCategory.value = catName;
+        print('📝 ADD_PRODUCT: Category set: $catName');
+      }
+    }
+
+    // Poids — priorité au poids personnalisé
+    final weightCategory = product['weight_category']?.toString().trim();
+    final customWeight = product['weight']?.toString().trim();
+
+    print('📝 ADD_PRODUCT: Weight data from API:');
+    print('   └─ weight_category: $weightCategory');
+    print('   └─ weight: $customWeight');
+
+    if (customWeight != null && customWeight.isNotEmpty && customWeight != 'null' && customWeight != '0') {
+      selectedWeightType.value = 'custom';
+      final cleanWeight = customWeight.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
+      weightKgController.text = cleanWeight;
+      customWeightValue.value = cleanWeight;
+      print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg');
+    } else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
+      if (weightTypes.containsKey(weightCategory)) {
+        selectedWeightType.value = weightCategory;
+        print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
+      } else {
+        print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
+      }
+    } else {
+      print('⚠️ ADD_PRODUCT: No weight found in product data');
+    }
+
+    // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
+    final images = product['images'] as List?;
+    existingImages.clear();
+    existingImageIds.clear();
+
+    if (images != null && images.isNotEmpty) {
+      int primaryIndex = 0;
+
+      for (int i = 0; i < images.length; i++) {
+        final imageData = images[i] as Map<String, dynamic>;
+        final id = imageData['id'] as int?;
+        final url = imageData['url'] as String?;
+        final isPrimary = imageData['is_primary'] == true;
+
+        if (url == null) continue;
+
+        existingImages.add({
+          'id': id,
+          'url': url,
+          'isPrimary': isPrimary,
+        });
+
+        if (id != null) existingImageIds.add(id);
+        if (isPrimary) primaryIndex = existingImages.length - 1;
+      }
+
+      primaryImageIndex.value = primaryIndex;
+      // Les nouvelles images ajoutées par l'utilisateur commenceront après
+      // toutes les images existantes (dans la liste combinée affichée).
+      newImageStartIndex.value = existingImages.length;
+
+      print('✅ ADD_PRODUCT: ${existingImages.length} images existantes référencées (aucun téléchargement)');
+      print('📝 ADD_PRODUCT: Existing image IDs: $existingImageIds');
+      print('📝 ADD_PRODUCT: New images will start at index: ${newImageStartIndex.value}');
+    } else {
+      newImageStartIndex.value = 0;
+      print('⚠️ ADD_PRODUCT: No images found in product data');
+    }
+
+    print('✅ ADD_PRODUCT: Edit data populated successfully');
+  } catch (e, stackTrace) {
+    print('❌ ADD_PRODUCT: Error populating edit data: $e');
+    print('Stack trace: $stackTrace');
+    Get.snackbar(
+      'Erreur',
+      'Impossible de charger les données du produit',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+}
   /// Ajouter des images (galerie, sélection multiple)
   Future<void> pickImages() async {
     try {
@@ -544,46 +577,6 @@ class AddProductController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     }
-  }
-
-  /// Supprimer une image
-  void removeImage(int index) {
-    print('🗑️ Removing image at index $index');
-    print('   └─ Is edit mode: ${isEditMode.value}');
-    print('   └─ newImageStartIndex: ${newImageStartIndex.value}');
-    print('   └─ existingImageIds: $existingImageIds');
-
-    // Si on supprime une image existante (en mode édition)
-    if (isEditMode.value && index < newImageStartIndex.value) {
-      // Trouver l'ID de l'image supprimée
-      if (index < existingImageIds.length) {
-        final deletedId = existingImageIds[index];
-        deletedImageIds.add(deletedId);
-        existingImageIds.removeAt(index);
-        print('   └─ Added image ID $deletedId to deletedImageIds');
-        print('   └─ deletedImageIds now: $deletedImageIds');
-      }
-
-      // Décrementer newImageStartIndex car on a supprimé une image existante
-      newImageStartIndex.value--;
-      print('   └─ newImageStartIndex now: ${newImageStartIndex.value}');
-    }
-
-    productImages.removeAt(index);
-
-    // Ajuster l'index de l'image primaire si nécessaire
-    if (primaryImageIndex.value >= productImages.length && productImages.isNotEmpty) {
-      primaryImageIndex.value = 0;
-    } else if (primaryImageIndex.value == index && productImages.isNotEmpty) {
-      primaryImageIndex.value = 0; // Reset to first image if we deleted the primary
-    }
-
-    print('   └─ Remaining images: ${productImages.length}');
-  }
-
-  /// Définir l'image primaire
-  void setPrimaryImage(int index) {
-    primaryImageIndex.value = index;
   }
 
   /// Analyser l'image du produit avec Gemini AI
