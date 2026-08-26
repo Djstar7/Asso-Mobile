@@ -875,7 +875,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                       context,
                       isDark,
                       label: 'Min',
-                      value: controller.minPrice.value,
+                      textController: controller.minPriceController,
                       onChanged: (value) {
                         controller.minPrice.value = value;
                       },
@@ -896,7 +896,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                       context,
                       isDark,
                       label: 'Max',
-                      value: controller.maxPrice.value,
+                      textController: controller.minPriceController,
                       onChanged: (value) {
                         controller.maxPrice.value = value;
                       },
@@ -1051,12 +1051,9 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     BuildContext context,
     bool isDark, {
     required String label,
-    required double value,
+    required TextEditingController textController,
     required Function(double) onChanged,
   }) {
-    final controller = TextEditingController(
-      text: value > 0 ? value.toInt().toString() : '',
-    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1079,7 +1076,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           ),
           const SizedBox(height: 4),
           TextField(
-            controller: controller,
+            controller: textController,
             keyboardType: TextInputType.number,
             style: context.textStyle(
               FontSizeType.body1,

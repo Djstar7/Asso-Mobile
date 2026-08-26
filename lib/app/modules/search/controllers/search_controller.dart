@@ -11,6 +11,8 @@ class SearchController extends GetxController {
   final _storage = GetStorage();
   final TextEditingController searchTextController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
+  final TextEditingController minPriceController = TextEditingController();
+  final TextEditingController maxPriceController = TextEditingController();
 
   // ================================
   // DONNÉES DES PRODUITS
@@ -101,6 +103,8 @@ class SearchController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    minPriceController.text = minPrice.value > 0 ? minPrice.value.toInt().toString() : '';
+    maxPriceController.text = maxPrice.value > 0 ? maxPrice.value.toInt().toString() : '';
     _loadSearchHistory();
     _loadCategories();
     _setupSearchListener();
@@ -131,6 +135,8 @@ class SearchController extends GetxController {
   void onClose() {
     searchTextController.dispose();
     searchFocusNode.dispose();
+    minPriceController.dispose();
+    maxPriceController.dispose();
     super.onClose();
   }
 
@@ -465,6 +471,8 @@ class SearchController extends GetxController {
     maxPrice.value = 1000000.0;
     currentMinPrice.value = 0.0;
     currentMaxPrice.value = 1000000.0;
+    minPriceController.clear();
+    maxPriceController.clear();
     selectedLocation.value = 'Toutes les villes';
     selectedSortOption.value = SortOption.relevance;
     sortBy.value = 'created_at';
