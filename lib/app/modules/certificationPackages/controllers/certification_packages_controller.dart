@@ -4,233 +4,215 @@ import '../../../data/providers/package_service.dart';
 import '../../../data/providers/wallet_service.dart';
 import '../../../data/models/wallet_model.dart';
 import '../../../core/utils/app_theme_system.dart';
-import '../../packageSubscription/widgets/payment_loading_dialog.dart';
-import '../../packageSubscription/widgets/payment_success_dialog.dart';
 
 class CertificationPackagesController extends GetxController {
-  // State management
   bool _isDisposed = false;
   bool get isSafe => !_isDisposed && isClosed == false;
 
-  // Observable variables
   final packages = <Map<String, dynamic>>[].obs;
   final selectedPackage = Rx<Map<String, dynamic>?>(null);
   final isLoading = false.obs;
+  final isCreatingOrder = false.obs;
 
-  // Wallet data
   final wallet = Rx<WalletModel?>(null);
   final isLoadingWallet = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    print('');
-    print('========================================');
-    print('✅ CERTIFICATION PACKAGES CONTROLLER: Init');
-    print('========================================');
     loadPackages();
     loadWallet();
   }
 
-  /// Load all available certification packages
   Future<void> loadPackages() async {
     if (_isDisposed) return;
-
-    print('');
-    print('✅ Loading certification packages...');
     isLoading.value = true;
-
     try {
       final response = await PackageService.getCertificationPackages();
-
       if (_isDisposed) return;
-
       if (response.success && response.data != null) {
         final packagesData = response.data!['packages'] as List?;
-
         if (packagesData != null) {
-          packages.value = packagesData
-              .map((e) => e as Map<String, dynamic>)
-              .toList();
-          print('✅ Loaded ${packages.length} certification packages');
+          packages.value = packagesData.map((e) => e as Map<String, dynamic>).toList();
         }
       } else {
-        print('❌ Failed to load certification packages: ${response.message}');
-        Get.snackbar(
-          'Erreur',
-          response.message ?? 'Impossible de charger les packages de certification',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppThemeSystem.errorColor,
-          colorText: Colors.white,
-        );
+        Get.snackbar('Erreur', response.message ?? 'Impossible de charger les packages',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
       }
     } catch (e) {
-      print('💥 Exception loading certification packages: $e');
-      Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
+      Get.snackbar('Erreur', 'Une erreur est survenue: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Load wallet balance
   Future<void> loadWallet() async {
     if (_isDisposed) return;
-
-    print('');
-    print('💰 Loading wallet balance...');
     isLoadingWallet.value = true;
-
     try {
       final response = await WalletService.getWallet();
-
       if (_isDisposed) return;
-
       if (response.success && response.data != null) {
         final walletData = response.data!['data'] ?? response.data!;
         wallet.value = WalletModel.fromJson(walletData);
-        print('✅ Wallet loaded');
-        print('  └─ KPay: ${wallet.value!.kpayBalance} FCFA');
-        print('  └─ PayPal: ${wallet.value!.paypalBalance} FCFA');
-        print('  └─ Total: ${wallet.value!.currentBalance} FCFA');
-      } else {
-        print('❌ Failed to load wallet: ${response.message}');
       }
-    } catch (e) {
-      print('💥 Exception loading wallet: $e');
+    } catch (_) {
     } finally {
       isLoadingWallet.value = false;
     }
   }
 
-  /// Select a package
   void selectPackage(Map<String, dynamic> package) {
-    print('');
-    print('✅ Certification package selected: ${package['name']}');
     selectedPackage.value = package;
   }
 
-  /// Subscribe to the selected certification package with chosen wallet
-  Future<void> subscribeWithWallet(String walletType) async {
-    if (_isDisposed) return;
-
-    if (selectedPackage.value == null) {
-      Get.snackbar(
-        'Erreur',
-        'Veuillez sélectionner un package',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    // Check wallet balance
-    final price = (selectedPackage.value!['price'] ?? 0).toDouble();
-    final walletBalance = walletType == 'kpay'
-        ? wallet.value?.kpayBalance ?? 0
-        : wallet.value?.paypalBalance ?? 0;
-
-    if (walletBalance < price) {
-      Get.snackbar(
-        'Solde insuffisant',
-        'Votre ${walletType == 'kpay' ? 'wallet KPay' : 'wallet PayPal'} n\'a pas un solde suffisant. Solde actuel: ${walletBalance.toStringAsFixed(0)} FCFA, Prix: ${price.toStringAsFixed(0)} FCFA',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.warningColor,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
-      return;
-    }
-
-    print('');
-    print('========================================');
-    print('✅ Subscribing to certification package with $walletType...');
-    print('  └─ Package: ${selectedPackage.value!['name']}');
-    print('  └─ Price: $price FCFA');
-    print('  └─ Wallet Balance: $walletBalance FCFA');
-    print('========================================');
-
-    // Close bottom sheet first
-    Get.back();
-
-    // Show loading dialog
-    PaymentLoadingDialog.show(
-      message: 'Activation de votre certification ${selectedPackage.value!['name']}...',
+  /// KPay direct (USSD) — équivalent de ProductController.createOrder
+/// Confirmer et créer l'abonnement — paiement Mobile Money (KPay direct, USSD).
+Future<bool> createOrder({
+  required int packageId,
+  String paymentMode = 'kpay_direct',
+  String? kpayProvider,
+  String? kpayPhone,
+}) async {
+  if (_isDisposed) return false;
+  isCreatingOrder.value = true;
+  try {
+    final response = await PackageService.subscribePackageDirect(
+      packageId,
+      paymentMode: paymentMode,
+      provider: kpayProvider,
+      phoneNumber: kpayPhone,
     );
 
-    try {
-      final packageId = selectedPackage.value!['id'] as int;
-      final response = await PackageService.subscribeToPackage(
-        packageId,
-        walletType: walletType,
-      );
-
-      if (_isDisposed) return;
-
-      // Hide loading dialog
-      PaymentLoadingDialog.hide();
-
-      if (response.success) {
-        print('✅ Certification subscription successful!');
-
-        // Reload wallet in background
-        loadWallet();
-
-        // Show success dialog with invoice URL if available
-        final invoiceUrl = response.data?['invoice_url'];
-
-        await PaymentSuccessDialog.show(
-          packageName: selectedPackage.value!['name'],
-          amount: price,
-          paymentMethod: walletType,
-          invoiceUrl: invoiceUrl,
-        );
-
-        // Navigation is handled by the success dialog
-      } else {
-        print('❌ Certification subscription failed: ${response.message}');
-
-        Get.snackbar(
-          'Erreur',
-          response.message ?? 'Impossible de souscrire à la certification',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppThemeSystem.errorColor,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
+    if (response.success) {
+      final subscriptionId = response.data?['subscription_id'];
+      if (paymentMode == 'kpay_direct' && subscriptionId is int) {
+        _pollOrderPayment(subscriptionId);
       }
-    } catch (e) {
-      print('💥 Exception during certification subscription: $e');
-
-      // Hide loading dialog if still open
-      PaymentLoadingDialog.hide();
-
-      Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-      );
+      return true;
+    } else {
+      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
     }
+  } catch (e) {
+    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    return false;
+  } finally {
+    if (!_isDisposed) isCreatingOrder.value = false;
   }
+}
 
-  /// Refresh packages
+/// Crée un abonnement en mode « redirect » (checkout WebView : PayPal).
+/// Retourne `{order_id, approval_url}` à ouvrir dans la WebView, ou null si échec.
+Future<Map<String, dynamic>?> createRedirectOrder({
+  required int packageId,
+  required String paymentMode, // 'paypal_direct'
+}) async {
+  if (_isDisposed) return null;
+  isCreatingOrder.value = true;
+  try {
+    final response = await PackageService.subscribePackageDirect(
+      packageId,
+      paymentMode: paymentMode,
+    );
+
+    if (response.success) {
+      final subscriptionId = response.data?['subscription_id'];
+      final approvalUrl = response.data?['approval_url'];
+      if (subscriptionId is int && approvalUrl is String && approvalUrl.isNotEmpty) {
+        return {'order_id': subscriptionId, 'approval_url': approvalUrl};
+      }
+      Get.snackbar('Erreur', 'Lien de paiement indisponible', snackPosition: SnackPosition.BOTTOM);
+      return null;
+    } else {
+      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    }
+  } catch (e) {
+    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    return null;
+  } finally {
+    if (!_isDisposed) isCreatingOrder.value = false;
+  }
+}
+
+/// Crée un abonnement payé par CARTE (Payment Sheet Stripe native).
+/// Retourne `{order_id, client_secret, payment_intent_id, publishable_key}` ou null.
+Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
+  if (_isDisposed) return null;
+  isCreatingOrder.value = true;
+  try {
+    final response = await PackageService.subscribePackageDirect(
+      packageId,
+      paymentMode: 'stripe_direct',
+    );
+
+    if (response.success) {
+      final subscriptionId = response.data?['subscription_id'];
+      final clientSecret = response.data?['client_secret']?.toString();
+      final publishableKey = response.data?['publishable_key']?.toString();
+      if (subscriptionId is int &&
+          clientSecret != null && clientSecret.isNotEmpty &&
+          publishableKey != null && publishableKey.isNotEmpty) {
+        return {
+          'order_id': subscriptionId,
+          'client_secret': clientSecret,
+          'payment_intent_id': response.data?['payment_intent_id']?.toString(),
+          'publishable_key': publishableKey,
+        };
+      }
+      Get.snackbar('Erreur', 'Données de paiement carte indisponibles', snackPosition: SnackPosition.BOTTOM);
+      return null;
+    } else {
+      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    }
+  } catch (e) {
+    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    return null;
+  } finally {
+    if (!_isDisposed) isCreatingOrder.value = false;
+  }
+}
+
+/// Démarre le suivi du paiement (utilisé après retour WebView PayPal / Stripe).
+void pollOrderPayment(int orderId) => _pollOrderPayment(orderId);
+
+void _pollOrderPayment(int subscriptionId) async {
+  for (int i = 0; i < 120; i++) {
+    await Future.delayed(const Duration(seconds: 5));
+    if (_isDisposed) return;
+    try {
+      final res = await PackageService.getSubscriptionPaymentStatus(subscriptionId);
+      final status = res.data?['data']?['status'];
+      if (status == 'paid') {
+        loadWallet();
+        loadPackages();
+        Get.snackbar('Paiement confirmé', 'Votre certification a été activée.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green, colorText: Colors.white,
+            duration: const Duration(seconds: 4));
+        return;
+      } else if (status == 'failed') {
+        Get.snackbar('Paiement échoué', 'Le paiement n\'a pas abouti.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white,
+            duration: const Duration(seconds: 5));
+        return;
+      }
+    } catch (_) {}
+  }
+}
   Future<void> refreshPackages() async {
-    await Future.wait([
-      loadPackages(),
-      loadWallet(),
-    ]);
+    await Future.wait([loadPackages(), loadWallet()]);
   }
 
-  /// Format currency
   String formatCurrency(double amount) {
     return '${amount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -240,15 +222,7 @@ class CertificationPackagesController extends GetxController {
 
   @override
   void onClose() {
-    print('');
-    print('========================================');
-    print('✅ CERTIFICATION PACKAGES CONTROLLER: Closing');
-    print('========================================');
-
     _isDisposed = true;
     super.onClose();
-
-    print('  └─ Controller disposed safely');
-    print('========================================');
   }
 }

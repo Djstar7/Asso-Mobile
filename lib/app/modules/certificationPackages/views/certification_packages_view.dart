@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/certification_packages_controller.dart';
+import '../../payment/widgets/payment_method_selector.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../wallet/views/payment_webview.dart';
+import '../../../data/services/stripe_native_service.dart';
 
-class CertificationPackagesView extends GetView<CertificationPackagesController> {
+class CertificationPackagesView
+    extends GetView<CertificationPackagesController> {
   const CertificationPackagesView({super.key});
 
   @override
@@ -24,17 +30,11 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
         centerTitle: false,
         title: Row(
           children: [
-            Icon(
-              Icons.verified,
-              color: const Color(0xFF1DA1F2),
-              size: 28,
-            ),
+            Icon(Icons.verified, color: const Color(0xFF1DA1F2), size: 28),
             const SizedBox(width: 12),
             Text(
               'Certification',
-              style: context.h4.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: context.h4.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -63,7 +63,9 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                   left: context.horizontalPadding,
                   right: context.horizontalPadding,
                   top: context.horizontalPadding,
-                  bottom: MediaQuery.of(context).padding.bottom + context.horizontalPadding,
+                  bottom:
+                      MediaQuery.of(context).padding.bottom +
+                      context.horizontalPadding,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,10 +119,7 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
       padding: EdgeInsets.all(context.horizontalPadding * 1.5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1DA1F2),
-            const Color(0xFF0D7FC6),
-          ],
+          colors: [const Color(0xFF1DA1F2), const Color(0xFF0D7FC6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -142,11 +141,7 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.verified,
-              color: Colors.white,
-              size: 32,
-            ),
+            child: const Icon(Icons.verified, color: Colors.white, size: 32),
           ),
           const SizedBox(height: 16),
           Text(
@@ -203,61 +198,61 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
       children: [
         Text(
           'Pourquoi se certifier ?',
-          style: context.h6.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: context.h6.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ...benefits.map((benefit) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: (benefit['color'] as Color).withValues(alpha: 0.05),
-                  borderRadius: context.borderRadius(BorderRadiusType.medium),
-                  border: Border.all(
-                    color: (benefit['color'] as Color).withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: benefit['color'] as Color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        benefit['icon'] as IconData,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            benefit['title'] as String,
-                            style: context.subtitle1.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            benefit['description'] as String,
-                            style: context.caption.copyWith(
-                              color: context.secondaryTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+        ...benefits.map(
+          (benefit) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: (benefit['color'] as Color).withValues(alpha: 0.05),
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                border: Border.all(
+                  color: (benefit['color'] as Color).withValues(alpha: 0.2),
                 ),
               ),
-            )),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: benefit['color'] as Color,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      benefit['icon'] as IconData,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          benefit['title'] as String,
+                          style: context.subtitle1.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          benefit['description'] as String,
+                          style: context.caption.copyWith(
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -269,29 +264,27 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
       children: [
         Text(
           'Choisissez votre plan',
-          style: context.h6.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: context.h6.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ...List.generate(
-          controller.packages.length,
-          (index) {
-            final package = controller.packages[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                  bottom: index < controller.packages.length - 1 ? 16 : 0),
-              child: _buildPremiumPackageCard(context, package),
-            );
-          },
-        ),
+        ...List.generate(controller.packages.length, (index) {
+          final package = controller.packages[index];
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index < controller.packages.length - 1 ? 16 : 0,
+            ),
+            child: _buildPremiumPackageCard(context, package),
+          );
+        }),
       ],
     );
   }
 
   /// Build premium package card with exclusive design
   Widget _buildPremiumPackageCard(
-      BuildContext context, Map<String, dynamic> package) {
+    BuildContext context,
+    Map<String, dynamic> package,
+  ) {
     final isPopular = package['is_popular'] ?? false;
     final benefits = package['benefits'] as List?;
     final name = package['name'] ?? '';
@@ -378,11 +371,7 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                         ),
                       ],
                     ),
-                    child: Icon(
-                      badgeIcon,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: Icon(badgeIcon, color: Colors.white, size: 28),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -408,7 +397,9 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                   if (isPopular)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -419,7 +410,9 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppThemeSystem.warningColor.withValues(alpha: 0.3),
+                            color: AppThemeSystem.warningColor.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -507,8 +500,7 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                 width: double.infinity,
                 height: context.buttonHeight,
                 child: ElevatedButton(
-                  onPressed: () =>
-                      _showPaymentMethodBottomSheet(context, package),
+                  onPressed: () => _choosePaymentAndOrder(context, package),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isPopular || isSelected
                         ? primaryColor
@@ -523,8 +515,9 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
                       width: isPopular || isSelected ? 0 : 2,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          context.borderRadius(BorderRadiusType.medium),
+                      borderRadius: context.borderRadius(
+                        BorderRadiusType.medium,
+                      ),
                     ),
                   ),
                   child: Text(
@@ -545,267 +538,190 @@ class CertificationPackagesView extends GetView<CertificationPackagesController>
     });
   }
 
-  /// Show payment method selection bottom sheet (reused from package subscription)
-  void _showPaymentMethodBottomSheet(
-      BuildContext context, Map<String, dynamic> package) {
-    controller.selectPackage(package);
-
-    // Refresh wallet data
-    controller.loadWallet();
-
+  /// Ouvre le sélecteur STANDARD de moyen de paiement puis lance le sous-parcours
+  /// correspondant au rail choisi (identique à toutes les pages de paiement).
+  void _choosePaymentAndOrder(
+    BuildContext context,
+    Map<String, dynamic> package,
+  ) async {
+    final packageId = package['id'] as int;
     final price = (package['price'] ?? 0).toDouble();
 
-    Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.only(
-          left: context.horizontalPadding,
-          right: context.horizontalPadding,
-          top: context.verticalPadding,
-          bottom: context.bottomSheetPadding,
-        ),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.borderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            SizedBox(height: context.elementSpacing),
-
-            // Title
-            Text(
-              'Choisir votre méthode de paiement',
-              style: context.h6.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: context.elementSpacing / 2),
-
-            Text(
-              'Prix de la certification: ${controller.formatCurrency(price)}',
-              style: context.body2.copyWith(
-                color: context.secondaryTextColor,
-              ),
-            ),
-            SizedBox(height: context.sectionSpacing),
-
-            // Wallet loading indicator or options
-            Obx(() {
-              final isLoadingWallet = controller.isLoadingWallet.value;
-
-              if (isLoadingWallet) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32.0),
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppThemeSystem.primaryColor,
-                          ),
-                          strokeWidth: 3,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Chargement des soldes...',
-                          style: context.body2.copyWith(
-                            color: context.secondaryTextColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                children: [
-                  // KPay Wallet Option
-                  _buildWalletOption(
-                    context,
-                    title: 'Wallet KPay',
-                    balance: controller.wallet.value?.kpayBalance ?? 0,
-                    price: price,
-                    icon: Icons.phone_android_rounded,
-                    color: AppThemeSystem.kpayColor,
-                    onTap: () {
-                      controller.subscribeWithWallet('kpay');
-                    },
-                  ),
-                  SizedBox(height: context.elementSpacing),
-
-                  // PayPal Wallet Option
-                  _buildWalletOption(
-                    context,
-                    title: 'Wallet PayPal',
-                    balance: controller.wallet.value?.paypalBalance ?? 0,
-                    price: price,
-                    icon: Icons.payment_rounded,
-                    color: AppThemeSystem.paypalColor,
-                    onTap: () {
-                      controller.subscribeWithWallet('paypal');
-                    },
-                  ),
-                ],
-              );
-            }),
-            SizedBox(height: context.elementSpacing),
-
-            // Recharge Wallet Button
-            OutlinedButton(
-              onPressed: () {
-                Get.back();
-                Get.offAllNamed('/home', arguments: {'initialTab': 2});
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: context.borderColor,
-                  width: 1.5,
-                ),
-                padding:
-                    EdgeInsets.symmetric(vertical: context.elementSpacing),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      context.borderRadius(BorderRadiusType.medium),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_circle_outline_rounded,
-                    size: 20,
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Recharger mon wallet',
-                    style: context.button.copyWith(
-                      color: AppThemeSystem.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final method = await PaymentMethodSelector.show(
+      amount: price,
+      currency: 'XAF',
+      amountLabel: 'Prix de la certification',
     );
+    if (method == null) return; // annulé
+
+    switch (method.code) {
+      case 'kpay':
+        await _confirmOrder(context, packageId, price);
+        break;
+      case 'paypal':
+        await _payViaRedirect(context, packageId, 'paypal_direct', 'paypal');
+        break;
+      case 'stripe':
+        await _payViaCard(context, packageId);
+        break;
+      default:
+        Get.snackbar(
+          'Indisponible',
+          "Ce moyen de paiement n'est pas encore disponible pour les certifications.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+    }
   }
 
-  /// Build wallet option card
-  Widget _buildWalletOption(
-    BuildContext context, {
-    required String title,
-    required double balance,
-    required double price,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final hasEnoughBalance = balance >= price;
+  /// Sous-parcours KPay direct (USSD).
+  Future<void> _confirmOrder(
+    BuildContext context,
+    int packageId,
+    double amount,
+  ) async {
+    final selection = await KpayDirectPaymentSheet.show(
+      amount: amount,
+      amountLabel: 'Prix de la certification',
+    );
+    if (selection == null) return; // paiement annulé
 
-    return Obx(() {
-      final isLoading = controller.isLoading.value;
+    final success = await controller.createOrder(
+      packageId: packageId,
+      paymentMode: 'kpay_direct',
+      kpayProvider: selection['provider'],
+      kpayPhone: selection['phone'],
+    );
 
-      return InkWell(
-        onTap: isLoading ? null : onTap,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        child: Container(
-          padding: EdgeInsets.all(context.horizontalPadding),
-          decoration: BoxDecoration(
-            color: hasEnoughBalance
-                ? color.withValues(alpha: 0.05)
-                : context.surfaceColor,
-            borderRadius: context.borderRadius(BorderRadiusType.medium),
-            border: Border.all(
-              color: hasEnoughBalance ? color : context.borderColor,
-              width: hasEnoughBalance ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              SizedBox(width: context.elementSpacing),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: context.subtitle1.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Solde: ${controller.formatCurrency(balance)}',
-                      style: context.caption.copyWith(
-                        color: hasEnoughBalance
-                            ? AppThemeSystem.successColor
-                            : AppThemeSystem.errorColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Status
-              if (isLoading)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else if (hasEnoughBalance)
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: AppThemeSystem.successColor,
-                  size: 24,
-                )
-              else
-                Icon(
-                  Icons.lock_rounded,
-                  color: AppThemeSystem.errorColor,
-                  size: 20,
-                ),
-            ],
-          ),
-        ),
+    if (success) {
+      Get.snackbar(
+        'Commande créée !',
+        'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
-    });
+    }
+  }
+
+  /// Sous-parcours PayPal (checkout WebView, ou navigateur système hors mobile).
+  Future<void> _payViaRedirect(
+    BuildContext context,
+    int packageId,
+    String paymentMode,
+    String methodCode,
+  ) async {
+    final data = await controller.createRedirectOrder(
+      packageId: packageId,
+      paymentMode: paymentMode,
+    );
+    if (data == null)
+      return; // échec / lien indisponible (snackbar déjà affiché)
+
+    final orderId = data['order_id'] as int;
+    final approvalUrl = data['approval_url'] as String;
+
+    if (!(GetPlatform.isAndroid || GetPlatform.isIOS)) {
+      final launched = await launchUrl(
+        Uri.parse(approvalUrl),
+        mode: LaunchMode.externalApplication,
+      );
+      if (launched) {
+        controller.pollOrderPayment(orderId);
+        Get.snackbar(
+          'Paiement ouvert dans le navigateur',
+          'Terminez le paiement, la confirmation est automatique.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 6),
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          "Impossible d'ouvrir la page de paiement.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return;
+    }
+
+    final result = await Get.to<Map<String, dynamic>>(
+      () => PaymentWebView(
+        paymentUrl: approvalUrl,
+        paymentMethod: methodCode,
+        paymentId: orderId,
+      ),
+    );
+
+    if (result != null && result['success'] == true) {
+      controller.pollOrderPayment(orderId);
+      Get.snackbar(
+        'Paiement en cours',
+        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    } else {
+      Get.snackbar(
+        'Paiement annulé',
+        'Le paiement n\'a pas été finalisé.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  /// Sous-parcours CARTE (Payment Sheet Stripe native).
+  Future<void> _payViaCard(BuildContext context, int packageId) async {
+    if (!StripeNativeService.isSupported) {
+      Get.snackbar(
+        'Indisponible',
+        "Le paiement par carte est disponible sur l'application mobile.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final data = await controller.createCardOrder(packageId: packageId);
+    if (data == null) return; // échec (snackbar déjà affiché)
+
+    final orderId = data['order_id'] as int;
+
+    try {
+      final ok = await StripeNativeService().payWithCard(
+        publishableKey: data['publishable_key'] as String,
+        clientSecret: data['client_secret'] as String,
+      );
+
+      if (!ok) {
+        Get.snackbar(
+          'Paiement annulé',
+          "Le paiement n'a pas été finalisé.",
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+
+      controller.pollOrderPayment(orderId);
+      Get.snackbar(
+        'Paiement en cours',
+        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 }
