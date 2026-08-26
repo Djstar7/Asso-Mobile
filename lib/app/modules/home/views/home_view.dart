@@ -511,8 +511,7 @@ class HomeView extends GetView<HomeController> {
                   title: 'Mes préférences',
                   onTap: () {
                     Get.back();
-                    // Préférences accessibles en mode vitrine (sans connexion).
-                    Get.toNamed(Routes.PREFERENCES);
+                    Get.toNamed(Routes.PREFERENCES, arguments: {'isEditing': true});
                   },
                 ),
                 _buildDrawerItem(

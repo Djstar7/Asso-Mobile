@@ -143,6 +143,9 @@ class PreferencesController extends GetxController {
     super.onInit();
     _loadPreferences();
   }
+  // true si l'utilisateur ouvre la page volontairement pour modifier
+  // (depuis le drawer), false si c'est l'étape d'onboarding après inscription.
+  bool get _isEditMode => (Get.arguments as Map?)?['isEditing'] == true;
 
   Future<void> _loadPreferences() async {
     // Mode vitrine (invite): pas de token, on n'appelle pas l'API et on laisse
@@ -171,9 +174,8 @@ class PreferencesController extends GetxController {
           print('✅ Pre-selected ${selectedSubcategories.length} categories');
           print('📋 Selected: ${selectedSubcategories.toList()}');
 
-          // AUTO-NAVIGATE: If user already has preferences, redirect to HOME
-          // This handles the case where preferences exist on backend but not in local storage
-          if (selectedSubcategories.isNotEmpty) {
+          // AUTO-NAVIGATE : uniquement en onboarding, jamais en mode édition.
+          if (!_isEditMode && selectedSubcategories.isNotEmpty) {
             print('🏠 AUTO-NAVIGATE: User has existing preferences, navigating to HOME');
             await Future.delayed(const Duration(milliseconds: 300));
             Get.offAllNamed(Routes.HOME);
