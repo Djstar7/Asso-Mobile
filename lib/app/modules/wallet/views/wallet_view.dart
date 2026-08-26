@@ -76,9 +76,6 @@ import 'package:flutter/material.dart';
                   // Carte bancaire style VISA/ASSO
                   _buildAssoCard(context),
 
-                  // Bannière "chaude" : IBAN vendeur non encore synchronisé
-                  _buildIbanSyncBanner(context),
-
                   const SizedBox(height: 24),
 
                   // Actions rapides
