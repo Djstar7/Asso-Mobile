@@ -526,11 +526,11 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         final res = await OrderService.orderPaymentStatus(orderId);
         final status = res.data?['data']?['payment_status'];
         if (status == 'paid') {
-          Get.snackbar('✅ Paiement confirmé', 'Votre commande en gros est payée. En attente de validation du vendeur.',
+          Get.snackbar('Paiement confirmé', 'Votre commande en gros est payée. En attente de validation du vendeur.',
               backgroundColor: Colors.green, colorText: Colors.white, duration: const Duration(seconds: 4), snackPosition: SnackPosition.BOTTOM);
           return;
         } else if (status == 'failed') {
-          Get.snackbar('❌ Paiement échoué', "Le paiement n'a pas abouti.",
+          Get.snackbar('Paiement échouéPaiement confirm', "Le paiement n'a pas abouti.",
               backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 5), snackPosition: SnackPosition.BOTTOM);
           return;
         }

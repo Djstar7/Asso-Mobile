@@ -561,7 +561,7 @@ class ProductController extends GetxController {
         final res = await OrderService.orderPaymentStatus(orderId);
         final status = res.data?['data']?['payment_status'];
         if (status == 'paid') {
-          Get.snackbar('✅ Paiement confirmé',
+          Get.snackbar('Paiement confirmé',
               'Votre commande a été payée. En attente de validation du vendeur.',
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Get.theme.colorScheme.primary,
@@ -569,7 +569,7 @@ class ProductController extends GetxController {
               duration: const Duration(seconds: 4));
           return;
         } else if (status == 'failed') {
-          Get.snackbar('❌ Paiement échoué', 'Le paiement de la commande n\'a pas abouti.',
+          Get.snackbar('Paiement échoué', 'Le paiement de la commande n\'a pas abouti.',
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Get.theme.colorScheme.error,
               colorText: Get.theme.colorScheme.onError,

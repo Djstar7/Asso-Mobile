@@ -5,7 +5,6 @@ import '../../../data/models/currency_model.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
-
 class DiaspoCreateController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
 
@@ -276,7 +275,7 @@ class DiaspoCreateController extends GetxController {
         currency: selectedCurrencyCode.value,
       );
 
-      Get.back();
+      Get.offNamed('/diaspo');
       Get.snackbar(
         'Succès',
         'Votre offre a été créée avec succès. Elle sera vérifiée par notre équipe.',
