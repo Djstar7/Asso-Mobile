@@ -896,7 +896,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                       context,
                       isDark,
                       label: 'Max',
-                      textController: controller.minPriceController,
+                      textController: controller.maxPriceController,
                       onChanged: (value) {
                         controller.maxPrice.value = value;
                       },
