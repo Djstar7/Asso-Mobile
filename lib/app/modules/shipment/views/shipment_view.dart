@@ -126,7 +126,6 @@ class ShipmentView extends GetView<MyOrderController> {
   }
 
   Widget _buildOrderCard(BuildContext context, CustomerOrder order) {
-    final numberFormat = NumberFormat('#,###', 'fr_FR');
 
     return Container(
       decoration: BoxDecoration(

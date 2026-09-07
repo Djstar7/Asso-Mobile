@@ -42,15 +42,12 @@ class StoreManagementController extends GetxController {
   // Image picker
   final Rx<XFile?> selectedLogo = Rx<XFile?>(null);
 
-  // Location change requests
-  final RxList<dynamic> locationRequests = <dynamic>[].obs;
   final RxBool hasLocationUpdatePending = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadData();
-    loadLocationRequests();
     _setupBanners();
   }
 
@@ -328,29 +325,6 @@ class StoreManagementController extends GetxController {
     }
   }
 
-  /// Load location change requests
-  Future<void> loadLocationRequests() async {
-    try {
-      final response = await ShopService.getLocationRequests();
-
-      if (response.success && response.data != null) {
-        locationRequests.value = response.data!['requests'] as List? ?? [];
-        final pendingCount = response.data!['pending_count'] as int? ?? 0;
-        hasLocationUpdatePending.value = pendingCount > 0;
-
-        print('✅ CONTROLLER: Location requests loaded');
-        print('  ├─ Total requests: ${locationRequests.length}');
-        print('  └─ Pending requests: $pendingCount');
-      } else {
-        locationRequests.value = [];
-        hasLocationUpdatePending.value = false;
-      }
-    } catch (e) {
-      print('⚠️ CONTROLLER: Failed to load location requests: $e');
-      locationRequests.value = [];
-      hasLocationUpdatePending.value = false;
-    }
-  }
 
   /// Vérifie si la livraison est disponible à une position donnée
   Future<void> checkDeliveryAvailability(double latitude, double longitude) async {
@@ -599,20 +573,15 @@ class StoreManagementController extends GetxController {
         // Reload location requests to check for new pending requests
         print('');
         print('🔄 Reloading location requests...');
-        await loadLocationRequests();
 
         Get.back(); // Fermer le formulaire d'édition
 
         // Determine success message based on whether location request was created
-        final hasLocationRequest = response.data!['location_request'] != null;
-        final message = hasLocationRequest
-            ? 'Informations mises à jour. Votre demande de changement de localisation sera validée par un administrateur.'
-            : 'Informations de la boutique mises à jour avec succès';
+        final message = 'Informations de la boutique mises à jour avec succès';
 
         print('');
         print('========================================');
         print('✅ SAVE COMPLETED SUCCESSFULLY');
-        print('  ├─ Location request created: $hasLocationRequest');
         print('  └─ Message: $message');
         print('========================================');
 

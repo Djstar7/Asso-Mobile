@@ -660,45 +660,6 @@ class EditStoreView extends GetView<StoreManagementController> {
     );
   }
 
-  Widget _buildTextField(
-    BuildContext context, {
-    required String initialValue,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required Function(String) onChanged,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: context.body2.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          key: ValueKey(initialValue),
-          initialValue: initialValue,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.small),
-            ),
-            prefixIcon: Icon(icon),
-            filled: true,
-            fillColor: context.inputFieldColor,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildTextFieldWithController(
     BuildContext context, {

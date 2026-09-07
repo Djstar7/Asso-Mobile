@@ -5,7 +5,6 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
-import 'edit_store_view.dart';
 
 class StoreManagementView extends GetView<StoreManagementController> {
   const StoreManagementView({super.key});
@@ -1269,20 +1268,6 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
               isEmpty: store.phone.isEmpty,
             ),
             SizedBox(height: context.sectionSpacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Get.to(() => const EditStoreView());
-                },
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Modifier les informations'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
           ],
         ),
       );
@@ -1364,17 +1349,6 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
         return const SizedBox.shrink();
       }
 
-      // Get the most recent pending request
-      final pendingRequests = controller.locationRequests
-          .where((req) => req['status'] == 'pending')
-          .toList();
-
-      if (pendingRequests.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      final latestRequest = pendingRequests.first;
-
       return Container(
         margin: EdgeInsets.only(bottom: context.elementSpacing),
         padding: EdgeInsets.all(context.horizontalPadding),
@@ -1454,42 +1428,6 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Text(
-                          'Lat: ${_formatCoordinate(latestRequest['latitude'])}, '
-                          'Lng: ${_formatCoordinate(latestRequest['longitude'])}',
-                          style: context.caption.copyWith(
-                            color: context.primaryTextColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (latestRequest['created_at'] != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: context.secondaryTextColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Soumis le ${_formatDate(latestRequest['created_at'])}',
-                            style: context.caption.copyWith(
-                              color: context.secondaryTextColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -1504,32 +1442,5 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
         ),
       );
     });
-  }
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd/MM/yyyy à HH:mm').format(date);
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
-  String _formatCoordinate(dynamic value) {
-    if (value == null) return '0.0';
-    try {
-      if (value is double) {
-        return value.toStringAsFixed(6);
-      } else if (value is int) {
-        return value.toDouble().toStringAsFixed(6);
-      } else if (value is String) {
-        final parsed = double.tryParse(value);
-        return parsed?.toStringAsFixed(6) ?? value;
-      }
-      return value.toString();
-    } catch (e) {
-      return value.toString();
-    }
   }
 }
