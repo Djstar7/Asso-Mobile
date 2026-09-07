@@ -1,11 +1,20 @@
+import 'package:get/get.dart';
+
 import 'api_provider.dart';
 import '../models/wholesale_models.dart';
+import 'currency_service.dart';
 
 /// API du module GROS (ASSO CHINA / DUBAÏ / TURQUIE).
 class ImportService {
   /// Catalogue gros d'un pays (produits à paliers + options d'expédition).
   static Future<WholesaleCatalog?> getCatalog(String countryCode) async {
-    final res = await ApiProvider.get('/v1/import/$countryCode/products');
+    final targetCurrency = Get.isRegistered<CurrencyService>()
+        ? CurrencyService.to.currencyCode
+        : 'XAF';
+    final res = await ApiProvider.get(
+      '/v1/import/$countryCode/products',
+      queryParams: {'currency': targetCurrency},
+    );
     if (res.success && res.data != null) {
       return WholesaleCatalog.fromJson(Map<String, dynamic>.from(res.data!));
     }

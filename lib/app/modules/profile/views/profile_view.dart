@@ -18,104 +18,90 @@ class ProfileView extends GetView<ProfileController> {
           return Center(child: CircularProgressIndicator());
         }
 
-        return SingleChildScrollView(
-            child: Column(
-              children: [
-                // Header avec profil
-                _buildProfileHeader(context, isDark, deviceType),
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header avec profil
+            _buildProfileHeader(context, isDark, deviceType),
 
-                SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
+            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-                // Menu principal
-                Obx(() {
-                  final isVendor = controller.isVendor;
+            // Menu principal (plus de Obx : aucune variable réactive à observer ici)
+            _buildMenuSection(context, 'Mon compte', [
+              _MenuItem(
+                icon: Icons.favorite_outline_rounded,
+                title: 'Mes favoris',
+                subtitle: 'Articles sauvegardés',
+                onTap: controller.goToFavorites,
+              ),
+              _MenuItem(
+                icon: Icons.receipt_long_rounded,
+                title: 'Mes commandes',
+                subtitle: 'Historique d\'achats',
+                onTap: controller.goToOrders,
+              ),
+            ]),
 
-                  return _buildMenuSection(
-                    context,
-                    'Mon compte',
-                    [
-                      _MenuItem(
-                        icon: Icons.favorite_outline_rounded,
-                        title: 'Mes favoris',
-                        subtitle: 'Articles sauvegardés',
-                        onTap: controller.goToFavorites,
-                      ),
-                      _MenuItem(
-                        icon: Icons.receipt_long_rounded,
-                        title: 'Mes commandes',
-                        subtitle: 'Historique d\'achats',
-                        onTap: controller.goToOrders,
-                      ),
-                      _MenuItem(
-                        icon: Icons.account_balance_wallet_rounded,
-                        title: 'Portefeuille',
-                        subtitle: isVendor
-                            ? 'Solde, retraits et gains'
-                            : 'Solde et remboursements',
-                        onTap: () => Get.toNamed('/wallet'),
-                      ),
-                    ],
-                  );
-                }),
+            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 
-                SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+            // Support & Paramètres
+            _buildMenuSection(context, 'Support & Paramètres', [
+              _MenuItem(
+                icon: Icons.tune_rounded,
+                title: 'Préférences',
+                subtitle: 'Vos centres d\'intérêt',
+                onTap: controller.goToPreferences,
+              ),
+              _MenuItem(
+                icon: Icons.help_outline_rounded,
+                title: 'Aide & Support',
+                subtitle: 'FAQ et contact',
+                onTap: controller.goToHelp,
+              ),
+              _MenuItem(
+                icon: Icons.settings_outlined,
+                title: 'Paramètres',
+                subtitle: 'Préférences de l\'app',
+                onTap: controller.goToSettings,
+              ),
+            ]),
 
-                // Support & Paramètres
-                _buildMenuSection(
-                  context,
-                  'Support & Paramètres',
-                  [
-                    _MenuItem(
-                      icon: Icons.tune_rounded,
-                      title: 'Préférences',
-                      subtitle: 'Vos centres d\'intérêt',
-                      onTap: controller.goToPreferences,
-                    ),
-                    _MenuItem(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Aide & Support',
-                      subtitle: 'FAQ et contact',
-                      onTap: controller.goToHelp,
-                    ),
-                    _MenuItem(
-                      icon: Icons.settings_outlined,
-                      title: 'Paramètres',
-                      subtitle: 'Préférences de l\'app',
-                      onTap: controller.goToSettings,
-                    ),
-                  ],
-                ),
+            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-                SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
+            // Bouton déconnexion
+            _buildLogoutButton(context, deviceType),
 
-                // Bouton déconnexion
-                _buildLogoutButton(context, deviceType),
-
-                // Espacement pour la barre de navigation native du téléphone
-                SizedBox(height: MediaQuery.of(context).viewPadding.bottom + AppThemeSystem.getVerticalPadding(context)),
-              ],
+            // Espacement pour la barre de navigation native du téléphone
+            SizedBox(
+              height:
+                  MediaQuery.of(context).viewPadding.bottom +
+                  AppThemeSystem.getVerticalPadding(context),
             ),
-          );
-      }),
+          ],
+        ),
+      );}),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, bool isDark, DeviceType deviceType) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    bool isDark,
+    DeviceType deviceType,
+  ) {
     final profile = controller.userProfile;
 
     return Container(
       padding: EdgeInsets.only(
         left: AppThemeSystem.getHorizontalPadding(context),
         right: AppThemeSystem.getHorizontalPadding(context),
-        top: MediaQuery.of(context).padding.top + AppThemeSystem.getHorizontalPadding(context),
+        top:
+            MediaQuery.of(context).padding.top +
+            AppThemeSystem.getHorizontalPadding(context),
         bottom: AppThemeSystem.getHorizontalPadding(context),
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppThemeSystem.primaryColor,
-            AppThemeSystem.tertiaryColor,
-          ],
+          colors: [AppThemeSystem.primaryColor, AppThemeSystem.tertiaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -163,10 +149,7 @@ class ProfileView extends GetView<ProfileController> {
                 height: deviceType == DeviceType.mobile ? 100 : 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 4,
-                  ),
+                  border: Border.all(color: Colors.white, width: 4),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withValues(alpha: 0.3),
@@ -193,16 +176,9 @@ class ProfileView extends GetView<ProfileController> {
                   decoration: BoxDecoration(
                     color: Colors.green,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: Icon(
-                    Icons.check,
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                  child: Icon(Icons.check, size: 16, color: Colors.white),
                 ),
               ),
             ],
@@ -211,7 +187,9 @@ class ProfileView extends GetView<ProfileController> {
           Text(
             profile['name'],
             style: context.textStyle(
-              deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
+              deviceType == DeviceType.mobile
+                  ? FontSizeType.h4
+                  : FontSizeType.h3,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -220,7 +198,9 @@ class ProfileView extends GetView<ProfileController> {
           Text(
             profile['email'],
             style: context.textStyle(
-              deviceType == DeviceType.mobile ? FontSizeType.body2 : FontSizeType.body1,
+              deviceType == DeviceType.mobile
+                  ? FontSizeType.body2
+                  : FontSizeType.body1,
               color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
@@ -247,7 +227,9 @@ class ProfileView extends GetView<ProfileController> {
           Text(
             profile['memberSince'],
             style: context.textStyle(
-              deviceType == DeviceType.mobile ? FontSizeType.caption : FontSizeType.body2,
+              deviceType == DeviceType.mobile
+                  ? FontSizeType.caption
+                  : FontSizeType.body2,
               color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
@@ -261,10 +243,13 @@ class ProfileView extends GetView<ProfileController> {
     String title,
     List<_MenuItem> items,
   ) {
+    if (items.isEmpty) return const SizedBox.shrink();
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppThemeSystem.getHorizontalPadding(context)),
+      margin: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+      ),
       decoration: BoxDecoration(
         color: AppThemeSystem.getSurfaceColor(context),
         borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -280,11 +265,15 @@ class ProfileView extends GetView<ProfileController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+            padding: EdgeInsets.all(
+              AppThemeSystem.getHorizontalPadding(context),
+            ),
             child: Text(
               title,
               style: context.textStyle(
-                deviceType == DeviceType.mobile ? FontSizeType.body2 : FontSizeType.body1,
+                deviceType == DeviceType.mobile
+                    ? FontSizeType.body2
+                    : FontSizeType.body1,
                 fontWeight: FontWeight.bold,
                 color: AppThemeSystem.grey600,
               ),
@@ -302,20 +291,35 @@ class ProfileView extends GetView<ProfileController> {
                   child: InkWell(
                     onTap: item.onTap,
                     borderRadius: BorderRadius.vertical(
-                      bottom: isLast ? Radius.circular(AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium)) : Radius.zero,
+                      bottom: isLast
+                          ? Radius.circular(
+                              AppThemeSystem.getBorderRadius(
+                                context,
+                                BorderRadiusType.medium,
+                              ),
+                            )
+                          : Radius.zero,
                     ),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: AppThemeSystem.getHorizontalPadding(context),
+                        horizontal: AppThemeSystem.getHorizontalPadding(
+                          context,
+                        ),
                         vertical: AppThemeSystem.getElementSpacing(context),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.all(AppThemeSystem.getElementSpacing(context) * 0.8),
+                            padding: EdgeInsets.all(
+                              AppThemeSystem.getElementSpacing(context) * 0.8,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                              borderRadius: context.borderRadius(BorderRadiusType.small),
+                              color: AppThemeSystem.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: context.borderRadius(
+                                BorderRadiusType.small,
+                              ),
                             ),
                             child: Icon(
                               item.icon,
@@ -323,7 +327,9 @@ class ProfileView extends GetView<ProfileController> {
                               size: deviceType == DeviceType.mobile ? 24 : 28,
                             ),
                           ),
-                          SizedBox(width: AppThemeSystem.getElementSpacing(context)),
+                          SizedBox(
+                            width: AppThemeSystem.getElementSpacing(context),
+                          ),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,16 +337,26 @@ class ProfileView extends GetView<ProfileController> {
                                 Text(
                                   item.title,
                                   style: context.textStyle(
-                                    deviceType == DeviceType.mobile ? FontSizeType.body1 : FontSizeType.subtitle1,
+                                    deviceType == DeviceType.mobile
+                                        ? FontSizeType.body1
+                                        : FontSizeType.subtitle1,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 if (item.subtitle != null) ...[
-                                  SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.25),
+                                  SizedBox(
+                                    height:
+                                        AppThemeSystem.getElementSpacing(
+                                          context,
+                                        ) *
+                                        0.25,
+                                  ),
                                   Text(
                                     item.subtitle!,
                                     style: context.textStyle(
-                                      deviceType == DeviceType.mobile ? FontSizeType.caption : FontSizeType.body2,
+                                      deviceType == DeviceType.mobile
+                                          ? FontSizeType.caption
+                                          : FontSizeType.body2,
                                       color: AppThemeSystem.grey600,
                                     ),
                                   ),
@@ -357,11 +373,7 @@ class ProfileView extends GetView<ProfileController> {
                     ),
                   ),
                 ),
-                if (!isLast)
-                  Divider(
-                    height: 1,
-                    indent: 72,
-                  ),
+                if (!isLast) Divider(height: 1, indent: 72),
               ],
             );
           }).toList(),
@@ -372,7 +384,9 @@ class ProfileView extends GetView<ProfileController> {
 
   Widget _buildLogoutButton(BuildContext context, DeviceType deviceType) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppThemeSystem.getHorizontalPadding(context)),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+      ),
       child: SizedBox(
         width: double.infinity,
         height: AppThemeSystem.getButtonHeight(context),
@@ -386,7 +400,9 @@ class ProfileView extends GetView<ProfileController> {
           label: Text(
             'Déconnexion',
             style: context.textStyle(
-              deviceType == DeviceType.mobile ? FontSizeType.body1 : FontSizeType.subtitle1,
+              deviceType == DeviceType.mobile
+                  ? FontSizeType.body1
+                  : FontSizeType.subtitle1,
               fontWeight: FontWeight.w600,
               color: AppThemeSystem.errorColor,
             ),

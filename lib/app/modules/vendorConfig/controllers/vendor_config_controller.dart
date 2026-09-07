@@ -48,8 +48,10 @@ class VendorConfigController extends GetxController {
 
   // Step 2: Configuration boutique
   final TextEditingController shopNameController = TextEditingController();
-  final TextEditingController shopDescriptionController = TextEditingController();
-  final TextEditingController locationSearchController = TextEditingController();
+  final TextEditingController shopDescriptionController =
+      TextEditingController();
+  final TextEditingController locationSearchController =
+      TextEditingController();
 
   // Observable versions for reactive UI updates
   final shopNameText = ''.obs;
@@ -66,7 +68,8 @@ class VendorConfigController extends GetxController {
 
   // Categories
   final selectedCategories = <String>[].obs; // Category names selected
-  final RxList<CategoryModel> categories = <CategoryModel>[].obs; // Full category objects from API
+  final RxList<CategoryModel> categories =
+      <CategoryModel>[].obs; // Full category objects from API
   final isCategoriesLoading = false.obs;
   final categoriesLoadError = ''.obs;
 
@@ -193,7 +196,9 @@ class VendorConfigController extends GetxController {
       print('✅ VENDOR CONFIG: Delivery partners loaded successfully');
       print('  └─ Total: ${loadedPartners.length}');
       for (var partner in loadedPartners) {
-        print('  └─ ${partner.name} - ${partner.zone.name} (${partner.zone.latitude}, ${partner.zone.longitude})');
+        print(
+          '  └─ ${partner.name} - ${partner.zone.name} (${partner.zone.latitude}, ${partner.zone.longitude})',
+        );
       }
 
       isLoadingDeliveryPartners.value = false;
@@ -283,18 +288,18 @@ class VendorConfigController extends GetxController {
   /// Obtenir la position actuelle
   Future<void> _getCurrentLocation() async {
     try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        userLocation.value = 'Localisation désactivée';
+        return;
+      }
       Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
 
-      // Pour l'instant, on affiche juste les coordonnées
-      // Dans une vraie app, on utiliserait un service de géocodage inversé
-      userLocation.value = 'Position: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
-
-      // Simuler une adresse pour le moment
-      userLocation.value = 'Douala, Cameroun';
+      userLocation.value =
+          'Position: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
     } catch (e) {
       userLocation.value = 'Localisation non disponible';
     }
@@ -515,7 +520,10 @@ class VendorConfigController extends GetxController {
   }
 
   /// Vérifie si la livraison est disponible à une position donnée
-  Future<void> checkDeliveryAvailability(double latitude, double longitude) async {
+  Future<void> checkDeliveryAvailability(
+    double latitude,
+    double longitude,
+  ) async {
     print('');
     print('========================================');
     print('🚚 VENDOR CONFIG: Checking delivery availability');
@@ -548,7 +556,9 @@ class VendorConfigController extends GetxController {
         print('🔔 DELIVERY AVAILABILITY RESULT:');
         print('  ├─ Available: $available');
         print('  ├─ Message: $message');
-        print('  └─ isDeliveryAvailable.value is now: ${isDeliveryAvailable.value}');
+        print(
+          '  └─ isDeliveryAvailable.value is now: ${isDeliveryAvailable.value}',
+        );
 
         if (available) {
           print('✅ VENDOR CONFIG: Delivery is available');
@@ -594,7 +604,8 @@ class VendorConfigController extends GetxController {
     // Afficher un loader
     Get.dialog(
       WillPopScope(
-        onWillPop: () async => false, // Empêcher de fermer en appuyant sur retour
+        onWillPop: () async =>
+            false, // Empêcher de fermer en appuyant sur retour
         child: Center(
           child: Container(
             padding: const EdgeInsets.all(20),
@@ -634,26 +645,28 @@ class VendorConfigController extends GetxController {
       barrierDismissible: false,
     );
 
-      // Attendre que les partenaires soient chargés si nécessaire
-      if (deliveryPartners.isNotEmpty) {
-        print('📋 Partners to display on map:');
-        for (var partner in deliveryPartners) {
-          print('  ├─ ${partner.name} (${partner.zone.name})');
-          print('  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})');
-        }
-      } else if (isLoadingDeliveryPartners.value) {
-        print('⏳ Partners are still loading... waiting...');
-        // Attendre que les partenaires soient chargés (max 5 secondes)
-        int waitCount = 0;
-        while (isLoadingDeliveryPartners.value && waitCount < 10) {
-          await Future.delayed(const Duration(milliseconds: 500));
-          waitCount++;
-        }
-        print('  └─ After wait, partners count: ${deliveryPartners.length}');
-      } else {
-        print('⚠️ No partners loaded and not loading!');
+    // Attendre que les partenaires soient chargés si nécessaire
+    if (deliveryPartners.isNotEmpty) {
+      print('📋 Partners to display on map:');
+      for (var partner in deliveryPartners) {
+        print('  ├─ ${partner.name} (${partner.zone.name})');
+        print(
+          '  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})',
+        );
       }
-      print('========================================');
+    } else if (isLoadingDeliveryPartners.value) {
+      print('⏳ Partners are still loading... waiting...');
+      // Attendre que les partenaires soient chargés (max 5 secondes)
+      int waitCount = 0;
+      while (isLoadingDeliveryPartners.value && waitCount < 10) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        waitCount++;
+      }
+      print('  └─ After wait, partners count: ${deliveryPartners.length}');
+    } else {
+      print('⚠️ No partners loaded and not loading!');
+    }
+    print('========================================');
 
     try {
       // Préparer la position initiale
@@ -689,7 +702,9 @@ class VendorConfigController extends GetxController {
       final result = await Get.to<Map<String, dynamic>>(
         () => MapLocationPickerView(
           initialPosition: initialPosition,
-          initialAddress: shopLocation.value.isEmpty ? null : shopLocation.value,
+          initialAddress: shopLocation.value.isEmpty
+              ? null
+              : shopLocation.value,
           deliveryPartners: deliveryPartners.toList(),
         ),
       );
@@ -727,7 +742,9 @@ class VendorConfigController extends GetxController {
                     Text(
                       'Veuillez patienter',
                       style: Get.textTheme.bodyMedium?.copyWith(
-                        color: Get.theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Get.theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -759,7 +776,9 @@ class VendorConfigController extends GetxController {
 
         // Si la livraison n'est pas disponible, afficher le popup bloquant
         if (!isDeliveryAvailable.value) {
-          print('⚠️ Showing NO DELIVERY dialog (user must choose another position)');
+          print(
+            '⚠️ Showing NO DELIVERY dialog (user must choose another position)',
+          );
           await _showNoDeliveryServiceDialog();
         } else {
           print('✅ Position SAVED! Button "Finaliser" should now be enabled');
@@ -892,10 +911,7 @@ class VendorConfigController extends GetxController {
                 icon: const Icon(Icons.edit_location),
                 label: const Text(
                   'Modifier mon emplacement',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -921,10 +937,7 @@ class VendorConfigController extends GetxController {
                 icon: const Icon(Icons.home),
                 label: const Text(
                   'Retour à l\'accueil',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -948,9 +961,13 @@ class VendorConfigController extends GetxController {
       // Log data being sent
       print('📤 VENDOR CONFIG: Preparing data to send...');
       print('  └─ Shop Name: ${shopNameController.text.trim()}');
-      print('  └─ Shop Description: ${shopDescriptionController.text.trim().isNotEmpty ? "YES" : "NO"}');
+      print(
+        '  └─ Shop Description: ${shopDescriptionController.text.trim().isNotEmpty ? "YES" : "NO"}',
+      );
       print('  └─ Shop Address: ${shopLocation.value}');
-      print('  └─ Shop Coordinates: (${shopLatitude.value}, ${shopLongitude.value})');
+      print(
+        '  └─ Shop Coordinates: (${shopLatitude.value}, ${shopLongitude.value})',
+      );
       print('  └─ Categories: ${selectedCategories.toList()}');
       print('  └─ First Name: ${firstNameController.text.trim()}');
       print('  └─ Last Name: ${lastNameController.text.trim()}');
@@ -971,7 +988,9 @@ class VendorConfigController extends GetxController {
         lastName: lastNameController.text.trim(),
         gender: selectedGender.value,
         accountType: selectedAccountType.value,
-        companyName: selectedAccountType.value == 'Entreprise' ? shopNameController.text.trim() : null,
+        companyName: selectedAccountType.value == 'Entreprise'
+            ? shopNameController.text.trim()
+            : null,
         shopLogo: shopLogo.value,
         profileImage: profileImage.value,
       );
@@ -1033,7 +1052,9 @@ class VendorConfigController extends GetxController {
           }
         }
 
-        Get.snackbar('Succès', 'Vous êtes maintenant vendeur !',
+        Get.snackbar(
+          'Succès',
+          'Vous êtes maintenant vendeur !',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -1046,7 +1067,9 @@ class VendorConfigController extends GetxController {
         print('❌ VENDOR CONFIG: Failed');
         print('  └─ Error Message: ${response.message}');
 
-        Get.snackbar('Erreur', response.message,
+        Get.snackbar(
+          'Erreur',
+          response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -1062,7 +1085,9 @@ class VendorConfigController extends GetxController {
       print('  └─ Stack Trace:');
       print(stackTrace.toString().split('\n').take(5).join('\n'));
 
-      Get.snackbar('Erreur', 'Une erreur est survenue: $e',
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue: $e',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,

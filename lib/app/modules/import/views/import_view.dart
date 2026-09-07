@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/import_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/models/wholesale_models.dart';
 import '../../../core/utils/app_theme_system.dart';
 import 'wholesale_order_sheet.dart';
@@ -424,7 +424,7 @@ class _ImportViewState extends State<ImportView> {
                   children: [
                     Positioned.fill(
                       child: (image != null && image.isNotEmpty)
-                          ? Image.network(image, fit: BoxFit.cover,
+                          ? Image.network(image, fit: BoxFit.contain,
                               loadingBuilder: (ctx, child, prog) =>
                                   prog == null ? child : Container(color: const Color(0xFFF1F2F5)),
                               errorBuilder: (_, __, ___) => _imgPlaceholder())
@@ -467,7 +467,9 @@ class _ImportViewState extends State<ImportView> {
                     const SizedBox(height: 6),
                     // Prix d'entrée (« à partir de ») + quantité minimale (cota)
                     Text(
-                      entry != null ? 'À partir de ${entry.formattedPrice}' : 'Sur devis',
+                      entry != null
+                          ? 'À partir de ${CurrencyService.formatAmountInCurrency(entry.unitPrice, entry.currency)}'
+                          : 'Sur devis',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w800, fontSize: 13.5),

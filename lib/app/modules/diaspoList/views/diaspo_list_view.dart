@@ -18,8 +18,10 @@ class DiaspoListView extends GetView<DiaspoListController> {
         ),
       body: Column(
         children: [
-        // 🔍 Zone de recherche
+        //  Zone de recherche
         _buildSearchBar(context, isDark),
+
+          Obx(() => _buildVerificationBanner(context, isDark)),
 
           // Tabs horizontaux (comme les catégories)
           _buildTabs(context, isDark),
@@ -35,6 +37,54 @@ class DiaspoListView extends GetView<DiaspoListController> {
         backgroundColor: AppThemeSystem.primaryColor,
         icon: const Icon(Icons.add),
         label: const Text('Créer mon offre'),
+      ),
+    );
+  }
+
+  Widget _buildVerificationBanner(BuildContext context, bool isDark) {
+    final status = controller.verificationStatus.value;
+    if (status == 'verified') return const SizedBox.shrink();
+
+    final isPending = status == 'pending';
+    final isRejected = status == 'rejected';
+    final color = isRejected ? Colors.red : Colors.orange;
+    final title = isPending
+        ? 'Vérification d\'identité en cours'
+        : isRejected
+            ? 'Vérification à compléter'
+            : 'Vérifiez votre identité';
+    final message = isPending
+        ? 'Vos offres restent enregistrées et seront publiées après validation.'
+        : 'Vous pouvez créer une offre, mais elle restera en attente jusqu\'à la validation de votre identité.';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(isPending ? Icons.hourglass_top : Icons.verified_user_outlined, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+                const SizedBox(height: 3),
+                Text(message, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: controller.handleVerification,
+            child: Text(isPending ? 'Voir' : (isRejected ? 'Compléter' : 'Commencer')),
+          ),
+        ],
       ),
     );
   }
@@ -507,6 +557,10 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                     ],
                   ],
                 ),
+                if (showMine) ...[
+                  const SizedBox(height: 12),
+                  _buildOfferStatusBadge(offer),
+                ],
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Divider(color: muted.withValues(alpha: 0.15), height: 1),
@@ -559,6 +613,51 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOfferStatusBadge(dynamic offer) {
+    late final Color color;
+    late final IconData icon;
+    late final String label;
+
+    if (offer.verificationStatus == 'rejected' || offer.status == 'rejected') {
+      color = Colors.red;
+      icon = Icons.cancel_outlined;
+      label = 'Offre refusée';
+    } else if (offer.verificationStatus != 'verified') {
+      color = Colors.orange;
+      icon = Icons.badge_outlined;
+      label = 'En attente de vérification d\'identité';
+    } else if (offer.status == 'pending') {
+      color = Colors.orange;
+      icon = Icons.hourglass_top;
+      label = 'En attente d\'approbation';
+    } else if (offer.status == 'approved' || offer.status == 'active') {
+      color = const Color(0xFF16A34A);
+      icon = Icons.check_circle_outline;
+      label = 'Offre publiée';
+    } else {
+      color = Colors.grey;
+      icon = Icons.info_outline;
+      label = offer.status.toString();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
+          Flexible(child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color))),
+        ],
       ),
     );
   }

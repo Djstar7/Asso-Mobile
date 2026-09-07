@@ -135,18 +135,7 @@ class ProfileController extends GetxController {
   String get memberSince => profile['memberSince'] ?? '';
   String get role => profile['role'] ?? 'client';
   String get address => profile['location'] ?? '';
-
-  /// Check if user is a vendor based on profile data
-  bool get isVendor {
-    final roles = profile['roles'];
-    if (roles is List && roles.isNotEmpty) {
-      return roles.contains('vendor') || roles.contains('vendeur');
-    }
-    // Fallback to role column
-    final userRole = profile['role'] ?? 'client';
-    return userRole == 'vendor' || userRole == 'vendeur';
-  }
-
+ 
   void editProfile() {
     // Garde: l'edition du profil necessite une connexion (mode invite bloque).
     if (AuthGuard.isGuest) {

@@ -215,6 +215,18 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
+  /// Recharge les informations dépendantes de la session après une connexion
+  /// effectuée depuis l'accueil invité, sans recréer le TabController.
+  Future<void> refreshAuthState() async {
+    if (_isDisposed) return;
+    final user = ApiProvider.cachedUser;
+    userName.value = user == null
+        ? ''
+        : '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
+    userAvatar.value = user?['avatar']?.toString() ?? '';
+    await _loadData();
+  }
+
   /// Load all data in correct order
   Future<void> _loadData() async {
     isInitialLoading.value = true;
@@ -459,20 +471,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           name: 'HomeController',
         );
 
-        // DEBUG: Log shop certification status
-        if (nearbyProducts.isNotEmpty) {
-          final firstProduct = nearbyProducts.first;
-          print('=== DEBUG NEARBY PRODUCT ===');
-          print('Product name: ${firstProduct['name']}');
-          print('Full product data keys: ${firstProduct.keys.toList()}');
-          print('Shop data: ${firstProduct['shop']}');
-          if (firstProduct['shop'] != null) {
-            print('Shop keys: ${firstProduct['shop'].keys.toList()}');
-            print('is_certified value: ${firstProduct['shop']['is_certified']}');
-            print('is_certified type: ${firstProduct['shop']['is_certified'].runtimeType}');
-          }
-          print('========================');
-        }
       }
     } catch (e) {
       developer.log(
@@ -501,20 +499,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           name: 'HomeController',
         );
 
-        // DEBUG: Log shop certification status
-        if (recentProducts.isNotEmpty) {
-          final firstProduct = recentProducts.first;
-          print('=== DEBUG RECENT PRODUCT ===');
-          print('Product name: ${firstProduct['name']}');
-          print('Full product data keys: ${firstProduct.keys.toList()}');
-          print('Shop data: ${firstProduct['shop']}');
-          if (firstProduct['shop'] != null) {
-            print('Shop keys: ${firstProduct['shop'].keys.toList()}');
-            print('is_certified value: ${firstProduct['shop']['is_certified']}');
-            print('is_certified type: ${firstProduct['shop']['is_certified'].runtimeType}');
-          }
-          print('========================');
-        }
       }
     } catch (e) {
       developer.log(

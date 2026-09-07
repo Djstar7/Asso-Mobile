@@ -58,6 +58,19 @@ class CurrencyService extends GetxService {
     return fallbackSymbols[upper] ?? code;
   }
 
+  /// Formate un montant déjà exprimé dans [currencyCode], sans effectuer une
+  /// nouvelle conversion. Utile pour les prix Import convertis par le backend.
+  static String formatAmountInCurrency(double amount, String currencyCode) {
+    final decimals = amount == amount.roundToDouble() ? 0 : 2;
+    final parts = amount.toStringAsFixed(decimals).split('.');
+    final integer = parts.first.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]} ',
+    );
+    final formatted = parts.length == 2 ? '$integer,${parts.last}' : integer;
+    return '$formatted ${getSymbolForCode(currencyCode)}';
+  }
+
   @override
   Future<void> onInit() async {
     super.onInit();

@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/vendor_dashboard_controller.dart';
-import '../../addProduct/views/add_product_view.dart';
-import '../../addProduct/bindings/add_product_binding.dart';
 import '../../orderManagement/views/order_management_view.dart';
 import '../../orderManagement/bindings/order_management_binding.dart';
 import '../../storeManagement/views/store_management_view.dart';
@@ -488,6 +486,16 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               () => const StoreManagementView(),
               binding: StoreManagementBinding(),
             );
+          },
+        ),
+        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
+        _buildActionButton(
+          context,
+          icon: Icons.account_balance_wallet_rounded,
+          title: 'Portefeuille',
+          subtitle: 'Solde et remboursements',
+          onTap: () {
+            Get.toNamed('/wallet');
           },
         ),
         SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),

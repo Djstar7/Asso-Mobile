@@ -29,8 +29,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
   late LatLng selectedPosition;
   String selectedAddress = '';
   bool isLoading = false;
-  bool isGeocodingInProgress = false; // Pour suivre si le géocodage est en cours
-  bool showDeliveryPartners = true; // Toggle pour afficher/masquer les partenaires
+  bool isGeocodingInProgress =
+      false; // Pour suivre si le géocodage est en cours
+  bool showDeliveryPartners =
+      true; // Toggle pour afficher/masquer les partenaires
 
   // Recherche
   final TextEditingController searchController = TextEditingController();
@@ -39,6 +41,30 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
 
   // Selected deliverer for info display
   DelivererModel? selectedDeliverer;
+
+  String _readableAddress(Map<String, dynamic> data, LatLng position) {
+    final address = Map<String, dynamic>.from(data['address'] ?? const {});
+    final locality =
+        address['city'] ??
+        address['town'] ??
+        address['municipality'] ??
+        address['village'] ??
+        address['county'];
+    final area =
+        address['road'] ?? address['suburb'] ?? address['neighbourhood'];
+    final country = address['country'];
+    final parts = <String>{
+      if (area != null && area.toString().trim().isNotEmpty) area.toString(),
+      if (locality != null && locality.toString().trim().isNotEmpty)
+        locality.toString(),
+      if (country != null && country.toString().trim().isNotEmpty)
+        country.toString(),
+    }.toList();
+    return parts.isNotEmpty
+        ? parts.join(', ')
+        : (data['display_name']?.toString() ??
+              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}');
+  }
 
   // Calculer le centre et le zoom pour voir tous les marqueurs
   LatLng _calculateCenter() {
@@ -88,9 +114,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     print('  └─ Max diff: $maxDiff');
 
     // Zoom adapté selon la distance
-    if (maxDiff > 0.5) return 9.0;   // Très grande zone
-    if (maxDiff > 0.2) return 10.0;  // Grande zone
-    if (maxDiff > 0.1) return 11.0;  // Zone moyenne
+    if (maxDiff > 0.5) return 9.0; // Très grande zone
+    if (maxDiff > 0.2) return 10.0; // Grande zone
+    if (maxDiff > 0.1) return 11.0; // Zone moyenne
     if (maxDiff > 0.05) return 12.0; // Petite zone
     return 13.0; // Très petite zone
   }
@@ -106,14 +132,19 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     print('========================================');
     print('📍 Initial Position: ${widget.initialPosition}');
     print('📌 Initial Address: ${widget.initialAddress}');
-    print('🚚 Delivery Partners Count: ${widget.deliveryPartners?.length ?? 0}');
+    print(
+      '🚚 Delivery Partners Count: ${widget.deliveryPartners?.length ?? 0}',
+    );
 
-    if (widget.deliveryPartners != null && widget.deliveryPartners!.isNotEmpty) {
+    if (widget.deliveryPartners != null &&
+        widget.deliveryPartners!.isNotEmpty) {
       print('📋 Delivery Partners:');
       for (var partner in widget.deliveryPartners!) {
         print('  ├─ ${partner.name}');
         print('  │  └─ Zone: ${partner.zone.name}');
-        print('  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})');
+        print(
+          '  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})',
+        );
       }
     } else {
       print('⚠️ No delivery partners provided!');
@@ -163,7 +194,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         'lat=${position.latitude}&'
         'lon=${position.longitude}&'
         'zoom=18&'
-        'addressdetails=1'
+        'addressdetails=1',
       );
 
       final response = await http.get(
@@ -175,15 +206,18 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         final data = json.decode(response.body);
         if (mounted) {
           setState(() {
-            selectedAddress = data['display_name'] ??
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+            selectedAddress = _readableAddress(
+              Map<String, dynamic>.from(data),
+              position,
+            );
             isGeocodingInProgress = false;
           });
         }
       } else {
         if (mounted) {
           setState(() {
-            selectedAddress = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+            selectedAddress =
+                'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
             isGeocodingInProgress = false;
           });
         }
@@ -191,7 +225,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          selectedAddress = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+          selectedAddress =
+              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
           isGeocodingInProgress = false;
         });
       }
@@ -221,7 +256,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         'format=json&'
         'q=$query&'
         'limit=5&'
-        'addressdetails=1'
+        'addressdetails=1',
       );
 
       final response = await http.get(
@@ -233,11 +268,15 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         final List<dynamic> data = json.decode(response.body);
         if (mounted) {
           setState(() {
-            searchResults = data.map((item) => {
-              'display_name': item['display_name'],
-              'lat': double.parse(item['lat']),
-              'lon': double.parse(item['lon']),
-            }).toList();
+            searchResults = data
+                .map(
+                  (item) => {
+                    'display_name': item['display_name'],
+                    'lat': double.parse(item['lat']),
+                    'lon': double.parse(item['lon']),
+                  },
+                )
+                .toList();
             isSearching = false;
           });
         }
@@ -283,13 +322,15 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
   }
 
   void _confirmLocation() {
-    Get.back(result: {
-      'latitude': selectedPosition.latitude,
-      'longitude': selectedPosition.longitude,
-      'address': selectedAddress.isEmpty
-          ? 'Position: ${selectedPosition.latitude.toStringAsFixed(4)}, ${selectedPosition.longitude.toStringAsFixed(4)}'
-          : selectedAddress,
-    });
+    Get.back(
+      result: {
+        'latitude': selectedPosition.latitude,
+        'longitude': selectedPosition.longitude,
+        'address': selectedAddress.isEmpty
+            ? 'Position: ${selectedPosition.latitude.toStringAsFixed(4)}, ${selectedPosition.longitude.toStringAsFixed(4)}'
+            : selectedAddress,
+      },
+    );
   }
 
   void _getCurrentLocation() async {
@@ -298,6 +339,19 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     });
 
     try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const LocationServiceDisabledException();
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw const PermissionDeniedException(
+          'Permission de localisation refusée',
+        );
+      }
       // Obtenir la position actuelle
       Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -328,6 +382,24 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         colorText: Colors.white,
         duration: const Duration(seconds: 2),
       );
+    } on LocationServiceDisabledException {
+      if (mounted) setState(() => isLoading = false);
+      Get.snackbar(
+        'Localisation désactivée',
+        'Activez la localisation de votre téléphone puis réessayez.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
+    } on PermissionDeniedException {
+      if (mounted) setState(() => isLoading = false);
+      Get.snackbar(
+        'Permission requise',
+        'Autorisez ASSO à accéder à votre position dans les paramètres.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppThemeSystem.errorColor,
+        colorText: Colors.white,
+      );
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -351,27 +423,25 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-          ),
+          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'Sélectionner la position',
-          style: context.h5.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
           // Toggle pour afficher/masquer les partenaires
-          if (widget.deliveryPartners != null && widget.deliveryPartners!.isNotEmpty)
+          if (widget.deliveryPartners != null &&
+              widget.deliveryPartners!.isNotEmpty)
             IconButton(
               icon: Icon(
                 showDeliveryPartners ? Icons.visibility : Icons.visibility_off,
                 color: AppThemeSystem.primaryColor,
               ),
-              tooltip: showDeliveryPartners ? 'Masquer les partenaires' : 'Afficher les partenaires',
+              tooltip: showDeliveryPartners
+                  ? 'Masquer les partenaires'
+                  : 'Afficher les partenaires',
               onPressed: () {
                 setState(() {
                   showDeliveryPartners = !showDeliveryPartners;
@@ -379,10 +449,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
               },
             ),
           IconButton(
-            icon: Icon(
-              Icons.my_location,
-              color: AppThemeSystem.primaryColor,
-            ),
+            icon: Icon(Icons.my_location, color: AppThemeSystem.primaryColor),
             tooltip: 'Ma position actuelle',
             onPressed: _getCurrentLocation,
           ),
@@ -417,7 +484,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(4),
@@ -446,7 +516,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                       final index = entry.key;
                       final deliverer = entry.value;
 
-                      print('🚚 Adding marker for: ${deliverer.name} at (${deliverer.zone.latitude}, ${deliverer.zone.longitude})');
+                      print(
+                        '🚚 Adding marker for: ${deliverer.name} at (${deliverer.zone.latitude}, ${deliverer.zone.longitude})',
+                      );
 
                       return Marker(
                         width: 100.0,
@@ -467,7 +539,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             children: [
                               // Badge avec numéro
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppThemeSystem.primaryColor,
                                   borderRadius: BorderRadius.circular(4),
@@ -495,7 +570,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.3),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
@@ -543,7 +620,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     decoration: InputDecoration(
                       hintText: 'Rechercher une adresse...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
-                      prefixIcon: Icon(Icons.search, color: AppThemeSystem.primaryColor),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: AppThemeSystem.primaryColor,
+                      ),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear),
@@ -592,7 +672,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: searchResults.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final result = searchResults[index];
                           return ListTile(
@@ -631,7 +712,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
             ),
 
           // Légende des marqueurs (en bas à gauche)
-          if (widget.deliveryPartners != null && widget.deliveryPartners!.isNotEmpty && showDeliveryPartners)
+          if (widget.deliveryPartners != null &&
+              widget.deliveryPartners!.isNotEmpty &&
+              showDeliveryPartners)
             Positioned(
               bottom: 200,
               left: 10,
@@ -676,11 +759,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 20,
-                        ),
+                        Icon(Icons.location_pin, color: Colors.red, size: 20),
                         const SizedBox(width: 6),
                         Text(
                           'Ma boutique',
@@ -702,10 +781,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                           decoration: BoxDecoration(
                             color: AppThemeSystem.primaryColor,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
-                            ),
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
                           child: const Icon(
                             Icons.local_shipping,
@@ -765,7 +841,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             gradient: LinearGradient(
                               colors: [
                                 AppThemeSystem.primaryColor,
-                                AppThemeSystem.primaryColor.withValues(alpha: 0.7),
+                                AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.7,
+                                ),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -773,7 +851,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                                color: AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -800,9 +880,14 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                  color: AppThemeSystem.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -818,10 +903,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(
-                            Icons.close,
-                            color: Colors.grey[600],
-                          ),
+                          icon: Icon(Icons.close, color: Colors.grey[600]),
                           onPressed: () {
                             setState(() {
                               selectedDeliverer = null;
@@ -856,7 +938,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                        color: AppThemeSystem.primaryColor.withValues(
+                          alpha: 0.05,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -920,11 +1004,17 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             ),
                           ),
                         ),
-                        if (widget.deliveryPartners != null && widget.deliveryPartners!.isNotEmpty)
+                        if (widget.deliveryPartners != null &&
+                            widget.deliveryPartners!.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                              color: AppThemeSystem.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -954,21 +1044,21 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     // Message d'aide
                     if (selectedAddress.isEmpty)
                       Container(
-                        padding: EdgeInsets.all(context.horizontalPadding * 0.75),
+                        padding: EdgeInsets.all(
+                          context.horizontalPadding * 0.75,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.withValues(alpha: 0.1),
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderRadius: context.borderRadius(
+                            BorderRadiusType.medium,
+                          ),
                           border: Border.all(
                             color: Colors.blue.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.touch_app,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
+                            Icon(Icons.touch_app, color: Colors.blue, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -985,12 +1075,20 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     else
                       // Adresse ou coordonnées
                       Container(
-                        padding: EdgeInsets.all(context.horizontalPadding * 0.75),
+                        padding: EdgeInsets.all(
+                          context.horizontalPadding * 0.75,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppThemeSystem.successColor.withValues(alpha: 0.1),
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          color: AppThemeSystem.successColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: context.borderRadius(
+                            BorderRadiusType.medium,
+                          ),
                           border: Border.all(
-                            color: AppThemeSystem.successColor.withValues(alpha: 0.3),
+                            color: AppThemeSystem.successColor.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -1020,9 +1118,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: (selectedAddress.isEmpty ||
-                                   isGeocodingInProgress ||
-                                   selectedAddress.contains('Chargement'))
+                        onPressed:
+                            (selectedAddress.isEmpty ||
+                                isGeocodingInProgress ||
+                                selectedAddress.contains('Chargement'))
                             ? null
                             : _confirmLocation,
                         style: ElevatedButton.styleFrom(
@@ -1032,7 +1131,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             vertical: context.verticalPadding * 0.75,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: context.borderRadius(BorderRadiusType.medium),
+                            borderRadius: context.borderRadius(
+                              BorderRadiusType.medium,
+                            ),
                           ),
                         ),
                         child: Text(

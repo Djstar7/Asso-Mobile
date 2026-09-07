@@ -281,6 +281,7 @@ class DiaspoListController extends GetxController {
   /// Refresh current tab data
   @override
   Future<void> refresh() async {
+    await loadVerificationStatus();
     switch (selectedTab.value) {
       case 0:
         await loadOffers(refresh: true);
@@ -313,11 +314,22 @@ class DiaspoListController extends GetxController {
 
   /// Handle create offer button
   void handleCreateOffer() {
-    if (canCreateOffers.value) {
-      Get.toNamed('/diaspo/create');
-    } else {
-      _showVerificationDialog();
+    // L'identité n'empêche plus la saisie : le backend conserve simplement
+    // l'offre en attente et hors du catalogue jusqu'à sa validation.
+    Get.toNamed('/diaspo/create');
+  }
+
+  /// Ouvre le parcours de vérification sans bloquer la création d'une offre.
+  void handleVerification() {
+    if (verificationStatus.value == 'verified') {
+      Get.snackbar(
+        'Identité validée',
+        'Votre compte DIASPO est déjà vérifié.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
     }
+    _showVerificationDialog();
   }
 
   /// Show verification dialog
@@ -403,7 +415,7 @@ class DiaspoListController extends GetxController {
               ],
             ),
             content: const Text(
-              'Pour créer une offre, vous devez d\'abord vérifier votre identité.\n\n'
+              'Vous pouvez enregistrer votre offre maintenant, mais elle ne sera publiée qu\'après la vérification de votre identité.\n\n'
               'Document requis (au choix):\n'
               '• Carte Nationale d\'Identité (CNI)\n'
               '• Passeport',

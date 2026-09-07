@@ -5,6 +5,7 @@ import '../../../data/providers/auth_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../profile/controllers/profile_controller.dart';
+import '../../home/controllers/home_controller.dart';
 
 class LoginController extends GetxController {
   late TextEditingController emailController;
@@ -51,6 +52,7 @@ class LoginController extends GetxController {
   }
 
   Future<void> login() async {
+    var loginSucceeded = false;
     developer.log(
       '========== LOGIN ATTEMPT ==========',
       name: 'LoginController',
@@ -94,19 +96,6 @@ class LoginController extends GetxController {
           error: 'Email: ${email.value}',
         );
 
-        Get.snackbar(
-          'Succès',
-          'Connexion réussie',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.primary,
-          colorText: Get.theme.colorScheme.onPrimary,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-
-        await Future.delayed(const Duration(milliseconds: 500));
-
         // Envoyer le token FCM au backend ET s'abonner au topic des annonces
         developer.log('📱 Registering device and subscribing to topics...', name: 'LoginController');
         try {
@@ -125,14 +114,7 @@ class LoginController extends GetxController {
           // On ne bloque pas la navigation même si l'opération échoue
         }
 
-        // Rafraichir l'etat d'auth des controllers persistants (permanent:true)
-        // afin que le profil/menus refletent immediatement l'utilisateur connecte
-        // sans redemarrer l'app.
-        _refreshAuthState();
-
-        // Navigate to home
-        developer.log('Navigating to HOME', name: 'LoginController');
-        Get.offAllNamed(Routes.HOME);
+        loginSucceeded = true;
       } else {
         developer.log(
           'Login failed',
@@ -168,8 +150,50 @@ class LoginController extends GetxController {
         borderRadius: 12,
       );
     } finally {
+      // Toujours terminer l'Obx du formulaire AVANT de retirer LoginView de
+      // l'arbre. Une mutation après Get.offAll/Get.back provoquait le crash
+      // "dirty widget in the wrong build scope" sur Flutter Web.
       isLoading.value = false;
     }
+
+    if (loginSucceeded) {
+      await _finishLoginNavigation();
+    }
+  }
+
+  Future<void> _finishLoginNavigation() async {
+    developer.log('Navigating after login', name: 'LoginController');
+
+    // Laisser Flutter terminer la frame du bouton/loader avant toute mutation
+    // de la pile de navigation.
+    await WidgetsBinding.instance.endOfFrame;
+
+    final homeAlreadyMounted = Get.isRegistered<HomeController>() &&
+        Get.previousRoute == Routes.HOME;
+
+    if (homeAlreadyMounted) {
+      // Connexion ouverte depuis l'accueil invité : revenir à l'instance Home
+      // existante au lieu de recréer ses controllers permanents.
+      Get.back();
+      await WidgetsBinding.instance.endOfFrame;
+      _refreshAuthState();
+    } else {
+      // Connexion depuis le démarrage/welcomer : créer Home normalement.
+      Get.offAllNamed(Routes.HOME);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar(
+        'Succès',
+        'Connexion réussie',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Get.theme.colorScheme.onPrimary,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    });
   }
 
   /// Met a jour les controllers persistants dependant de l'authentification.
@@ -178,6 +202,9 @@ class LoginController extends GetxController {
   void _refreshAuthState() {
     if (Get.isRegistered<ProfileController>()) {
       Get.find<ProfileController>().refreshAuthState();
+    }
+    if (Get.isRegistered<HomeController>()) {
+      Get.find<HomeController>().refreshAuthState();
     }
   }
 

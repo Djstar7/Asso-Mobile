@@ -16,102 +16,163 @@ import 'package:flutter/material.dart';
     const WalletView({super.key});
 
     @override
-    Widget build(BuildContext context) {
-      return Scaffold(
-        backgroundColor: AppThemeSystem.getBackgroundColor(context),
-        // SafeArea: pas d'AppBar ici, on ajoute le padding de la status bar
-        // pour que le contenu ne colle pas sous l'encoche.
-        body: SafeArea(
-          child: RefreshIndicator(
-          onRefresh: () => controller.refresh(),
-          child: Obx(() {
-            if (controller.isLoading.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
+   Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: AppThemeSystem.getBackgroundColor(context),
+    body: SafeArea(
+      child: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (controller.errorMessage.value.isNotEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 64,
-                        color: AppThemeSystem.errorColor,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        controller.errorMessage.value,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppThemeSystem.getSecondaryTextColor(context),
+              if (controller.errorMessage.value.isNotEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 64,
+                          color: AppThemeSystem.errorColor,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => controller.loadWallet(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppThemeSystem.primaryColor,
-                          foregroundColor: AppThemeSystem.whiteColor,
-                          minimumSize: const Size(double.infinity, 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          controller.errorMessage.value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppThemeSystem.getSecondaryTextColor(context),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => controller.loadWallet(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppThemeSystem.primaryColor,
+                            foregroundColor: AppThemeSystem.whiteColor,
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
                   ),
+                );
+              }
+
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // On réserve l'espace pour laisser le bouton flotter au-dessus
+                    const SizedBox(height: 12),
+
+                    // Ligne titre + bouton retour, cohérente avec le design
+                    _buildHeaderBar(context),
+
+                    const SizedBox(height: 16),
+
+                    // Carte bancaire style VISA/ASSO
+                    _buildAssoCard(context),
+
+                    //Bannière IBAN (vendeur uniquement, absent ou refusé)
+                    _buildIbanSyncBanner(context),
+
+                    const SizedBox(height: 24),
+
+                    // Actions rapides
+                    _buildQuickActions(context),
+
+                    const SizedBox(height: 24),
+
+                    Obx(() {
+                      final hasLockedDiaspo = controller.lockedBookings.isNotEmpty;
+                      if (hasLockedDiaspo) {
+                        return Column(
+                          children: [
+                            _buildLockedFundsSection(context),
+                            const SizedBox(height: 24),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
+
+                    _buildBalancesByProvider(context),
+
+                    const SizedBox(height: 100),
+                  ],
                 ),
               );
-            }
-
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-
-                  // Carte bancaire style VISA/ASSO
-                  _buildAssoCard(context),
-
-                  const SizedBox(height: 24),
-
-                  // Actions rapides
-                  _buildQuickActions(context),
-
-                  const SizedBox(height: 24),
-
-                  // Fonds en attente DIASPO EXPRESS - only if has locked diaspo bookings OR diaspo locked funds
-                  // Ne pas afficher pour les autres types de locks (commandes, abonnements, etc.)
-                  Obx(() {
-                    final hasLockedDiaspo = controller.lockedBookings.isNotEmpty;
-
-                    if (hasLockedDiaspo) {
-                      return Column(
-                        children: [
-                          _buildLockedFundsSection(context),
-                          const SizedBox(height: 24),
-                        ],
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }),
-
-                  // Soldes par méthode de paiement
-                  _buildBalancesByProvider(context),
-
-                  const SizedBox(height: 100), // Espace pour le bottom nav
-                ],
-              ),
-            );
-          }),
+            }),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+Widget _buildHeaderBar(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    child: Row(
+      children: [
+        _buildBackButton(context),
+        const SizedBox(width: 12),
+        Text(
+          'Mon Portefeuille',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppThemeSystem.getPrimaryTextColor(context),
+          ),
         ),
-        ),
-      );
-    }
+      ],
+    ),
+  );
+}
 
+Widget _buildBackButton(BuildContext context) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        if (Navigator.of(context).canPop()) {
+          Get.back();
+        } else {
+          Get.offAllNamed('/home');
+        }
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getSurfaceColor(context), // fond carte/surface
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 18,
+          color: AppThemeSystem.getPrimaryTextColor(context),
+        ),
+      ),
+    ),
+  );
+}
     /// Bannière "chaude" invitant le vendeur à synchroniser son IBAN
     /// (compte de virement Stripe Connect) tant qu'il n'est pas approuvé.
     Widget _buildIbanSyncBanner(BuildContext context) {
