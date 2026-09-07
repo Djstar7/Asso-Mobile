@@ -70,16 +70,36 @@ class ProductView extends GetView<ProductController> {
     print('═══════════════════════════════════════════════════════════════');
     print('');
 
-    return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
-      body: CustomScrollView(
-        slivers: [
-          // App Bar avec images
-          SliverAppBar(
-            expandedHeight: 400,
-            pinned: true,
-            backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-            leading: IconButton(
+    return Scaffold(                               
+    backgroundColor: AppThemeSystem.getBackgroundColor(context),
+    body: CustomScrollView(
+      slivers: [
+        // App Bar avec images
+        SliverAppBar(
+          expandedHeight: 400,
+          pinned: true,
+          backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+          leading: IconButton(
+            icon: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            onPressed: () => Get.back(),
+          ),
+          actions: [
+            IconButton(
               icon: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -91,15 +111,23 @@ class ProductView extends GetView<ProductController> {
                   ),
                 ),
                 child: Icon(
-                  Icons.arrow_back_rounded,
+                  Icons.share_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
               ),
-              onPressed: () => Get.back(),
+              onPressed: () {
+                Get.snackbar(
+                  'Partager',
+                  'Partagez ce produit avec vos amis',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
             ),
-            actions: [
-              IconButton(
+            SizedBox(width: 8),
+            Obx(() {
+              final isFav = controller.isFavorite.value;
+              return IconButton(
                 icon: Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -111,99 +139,55 @@ class ProductView extends GetView<ProductController> {
                     ),
                   ),
                   child: Icon(
-                    Icons.share_rounded,
-                    color: Colors.white,
+                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isFav ? Colors.red : Colors.white,
                     size: 20,
                   ),
                 ),
                 onPressed: () {
-                  Get.snackbar(
-                    'Partager',
-                    'Partagez ce produit avec vos amis',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
+                  final productId = product['id'] is int
+                      ? product['id']
+                      : int.tryParse(product['id'].toString()) ?? 0;
+                  if (productId > 0) {
+                    AuthGuard.requireAuth(
+                      context,
+                      onAuthenticated: () => controller.toggleFavorite(productId),
+                      featureName: 'les favoris',
+                      useDialog: false,
+                    );
+                  }
                 },
-              ),
-              SizedBox(width: 8),
-              Obx(() {
-                final isFav = controller.isFavorite.value;
-                return IconButton(
-                  icon: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(
-                      isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: isFav ? Colors.red : Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  onPressed: () {
-                    final productId = product['id'] is int
-                        ? product['id']
-                        : int.tryParse(product['id'].toString()) ?? 0;
-                    if (productId > 0) {
-                      AuthGuard.requireAuth(
-                        context,
-                        onAuthenticated: () => controller.toggleFavorite(productId),
-                        featureName: 'les favoris',
-                        useDialog: false,
-                      );
-                    }
-                  },
-                );
-              }),
-              SizedBox(width: 8),
+              );
+            }),
+            SizedBox(width: 8),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            background: _buildImageCarousel(context, product),
+          ),
+        ),
+
+        // Contenu
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProductHeader(context, product),
+              _buildLocationSection(context, product),
+              Divider(height: 32),
+              _buildDescriptionSection(context, product),
+              _buildProductCharacteristics(context, product),
+              Divider(height: 32),
+              _buildSellerSection(context, product),
+              Divider(height: 32),
+              _buildSimilarProductsSection(context, product),
+              SizedBox(height: 100),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildImageCarousel(context, product),
-            ),
           ),
-
-          // Contenu
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Prix et nom
-                _buildProductHeader(context, product),
-
-                // Localisation
-                _buildLocationSection(context, product),
-
-                Divider(height: 32),
-
-                // Description
-                _buildDescriptionSection(context, product),
-
-                // Caractéristiques du produit (stock à gauche, poids à droite)
-                _buildProductCharacteristics(context, product),
-
-                Divider(height: 32),
-
-                // Info vendeur
-                _buildSellerSection(context, product),
-
-                Divider(height: 32),
-
-                // Produits similaires
-                _buildSimilarProductsSection(context, product),
-
-                SizedBox(height: 100), // Espace pour les boutons fixes
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomBar(context, product),
-    );
-  }
+        ),
+      ],
+    ),
+    bottomNavigationBar: _buildBottomBar(context, product),
+  );}
 
   Widget _buildImageCarousel(BuildContext context, Map<String, dynamic> product) {
     final images = _getProductImages(product);
@@ -253,55 +237,55 @@ class ProductView extends GetView<ProductController> {
       ],
     );
   }
-
   Widget _buildProductHeader(BuildContext context, Map<String, dynamic> product) {
-    return Padding(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Prix
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppThemeSystem.primaryColor,
-                  AppThemeSystem.primaryColor.withValues(alpha: 0.8),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
+  return Padding(
+    padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Prix
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppThemeSystem.primaryColor,
+                AppThemeSystem.primaryColor.withValues(alpha: 0.8),
               ],
             ),
-            child: Obx(() => Text(
-              controller.formatPrice(double.tryParse((product['price_xaf'] ?? product['price']).toString()) ?? 0),
-              style: context.textStyle(
-                FontSizeType.h3,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: Offset(0, 4),
               ),
-            )),
+            ],
           ),
-          SizedBox(height: 16),
-          // Nom du produit
-          Text(
-            product['name'],
+          child: Text(
+            controller.formatPrice(
+              double.tryParse((product['price_xaf'] ?? product['price']).toString()) ?? 0,
+            ),
             style: context.textStyle(
-              FontSizeType.h4,
+              FontSizeType.h3,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+        SizedBox(height: 16),
+        // Nom du produit
+        Text(
+          product['name'],
+          style: context.textStyle(
+            FontSizeType.h4,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildProductCharacteristics(BuildContext context, Map<String, dynamic> product) {
     // Extraire le stock
     final stock = product['stock'];
@@ -1587,6 +1571,36 @@ class ProductView extends GetView<ProductController> {
                       );
                     }),
 
+                    SizedBox(height: 12),
+
+                    TextField(
+                      controller: controller.addressDetailsController,
+                      maxLines: 2,
+                      maxLength: 500,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Précision de l’adresse (facultatif)',
+                        hintText: 'Ex. portail bleu, près de..., étage, repère',
+                        prefixIcon: Icon(Icons.signpost_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+
+                    SizedBox(height: 8),
+
+                    TextField(
+                      controller: controller.customerPhoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.done,
+                      maxLength: 30,
+                      decoration: InputDecoration(
+                        labelText: 'Téléphone à joindre par le livreur',
+                        hintText: 'Ex. 6XXXXXXXX',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+
                     SizedBox(height: 20),
 
                     // Section partenaires de livraison
@@ -2233,13 +2247,13 @@ class ProductView extends GetView<ProductController> {
 
       if (lat != null && lon != null) {
         // Mettre à jour les coordonnées GPS
-        controller.clientLatitude = lat;
-        controller.clientLongitude = lon;
+        controller.clientLatitude.value = lat;
+        controller.clientLongitude.value = lon;
 
         print('');
         print('🔍 MISE À JOUR DES COORDONNÉES GPS:');
-        print('   controller.clientLatitude: ${controller.clientLatitude}');
-        print('   controller.clientLongitude: ${controller.clientLongitude}');
+        print('   controller.clientLatitude: ${controller.clientLatitude.value}');
+        print('   controller.clientLongitude: ${controller.clientLongitude.value}');
 
         // Faire du reverse geocoding pour obtenir l'adresse lisible
         try {
@@ -2293,16 +2307,17 @@ class ProductView extends GetView<ProductController> {
         print('═══════════════════════════════════════════════════════════════');
         print('🔍 VÉRIFICATION AVANT RECHARGEMENT DES PARTENAIRES');
         print('═══════════════════════════════════════════════════════════════');
-        print('📦 controller.currentProductId: ${controller.currentProductId}');
+        print('📦 controller.currentProductId: ${controller.currentProductId.value}');
         print('📍 Nouvelle position: ${controller.currentLocation.value}');
-        print('📍 GPS: ${controller.clientLatitude}, ${controller.clientLongitude}');
+        print('📍 GPS: ${controller.clientLatitude.value}, ${controller.clientLongitude.value}');
 
-        if (controller.currentProductId != null) {
+        final productId = controller.currentProductId.value;
+        if (productId != 0) {
           print('');
           print('✅ ProductId trouvé, rechargement en cours...');
           print('🔄 Rechargement des partenaires avec la nouvelle position...');
           print('═══════════════════════════════════════════════════════════════');
-          await controller.loadDeliveryPartners(controller.currentProductId!);
+          await controller.loadDeliveryPartners(productId);
           print('');
           print('✅ RECHARGEMENT DES PARTENAIRES TERMINÉ');
           print('   Nombre de partenaires: ${controller.deliveryPartners.length}');
@@ -2310,7 +2325,7 @@ class ProductView extends GetView<ProductController> {
         } else {
           print('');
           print('❌ IMPOSSIBLE DE RECHARGER LES PARTENAIRES');
-          print('   Raison: controller.currentProductId est NULL');
+          print('   Raison: controller.currentProductId est à 0');
           print('   Get.arguments disponible: ${Get.arguments != null}');
           if (Get.arguments != null) {
             final product = Get.arguments as Map<String, dynamic>?;
@@ -2332,217 +2347,6 @@ class ProductView extends GetView<ProductController> {
     } else {
       print('ℹ️ Aucune position sélectionnée (annulé)');
     }
-  }
-
-  // Ancienne fonction - conservée au cas où (à supprimer plus tard)
-  Future<void> _showChangeAddressDialogOLD(BuildContext context) async {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.edit_location_rounded,
-                      color: AppThemeSystem.primaryColor,
-                      size: 24,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Modifier l\'adresse',
-                      style: context.textStyle(
-                        FontSizeType.h5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Choisissez comment définir votre adresse de livraison',
-                style: context.textStyle(
-                  FontSizeType.body2,
-                  color: AppThemeSystem.grey600,
-                ),
-              ),
-              SizedBox(height: 20),
-
-              // Option 1: Ouvrir la carte
-              InkWell(
-                onTap: () async {
-                  Get.back();
-                  final result = await Get.to<Map<String, dynamic>>(
-                    () => MapSelectionView(),
-                    transition: Transition.rightToLeft,
-                  );
-
-                  if (result != null) {
-                    controller.currentLocation.value = result['address'];
-                    Get.snackbar(
-                      'Position mise à jour',
-                      'Votre position de livraison a été modifiée',
-                      snackPosition: SnackPosition.BOTTOM,
-                      icon: Icon(Icons.check_circle_rounded, color: Colors.green),
-                    );
-                  }
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.map_rounded,
-                          color: AppThemeSystem.primaryColor,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Choisir sur la carte',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Sélectionnez votre position sur OpenStreetMap',
-                              style: context.textStyle(
-                                FontSizeType.caption,
-                                color: AppThemeSystem.grey600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppThemeSystem.primaryColor,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 12),
-
-              // Option 2: Entrer manuellement
-              InkWell(
-                onTap: () {
-                  Get.back();
-                  _showManualAddressDialog(context);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.getSurfaceColor(context),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppThemeSystem.getBorderColor(context),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.grey200,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.edit_rounded,
-                          color: AppThemeSystem.grey700,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Entrer manuellement',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Saisissez votre adresse complète',
-                              style: context.textStyle(
-                                FontSizeType.caption,
-                                color: AppThemeSystem.grey600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppThemeSystem.grey400,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Bouton annuler
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Get.back(),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text('Annuler'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _showManualAddressDialog(BuildContext context) {

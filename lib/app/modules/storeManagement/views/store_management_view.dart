@@ -5,6 +5,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
+import 'edit_store_view.dart';
 
 class StoreManagementView extends GetView<StoreManagementController> {
   const StoreManagementView({super.key});
@@ -1268,6 +1269,20 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
               isEmpty: store.phone.isEmpty,
             ),
             SizedBox(height: context.sectionSpacing),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.to(() => const EditStoreView());
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Modifier les informations'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
           ],
         ),
       );
@@ -1348,6 +1363,7 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
       if (!controller.hasLocationUpdatePending.value) {
         return const SizedBox.shrink();
       }
+
 
       return Container(
         margin: EdgeInsets.only(bottom: context.elementSpacing),

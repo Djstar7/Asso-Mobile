@@ -404,28 +404,6 @@ class EditStoreView extends GetView<StoreManagementController> {
                           color: AppThemeSystem.warningColor,
                           size: 20,
                         ),
-                        SizedBox(width: context.elementSpacing),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Demande de changement de localisation en attente',
-                                style: context.body2.copyWith(
-                                  color: AppThemeSystem.warningColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Votre nouvelle localisation sera effective après validation par un administrateur.',
-                                style: context.caption.copyWith(
-                                  color: AppThemeSystem.warningColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   );
@@ -659,7 +637,6 @@ class EditStoreView extends GetView<StoreManagementController> {
       ],
     );
   }
-
 
   Widget _buildTextFieldWithController(
     BuildContext context, {

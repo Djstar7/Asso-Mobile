@@ -42,6 +42,7 @@ class StoreManagementController extends GetxController {
   // Image picker
   final Rx<XFile?> selectedLogo = Rx<XFile?>(null);
 
+  // Location change requests
   final RxBool hasLocationUpdatePending = false.obs;
 
   @override
@@ -325,6 +326,25 @@ class StoreManagementController extends GetxController {
     }
   }
 
+  /// Load location change requests
+  Future<void> loadLocationRequests() async {
+    try {
+      final response = await ShopService.getLocationRequests();
+
+      if (response.success && response.data != null) {;
+        final pendingCount = response.data!['pending_count'] as int? ?? 0;
+        hasLocationUpdatePending.value = pendingCount > 0;
+
+        print('✅ CONTROLLER: Location requests loaded');
+        print('  └─ Pending requests: $pendingCount');
+      } else {
+        hasLocationUpdatePending.value = false;
+      }
+    } catch (e) {
+      print('⚠️ CONTROLLER: Failed to load location requests: $e');
+      hasLocationUpdatePending.value = false;
+    }
+  }
 
   /// Vérifie si la livraison est disponible à une position donnée
   Future<void> checkDeliveryAvailability(double latitude, double longitude) async {
@@ -573,11 +593,12 @@ class StoreManagementController extends GetxController {
         // Reload location requests to check for new pending requests
         print('');
         print('🔄 Reloading location requests...');
+        await loadLocationRequests();
 
         Get.back(); // Fermer le formulaire d'édition
 
         // Determine success message based on whether location request was created
-        final message = 'Informations de la boutique mises à jour avec succès';
+        final message ='Informations de la boutique mises à jour avec succès';
 
         print('');
         print('========================================');
