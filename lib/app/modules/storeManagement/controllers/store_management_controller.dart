@@ -88,7 +88,7 @@ class StoreManagementController extends GetxController {
           // Extraire la ville de l'adresse si présente
           String city = '';
           if (address != null && address.isNotEmpty && address.contains(',')) {
-            city = address.split(',').last.trim();
+            city = address.split(',').first.trim();
           }
 
           // Parser les catégories
@@ -546,7 +546,7 @@ class StoreManagementController extends GetxController {
           // Extraire la ville de l'adresse si présente
           String updatedCity = '';
           if (updatedAddress != null && updatedAddress.isNotEmpty && updatedAddress.contains(',')) {
-            updatedCity = updatedAddress.split(',').last.trim();
+            updatedCity = updatedAddress.split(',').first.trim();
           }
 
           // Parser les catégories
