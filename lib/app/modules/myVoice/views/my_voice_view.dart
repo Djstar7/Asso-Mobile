@@ -42,25 +42,37 @@ class MyVoiceView extends GetView<MyVoiceController> {
 
         return RefreshIndicator(
           onRefresh: controller.refresh,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount:
-                controller.posts.length +
-                (controller.isLoadingMore.value ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == controller.posts.length) {
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification.metrics.pixels >=
+                      notification.metrics.maxScrollExtent - 200 &&
+                  controller.hasMore.value &&
+                  !controller.isLoading.value &&
+                  !controller.isLoadingMore.value) {
                 controller.loadMore();
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
               }
-
-              final post = controller.posts[index];
-              return _buildPostCard(context, post);
+              return false;
             },
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: controller.posts.length +
+                  (controller.hasMore.value ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == controller.posts.length) {
+                  return Obx(() => controller.isLoadingMore.value
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : const SizedBox(height: 24));
+                }
+
+                final post = controller.posts[index];
+                return _buildPostCard(context, post);
+              },
+            ),
           ),
         );
             }),

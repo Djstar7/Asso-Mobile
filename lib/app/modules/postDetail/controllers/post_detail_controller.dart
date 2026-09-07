@@ -15,15 +15,17 @@ class PostDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Get post ID from arguments
-    postId = Get.arguments['postId'] as int;
+    final arguments = Map<String, dynamic>.from(Get.arguments as Map);
+    postId = arguments['postId'] as int;
 
     // If post object is passed, use it
-    if (Get.arguments['post'] != null) {
-      post.value = Get.arguments['post'] as Post;
+    final passedPost = arguments['post'];
+    if (passedPost is Post) {
+      post.value = passedPost;
+    } else {
+      fetchPostDetails();
     }
 
-    fetchPostDetails();
     fetchComments();
   }
 

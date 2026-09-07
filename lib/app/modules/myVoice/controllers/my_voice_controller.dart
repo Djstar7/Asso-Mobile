@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/post.dart';
-import '../../../data/models/post_comment.dart';
 import '../../../data/providers/post_service.dart';
 
 class MyVoiceController extends GetxController {
@@ -22,6 +21,10 @@ class MyVoiceController extends GetxController {
 
   /// Fetch posts
   Future<void> fetchPosts({bool refresh = false}) async {
+    if (isLoading.value || isLoadingMore.value) {
+      return;
+    }
+
     if (refresh) {
       currentPage = 1;
       hasMore.value = true;
@@ -111,6 +114,15 @@ class MyVoiceController extends GetxController {
       );
 
       if (response.success && response.data != null) {
+        final createdData = response.data?['data'];
+        if (createdData is Map) {
+          final createdPost = Post.fromJson(
+            Map<String, dynamic>.from(createdData),
+          );
+          posts.removeWhere((post) => post.id == createdPost.id);
+          posts.insert(0, createdPost);
+        }
+
         Get.back();
 
         // Refresh the posts list to get the latest data
@@ -208,7 +220,7 @@ class MyVoiceController extends GetxController {
 
   /// Load more posts
   void loadMore() {
-    if (!isLoadingMore.value && hasMore.value) {
+    if (!isLoading.value && !isLoadingMore.value && hasMore.value) {
       fetchPosts();
     }
   }
