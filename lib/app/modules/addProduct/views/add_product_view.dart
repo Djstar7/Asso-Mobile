@@ -109,6 +109,8 @@ class AddProductView extends GetView<AddProductController> {
             // Poids du produit
             _buildWeightSection(context),
             SizedBox(height: context.sectionSpacing),
+            _buildSizesSection(context),
+            SizedBox(height: context.sectionSpacing),
             // Stock
             _buildStockSection(context),
             SizedBox(height: context.sectionSpacing),
@@ -863,6 +865,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                             : null,
                         onTap: () {
                           controller.selectedCategory.value = category;
+                          controller.selectedSizes.clear();
                           Navigator.pop(context);
                         },
                       );
@@ -1449,6 +1452,152 @@ void _showCurrencyBottomSheet(BuildContext context) {
         ],
       );
     });
+  }
+
+  Widget _buildSizesSection(BuildContext context) {
+    return Obx(() {
+      final groups = controller.sizeGroupsForCategory;
+      if (groups.isEmpty) return const SizedBox.shrink();
+      final selected = controller.selectedSizes;
+      final label = selected.isEmpty
+          ? 'Aucune taille sélectionnée'
+          : selected.join(', ');
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tailles disponibles',
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Optionnel : sélectionnez une ou plusieurs tailles.',
+            style: context.caption.copyWith(color: context.secondaryTextColor),
+          ),
+          SizedBox(height: context.elementSpacing),
+          InkWell(
+            onTap: () => _showSizesBottomSheet(context),
+            borderRadius: context.borderRadius(BorderRadiusType.medium),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(context.horizontalPadding),
+              decoration: BoxDecoration(
+                color: selected.isNotEmpty
+                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
+                    : context.surfaceColor,
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                border: Border.all(
+                  color: selected.isNotEmpty
+                      ? AppThemeSystem.primaryColor
+                      : context.borderColor,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.straighten,
+                      color: selected.isNotEmpty
+                          ? AppThemeSystem.primaryColor
+                          : context.secondaryTextColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.body1.copyWith(
+                        color: selected.isNotEmpty
+                            ? AppThemeSystem.primaryColor
+                            : context.secondaryTextColor,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  void _showSizesBottomSheet(BuildContext context) {
+    final draft = controller.selectedSizes.toSet();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: context.backgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('Tailles disponibles', style: context.h5),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        controller.selectedSizes.assignAll(
+                          controller.sizeGroupsForCategory.values
+                              .expand((sizes) => sizes)
+                              .where(draft.contains)
+                              .toList(),
+                        );
+                        Navigator.pop(sheetContext);
+                      },
+                      child: const Text('Valider'),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  children: controller.sizeGroupsForCategory.entries.map((group) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10, bottom: 6),
+                          child: Text(group.key, style: context.subtitle2),
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: group.value.map((size) {
+                            final isSelected = draft.contains(size);
+                            return FilterChip(
+                              label: Text(size),
+                              selected: isSelected,
+                              onSelected: (value) => setSheetState(() {
+                                value ? draft.add(size) : draft.remove(size);
+                              }),
+                              selectedColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                              checkmarkColor: AppThemeSystem.primaryColor,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Bottom sheet pour sélectionner le poids

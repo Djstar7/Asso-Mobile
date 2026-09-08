@@ -65,6 +65,35 @@ class AddProductController extends GetxController {
     'custom': 'Poids personnalisé (KG)',
   };
 
+  static const sizeGroups = <String, List<String>>{
+    'Vêtements': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL'],
+    'Tailles numériques': ['28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'],
+    'Pointures': ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48'],
+    'Tailles bébé': ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M', '2-3A', '3-4A', '4-5A', '5-6A'],
+    'Dimensions': ['S', 'M', 'L'],
+  };
+  final selectedSizes = <String>[].obs;
+
+  Map<String, List<String>> get sizeGroupsForCategory {
+    final category = '${selectedCategory.value ?? ''} ${selectedSubcategory.value ?? ''}'.toLowerCase();
+    if (category.contains('chauss') || category.contains('shoe')) {
+      return {'Pointures': sizeGroups['Pointures']!};
+    }
+    if (category.contains('bébé') || category.contains('bebe') || category.contains('enfant')) {
+      return {'Tailles bébé': sizeGroups['Tailles bébé']!};
+    }
+    if (category.contains('meuble') || category.contains('mobilier') || category.contains('furniture')) {
+      return {'Dimensions': sizeGroups['Dimensions']!};
+    }
+    if (category.contains('mode') || category.contains('vêtement') || category.contains('vetement') || category.contains('fashion')) {
+      return {
+        'Vêtements': sizeGroups['Vêtements']!,
+        'Tailles numériques': sizeGroups['Tailles numériques']!,
+      };
+    }
+    return {};
+  }
+
   // Stockage
   final selectedStorage = Rx<Map<String, dynamic>?>(null);
   final storageList = <Map<String, dynamic>>[].obs;
@@ -486,6 +515,11 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       print('⚠️ ADD_PRODUCT: No weight found in product data');
     }
 
+    final sizes = product['sizes'];
+    if (sizes is List) {
+      selectedSizes.assignAll(sizes.map((size) => size.toString()));
+    }
+
     // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
     final images = product['images'] as List?;
     existingImages.clear();
@@ -894,6 +928,10 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       // Ajouter stock si disponible
       if (stockController.text.trim().isNotEmpty) {
         fieldsMap['stock'] = stockController.text.trim();
+      }
+
+      for (var i = 0; i < selectedSizes.length; i++) {
+        fieldsMap['sizes[$i]'] = selectedSizes[i];
       }
 
       // Ajouter weight si disponible

@@ -4,6 +4,7 @@ import '../../../data/providers/import_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/wholesale_models.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/values/constants.dart';
 import 'wholesale_order_sheet.dart';
 
 /// Section « Produits importés » : pays d'origine gérés côté backend
@@ -423,12 +424,7 @@ class _ImportViewState extends State<ImportView> {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: (image != null && image.isNotEmpty)
-                          ? Image.network(image, fit: BoxFit.contain,
-                              loadingBuilder: (ctx, child, prog) =>
-                                  prog == null ? child : Container(color: const Color(0xFFF1F2F5)),
-                              errorBuilder: (_, __, ___) => _imgPlaceholder())
-                          : _imgPlaceholder(),
+                      child: _buildProductImage(image),
                     ),
                     // Badge drapeau pays (origine)
                     Positioned(
@@ -518,4 +514,43 @@ class _ImportViewState extends State<ImportView> {
         color: const Color(0xFFF1F2F5),
         child: Icon(Icons.image_outlined, color: Colors.grey.shade400, size: 40),
       );
+
+  Widget _buildProductImage(String? path) {
+    if (path == null || path.trim().isEmpty) return _imgPlaceholder();
+    final value = path.trim();
+    if (value.startsWith('assets/')) {
+      return Image.asset(value, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _imgPlaceholder());
+    }
+
+    return Image.network(
+      _imageUrlForDevice(value),
+      fit: BoxFit.contain,
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : Container(color: const Color(0xFFF1F2F5)),
+      errorBuilder: (_, __, ___) => _imgPlaceholder(),
+    );
+  }
+
+  String _imageUrlForDevice(String value) {
+    final apiUri = Uri.parse(AppConstants.baseUrl);
+    final imageUri = Uri.tryParse(value);
+    if (imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty) {
+      final normalizedPath = imageUri.path.replaceFirst('/storage/storage/', '/storage/');
+      if (imageUri.host == 'localhost' || imageUri.host == '127.0.0.1') {
+        return imageUri
+            .replace(host: apiUri.host, port: apiUri.port, path: normalizedPath)
+            .toString();
+      }
+      return imageUri.replace(path: normalizedPath).toString();
+    }
+
+    final path = (value.startsWith('/') ? value : '/$value')
+        .replaceFirst('/storage/storage/', '/storage/');
+    return Uri(
+      scheme: apiUri.scheme,
+      host: apiUri.host,
+      port: apiUri.port,
+      path: path.startsWith('/storage/') ? path : '/storage$path',
+    ).toString();
+  }
 }

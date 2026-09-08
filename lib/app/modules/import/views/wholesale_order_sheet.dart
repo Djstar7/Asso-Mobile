@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/controllers/app_config_controller.dart';
+import '../../../core/values/constants.dart';
 import '../../../data/models/wholesale_models.dart';
 import '../../../data/providers/import_service.dart';
 import '../../../data/providers/order_service.dart';
@@ -115,30 +116,37 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.grey300,
-                    borderRadius: BorderRadius.circular(2),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Retour',
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: AppThemeSystem.getPrimaryTextColor(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                ),
+                  const Spacer(),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppThemeSystem.grey300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 24),
+                ],
               ),
+              const SizedBox(height: 16),
               // En-tête produit
               Row(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: (p.image != null && p.image!.isNotEmpty)
-                        ? Image.network(
-                            p.image!,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _imgPh(),
-                          )
+                        ? _buildProductImage(p.image!)
                         : _imgPh(),
                   ),
                   const SizedBox(width: 12),
@@ -308,6 +316,50 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
     child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFB4BCC6)),
   );
 
+  Widget _buildProductImage(String value) {
+    final trimmed = value.trim();
+    if (trimmed.startsWith('assets/')) {
+      return Image.asset(
+        trimmed,
+        width: 56,
+        height: 56,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _imgPh(),
+      );
+    }
+
+    final apiUri = Uri.parse(AppConstants.baseUrl);
+    final imageUri = Uri.tryParse(trimmed);
+    final imageUrl = imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty
+      ? ((imageUri.host == 'localhost' || imageUri.host == '127.0.0.1')
+        ? imageUri
+          .replace(
+            host: apiUri.host,
+            port: apiUri.port,
+            path: imageUri.path.replaceFirst('/storage/storage/', '/storage/'),
+          )
+          .toString()
+        : imageUri
+          .replace(path: imageUri.path.replaceFirst('/storage/storage/', '/storage/'))
+          .toString())
+        : Uri(
+            scheme: apiUri.scheme,
+            host: apiUri.host,
+            port: apiUri.port,
+        path: trimmed.startsWith('/storage/')
+          ? trimmed.replaceFirst('/storage/storage/', '/storage/')
+          : '/storage/${trimmed.replaceFirst(RegExp(r'^/'), '')}',
+          ).toString();
+
+    return Image.network(
+      imageUrl,
+      width: 56,
+      height: 56,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _imgPh(),
+    );
+  }
+
   Widget _label(BuildContext c, String t) => Text(
     t,
     style: TextStyle(
@@ -387,7 +439,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
     final min = _tier?.minQuantity ?? 1;
     return Row(
       children: [
-        _qtyBtn(Icons.remove, () {
+        _qtyBtn(Icons.remove, _quantity > min, () {
           if (_quantity > min) setState(() => _quantity--);
         }),
         Expanded(
@@ -402,22 +454,27 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
             ),
           ),
         ),
-        _qtyBtn(Icons.add, () => setState(() => _quantity++)),
+        _qtyBtn(Icons.add, true, () => setState(() => _quantity++)),
       ],
     );
   }
 
-  Widget _qtyBtn(IconData i, VoidCallback onTap) => InkWell(
-    onTap: onTap,
+  Widget _qtyBtn(IconData i, bool enabled, VoidCallback onTap) => InkWell(
+    onTap: enabled ? onTap : null,
     borderRadius: BorderRadius.circular(10),
     child: Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+        color: enabled
+            ? AppThemeSystem.primaryColor
+            : AppThemeSystem.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(i, color: AppThemeSystem.primaryColor),
+      child: Icon(
+        i,
+        color: enabled ? Colors.white : AppThemeSystem.primaryColor,
+      ),
     ),
   );
 
