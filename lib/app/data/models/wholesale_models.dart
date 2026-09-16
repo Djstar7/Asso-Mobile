@@ -24,10 +24,11 @@ class PriceTier {
   factory PriceTier.fromJson(Map<String, dynamic> j) => PriceTier(
     id: j['id'] as int,
     label: j['label']?.toString() ?? '',
-        unitPrice: (j['unit_price'] as num?)?.toDouble() ?? 0,
-        unitPriceXaf: (j['unit_price_xaf'] as num?)?.toDouble() ??
-            (j['unit_price'] as num?)?.toDouble() ??
-            0,
+    unitPrice: (j['unit_price'] as num?)?.toDouble() ?? 0,
+    unitPriceXaf:
+        (j['unit_price_xaf'] as num?)?.toDouble() ??
+        (j['unit_price'] as num?)?.toDouble() ??
+        0,
     currency: j['currency']?.toString() ?? 'XAF',
     minQuantity: (j['min_quantity'] as num?)?.toInt() ?? 1,
     packSize: (j['pack_size'] as num?)?.toInt(),
@@ -67,10 +68,11 @@ class ShippingOption {
     mode: j['mode']?.toString() ?? '',
     modeLabel: j['mode_label']?.toString() ?? '',
     rateType: j['rate_type']?.toString() ?? 'per_kg',
-        rateAmount: (j['rate_amount'] as num?)?.toDouble() ?? 0,
-        rateAmountXaf: (j['rate_amount_xaf'] as num?)?.toDouble() ??
-            (j['rate_amount'] as num?)?.toDouble() ??
-            0,
+    rateAmount: (j['rate_amount'] as num?)?.toDouble() ?? 0,
+    rateAmountXaf:
+        (j['rate_amount_xaf'] as num?)?.toDouble() ??
+        (j['rate_amount'] as num?)?.toDouble() ??
+        0,
     currency: j['currency']?.toString() ?? 'XAF',
     leadTimeDays: (j['lead_time_days'] as num?)?.toInt(),
     expeditionNote: j['expedition_note']?.toString(),
@@ -85,29 +87,39 @@ class WholesaleProduct {
   final int id;
   final String name;
   final String? description;
+  final String? characteristics;
+  final String? commercialInformation;
   final String? originCountry;
   final String currency;
   final int? minOrderQuantity;
   final double? unitWeightKg;
   final List<PriceTier> priceTiers;
+  final List<Map<String, dynamic>> variants;
   final String? image;
+  final List<String> images;
 
   const WholesaleProduct({
     required this.id,
     required this.name,
     this.description,
+    this.characteristics,
+    this.commercialInformation,
     this.originCountry,
     required this.currency,
     this.minOrderQuantity,
     this.unitWeightKg,
     required this.priceTiers,
+    this.variants = const [],
     this.image,
+    this.images = const [],
   });
 
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
     id: j['id'] as int,
     name: j['name']?.toString() ?? '',
     description: j['description']?.toString(),
+    characteristics: j['characteristics']?.toString(),
+    commercialInformation: j['commercial_information']?.toString(),
     originCountry: j['origin_country']?.toString(),
     currency: j['currency']?.toString() ?? 'XAF',
     minOrderQuantity: (j['min_order_quantity'] as num?)?.toInt(),
@@ -117,7 +129,18 @@ class WholesaleProduct {
             ?.map((e) => PriceTier.fromJson(Map<String, dynamic>.from(e)))
             .toList() ??
         const [],
+    variants:
+        (j['variants'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        const [],
     image: j['image']?.toString(),
+    images:
+        (j['images'] as List?)
+            ?.map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList() ??
+        const [],
   );
 
   /// Prix d'entrée = plus petit prix parmi les paliers (pour l'affichage « à partir de »).

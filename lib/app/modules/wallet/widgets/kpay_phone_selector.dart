@@ -13,7 +13,8 @@ class KpayPhoneSelector extends StatefulWidget {
     required String? phoneNumber,
     required String currency,
     required bool isValid,
-  }) onChanged;
+  })
+  onChanged;
 
   const KpayPhoneSelector({super.key, required this.onChanged});
 
@@ -40,11 +41,14 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
     super.dispose();
   }
 
-  String get _localDigits => _phoneController.text.replaceAll(RegExp(r'\D'), '');
+  String get _localDigits =>
+      _phoneController.text.replaceAll(RegExp(r'\D'), '');
 
   bool get _isValid {
-    // Numéro local raisonnable (6 à 12 chiffres selon le pays).
     final len = _localDigits.length;
+    // Au Cameroun, un numéro mobile local contient exactement 9 chiffres.
+    if (_country.iso3 == 'CMR') return len == 9;
+    // Les autres pays KPay conservent leur plage autorisée par le fournisseur.
     return len >= 6 && len <= 12;
   }
 
@@ -72,8 +76,10 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
           children: [
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Sélectionnez votre pays',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Sélectionnez votre pays',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
             Flexible(
               child: ListView.builder(
@@ -84,8 +90,13 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
                   return ListTile(
                     leading: Text(c.flag, style: const TextStyle(fontSize: 26)),
                     title: Text(c.name),
-                    trailing: Text('+${c.dialCode}',
-                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+                    trailing: Text(
+                      '+${c.dialCode}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     onTap: () => Navigator.pop(ctx, c),
                   );
                 },
@@ -128,9 +139,19 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
               children: [
                 Text(_country.flag, style: const TextStyle(fontSize: 24)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(_country.name, style: const TextStyle(fontSize: 16))),
-                Text('+${_country.dialCode}',
-                    style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+                Expanded(
+                  child: Text(
+                    _country.name,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+                Text(
+                  '+${_country.dialCode}',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
               ],
             ),
@@ -164,7 +185,10 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         const SizedBox(height: 16),
 
         // --- Numéro ---
-        const Text('Numéro Mobile Money', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text(
+          'Numéro Mobile Money',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: _phoneController,
@@ -173,10 +197,15 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
           decoration: InputDecoration(
             prefixIcon: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              child: Text('${_country.flag} +${_country.dialCode}',
-                  style: const TextStyle(fontSize: 16)),
+              child: Text(
+                '${_country.flag} +${_country.dialCode}',
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
             hintText: 'Ex. 670000001',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             enabledBorder: OutlineInputBorder(
@@ -186,9 +215,14 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
           ),
         ),
         if (_phoneController.text.isNotEmpty && !_isValid)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 6),
-            child: Text('Numéro invalide', style: TextStyle(color: Colors.red, fontSize: 12)),
+            child: Text(
+              _country.iso3 == 'CMR'
+                  ? 'Saisissez les 9 chiffres du numéro'
+                  : 'Numéro incomplet ou invalide',
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
           ),
       ],
     );

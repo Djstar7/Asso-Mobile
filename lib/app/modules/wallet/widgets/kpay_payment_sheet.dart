@@ -36,6 +36,8 @@ class KpayDirectPaymentSheet extends StatefulWidget {
 }
 
 class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _payButtonKey = GlobalKey();
   String? _provider;
   String? _phone;
   bool _valid = false;
@@ -44,29 +46,64 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
   double? _converted; // montant converti dans la devise de l'opérateur
   bool _converting = false;
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _keepPaymentButtonVisible() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final buttonContext = _payButtonKey.currentContext;
+      if (!mounted ||
+          buttonContext == null ||
+          MediaQuery.viewInsetsOf(context).bottom == 0)
+        return;
+      Scrollable.ensureVisible(
+        buttonContext,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        alignment: 1,
+      );
+    });
+  }
+
   /// Convertit le montant (XAF) dans la devise de l'opérateur sélectionné.
   /// Purement pour l'affichage : la conversion débitée est refaite côté serveur.
   Future<void> _convertFor(String currency) async {
     if (currency == 'XAF' || currency.isEmpty) {
-      if (mounted) setState(() { _currency = 'XAF'; _converted = null; _converting = false; });
+      if (mounted)
+        setState(() {
+          _currency = 'XAF';
+          _converted = null;
+          _converting = false;
+        });
       return;
     }
-    setState(() { _currency = currency; _converting = true; });
+    setState(() {
+      _currency = currency;
+      _converting = true;
+    });
     try {
-      final res = await ApiProvider.get('/v1/currencies/convert', queryParams: {
-        'from': 'XAF',
-        'to': currency,
-        'amount': widget.amount,
-      });
+      final res = await ApiProvider.get(
+        '/v1/currencies/convert',
+        queryParams: {'from': 'XAF', 'to': currency, 'amount': widget.amount},
+      );
       final value = res.data?['data']?['converted'];
       if (mounted) {
         setState(() {
-          _converted = (value is num) ? value.toDouble() : double.tryParse('$value');
+          _converted = (value is num)
+              ? value.toDouble()
+              : double.tryParse('$value');
           _converting = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() { _converted = null; _converting = false; });
+      if (mounted)
+        setState(() {
+          _converted = null;
+          _converting = false;
+        });
     }
   }
 
@@ -80,6 +117,8 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: SingleChildScrollView(
+        controller: _scrollController,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,8 +134,10 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                 ),
               ),
             ),
-            const Text('Paiement KPay',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(
+              'Paiement KPay',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
 
             // Montant à payer
@@ -112,17 +153,23 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(widget.amountLabel,
-                          style: TextStyle(color: Colors.grey.shade700)),
-                      Text('${widget.amount.toStringAsFixed(0)} FCFA',
-                          style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFFF7900))),
+                      Text(
+                        widget.amountLabel,
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                      Text(
+                        '${widget.amount.toStringAsFixed(0)} FCFA',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF7900),
+                        ),
+                      ),
                     ],
                   ),
                   // Montant converti dans la devise de l'opérateur (affichage)
-                  if (_currency != 'XAF' && (_converting || _converted != null)) ...[
+                  if (_currency != 'XAF' &&
+                      (_converting || _converted != null)) ...[
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Divider(height: 1),
@@ -132,20 +179,37 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.sync_alt_rounded, size: 15, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.sync_alt_rounded,
+                              size: 15,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 6),
-                            Text('Débité par votre opérateur',
-                                style: TextStyle(color: Colors.grey.shade700, fontSize: 12.5)),
+                            Text(
+                              'Débité par votre opérateur',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 12.5,
+                              ),
+                            ),
                           ],
                         ),
                         _converting
                             ? const SizedBox(
-                                width: 14, height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
-                            : Text('≈ ${_converted!.toStringAsFixed(0)} $_currency',
+                            : Text(
+                                '≈ ${_converted!.toStringAsFixed(0)} $_currency',
                                 style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1B2530))),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1B2530),
+                                ),
+                              ),
                       ],
                     ),
                   ],
@@ -155,44 +219,48 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
             const SizedBox(height: 20),
 
             KpayPhoneSelector(
-              onChanged: ({
-                required String? providerCode,
-                required String? phoneNumber,
-                required String currency,
-                required bool isValid,
-              }) {
-                setState(() {
-                  _provider = providerCode;
-                  _phone = phoneNumber;
-                  _valid = isValid;
-                });
-                // Convertir l'affichage dès que la devise de l'opérateur change
-                if (currency != _currency) {
-                  _convertFor(currency);
-                }
-              },
+              onChanged:
+                  ({
+                    required String? providerCode,
+                    required String? phoneNumber,
+                    required String currency,
+                    required bool isValid,
+                  }) {
+                    setState(() {
+                      _provider = providerCode;
+                      _phone = phoneNumber;
+                      _valid = isValid;
+                    });
+                    _keepPaymentButtonVisible();
+                    // Convertir l'affichage dès que la devise de l'opérateur change
+                    if (currency != _currency) {
+                      _convertFor(currency);
+                    }
+                  },
             ),
             const SizedBox(height: 24),
 
             SizedBox(
+              key: _payButtonKey,
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 onPressed: (_valid && _provider != null && _phone != null)
-                    ? () => Get.back(result: {
-                          'provider': _provider!,
-                          'phone': _phone!,
-                        })
+                    ? () => Get.back(
+                        result: {'provider': _provider!, 'phone': _phone!},
+                      )
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF7900),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Payer maintenant',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Payer maintenant',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],

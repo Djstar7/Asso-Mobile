@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/login_controller.dart';
+import '../../../data/providers/auth_service.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
@@ -38,6 +39,14 @@ class LoginView extends GetView<LoginController> {
 
               _buildPasswordForm(context),
 
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _showPasswordReset(context),
+                  child: const Text('Mot de passe oublié ?'),
+                ),
+              ),
+
               SizedBox(height: context.sectionSpacing),
 
               // Bouton de connexion
@@ -49,7 +58,7 @@ class LoginView extends GetView<LoginController> {
               _buildDivider(context),
 
               SizedBox(height: context.sectionSpacing),
-              
+
               // Lien vers inscription
               _buildRegisterLink(context),
             ],
@@ -186,9 +195,7 @@ class LoginView extends GetView<LoginController> {
               vertical: context.verticalPadding * 0.75,
             ),
           ),
-          style: context.body1.copyWith(
-            color: context.primaryTextColor,
-          ),
+          style: context.body1.copyWith(color: context.primaryTextColor),
         ),
       ],
     );
@@ -211,52 +218,145 @@ class LoginView extends GetView<LoginController> {
         SizedBox(height: context.elementSpacing),
 
         // Champ mot de passe
-        Obx(() => TextField(
-          controller: controller.passwordController,
-          obscureText: controller.obscurePassword.value,
-          onChanged: (value) => controller.password.value = value,
-          decoration: InputDecoration(
-            hintText: 'Votre mot de passe',
-            hintStyle: context.body1.copyWith(
-              color: context.secondaryTextColor,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                controller.obscurePassword.value
-                    ? Icons.visibility_off
-                    : Icons.visibility,
+        Obx(
+          () => TextField(
+            controller: controller.passwordController,
+            obscureText: controller.obscurePassword.value,
+            onChanged: (value) => controller.password.value = value,
+            decoration: InputDecoration(
+              hintText: 'Votre mot de passe',
+              hintStyle: context.body1.copyWith(
                 color: context.secondaryTextColor,
               ),
-              onPressed: controller.togglePasswordVisibility,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor, width: 1.5),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor, width: 1.5),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: const BorderSide(
-                color: AppThemeSystem.primaryColor,
-                width: 2,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  controller.obscurePassword.value
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                  color: context.secondaryTextColor,
+                ),
+                onPressed: controller.togglePasswordVisibility,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: BorderSide(color: context.borderColor, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: BorderSide(color: context.borderColor, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: const BorderSide(
+                  color: AppThemeSystem.primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: context.inputFieldColor,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: context.horizontalPadding,
+                vertical: context.verticalPadding * 0.75,
               ),
             ),
-            filled: true,
-            fillColor: context.inputFieldColor,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: context.horizontalPadding,
-              vertical: context.verticalPadding * 0.75,
-            ),
+            style: context.body1.copyWith(color: context.primaryTextColor),
           ),
-          style: context.body1.copyWith(
-            color: context.primaryTextColor,
-          ),
-        )),
+        ),
       ],
     );
+  }
+
+  /// Bouton de connexion
+  Future<void> _showPasswordReset(BuildContext context) async {
+    final email = TextEditingController(text: controller.email.value);
+    final code = TextEditingController();
+    final password = TextEditingController();
+    var codeSent = false;
+    var loading = false;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Réinitialiser le mot de passe'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: email,
+                enabled: !codeSent,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Adresse e-mail'),
+              ),
+              if (codeSent) ...[
+                TextField(
+                  controller: code,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: const InputDecoration(
+                    labelText: 'Code reçu par e-mail',
+                  ),
+                ),
+                TextField(
+                  controller: password,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nouveau mot de passe',
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: loading ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: loading
+                  ? null
+                  : () async {
+                      setState(() => loading = true);
+                      final response = codeSent
+                          ? await AuthService.resetPassword(
+                              email: email.text.trim(),
+                              code: code.text.trim(),
+                              password: password.text,
+                            )
+                          : await AuthService.requestPasswordReset(
+                              email.text.trim(),
+                            );
+                      if (!dialogContext.mounted) return;
+                      setState(() => loading = false);
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            response.message ??
+                                (response.success
+                                    ? 'Opération réussie'
+                                    : 'Une erreur est survenue'),
+                          ),
+                        ),
+                      );
+                      if (response.success) {
+                        if (codeSent)
+                          Navigator.pop(dialogContext);
+                        else
+                          setState(() => codeSent = true);
+                      }
+                    },
+              child: Text(
+                loading
+                    ? 'Veuillez patienter…'
+                    : (codeSent ? 'Modifier' : 'Envoyer le code'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    email.dispose();
+    code.dispose();
+    password.dispose();
   }
 
   /// Bouton de connexion
@@ -307,12 +407,7 @@ class LoginView extends GetView<LoginController> {
   Widget _buildDivider(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: context.borderColor,
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: context.borderColor)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: context.elementSpacing),
           child: Text(
@@ -323,15 +418,11 @@ class LoginView extends GetView<LoginController> {
             ),
           ),
         ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: context.borderColor,
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: context.borderColor)),
       ],
     );
   }
+
   /// Lien vers inscription
   Widget _buildRegisterLink(BuildContext context) {
     return Center(
@@ -339,9 +430,7 @@ class LoginView extends GetView<LoginController> {
         onPressed: controller.goToRegister,
         child: RichText(
           text: TextSpan(
-            style: context.body2.copyWith(
-              color: context.secondaryTextColor,
-            ),
+            style: context.body2.copyWith(color: context.secondaryTextColor),
             children: [
               const TextSpan(text: 'Pas encore de compte ? '),
               TextSpan(

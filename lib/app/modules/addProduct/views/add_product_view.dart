@@ -17,18 +17,17 @@ class AddProductView extends GetView<AddProductController> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-          ),
+          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
           onPressed: () => Get.back(),
         ),
-        title: Obx(() => Text(
-          controller.isEditMode.value ? 'Modifier le produit' : 'Ajouter un produit',
-          style: context.h5.copyWith(
-            fontWeight: FontWeight.w600,
+        title: Obx(
+          () => Text(
+            controller.isEditMode.value
+                ? 'Modifier le produit'
+                : 'Ajouter un produit',
+            style: context.h5.copyWith(fontWeight: FontWeight.w600),
           ),
-        )),
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -44,7 +43,9 @@ class AddProductView extends GetView<AddProductController> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                        color: AppThemeSystem.primaryColor.withValues(
+                          alpha: 0.1,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -58,9 +59,7 @@ class AddProductView extends GetView<AddProductController> {
                 SizedBox(height: context.sectionSpacing),
                 Text(
                   'Chargement des données...',
-                  style: context.h6.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: context.h6.copyWith(fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: context.elementSpacing * 0.5),
                 Text(
@@ -76,124 +75,129 @@ class AddProductView extends GetView<AddProductController> {
         }
 
         return SingleChildScrollView(
-        padding: EdgeInsets.only(
-          left: context.horizontalPadding,
-          right: context.horizontalPadding,
-          top: context.verticalPadding,
-          bottom: MediaQuery.of(context).viewPadding.bottom + context.verticalPadding * 2,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section Images
-            _buildImagesSection(context),
-            SizedBox(height: context.elementSpacing),
-            // Bouton d'analyse AI
-            // _buildAIAnalysisButton(context),
-            // SizedBox(height: context.sectionSpacing),
-            // Nom du produit
-            _buildNameSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Catégorie (Bottom sheet)
-            _buildCategorySelector(context),
-            SizedBox(height: context.sectionSpacing),
-            // Sous-catégorie (Bottom sheet)
-            _buildSubcategorySelector(context),
-            SizedBox(height: context.sectionSpacing),
-            // Prix
-            _buildPriceSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Description
-            _buildDescriptionSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Poids du produit
-            _buildWeightSection(context),
-            SizedBox(height: context.sectionSpacing),
-            _buildSizesSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Stock
-            _buildStockSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Espace de stockage
-            _buildStorageSection(context),
-            SizedBox(height: context.sectionSpacing),
-            // Bouton de soumission
-            _buildSubmitButton(context),
-            SizedBox(height: context.elementSpacing),
-          ],
-        ),
-      );
+          padding: EdgeInsets.only(
+            left: context.horizontalPadding,
+            right: context.horizontalPadding,
+            top: context.verticalPadding,
+            bottom:
+                MediaQuery.of(context).viewPadding.bottom +
+                context.verticalPadding * 2,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section Images
+              _buildImagesSection(context),
+              SizedBox(height: context.elementSpacing),
+              // Bouton d'analyse AI
+              // _buildAIAnalysisButton(context),
+              // SizedBox(height: context.sectionSpacing),
+              // Nom du produit
+              _buildNameSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Catégorie (Bottom sheet)
+              _buildCategorySelector(context),
+              SizedBox(height: context.sectionSpacing),
+              // Sous-catégorie (Bottom sheet)
+              _buildSubcategorySelector(context),
+              SizedBox(height: context.sectionSpacing),
+              // Prix
+              _buildPriceSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Description
+              _buildDescriptionSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Poids du produit
+              _buildWeightSection(context),
+              SizedBox(height: context.sectionSpacing),
+              _buildSizesSection(context),
+              SizedBox(height: context.sectionSpacing),
+              _buildVariantsSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Stock
+              _buildStockSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Espace de stockage
+              _buildStorageSection(context),
+              SizedBox(height: context.sectionSpacing),
+              // Bouton de soumission
+              _buildSubmitButton(context),
+              SizedBox(height: context.elementSpacing),
+            ],
+          ),
+        );
       }),
     );
   }
 
   /// Section Images avec sélection multiple et choix de l'image primaire
-Widget _buildImagesSection(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Text(
-            'Images du produit',
-            style: context.h5.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildImagesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Images du produit',
+              style: context.h5.copyWith(fontWeight: FontWeight.bold),
             ),
-            child: Text(
-              'Obligatoire',
-              style: context.caption.copyWith(
-                color: AppThemeSystem.errorColor,
-                fontWeight: FontWeight.w600,
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Obligatoire',
+                style: context.caption.copyWith(
+                  color: AppThemeSystem.errorColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      SizedBox(height: context.elementSpacing * 0.5),
-      Text(
-        'Ajoutez plusieurs images et sélectionnez l\'image principale',
-        style: context.caption.copyWith(color: context.secondaryTextColor),
-      ),
-      SizedBox(height: context.elementSpacing),
+          ],
+        ),
+        SizedBox(height: context.elementSpacing * 0.5),
+        Text(
+          'Ajoutez plusieurs images et sélectionnez l\'image principale',
+          style: context.caption.copyWith(color: context.secondaryTextColor),
+        ),
+        SizedBox(height: context.elementSpacing),
 
-      Obx(() {
-        final existingCount = controller.existingImages.length;
-        final newCount = controller.productImages.length;
-        final total = existingCount + newCount;
+        Obx(() {
+          final existingCount = controller.existingImages.length;
+          final newCount = controller.productImages.length;
+          final total = existingCount + newCount;
 
-        return SizedBox(
-          height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildAddImageButton(
-                context,
-                icon: Icons.add_photo_alternate,
-                label: 'Upload Images',
-                onTap: () => _showImageSourceBottomSheet(context),
-              ),
-              SizedBox(width: context.elementSpacing),
+          return SizedBox(
+            height: 120,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildAddImageButton(
+                  context,
+                  icon: Icons.add_photo_alternate,
+                  label: 'Upload Images',
+                  onTap: () => _showImageSourceBottomSheet(context),
+                ),
+                SizedBox(width: context.elementSpacing),
 
-              // Liste combinée : images existantes (réseau) + nouvelles (locales)
-              ...List.generate(total, (index) {
-                return Padding(
-                  padding: EdgeInsets.only(right: context.elementSpacing),
-                  child: _buildImageThumbnail(context, index),
-                );
-              }),
-            ],
-          ),
-        );
-      }),
-    ],
-  );
-}
+                // Liste combinée : images existantes (réseau) + nouvelles (locales)
+                ...List.generate(total, (index) {
+                  return Padding(
+                    padding: EdgeInsets.only(right: context.elementSpacing),
+                    child: _buildImageThumbnail(context, index),
+                  );
+                }),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   /// Bouton d'analyse AI avec Gemini
   Widget _buildAIAnalysisButton(BuildContext context) {
     return Obx(() {
@@ -226,8 +230,8 @@ Widget _buildImagesSection(BuildContext context) {
             isAnalyzing
                 ? 'Analyse en cours...'
                 : hasImages
-                    ? 'Analyser avec l\'IA'
-                    : 'Ajoutez une image pour analyser',
+                ? 'Analyser avec l\'IA'
+                : 'Ajoutez une image pour analyser',
             style: context.body1.copyWith(
               color: hasImages ? Colors.white : Colors.grey,
               fontWeight: FontWeight.w600,
@@ -309,104 +313,178 @@ Widget _buildImagesSection(BuildContext context) {
     );
   }
 
-Widget _buildImageThumbnail(BuildContext context, int index) {
-  return Obx(() {
-    final existingCount = controller.existingImages.length;
-    final isExisting = index < existingCount;
-    final isPrimary = controller.primaryImageIndex.value == index;
+  Widget _buildImageThumbnail(BuildContext context, int index) {
+    return Obx(() {
+      final existingCount = controller.existingImages.length;
+      final isExisting = index < existingCount;
+      final isPrimary = controller.primaryImageIndex.value == index;
 
-    Widget imageWidget;
-    if (isExisting) {
-      final url = controller.existingImages[index]['url'] as String;
-      imageWidget = Image.network(
-        url,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              value: progress.expectedTotalBytes != null
-                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: context.surfaceColor,
-            child: Icon(Icons.broken_image, color: context.secondaryTextColor),
-          );
-        },
-      );
-    } else {
-      final newIndex = index - existingCount;
-      imageWidget = MediaHelper.buildImagePreview(
-        controller.productImages[newIndex],
-        fit: BoxFit.cover,
-      );
-    }
-
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: () => controller.setPrimaryImage(index),
-          child: Container(
-            width: 100,
-            decoration: BoxDecoration(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              border: Border.all(
-                color: isPrimary ? AppThemeSystem.successColor : context.borderColor,
-                width: isPrimary ? 3 : 1,
+      Widget imageWidget;
+      if (isExisting) {
+        final url = controller.existingImages[index]['url'] as String;
+        imageWidget = Image.network(
+          url,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: progress.expectedTotalBytes != null
+                    ? progress.cumulativeBytesLoaded /
+                          progress.expectedTotalBytes!
+                    : null,
               ),
-            ),
-            child: ClipRRect(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              child: imageWidget,
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: context.surfaceColor,
+              child: Icon(
+                Icons.broken_image,
+                color: context.secondaryTextColor,
+              ),
+            );
+          },
+        );
+      } else {
+        final newIndex = index - existingCount;
+        imageWidget = MediaHelper.buildImagePreview(
+          controller.productImages[newIndex],
+          fit: BoxFit.cover,
+        );
+      }
+
+      return Stack(
+        children: [
+          GestureDetector(
+            onTap: () => controller.setPrimaryImage(index),
+            child: Container(
+              width: 100,
+              decoration: BoxDecoration(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                border: Border.all(
+                  color: isPrimary
+                      ? AppThemeSystem.successColor
+                      : context.borderColor,
+                  width: isPrimary ? 3 : 1,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                child: imageWidget,
+              ),
             ),
           ),
-        ),
 
-        if (isPrimary)
-          Positioned(
-            top: 4,
-            left: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.successColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'Principale',
-                style: context.caption.copyWith(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+          if (isPrimary)
+            Positioned(
+              top: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.successColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Principale',
+                  style: context.caption.copyWith(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
 
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: () => controller.removeImage(index),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.errorColor,
-                shape: BoxShape.circle,
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => controller.removeImage(index),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.errorColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
               ),
-              child: const Icon(Icons.close, color: Colors.white, size: 16),
             ),
           ),
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => _showSelectedImage(context, index),
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.zoom_in, color: Colors.white, size: 18),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  void _showSelectedImage(BuildContext context, int index) {
+    final existingCount = controller.existingImages.length;
+    final isExisting = index < existingCount;
+    final image = isExisting
+        ? Image.network(
+            controller.existingImages[index]['url'] as String,
+            fit: BoxFit.contain,
+          )
+        : MediaHelper.buildImagePreview(
+            controller.productImages[index - existingCount],
+            fit: BoxFit.contain,
+          );
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: Center(child: image),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                ),
+              ),
+            ),
+            const Positioned(
+              bottom: 24,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Text(
+                  'Pincez pour zoomer',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
-  });
-}
+  }
+
   /// Section Nom du produit
   Widget _buildNameSection(BuildContext context) {
     return Column(
@@ -414,9 +492,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
       children: [
         Text(
           'Nom du produit *',
-          style: context.subtitle1.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
         TextField(
@@ -447,7 +523,6 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
     );
   }
 
-
   /// Sélecteur de catégorie avec bottom sheet
   Widget _buildCategorySelector(BuildContext context) {
     return Obx(() {
@@ -458,9 +533,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
         children: [
           Text(
             'Catégorie *',
-            style: context.subtitle1.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
           GestureDetector(
@@ -526,9 +599,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
         children: [
           Text(
             'Sous-catégorie *',
-            style: context.subtitle1.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
           GestureDetector(
@@ -622,9 +693,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
               // Titre
               Text(
                 'Ajouter des images',
-                style: context.h5.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: context.h5.copyWith(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: context.sectionSpacing),
 
@@ -675,10 +744,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
         decoration: BoxDecoration(
           color: context.surfaceColor,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
+          border: Border.all(color: context.borderColor, width: 1),
         ),
         child: Row(
           children: [
@@ -688,11 +754,7 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                 color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
                 borderRadius: context.borderRadius(BorderRadiusType.small),
               ),
-              child: Icon(
-                icon,
-                color: AppThemeSystem.primaryColor,
-                size: 28,
-              ),
+              child: Icon(icon, color: AppThemeSystem.primaryColor, size: 28),
             ),
             SizedBox(width: context.elementSpacing),
             Expanded(
@@ -756,7 +818,10 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                   color: context.surfaceColor,
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(
-                      AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+                      AppThemeSystem.getBorderRadius(
+                        context,
+                        BorderRadiusType.large,
+                      ),
                     ),
                   ),
                   border: Border(
@@ -801,7 +866,9 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                         filled: true,
                         fillColor: context.backgroundColor,
                         border: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderRadius: context.borderRadius(
+                            BorderRadiusType.medium,
+                          ),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: EdgeInsets.symmetric(
@@ -813,7 +880,11 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                           filteredCategories.value = categories;
                         } else {
                           filteredCategories.value = categories
-                              .where((cat) => cat.toLowerCase().contains(value.toLowerCase()))
+                              .where(
+                                (cat) => cat.toLowerCase().contains(
+                                  value.toLowerCase(),
+                                ),
+                              )
                               .toList();
                         }
                       },
@@ -833,13 +904,12 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                       bottom: context.bottomSheetPadding,
                     ),
                     itemCount: filteredCategories.length,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: context.borderColor,
-                    ),
+                    separatorBuilder: (context, index) =>
+                        Divider(height: 1, color: context.borderColor),
                     itemBuilder: (context, index) {
                       final category = filteredCategories[index];
-                      final isSelected = controller.selectedCategory.value == category;
+                      final isSelected =
+                          controller.selectedCategory.value == category;
 
                       return ListTile(
                         leading: Icon(
@@ -851,7 +921,9 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                         title: Text(
                           category,
                           style: context.body1.copyWith(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: isSelected
                                 ? AppThemeSystem.primaryColor
                                 : context.primaryTextColor,
@@ -917,7 +989,10 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                   color: context.surfaceColor,
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(
-                      AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+                      AppThemeSystem.getBorderRadius(
+                        context,
+                        BorderRadiusType.large,
+                      ),
                     ),
                   ),
                   border: Border(
@@ -964,7 +1039,9 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                         filled: true,
                         fillColor: context.backgroundColor,
                         border: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderRadius: context.borderRadius(
+                            BorderRadiusType.medium,
+                          ),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: EdgeInsets.symmetric(
@@ -976,8 +1053,11 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                           filteredSubcategories.value = subcategories;
                         } else {
                           filteredSubcategories.value = subcategories
-                              .where((sub) =>
-                                  sub['name']!.toLowerCase().contains(value.toLowerCase()))
+                              .where(
+                                (sub) => sub['name']!.toLowerCase().contains(
+                                  value.toLowerCase(),
+                                ),
+                              )
                               .toList();
                         }
                       },
@@ -1014,13 +1094,13 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                       bottom: context.bottomSheetPadding,
                     ),
                     itemCount: filteredSubcategories.length,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: context.borderColor,
-                    ),
+                    separatorBuilder: (context, index) =>
+                        Divider(height: 1, color: context.borderColor),
                     itemBuilder: (context, index) {
                       final subcategory = filteredSubcategories[index];
-                      final isSelected = controller.selectedSubcategoryId.value == subcategory['id'];
+                      final isSelected =
+                          controller.selectedSubcategoryId.value ==
+                          subcategory['id'];
 
                       return ListTile(
                         leading: Icon(
@@ -1032,7 +1112,9 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                         title: Text(
                           subcategory['name']!,
                           style: context.body1.copyWith(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: isSelected
                                 ? AppThemeSystem.primaryColor
                                 : context.primaryTextColor,
@@ -1045,8 +1127,10 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
                               )
                             : null,
                         onTap: () {
-                          controller.selectedSubcategory.value = subcategory['name'];
-                          controller.selectedSubcategoryId.value = subcategory['id'];
+                          controller.selectedSubcategory.value =
+                              subcategory['name'];
+                          controller.selectedSubcategoryId.value =
+                              subcategory['id'];
                           Navigator.pop(context);
                         },
                       );
@@ -1061,7 +1145,6 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
     );
   }
 
-
   /// Section Prix
   Widget _buildPriceSection(BuildContext context) {
     return Column(
@@ -1069,41 +1152,47 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
       children: [
         Text(
           'Prix *',
-          style: context.subtitle1.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Obx(() => TextField(
-                    controller: controller.priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Entrez le prix',
-                      filled: true,
-                      fillColor: context.inputFieldColor,
-                      prefixIcon: const Icon(Icons.payments_outlined),
-                      suffixText: controller.selectedCurrencySymbol,
-                      border: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
+              child: Obx(
+                () => TextField(
+                  controller: controller.priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: 'Entrez le prix',
+                    filled: true,
+                    fillColor: context.inputFieldColor,
+                    prefixIcon: const Icon(Icons.payments_outlined),
+                    suffixText: controller.selectedCurrencySymbol,
+                    border: OutlineInputBorder(
+                      borderRadius: context.borderRadius(
+                        BorderRadiusType.medium,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
+                      borderSide: BorderSide(color: context.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: context.borderRadius(
+                        BorderRadiusType.medium,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: const BorderSide(
-                          color: AppThemeSystem.primaryColor,
-                          width: 2,
-                        ),
+                      borderSide: BorderSide(color: context.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: context.borderRadius(
+                        BorderRadiusType.medium,
+                      ),
+                      borderSide: const BorderSide(
+                        color: AppThemeSystem.primaryColor,
+                        width: 2,
                       ),
                     ),
-                  )),
+                  ),
+                ),
+              ),
             ),
             SizedBox(width: context.elementSpacing),
             _buildCurrencySelector(context),
@@ -1118,227 +1207,237 @@ Widget _buildImageThumbnail(BuildContext context, int index) {
     );
   }
 
-/// Sélecteur de devise du prix — bottom sheet avec recherche (remplace le dropdown)
-Widget _buildCurrencySelector(BuildContext context) {
-  return Obx(() {
-    final currencies = controller.availableCurrencies;
-    final selectedCode = controller.selectedCurrency.value;
-    final selected = currencies.firstWhereOrNull((c) => c.code == selectedCode);
+  /// Sélecteur de devise du prix — bottom sheet avec recherche (remplace le dropdown)
+  Widget _buildCurrencySelector(BuildContext context) {
+    return Obx(() {
+      final currencies = controller.availableCurrencies;
+      final selectedCode = controller.selectedCurrency.value;
+      final selected = currencies.firstWhereOrNull(
+        (c) => c.code == selectedCode,
+      );
 
-    return GestureDetector(
-      onTap: () => _showCurrencyBottomSheet(context),
-      child: Container(
-        height: 56, // aligné avec la hauteur du TextField du prix
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: context.inputFieldColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              selected?.code ?? selectedCode,
-              style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.arrow_drop_down,
-              color: context.secondaryTextColor,
-            ),
-          ],
-        ),
-      ),
-    );
-  });
-}
-
-/// Bottom sheet pour sélectionner la devise, avec recherche (code ou nom)
-void _showCurrencyBottomSheet(BuildContext context) {
-  final searchController = TextEditingController();
-  final allCurrencies = controller.availableCurrencies.isNotEmpty
-      ? controller.availableCurrencies
-      : <CurrencyModel>[];
-  final filteredCurrencies = <CurrencyModel>[].obs;
-  filteredCurrencies.value = allCurrencies;
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: context.backgroundColor,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-              AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-            ),
+      return GestureDetector(
+        onTap: () => _showCurrencyBottomSheet(context),
+        child: Container(
+          height: 56, // aligné avec la hauteur du TextField du prix
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: context.inputFieldColor,
+            borderRadius: context.borderRadius(BorderRadiusType.medium),
+            border: Border.all(color: context.borderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                selected?.code ?? selectedCode,
+                style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_drop_down, color: context.secondaryTextColor),
+            ],
           ),
         ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: EdgeInsets.all(context.horizontalPadding),
-              decoration: BoxDecoration(
-                color: context.surfaceColor,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
-                    AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-                  ),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: context.borderColor),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Handle
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.borderColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  SizedBox(height: context.elementSpacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Sélectionner une devise',
-                          style: context.h5.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.elementSpacing),
-                  // Barre de recherche
-                  TextField(
-                    controller: searchController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher par code ou nom...',
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: context.backgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: context.horizontalPadding,
-                      ),
-                    ),
-                    onChanged: (value) {
-                      if (value.isEmpty) {
-                        filteredCurrencies.value = allCurrencies;
-                      } else {
-                        final query = value.toLowerCase();
-                        filteredCurrencies.value = allCurrencies.where((c) {
-                          return c.code.toLowerCase().contains(query) ||
-                              c.name.toLowerCase().contains(query);
-                        }).toList();
-                      }
-                    },
-                  ),
-                ],
+      );
+    });
+  }
+
+  /// Bottom sheet pour sélectionner la devise, avec recherche (code ou nom)
+  void _showCurrencyBottomSheet(BuildContext context) {
+    final searchController = TextEditingController();
+    final allCurrencies = controller.availableCurrencies.isNotEmpty
+        ? controller.availableCurrencies
+        : <CurrencyModel>[];
+    final filteredCurrencies = <CurrencyModel>[].obs;
+    filteredCurrencies.value = allCurrencies;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: context.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(
+                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
               ),
             ),
-
-            // Liste des devises
-            Expanded(
-              child: Obx(() {
-                if (filteredCurrencies.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(context.horizontalPadding),
-                      child: Text(
-                        'Aucune devise trouvée',
-                        style: context.body1.copyWith(
-                          color: context.secondaryTextColor,
-                        ),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: EdgeInsets.all(context.horizontalPadding),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(
+                      AppThemeSystem.getBorderRadius(
+                        context,
+                        BorderRadiusType.large,
                       ),
                     ),
-                  );
-                }
-
-                return ListView.separated(
-                  padding: EdgeInsets.only(
-                    left: context.horizontalPadding,
-                    right: context.horizontalPadding,
-                    top: context.horizontalPadding,
-                    bottom: context.bottomSheetPadding,
                   ),
-                  itemCount: filteredCurrencies.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: context.borderColor,
+                  border: Border(
+                    bottom: BorderSide(color: context.borderColor),
                   ),
-                  itemBuilder: (context, index) {
-                    final currency = filteredCurrencies[index];
-                    final isSelected = controller.selectedCurrency.value == currency.code;
+                ),
+                child: Column(
+                  children: [
+                    // Handle
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.borderColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    SizedBox(height: context.elementSpacing),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Sélectionner une devise',
+                            style: context.h5.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: context.elementSpacing),
+                    // Barre de recherche
+                    TextField(
+                      controller: searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher par code ou nom...',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: context.backgroundColor,
+                        border: OutlineInputBorder(
+                          borderRadius: context.borderRadius(
+                            BorderRadiusType.medium,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: context.horizontalPadding,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        if (value.isEmpty) {
+                          filteredCurrencies.value = allCurrencies;
+                        } else {
+                          final query = value.toLowerCase();
+                          filteredCurrencies.value = allCurrencies.where((c) {
+                            return c.code.toLowerCase().contains(query) ||
+                                c.name.toLowerCase().contains(query);
+                          }).toList();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isSelected
-                            ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                            : context.surfaceColor,
+              // Liste des devises
+              Expanded(
+                child: Obx(() {
+                  if (filteredCurrencies.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(context.horizontalPadding),
                         child: Text(
-                          currency.symbol,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? AppThemeSystem.primaryColor
-                                : context.secondaryTextColor,
+                          'Aucune devise trouvée',
+                          style: context.body1.copyWith(
+                            color: context.secondaryTextColor,
                           ),
                         ),
                       ),
-                      title: Text(
-                        currency.code,
-                        style: context.body1.copyWith(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected
-                              ? AppThemeSystem.primaryColor
-                              : context.primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        currency.name,
-                        style: context.caption.copyWith(
-                          color: context.secondaryTextColor,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: AppThemeSystem.successColor,
-                            )
-                          : null,
-                      onTap: () {
-                        controller.selectedCurrency.value = currency.code;
-                        Navigator.pop(context);
-                      },
                     );
-                  },
-                );
-              }),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+                  }
+
+                  return ListView.separated(
+                    padding: EdgeInsets.only(
+                      left: context.horizontalPadding,
+                      right: context.horizontalPadding,
+                      top: context.horizontalPadding,
+                      bottom: context.bottomSheetPadding,
+                    ),
+                    itemCount: filteredCurrencies.length,
+                    separatorBuilder: (context, index) =>
+                        Divider(height: 1, color: context.borderColor),
+                    itemBuilder: (context, index) {
+                      final currency = filteredCurrencies[index];
+                      final isSelected =
+                          controller.selectedCurrency.value == currency.code;
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isSelected
+                              ? AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.1,
+                                )
+                              : context.surfaceColor,
+                          child: Text(
+                            currency.symbol,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? AppThemeSystem.primaryColor
+                                  : context.secondaryTextColor,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          currency.code,
+                          style: context.body1.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? AppThemeSystem.primaryColor
+                                : context.primaryTextColor,
+                          ),
+                        ),
+                        subtitle: Text(
+                          currency.name,
+                          style: context.caption.copyWith(
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: AppThemeSystem.successColor,
+                              )
+                            : null,
+                        onTap: () {
+                          controller.selectedCurrency.value = currency.code;
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// Section Description
   Widget _buildDescriptionSection(BuildContext context) {
     return Column(
@@ -1346,9 +1445,7 @@ void _showCurrencyBottomSheet(BuildContext context) {
       children: [
         Text(
           'Description *',
-          style: context.subtitle1.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
         TextField(
@@ -1385,10 +1482,10 @@ void _showCurrencyBottomSheet(BuildContext context) {
       final selectedWeight = controller.selectedWeightType.value;
       final weightLabel = selectedWeight != null
           ? (selectedWeight == 'custom'
-              ? controller.customWeightValue.value.isNotEmpty
-                  ? '${controller.customWeightValue.value} kg'
-                  : 'Saisir le poids personnalisé'
-              : '$selectedWeight (${controller.weightTypes[selectedWeight]})')
+                ? controller.customWeightValue.value.isNotEmpty
+                      ? '${controller.customWeightValue.value} kg'
+                      : 'Saisir le poids personnalisé'
+                : '$selectedWeight (${controller.weightTypes[selectedWeight]})')
           : null;
 
       return Column(
@@ -1396,9 +1493,7 @@ void _showCurrencyBottomSheet(BuildContext context) {
         children: [
           Text(
             'Poids du produit *',
-            style: context.subtitle1.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
           GestureDetector(
@@ -1495,10 +1590,12 @@ void _showCurrencyBottomSheet(BuildContext context) {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.straighten,
-                      color: selected.isNotEmpty
-                          ? AppThemeSystem.primaryColor
-                          : context.secondaryTextColor),
+                  Icon(
+                    Icons.straighten,
+                    color: selected.isNotEmpty
+                        ? AppThemeSystem.primaryColor
+                        : context.secondaryTextColor,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1564,7 +1661,9 @@ void _showCurrencyBottomSheet(BuildContext context) {
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  children: controller.sizeGroupsForCategory.entries.map((group) {
+                  children: controller.sizeGroupsForCategory.entries.map((
+                    group,
+                  ) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1583,7 +1682,8 @@ void _showCurrencyBottomSheet(BuildContext context) {
                               onSelected: (value) => setSheetState(() {
                                 value ? draft.add(size) : draft.remove(size);
                               }),
-                              selectedColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                              selectedColor: AppThemeSystem.primaryColor
+                                  .withValues(alpha: 0.2),
                               checkmarkColor: AppThemeSystem.primaryColor,
                             );
                           }).toList(),
@@ -1620,7 +1720,9 @@ void _showCurrencyBottomSheet(BuildContext context) {
                 padding: EdgeInsets.all(context.horizontalPadding),
                 decoration: BoxDecoration(
                   color: context.surfaceColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                   border: Border(
                     bottom: BorderSide(color: context.borderColor),
                   ),
@@ -1667,15 +1769,16 @@ void _showCurrencyBottomSheet(BuildContext context) {
                     bottom: context.bottomSheetPadding,
                   ),
                   itemCount: controller.weightTypes.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: context.borderColor,
-                  ),
+                  separatorBuilder: (context, index) =>
+                      Divider(height: 1, color: context.borderColor),
                   itemBuilder: (context, index) {
-                    final entry = controller.weightTypes.entries.elementAt(index);
+                    final entry = controller.weightTypes.entries.elementAt(
+                      index,
+                    );
 
                     return Obx(() {
-                      final isSelected = controller.selectedWeightType.value == entry.key;
+                      final isSelected =
+                          controller.selectedWeightType.value == entry.key;
 
                       return ListTile(
                         leading: Icon(
@@ -1687,7 +1790,9 @@ void _showCurrencyBottomSheet(BuildContext context) {
                         title: Text(
                           entry.key,
                           style: context.body1.copyWith(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: isSelected
                                 ? AppThemeSystem.primaryColor
                                 : context.primaryTextColor,
@@ -1743,9 +1848,7 @@ void _showCurrencyBottomSheet(BuildContext context) {
             labelText: 'Poids en KG',
             hintText: 'Ex: 25.5',
             suffixText: 'KG',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.fitness_center),
           ),
         ),
@@ -1784,15 +1887,137 @@ void _showCurrencyBottomSheet(BuildContext context) {
   }
 
   /// Section Stock
+  Widget _buildVariantsSection(BuildContext context) {
+    return Obx(
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Variantes du produit',
+                  style: context.subtitle1.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => _showVariantDialog(context),
+                icon: const Icon(Icons.add),
+                label: const Text('Ajouter'),
+              ),
+            ],
+          ),
+          Text(
+            'Exemples : Couleur: Rouge; Taille: M ou Pointure: 42',
+            style: context.caption,
+          ),
+          if (controller.variants.isNotEmpty) ...[
+            SizedBox(height: context.elementSpacing),
+            ...controller.variants.asMap().entries.map(
+              (entry) => Card(
+                child: ListTile(
+                  leading: const Icon(Icons.tune),
+                  title: Text(entry.value['attributes'] ?? ''),
+                  subtitle: Text(
+                    'Stock : ${entry.value['stock']} · SKU : ${entry.value['sku']?.isEmpty == true ? '—' : entry.value['sku']}',
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => controller.removeVariant(entry.key),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showVariantDialog(BuildContext context) async {
+    final attributes = TextEditingController();
+    final stock = TextEditingController(text: '0');
+    final sku = TextEditingController();
+    final adjustment = TextEditingController(text: '0');
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ajouter une variante'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: attributes,
+                decoration: const InputDecoration(
+                  labelText: 'Attributs',
+                  hintText: 'Couleur: Rouge; Taille: M',
+                ),
+              ),
+              TextField(
+                controller: stock,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Stock'),
+              ),
+              TextField(
+                controller: sku,
+                decoration: const InputDecoration(
+                  labelText: 'Référence / SKU (facultatif)',
+                ),
+              ),
+              TextField(
+                controller: adjustment,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Écart de prix',
+                  hintText: '0',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (attributes.text.trim().isEmpty ||
+                  int.tryParse(stock.text) == null)
+                return;
+              controller.addVariant(
+                attributes: attributes.text,
+                stock: stock.text,
+                sku: sku.text,
+                priceAdjustment: adjustment.text,
+              );
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+    attributes.dispose();
+    stock.dispose();
+    sku.dispose();
+    adjustment.dispose();
+  }
+
+  /// Section Stock
   Widget _buildStockSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Quantité en stock *',
-          style: context.subtitle1.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
         TextField(
@@ -1835,9 +2060,7 @@ void _showCurrencyBottomSheet(BuildContext context) {
             Expanded(
               child: Text(
                 'Espace de stockage *',
-                style: context.subtitle1.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             TextButton.icon(
@@ -1895,20 +2118,14 @@ void _showCurrencyBottomSheet(BuildContext context) {
             decoration: BoxDecoration(
               color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
               borderRadius: context.borderRadius(BorderRadiusType.medium),
-              border: Border.all(
-                color: AppThemeSystem.primaryColor,
-                width: 2,
-              ),
+              border: Border.all(color: AppThemeSystem.primaryColor, width: 2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.storage,
-                      color: AppThemeSystem.primaryColor,
-                    ),
+                    Icon(Icons.storage, color: AppThemeSystem.primaryColor),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -1937,8 +2154,8 @@ void _showCurrencyBottomSheet(BuildContext context) {
                       percentageUsed > 80
                           ? AppThemeSystem.errorColor
                           : percentageUsed > 50
-                              ? AppThemeSystem.warningColor
-                              : AppThemeSystem.successColor,
+                          ? AppThemeSystem.warningColor
+                          : AppThemeSystem.successColor,
                     ),
                     minHeight: 14,
                   ),
@@ -1972,8 +2189,8 @@ void _showCurrencyBottomSheet(BuildContext context) {
                       color: percentageUsed > 80
                           ? AppThemeSystem.errorColor
                           : percentageUsed > 50
-                              ? AppThemeSystem.warningColor
-                              : AppThemeSystem.successColor,
+                          ? AppThemeSystem.warningColor
+                          : AppThemeSystem.successColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -2004,9 +2221,7 @@ void _showCurrencyBottomSheet(BuildContext context) {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppThemeSystem.primaryColor,
             foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(
-              vertical: context.verticalPadding,
-            ),
+            padding: EdgeInsets.symmetric(vertical: context.verticalPadding),
             shape: RoundedRectangleBorder(
               borderRadius: context.borderRadius(BorderRadiusType.medium),
             ),
@@ -2020,13 +2235,17 @@ void _showCurrencyBottomSheet(BuildContext context) {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : Obx(() => Text(
-                  controller.isEditMode.value ? 'Modifier le produit' : 'Ajouter le produit',
-                  style: context.button.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+              : Obx(
+                  () => Text(
+                    controller.isEditMode.value
+                        ? 'Modifier le produit'
+                        : 'Ajouter le produit',
+                    style: context.button.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                )),
+                ),
         ),
       );
     });

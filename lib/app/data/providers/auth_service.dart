@@ -7,6 +7,23 @@ import '../../core/utils/session_reset.dart';
 
 /// Authentication service with OTP support
 class AuthService {
+  static Future<ApiResponse> requestPasswordReset(String email) =>
+      ApiProvider.post(AppConstants.forgotPasswordUrl, body: {'email': email});
+
+  static Future<ApiResponse> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) => ApiProvider.post(
+    AppConstants.resetPasswordUrl,
+    body: {
+      'email': email,
+      'otp_code': code,
+      'password': password,
+      'password_confirmation': password,
+    },
+  );
+
   /// Send OTP to phone number (login/register)
   static Future<ApiResponse> sendOtp({
     required String phone,
@@ -18,10 +35,10 @@ class AuthService {
       error: 'Phone: $countryCode$phone',
     );
 
-    final response = await ApiProvider.post(AppConstants.sendOtpUrl, body: {
-      'phone': phone,
-      'country_code': countryCode,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.sendOtpUrl,
+      body: {'phone': phone, 'country_code': countryCode},
+    );
 
     developer.log(
       'OTP sent response',
@@ -37,7 +54,8 @@ class AuthService {
         developer.log(
           '🔓 OTP BYPASS DETECTED IN RESPONSE',
           name: 'AuthService',
-          error: 'Phone: $countryCode$phone, Channel: ${response.data!['channel']}',
+          error:
+              'Phone: $countryCode$phone, Channel: ${response.data!['channel']}',
         );
       }
 
@@ -64,10 +82,10 @@ class AuthService {
       error: 'Phone: $fullPhone, OTP: $otpCode',
     );
 
-    final response = await ApiProvider.post(AppConstants.verifyOtpUrl, body: {
-      'phone': fullPhone,
-      'otp_code': otpCode,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.verifyOtpUrl,
+      body: {'phone': fullPhone, 'otp_code': otpCode},
+    );
 
     developer.log(
       'OTP verification response',
@@ -91,7 +109,9 @@ class AuthService {
       final userData = response.data!['user'] as Map<String, dynamic>?;
       final isNewUser = response.data!['is_new_user'] as bool? ?? false;
 
-      print('📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}');
+      print(
+        '📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
+      );
       developer.log(
         'Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
         name: 'AuthService',
@@ -106,7 +126,9 @@ class AuthService {
         );
 
         final user = UserModel.fromJson(userData);
-        print('👤 User created from JSON: ID=${user.id}, Phone=${user.phone}, ProfileComplete=${user.isProfileComplete}');
+        print(
+          '👤 User created from JSON: ID=${user.id}, Phone=${user.phone}, ProfileComplete=${user.isProfileComplete}',
+        );
         developer.log(
           'User created from JSON: ID=${user.id}, Phone=${user.phone}, ProfileComplete=${user.isProfileComplete}',
           name: 'AuthService',
@@ -124,7 +146,9 @@ class AuthService {
         // Verify it was actually saved
         final savedToken = StorageService.getToken();
         final savedUser = StorageService.getUser();
-        print('🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}');
+        print(
+          '🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
+        );
         developer.log(
           'Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
           name: 'AuthService',
@@ -167,10 +191,10 @@ class AuthService {
       error: 'Phone: $countryCode$phone',
     );
 
-    final response = await ApiProvider.post(AppConstants.loginUrl, body: {
-      'phone': countryCode + phone,
-      'password': password,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.loginUrl,
+      body: {'phone': countryCode + phone, 'password': password},
+    );
 
     developer.log(
       'Login response',
@@ -183,10 +207,7 @@ class AuthService {
       final userData = response.data!['user'] as Map<String, dynamic>?;
 
       if (token != null && userData != null) {
-        developer.log(
-          'Login successful - saving session',
-          name: 'AuthService',
-        );
+        developer.log('Login successful - saving session', name: 'AuthService');
 
         final user = UserModel.fromJson(userData);
         StorageService.saveAuthSession(token, user);
@@ -228,13 +249,16 @@ class AuthService {
       error: 'Email: $email',
     );
 
-    final response = await ApiProvider.post(AppConstants.registerEmailUrl, body: {
-      'email': email,
-      'password': password,
-      'password_confirmation': passwordConfirmation,
-      if (firstName != null) 'first_name': firstName,
-      if (lastName != null) 'last_name': lastName,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.registerEmailUrl,
+      body: {
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+        if (firstName != null) 'first_name': firstName,
+        if (lastName != null) 'last_name': lastName,
+      },
+    );
 
     developer.log(
       'Register with email response',
@@ -243,7 +267,9 @@ class AuthService {
     );
 
     // Log OTP code in development mode
-    if (response.success && response.data != null && response.data!.containsKey('otp_code')) {
+    if (response.success &&
+        response.data != null &&
+        response.data!.containsKey('otp_code')) {
       developer.log(
         '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
         name: 'AuthService',
@@ -264,10 +290,10 @@ class AuthService {
       error: 'Email: $email',
     );
 
-    final response = await ApiProvider.post(AppConstants.loginEmailUrl, body: {
-      'email': email,
-      'password': password,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.loginEmailUrl,
+      body: {'email': email, 'password': password},
+    );
 
     developer.log(
       'Login with email response',
@@ -322,10 +348,10 @@ class AuthService {
       error: 'Email: $email, OTP: $otpCode',
     );
 
-    final response = await ApiProvider.post(AppConstants.verifyEmailOtpUrl, body: {
-      'email': email,
-      'otp_code': otpCode,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.verifyEmailOtpUrl,
+      body: {'email': email, 'otp_code': otpCode},
+    );
 
     developer.log(
       'Email OTP verification response',
@@ -337,16 +363,15 @@ class AuthService {
       print('');
       print('========================================');
       print('✅ EMAIL OTP VERIFICATION SUCCESS');
-      developer.log(
-        '✓ Email OTP Verification SUCCESS',
-        name: 'AuthService',
-      );
+      developer.log('✓ Email OTP Verification SUCCESS', name: 'AuthService');
 
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;
       final isNewUser = response.data!['is_new_user'] as bool? ?? false;
 
-      print('📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}');
+      print(
+        '📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
+      );
       developer.log(
         'Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
         name: 'AuthService',
@@ -361,7 +386,9 @@ class AuthService {
         );
 
         final user = UserModel.fromJson(userData);
-        print('👤 User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}');
+        print(
+          '👤 User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}',
+        );
         developer.log(
           'User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}',
           name: 'AuthService',
@@ -379,7 +406,9 @@ class AuthService {
         // Verify it was actually saved
         final savedToken = StorageService.getToken();
         final savedUser = StorageService.getUser();
-        print('🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}');
+        print(
+          '🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
+        );
         developer.log(
           'Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
           name: 'AuthService',
@@ -474,10 +503,7 @@ class AuthService {
 
   /// Get user preferences from backend
   static Future<ApiResponse> getPreferences() async {
-    developer.log(
-      '========== GET PREFERENCES ==========',
-      name: 'AuthService',
-    );
+    developer.log('========== GET PREFERENCES ==========', name: 'AuthService');
 
     final response = await ApiProvider.get(AppConstants.getPreferencesUrl);
 
@@ -491,16 +517,19 @@ class AuthService {
   }
 
   /// Update user preferences
-  static Future<ApiResponse> updatePreferences(Map<String, dynamic> preferences) async {
+  static Future<ApiResponse> updatePreferences(
+    Map<String, dynamic> preferences,
+  ) async {
     developer.log(
       '========== UPDATE PREFERENCES ==========',
       name: 'AuthService',
       error: 'Preferences: $preferences',
     );
 
-    final response = await ApiProvider.put(AppConstants.updatePreferencesUrl, body: {
-      'preferences': preferences,
-    });
+    final response = await ApiProvider.put(
+      AppConstants.updatePreferencesUrl,
+      body: {'preferences': preferences},
+    );
 
     developer.log(
       'Preferences update response',
@@ -533,10 +562,10 @@ class AuthService {
       error: 'New phone: $countryCode$newPhone',
     );
 
-    final response = await ApiProvider.post(AppConstants.requestPhoneChangeUrl, body: {
-      'new_phone': newPhone,
-      'country_code': countryCode,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.requestPhoneChangeUrl,
+      body: {'new_phone': newPhone, 'country_code': countryCode},
+    );
 
     developer.log(
       'Phone change request response',
@@ -545,7 +574,9 @@ class AuthService {
     );
 
     // Log OTP code in development mode
-    if (response.success && response.data != null && response.data!.containsKey('otp_code')) {
+    if (response.success &&
+        response.data != null &&
+        response.data!.containsKey('otp_code')) {
       developer.log(
         '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
         name: 'AuthService',
@@ -567,11 +598,14 @@ class AuthService {
       error: 'New phone: $newPhone, OTP: $otpCode',
     );
 
-    final response = await ApiProvider.post(AppConstants.confirmPhoneChangeUrl, body: {
-      'new_phone': newPhone,
-      'otp_code': otpCode,
-      'country_code': countryCode,
-    });
+    final response = await ApiProvider.post(
+      AppConstants.confirmPhoneChangeUrl,
+      body: {
+        'new_phone': newPhone,
+        'otp_code': otpCode,
+        'country_code': countryCode,
+      },
+    );
 
     developer.log(
       'Phone change confirmation response',
@@ -618,7 +652,10 @@ class AuthService {
     if (response.success) {
       // Clear local session
       StorageService.clearAuth();
-      developer.log('Account deleted - local session cleared', name: 'AuthService');
+      developer.log(
+        'Account deleted - local session cleared',
+        name: 'AuthService',
+      );
     }
 
     return response;

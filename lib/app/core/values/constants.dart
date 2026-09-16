@@ -77,6 +77,8 @@ class AppConstants {
   static const String registerEmailUrl = '/v1/auth/register-email';
   static const String loginEmailUrl = '/v1/auth/login-email';
   static const String verifyEmailOtpUrl = '/v1/auth/verify-email-otp';
+  static const String forgotPasswordUrl = '/v1/auth/password/forgot';
+  static const String resetPasswordUrl = '/v1/auth/password/reset';
 
   // Profile & Auth management
   static const String profileUrl = '/v1/auth/profile';
@@ -133,8 +135,7 @@ class AppConstants {
   static const String walletPayUrl = '/v1/wallet/pay';
   static const String walletWithdrawalBalancesUrl =
       '/v1/wallet/withdrawal-balances';
-  static const String walletWithdrawKpayUrl =
-      '/v1/wallet/withdraw/kpay';
+  static const String walletWithdrawKpayUrl = '/v1/wallet/withdraw/kpay';
   static const String walletWithdrawPaypalUrl = '/v1/wallet/withdraw/paypal';
   static const String walletWithdrawStripeUrl = '/v1/wallet/withdraw/stripe';
   // Devis d'un virement IBAN : montant converti vers la devise du compte bancaire.

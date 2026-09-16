@@ -23,14 +23,14 @@ class AddProductController extends GetxController {
 
   // Track existing images (from server) vs new images (added by user)
   final existingImageIds = <int>[].obs; // IDs des images déjà sur le serveur
-  final newImageStartIndex = 0.obs; // Index à partir duquel les images sont nouvelles
-  final deletedImageIds = <int>[].obs; // IDs des images supprimées par l'utilisateur
-
+  final newImageStartIndex =
+      0.obs; // Index à partir duquel les images sont nouvelles
+  final deletedImageIds =
+      <int>[].obs; // IDs des images supprimées par l'utilisateur
 
   final existingImages = <Map<String, dynamic>>[].obs; // {id, url, isPrimary}
   final newImages = <XFile>[].obs;
 
-  
   // Catégorie et sous-catégorie
   final selectedCategory = Rx<String?>(null);
   final selectedSubcategory = Rx<String?>(null);
@@ -42,7 +42,6 @@ class AddProductController extends GetxController {
   // Type d'article
   final articleType = 'article'.obs; // 'article' ou 'service'
 
-
   // Type de prix
   final priceType = 'fixed'.obs; // 'fixed', 'discover', 'visit'
 
@@ -53,8 +52,11 @@ class AddProductController extends GetxController {
   final availableCurrencies = <CurrencyModel>[].obs;
 
   // Poids du produit
-  final selectedWeightType = Rx<String?>(null); // 'X-small', '30 Deep', '50 Deep', '60 Deep', 'Rainbow XL', 'Pallet', 'custom'
-  final customWeightValue = ''.obs; // Pour suivre les changements du poids personnalisé
+  final selectedWeightType = Rx<String?>(
+    null,
+  ); // 'X-small', '30 Deep', '50 Deep', '60 Deep', 'Rainbow XL', 'Pallet', 'custom'
+  final customWeightValue =
+      ''.obs; // Pour suivre les changements du poids personnalisé
   final weightTypes = <String, String>{
     'X-small': '~5 kg',
     '30 Deep': '~30 kg',
@@ -66,26 +68,122 @@ class AddProductController extends GetxController {
   };
 
   static const sizeGroups = <String, List<String>>{
-    'Vêtements': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL'],
-    'Tailles numériques': ['28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'],
-    'Pointures': ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48'],
-    'Tailles bébé': ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M', '2-3A', '3-4A', '4-5A', '5-6A'],
+    'Vêtements': [
+      'XXS',
+      'XS',
+      'S',
+      'M',
+      'L',
+      'XL',
+      'XXL',
+      'XXXL',
+      '4XL',
+      '5XL',
+      '6XL',
+    ],
+    'Tailles numériques': [
+      '28',
+      '30',
+      '32',
+      '34',
+      '36',
+      '38',
+      '40',
+      '42',
+      '44',
+      '46',
+      '48',
+      '50',
+      '52',
+      '54',
+      '56',
+      '58',
+      '60',
+    ],
+    'Pointures': [
+      '35',
+      '36',
+      '37',
+      '38',
+      '39',
+      '40',
+      '41',
+      '42',
+      '43',
+      '44',
+      '45',
+      '46',
+      '47',
+      '48',
+    ],
+    'Tailles bébé': [
+      '0-3M',
+      '3-6M',
+      '6-9M',
+      '9-12M',
+      '12-18M',
+      '18-24M',
+      '2-3A',
+      '3-4A',
+      '4-5A',
+      '5-6A',
+    ],
     'Dimensions': ['S', 'M', 'L'],
   };
   final selectedSizes = <String>[].obs;
+  final variants = <Map<String, String>>[].obs;
+
+  void addVariant({
+    required String attributes,
+    required String stock,
+    String sku = '',
+    String priceAdjustment = '0',
+  }) {
+    variants.add({
+      'attributes': attributes.trim(),
+      'stock': stock.trim(),
+      'sku': sku.trim(),
+      'price_adjustment': priceAdjustment.trim(),
+    });
+    stockController.text = variants
+        .fold<int>(
+          0,
+          (sum, item) => sum + (int.tryParse(item['stock'] ?? '') ?? 0),
+        )
+        .toString();
+  }
+
+  void removeVariant(int index) {
+    variants.removeAt(index);
+    stockController.text = variants
+        .fold<int>(
+          0,
+          (sum, item) => sum + (int.tryParse(item['stock'] ?? '') ?? 0),
+        )
+        .toString();
+  }
 
   Map<String, List<String>> get sizeGroupsForCategory {
-    final category = '${selectedCategory.value ?? ''} ${selectedSubcategory.value ?? ''}'.toLowerCase();
+    final category =
+        '${selectedCategory.value ?? ''} ${selectedSubcategory.value ?? ''}'
+            .toLowerCase();
     if (category.contains('chauss') || category.contains('shoe')) {
       return {'Pointures': sizeGroups['Pointures']!};
     }
-    if (category.contains('bébé') || category.contains('bebe') || category.contains('enfant')) {
+    if (category.contains('bébé') ||
+        category.contains('bebe') ||
+        category.contains('enfant')) {
       return {'Tailles bébé': sizeGroups['Tailles bébé']!};
     }
-    if (category.contains('meuble') || category.contains('mobilier') || category.contains('furniture')) {
+    if (category.contains('meuble') ||
+        category.contains('mobilier') ||
+        category.contains('furniture')) {
       return {'Dimensions': sizeGroups['Dimensions']!};
     }
-    if (category.contains('mode') || category.contains('vêtement') || category.contains('vetement') || category.contains('fashion')) {
+    if (category.contains('mode') ||
+        category.contains('vêtement') ||
+        category.contains('vetement') ||
+        category.contains('fashion')) {
       return {
         'Vêtements': sizeGroups['Vêtements']!,
         'Tailles numériques': sizeGroups['Tailles numériques']!,
@@ -141,46 +239,52 @@ class AddProductController extends GetxController {
       {'id': '20', 'name': 'Produits de santé'},
     ],
   };
+
   /// Nombre total d'images (existantes + nouvelles)
-int get totalImagesCount => existingImages.length + productImages.length;
+  int get totalImagesCount => existingImages.length + productImages.length;
 
-/// Supprimer une image (existante ou nouvelle) via un index combiné
-void removeImage(int index) {
-  print('🗑️ Removing image at combined index $index');
+  /// Supprimer une image (existante ou nouvelle) via un index combiné
+  void removeImage(int index) {
+    print('🗑️ Removing image at combined index $index');
 
-  if (index < existingImages.length) {
-    // C'est une image existante (déjà sur le serveur)
-    final removed = existingImages.removeAt(index);
-    final id = removed['id'] as int?;
-    if (id != null) {
-      deletedImageIds.add(id);
-      existingImageIds.remove(id);
-      print('   └─ Image existante supprimée, ID $id ajouté à deletedImageIds');
+    if (index < existingImages.length) {
+      // C'est une image existante (déjà sur le serveur)
+      final removed = existingImages.removeAt(index);
+      final id = removed['id'] as int?;
+      if (id != null) {
+        deletedImageIds.add(id);
+        existingImageIds.remove(id);
+        print(
+          '   └─ Image existante supprimée, ID $id ajouté à deletedImageIds',
+        );
+      }
+      // Les nouvelles images "démarrent" toujours juste après les existantes restantes
+      newImageStartIndex.value = existingImages.length;
+    } else {
+      // C'est une nouvelle image (XFile local, pas encore uploadée)
+      final newIndex = index - existingImages.length;
+      productImages.removeAt(newIndex);
+      print('   └─ Nouvelle image supprimée (index local $newIndex)');
     }
-    // Les nouvelles images "démarrent" toujours juste après les existantes restantes
-    newImageStartIndex.value = existingImages.length;
-  } else {
-    // C'est une nouvelle image (XFile local, pas encore uploadée)
-    final newIndex = index - existingImages.length;
-    productImages.removeAt(newIndex);
-    print('   └─ Nouvelle image supprimée (index local $newIndex)');
+
+    // Réajuster l'image primaire si nécessaire
+    final total = totalImagesCount;
+    if (total == 0) {
+      primaryImageIndex.value = 0;
+    } else if (primaryImageIndex.value >= total ||
+        primaryImageIndex.value == index) {
+      primaryImageIndex.value = 0;
+    }
+
+    print(
+      '   └─ Images restantes: $total (existantes: ${existingImages.length}, nouvelles: ${productImages.length})',
+    );
   }
 
-  // Réajuster l'image primaire si nécessaire
-  final total = totalImagesCount;
-  if (total == 0) {
-    primaryImageIndex.value = 0;
-  } else if (primaryImageIndex.value >= total || primaryImageIndex.value == index) {
-    primaryImageIndex.value = 0;
+  /// Définir l'image primaire (index combiné)
+  void setPrimaryImage(int index) {
+    primaryImageIndex.value = index;
   }
-
-  print('   └─ Images restantes: $total (existantes: ${existingImages.length}, nouvelles: ${productImages.length})');
-}
-
-/// Définir l'image primaire (index combiné)
-void setPrimaryImage(int index) {
-  primaryImageIndex.value = index;
-}
 
   @override
   void onInit() {
@@ -197,7 +301,9 @@ void setPrimaryImage(int index) {
       isEditMode.value = true;
       final product = args['product'] as Map<String, dynamic>;
       editProductId.value = product['id'] as int?;
-      print('📝 ADD_PRODUCT: Edit mode detected for product ID: ${editProductId.value}');
+      print(
+        '📝 ADD_PRODUCT: Edit mode detected for product ID: ${editProductId.value}',
+      );
     } else {
       // Mode création - s'assurer que les listes sont vides
       existingImageIds.clear();
@@ -232,21 +338,19 @@ void setPrimaryImage(int index) {
         // Sécuriser : si la devise sélectionnée n'est pas dans la liste, retomber sur XAF
         if (!availableCurrencies.any((c) => c.code == selectedCurrency.value)) {
           final hasXaf = availableCurrencies.any((c) => c.code == 'XAF');
-          selectedCurrency.value = hasXaf ? 'XAF' : (availableCurrencies.first.code);
+          selectedCurrency.value = hasXaf
+              ? 'XAF'
+              : (availableCurrencies.first.code);
         }
       }
     }
   }
 
-
   /// Initialise les données (catégories et stockage)
   Future<void> _initializeData() async {
     isLoading.value = true;
 
-    await Future.wait([
-      _loadCategories(),
-      _loadStorages(),
-    ]);
+    await Future.wait([_loadCategories(), _loadStorages()]);
 
     // If in edit mode, populate fields with product data
     if (isEditMode.value && editProductData != null) {
@@ -281,8 +385,12 @@ void setPrimaryImage(int index) {
         // La réponse de l'API est: { success: true, categories: [...] }
         final categoriesFromApi = response.data!['categories'];
 
-        print('📂 ADD_PRODUCT: Type de categories: ${categoriesFromApi.runtimeType}');
-        print('📂 ADD_PRODUCT: Nombre de catégories: ${categoriesFromApi is List ? categoriesFromApi.length : 'N/A'}');
+        print(
+          '📂 ADD_PRODUCT: Type de categories: ${categoriesFromApi.runtimeType}',
+        );
+        print(
+          '📂 ADD_PRODUCT: Nombre de catégories: ${categoriesFromApi is List ? categoriesFromApi.length : 'N/A'}',
+        );
 
         if (categoriesFromApi is List && categoriesFromApi.isNotEmpty) {
           // Restructure categories from API format
@@ -294,7 +402,9 @@ void setPrimaryImage(int index) {
             final catName = catMap['name'] ?? 'Autre';
             final catId = catMap['id']?.toString() ?? '';
 
-            print('📂 ADD_PRODUCT: Traitement catégorie: $catName (ID: $catId)');
+            print(
+              '📂 ADD_PRODUCT: Traitement catégorie: $catName (ID: $catId)',
+            );
 
             if (!categories.containsKey(catName)) {
               categories[catName] = [];
@@ -314,13 +424,17 @@ void setPrimaryImage(int index) {
                   'category_id': catId,
                 };
 
-                print('   └─ Sous-catégorie: ${subcatData['name']} (ID: ${subcatData['id']})');
+                print(
+                  '   └─ Sous-catégorie: ${subcatData['name']} (ID: ${subcatData['id']})',
+                );
 
                 categories[catName]!.add(subcatData);
                 allSubs.add(subcatData);
               }
             } else {
-              print('   └─ Aucune sous-catégorie, ajout de la catégorie comme sous-catégorie');
+              print(
+                '   └─ Aucune sous-catégorie, ajout de la catégorie comme sous-catégorie',
+              );
               // If no subcategories, add the category itself as a subcategory
               final subcatData = <String, String>{
                 'id': catId,
@@ -337,14 +451,20 @@ void setPrimaryImage(int index) {
           categoriesData.addAll(categories);
           allSubcategories.value = allSubs;
 
-          print('✅ ADD_PRODUCT: ${categories.length} catégories chargées depuis l\'API');
+          print(
+            '✅ ADD_PRODUCT: ${categories.length} catégories chargées depuis l\'API',
+          );
           print('✅ ADD_PRODUCT: ${allSubs.length} sous-catégories au total');
         } else {
-          print('⚠️ ADD_PRODUCT: Format de données inattendu ou liste vide, utilisation des données hardcodées');
+          print(
+            '⚠️ ADD_PRODUCT: Format de données inattendu ou liste vide, utilisation des données hardcodées',
+          );
           _buildAllSubcategoriesFromHardcoded();
         }
       } else {
-        print('❌ ADD_PRODUCT: Échec de la réponse API - Message: ${response.message}');
+        print(
+          '❌ ADD_PRODUCT: Échec de la réponse API - Message: ${response.message}',
+        );
         _buildAllSubcategoriesFromHardcoded();
       }
     } catch (e, stackTrace) {
@@ -355,32 +475,33 @@ void setPrimaryImage(int index) {
     }
   }
 
-
   Future<XFile?> _downloadImage(String url) async {
-  try {
-    final response = await http
-        .get(Uri.parse(url))
-        .timeout(
-          const Duration(seconds: 15),
-          onTimeout: () => http.Response('', 408),
-        );
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => http.Response('', 408),
+          );
 
-    if (response.statusCode == 200) {
-      final fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${url.split('/').last}';
-      return XFile.fromData(
-        response.bodyBytes,
-        name: fileName,
-        mimeType: response.headers['content-type'],
-      );
-    } else {
-      print('❌ ADD_PRODUCT: Failed to download image. Status: ${response.statusCode} — URL: $url');
+      if (response.statusCode == 200) {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${url.split('/').last}';
+        return XFile.fromData(
+          response.bodyBytes,
+          name: fileName,
+          mimeType: response.headers['content-type'],
+        );
+      } else {
+        print(
+          '❌ ADD_PRODUCT: Failed to download image. Status: ${response.statusCode} — URL: $url',
+        );
+      }
+    } catch (e) {
+      print('❌ ADD_PRODUCT: Error downloading image: $e — URL: $url');
     }
-  } catch (e) {
-    print('❌ ADD_PRODUCT: Error downloading image: $e — URL: $url');
+    return null;
   }
-  return null;
-}
 
   /// Construit la liste de toutes les sous-catégories depuis les données hardcodées
   void _buildAllSubcategoriesFromHardcoded() {
@@ -408,11 +529,15 @@ void setPrimaryImage(int index) {
       if (response.success && response.data != null) {
         final data = response.data!['data'] ?? response.data!;
 
-        if (data['package'] != null && data['package']['vendor_package'] != null) {
+        if (data['package'] != null &&
+            data['package']['vendor_package'] != null) {
           final vendorPackage = data['package']['vendor_package'];
-          final storageTotalMb = (vendorPackage['storage_total_mb'] ?? 0).toDouble();
-          final storageRemainingMb = (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
-          final packageName = vendorPackage['package']?['name'] ?? 'Package actif';
+          final storageTotalMb = (vendorPackage['storage_total_mb'] ?? 0)
+              .toDouble();
+          final storageRemainingMb =
+              (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
+          final packageName =
+              vendorPackage['package']?['name'] ?? 'Package actif';
 
           storageList.value = [
             {
@@ -420,7 +545,7 @@ void setPrimaryImage(int index) {
               'name': packageName,
               'available': storageRemainingMb / 1024, // Convert MB to GB
               'total': storageTotalMb / 1024, // Convert MB to GB
-            }
+            },
           ];
 
           // Sélectionner automatiquement
@@ -436,150 +561,183 @@ void setPrimaryImage(int index) {
   }
 
   /// Populate form with product data for editing
- 
-Future<void> _populateEditData(Map<String, dynamic> product) async {
-  try {
-    print('📝 ADD_PRODUCT: Populating edit data...');
-    print('📝 ADD_PRODUCT: Product data structure: ${product.keys.toList()}');
 
-    // Champs texte
-    nameController.text = product['name'] ?? '';
-    descriptionController.text = product['description'] ?? '';
+  Future<void> _populateEditData(Map<String, dynamic> product) async {
+    try {
+      print('📝 ADD_PRODUCT: Populating edit data...');
+      print('📝 ADD_PRODUCT: Product data structure: ${product.keys.toList()}');
 
-    // Devise + prix source du produit
-    final productCurrency = (product['currency']?.toString() ?? 'XAF').toUpperCase();
-    selectedCurrency.value = productCurrency.isNotEmpty ? productCurrency : 'XAF';
+      // Champs texte
+      nameController.text = product['name'] ?? '';
+      descriptionController.text = product['description'] ?? '';
 
-    final price = product['price'];
-    if (price != null) {
-      final sourcePrice = double.tryParse(price.toString()) ?? 0;
-      priceController.text = sourcePrice.toStringAsFixed(0);
-      print('📝 ADD_PRODUCT: Prix source: $sourcePrice ${selectedCurrency.value}');
-    } else {
-      print('⚠️ ADD_PRODUCT: No price found in product data');
-    }
+      // Devise + prix source du produit
+      final productCurrency = (product['currency']?.toString() ?? 'XAF')
+          .toUpperCase();
+      selectedCurrency.value = productCurrency.isNotEmpty
+          ? productCurrency
+          : 'XAF';
 
-    // Stock
-    final stock = product['stock'] ?? product['quantity'] ?? product['stock_quantity'];
-    if (stock != null) {
-      stockController.text = stock.toString();
-      print('📝 ADD_PRODUCT: Stock set: $stock');
-    } else {
-      print('⚠️ ADD_PRODUCT: No stock/quantity found in product data');
-    }
-
-    // Catégorie et sous-catégorie
-    final subcategory = product['subcategory'];
-    final category = product['category'];
-
-    if (subcategory != null) {
-      final subcatId = subcategory['id']?.toString();
-      final subcatName = subcategory['name'];
-      if (subcatId != null && subcatName != null) {
-        selectedSubcategoryId.value = subcatId;
-        selectedSubcategory.value = subcatName;
-        print('📝 ADD_PRODUCT: Subcategory set: $subcatName (ID: $subcatId)');
-      }
-    }
-
-    if (category != null) {
-      final catName = category['name'];
-      if (catName != null) {
-        selectedCategory.value = catName;
-        print('📝 ADD_PRODUCT: Category set: $catName');
-      }
-    }
-
-    // Poids — priorité au poids personnalisé
-    final weightCategory = product['weight_category']?.toString().trim();
-    final customWeight = product['weight']?.toString().trim();
-
-    print('📝 ADD_PRODUCT: Weight data from API:');
-    print('   └─ weight_category: $weightCategory');
-    print('   └─ weight: $customWeight');
-
-    if (customWeight != null && customWeight.isNotEmpty && customWeight != 'null' && customWeight != '0') {
-      selectedWeightType.value = 'custom';
-      final cleanWeight = customWeight.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
-      weightKgController.text = cleanWeight;
-      customWeightValue.value = cleanWeight;
-      print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg');
-    } else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
-      if (weightTypes.containsKey(weightCategory)) {
-        selectedWeightType.value = weightCategory;
-        print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
+      final price = product['price'];
+      if (price != null) {
+        final sourcePrice = double.tryParse(price.toString()) ?? 0;
+        priceController.text = sourcePrice.toStringAsFixed(0);
+        print(
+          '📝 ADD_PRODUCT: Prix source: $sourcePrice ${selectedCurrency.value}',
+        );
       } else {
-        print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
-      }
-    } else {
-      print('⚠️ ADD_PRODUCT: No weight found in product data');
-    }
-
-    final sizes = product['sizes'];
-    if (sizes is List) {
-      selectedSizes.assignAll(sizes.map((size) => size.toString()));
-    }
-
-    // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
-    final images = product['images'] as List?;
-    existingImages.clear();
-    existingImageIds.clear();
-
-    if (images != null && images.isNotEmpty) {
-      int primaryIndex = 0;
-
-      for (int i = 0; i < images.length; i++) {
-        final imageData = images[i] as Map<String, dynamic>;
-        final id = imageData['id'] as int?;
-        final url = imageData['url'] as String?;
-        final isPrimary = imageData['is_primary'] == true;
-
-        if (url == null) continue;
-
-        existingImages.add({
-          'id': id,
-          'url': url,
-          'isPrimary': isPrimary,
-        });
-
-        if (id != null) existingImageIds.add(id);
-        if (isPrimary) primaryIndex = existingImages.length - 1;
+        print('⚠️ ADD_PRODUCT: No price found in product data');
       }
 
-      primaryImageIndex.value = primaryIndex;
-      // Les nouvelles images ajoutées par l'utilisateur commenceront après
-      // toutes les images existantes (dans la liste combinée affichée).
-      newImageStartIndex.value = existingImages.length;
+      // Stock
+      final stock =
+          product['stock'] ?? product['quantity'] ?? product['stock_quantity'];
+      if (stock != null) {
+        stockController.text = stock.toString();
+        print('📝 ADD_PRODUCT: Stock set: $stock');
+      } else {
+        print('⚠️ ADD_PRODUCT: No stock/quantity found in product data');
+      }
 
-      print('✅ ADD_PRODUCT: ${existingImages.length} images existantes référencées (aucun téléchargement)');
-      print('📝 ADD_PRODUCT: Existing image IDs: $existingImageIds');
-      print('📝 ADD_PRODUCT: New images will start at index: ${newImageStartIndex.value}');
-    } else {
-      newImageStartIndex.value = 0;
-      print('⚠️ ADD_PRODUCT: No images found in product data');
+      // Catégorie et sous-catégorie
+      final subcategory = product['subcategory'];
+      final category = product['category'];
+
+      if (subcategory != null) {
+        final subcatId = subcategory['id']?.toString();
+        final subcatName = subcategory['name'];
+        if (subcatId != null && subcatName != null) {
+          selectedSubcategoryId.value = subcatId;
+          selectedSubcategory.value = subcatName;
+          print('📝 ADD_PRODUCT: Subcategory set: $subcatName (ID: $subcatId)');
+        }
+      }
+
+      if (category != null) {
+        final catName = category['name'];
+        if (catName != null) {
+          selectedCategory.value = catName;
+          print('📝 ADD_PRODUCT: Category set: $catName');
+        }
+      }
+
+      // Poids — priorité au poids personnalisé
+      final weightCategory = product['weight_category']?.toString().trim();
+      final customWeight = product['weight']?.toString().trim();
+
+      print('📝 ADD_PRODUCT: Weight data from API:');
+      print('   └─ weight_category: $weightCategory');
+      print('   └─ weight: $customWeight');
+
+      if (customWeight != null &&
+          customWeight.isNotEmpty &&
+          customWeight != 'null' &&
+          customWeight != '0') {
+        selectedWeightType.value = 'custom';
+        final cleanWeight = customWeight
+            .replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '')
+            .trim();
+        weightKgController.text = cleanWeight;
+        customWeightValue.value = cleanWeight;
+        print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg');
+      } else if (weightCategory != null &&
+          weightCategory.isNotEmpty &&
+          weightCategory != 'null') {
+        if (weightTypes.containsKey(weightCategory)) {
+          selectedWeightType.value = weightCategory;
+          print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
+        } else {
+          print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
+        }
+      } else {
+        print('⚠️ ADD_PRODUCT: No weight found in product data');
+      }
+
+      final sizes = product['sizes'];
+      if (sizes is List) {
+        selectedSizes.assignAll(sizes.map((size) => size.toString()));
+      }
+
+      final productVariants = product['variants'];
+      variants.clear();
+      if (productVariants is List) {
+        for (final raw in productVariants) {
+          final variant = Map<String, dynamic>.from(raw as Map);
+          final attributes = Map<String, dynamic>.from(
+            variant['attributes'] as Map? ?? const {},
+          );
+          variants.add({
+            'attributes': attributes.entries
+                .map((entry) => '${entry.key}: ${entry.value}')
+                .join('; '),
+            'stock': '${variant['stock'] ?? 0}',
+            'sku': variant['sku']?.toString() ?? '',
+            'price_adjustment': variant['price_adjustment']?.toString() ?? '0',
+          });
+        }
+      }
+
+      // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
+      final images = product['images'] as List?;
+      existingImages.clear();
+      existingImageIds.clear();
+
+      if (images != null && images.isNotEmpty) {
+        int primaryIndex = 0;
+
+        for (int i = 0; i < images.length; i++) {
+          final imageData = images[i] as Map<String, dynamic>;
+          final id = imageData['id'] as int?;
+          final url = imageData['url'] as String?;
+          final isPrimary = imageData['is_primary'] == true;
+
+          if (url == null) continue;
+
+          existingImages.add({'id': id, 'url': url, 'isPrimary': isPrimary});
+
+          if (id != null) existingImageIds.add(id);
+          if (isPrimary) primaryIndex = existingImages.length - 1;
+        }
+
+        primaryImageIndex.value = primaryIndex;
+        // Les nouvelles images ajoutées par l'utilisateur commenceront après
+        // toutes les images existantes (dans la liste combinée affichée).
+        newImageStartIndex.value = existingImages.length;
+
+        print(
+          '✅ ADD_PRODUCT: ${existingImages.length} images existantes référencées (aucun téléchargement)',
+        );
+        print('📝 ADD_PRODUCT: Existing image IDs: $existingImageIds');
+        print(
+          '📝 ADD_PRODUCT: New images will start at index: ${newImageStartIndex.value}',
+        );
+      } else {
+        newImageStartIndex.value = 0;
+        print('⚠️ ADD_PRODUCT: No images found in product data');
+      }
+
+      print('✅ ADD_PRODUCT: Edit data populated successfully');
+    } catch (e, stackTrace) {
+      print('❌ ADD_PRODUCT: Error populating edit data: $e');
+      print('Stack trace: $stackTrace');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger les données du produit',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
-
-    print('✅ ADD_PRODUCT: Edit data populated successfully');
-  } catch (e, stackTrace) {
-    print('❌ ADD_PRODUCT: Error populating edit data: $e');
-    print('Stack trace: $stackTrace');
-    Get.snackbar(
-      'Erreur',
-      'Impossible de charger les données du produit',
-      snackPosition: SnackPosition.BOTTOM,
-    );
   }
-}
+
   /// Ajouter des images (galerie, sélection multiple)
   Future<void> pickImages() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 85,
-      );
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
 
       if (images.isNotEmpty) {
         productImages.addAll(images);
-        print('📷 ADD_PRODUCT: ${images.length} images sélectionnées depuis la galerie');
+        print(
+          '📷 ADD_PRODUCT: ${images.length} images sélectionnées depuis la galerie',
+        );
       }
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la sélection des images: $e');
@@ -643,8 +801,10 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       final response = await ProductService.analyzeProductImage(primaryImage);
 
       if (response.success && response.data != null) {
-        final analysis = response.data!['suggested_data'] as Map<String, dynamic>?;
-        final confidence = response.data!['confidence'] as Map<String, dynamic>?;
+        final analysis =
+            response.data!['suggested_data'] as Map<String, dynamic>?;
+        final confidence =
+            response.data!['confidence'] as Map<String, dynamic>?;
 
         if (analysis != null) {
           print('✅ Analysis completed successfully!');
@@ -687,7 +847,10 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
   }
 
   /// Appliquer les résultats de l'analyse aux champs du formulaire
-  void _applyAnalysisResults(Map<String, dynamic> analysis, Map<String, dynamic> confidence) {
+  void _applyAnalysisResults(
+    Map<String, dynamic> analysis,
+    Map<String, dynamic> confidence,
+  ) {
     print('📝 Applying analysis results to form...');
 
     // Nom du produit
@@ -697,7 +860,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
     }
 
     // Description
-    if (analysis['description'] != null && (confidence['description'] ?? 0) > 0.3) {
+    if (analysis['description'] != null &&
+        (confidence['description'] ?? 0) > 0.3) {
       descriptionController.text = analysis['description'];
       print('   └─ Description applied');
     }
@@ -715,7 +879,7 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
 
       // Chercher la catégorie correspondante dans allSubcategories
       final matchingSubcat = allSubcategories.firstWhereOrNull(
-        (subcat) => subcat['id'] == (subcategoryId ?? categoryId)
+        (subcat) => subcat['id'] == (subcategoryId ?? categoryId),
       );
 
       if (matchingSubcat != null) {
@@ -729,7 +893,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
     }
 
     // Poids
-    if (analysis['weight_category'] != null && weightTypes.containsKey(analysis['weight_category'])) {
+    if (analysis['weight_category'] != null &&
+        weightTypes.containsKey(analysis['weight_category'])) {
       selectedWeightType.value = analysis['weight_category'];
       print('   └─ Weight category applied: ${analysis['weight_category']}');
     }
@@ -763,7 +928,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       return;
     }
 
-    if (selectedSubcategoryId.value == null || selectedSubcategoryId.value!.isEmpty) {
+    if (selectedSubcategoryId.value == null ||
+        selectedSubcategoryId.value!.isEmpty) {
       Get.snackbar(
         'Catégorie requise',
         'Veuillez sélectionner une catégorie',
@@ -855,7 +1021,9 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
         totalSizeMb += bytes / 1048576;
       }
 
-      print('📦 ADD_PRODUCT: Total images size: ${totalSizeMb.toStringAsFixed(2)} MB');
+      print(
+        '📦 ADD_PRODUCT: Total images size: ${totalSizeMb.toStringAsFixed(2)} MB',
+      );
 
       // Préparer les fichiers pour l'upload (XFile → octets, web ET mobile)
       final filesMap = <String, XFile>{};
@@ -921,7 +1089,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       }
 
       // Ajouter subcategory_id si disponible
-      if (selectedSubcategoryId.value != null && selectedSubcategoryId.value!.isNotEmpty) {
+      if (selectedSubcategoryId.value != null &&
+          selectedSubcategoryId.value!.isNotEmpty) {
         fieldsMap['subcategory_id'] = selectedSubcategoryId.value!;
       }
 
@@ -932,6 +1101,28 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
 
       for (var i = 0; i < selectedSizes.length; i++) {
         fieldsMap['sizes[$i]'] = selectedSizes[i];
+      }
+
+      for (var i = 0; i < variants.length; i++) {
+        final variant = variants[i];
+        final attributes = (variant['attributes'] ?? '').split(';');
+        var attributeIndex = 0;
+        for (final attribute in attributes) {
+          final parts = attribute.split(':');
+          if (parts.length < 2) continue;
+          final name = parts.first.trim();
+          final value = parts.sublist(1).join(':').trim();
+          if (name.isEmpty || value.isEmpty) continue;
+          fieldsMap['variants[$i][attributes][$name]'] = value;
+          attributeIndex++;
+        }
+        if (attributeIndex > 0) {
+          fieldsMap['variants[$i][stock]'] = variant['stock'] ?? '0';
+          fieldsMap['variants[$i][sku]'] = variant['sku'] ?? '';
+          fieldsMap['variants[$i][price_adjustment]'] =
+              variant['price_adjustment'] ?? '0';
+          fieldsMap['variants[$i][is_active]'] = '1';
+        }
       }
 
       // Ajouter weight si disponible
@@ -945,19 +1136,29 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
           final customWeightText = weightKgController.text.trim();
           if (customWeightText.isNotEmpty) {
             // S'assurer que "kg" est ajouté une seule fois
-            final cleanWeight = customWeightText.replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '').trim();
+            final cleanWeight = customWeightText
+                .replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '')
+                .trim();
             fieldsMap['weight'] = '$cleanWeight kg';
             // Ne pas envoyer weight_category du tout (pas de chaîne vide pour éviter NOT NULL constraint)
-            print('📦 ADD_PRODUCT: ✅ Adding custom weight: "${fieldsMap['weight']}"');
-            print('📦 ADD_PRODUCT: ✅ Not sending weight_category (using custom weight)');
+            print(
+              '📦 ADD_PRODUCT: ✅ Adding custom weight: "${fieldsMap['weight']}"',
+            );
+            print(
+              '📦 ADD_PRODUCT: ✅ Not sending weight_category (using custom weight)',
+            );
           } else {
-            print('⚠️ ADD_PRODUCT: Custom weight selected but no value entered');
+            print(
+              '⚠️ ADD_PRODUCT: Custom weight selected but no value entered',
+            );
           }
         } else {
           // Catégorie de poids prédéfinie (X-small, 30 Deep, etc.)
           fieldsMap['weight_category'] = selectedWeightType.value!;
           // Ne pas envoyer weight du tout (pas de chaîne vide)
-          print('📦 ADD_PRODUCT: ✅ Adding weight_category: "${fieldsMap['weight_category']}"');
+          print(
+            '📦 ADD_PRODUCT: ✅ Adding weight_category: "${fieldsMap['weight_category']}"',
+          );
           print('📦 ADD_PRODUCT: ✅ Not sending weight (using weight_category)');
         }
       } else {
@@ -967,7 +1168,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       // Note: storage_id n'est pas encore supporté par l'API
       // Il sera ajouté dans une future version du backend
 
-      if (primaryImageIndex.value > 0 && primaryImageIndex.value < productImages.length) {
+      if (primaryImageIndex.value > 0 &&
+          primaryImageIndex.value < productImages.length) {
         fieldsMap['primary_image_index'] = primaryImageIndex.value.toString();
       }
 
@@ -998,10 +1200,16 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
       if (response.success) {
         print('');
         print('✅ ========================================');
-        print('✅ PRODUCT ${isEditMode.value ? "UPDATED" : "CREATED"} SUCCESSFULLY!');
+        print(
+          '✅ PRODUCT ${isEditMode.value ? "UPDATED" : "CREATED"} SUCCESSFULLY!',
+        );
         print('✅ ========================================');
-        print('📦 Product ID: ${response.data?['product']?['id'] ?? editProductId.value ?? 'N/A'}');
-        print('📦 Product Name: ${response.data?['product']?['name'] ?? nameController.text}');
+        print(
+          '📦 Product ID: ${response.data?['product']?['id'] ?? editProductId.value ?? 'N/A'}',
+        );
+        print(
+          '📦 Product Name: ${response.data?['product']?['name'] ?? nameController.text}',
+        );
 
         // Afficher info stockage si disponible
         if (response.data?['storage_info'] != null) {
@@ -1042,7 +1250,9 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
         // Navigation vers la page de gestion des produits
         // On utilise offNamed pour remplacer la page actuelle (formulaire) par product-management
         // Cela fait en sorte que le bouton back de product-management retourne au dashboard vendeur
-        print('🧭 Using Get.offNamed to replace current route with /product-management');
+        print(
+          '🧭 Using Get.offNamed to replace current route with /product-management',
+        );
 
         // On passe un argument pour indiquer qu'il faut rafraîchir les produits
         Get.offNamed('/product-management', arguments: {'refresh': true});
@@ -1053,7 +1263,8 @@ Future<void> _populateEditData(Map<String, dynamic> product) async {
             AlertDialog(
               title: const Text('Package requis'),
               content: Text(
-                response.message ?? 'Vous devez souscrire à un package de stockage',
+                response.message ??
+                    'Vous devez souscrire à un package de stockage',
               ),
               actions: [
                 TextButton(

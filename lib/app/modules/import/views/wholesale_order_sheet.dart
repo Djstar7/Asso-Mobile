@@ -57,6 +57,9 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
   int _quantity = 0;
   bool _submitting = false;
   bool _contactingSupport = false;
+  int _imageIndex = 0;
+  Map<String, dynamic>? _selectedVariant;
+  final PageController _galleryController = PageController();
 
   @override
   void initState() {
@@ -68,12 +71,24 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
     }
   }
 
+  @override
+  void dispose() {
+    _galleryController.dispose();
+    super.dispose();
+  }
+
   String _fmt(double valueInXaf) => Get.isRegistered<CurrencyService>()
       ? CurrencyService.to.formatPrice(valueInXaf)
       : '${valueInXaf.toStringAsFixed(0)} FCFA';
 
   String _fmtConverted(double amount, String currency) =>
       CurrencyService.formatAmountInCurrency(amount, currency);
+
+  String? _variantNote() {
+    final attributes = _selectedVariant?['attributes'];
+    if (attributes is! Map) return null;
+    return 'Variante choisie : ${attributes.entries.map((entry) => '${entry.key}: ${entry.value}').join(', ')}';
+  }
 
   double get _subtotal => (_tier?.unitPriceXaf ?? 0) * _quantity;
 
@@ -140,16 +155,11 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                 ],
               ),
               const SizedBox(height: 16),
+              _buildProductGallery(context, p),
+              const SizedBox(height: 16),
               // En-tête produit
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: (p.image != null && p.image!.isNotEmpty)
-                        ? _buildProductImage(p.image!)
-                        : _imgPh(),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,6 +216,40 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                     fontSize: 13,
                     color: AppThemeSystem.getSecondaryTextColor(context),
                   ),
+                ),
+              ],
+              if (p.characteristics?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                _label(context, 'Caractéristiques'),
+                const SizedBox(height: 4),
+                Text(
+                  p.characteristics!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+              if (p.commercialInformation?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                _label(context, 'Informations commerciales'),
+                const SizedBox(height: 4),
+                Text(
+                  p.commercialInformation!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+              if (p.variants.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _label(context, 'Variantes disponibles'),
+                const SizedBox(height: 6),
+                Column(
+                  children: p.variants
+                      .map((variant) => _variantCard(context, variant))
+                      .toList(),
                 ),
               ],
 
@@ -316,6 +360,183 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
     child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFB4BCC6)),
   );
 
+  Widget _buildProductGallery(BuildContext context, WholesaleProduct product) {
+    final images = <String>[
+      ...product.images,
+      if (product.images.isEmpty && product.image?.isNotEmpty == true)
+        product.image!,
+    ];
+    if (images.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: () => _showImageGallery(context, images, _imageIndex),
+          child: Stack(
+            children: [
+              SizedBox(
+                height: 210,
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: PageView.builder(
+                    controller: _galleryController,
+                    itemCount: images.length,
+                    onPageChanged: (index) =>
+                        setState(() => _imageIndex = index),
+                    itemBuilder: (_, index) =>
+                        _buildLargeProductImage(images[index]),
+                  ),
+                ),
+              ),
+              if (images.length > 1) ...[
+                Positioned(
+                  left: 8,
+                  top: 82,
+                  child: _galleryArrow(Icons.chevron_left, () {
+                    final target = (_imageIndex - 1).clamp(
+                      0,
+                      images.length - 1,
+                    );
+                    _galleryController.animateToPage(
+                      target,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    );
+                  }),
+                ),
+                Positioned(
+                  right: 8,
+                  top: 82,
+                  child: _galleryArrow(Icons.chevron_right, () {
+                    final target = (_imageIndex + 1).clamp(
+                      0,
+                      images.length - 1,
+                    );
+                    _galleryController.animateToPage(
+                      target,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    );
+                  }),
+                ),
+              ],
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.zoom_in, color: Colors.white, size: 18),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${_imageIndex + 1}/${images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (images.length > 1) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Balayez pour voir les autres photos · touchez pour agrandir',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppThemeSystem.getSecondaryTextColor(context),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _galleryArrow(IconData icon, VoidCallback onPressed) => Material(
+    color: Colors.black.withValues(alpha: 0.58),
+    shape: const CircleBorder(),
+    child: IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, color: Colors.white, size: 30),
+      tooltip: icon == Icons.chevron_left
+          ? 'Photo précédente'
+          : 'Photo suivante',
+    ),
+  );
+
+  Widget _buildLargeProductImage(String value) {
+    final widget = _buildProductImage(value);
+    if (widget is Image)
+      return Image(
+        image: widget.image,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _imgPh(),
+      );
+    return widget;
+  }
+
+  void _showImageGallery(
+    BuildContext context,
+    List<String> images,
+    int initialIndex,
+  ) {
+    final controller = PageController(initialPage: initialIndex);
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: controller,
+              itemCount: images.length,
+              itemBuilder: (_, index) => InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: Center(child: _buildLargeProductImage(images[index])),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                ),
+              ),
+            ),
+            const Positioned(
+              bottom: 26,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Text(
+                  'Pincez pour zoomer · balayez pour changer de photo',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
   Widget _buildProductImage(String value) {
     final trimmed = value.trim();
     if (trimmed.startsWith('assets/')) {
@@ -330,25 +551,34 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
 
     final apiUri = Uri.parse(AppConstants.baseUrl);
     final imageUri = Uri.tryParse(trimmed);
-    final imageUrl = imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty
-      ? ((imageUri.host == 'localhost' || imageUri.host == '127.0.0.1')
-        ? imageUri
-          .replace(
-            host: apiUri.host,
-            port: apiUri.port,
-            path: imageUri.path.replaceFirst('/storage/storage/', '/storage/'),
-          )
-          .toString()
-        : imageUri
-          .replace(path: imageUri.path.replaceFirst('/storage/storage/', '/storage/'))
-          .toString())
+    final imageUrl =
+        imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty
+        ? ((imageUri.host == 'localhost' || imageUri.host == '127.0.0.1')
+              ? imageUri
+                    .replace(
+                      host: apiUri.host,
+                      port: apiUri.port,
+                      path: imageUri.path.replaceFirst(
+                        '/storage/storage/',
+                        '/storage/',
+                      ),
+                    )
+                    .toString()
+              : imageUri
+                    .replace(
+                      path: imageUri.path.replaceFirst(
+                        '/storage/storage/',
+                        '/storage/',
+                      ),
+                    )
+                    .toString())
         : Uri(
             scheme: apiUri.scheme,
             host: apiUri.host,
             port: apiUri.port,
-        path: trimmed.startsWith('/storage/')
-          ? trimmed.replaceFirst('/storage/storage/', '/storage/')
-          : '/storage/${trimmed.replaceFirst(RegExp(r'^/'), '')}',
+            path: trimmed.startsWith('/storage/')
+                ? trimmed.replaceFirst('/storage/storage/', '/storage/')
+                : '/storage/${trimmed.replaceFirst(RegExp(r'^/'), '')}',
           ).toString();
 
     return Image.network(
@@ -519,7 +749,11 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_fmtConverted(s.rateAmount, s.currency)}${s.rateType == 'per_kg' ? ' / kg' : s.rateType == 'per_cbm' ? ' / CBM' : ''}${s.expeditionNote != null ? ' · ${s.expeditionNote}' : ''}',
+                    '${_fmtConverted(s.rateAmount, s.currency)}${s.rateType == 'per_kg'
+                        ? ' / kg'
+                        : s.rateType == 'per_cbm'
+                        ? ' / CBM'
+                        : ''}${s.expeditionNote != null ? ' · ${s.expeditionNote}' : ''}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -627,6 +861,170 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
           ),
         ],
       );
+
+  Widget _variantCard(BuildContext context, Map<String, dynamic> variant) {
+    final attributes = Map<String, dynamic>.from(
+      variant['attributes'] as Map? ?? const {},
+    );
+    String? colorName;
+    for (final entry in attributes.entries) {
+      final key = entry.key.toLowerCase();
+      if (key.contains('couleur') || key.contains('color')) {
+        colorName = entry.value.toString();
+        break;
+      }
+    }
+    final swatchColor = _variantColor(colorName);
+    final stock = (variant['stock'] as num?)?.toInt() ?? 0;
+    final selected = _selectedVariant?['id'] == variant['id'];
+
+    return GestureDetector(
+      onTap: stock > 0
+          ? () => setState(() => _selectedVariant = variant)
+          : null,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
+              : AppThemeSystem.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppThemeSystem.primaryColor
+                : AppThemeSystem.getBorderColor(context),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            if (colorName != null) ...[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: swatchColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black26, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: swatchColor.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: attributes.entries
+                        .map(
+                          (entry) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppThemeSystem.primaryColor.withValues(
+                                alpha: 0.10,
+                              ),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              entry.value.toString(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 15,
+                        color: stock > 0
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '$stock disponible${stock > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: stock > 0
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(
+                Icons.check_circle,
+                color: AppThemeSystem.primaryColor,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _variantColor(String? name) {
+    final value = (name ?? '').toLowerCase().trim();
+    const colors = <String, Color>{
+      'rouge': Color(0xFFE53935),
+      'red': Color(0xFFE53935),
+      'bleu': Color(0xFF1E88E5),
+      'blue': Color(0xFF1E88E5),
+      'vert': Color(0xFF43A047),
+      'green': Color(0xFF43A047),
+      'noir': Color(0xFF212121),
+      'black': Color(0xFF212121),
+      'blanc': Color(0xFFFAFAFA),
+      'white': Color(0xFFFAFAFA),
+      'jaune': Color(0xFFFDD835),
+      'yellow': Color(0xFFFDD835),
+      'orange': Color(0xFFFB8C00),
+      'rose': Color(0xFFEC407A),
+      'pink': Color(0xFFEC407A),
+      'violet': Color(0xFF8E24AA),
+      'purple': Color(0xFF8E24AA),
+      'marron': Color(0xFF795548),
+      'brown': Color(0xFF795548),
+      'gris': Color(0xFF757575),
+      'grey': Color(0xFF757575),
+      'gray': Color(0xFF757575),
+      'beige': Color(0xFFD7CCC8),
+    };
+    if (value.startsWith('#')) {
+      final hex = value.substring(1);
+      final parsed = int.tryParse(hex.length == 6 ? 'FF$hex' : hex, radix: 16);
+      if (parsed != null) return Color(parsed);
+    }
+    return colors.entries
+        .firstWhere(
+          (entry) => value.contains(entry.key),
+          orElse: () => const MapEntry('', Color(0xFFBDBDBD)),
+        )
+        .value;
+  }
 
   // ─────────────────────────── Paiement ───────────────────────────
   Future<void> _pay() async {
@@ -738,6 +1136,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         paymentMode: mode,
         provider: provider,
         phoneNumber: phone,
+        notes: _variantNote(),
       );
       if (!res.success) {
         Get.snackbar(
@@ -830,6 +1229,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         shippingWeightKg: weight,
         shippingCbm: cbm,
         paymentMode: 'stripe_direct',
+        notes: _variantNote(),
       );
       if (!res.success) {
         Get.snackbar(

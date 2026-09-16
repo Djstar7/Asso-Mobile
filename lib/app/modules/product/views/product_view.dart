@@ -21,23 +21,21 @@ class ProductView extends GetView<ProductController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     // Récupérer les données du produit depuis les arguments
-    final product = Get.arguments as Map<String, dynamic>? ?? {
-      'name': 'Produit',
-      'price': '0',
-      'location': 'Non spécifiée',
-      'description': 'Aucune description disponible',
-      'image': 'assets/images/p1.jpeg',
-      'images': [
-        'assets/images/p1.jpeg',
-        'assets/images/p2.jpeg',
-        'assets/images/p3.jpeg',
-      ],
-      'seller': {
-        'name': 'Vendeur',
-        'rating': 4.5,
-        'reviews': 120,
-      },
-    };
+    final product =
+        Get.arguments as Map<String, dynamic>? ??
+        {
+          'name': 'Produit',
+          'price': '0',
+          'location': 'Non spécifiée',
+          'description': 'Aucune description disponible',
+          'image': 'assets/images/p1.jpeg',
+          'images': [
+            'assets/images/p1.jpeg',
+            'assets/images/p2.jpeg',
+            'assets/images/p3.jpeg',
+          ],
+          'seller': {'name': 'Vendeur', 'rating': 4.5, 'reviews': 120},
+        };
 
     // 🔍 DEBUG: Afficher tous les détails du produit
     print('');
@@ -49,16 +47,24 @@ class ProductView extends GetView<ProductController> {
     print('📍 Location: ${product['location']}');
     print('');
     print('🗺️ COORDONNÉES GPS DIRECTES:');
-    print('   latitude: ${product['latitude']} (type: ${product['latitude']?.runtimeType})');
-    print('   longitude: ${product['longitude']} (type: ${product['longitude']?.runtimeType})');
+    print(
+      '   latitude: ${product['latitude']} (type: ${product['latitude']?.runtimeType})',
+    );
+    print(
+      '   longitude: ${product['longitude']} (type: ${product['longitude']?.runtimeType})',
+    );
     print('');
     print('🏪 SHOP DATA:');
     if (product['shop'] != null) {
       final shop = product['shop'] as Map<String, dynamic>;
       print('   shop.name: ${shop['name']}');
       print('   shop.address: ${shop['address']}');
-      print('   shop.latitude: ${shop['latitude']} (type: ${shop['latitude']?.runtimeType})');
-      print('   shop.longitude: ${shop['longitude']} (type: ${shop['longitude']?.runtimeType})');
+      print(
+        '   shop.latitude: ${shop['latitude']} (type: ${shop['latitude']?.runtimeType})',
+      );
+      print(
+        '   shop.longitude: ${shop['longitude']} (type: ${shop['longitude']?.runtimeType})',
+      );
       print('   shop.is_certified: ${shop['is_certified']}');
       print('   Toutes les clés shop: ${shop.keys.toList()}');
     } else {
@@ -70,36 +76,18 @@ class ProductView extends GetView<ProductController> {
     print('═══════════════════════════════════════════════════════════════');
     print('');
 
-    return Scaffold(                               
-    backgroundColor: AppThemeSystem.getBackgroundColor(context),
-    body: CustomScrollView(
-      slivers: [
-        // App Bar avec images
-        SliverAppBar(
-          expandedHeight: 400,
-          pinned: true,
-          backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-          leading: IconButton(
-            icon: Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            onPressed: () => Get.back(),
-          ),
-          actions: [
-            IconButton(
+    return Scaffold(
+      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      body: CustomScrollView(
+        slivers: [
+          // App Bar avec images
+          SliverAppBar(
+            expandedHeight: 400,
+            pinned: true,
+            backgroundColor: isDark
+                ? AppThemeSystem.darkCardColor
+                : Colors.white,
+            leading: IconButton(
               icon: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -111,23 +99,15 @@ class ProductView extends GetView<ProductController> {
                   ),
                 ),
                 child: Icon(
-                  Icons.share_rounded,
+                  Icons.arrow_back_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
               ),
-              onPressed: () {
-                Get.snackbar(
-                  'Partager',
-                  'Partagez ce produit avec vos amis',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
+              onPressed: () => Get.back(),
             ),
-            SizedBox(width: 8),
-            Obx(() {
-              final isFav = controller.isFavorite.value;
-              return IconButton(
+            actions: [
+              IconButton(
                 icon: Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -139,57 +119,93 @@ class ProductView extends GetView<ProductController> {
                     ),
                   ),
                   child: Icon(
-                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFav ? Colors.red : Colors.white,
+                    Icons.share_rounded,
+                    color: Colors.white,
                     size: 20,
                   ),
                 ),
                 onPressed: () {
-                  final productId = product['id'] is int
-                      ? product['id']
-                      : int.tryParse(product['id'].toString()) ?? 0;
-                  if (productId > 0) {
-                    AuthGuard.requireAuth(
-                      context,
-                      onAuthenticated: () => controller.toggleFavorite(productId),
-                      featureName: 'les favoris',
-                      useDialog: false,
-                    );
-                  }
+                  Get.snackbar(
+                    'Partager',
+                    'Partagez ce produit avec vos amis',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
                 },
-              );
-            }),
-            SizedBox(width: 8),
-          ],
-          flexibleSpace: FlexibleSpaceBar(
-            background: _buildImageCarousel(context, product),
-          ),
-        ),
-
-        // Contenu
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProductHeader(context, product),
-              _buildLocationSection(context, product),
-              Divider(height: 32),
-              _buildDescriptionSection(context, product),
-              _buildProductCharacteristics(context, product),
-              Divider(height: 32),
-              _buildSellerSection(context, product),
-              Divider(height: 32),
-              _buildSimilarProductsSection(context, product),
-              SizedBox(height: 100),
+              ),
+              SizedBox(width: 8),
+              Obx(() {
+                final isFav = controller.isFavorite.value;
+                return IconButton(
+                  icon: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      isFav
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFav ? Colors.red : Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () {
+                    final productId = product['id'] is int
+                        ? product['id']
+                        : int.tryParse(product['id'].toString()) ?? 0;
+                    if (productId > 0) {
+                      AuthGuard.requireAuth(
+                        context,
+                        onAuthenticated: () =>
+                            controller.toggleFavorite(productId),
+                        featureName: 'les favoris',
+                        useDialog: false,
+                      );
+                    }
+                  },
+                );
+              }),
+              SizedBox(width: 8),
             ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: _buildImageCarousel(context, product),
+            ),
           ),
-        ),
-      ],
-    ),
-    bottomNavigationBar: _buildBottomBar(context, product),
-  );}
 
-  Widget _buildImageCarousel(BuildContext context, Map<String, dynamic> product) {
+          // Contenu
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProductHeader(context, product),
+                _buildLocationSection(context, product),
+                Divider(height: 32),
+                _buildDescriptionSection(context, product),
+                _buildVariantsSection(context, product),
+                _buildProductCharacteristics(context, product),
+                Divider(height: 32),
+                _buildSellerSection(context, product),
+                Divider(height: 32),
+                _buildSimilarProductsSection(context, product),
+                SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(context, product),
+    );
+  }
+
+  Widget _buildImageCarousel(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     final images = _getProductImages(product);
 
     return Stack(
@@ -200,7 +216,10 @@ class ProductView extends GetView<ProductController> {
             controller.currentImageIndex.value = index;
           },
           itemBuilder: (context, index) {
-            return _buildImageWidget(images[index]);
+            return GestureDetector(
+              onTap: () => _showZoomableImage(context, images, index),
+              child: _buildImageWidget(images[index]),
+            );
           },
         ),
         // Indicateurs d'images
@@ -209,87 +228,102 @@ class ProductView extends GetView<ProductController> {
             bottom: 16,
             left: 0,
             right: 0,
-            child: Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                images.length,
-                (index) => AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  margin: EdgeInsets.symmetric(horizontal: 4),
-                  width: controller.currentImageIndex.value == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: controller.currentImageIndex.value == index
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                      ),
-                    ],
+            child: Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  images.length,
+                  (index) => AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    width: controller.currentImageIndex.value == index ? 24 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: controller.currentImageIndex.value == index
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            )),
+            ),
           ),
       ],
     );
   }
-  Widget _buildProductHeader(BuildContext context, Map<String, dynamic> product) {
-  return Padding(
-    padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Prix
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppThemeSystem.primaryColor,
-                AppThemeSystem.primaryColor.withValues(alpha: 0.8),
+
+  Widget _buildProductHeader(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    return Padding(
+      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Prix
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppThemeSystem.primaryColor,
+                  AppThemeSystem.primaryColor.withValues(alpha: 0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: Offset(0, 4),
+            child: Text(
+              controller.formatPrice(
+                double.tryParse(
+                      (product['price_xaf'] ?? product['price']).toString(),
+                    ) ??
+                    0,
               ),
-            ],
-          ),
-          child: Text(
-            controller.formatPrice(
-              double.tryParse((product['price_xaf'] ?? product['price']).toString()) ?? 0,
+              style: context.textStyle(
+                FontSizeType.h3,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
+          ),
+          SizedBox(height: 16),
+          // Nom du produit
+          Text(
+            product['name'],
             style: context.textStyle(
-              FontSizeType.h3,
+              FontSizeType.h4,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
             ),
           ),
-        ),
-        SizedBox(height: 16),
-        // Nom du produit
-        Text(
-          product['name'],
-          style: context.textStyle(
-            FontSizeType.h4,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildProductCharacteristics(BuildContext context, Map<String, dynamic> product) {
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCharacteristics(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     // Extraire le stock
     final stock = product['stock'];
-    final stockValue = stock is int ? stock : int.tryParse(stock.toString()) ?? 0;
+    final stockValue = stock is int
+        ? stock
+        : int.tryParse(stock.toString()) ?? 0;
     final hasStock = stockValue > 0;
 
     // Extraire le poids (PRIORITÉ au poids personnalisé, sinon weight_category)
@@ -299,14 +333,19 @@ class ProductView extends GetView<ProductController> {
     String? weightDisplay;
 
     // PRIORITÉ 1 : Poids personnalisé (weight)
-    if (customWeight != null && customWeight.isNotEmpty && customWeight != '0' && customWeight != 'null') {
+    if (customWeight != null &&
+        customWeight.isNotEmpty &&
+        customWeight != '0' &&
+        customWeight != 'null') {
       // Utiliser le poids personnalisé
       weightDisplay = customWeight.contains('kg') || customWeight.contains('KG')
           ? customWeight
           : '$customWeight kg';
     }
     // PRIORITÉ 2 : Catégorie de poids prédéfinie (weight_category)
-    else if (weightCategory != null && weightCategory.isNotEmpty && weightCategory != 'null') {
+    else if (weightCategory != null &&
+        weightCategory.isNotEmpty &&
+        weightCategory != 'null') {
       // Utiliser la catégorie de poids
       final weightMap = {
         'X-small': '~5 kg',
@@ -320,9 +359,23 @@ class ProductView extends GetView<ProductController> {
     }
 
     final hasWeight = weightDisplay != null;
+    final characteristics = product['characteristics']?.toString().trim();
+    final commercialInformation = product['commercial_information']
+        ?.toString()
+        .trim();
+    final sizes =
+        (product['sizes'] as List?)
+            ?.map((size) => size.toString())
+            .where((size) => size.isNotEmpty)
+            .toList() ??
+        const <String>[];
+    final hasDetails =
+        characteristics?.isNotEmpty == true ||
+        commercialInformation?.isNotEmpty == true ||
+        sizes.isNotEmpty;
 
     // Si aucune caractéristique n'est disponible, ne rien afficher
-    if (!hasStock && !hasWeight) {
+    if (!hasStock && !hasWeight && !hasDetails) {
       return SizedBox.shrink();
     }
 
@@ -336,41 +389,82 @@ class ProductView extends GetView<ProductController> {
         decoration: BoxDecoration(
           color: AppThemeSystem.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppThemeSystem.getBorderColor(context),
-          ),
+          border: Border.all(color: AppThemeSystem.getBorderColor(context)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Stock à gauche
-            if (hasStock)
-              Expanded(
-                child: _buildCharacteristicItem(
-                  context: context,
-                  icon: Icons.inventory_2_rounded,
-                  label: 'Stock disponible',
-                  value: '$stockValue unité${stockValue > 1 ? "s" : ""}',
-                ),
+            if (characteristics?.isNotEmpty == true) ...[
+              const Text(
+                'Caractéristiques',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-
-            // Séparateur si les deux sont présents
-            if (hasStock && hasWeight)
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: 16),
-                width: 1,
-                height: 50,
-                color: AppThemeSystem.getBorderColor(context),
+              const SizedBox(height: 4),
+              Text(
+                characteristics!,
+                style: TextStyle(color: context.secondaryTextColor),
               ),
+              const SizedBox(height: 14),
+            ],
+            if (commercialInformation?.isNotEmpty == true) ...[
+              const Text(
+                'Informations commerciales',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                commercialInformation!,
+                style: TextStyle(color: context.secondaryTextColor),
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (sizes.isNotEmpty) ...[
+              const Text(
+                'Tailles disponibles',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: sizes.map((size) => Chip(label: Text(size))).toList(),
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (hasStock || hasWeight)
+              Row(
+                children: [
+                  // Stock à gauche
+                  if (hasStock)
+                    Expanded(
+                      child: _buildCharacteristicItem(
+                        context: context,
+                        icon: Icons.inventory_2_rounded,
+                        label: 'Stock disponible',
+                        value: '$stockValue unité${stockValue > 1 ? "s" : ""}',
+                      ),
+                    ),
 
-            // Poids à droite
-            if (hasWeight)
-              Expanded(
-                child: _buildCharacteristicItem(
-                  context: context,
-                  icon: Icons.scale_rounded,
-                  label: 'Poids',
-                  value: weightDisplay,
-                ),
+                  // Séparateur si les deux sont présents
+                  if (hasStock && hasWeight)
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      width: 1,
+                      height: 50,
+                      color: AppThemeSystem.getBorderColor(context),
+                    ),
+
+                  // Poids à droite
+                  if (hasWeight)
+                    Expanded(
+                      child: _buildCharacteristicItem(
+                        context: context,
+                        icon: Icons.scale_rounded,
+                        label: 'Poids',
+                        value: weightDisplay,
+                      ),
+                    ),
+                ],
               ),
           ],
         ),
@@ -393,11 +487,7 @@ class ProductView extends GetView<ProductController> {
             color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: AppThemeSystem.primaryColor,
-            size: 22,
-          ),
+          child: Icon(icon, color: AppThemeSystem.primaryColor, size: 22),
         ),
         SizedBox(width: 12),
         Flexible(
@@ -429,8 +519,14 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  Widget _buildLocationSection(BuildContext context, Map<String, dynamic> product) {
-    final fullLocation = product['location']?.toString() ?? product['shop']?['address']?.toString() ?? 'Non spécifiée';
+  Widget _buildLocationSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    final fullLocation =
+        product['location']?.toString() ??
+        product['shop']?['address']?.toString() ??
+        'Non spécifiée';
     final shortLocation = _getShortLocation(fullLocation);
 
     return Padding(
@@ -445,9 +541,7 @@ class ProductView extends GetView<ProductController> {
           decoration: BoxDecoration(
             color: AppThemeSystem.getSurfaceColor(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppThemeSystem.getBorderColor(context),
-            ),
+            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
           ),
           child: Row(
             children: [
@@ -511,7 +605,10 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  Widget _buildDescriptionSection(BuildContext context, Map<String, dynamic> product) {
+  Widget _buildDescriptionSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppThemeSystem.getHorizontalPadding(context),
@@ -538,7 +635,8 @@ class ProductView extends GetView<ProductController> {
           ),
           SizedBox(height: 12),
           Text(
-            product['description'] ?? 'Aucune description disponible pour ce produit.',
+            product['description'] ??
+                'Aucune description disponible pour ce produit.',
             style: context.textStyle(
               FontSizeType.body1,
               color: AppThemeSystem.getSecondaryTextColor(context),
@@ -550,13 +648,119 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  Widget _buildSellerSection(BuildContext context, Map<String, dynamic> product) {
+  Widget _buildVariantsSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    final variants =
+        (product['variants'] as List?)
+            ?.map((item) => Map<String, dynamic>.from(item as Map))
+            .where((item) => (item['stock'] as num? ?? 0) > 0)
+            .toList() ??
+        const <Map<String, dynamic>>[];
+    if (variants.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Choisissez votre variante',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Obx(
+            () => Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: variants.map((variant) {
+                final attributes = Map<String, dynamic>.from(
+                  variant['attributes'] as Map? ?? const {},
+                );
+                final label = attributes.entries
+                    .map((entry) => '${entry.key}: ${entry.value}')
+                    .join(' · ');
+                String? colorName;
+                for (final entry in attributes.entries) {
+                  final key = entry.key.toLowerCase();
+                  if (key.contains('couleur') || key.contains('color')) {
+                    colorName = entry.value.toString();
+                    break;
+                  }
+                }
+                final selected =
+                    controller.selectedVariant.value?['id'] == variant['id'];
+                return ChoiceChip(
+                  selected: selected,
+                  avatar: colorName == null
+                      ? null
+                      : CircleAvatar(
+                          backgroundColor: _productVariantColor(colorName),
+                          radius: 10,
+                        ),
+                  label: Text('$label (${variant['stock']} dispo.)'),
+                  onSelected: (_) => controller.selectedVariant.value = variant,
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'La variante choisie sera jointe automatiquement à votre commande.',
+            style: TextStyle(fontSize: 12, color: context.secondaryTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _productVariantColor(String name) {
+    final value = name.toLowerCase().trim();
+    const colors = <String, Color>{
+      'rouge': Color(0xFFE53935),
+      'red': Color(0xFFE53935),
+      'bleu': Color(0xFF1E88E5),
+      'blue': Color(0xFF1E88E5),
+      'vert': Color(0xFF43A047),
+      'green': Color(0xFF43A047),
+      'noir': Color(0xFF212121),
+      'black': Color(0xFF212121),
+      'blanc': Color(0xFFFAFAFA),
+      'white': Color(0xFFFAFAFA),
+      'jaune': Color(0xFFFDD835),
+      'yellow': Color(0xFFFDD835),
+      'orange': Color(0xFFFB8C00),
+      'rose': Color(0xFFEC407A),
+      'pink': Color(0xFFEC407A),
+      'violet': Color(0xFF8E24AA),
+      'purple': Color(0xFF8E24AA),
+      'marron': Color(0xFF795548),
+      'brown': Color(0xFF795548),
+      'gris': Color(0xFF757575),
+      'grey': Color(0xFF757575),
+      'gray': Color(0xFF757575),
+      'beige': Color(0xFFD7CCC8),
+    };
+    return colors.entries
+        .firstWhere(
+          (entry) => value.contains(entry.key),
+          orElse: () => const MapEntry('', Color(0xFFBDBDBD)),
+        )
+        .value;
+  }
+
+  Widget _buildSellerSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     final shop = product['shop'];
     final seller = product['seller'];
 
-    final shopName = shop?['name']?.toString() ?? seller?['name']?.toString() ?? 'Vendeur';
+    final shopName =
+        shop?['name']?.toString() ?? seller?['name']?.toString() ?? 'Vendeur';
     final shopImage = shop?['image']?.toString() ?? shop?['logo']?.toString();
-    final ownerImage = seller?['avatar']?.toString(); // Get seller avatar from seller object
+    final ownerImage = seller?['avatar']
+        ?.toString(); // Get seller avatar from seller object
     final isCertified = _isShopCertified(product);
     final rating = seller?['rating'] ?? shop?['rating'] ?? 4.5;
     final reviewCount = seller?['reviews_count'] ?? shop?['reviews_count'] ?? 0;
@@ -570,9 +774,7 @@ class ProductView extends GetView<ProductController> {
         decoration: BoxDecoration(
           color: AppThemeSystem.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppThemeSystem.getBorderColor(context),
-          ),
+          border: Border.all(color: AppThemeSystem.getBorderColor(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,7 +841,9 @@ class ProductView extends GetView<ProductController> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                          color: AppThemeSystem.primaryColor.withValues(
+                            alpha: 0.3,
+                          ),
                           width: 2,
                         ),
                       ),
@@ -648,17 +852,19 @@ class ProductView extends GetView<ProductController> {
                             ? Image.network(
                                 ownerImage,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppThemeSystem.primaryColor,
-                                      ),
-                                    ),
-                                  );
-                                },
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppThemeSystem.primaryColor,
+                                              ),
+                                        ),
+                                      );
+                                    },
                                 errorBuilder: (_, __, ___) => Container(
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -796,7 +1002,11 @@ class ProductView extends GetView<ProductController> {
                       SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                          Icon(
+                            Icons.star_rounded,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             '${rating is num ? rating.toStringAsFixed(1) : rating}',
@@ -828,9 +1038,10 @@ class ProductView extends GetView<ProductController> {
                 onPressed: () {
                   final shopId = shop?['id'];
                   if (shopId != null) {
-                    Get.toNamed('/vendor-details', arguments: {
-                      'shop_id': shopId.toString(),
-                    });
+                    Get.toNamed(
+                      '/vendor-details',
+                      arguments: {'shop_id': shopId.toString()},
+                    );
                   } else {
                     Get.snackbar(
                       'Erreur',
@@ -841,10 +1052,7 @@ class ProductView extends GetView<ProductController> {
                     );
                   }
                 },
-                icon: Icon(
-                  Icons.storefront_rounded,
-                  size: 18,
-                ),
+                icon: Icon(Icons.storefront_rounded, size: 18),
                 label: Text('Voir la boutique'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppThemeSystem.primaryColor,
@@ -872,7 +1080,8 @@ class ProductView extends GetView<ProductController> {
     final currentUser = StorageService.getUser();
     final seller = product['seller'] as Map<String, dynamic>?;
     final sellerId = int.tryParse(seller?['id']?.toString() ?? '');
-    final isMyProduct = currentUser != null && sellerId != null && currentUser.id == sellerId;
+    final isMyProduct =
+        currentUser != null && sellerId != null && currentUser.id == sellerId;
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -889,7 +1098,7 @@ class ProductView extends GetView<ProductController> {
       child: SafeArea(
         child: isMyProduct
             ? // Bouton pour gérer mes produits
-            ElevatedButton.icon(
+              ElevatedButton.icon(
                 onPressed: () {
                   Get.toNamed(Routes.PRODUCT_MANAGEMENT);
                 },
@@ -915,44 +1124,51 @@ class ProductView extends GetView<ProductController> {
                 children: [
                   // Bouton Message
                   Expanded(
-                    child: Obx(() => OutlinedButton.icon(
-                      onPressed: controller.isStartingConversation.value
-                          ? null
-                          : () {
-                              AuthGuard.requireAuth(
-                                context,
-                                onAuthenticated: () {
-                                  controller.openConversationWithSeller(
-                                    product: product,
-                                  );
-                                },
-                                featureName: 'la messagerie',
-                              );
-                            },
-                      icon: controller.isStartingConversation.value
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppThemeSystem.primaryColor,
+                    child: Obx(
+                      () => OutlinedButton.icon(
+                        onPressed: controller.isStartingConversation.value
+                            ? null
+                            : () {
+                                AuthGuard.requireAuth(
+                                  context,
+                                  onAuthenticated: () {
+                                    controller.openConversationWithSeller(
+                                      product: product,
+                                    );
+                                  },
+                                  featureName: 'la messagerie',
+                                );
+                              },
+                        icon: controller.isStartingConversation.value
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppThemeSystem.primaryColor,
+                                  ),
                                 ),
-                              ),
-                            )
-                          : Icon(Icons.chat_bubble_outline_rounded),
-                      label: Text(controller.isStartingConversation.value
-                          ? 'Ouverture...'
-                          : 'Message'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppThemeSystem.primaryColor,
-                        side: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                              )
+                            : Icon(Icons.chat_bubble_outline_rounded),
+                        label: Text(
+                          controller.isStartingConversation.value
+                              ? 'Ouverture...'
+                              : 'Message',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppThemeSystem.primaryColor,
+                          side: BorderSide(
+                            color: AppThemeSystem.primaryColor,
+                            width: 2,
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
-                    )),
+                    ),
                   ),
                   SizedBox(width: 12),
                   // Bouton Commander
@@ -968,7 +1184,10 @@ class ProductView extends GetView<ProductController> {
                           featureName: 'passer une commande',
                         );
                       },
-                      icon: Icon(Icons.shopping_cart_rounded, color: Colors.white),
+                      icon: Icon(
+                        Icons.shopping_cart_rounded,
+                        color: Colors.white,
+                      ),
                       label: Text(
                         'Commander',
                         style: context.textStyle(
@@ -1048,9 +1267,10 @@ class ProductView extends GetView<ProductController> {
 
   /// Open map options (Google Maps or Asso Map)
   void _openMapOptions(BuildContext context, Map<String, dynamic> product) {
-    final location = product['location']?.toString() ??
-                    product['shop']?['address']?.toString() ??
-                    'Non spécifiée';
+    final location =
+        product['location']?.toString() ??
+        product['shop']?['address']?.toString() ??
+        'Non spécifiée';
 
     final latitude = product['latitude'] ?? product['shop']?['latitude'];
     final longitude = product['longitude'] ?? product['shop']?['longitude'];
@@ -1170,7 +1390,9 @@ class ProductView extends GetView<ProductController> {
                     Container(
                       padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.15),
+                        color: AppThemeSystem.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -1215,65 +1437,65 @@ class ProductView extends GetView<ProductController> {
 
             // Option 2: Google Maps (toujours affichée)
             InkWell(
-                onTap: () {
-                  Get.back();
-                  _openGoogleMaps(latitude, longitude);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.getSurfaceColor(context),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppThemeSystem.getBorderColor(context),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.grey200,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.map_outlined,
-                          color: AppThemeSystem.grey700,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Google Maps',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Ouvrir dans Google Maps',
-                              style: context.textStyle(
-                                FontSizeType.caption,
-                                color: AppThemeSystem.grey600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.open_in_new_rounded,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ],
+              onTap: () {
+                Get.back();
+                _openGoogleMaps(latitude, longitude);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.getSurfaceColor(context),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppThemeSystem.getBorderColor(context),
                   ),
                 ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.grey200,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.map_outlined,
+                        color: AppThemeSystem.grey700,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Google Maps',
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Ouvrir dans Google Maps',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.grey600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.open_in_new_rounded,
+                      color: AppThemeSystem.grey600,
+                    ),
+                  ],
+                ),
               ),
+            ),
 
             SizedBox(height: 20),
 
@@ -1305,13 +1527,19 @@ class ProductView extends GetView<ProductController> {
   void _openAssoMap(BuildContext context, Map<String, dynamic> product) async {
     final latitude = product['latitude'] ?? product['shop']?['latitude'];
     final longitude = product['longitude'] ?? product['shop']?['longitude'];
-    final location = product['location']?.toString() ?? product['shop']?['address']?.toString();
+    final location =
+        product['location']?.toString() ??
+        product['shop']?['address']?.toString();
 
     final lat = latitude != null
-        ? (latitude is num ? latitude.toDouble() : double.tryParse(latitude.toString()))
+        ? (latitude is num
+              ? latitude.toDouble()
+              : double.tryParse(latitude.toString()))
         : null;
     final lng = longitude != null
-        ? (longitude is num ? longitude.toDouble() : double.tryParse(longitude.toString()))
+        ? (longitude is num
+              ? longitude.toDouble()
+              : double.tryParse(longitude.toString()))
         : null;
 
     if (lat != null && lng != null) {
@@ -1344,10 +1572,14 @@ class ProductView extends GetView<ProductController> {
     double? lng;
 
     if (latitude != null) {
-      lat = latitude is num ? latitude.toDouble() : double.tryParse(latitude.toString());
+      lat = latitude is num
+          ? latitude.toDouble()
+          : double.tryParse(latitude.toString());
     }
     if (longitude != null) {
-      lng = longitude is num ? longitude.toDouble() : double.tryParse(longitude.toString());
+      lng = longitude is num
+          ? longitude.toDouble()
+          : double.tryParse(longitude.toString());
     }
 
     if (lat == null || lng == null) {
@@ -1363,15 +1595,14 @@ class ProductView extends GetView<ProductController> {
     }
 
     // Ouvrir Google Maps avec les coordonnées
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
 
     try {
       final canLaunch = await canLaunchUrl(url);
       if (canLaunch) {
-        await launchUrl(
-          url,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
           'Erreur',
@@ -1395,7 +1626,14 @@ class ProductView extends GetView<ProductController> {
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
-    final productPrice = double.tryParse((product['price_xaf'] ?? product['price']).toString().replaceAll(' ', '')) ?? 0.0;
+    final productPrice =
+        double.tryParse(
+          (product['price_xaf'] ?? product['price']).toString().replaceAll(
+            ' ',
+            '',
+          ),
+        ) ??
+        0.0;
     final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
 
     // Réinitialiser les valeurs
@@ -1403,7 +1641,8 @@ class ProductView extends GetView<ProductController> {
     controller.selectedPartner.value = null;
     controller.deliveryPrice.value = 0;
     controller.deliveryPartners.clear();
-    controller.orderQuantity.value = 1; // réinitialiser la quantité à chaque ouverture
+    controller.orderQuantity.value =
+        1; // réinitialiser la quantité à chaque ouverture
 
     // Charger la position + partenaires
     controller.fetchCurrentLocation().then((_) {
@@ -1412,7 +1651,9 @@ class ProductView extends GetView<ProductController> {
 
     Get.bottomSheet(
       Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         decoration: BoxDecoration(
           color: AppThemeSystem.getBackgroundColor(context),
           borderRadius: BorderRadius.only(
@@ -1449,8 +1690,12 @@ class ProductView extends GetView<ProductController> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                                AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.2,
+                                ),
+                                AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -1493,24 +1738,32 @@ class ProductView extends GetView<ProductController> {
 
                     // Adresse de livraison
                     Obx(() {
-                      final isLoading = controller.isLoadingLocation.value || controller.isLoadingPartners.value;
+                      final isLoading =
+                          controller.isLoadingLocation.value ||
+                          controller.isLoadingPartners.value;
 
                       return Opacity(
                         opacity: isLoading ? 0.6 : 1.0,
                         child: InkWell(
-                          onTap: isLoading ? null : () => _showChangeAddressDialog(context),
+                          onTap: isLoading
+                              ? null
+                              : () => _showChangeAddressDialog(context),
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
                             padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isLoading
                                   ? AppThemeSystem.grey200
-                                  : AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                                  : AppThemeSystem.primaryColor.withValues(
+                                      alpha: 0.05,
+                                    ),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isLoading
                                     ? AppThemeSystem.grey400
-                                    : AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                                    : AppThemeSystem.primaryColor.withValues(
+                                        alpha: 0.2,
+                                      ),
                               ),
                             ),
                             child: Row(
@@ -1520,33 +1773,44 @@ class ProductView extends GetView<ProductController> {
                                   decoration: BoxDecoration(
                                     color: isLoading
                                         ? AppThemeSystem.grey300
-                                        : AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                                        : AppThemeSystem.primaryColor
+                                              .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: controller.isLoadingLocation.value
                                       ? SizedBox(
-                                          width: 20, height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  AppThemeSystem.primaryColor,
+                                                ),
                                           ),
                                         )
                                       : Icon(
                                           Icons.location_on_rounded,
-                                          color: isLoading ? AppThemeSystem.grey600 : AppThemeSystem.primaryColor,
-                                          size: 20
+                                          color: isLoading
+                                              ? AppThemeSystem.grey600
+                                              : AppThemeSystem.primaryColor,
+                                          size: 20,
                                         ),
                                 ),
                                 SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Adresse de livraison',
                                         style: context.textStyle(
                                           FontSizeType.caption,
-                                          color: isLoading ? AppThemeSystem.grey500 : AppThemeSystem.grey600
-                                        )
+                                          color: isLoading
+                                              ? AppThemeSystem.grey500
+                                              : AppThemeSystem.grey600,
+                                        ),
                                       ),
                                       SizedBox(height: 4),
                                       Text(
@@ -1554,16 +1818,22 @@ class ProductView extends GetView<ProductController> {
                                         style: context.textStyle(
                                           FontSizeType.body2,
                                           fontWeight: FontWeight.w600,
-                                          color: isLoading ? AppThemeSystem.grey700 : null,
+                                          color: isLoading
+                                              ? AppThemeSystem.grey700
+                                              : null,
                                         ),
                                         maxLines: 2,
-                                        overflow: TextOverflow.ellipsis
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
                                 if (!isLoading)
-                                  Icon(Icons.edit_outlined, color: AppThemeSystem.primaryColor, size: 20),
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    color: AppThemeSystem.primaryColor,
+                                    size: 20,
+                                  ),
                               ],
                             ),
                           ),
@@ -1582,7 +1852,9 @@ class ProductView extends GetView<ProductController> {
                         labelText: 'Précision de l’adresse (facultatif)',
                         hintText: 'Ex. portail bleu, près de..., étage, repère',
                         prefixIcon: Icon(Icons.signpost_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
 
@@ -1597,7 +1869,9 @@ class ProductView extends GetView<ProductController> {
                         labelText: 'Téléphone à joindre par le livreur',
                         hintText: 'Ex. 6XXXXXXXX',
                         prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
 
@@ -1606,7 +1880,10 @@ class ProductView extends GetView<ProductController> {
                     // Section partenaires de livraison
                     Text(
                       'Choisir un partenaire de livraison',
-                      style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold),
+                      style: context.textStyle(
+                        FontSizeType.body1,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 16),
 
@@ -1618,11 +1895,18 @@ class ProductView extends GetView<ProductController> {
                             child: Column(
                               children: [
                                 CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppThemeSystem.primaryColor,
+                                  ),
                                 ),
                                 SizedBox(height: 12),
-                                Text('Chargement des partenaires...',
-                                  style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                                Text(
+                                  'Chargement des partenaires...',
+                                  style: context.textStyle(
+                                    FontSizeType.caption,
+                                    color: AppThemeSystem.grey600,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1635,249 +1919,348 @@ class ProductView extends GetView<ProductController> {
                           decoration: BoxDecoration(
                             color: AppThemeSystem.getSurfaceColor(context),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+                            border: Border.all(
+                              color: AppThemeSystem.getBorderColor(context),
+                            ),
                           ),
                           child: Center(
-                            child: Text('Aucun partenaire de livraison disponible à ${controller.currentLocation.value}',
-                              style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              'Aucun partenaire de livraison disponible à ${controller.currentLocation.value}',
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                color: AppThemeSystem.grey600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         );
                       }
 
                       // Carousel horizontal de partenaires
                       return SizedBox(
-                        height: AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 230 : 250,
+                        height:
+                            AppThemeSystem.getDeviceType(context) ==
+                                DeviceType.mobile
+                            ? 230
+                            : 250,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: controller.deliveryPartners.length,
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           itemBuilder: (context, index) {
                             final partner = controller.deliveryPartners[index];
-                            final price = (partner['delivery_price'] as num?)?.toDouble() ?? 0;
-                            final distance = partner['distance_km']?.toString() ?? '';
+                            final price =
+                                (partner['delivery_price'] as num?)
+                                    ?.toDouble() ??
+                                0;
+                            final distance =
+                                partner['distance_km']?.toString() ?? '';
                             final logo = partner['company_logo'];
-                            final zoneName = partner['zone_name']?.toString() ?? '';
+                            final zoneName =
+                                partner['zone_name']?.toString() ?? '';
 
                             // Dimensions responsives
-                            final deviceType = AppThemeSystem.getDeviceType(context);
-                            final cardWidth = deviceType == DeviceType.mobile ? 160.0 : 180.0;
-                            final logoSize = deviceType == DeviceType.mobile ? 60.0 : 70.0;
-                            final cardPadding = AppThemeSystem.getElementSpacing(context);
-                            final borderRadius = AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium);
+                            final deviceType = AppThemeSystem.getDeviceType(
+                              context,
+                            );
+                            final cardWidth = deviceType == DeviceType.mobile
+                                ? 160.0
+                                : 180.0;
+                            final logoSize = deviceType == DeviceType.mobile
+                                ? 60.0
+                                : 70.0;
+                            final cardPadding =
+                                AppThemeSystem.getElementSpacing(context);
+                            final borderRadius = AppThemeSystem.getBorderRadius(
+                              context,
+                              BorderRadiusType.medium,
+                            );
 
                             // Wrapper Obx pour réagir aux changements de sélection
                             return Obx(() {
-                              final isSelected = controller.selectedPartner.value?['company_id'] == partner['company_id']
-                                  && controller.selectedPartner.value?['zone_id'] == partner['zone_id'];
+                              final isSelected =
+                                  controller
+                                          .selectedPartner
+                                          .value?['company_id'] ==
+                                      partner['company_id'] &&
+                                  controller
+                                          .selectedPartner
+                                          .value?['zone_id'] ==
+                                      partner['zone_id'];
 
                               return AnimatedContainer(
-                              duration: Duration(milliseconds: 250),
-                              curve: Curves.easeInOut,
-                              width: cardWidth,
-                              margin: EdgeInsets.only(
-                                right: cardPadding,
-                                bottom: 4,
-                                top: 4
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.12)
-                                    : AppThemeSystem.getSurfaceColor(context),
-                                borderRadius: BorderRadius.circular(borderRadius),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppThemeSystem.primaryColor
-                                      : AppThemeSystem.getBorderColor(context),
-                                  width: isSelected ? 2.5 : 1,
+                                duration: Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                                width: cardWidth,
+                                margin: EdgeInsets.only(
+                                  right: cardPadding,
+                                  bottom: 4,
+                                  top: 4,
                                 ),
-                                boxShadow: isSelected ? [
-                                  BoxShadow(
-                                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                                    blurRadius: 12,
-                                    offset: Offset(0, 4),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppThemeSystem.primaryColor.withValues(
+                                          alpha: 0.12,
+                                        )
+                                      : AppThemeSystem.getSurfaceColor(context),
+                                  borderRadius: BorderRadius.circular(
+                                    borderRadius,
                                   ),
-                                ] : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppThemeSystem.primaryColor
+                                        : AppThemeSystem.getBorderColor(
+                                            context,
+                                          ),
+                                    width: isSelected ? 2.5 : 1,
                                   ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    controller.selectPartner(partner);
-                                    controller.withDelivery.value = true;
-                                  },
-                                  borderRadius: BorderRadius.circular(borderRadius),
-                                  splashColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                                  highlightColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                  child: Padding(
-                                    padding: EdgeInsets.all(cardPadding),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                      // Logo dans un cercle
-                                      Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Container(
-                                            width: logoSize,
-                                            height: logoSize,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: isSelected
-                                                  ? AppThemeSystem.primaryColor.withValues(alpha: 0.15)
-                                                  : AppThemeSystem.grey200,
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.3)
-                                                    : Colors.transparent,
-                                                width: 2,
-                                              ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: AppThemeSystem.primaryColor
+                                                .withValues(alpha: 0.2),
+                                            blurRadius: 12,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ]
+                                      : [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.04,
                                             ),
-                                            child: ClipOval(
-                                              child: logo != null && logo.isNotEmpty
-                                                  ? Image.network(
-                                                      logo,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) {
-                                                        return Icon(
-                                                          Icons.local_shipping_rounded,
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      controller.selectPartner(partner);
+                                      controller.withDelivery.value = true;
+                                    },
+                                    borderRadius: BorderRadius.circular(
+                                      borderRadius,
+                                    ),
+                                    splashColor: AppThemeSystem.primaryColor
+                                        .withValues(alpha: 0.2),
+                                    highlightColor: AppThemeSystem.primaryColor
+                                        .withValues(alpha: 0.1),
+                                    child: Padding(
+                                      padding: EdgeInsets.all(cardPadding),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Logo dans un cercle
+                                          Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Container(
+                                                width: logoSize,
+                                                height: logoSize,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: isSelected
+                                                      ? AppThemeSystem
+                                                            .primaryColor
+                                                            .withValues(
+                                                              alpha: 0.15,
+                                                            )
+                                                      : AppThemeSystem.grey200,
+                                                  border: Border.all(
+                                                    color: isSelected
+                                                        ? AppThemeSystem
+                                                              .primaryColor
+                                                              .withValues(
+                                                                alpha: 0.3,
+                                                              )
+                                                        : Colors.transparent,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: ClipOval(
+                                                  child:
+                                                      logo != null &&
+                                                          logo.isNotEmpty
+                                                      ? Image.network(
+                                                          logo,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder:
+                                                              (
+                                                                context,
+                                                                error,
+                                                                stackTrace,
+                                                              ) {
+                                                                return Icon(
+                                                                  Icons
+                                                                      .local_shipping_rounded,
+                                                                  size:
+                                                                      logoSize *
+                                                                      0.47,
+                                                                  color:
+                                                                      isSelected
+                                                                      ? AppThemeSystem
+                                                                            .primaryColor
+                                                                      : AppThemeSystem
+                                                                            .grey600,
+                                                                );
+                                                              },
+                                                        )
+                                                      : Icon(
+                                                          Icons
+                                                              .local_shipping_rounded,
                                                           size: logoSize * 0.47,
                                                           color: isSelected
-                                                              ? AppThemeSystem.primaryColor
-                                                              : AppThemeSystem.grey600,
-                                                        );
-                                                      },
-                                                    )
-                                                  : Icon(
-                                                      Icons.local_shipping_rounded,
-                                                      size: logoSize * 0.47,
-                                                      color: isSelected
-                                                          ? AppThemeSystem.primaryColor
-                                                          : AppThemeSystem.grey600,
+                                                              ? AppThemeSystem
+                                                                    .primaryColor
+                                                              : AppThemeSystem
+                                                                    .grey600,
+                                                        ),
+                                                ),
+                                              ),
+                                              if (isSelected)
+                                                Positioned(
+                                                  top: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(2),
+                                                    decoration: BoxDecoration(
+                                                      color: AppThemeSystem
+                                                          .primaryColor,
+                                                      shape: BoxShape.circle,
                                                     ),
-                                            ),
+                                                    child: Icon(
+                                                      Icons.check,
+                                                      size: 12,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
                                           ),
-                                          if (isSelected)
-                                            Positioned(
-                                              top: 0,
-                                              right: 0,
-                                              child: Container(
-                                                padding: EdgeInsets.all(2),
-                                                decoration: BoxDecoration(
-                                                  color: AppThemeSystem.primaryColor,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.check,
-                                                  size: 12,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
 
-                                      SizedBox(height: 6),
+                                          SizedBox(height: 6),
 
-                                      // Nom du partenaire et zone
-                                      Expanded(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 4),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                partner['company_name'] ?? 'Partenaire',
-                                                style: context.textStyle(
-                                                  FontSizeType.body2,
-                                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                                  color: isSelected ? AppThemeSystem.primaryColor : null,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                          // Nom du partenaire et zone
+                                          Expanded(
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 4,
                                               ),
-                                              if (zoneName.isNotEmpty) ...[
-                                                SizedBox(height: 3),
-                                                Flexible(
-                                                  child: Text(
-                                                    zoneName,
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    partner['company_name'] ??
+                                                        'Partenaire',
                                                     style: context.textStyle(
-                                                      FontSizeType.caption,
+                                                      FontSizeType.body2,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.w600,
                                                       color: isSelected
-                                                          ? AppThemeSystem.primaryColor.withValues(alpha: 0.8)
-                                                          : AppThemeSystem.grey600,
-                                                      fontWeight: FontWeight.w500,
+                                                          ? AppThemeSystem
+                                                                .primaryColor
+                                                          : null,
                                                     ),
                                                     textAlign: TextAlign.center,
-                                                    maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  if (zoneName.isNotEmpty) ...[
+                                                    SizedBox(height: 3),
+                                                    Flexible(
+                                                      child: Text(
+                                                        zoneName,
+                                                        style: context.textStyle(
+                                                          FontSizeType.caption,
+                                                          color: isSelected
+                                                              ? AppThemeSystem
+                                                                    .primaryColor
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.8,
+                                                                    )
+                                                              : AppThemeSystem
+                                                                    .grey600,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(height: 6),
+
+                                          // Prix
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: cardPadding * 0.83,
+                                              vertical: cardPadding * 0.42,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? AppThemeSystem.primaryColor
+                                                  : AppThemeSystem.grey100,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              controller.formatPrice(price),
+                                              style: context.textStyle(
+                                                FontSizeType.body2,
+                                                fontWeight: FontWeight.bold,
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : AppThemeSystem.grey800,
+                                              ),
+                                            ),
+                                          ),
+
+                                          // Distance (si disponible)
+                                          if (distance.isNotEmpty) ...[
+                                            SizedBox(height: 4),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.location_on,
+                                                  size: 11,
+                                                  color: AppThemeSystem.grey600,
+                                                ),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  '$distance km',
+                                                  style: context.textStyle(
+                                                    FontSizeType.caption,
+                                                    color:
+                                                        AppThemeSystem.grey600,
                                                   ),
                                                 ),
                                               ],
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-
-                                      SizedBox(height: 6),
-
-                                      // Prix
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: cardPadding * 0.83,
-                                          vertical: cardPadding * 0.42
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? AppThemeSystem.primaryColor
-                                              : AppThemeSystem.grey100,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          controller.formatPrice(price),
-                                          style: context.textStyle(
-                                            FontSizeType.body2,
-                                            fontWeight: FontWeight.bold,
-                                            color: isSelected ? Colors.white : AppThemeSystem.grey800,
-                                          ),
-                                        ),
-                                      ),
-
-                                      // Distance (si disponible)
-                                      if (distance.isNotEmpty) ...[
-                                        SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              size: 11,
-                                              color: AppThemeSystem.grey600,
-                                            ),
-                                            SizedBox(width: 2),
-                                            Text(
-                                              '$distance km',
-                                              style: context.textStyle(
-                                                FontSizeType.caption,
-                                                color: AppThemeSystem.grey600,
-                                              ),
                                             ),
                                           ],
-                                        ),
-                                      ],
-                                    ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                ),
-                              ),
                               );
                             });
                           },
@@ -1899,97 +2282,173 @@ class ProductView extends GetView<ProductController> {
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                          color: AppThemeSystem.primaryColor.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
-                      child: Obx(() => Column(
-                        children: [
-                          // Sélecteur de quantité (produit normal)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Quantité', style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  InkWell(
-                                    onTap: () {
-                                      if (controller.orderQuantity.value > 1) controller.orderQuantity.value--;
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      width: 34, height: 34,
-                                      decoration: BoxDecoration(
-                                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
+                      child: Obx(
+                        () => Column(
+                          children: [
+                            // Sélecteur de quantité (produit normal)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Quantité',
+                                  style: context.textStyle(
+                                    FontSizeType.body2,
+                                    color: AppThemeSystem.grey600,
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    InkWell(
+                                      onTap: () {
+                                        if (controller.orderQuantity.value > 1)
+                                          controller.orderQuantity.value--;
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        width: 34,
+                                        height: 34,
+                                        decoration: BoxDecoration(
+                                          color: AppThemeSystem.primaryColor
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.remove,
+                                          size: 18,
+                                          color: AppThemeSystem.primaryColor,
+                                        ),
                                       ),
-                                      child: Icon(Icons.remove, size: 18, color: AppThemeSystem.primaryColor),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: Text(
+                                        '${controller.orderQuantity.value}',
+                                        style: context.textStyle(
+                                          FontSizeType.body1,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: () =>
+                                          controller.orderQuantity.value++,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        width: 34,
+                                        height: 34,
+                                        decoration: BoxDecoration(
+                                          color: AppThemeSystem.primaryColor,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.add,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Prix du produit${controller.orderQuantity.value > 1 ? ' (×${controller.orderQuantity.value})' : ''}',
+                                  style: context.textStyle(
+                                    FontSizeType.body2,
+                                    color: AppThemeSystem.grey600,
+                                  ),
+                                ),
+                                Text(
+                                  controller.formatPrice(
+                                    controller.subtotal(productPrice),
+                                  ),
+                                  style: context.textStyle(
+                                    FontSizeType.body2,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (controller.withDelivery.value &&
+                                controller.selectedPartner.value != null) ...[
+                              SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Livraison (${controller.selectedPartner.value!['company_name']})',
+                                      style: context.textStyle(
+                                        FontSizeType.body2,
+                                        color: AppThemeSystem.grey600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    child: Text('${controller.orderQuantity.value}',
-                                        style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
-                                  ),
-                                  InkWell(
-                                    onTap: () => controller.orderQuantity.value++,
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      width: 34, height: 34,
-                                      decoration: BoxDecoration(
-                                        color: AppThemeSystem.primaryColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(Icons.add, size: 18, color: Colors.white),
+                                  Text(
+                                    controller.formatPrice(
+                                      controller.deliveryPrice.value,
+                                    ),
+                                    style: context.textStyle(
+                                      FontSizeType.body2,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppThemeSystem.primaryColor,
                                     ),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
-                          SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Prix du produit${controller.orderQuantity.value > 1 ? ' (×${controller.orderQuantity.value})' : ''}',
-                                  style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
-                              Text(controller.formatPrice(controller.subtotal(productPrice)),
-                                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                          if (controller.withDelivery.value && controller.selectedPartner.value != null) ...[
-                            SizedBox(height: 12),
+                            Divider(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
-                                  child: Text('Livraison (${controller.selectedPartner.value!['company_name']})',
-                                    style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600),
-                                    overflow: TextOverflow.ellipsis),
+                                Text(
+                                  'Total',
+                                  style: context.textStyle(
+                                    FontSizeType.h5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                Text(controller.formatPrice(controller.deliveryPrice.value),
-                                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppThemeSystem.primaryColor)),
+                                Text(
+                                  controller.formatPrice(
+                                    controller.calculateTotal(productPrice),
+                                  ),
+                                  style: context.textStyle(
+                                    FontSizeType.h5,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppThemeSystem.primaryColor,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
-                          Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Total', style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
-                              Text(controller.formatPrice(controller.calculateTotal(productPrice)),
-                                style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor)),
-                            ],
-                          ),
-                        ],
-                      )),
+                        ),
+                      ),
                     ),
 
                     SizedBox(height: 20),
 
                     // Boutons Wallet (KPay / PayPal)
                     Obx(() {
-                      final hasPartner = controller.selectedPartner.value != null;
+                      final hasPartner =
+                          controller.selectedPartner.value != null;
 
                       return Column(
                         children: [
@@ -1998,19 +2457,44 @@ class ProductView extends GetView<ProductController> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: !hasPartner || controller.isCreatingOrder.value
+                              onPressed:
+                                  !hasPartner ||
+                                      controller.isCreatingOrder.value
                                   ? null
-                                  : () => _choosePaymentAndOrder(context, product, productId),
+                                  : () => _choosePaymentAndOrder(
+                                      context,
+                                      product,
+                                      productId,
+                                    ),
                               icon: controller.isCreatingOrder.value
-                                  ? SizedBox(width: 20, height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : Icon(Icons.account_balance_wallet_rounded, color: Colors.white),
-                              label: Text('Choisir un moyen de paiement',
-                                style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      color: Colors.white,
+                                    ),
+                              label: Text(
+                                'Choisir un moyen de paiement',
+                                style: context.textStyle(
+                                  FontSizeType.body1,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: hasPartner ? AppThemeSystem.primaryColor : AppThemeSystem.grey400,
+                                backgroundColor: hasPartner
+                                    ? AppThemeSystem.primaryColor
+                                    : AppThemeSystem.grey400,
                                 padding: EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 elevation: hasPartner ? 4 : 0,
                               ),
                             ),
@@ -2018,9 +2502,14 @@ class ProductView extends GetView<ProductController> {
                           if (!hasPartner)
                             Padding(
                               padding: EdgeInsets.only(top: 10),
-                              child: Text('Sélectionnez un partenaire de livraison pour continuer',
-                                style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey500),
-                                textAlign: TextAlign.center),
+                              child: Text(
+                                'Sélectionnez un partenaire de livraison pour continuer',
+                                style: context.textStyle(
+                                  FontSizeType.caption,
+                                  color: AppThemeSystem.grey500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                         ],
                       );
@@ -2039,7 +2528,11 @@ class ProductView extends GetView<ProductController> {
 
   /// Ouvre le sélecteur STANDARD de moyen de paiement puis lance le sous-parcours
   /// correspondant au rail choisi (identique à toutes les pages de paiement).
-  void _choosePaymentAndOrder(BuildContext context, Map<String, dynamic> product, int productId) async {
+  void _choosePaymentAndOrder(
+    BuildContext context,
+    Map<String, dynamic> product,
+    int productId,
+  ) async {
     final price = double.tryParse(product['price'].toString()) ?? 0;
     final total = controller.calculateTotal(price);
 
@@ -2072,13 +2565,18 @@ class ProductView extends GetView<ProductController> {
   /// Sous-parcours de paiement par redirection (PayPal / carte Stripe) : crée la
   /// commande, ouvre le checkout hébergé en WebView, puis suit la confirmation serveur.
   Future<void> _payViaRedirect(
-      Map<String, dynamic> product, int productId, String paymentMode, String methodCode) async {
+    Map<String, dynamic> product,
+    int productId,
+    String paymentMode,
+    String methodCode,
+  ) async {
     final data = await controller.createRedirectOrder(
       productId: productId,
       quantity: controller.orderQuantity.value,
       paymentMode: paymentMode,
     );
-    if (data == null) return; // échec / lien indisponible (snackbar déjà affiché)
+    if (data == null)
+      return; // échec / lien indisponible (snackbar déjà affiché)
 
     final orderId = data['order_id'] as int;
     final approvalUrl = data['approval_url'] as String;
@@ -2090,7 +2588,10 @@ class ProductView extends GetView<ProductController> {
     // dans le navigateur système : la confirmation se fait de toute façon côté serveur
     // (polling), ce qui rend le paiement fonctionnel partout.
     if (!(GetPlatform.isAndroid || GetPlatform.isIOS)) {
-      final launched = await launchUrl(Uri.parse(approvalUrl), mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        Uri.parse(approvalUrl),
+        mode: LaunchMode.externalApplication,
+      );
       if (launched) {
         controller.pollOrderPayment(orderId);
         Get.snackbar(
@@ -2103,8 +2604,11 @@ class ProductView extends GetView<ProductController> {
         );
         Get.toNamed('/shipment');
       } else {
-        Get.snackbar('Erreur', "Impossible d'ouvrir la page de paiement.",
-            snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar(
+          'Erreur',
+          "Impossible d'ouvrir la page de paiement.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
       return;
     }
@@ -2143,9 +2647,11 @@ class ProductView extends GetView<ProductController> {
   /// confirmation serveur (polling + webhook).
   Future<void> _payViaCard(Map<String, dynamic> product, int productId) async {
     if (!StripeNativeService.isSupported) {
-      Get.snackbar('Indisponible',
-          "Le paiement par carte est disponible sur l'application mobile.",
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Indisponible',
+        "Le paiement par carte est disponible sur l'application mobile.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
@@ -2165,32 +2671,44 @@ class ProductView extends GetView<ProductController> {
 
       if (!ok) {
         // Annulation utilisateur : la commande reste en attente.
-        Get.snackbar('Paiement annulé',
-            "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 4));
+        Get.snackbar(
+          'Paiement annulé',
+          "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
         return;
       }
 
       Get.back(); // fermer le bottomsheet de commande
       controller.pollOrderPayment(orderId);
-      Get.snackbar('Paiement en cours',
-          'Votre paiement est en cours de confirmation. Vous serez notifié.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green, colorText: Colors.white,
-          duration: const Duration(seconds: 5));
+      Get.snackbar(
+        'Paiement en cours',
+        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
       Get.toNamed('/shipment');
     } catch (e) {
-      Get.snackbar('Erreur',
-          e.toString().replaceAll('Exception: ', ''),
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 4));
+      Get.snackbar(
+        'Erreur',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
   /// Confirmer et créer la commande — paiement Mobile Money (KPay direct, USSD).
   /// Les paiements par redirection (PayPal / carte Stripe) passent par [_payViaRedirect].
-  Future<void> _confirmOrder(BuildContext context, Map<String, dynamic> product, int productId, String walletProvider) async {
+  Future<void> _confirmOrder(
+    BuildContext context,
+    Map<String, dynamic> product,
+    int productId,
+    String walletProvider,
+  ) async {
     final price = double.tryParse(product['price'].toString()) ?? 0;
     final total = controller.calculateTotal(price);
 
@@ -2252,8 +2770,12 @@ class ProductView extends GetView<ProductController> {
 
         print('');
         print('🔍 MISE À JOUR DES COORDONNÉES GPS:');
-        print('   controller.clientLatitude: ${controller.clientLatitude.value}');
-        print('   controller.clientLongitude: ${controller.clientLongitude.value}');
+        print(
+          '   controller.clientLatitude: ${controller.clientLatitude.value}',
+        );
+        print(
+          '   controller.clientLongitude: ${controller.clientLongitude.value}',
+        );
 
         // Faire du reverse geocoding pour obtenir l'adresse lisible
         try {
@@ -2271,13 +2793,16 @@ class ProductView extends GetView<ProductController> {
 
             if (placemark.locality != null && placemark.locality!.isNotEmpty) {
               parts.add(placemark.locality!); // Ville
-            } else if (placemark.subAdministrativeArea != null && placemark.subAdministrativeArea!.isNotEmpty) {
+            } else if (placemark.subAdministrativeArea != null &&
+                placemark.subAdministrativeArea!.isNotEmpty) {
               parts.add(placemark.subAdministrativeArea!);
-            } else if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+            } else if (placemark.administrativeArea != null &&
+                placemark.administrativeArea!.isNotEmpty) {
               parts.add(placemark.administrativeArea!);
             }
 
-            if (placemark.subLocality != null && placemark.subLocality!.isNotEmpty) {
+            if (placemark.subLocality != null &&
+                placemark.subLocality!.isNotEmpty) {
               parts.add(placemark.subLocality!); // Quartier
             }
 
@@ -2290,10 +2815,15 @@ class ProductView extends GetView<ProductController> {
             print('   - locality: ${placemark.locality}');
             print('   - subLocality: ${placemark.subLocality}');
             print('   - administrativeArea: ${placemark.administrativeArea}');
-            print('   - subAdministrativeArea: ${placemark.subAdministrativeArea}');
+            print(
+              '   - subAdministrativeArea: ${placemark.subAdministrativeArea}',
+            );
           } else {
-            controller.currentLocation.value = result['address'] ?? '$lat, $lon';
-            print('⚠️ Pas de placemark trouvé, utilisation de l\'adresse brute');
+            controller.currentLocation.value =
+                result['address'] ?? '$lat, $lon';
+            print(
+              '⚠️ Pas de placemark trouvé, utilisation de l\'adresse brute',
+            );
           }
         } catch (e) {
           print('❌ Erreur reverse geocoding: $e');
@@ -2304,24 +2834,38 @@ class ProductView extends GetView<ProductController> {
 
         // Recharger les partenaires de livraison avec la nouvelle position
         print('');
-        print('═══════════════════════════════════════════════════════════════');
+        print(
+          '═══════════════════════════════════════════════════════════════',
+        );
         print('🔍 VÉRIFICATION AVANT RECHARGEMENT DES PARTENAIRES');
-        print('═══════════════════════════════════════════════════════════════');
-        print('📦 controller.currentProductId: ${controller.currentProductId.value}');
+        print(
+          '═══════════════════════════════════════════════════════════════',
+        );
+        print(
+          '📦 controller.currentProductId: ${controller.currentProductId.value}',
+        );
         print('📍 Nouvelle position: ${controller.currentLocation.value}');
-        print('📍 GPS: ${controller.clientLatitude.value}, ${controller.clientLongitude.value}');
+        print(
+          '📍 GPS: ${controller.clientLatitude.value}, ${controller.clientLongitude.value}',
+        );
 
         final productId = controller.currentProductId.value;
         if (productId != 0) {
           print('');
           print('✅ ProductId trouvé, rechargement en cours...');
           print('🔄 Rechargement des partenaires avec la nouvelle position...');
-          print('═══════════════════════════════════════════════════════════════');
+          print(
+            '═══════════════════════════════════════════════════════════════',
+          );
           await controller.loadDeliveryPartners(productId);
           print('');
           print('✅ RECHARGEMENT DES PARTENAIRES TERMINÉ');
-          print('   Nombre de partenaires: ${controller.deliveryPartners.length}');
-          print('═══════════════════════════════════════════════════════════════');
+          print(
+            '   Nombre de partenaires: ${controller.deliveryPartners.length}',
+          );
+          print(
+            '═══════════════════════════════════════════════════════════════',
+          );
         } else {
           print('');
           print('❌ IMPOSSIBLE DE RECHARGER LES PARTENAIRES');
@@ -2331,7 +2875,9 @@ class ProductView extends GetView<ProductController> {
             final product = Get.arguments as Map<String, dynamic>?;
             print('   Get.arguments[\'id\']: ${product?['id']}');
           }
-          print('═══════════════════════════════════════════════════════════════');
+          print(
+            '═══════════════════════════════════════════════════════════════',
+          );
         }
 
         Get.snackbar(
@@ -2342,7 +2888,8 @@ class ProductView extends GetView<ProductController> {
         );
       } else {
         print('❌ Coordonnées invalides reçues du MapSelectionView');
-        controller.currentLocation.value = result['address'] ?? 'Position invalide';
+        controller.currentLocation.value =
+            result['address'] ?? 'Position invalide';
       }
     } else {
       print('ℹ️ Aucune position sélectionnée (annulé)');
@@ -2356,9 +2903,7 @@ class ProductView extends GetView<ProductController> {
 
     Get.dialog(
       Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Column(
@@ -2441,13 +2986,18 @@ class ProductView extends GetView<ProductController> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (addressController.text.trim().isNotEmpty) {
-                          controller.currentLocation.value = addressController.text.trim();
+                          controller.currentLocation.value = addressController
+                              .text
+                              .trim();
                           Get.back();
                           Get.snackbar(
                             'Adresse mise à jour',
                             'Votre adresse de livraison a été modifiée',
                             snackPosition: SnackPosition.BOTTOM,
-                            icon: Icon(Icons.check_circle_rounded, color: Colors.green),
+                            icon: Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.green,
+                            ),
                           );
                         }
                       },
@@ -2494,7 +3044,8 @@ class ProductView extends GetView<ProductController> {
     }
 
     // Try primary_image field
-    if (product['primary_image'] != null && product['primary_image'].toString().isNotEmpty) {
+    if (product['primary_image'] != null &&
+        product['primary_image'].toString().isNotEmpty) {
       final primaryImage = product['primary_image'].toString();
       if (!images.contains(primaryImage)) {
         images.insert(0, primaryImage);
@@ -2502,7 +3053,9 @@ class ProductView extends GetView<ProductController> {
     }
 
     // Try single image field
-    if (images.isEmpty && product['image'] != null && product['image'].toString().isNotEmpty) {
+    if (images.isEmpty &&
+        product['image'] != null &&
+        product['image'].toString().isNotEmpty) {
       images.add(product['image'].toString());
     }
 
@@ -2512,6 +3065,56 @@ class ProductView extends GetView<ProductController> {
     }
 
     return images;
+  }
+
+  void _showZoomableImage(
+    BuildContext context,
+    List<String> images,
+    int initialIndex,
+  ) {
+    final pageController = PageController(initialPage: initialIndex);
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.96),
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: pageController,
+              itemCount: images.length,
+              itemBuilder: (_, index) => InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: Center(child: _buildImageWidget(images[index])),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                ),
+              ),
+            ),
+            const Positioned(
+              bottom: 28,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Text(
+                  'Pincez pour zoomer · balayez pour changer d’image',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(pageController.dispose);
   }
 
   /// Build image widget (network or asset)
@@ -2525,10 +3128,13 @@ class ProductView extends GetView<ProductController> {
           return Center(
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
                   : null,
               strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppThemeSystem.primaryColor),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppThemeSystem.primaryColor,
+              ),
             ),
           );
         },
@@ -2589,8 +3195,12 @@ class ProductView extends GetView<ProductController> {
   }
 
   /// Build similar products section
-  Widget _buildSimilarProductsSection(BuildContext context, Map<String, dynamic> product) {
-    final categoryName = product['category']?['name']?.toString() ?? 'cette catégorie';
+  Widget _buildSimilarProductsSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    final categoryName =
+        product['category']?['name']?.toString() ?? 'cette catégorie';
     final categoryId = product['category']?['id'];
 
     return Padding(
@@ -2614,10 +3224,13 @@ class ProductView extends GetView<ProductController> {
               TextButton(
                 onPressed: () {
                   if (categoryId != null) {
-                    Get.toNamed('/search', arguments: {
-                      'categoryId': categoryId,
-                      'categoryName': categoryName,
-                    });
+                    Get.toNamed(
+                      '/search',
+                      arguments: {
+                        'categoryId': categoryId,
+                        'categoryName': categoryName,
+                      },
+                    );
                   }
                 },
                 child: Text(
@@ -2632,7 +3245,7 @@ class ProductView extends GetView<ProductController> {
             ],
           ),
           SizedBox(height: 12),
-          
+
           // Products list
           Obx(() {
             if (controller.isLoadingSimilarProducts.value) {
@@ -2681,16 +3294,22 @@ class ProductView extends GetView<ProductController> {
   }
 
   /// Build similar product card
-  Widget _buildSimilarProductCard(BuildContext context, Map<String, dynamic> product) {
+  Widget _buildSimilarProductCard(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     final productName = product['name']?.toString() ?? 'Produit';
     final productPrice = product['price_xaf'] ?? product['price'] ?? 0;
     final productStock = product['stock'] ?? 0;
 
     // Get product image
     String? productImage;
-    if (product['primary_image'] != null && product['primary_image'].toString().isNotEmpty) {
+    if (product['primary_image'] != null &&
+        product['primary_image'].toString().isNotEmpty) {
       productImage = product['primary_image'].toString();
-    } else if (product['images'] != null && product['images'] is List && (product['images'] as List).isNotEmpty) {
+    } else if (product['images'] != null &&
+        product['images'] is List &&
+        (product['images'] as List).isNotEmpty) {
       final images = product['images'] as List;
       if (images.isNotEmpty) {
         // Check if it's a map with 'url' key or direct string
@@ -2706,11 +3325,7 @@ class ProductView extends GetView<ProductController> {
     return GestureDetector(
       onTap: () {
         // Navigate to new product with preventDuplicates: false to force route recreation
-        Get.offNamed(
-          '/product',
-          arguments: product,
-          preventDuplicates: false,
-        );
+        Get.offNamed('/product', arguments: product, preventDuplicates: false);
       },
       child: Container(
         width: 160,
@@ -2735,7 +3350,10 @@ class ProductView extends GetView<ProductController> {
             ClipRRect(
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(
-                  AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
+                  AppThemeSystem.getBorderRadius(
+                    context,
+                    BorderRadiusType.medium,
+                  ),
                 ),
               ),
               child: Stack(
@@ -2782,7 +3400,10 @@ class ProductView extends GetView<ProductController> {
                       top: 8,
                       right: 8,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppThemeSystem.errorColor,
                           borderRadius: BorderRadius.circular(4),
@@ -2817,7 +3438,9 @@ class ProductView extends GetView<ProductController> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    controller.formatPrice(double.tryParse(productPrice.toString()) ?? 0),
+                    controller.formatPrice(
+                      double.tryParse(productPrice.toString()) ?? 0,
+                    ),
                     style: context.textStyle(
                       FontSizeType.body2,
                       fontWeight: FontWeight.bold,

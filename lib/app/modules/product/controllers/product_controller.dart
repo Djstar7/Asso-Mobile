@@ -24,12 +24,14 @@ class ProductController extends GetxController {
   final orderQuantity = 1.obs;
   final deliveryPrice = 0.0.obs;
   final currentImageIndex = 0.obs;
+  final selectedVariant = Rx<Map<String, dynamic>?>(null);
 
   final deliveryPartners = <Map<String, dynamic>>[].obs;
   final similarProducts = <Map<String, dynamic>>[].obs;
   final selectedPartner = Rx<Map<String, dynamic>?>(null);
 
-  final TextEditingController addressDetailsController = TextEditingController();
+  final TextEditingController addressDetailsController =
+      TextEditingController();
   final TextEditingController customerPhoneController = TextEditingController();
 
   @override
@@ -64,7 +66,8 @@ class ProductController extends GetxController {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
         currentLocation.value = 'Permission de localisation refusée';
         return;
       }
@@ -79,7 +82,10 @@ class ProductController extends GetxController {
       clientLatitude.value = position.latitude;
       clientLongitude.value = position.longitude;
 
-      final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
         final parts = <String>[];
@@ -87,14 +93,18 @@ class ProductController extends GetxController {
         if (placemark.locality != null && placemark.locality!.isNotEmpty) {
           parts.add(placemark.locality!);
         }
-        if (placemark.subLocality != null && placemark.subLocality!.isNotEmpty) {
+        if (placemark.subLocality != null &&
+            placemark.subLocality!.isNotEmpty) {
           parts.add(placemark.subLocality!);
         }
-        if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+        if (placemark.administrativeArea != null &&
+            placemark.administrativeArea!.isNotEmpty) {
           parts.add(placemark.administrativeArea!);
         }
 
-        currentLocation.value = parts.isNotEmpty ? parts.join(', ') : 'Position actuelle';
+        currentLocation.value = parts.isNotEmpty
+            ? parts.join(', ')
+            : 'Position actuelle';
       } else {
         currentLocation.value = 'Position actuelle';
       }
@@ -250,7 +260,18 @@ class ProductController extends GetxController {
         customerPhone: phone.isEmpty ? null : phone,
         deliveryLatitude: clientLatitude.value,
         deliveryLongitude: clientLongitude.value,
-        notes: details.isEmpty ? null : details,
+        notes:
+            [
+              if (selectedVariant.value != null)
+                'Variante: ${Map<String, dynamic>.from(selectedVariant.value!['attributes'] as Map? ?? const {}).entries.map((entry) => '${entry.key}: ${entry.value}').join(', ')}',
+              if (details.isNotEmpty) details,
+            ].join(' | ').trim().isEmpty
+            ? null
+            : [
+                if (selectedVariant.value != null)
+                  'Variante: ${Map<String, dynamic>.from(selectedVariant.value!['attributes'] as Map? ?? const {}).entries.map((entry) => '${entry.key}: ${entry.value}').join(', ')}',
+                if (details.isNotEmpty) details,
+              ].join(' | '),
       );
 
       if (!response.success) {
@@ -330,7 +351,9 @@ class ProductController extends GetxController {
     } catch (_) {}
   }
 
-  Future<void> openConversationWithSeller({required Map<String, dynamic> product}) async {
+  Future<void> openConversationWithSeller({
+    required Map<String, dynamic> product,
+  }) async {
     isStartingConversation.value = true;
     try {
       final shop = product['shop'] as Map<String, dynamic>?;
@@ -338,7 +361,11 @@ class ProductController extends GetxController {
       if (shopId != null) {
         await Get.toNamed('/chat', arguments: {'shop_id': shopId});
       } else {
-        Get.snackbar('Erreur', 'Impossible de démarrer la conversation.', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar(
+          'Erreur',
+          'Impossible de démarrer la conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     } finally {
       isStartingConversation.value = false;
