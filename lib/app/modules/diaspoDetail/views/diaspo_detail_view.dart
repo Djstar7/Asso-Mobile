@@ -39,6 +39,10 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                   children: [
                     _buildUserCard(context, offer, isDark),
                     const SizedBox(height: 16),
+                    if (!offer.profileVerified) ...[
+                      _buildUnverifiedNotice(offer, isDark),
+                      const SizedBox(height: 16),
+                    ],
                     _buildRouteCard(context, offer, isDark),
                     const SizedBox(height: 16),
                     _buildDatesCard(context, offer, isDark),
@@ -84,7 +88,8 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
 
   /// Carte voyageur
   Widget _buildUserCard(BuildContext context, offer, bool isDark) {
-    final verified = offer.verificationStatus == 'verified';
+    final verified = offer.profileVerified;
+    const unverifiedColor = Colors.orange;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDeco(isDark),
@@ -123,18 +128,56 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (verified ? const Color(0xFF16A34A) : _muted(isDark)).withValues(alpha: 0.12),
+                    color: (verified ? const Color(0xFF16A34A) : unverifiedColor).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    verified ? 'Voyageur vérifié' : 'Voyageur',
+                    verified ? 'Voyageur vérifié' : 'Profil non vérifié',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: verified ? const Color(0xFF16A34A) : _muted(isDark),
+                      color: verified ? const Color(0xFF16A34A) : unverifiedColor,
                     ),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Explication de la mention « Profil non vérifié » (acheteur ou voyageur).
+  Widget _buildUnverifiedNotice(offer, bool isDark) {
+    const color = Colors.orange;
+    final deadline = offer.formattedVerificationDeadline;
+    final text = controller.isMyOffer.value
+        ? 'Votre offre est en ligne avec la mention « Profil non vérifié » et ne peut pas encore être réservée. '
+            '${deadline != null ? 'Faites valider votre identité avant le $deadline, sinon elle sera retirée.' : 'Faites valider votre identité depuis l\'espace DIASPO.'}'
+        : 'L\'identité de ce voyageur n\'a pas encore été vérifiée par ASSO. '
+            'Vous pouvez lui écrire ; la réservation ouvrira dès la validation de son profil.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.gpp_maybe_outlined, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Profil non vérifié', style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+                const SizedBox(height: 4),
+                Text(text, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87)),
               ],
             ),
           ),
@@ -377,9 +420,14 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             child: SizedBox(
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: controller.openBooking,
-                icon: const Icon(Icons.shopping_bag_outlined),
-                label: const Text('Commander'),
+                // Réservation fermée tant que le profil n'est pas vérifié.
+                onPressed: (controller.offer.value?.profileVerified ?? false) ? controller.openBooking : null,
+                icon: Icon((controller.offer.value?.profileVerified ?? false)
+                    ? Icons.shopping_bag_outlined
+                    : Icons.lock_clock_outlined),
+                label: Text((controller.offer.value?.profileVerified ?? false)
+                    ? 'Commander'
+                    : 'Après vérification'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
                   foregroundColor: Colors.white,

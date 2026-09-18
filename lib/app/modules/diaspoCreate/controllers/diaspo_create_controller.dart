@@ -276,12 +276,17 @@ class DiaspoCreateController extends GetxController {
       );
 
       Get.offNamed('/diaspo/detail', arguments: {'offer': createdOffer});
+      final deadline = createdOffer.formattedVerificationDeadline;
       Get.snackbar(
-        'Succès',
-        'Votre offre a été créée avec succès. Elle sera vérifiée par notre équipe.',
+        createdOffer.profileVerified ? 'Offre publiée' : 'Offre publiée · Profil non vérifié',
+        createdOffer.profileVerified
+            ? 'Votre offre est en ligne et réservable.'
+            : 'Elle sera réservable dès la validation de votre identité'
+                '${deadline != null ? ' (à régulariser avant le $deadline)' : ''}.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: createdOffer.profileVerified ? Colors.green : Colors.orange,
         colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
     } catch (e) {
       // Parse error message from server

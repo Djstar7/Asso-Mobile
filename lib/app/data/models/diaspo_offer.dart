@@ -9,6 +9,8 @@ class DiaspoOffer {
   final DateTime? verifiedAt;
   final int? verifiedBy;
   final String? rejectionReason;
+  // Échéance avant retrait si l'identité du voyageur n'est pas validée.
+  final DateTime? verificationDeadlineAt;
 
   // Trip information
   final String departureCountry;
@@ -32,7 +34,12 @@ class DiaspoOffer {
 
   // Computed
   final String formattedPrice;
+  /// Réservable : publiée ET profil du voyageur vérifié.
   final bool isAvailable;
+  /// Visible dans le catalogue (même si le profil n'est pas encore vérifié).
+  final bool isPublished;
+  /// Faux → afficher « Profil non vérifié » (réservation fermée).
+  final bool profileVerified;
   final double? tripDurationHours;
 
   // Relations
@@ -48,6 +55,7 @@ class DiaspoOffer {
     this.verifiedAt,
     this.verifiedBy,
     this.rejectionReason,
+    this.verificationDeadlineAt,
     required this.departureCountry,
     required this.departureCity,
     required this.departureDateTime,
@@ -63,6 +71,8 @@ class DiaspoOffer {
     this.canDelete = true,
     required this.formattedPrice,
     required this.isAvailable,
+    this.isPublished = false,
+    this.profileVerified = false,
     this.tripDurationHours,
     this.user,
     required this.createdAt,
@@ -78,6 +88,9 @@ class DiaspoOffer {
       verifiedAt: json['verified_at'] != null ? DateTime.parse(json['verified_at']) : null,
       verifiedBy: json['verified_by'],
       rejectionReason: json['rejection_reason'],
+      verificationDeadlineAt: json['verification_deadline_at'] != null
+          ? DateTime.parse(json['verification_deadline_at']).toLocal()
+          : null,
       departureCountry: json['departure_country'] ?? '',
       departureCity: json['departure_city'] ?? '',
       departureDateTime: DateTime.parse(json['departure_datetime']),
@@ -93,6 +106,9 @@ class DiaspoOffer {
       canDelete: json['can_delete'] ?? true,
       formattedPrice: json['formatted_price'] ?? '',
       isAvailable: json['is_available'] ?? false,
+      isPublished: json['is_published'] ?? false,
+      profileVerified: json['profile_verified'] ??
+          (json['verification_status'] == 'verified'),
       tripDurationHours: json['trip_duration_hours'] != null
           ? double.parse(json['trip_duration_hours'].toString())
           : null,
@@ -111,6 +127,7 @@ class DiaspoOffer {
       'verified_at': verifiedAt?.toIso8601String(),
       'verified_by': verifiedBy,
       'rejection_reason': rejectionReason,
+      'verification_deadline_at': verificationDeadlineAt?.toIso8601String(),
       'departure_country': departureCountry,
       'departure_city': departureCity,
       'departure_datetime': departureDateTime.toIso8601String(),
@@ -124,9 +141,20 @@ class DiaspoOffer {
       'views_count': viewsCount,
       'bookings_count': bookingsCount,
       'can_delete': canDelete,
+      'is_available': isAvailable,
+      'is_published': isPublished,
+      'profile_verified': profileVerified,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
+  }
+
+  /// Échéance de régularisation au format jj/mm/aaaa (null si sans objet).
+  String? get formattedVerificationDeadline {
+    final d = verificationDeadlineAt;
+    if (d == null || profileVerified) return null;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year}';
   }
 
   /// Symbole de la devise RÉELLE de l'offre (et non celle de l'utilisateur).
@@ -168,6 +196,7 @@ class DiaspoOffer {
     DateTime? verifiedAt,
     int? verifiedBy,
     String? rejectionReason,
+    DateTime? verificationDeadlineAt,
     String? departureCountry,
     String? departureCity,
     DateTime? departureDateTime,
@@ -183,6 +212,8 @@ class DiaspoOffer {
     bool? canDelete,
     String? formattedPrice,
     bool? isAvailable,
+    bool? isPublished,
+    bool? profileVerified,
     double? tripDurationHours,
     DiaspoUser? user,
     DateTime? createdAt,
@@ -196,6 +227,8 @@ class DiaspoOffer {
       verifiedAt: verifiedAt ?? this.verifiedAt,
       verifiedBy: verifiedBy ?? this.verifiedBy,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      verificationDeadlineAt:
+          verificationDeadlineAt ?? this.verificationDeadlineAt,
       departureCountry: departureCountry ?? this.departureCountry,
       departureCity: departureCity ?? this.departureCity,
       departureDateTime: departureDateTime ?? this.departureDateTime,
@@ -211,6 +244,8 @@ class DiaspoOffer {
       canDelete: canDelete ?? this.canDelete,
       formattedPrice: formattedPrice ?? this.formattedPrice,
       isAvailable: isAvailable ?? this.isAvailable,
+      isPublished: isPublished ?? this.isPublished,
+      profileVerified: profileVerified ?? this.profileVerified,
       tripDurationHours: tripDurationHours ?? this.tripDurationHours,
       user: user ?? this.user,
       createdAt: createdAt ?? this.createdAt,

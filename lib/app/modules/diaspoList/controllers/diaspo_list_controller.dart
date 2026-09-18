@@ -26,6 +26,8 @@ class DiaspoListController extends GetxController {
   // Verification status
   final verificationStatus = 'unverified'.obs;
   final canCreateOffers = false.obs;
+  // Échéance la plus proche avant retrait d'une offre « Profil non vérifié ».
+  final Rx<DateTime?> nextVerificationDeadline = Rx<DateTime?>(null);
 
   // Document upload
   final Rx<String?> selectedDocumentType = Rx<String?>(
@@ -78,6 +80,9 @@ class DiaspoListController extends GetxController {
         verificationStatus.value =
             response['data']['verification_status'] ?? 'unverified';
         canCreateOffers.value = response['data']['can_create_offers'] ?? false;
+        final deadline = response['data']['next_deadline'];
+        nextVerificationDeadline.value =
+            deadline != null ? DateTime.tryParse(deadline)?.toLocal() : null;
       }
     } catch (e) {
       print('Error loading verification status: $e');
@@ -312,10 +317,18 @@ class DiaspoListController extends GetxController {
     return offer.userId == currentUser.id;
   }
 
+  /// Échéance de régularisation formatée (jj/mm/aaaa), ou null.
+  String? get formattedNextDeadline {
+    final d = nextVerificationDeadline.value;
+    if (d == null) return null;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year}';
+  }
+
   /// Handle create offer button
   void handleCreateOffer() {
-    // L'identité n'empêche plus la saisie : le backend conserve simplement
-    // l'offre en attente et hors du catalogue jusqu'à sa validation.
+    // L'identité n'empêche pas la publication : l'offre est en ligne avec la
+    // mention « Profil non vérifié » jusqu'à la validation de l'identité.
     Get.toNamed('/diaspo/create');
   }
 
@@ -354,6 +367,7 @@ class DiaspoListController extends GetxController {
             ),
             content: const Text(
               'Votre pièce d\'identité est en cours de vérification par notre équipe.\n\n'
+              'En attendant, vos offres restent visibles avec la mention « Profil non vérifié ». '
               'Vous recevrez une notification dès que votre profil sera validé (généralement sous 24-48h).',
             ),
             actions: [
@@ -378,8 +392,9 @@ class DiaspoListController extends GetxController {
                 ),
               ],
             ),
-            content: const Text(
+            content: Text(
               'Votre vérification a été refusée.\n\n'
+              '${formattedNextDeadline != null ? 'Envoyez des pièces conformes avant le $formattedNextDeadline, sinon vos offres seront retirées.\n\n' : ''}'
               'Voulez-vous soumettre à nouveau votre pièce d\'identité ?',
             ),
             actions: [
@@ -415,7 +430,9 @@ class DiaspoListController extends GetxController {
               ],
             ),
             content: const Text(
-              'Vous pouvez enregistrer votre offre maintenant, mais elle ne sera publiée qu\'après la vérification de votre identité.\n\n'
+              'Vous pouvez publier votre offre dès maintenant : elle s\'affichera avec la mention « Profil non vérifié » '
+              'et ne pourra pas être réservée tant que votre identité n\'est pas validée. '
+              'Sans pièces conformes dans le délai fixé par ASSO, elle sera retirée.\n\n'
               'Document requis (au choix):\n'
               '• Carte Nationale d\'Identité (CNI)\n'
               '• Passeport',

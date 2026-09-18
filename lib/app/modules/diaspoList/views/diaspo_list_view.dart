@@ -53,9 +53,17 @@ class DiaspoListView extends GetView<DiaspoListController> {
         : isRejected
             ? 'Vérification à compléter'
             : 'Vérifiez votre identité';
+    final deadline = controller.formattedNextDeadline;
+    final deadlineNote = deadline != null
+        ? ' Sans validation avant le $deadline, elles seront retirées.'
+        : '';
     final message = isPending
-        ? 'Vos offres restent enregistrées et seront publiées après validation.'
-        : 'Vous pouvez créer une offre, mais elle restera en attente jusqu\'à la validation de votre identité.';
+        ? 'Vos offres sont en ligne avec la mention « Profil non vérifié » jusqu\'à la validation.$deadlineNote'
+        : isRejected
+            ? 'Vos pièces n\'ont pas été acceptées. Renvoyez des pièces conformes.$deadlineNote'
+            : deadline != null
+                ? 'Vos offres affichent « Profil non vérifié » et ne sont pas réservables.$deadlineNote'
+                : 'Vous pouvez publier dès maintenant : vos offres afficheront « Profil non vérifié » jusqu\'à la validation de votre identité.';
 
     return Container(
       width: double.infinity,
@@ -560,6 +568,9 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                 if (showMine) ...[
                   const SizedBox(height: 12),
                   _buildOfferStatusBadge(offer),
+                ] else if (!offer.profileVerified) ...[
+                  const SizedBox(height: 12),
+                  _buildUnverifiedProfileChip(),
                 ],
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -617,6 +628,30 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
     );
   }
 
+  /// Mention publique : le voyageur n'a pas encore fait valider son identité.
+  Widget _buildUnverifiedProfileChip() {
+    const color = Colors.orange;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.gpp_maybe_outlined, size: 14, color: color),
+          SizedBox(width: 5),
+          Text(
+            'Profil non vérifié',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOfferStatusBadge(dynamic offer) {
     late final Color color;
     late final IconData icon;
@@ -627,9 +662,12 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
       icon = Icons.cancel_outlined;
       label = 'Offre refusée';
     } else if (offer.verificationStatus != 'verified') {
+      final deadline = offer.formattedVerificationDeadline;
       color = Colors.orange;
       icon = Icons.badge_outlined;
-      label = 'En attente de vérification d\'identité';
+      label = deadline != null
+          ? 'Publiée · Profil non vérifié — à régulariser avant le $deadline'
+          : 'Publiée · Profil non vérifié';
     } else if (offer.status == 'pending') {
       color = Colors.orange;
       icon = Icons.hourglass_top;

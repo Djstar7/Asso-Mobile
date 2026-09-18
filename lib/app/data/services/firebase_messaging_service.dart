@@ -377,6 +377,15 @@ class FirebaseMessagingService extends GetxService {
         }
         break;
 
+      // Vérification d'identité Diaspo (validée, refusée, échéance, offre retirée) :
+      // tout se consulte depuis l'espace DIASPO (bannière + onglet « Mes offres »).
+      case 'diaspo_verified':
+      case 'diaspo_rejected':
+      case 'diaspo_verification_deadline':
+      case 'diaspo_offer_removed':
+        Get.toNamed(Routes.DIASPO);
+        break;
+
       // Notifications vendeur : ouvrir la gestion des commandes / des forfaits.
       case 'new_order_vendor':
       case 'order_cancelled_vendor':
