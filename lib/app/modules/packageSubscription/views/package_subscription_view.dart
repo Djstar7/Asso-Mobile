@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/package_subscription_controller.dart';
+import '../widgets/sales_code_field.dart';
 
 class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
   const PackageSubscriptionView({super.key});
@@ -67,6 +68,10 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                       _buildCurrentPackageSection(context),
                       SizedBox(height: context.sectionSpacing),
                     ],
+
+                    // Code commercial (P6)
+                    SalesCodeField(input: controller.salesCode),
+                    SizedBox(height: context.sectionSpacing),
 
                     // Available Packages
                     if (controller.packages.isEmpty)

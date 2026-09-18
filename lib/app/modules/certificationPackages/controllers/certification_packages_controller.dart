@@ -5,6 +5,7 @@ import '../../../data/providers/wallet_service.dart';
 import '../../../data/models/wallet_model.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../packageSubscription/widgets/sales_code_field.dart';
 
 class CertificationPackagesController extends GetxController {
   bool _isDisposed = false;
@@ -17,6 +18,9 @@ class CertificationPackagesController extends GetxController {
 
   final wallet = Rx<WalletModel?>(null);
   final isLoadingWallet = false.obs;
+
+  // P6 : code commercial facultatif, vérifié avant le paiement.
+  final salesCode = SalesCodeInput();
 
   @override
   void onInit() {
@@ -86,6 +90,7 @@ Future<bool> createOrder({
       paymentMode: paymentMode,
       provider: kpayProvider,
       phoneNumber: kpayPhone,
+      salesCode: salesCode.code,
     );
 
     if (response.success) {
@@ -94,6 +99,8 @@ Future<bool> createOrder({
         _pollOrderPayment(subscriptionId);
       }
       return true;
+    } else if (salesCode.handleServerRejection(response)) {
+      return false;
     } else {
       Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
           snackPosition: SnackPosition.BOTTOM);
@@ -116,7 +123,9 @@ Future<String?> payWithWallet({required int packageId}) async {
     final response = await PackageService.subscribePackageDirect(
       packageId,
       paymentMode: 'wallet',
+      salesCode: salesCode.code,
     );
+    if (salesCode.handleServerRejection(response)) return null;
     if (!response.success) {
       Get.snackbar('Paiement impossible',
           response.message.isNotEmpty ? response.message : 'Échec du paiement',
@@ -143,8 +152,10 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
     final response = await PackageService.subscribePackageDirect(
       packageId,
       paymentMode: 'stripe_direct',
+      salesCode: salesCode.code,
     );
 
+    if (salesCode.handleServerRejection(response)) return null;
     if (response.success) {
       final subscriptionId = response.data?['subscription_id'];
       final clientSecret = response.data?['client_secret']?.toString();
@@ -212,6 +223,7 @@ void _pollOrderPayment(int subscriptionId) async {
   @override
   void onClose() {
     _isDisposed = true;
+    salesCode.dispose();
     super.onClose();
   }
 }

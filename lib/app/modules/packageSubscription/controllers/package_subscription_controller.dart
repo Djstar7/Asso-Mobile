@@ -9,6 +9,7 @@ import '../../../data/models/payment_method_option.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../widgets/payment_loading_dialog.dart';
 import '../widgets/payment_success_dialog.dart';
+import '../widgets/sales_code_field.dart';
 import '../../../data/services/stripe_native_service.dart';
 
 class PackageSubscriptionController extends GetxController {
@@ -25,6 +26,9 @@ class PackageSubscriptionController extends GetxController {
 
   // Empêche le lancement de plusieurs abonnements simultanés.
   final isSubscribing = false.obs;
+
+  // P6 : code commercial facultatif, vérifié avant le paiement.
+  final salesCode = SalesCodeInput();
 
   @override
   void onInit() {
@@ -128,6 +132,9 @@ class PackageSubscriptionController extends GetxController {
     selectPackage(package);
     final price = (package['price'] ?? 0).toDouble();
 
+    // 0) Code commercial saisi : il doit être valide avant de payer.
+    if (!await salesCode.ensureReady() || _isDisposed) return;
+
     // 1) Choix du moyen de paiement (tous affichés, grisés si indisponibles).
     final display = CurrencyService.displayFromPivot(price);
     final method = await PaymentMethodSelector.show(
@@ -169,6 +176,7 @@ class PackageSubscriptionController extends GetxController {
       itemLabel: 'Forfait ${package['name'] ?? ''}',
       amount: price,
       balance: method.balance ?? 0,
+      salesCode: salesCode.code,
     );
     if (!confirmed || _isDisposed) return;
 
@@ -179,11 +187,13 @@ class PackageSubscriptionController extends GetxController {
       final response = await PackageService.subscribePackageDirect(
         package['id'] as int,
         paymentMode: 'wallet',
+        salesCode: salesCode.code,
       );
       if (_isDisposed) return;
       PaymentLoadingDialog.hide();
 
       if (!response.success) {
+        if (salesCode.handleServerRejection(response)) return;
         _showSubscriptionError(response.message);
         return;
       }
@@ -223,6 +233,7 @@ class PackageSubscriptionController extends GetxController {
         paymentMode: 'kpay_direct',
         provider: selection['provider'],
         phoneNumber: selection['phone'],
+        salesCode: salesCode.code,
       );
 
       if (_isDisposed) return;
@@ -230,6 +241,7 @@ class PackageSubscriptionController extends GetxController {
 
       final subscriptionId = _subscriptionIdFrom(response);
       if (!response.success || subscriptionId == null) {
+        if (salesCode.handleServerRejection(response)) return;
         _showSubscriptionError(response.message);
         return;
       }
@@ -270,6 +282,7 @@ class PackageSubscriptionController extends GetxController {
       final response = await PackageService.subscribePackageDirect(
         package['id'] as int,
         paymentMode: 'stripe_direct',
+        salesCode: salesCode.code,
       );
 
       if (_isDisposed) return;
@@ -280,6 +293,7 @@ class PackageSubscriptionController extends GetxController {
       final publishableKey = response.data?['publishable_key']?.toString();
 
       if (!response.success || subscriptionId == null) {
+        if (salesCode.handleServerRejection(response)) return;
         _showSubscriptionError(response.message);
         return;
       }
@@ -427,6 +441,7 @@ class PackageSubscriptionController extends GetxController {
     print('========================================');
 
     _isDisposed = true;
+    salesCode.dispose();
     super.onClose();
 
     print('  └─ Controller disposed safely');

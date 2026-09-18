@@ -14,6 +14,8 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
   final String itemLabel;
   final double amount;
   final double balance;
+  /// Code commercial vérifié saisi à la souscription d'un forfait (P6), rappelé ici.
+  final String? salesCode;
 
   const WalletPaymentConfirmDialog({
     super.key,
@@ -21,6 +23,7 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
     required this.itemLabel,
     required this.amount,
     required this.balance,
+    this.salesCode,
   });
 
   static Future<bool> show({
@@ -28,6 +31,7 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
     required double amount,
     required double balance,
     String title = 'Payer avec mon Wallet',
+    String? salesCode,
   }) async {
     final ok = await Get.dialog<bool>(
       WalletPaymentConfirmDialog(
@@ -35,6 +39,7 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
         itemLabel: itemLabel,
         amount: amount,
         balance: balance,
+        salesCode: salesCode,
       ),
     );
     return ok == true;
@@ -109,6 +114,8 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
           row('À payer', '− ${_fmt(amount)}', color: AppThemeSystem.errorColor),
           const Divider(height: 20),
           row('Solde après paiement', _fmt(after), strong: true),
+          if (salesCode != null && salesCode!.isNotEmpty)
+            row('Code commercial', salesCode!),
           const SizedBox(height: 8),
           Text(
             'Le montant est débité immédiatement de votre Wallet ASSO.',

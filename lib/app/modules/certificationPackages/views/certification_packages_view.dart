@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/certification_packages_controller.dart';
+import '../../packageSubscription/widgets/sales_code_field.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
@@ -77,6 +78,10 @@ class CertificationPackagesView
 
                     // Benefits Section
                     _buildBenefitsSection(context),
+                    SizedBox(height: context.sectionSpacing),
+
+                    // Code commercial (P6)
+                    SalesCodeField(input: controller.salesCode),
                     SizedBox(height: context.sectionSpacing),
 
                     // Packages List
@@ -552,6 +557,10 @@ class CertificationPackagesView
   ) async {
     final packageId = package['id'] as int;
     final price = (package['price'] ?? 0).toDouble(); // XAF (devise des forfaits)
+
+    // Code commercial saisi : il doit être valide avant de payer (P6).
+    if (!await controller.salesCode.ensureReady()) return;
+
     final display = CurrencyService.displayFromPivot(price);
 
     final method = await PaymentMethodSelector.show(
@@ -623,6 +632,7 @@ class CertificationPackagesView
       itemLabel: '${package['name'] ?? 'Certification'}',
       amount: price,
       balance: method.balance ?? 0,
+      salesCode: controller.salesCode.code,
     );
     if (!confirmed) return;
 

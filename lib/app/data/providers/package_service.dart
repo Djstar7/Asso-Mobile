@@ -88,13 +88,17 @@ class PackageService {
   ///  - stripe_direct : la réponse contient client_secret / publishable_key pour la
   ///    Payment Sheet, confirmation par polling.
   ///
+  /// [salesCode] : code commercial facultatif (P6). Code invalide ⇒ 422
+  /// `{ code: "invalid_sales_code", message }`.
+  ///
   /// Réponse 201 : { success, message, payment_mode, subscription_id,
-  ///                 status:"pending|paid", payment_reference, ... }
+  ///                 status:"pending|paid", payment_reference, sales_code, ... }
   static Future<ApiResponse> subscribePackageDirect(
     int packageId, {
     required String paymentMode,
     String? provider,
     String? phoneNumber,
+    String? salesCode,
   }) async {
     print('');
     print('========================================');
@@ -111,6 +115,9 @@ class PackageService {
       if (paymentMode == 'kpay_direct') {
         body['provider'] = provider;
         body['phone_number'] = phoneNumber;
+      }
+      if (salesCode != null && salesCode.isNotEmpty) {
+        body['sales_code'] = salesCode;
       }
 
       final response = await ApiProvider.post(

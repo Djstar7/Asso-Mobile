@@ -166,6 +166,9 @@ class AppConstants {
   static const String packagesUrl = '/v1/packages';
   static const String subscribePackageUrl = '/v1/packages/subscribe';
   static const String currentPackageUrl = '/v1/vendor/package/current';
+  // P6 : vérification d'un code commercial avant souscription
+  //   GET $salesCodeUrl/{code} → { data:{ code, agent_display_name } } | 404
+  static const String salesCodeUrl = '/v1/sales-codes';
   // Statut de paiement d'un abonnement vendeur (polling) :
   //   GET $packageSubscriptionUrl/{subscription_id}/payment-status
   static const String packageSubscriptionUrl = '/v1/packages/subscription';
