@@ -158,4 +158,31 @@ class WalletService {
       body: {},
     );
   }
+
+  /// Coordonnées de retrait Mobile Money enregistrées (`data` = null si aucune).
+  static Future<ApiResponse> getPayoutAccount() async {
+    return await ApiProvider.get(AppConstants.walletPayoutAccountUrl);
+  }
+
+  /// Enregistre / remplace les coordonnées de retrait Mobile Money.
+  static Future<ApiResponse> savePayoutAccount({
+    required String provider, // code opérateur KPay (ex. ORANGE_CMR)
+    required String phoneNumber, // international sans '+'
+    String? accountHolder,
+  }) async {
+    return await ApiProvider.put(
+      AppConstants.walletPayoutAccountUrl,
+      body: {
+        'provider': provider,
+        'phone_number': phoneNumber,
+        if (accountHolder != null && accountHolder.isNotEmpty)
+          'account_holder': accountHolder,
+      },
+    );
+  }
+
+  /// Supprime les coordonnées de retrait enregistrées.
+  static Future<ApiResponse> deletePayoutAccount() async {
+    return await ApiProvider.delete(AppConstants.walletPayoutAccountUrl);
+  }
 }

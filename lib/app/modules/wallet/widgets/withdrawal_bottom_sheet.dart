@@ -53,6 +53,16 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   bool _kpayValid = false;
   bool _isProcessing = false;
 
+  // Mémoriser le numéro saisi comme compte de retrait (proposé si différent de l'enregistré).
+  bool _rememberAccount = true;
+
+  Map<String, dynamic>? get _savedAccount => walletController.payoutAccount.value;
+
+  bool get _differsFromSaved =>
+      _savedAccount == null ||
+      _savedAccount!['provider'] != _kpayProvider ||
+      _savedAccount!['phone_number'] != _kpayPhone;
+
   /// Solde disponible pour le retrait : devise de l'opérateur (KPay) ou PayPal.
   double get _availableBalance => isKpay
       ? walletController.kpayAvailableFor(_kpayCurrency)
@@ -228,16 +238,21 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
                 // Champs spécifiques à KPay
                 if (isKpay) ...[
+                  // Pré-rempli avec le compte de retrait enregistré (s'il existe).
                   KpayPhoneSelector(
+                    initialProviderCode: _savedAccount?['provider']?.toString(),
+                    initialPhone: _savedAccount?['phone_number']?.toString(),
                     onChanged: ({
                       required String? providerCode,
                       required String? phoneNumber,
                       required String currency,
                       required bool isValid,
                     }) {
+                      final wasDifferent = _differsFromSaved;
                       _kpayProvider = providerCode;
                       _kpayPhone = phoneNumber;
                       _kpayValid = isValid;
+                      if (wasDifferent != _differsFromSaved && mounted) setState(() {});
                       // Rafraîchir le solde + convertir le montant saisi si la devise change
                       if (currency != _kpayCurrency) {
                         final old = _kpayCurrency;
@@ -247,6 +262,23 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       }
                     },
                   ),
+                  if (_kpayValid && _differsFromSaved)
+                    CheckboxListTile(
+                      value: _rememberAccount,
+                      onChanged: (v) => setState(() => _rememberAccount = v ?? false),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      dense: true,
+                      title: Text(
+                        _savedAccount == null
+                            ? 'Mémoriser ce numéro pour mes prochains retraits'
+                            : 'Remplacer mon compte de retrait enregistré',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppThemeSystem.getPrimaryTextColor(context),
+                        ),
+                      ),
+                    ),
                 ],
 
                 const SizedBox(height: 16),
@@ -392,6 +424,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
       if (!mounted) return;
 
       if (result['success'] == true) {
+        // Mémorisation du compte de retrait (non bloquante).
+        if (isKpay && _rememberAccount && _differsFromSaved) {
+          walletController.savePayoutAccount(
+            provider: _kpayProvider!,
+            phoneNumber: _kpayPhone!,
+          );
+        }
+
         // Suivi du statut en arrière-plan (polling 5 s + notification) pour tous les
         // rails : le retrait ne passe 'completed' qu'une fois le versement réellement
         // réglé (KPay, PayPal Payouts, Stripe payout).

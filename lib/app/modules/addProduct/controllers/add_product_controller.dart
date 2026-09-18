@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,6 +51,10 @@ class AddProductController extends GetxController {
   // Le prix est envoyé tel quel au backend avec ce code devise ; le backend calcule
   // la valeur canonique XAF (price_xaf). Plus de reconversion forcée vers XOF ici.
   final selectedCurrency = 'XAF'.obs;
+
+  /// Prix affiché aux clients (prix vendeur + commission ASSO), calculé par le serveur.
+  final buyerPricePreview = Rxn<double>();
+  Timer? _previewDebounce;
   final availableCurrencies = <CurrencyModel>[].obs;
 
   // Poids du produit
@@ -275,6 +280,10 @@ class AddProductController extends GetxController {
       customWeightValue.value = weightKgController.text.trim();
     });
 
+    // Aperçu du prix client à chaque saisie du prix ou changement de devise.
+    priceController.addListener(_schedulePricePreview);
+    ever(selectedCurrency, (_) => _schedulePricePreview());
+
     // Check if we're in edit mode
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null && args['isEdit'] == true && args['product'] != null) {
@@ -342,6 +351,7 @@ class AddProductController extends GetxController {
 
   @override
   void onClose() {
+    _previewDebounce?.cancel();
     // Les images sont des XFile (mémoire/cache géré par la plateforme) :
     // aucun nettoyage manuel de fichiers n'est nécessaire (et impossible sur le web).
     nameController.dispose();
@@ -1314,4 +1324,34 @@ class AddProductController extends GetxController {
     final match = availableCurrencies.firstWhereOrNull((c) => c.code == code);
     return match?.symbol ?? code;
   }
+
+  void _schedulePricePreview() {
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(const Duration(milliseconds: 400), _loadPricePreview);
+  }
+
+  Future<void> _loadPricePreview() async {
+    final price = double.tryParse(
+      priceController.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
+    );
+    if (price == null || price <= 0) {
+      buyerPricePreview.value = null;
+      return;
+    }
+    try {
+      final res = await ApiProvider.get('/v1/pricing/preview', queryParams: {
+        'price': price,
+        'currency': selectedCurrency.value,
+      });
+      if (isClosed) return;
+      final value = res.data?['data']?['buyer_price'];
+      buyerPricePreview.value = res.success && value is num ? value.toDouble() : null;
+    } catch (_) {
+      buyerPricePreview.value = null;
+    }
+  }
+
+  /// Montant formaté dans la devise choisie pour le produit (sans conversion).
+  String formatInSelectedCurrency(double amount) =>
+      CurrencyService.formatAmountInCurrency(amount, selectedCurrency.value);
 }

@@ -106,4 +106,22 @@ class KPayCatalog {
     }
     return null;
   }
+
+  /// Pays et opérateur correspondant à un code opérateur KPay (ex. ORANGE_CMR).
+  static (KPayCountry, KPayOperator)? byProviderCode(String? providerCode) {
+    if (providerCode == null) return null;
+    for (final c in countries) {
+      for (final o in c.operators) {
+        if (o.providerCode == providerCode) return (c, o);
+      }
+    }
+    return null;
+  }
+
+  /// Libellé lisible d'un code opérateur (ex. « Orange Money · Cameroun »).
+  static String labelFor(String? providerCode) {
+    final match = byProviderCode(providerCode);
+    if (match == null) return providerCode ?? '';
+    return '${match.$2.name} · ${match.$1.name}';
+  }
 }

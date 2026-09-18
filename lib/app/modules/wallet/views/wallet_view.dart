@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
   import '../../../core/utils/app_theme_system.dart';
   import '../../../data/providers/storage_service.dart';
   import '../widgets/withdrawal_bottom_sheet.dart';
+  import '../widgets/recharge_bottom_sheet.dart';
+  import '../widgets/payout_account_sheet.dart';
+  import '../../../core/values/kpay_catalog.dart';
   import '../widgets/quick_confirm_code_dialog.dart';
   import '../../payment/widgets/payment_method_selector.dart';
   import '../../../data/models/payment_method_option.dart';
@@ -106,6 +109,11 @@ import 'package:flutter/material.dart';
                     }),
 
                     _buildBalancesByProvider(context),
+
+                    const SizedBox(height: 24),
+
+                    // Où l'argent est versé lors d'un retrait
+                    _buildPayoutAccountSection(context),
 
                     const SizedBox(height: 100),
                   ],
@@ -616,12 +624,22 @@ Widget _buildBackButton(BuildContext context) {
       );
     }
 
-    /// Actions rapides (Retirer, Historique)
+    /// Actions rapides (Recharger, Retirer, Historique)
     Widget _buildQuickActions(BuildContext context) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
+            Expanded(
+              child: _buildActionButton(
+                context: context,
+                icon: Icons.add_circle_outline_rounded,
+                label: 'Recharger',
+                color: AppThemeSystem.successColor,
+                onTap: () => RechargeBottomSheet.show(context),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
                 context: context,
@@ -1067,6 +1085,106 @@ Widget _buildBackButton(BuildContext context) {
         ),
       );
     }
+    /// Coordonnées de retrait Mobile Money enregistrées (pré-remplissent les retraits).
+    Widget _buildPayoutAccountSection(BuildContext context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Coordonnées de retrait',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppThemeSystem.getPrimaryTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Obx(() {
+              final account = controller.payoutAccount.value;
+              final hasAccount = account != null;
+              final title = hasAccount
+                  ? KPayCatalog.labelFor(account['provider']?.toString())
+                  : 'Aucun numéro Mobile Money enregistré';
+              final subtitle = hasAccount
+                  ? [
+                      '+${account['masked_phone'] ?? account['phone_number']}',
+                      if ((account['account_holder'] ?? '').toString().isNotEmpty)
+                        account['account_holder'].toString(),
+                    ].join(' · ')
+                  : 'Enregistrez-le une fois, vos retraits seront pré-remplis.';
+
+              return InkWell(
+                onTap: () => PayoutAccountSheet.show(),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.getSurfaceColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: hasAccount
+                          ? AppThemeSystem.kpayColor.withValues(alpha: 0.3)
+                          : AppThemeSystem.getBorderColor(context),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.kpayColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          hasAccount ? Icons.phone_android_rounded : Icons.add_rounded,
+                          color: AppThemeSystem.kpayColor,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppThemeSystem.getPrimaryTextColor(context),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppThemeSystem.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        hasAccount ? 'Modifier' : 'Ajouter',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
     /// Petit lien texte discret sous la carte IBAN — pas de bouton
 /// Petit lien texte discret sous la carte IBAN — pas de bouton
 Widget _buildIbanConfigLink(BuildContext context, String? status) {

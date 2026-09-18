@@ -302,28 +302,21 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           title: 'Carte bancaire',
           subtitle: 'VISA, MasterCard',
           color: const Color(0xFF1A1F71),
-          onTap: () => _selectMethod('card'),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Crypto (Coming Soon)
-        _buildMethodOption(
-          context: context,
-          logoPath: 'assets/images/bitcoin.png',
-          title: 'Crypto',
-          subtitle: 'Paiement par cryptomonnaie',
-          color: AppThemeSystem.infoColor,
-          isComingSoon: true,
           onTap: () {
-            Get.snackbar(
-              'Bientôt disponible',
-              'Le paiement par cryptomonnaie sera bientôt disponible',
-              backgroundColor: AppThemeSystem.infoColor,
-              colorText: AppThemeSystem.whiteColor,
-            );
+            // Carte désactivée côté plateforme : on l'explique au lieu d'échouer plus loin.
+            if (!walletController.stripeConfigured.value) {
+              Get.snackbar(
+                'Carte indisponible',
+                'La recharge par carte est momentanément indisponible. Utilisez le Mobile Money.',
+                backgroundColor: AppThemeSystem.warningColor,
+                colorText: AppThemeSystem.whiteColor,
+              );
+              return;
+            }
+            _selectMethod('card');
           },
         ),
+
       ],
     );
   }

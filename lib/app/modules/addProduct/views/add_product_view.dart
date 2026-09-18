@@ -1212,10 +1212,44 @@ class AddProductView extends GetView<AddProductController> {
           ],
         ),
         SizedBox(height: context.elementSpacing / 2),
-        Text(
-          'Le prix est affiché aux acheteurs dans leur devise.',
-          style: context.caption.copyWith(color: context.secondaryTextColor),
-        ),
+        // Aperçu : ce que paient les clients (commission ASSO incluse) vs ce que reçoit le vendeur.
+        Obx(() {
+          final buyer = controller.buyerPricePreview.value;
+          final seller = double.tryParse(
+            controller.priceController.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
+          );
+          if (buyer == null || seller == null || buyer <= seller) {
+            return Text(
+              'Vous recevez exactement le prix que vous saisissez.',
+              style: context.caption.copyWith(color: context.secondaryTextColor),
+            );
+          }
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
+              borderRadius: context.borderRadius(BorderRadiusType.small),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prix affiché aux clients : ${controller.formatInSelectedCurrency(buyer)}',
+                  style: context.body2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppThemeSystem.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Vous recevez ${controller.formatInSelectedCurrency(seller)} par vente. La commission ASSO est payée par le client.',
+                  style: context.caption.copyWith(color: context.secondaryTextColor),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }

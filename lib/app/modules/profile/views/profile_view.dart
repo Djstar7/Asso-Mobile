@@ -29,6 +29,12 @@ class ProfileView extends GetView<ProfileController> {
             // Menu principal (plus de Obx : aucune variable réactive à observer ici)
             _buildMenuSection(context, 'Mon compte', [
               _MenuItem(
+                icon: Icons.account_balance_wallet_rounded,
+                title: 'Mon Wallet',
+                subtitle: 'Solde, recharge et remboursements',
+                onTap: controller.goToWallet,
+              ),
+              _MenuItem(
                 icon: Icons.favorite_outline_rounded,
                 title: 'Mes favoris',
                 subtitle: 'Articles sauvegardés',

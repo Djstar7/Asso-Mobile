@@ -14,6 +14,7 @@ import '../../../data/providers/import_service.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../../../data/services/stripe_native_service.dart';
@@ -926,6 +927,8 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       amount: displayAmount,
       currency: displayCurrency,
       amountLabel: 'Total à payer',
+      allowedCodes: const {'kpay', 'stripe'},
+      includeWallet: true,
     );
     if (method == null) return;
 
@@ -941,7 +944,15 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
     final weight = _needsWeight ? _shippingWeightKg : null;
     final cbm = null;
 
-    if (method.code == 'kpay') {
+    if (method.code == 'wallet') {
+      final confirmed = await WalletPaymentConfirmDialog.show(
+        itemLabel: 'Commande en gros — ${widget.product.name}',
+        amount: _total,
+        balance: method.balance ?? 0,
+      );
+      if (!confirmed) return;
+      await _create('wallet', items, shipping.id, weight, cbm);
+    } else if (method.code == 'kpay') {
       final sel = await KpayDirectPaymentSheet.show(
         amount: _total,
         amountLabel: 'Total à payer',
@@ -958,8 +969,6 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       );
     } else if (method.code == 'stripe') {
       await _createCard(items, shipping.id, weight, cbm);
-    } else if (method.code == 'paypal') {
-      await _create('paypal_direct', items, shipping.id, weight, cbm);
     } else {
       Get.snackbar(
         'Indisponible',
@@ -1001,6 +1010,18 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       final orderId = res.data?['order_id'] as int?;
       final approvalUrl = res.data?['approval_url']?.toString();
       Get.back(); // fermer le sheet
+
+      if (mode == 'wallet') {
+        Get.snackbar(
+          'Commande payée',
+          'Payée avec votre Wallet ASSO. En cas de refus, le montant vous est rendu immédiatement.',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
 
       if (mode == 'kpay_direct') {
         _pollOrder(orderId);

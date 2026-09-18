@@ -119,6 +119,7 @@ class OrderManagementController extends GetxController {
             (order['customer_phone'] ?? customer?['phone'] ?? '').toString(),
         addressDetails: order['delivery_address_details']?.toString(),
         paymentStatus: order['payment_status']?.toString() ?? 'paid',
+        // Prix du vendeur (hors majoration ASSO payée par le client).
         vendorAmount:
             double.tryParse(
               (order['vendor_amount'] ?? order['subtotal'] ?? order['total'])

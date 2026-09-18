@@ -1,12 +1,12 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../data/providers/package_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
+import '../../../data/models/payment_method_option.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
-import '../../wallet/views/payment_webview.dart';
 import '../widgets/payment_loading_dialog.dart';
 import '../widgets/payment_success_dialog.dart';
 import '../../../data/services/stripe_native_service.dart';
@@ -120,37 +120,32 @@ class PackageSubscriptionController extends GetxController {
     selectedPackage.value = package;
   }
 
-  /// Lance l'abonnement au package [package] via le sélecteur de paiement
-  /// acheteur (KPay Mobile Money / PayPal / Stripe), EXACTEMENT comme une
-  /// commande. Aucun solde wallet : ce sont des rails de paiement directs.
+  /// Lance l'abonnement au package [package] : Wallet ASSO (solde, activation
+  /// immédiate), Mobile Money (KPay) ou carte bancaire (Stripe).
   Future<void> subscribeToSelectedPackage(Map<String, dynamic> package) async {
     if (_isDisposed || isSubscribing.value) return;
 
     selectPackage(package);
     final price = (package['price'] ?? 0).toDouble();
 
-    // 1) Choix du moyen de paiement (tous affichés, grisés si trop faible,
-    //    jamais masqués selon le pays, sans solde wallet).
+    // 1) Choix du moyen de paiement (tous affichés, grisés si indisponibles).
+    final display = CurrencyService.displayFromPivot(price);
     final method = await PaymentMethodSelector.show(
-      amount: price,
-      currency: 'XAF',
-      amountLabel: 'Prix du package',
+      amount: display.amount,
+      currency: display.currency,
+      amountLabel: 'Prix du forfait',
+      allowedCodes: const {'kpay', 'stripe'},
+      includeWallet: true,
     );
     if (method == null) return; // annulé
 
     // 2) Sous-parcours selon le rail choisi.
     switch (method.code) {
+      case 'wallet':
+        await _subscribeViaWallet(package, price, method);
+        break;
       case 'kpay':
         await _subscribeViaKpay(package, price);
-        break;
-      case 'paypal':
-        // Le serveur n'accepte pas encore PayPal pour les forfaits (wallet,
-        // KPay et carte uniquement) : on l'explique au lieu d'échouer.
-        Get.snackbar(
-          'PayPal bientôt disponible',
-          'Pour votre forfait, payez par Mobile Money ou par carte bancaire.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
         break;
       case 'stripe':
         await _subscribeViaCard(package, price);
@@ -158,9 +153,53 @@ class PackageSubscriptionController extends GetxController {
       default:
         Get.snackbar(
           'Indisponible',
-          "Ce moyen de paiement n'est pas disponible pour les abonnements.",
+          "Ce moyen de paiement n'est pas disponible pour les forfaits.",
           snackPosition: SnackPosition.BOTTOM,
         );
+    }
+  }
+
+  /// Abonnement payé avec le solde du Wallet ASSO : débit et activation immédiats.
+  Future<void> _subscribeViaWallet(
+    Map<String, dynamic> package,
+    double price,
+    PaymentMethodOption method,
+  ) async {
+    final confirmed = await WalletPaymentConfirmDialog.show(
+      itemLabel: 'Forfait ${package['name'] ?? ''}',
+      amount: price,
+      balance: method.balance ?? 0,
+    );
+    if (!confirmed || _isDisposed) return;
+
+    isSubscribing.value = true;
+    PaymentLoadingDialog.show(message: 'Activation de votre forfait...');
+
+    try {
+      final response = await PackageService.subscribePackageDirect(
+        package['id'] as int,
+        paymentMode: 'wallet',
+      );
+      if (_isDisposed) return;
+      PaymentLoadingDialog.hide();
+
+      if (!response.success) {
+        _showSubscriptionError(response.message);
+        return;
+      }
+
+      await loadCurrentPackage();
+      if (_isDisposed) return;
+      await PaymentSuccessDialog.show(
+        packageName: package['name'] ?? 'Forfait',
+        amount: price,
+        paymentMethod: 'wallet',
+      );
+    } catch (e) {
+      PaymentLoadingDialog.hide();
+      _showSubscriptionError('Une erreur est survenue: $e');
+    } finally {
+      isSubscribing.value = false;
     }
   }
 
@@ -286,75 +325,6 @@ class PackageSubscriptionController extends GetxController {
     }
   }
 
-  /// Abonnement payé par redirection (PayPal / carte Stripe) via WebView.
-  // Conservé pour quand le serveur acceptera PayPal sur les forfaits.
-  // ignore: unused_element
-  Future<void> _subscribeViaRedirect(
-    Map<String, dynamic> package,
-    double price,
-    String paymentMode,
-    String methodCode,
-  ) async {
-    isSubscribing.value = true;
-    PaymentLoadingDialog.show(
-      message: 'Préparation du paiement...',
-    );
-
-    try {
-      final response = await PackageService.subscribePackageDirect(
-        package['id'] as int,
-        paymentMode: paymentMode,
-      );
-
-      if (_isDisposed) return;
-      PaymentLoadingDialog.hide();
-
-      final subscriptionId = _subscriptionIdFrom(response);
-      final approvalUrl = response.data?['approval_url']?.toString();
-
-      if (!response.success || subscriptionId == null) {
-        _showSubscriptionError(response.message);
-        return;
-      }
-      if (approvalUrl == null || approvalUrl.isEmpty) {
-        _showSubscriptionError('Lien de paiement indisponible. Réessayez.');
-        return;
-      }
-
-      // La WebView intégrée n'est disponible que sur mobile (Android/iOS). Sur les
-      // autres plateformes on ouvre le checkout dans le navigateur système : la
-      // confirmation se fait de toute façon côté serveur (polling).
-      if (GetPlatform.isAndroid || GetPlatform.isIOS) {
-        await Get.to<Map<String, dynamic>>(
-          () => PaymentWebView(
-            paymentUrl: approvalUrl,
-            paymentMethod: methodCode,
-            paymentId: subscriptionId,
-          ),
-        );
-      } else {
-        await launchUrl(Uri.parse(approvalUrl), mode: LaunchMode.externalApplication);
-      }
-
-      // Au retour du WebView, on suit la confirmation serveur.
-      Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-      );
-
-      _pollSubscriptionPayment(subscriptionId, package, price, methodCode);
-    } catch (e) {
-      PaymentLoadingDialog.hide();
-      _showSubscriptionError('Une erreur est survenue: $e');
-    } finally {
-      isSubscribing.value = false;
-    }
-  }
-
   /// Suit le paiement d'un abonnement (polling 5 s). Le succès (dialog) n'est
   /// affiché QU'AU statut « paid » (vendor_package renseigné) — jamais à la
   /// simple création. « failed » stoppe le suivi avec un message d'erreur.
@@ -438,13 +408,8 @@ class PackageSubscriptionController extends GetxController {
   // CURRENCY FORMATTING
   // ================================
 
-  /// Format currency (using CurrencyService)
-  String formatCurrency(double priceInXOF) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: true);
-  }
+  /// Montant (prix en XAF) affiché dans la devise de l'utilisateur.
+  String formatCurrency(double priceInXOF) => CurrencyService.formatFromPivot(priceInXOF);
 
   /// Get currency symbol
   String get currencySymbol {

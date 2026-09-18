@@ -5,10 +5,10 @@
 /// ou que le montant est inférieur à son minimum. `convertedAmount`/`targetCurrency`
 /// donnent le montant recalculé dans la devise du rail (via les taux stockés).
 class PaymentMethodOption {
-  final String code; // kpay | paypal | stripe
+  final String code; // wallet | kpay | stripe
   final String label;
   final String subtitle;
-  final String flow; // phone | redirect
+  final String flow; // wallet | phone | card
   final bool enabled;
   final bool available;
   final String? unavailableReason; // disabled | below_min | null
@@ -17,6 +17,8 @@ class PaymentMethodOption {
   final String? targetCurrency; // devise d'encaissement du rail (null pour kpay)
   final double? convertedAmount; // montant converti dans targetCurrency (null pour kpay)
   final String? hint; // libellé secondaire explicite (ex. solde disponible) — prioritaire
+  final double? balance; // solde disponible (option « wallet » uniquement)
+  final double? missingAmount; // montant manquant si solde insuffisant (option « wallet »)
 
   const PaymentMethodOption({
     required this.code,
@@ -31,7 +33,12 @@ class PaymentMethodOption {
     this.targetCurrency,
     this.convertedAmount,
     this.hint,
+    this.balance,
+    this.missingAmount,
   });
+
+  /// Paiement depuis le solde Wallet ASSO ?
+  bool get isWallet => code == 'wallet';
 
   factory PaymentMethodOption.fromJson(Map<String, dynamic> json) {
     double? toD(dynamic v) => v == null ? null : (v as num).toDouble();
@@ -47,6 +54,8 @@ class PaymentMethodOption {
       minCurrency: json['min_currency']?.toString() ?? 'XAF',
       targetCurrency: json['target_currency']?.toString(),
       convertedAmount: toD(json['converted_amount']),
+      balance: toD(json['balance']),
+      missingAmount: toD(json['missing_amount']),
     );
   }
 }

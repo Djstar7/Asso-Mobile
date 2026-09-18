@@ -12,10 +12,13 @@ class PaymentService {
   static Future<List<PaymentMethodOption>> fetchMethods({
     required double amount,
     required String currency,
+    bool includeWallet = false,
   }) async {
     final res = await ApiProvider.get('/v1/payments/methods', queryParams: {
       'amount': amount,
       'currency': currency,
+      // Ajoute l'option « Wallet ASSO » (solde) en tête pour les parcours qui l'acceptent.
+      if (includeWallet) 'include_wallet': 1,
     });
 
     if (res.success && res.data != null && res.data!['data'] != null) {

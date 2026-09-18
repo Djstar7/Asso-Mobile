@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/certification_packages_controller.dart';
 import '../../payment/widgets/payment_method_selector.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../data/providers/currency_service.dart';
+import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
+import '../../../data/models/payment_method_option.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
-import '../../wallet/views/payment_webview.dart';
 import '../../../data/services/stripe_native_service.dart';
 
 class CertificationPackagesView
@@ -288,7 +289,7 @@ class CertificationPackagesView
     final isPopular = package['is_popular'] ?? false;
     final benefits = package['benefits'] as List?;
     final name = package['name'] ?? '';
-    final price = package['formatted_price'] ?? '';
+    final priceXaf = (package['price'] ?? 0).toDouble();
     final duration = package['formatted_duration'] ?? '';
 
     // Determine card color based on package tier
@@ -436,11 +437,16 @@ class CertificationPackagesView
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    price,
-                    style: context.h3.copyWith(
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
+                  // Prix converti dans la devise de l'utilisateur (suit ses changements).
+                  Flexible(
+                    child: Obx(
+                      () => Text(
+                        controller.formatCurrency(priceXaf),
+                        style: context.h3.copyWith(
+                          color: primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -545,21 +551,24 @@ class CertificationPackagesView
     Map<String, dynamic> package,
   ) async {
     final packageId = package['id'] as int;
-    final price = (package['price'] ?? 0).toDouble();
+    final price = (package['price'] ?? 0).toDouble(); // XAF (devise des forfaits)
+    final display = CurrencyService.displayFromPivot(price);
 
     final method = await PaymentMethodSelector.show(
-      amount: price,
-      currency: 'XAF',
+      amount: display.amount,
+      currency: display.currency,
       amountLabel: 'Prix de la certification',
+      allowedCodes: const {'kpay', 'stripe'},
+      includeWallet: true,
     );
     if (method == null) return; // annulé
 
     switch (method.code) {
+      case 'wallet':
+        await _payViaWallet(package, price, method);
+        break;
       case 'kpay':
         await _confirmOrder(context, packageId, price);
-        break;
-      case 'paypal':
-        await _payViaRedirect(context, packageId, 'paypal_direct', 'paypal');
         break;
       case 'stripe':
         await _payViaCard(context, packageId);
@@ -604,74 +613,30 @@ class CertificationPackagesView
     }
   }
 
-  /// Sous-parcours PayPal (checkout WebView, ou navigateur système hors mobile).
-  Future<void> _payViaRedirect(
-    BuildContext context,
-    int packageId,
-    String paymentMode,
-    String methodCode,
+  /// Sous-parcours Wallet ASSO : débit du solde et certification immédiate.
+  Future<void> _payViaWallet(
+    Map<String, dynamic> package,
+    double price,
+    PaymentMethodOption method,
   ) async {
-    final data = await controller.createRedirectOrder(
-      packageId: packageId,
-      paymentMode: paymentMode,
+    final confirmed = await WalletPaymentConfirmDialog.show(
+      itemLabel: '${package['name'] ?? 'Certification'}',
+      amount: price,
+      balance: method.balance ?? 0,
     );
-    if (data == null)
-      return; // échec / lien indisponible (snackbar déjà affiché)
+    if (!confirmed) return;
 
-    final orderId = data['order_id'] as int;
-    final approvalUrl = data['approval_url'] as String;
+    final message = await controller.payWithWallet(packageId: package['id'] as int);
+    if (message == null) return; // erreur déjà affichée
 
-    if (!(GetPlatform.isAndroid || GetPlatform.isIOS)) {
-      final launched = await launchUrl(
-        Uri.parse(approvalUrl),
-        mode: LaunchMode.externalApplication,
-      );
-      if (launched) {
-        controller.pollOrderPayment(orderId);
-        Get.snackbar(
-          'Paiement ouvert dans le navigateur',
-          'Terminez le paiement, la confirmation est automatique.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 6),
-        );
-      } else {
-        Get.snackbar(
-          'Erreur',
-          "Impossible d'ouvrir la page de paiement.",
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
-      return;
-    }
-
-    final result = await Get.to<Map<String, dynamic>>(
-      () => PaymentWebView(
-        paymentUrl: approvalUrl,
-        paymentMethod: methodCode,
-        paymentId: orderId,
-      ),
+    Get.snackbar(
+      'Boutique certifiée ✅',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 5),
     );
-
-    if (result != null && result['success'] == true) {
-      controller.pollOrderPayment(orderId);
-      Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
-    } else {
-      Get.snackbar(
-        'Paiement annulé',
-        'Le paiement n\'a pas été finalisé.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 4),
-      );
-    }
   }
 
   /// Sous-parcours CARTE (Payment Sheet Stripe native).

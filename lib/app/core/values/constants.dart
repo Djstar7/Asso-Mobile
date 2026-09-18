@@ -144,6 +144,8 @@ class AppConstants {
   static const String walletWithdrawalStatusUrl =
       '/v1/wallet/withdrawal-status';
   static const String walletPaymentStatusUrl = '/v1/wallet/payment-status';
+  // Coordonnées de retrait Mobile Money enregistrées (GET / PUT / DELETE)
+  static const String walletPayoutAccountUrl = '/v1/wallet/payout-account';
   static const String walletPayPalCreateNativeOrderUrl =
       '/v1/wallet/paypal/create-native-order';
   static const String walletPayPalCaptureNativeOrderUrl =

@@ -23,9 +23,8 @@ class DiaspoBookingController extends GetxController {
   final minKg = 1.0;
 
   // Price calculation
-  final subtotal = 0.0.obs;
-  final commissionPercent = 5.0.obs; // Default 5%
-  final commissionAmount = 0.0.obs;
+  // Le prix au kilo reçu du serveur est déjà le prix PUBLIC (commission ASSO incluse,
+  // taux réglé dans l'admin) : total = kg × prix, sans ligne de commission.
   final totalPrice = 0.0.obs;
 
   double get remainingKg => offer.value?.remainingKg ?? 0;
@@ -69,9 +68,7 @@ class DiaspoBookingController extends GetxController {
   }
 
   void _calculatePrices() {
-    subtotal.value = kgBooked.value * pricePerKg;
-    commissionAmount.value = subtotal.value * (commissionPercent.value / 100);
-    totalPrice.value = subtotal.value + commissionAmount.value;
+    totalPrice.value = double.parse((kgBooked.value * pricePerKg).toStringAsFixed(2));
   }
 
   void incrementKg() {
@@ -386,7 +383,7 @@ class DiaspoBookingController extends GetxController {
   String get currencySymbol => CurrencyService.getSymbolForCode(currency);
 
   /// Formate un montant DÉJÀ exprimé dans la devise de l'offre, SANS reconversion.
-  /// Les sous-total/commission/total sont calculés à partir de `pricePerKg`
+  /// Le total est calculé à partir de `pricePerKg`
   /// (devise de l'offre), il ne faut donc pas les reconvertir vers la devise user.
   String formatOfferAmount(double amount) {
     final hasDecimals = amount != amount.roundToDouble();

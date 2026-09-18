@@ -245,11 +245,9 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
             children: [
               _sectionTitle('Détails du paiement', isDark),
               const SizedBox(height: 16),
-              _priceRow('Sous-total', controller.formatOfferAmount(controller.subtotal.value), isDark),
-              const SizedBox(height: 10),
               _priceRow(
-                'Commission (${controller.commissionPercent.value.toStringAsFixed(0)}%)',
-                controller.formatOfferAmount(controller.commissionAmount.value),
+                '${controller.kgBooked.value.toStringAsFixed(controller.kgBooked.value % 1 == 0 ? 0 : 1)} kg × ${controller.formatOfferAmount(controller.pricePerKg)}',
+                controller.formatOfferAmount(controller.totalPrice.value),
                 isDark,
               ),
               Padding(

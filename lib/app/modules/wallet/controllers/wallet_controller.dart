@@ -8,6 +8,8 @@ import '../../../data/services/fcm_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../data/providers/wallet_service.dart' as wallet_api;
+import '../widgets/recharge_bottom_sheet.dart';
 
 class WalletController extends GetxController {
   final WalletService _walletService = Get.find<WalletService>();
@@ -65,6 +67,10 @@ class WalletController extends GetxController {
   final kpayConfigured = true.obs;
   final stripeConfigured = true.obs;
 
+  // Coordonnées de retrait Mobile Money enregistrées (null = aucune).
+  final payoutAccount = Rxn<Map<String, dynamic>>();
+  final isSavingPayoutAccount = false.obs;
+
   // Pagination des transactions
   final currentPage = 1.obs;
   final lastPage = 1.obs;
@@ -103,6 +109,7 @@ class WalletController extends GetxController {
       loadTransactions(); // Charger l'historique dès l'ouverture
       loadWithdrawalBalances(); // Charger les soldes de retrait
       loadLockedBookings(); // Charger les réservations avec fonds bloqués
+      loadPayoutAccount(); // Coordonnées de retrait enregistrées
 
       // NOTE: Deposit polling is no longer needed!
       // The backend now processes deposits asynchronously using:
@@ -115,6 +122,17 @@ class WalletController extends GetxController {
     } else {
       // Mode invité - arrêter le chargement
       isLoading.value = false;
+    }
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Arrivée depuis « Solde insuffisant → Recharger » : ouvrir directement la recharge.
+    final args = Get.arguments;
+    if (args is Map && args['openRecharge'] == true && StorageService.isAuthenticated) {
+      final ctx = Get.context;
+      if (ctx != null) RechargeBottomSheet.show(ctx);
     }
   }
 
@@ -339,7 +357,60 @@ class WalletController extends GetxController {
       loadTransactions(),
       loadWithdrawalBalances(),
       loadLockedBookings(),
+      loadPayoutAccount(),
     ]);
+  }
+
+  // ================================
+  // COORDONNÉES DE RETRAIT
+  // ================================
+
+  Future<void> loadPayoutAccount() async {
+    if (_isDisposed) return;
+    try {
+      final res = await wallet_api.WalletService.getPayoutAccount();
+      if (_isDisposed || !res.success) return;
+      final data = res.data?['data'];
+      payoutAccount.value = data is Map ? Map<String, dynamic>.from(data) : null;
+    } catch (e) {
+      print('[WalletController] loadPayoutAccount error: $e');
+    }
+  }
+
+  /// Enregistre le compte Mobile Money de retrait. Renvoie le message d'erreur, ou null.
+  Future<String?> savePayoutAccount({
+    required String provider,
+    required String phoneNumber,
+    String? accountHolder,
+  }) async {
+    isSavingPayoutAccount.value = true;
+    try {
+      final res = await wallet_api.WalletService.savePayoutAccount(
+        provider: provider,
+        phoneNumber: phoneNumber,
+        accountHolder: accountHolder,
+      );
+      if (!res.success) {
+        return res.message.isNotEmpty ? res.message : "Impossible d'enregistrer ce compte.";
+      }
+      final data = res.data?['data'];
+      payoutAccount.value = data is Map ? Map<String, dynamic>.from(data) : null;
+      return null;
+    } catch (e) {
+      return 'Une erreur est survenue.';
+    } finally {
+      isSavingPayoutAccount.value = false;
+    }
+  }
+
+  Future<bool> deletePayoutAccount() async {
+    try {
+      final res = await wallet_api.WalletService.deletePayoutAccount();
+      if (res.success) payoutAccount.value = null;
+      return res.success;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Charge les réservations avec fonds bloqués (pour le seller)

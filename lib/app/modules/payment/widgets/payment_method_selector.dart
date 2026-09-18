@@ -4,13 +4,16 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../../data/providers/payment_service.dart';
+import '../../../data/providers/currency_service.dart';
+import '../../../routes/app_pages.dart';
 
 /// Sélecteur de moyen de paiement RÉUTILISABLE (réservation Diaspo, achat…).
 ///
 /// Comportement produit :
 ///  - Affiche TOUS les moyens renvoyés par le backend, jamais masqués selon le pays.
 ///  - Un moyen dont le montant est trop faible (ou désactivé) est GRISÉ, non masqué.
-///  - N'affiche AUCUN solde de portefeuille : ce sont des rails directs.
+///  - Avec [includeWallet], propose en tête le paiement par solde « Wallet ASSO »
+///    (grisé si le solde est insuffisant, avec un raccourci pour recharger).
 ///  - Sous chaque moyen, le montant est recalculé dans la devise du rail
 ///    (via les taux de change stockés côté serveur).
 ///
@@ -30,6 +33,10 @@ class PaymentMethodSelector extends StatefulWidget {
   /// (ex. commandes produit : Mobile Money et carte). null = tous.
   final Set<String>? allowedCodes;
 
+  /// Propose le paiement par solde Wallet ASSO (parcours acceptés côté serveur :
+  /// commandes et forfaits).
+  final bool includeWallet;
+
   const PaymentMethodSelector({
     super.key,
     required this.amount,
@@ -38,6 +45,7 @@ class PaymentMethodSelector extends StatefulWidget {
     this.title = 'Choisir un moyen de paiement',
     this.options,
     this.allowedCodes,
+    this.includeWallet = false,
   });
 
   static Future<PaymentMethodOption?> show({
@@ -47,6 +55,7 @@ class PaymentMethodSelector extends StatefulWidget {
     String title = 'Choisir un moyen de paiement',
     List<PaymentMethodOption>? options,
     Set<String>? allowedCodes,
+    bool includeWallet = false,
   }) {
     return Get.bottomSheet<PaymentMethodOption>(
       PaymentMethodSelector(
@@ -56,6 +65,7 @@ class PaymentMethodSelector extends StatefulWidget {
         title: title,
         options: options,
         allowedCodes: allowedCodes,
+        includeWallet: includeWallet,
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -94,11 +104,14 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       final methods = await PaymentService.fetchMethods(
         amount: widget.amount,
         currency: widget.currency,
+        includeWallet: widget.includeWallet,
       );
       final allowed = widget.allowedCodes;
       final visible = allowed == null
           ? methods
-          : methods.where((m) => allowed.contains(m.code)).toList();
+          : methods
+                .where((m) => m.isWallet || allowed.contains(m.code))
+                .toList();
       _methods.assignAll(visible);
       if (visible.isEmpty) {
         _error.value = 'Aucun moyen de paiement disponible pour le moment.';
@@ -119,6 +132,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   IconData _iconFor(String code) {
     switch (code) {
+      case 'wallet':
+        return Icons.account_balance_wallet_rounded;
       case 'kpay':
         return Icons.phone_android_rounded;
       case 'stripe':
@@ -130,6 +145,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   Color _colorFor(String code) {
     switch (code) {
+      case 'wallet':
+        return AppThemeSystem.successColor;
       case 'kpay':
         return AppThemeSystem.kpayColor;
       case 'stripe':
@@ -141,6 +158,26 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   /// Tap sur un moyen indisponible : notifier la raison au lieu d'ignorer le clic.
   void _notifyUnavailable(PaymentMethodOption m, String? hint) {
+    // Solde insuffisant : raccourci direct vers la recharge du Wallet.
+    if (m.isWallet) {
+      Get.snackbar(
+        'Solde Wallet insuffisant',
+        hint ?? 'Rechargez votre Wallet ASSO pour payer avec votre solde.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+        duration: const Duration(seconds: 5),
+        mainButton: TextButton(
+          onPressed: () {
+            Get.closeCurrentSnackbar();
+            Get.back(); // ferme le sélecteur
+            Get.toNamed(Routes.WALLET, arguments: {'openRecharge': true});
+          },
+          child: const Text('Recharger'),
+        ),
+      );
+      return;
+    }
     final reason = (hint != null && hint.trim().isNotEmpty)
         ? hint
         : "Ce moyen n'est pas disponible pour le moment.";
@@ -260,6 +297,13 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     // Ligne secondaire : hint explicite (ex. solde disponible en mode retrait) sinon
     // montant converti (si dispo) ou raison d'indisponibilité.
     String? hint = m.hint;
+    if (hint == null && m.isWallet) {
+      // Solde et manque renvoyés en XAF : affichés dans la devise de l'utilisateur.
+      final balance = CurrencyService.formatFromPivot(m.balance ?? 0);
+      hint = canPay
+          ? 'Solde disponible : $balance'
+          : 'Solde : $balance — il manque ${CurrencyService.formatFromPivot(m.missingAmount ?? 0)}';
+    }
     if (hint == null) {
       if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
         hint = 'Minimum ${_fmt(m.minAmount!, m.minCurrency)}';

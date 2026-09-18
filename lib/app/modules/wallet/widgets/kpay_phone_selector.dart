@@ -16,7 +16,17 @@ class KpayPhoneSelector extends StatefulWidget {
   })
   onChanged;
 
-  const KpayPhoneSelector({super.key, required this.onChanged});
+  /// Valeurs initiales (ex. coordonnées de retrait enregistrées) : code opérateur
+  /// KPay et numéro international sans « + ».
+  final String? initialProviderCode;
+  final String? initialPhone;
+
+  const KpayPhoneSelector({
+    super.key,
+    required this.onChanged,
+    this.initialProviderCode,
+    this.initialPhone,
+  });
 
   @override
   State<KpayPhoneSelector> createState() => _KpayPhoneSelectorState();
@@ -32,7 +42,24 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
     super.initState();
     _country = KPayCatalog.defaultCountry;
     _operator = _country.operators.first;
+
+    final initial = KPayCatalog.byProviderCode(widget.initialProviderCode);
+    if (initial != null) {
+      _country = initial.$1;
+      _operator = initial.$2;
+      final phone = widget.initialPhone ?? '';
+      _phoneController.text = phone.startsWith(_country.dialCode)
+          ? phone.substring(_country.dialCode.length)
+          : phone;
+    }
+
     _phoneController.addListener(_notify);
+    // Valeurs pré-remplies : le parent reçoit l'état initial sans attendre une saisie.
+    if (initial != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _notify();
+      });
+    }
   }
 
   @override

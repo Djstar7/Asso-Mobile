@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/providers/package_service.dart';
 import '../../../data/providers/wallet_service.dart';
 import '../../../data/models/wallet_model.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 
 class CertificationPackagesController extends GetxController {
@@ -106,33 +107,25 @@ Future<bool> createOrder({
   }
 }
 
-/// Crée un abonnement en mode « redirect » (checkout WebView : PayPal).
-/// Retourne `{order_id, approval_url}` à ouvrir dans la WebView, ou null si échec.
-Future<Map<String, dynamic>?> createRedirectOrder({
-  required int packageId,
-  required String paymentMode, // 'paypal_direct'
-}) async {
-  if (_isDisposed) return null;
+/// Paie la certification avec le solde du Wallet ASSO (activation immédiate).
+/// Renvoie le message de succès du serveur, ou null en cas d'échec (snackbar affiché).
+Future<String?> payWithWallet({required int packageId}) async {
+  if (_isDisposed || isCreatingOrder.value) return null;
   isCreatingOrder.value = true;
   try {
     final response = await PackageService.subscribePackageDirect(
       packageId,
-      paymentMode: paymentMode,
+      paymentMode: 'wallet',
     );
-
-    if (response.success) {
-      final subscriptionId = response.data?['subscription_id'];
-      final approvalUrl = response.data?['approval_url'];
-      if (subscriptionId is int && approvalUrl is String && approvalUrl.isNotEmpty) {
-        return {'order_id': subscriptionId, 'approval_url': approvalUrl};
-      }
-      Get.snackbar('Erreur', 'Lien de paiement indisponible', snackPosition: SnackPosition.BOTTOM);
-      return null;
-    } else {
-      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
-          snackPosition: SnackPosition.BOTTOM);
+    if (!response.success) {
+      Get.snackbar('Paiement impossible',
+          response.message.isNotEmpty ? response.message : 'Échec du paiement',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
       return null;
     }
+    loadWallet();
+    return response.message.isNotEmpty ? response.message : 'Certification activée.';
   } catch (e) {
     Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
     return null;
@@ -181,7 +174,7 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
   }
 }
 
-/// Démarre le suivi du paiement (utilisé après retour WebView PayPal / Stripe).
+/// Démarre le suivi du paiement (utilisé après la Payment Sheet carte).
 void pollOrderPayment(int orderId) => _pollOrderPayment(orderId);
 
 void _pollOrderPayment(int subscriptionId) async {
@@ -213,12 +206,8 @@ void _pollOrderPayment(int subscriptionId) async {
     await Future.wait([loadPackages(), loadWallet()]);
   }
 
-  String formatCurrency(double amount) {
-    return '${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
-  }
+  /// Montant (prix en XAF) affiché dans la devise de l'utilisateur.
+  String formatCurrency(double amountXaf) => CurrencyService.formatFromPivot(amountXaf);
 
   @override
   void onClose() {

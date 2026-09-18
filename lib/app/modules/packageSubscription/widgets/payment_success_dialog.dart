@@ -75,9 +75,11 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
     super.dispose();
   }
 
-  /// Libellé lisible du rail de paiement (accepte kpay / paypal / stripe).
+  /// Libellé lisible du rail de paiement (accepte wallet / kpay / paypal / stripe).
   String _paymentMethodLabel(String method) {
     switch (method) {
+      case 'wallet':
+        return 'Wallet ASSO';
       case 'kpay':
         return 'KPay';
       case 'paypal':

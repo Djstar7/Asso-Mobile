@@ -71,6 +71,40 @@ class CurrencyService extends GetxService {
     return '$formatted ${getSymbolForCode(currencyCode)}';
   }
 
+  /// Formate un montant exprimé dans la devise pivot (XAF/XOF, parité 1:1) dans la
+  /// devise de l'utilisateur. Contrairement à [formatPrice], garde 2 décimales pour
+  /// les devises fortes (100 FCFA ≈ 0,15 € et non « 0 € »).
+  /// À appeler dans un Obx pour suivre un changement de devise.
+  static String formatFromPivot(double amountXaf) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return formatAmountInCurrency(amountXaf.roundToDouble(), 'XAF');
+    }
+    final service = CurrencyService.to;
+    final code = service.currencyCode.toUpperCase();
+    final converted = service.convertFromXOF(amountXaf);
+    final zeroDecimal = code == 'XAF' || code == 'XOF' || code == 'JPY';
+    final rounded = zeroDecimal
+        ? converted.roundToDouble()
+        : (converted * 100).roundToDouble() / 100;
+    return formatAmountInCurrency(rounded, code);
+  }
+
+  /// Montant pivot (XAF) converti dans la devise utilisateur + code de cette devise,
+  /// pour les composants qui attendent un couple (montant, devise).
+  static ({double amount, String currency}) displayFromPivot(double amountXaf) {
+    if (!Get.isRegistered<CurrencyService>()) {
+      return (amount: amountXaf, currency: 'XAF');
+    }
+    final service = CurrencyService.to;
+    final code = service.currencyCode.toUpperCase();
+    final converted = service.convertFromXOF(amountXaf);
+    final zeroDecimal = code == 'XAF' || code == 'XOF' || code == 'JPY';
+    return (
+      amount: zeroDecimal ? converted.roundToDouble() : (converted * 100).roundToDouble() / 100,
+      currency: code,
+    );
+  }
+
   @override
   Future<void> onInit() async {
     super.onInit();

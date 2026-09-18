@@ -25,6 +25,8 @@ class OrderModel {
   final String deliveryPhone;
   final String? addressDetails;
   final String paymentStatus;
+  /// Montant versé au vendeur : ses propres prix (la commission ASSO est payée
+  /// en plus par le client).
   final double vendorAmount;
   final String? deliveryCompanyName;
 
@@ -157,6 +159,13 @@ class OrderModel {
       deliveryPersonId: deliveryPersonId ?? this.deliveryPersonId,
       deliveryPersonName: deliveryPersonName ?? this.deliveryPersonName,
       notes: notes ?? this.notes,
+      orderNumber: orderNumber,
+      deliveryPhone: deliveryPhone,
+      addressDetails: addressDetails,
+      paymentStatus: paymentStatus,
+      vendorAmount: vendorAmount,
+      deliveryCompanyName: deliveryCompanyName,
+      deliveryAssigned: deliveryAssigned,
     );
   }
 }

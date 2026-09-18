@@ -12,6 +12,8 @@ import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
+import '../../../data/models/payment_method_option.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
 
@@ -3010,10 +3012,14 @@ class ProductView extends GetView<ProductController> {
       currency: 'XAF',
       amountLabel: 'Total à payer',
       allowedCodes: const {'kpay', 'stripe'},
+      includeWallet: true,
     );
     if (method == null) return; // annulé
 
     switch (method.code) {
+      case 'wallet':
+        await _payViaWallet(product, total, method);
+        break;
       case 'kpay':
         await _payViaMobileMoney(product, total);
         break;
@@ -3027,6 +3033,32 @@ class ProductView extends GetView<ProductController> {
           snackPosition: SnackPosition.BOTTOM,
         );
     }
+  }
+
+  /// Paiement avec le solde du Wallet ASSO : fonds réservés immédiatement, prélevés
+  /// à la validation du vendeur et rendus disponibles en cas d'annulation/refus.
+  Future<void> _payViaWallet(
+    Map<String, dynamic> product,
+    double total,
+    PaymentMethodOption method,
+  ) async {
+    final confirmed = await WalletPaymentConfirmDialog.show(
+      itemLabel: product['name']?.toString() ?? 'Commande',
+      amount: total,
+      balance: method.balance ?? 0,
+    );
+    if (!confirmed) return;
+
+    final data = await controller.createOrder(
+      product: product,
+      paymentMode: 'wallet',
+    );
+    if (data == null) return; // snackbar déjà affiché
+
+    _showOrderConfirmation(
+      data,
+      'Payée avec votre Wallet ASSO. En cas de refus ou d\'annulation, le montant vous est rendu immédiatement.',
+    );
   }
 
   /// Paiement Mobile Money (KPay direct, validation USSD sur le téléphone).

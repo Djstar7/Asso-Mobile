@@ -80,16 +80,16 @@ class PackageService {
     }
   }
 
-  /// Souscrire à un package de stockage via un rail de paiement DIRECT
-  /// (identique au parcours acheteur : KPay Mobile Money / PayPal / Stripe).
+  /// Souscrire à un forfait (stockage ou certification).
   ///
-  ///  - kpay_direct  : nécessite [provider] + [phoneNumber] (fournis par le
-  ///    KpayDirectPaymentSheet, mêmes valeurs que les commandes).
-  ///  - paypal_direct / stripe_direct : aucune donnée supplémentaire ; la réponse
-  ///    contient une [approval_url] à ouvrir en WebView.
+  ///  - wallet        : débit du solde Wallet ASSO, activation immédiate (status "paid").
+  ///  - kpay_direct   : nécessite [provider] + [phoneNumber] (KpayDirectPaymentSheet),
+  ///    confirmation par polling.
+  ///  - stripe_direct : la réponse contient client_secret / publishable_key pour la
+  ///    Payment Sheet, confirmation par polling.
   ///
   /// Réponse 201 : { success, message, payment_mode, subscription_id,
-  ///                 status:"pending", payment_reference, approval_url }
+  ///                 status:"pending|paid", payment_reference, ... }
   static Future<ApiResponse> subscribePackageDirect(
     int packageId, {
     required String paymentMode,
