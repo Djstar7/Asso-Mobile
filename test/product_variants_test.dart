@@ -108,6 +108,57 @@ void main() {
     expect(find.text('+1500 FCFA'), findsOneWidget);
   });
 
+  testWidgets('unavailable choices are hidden, not struck through', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ProductVariantSelector(
+              catalog: VariantCatalog.fromApi(_variants, _options),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Noir n'existe en stock qu'en 41 : la pointure 42 disparaît.
+    await tester.tap(find.text('Noir'));
+    await tester.pumpAndSettle();
+    expect(find.text('41'), findsOneWidget);
+    expect(find.text('42'), findsNothing);
+    expect(find.text('Voir tous les choix'), findsOneWidget);
+
+    await tester.tap(find.text('Voir tous les choix'));
+    await tester.pumpAndSettle();
+    expect(find.text('42'), findsOneWidget);
+  });
+
+  testWidgets('fully out of stock product shows a single message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ProductVariantSelector(
+            catalog: VariantCatalog.fromApi([
+              {
+                'id': 9,
+                'attributes': {'Couleur': 'Rouge'},
+                'stock': 0,
+              },
+            ], null),
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Ce produit est actuellement épuisé'), findsOneWidget);
+    expect(find.text('Rouge'), findsNothing);
+  });
+
   group('VariantEditorState', () {
     test('builds every combination and serializes API fields', () {
       final state = VariantEditorState();

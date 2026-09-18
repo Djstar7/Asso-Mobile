@@ -246,8 +246,22 @@ class VariantCatalog {
     );
   }
 
-  bool exists(String group, String value) =>
-      variants.any((v) => attributesOf(v)[group] == value);
+  /// Au moins une variante en stock : sinon le produit entier est épuisé.
+  bool get hasStock => variants.any((v) => stockOf(v) > 0);
+
+  /// Valeurs réellement proposables : on masque celles qui n'ont plus de stock
+  /// ou qui ne vont avec aucun des autres choix déjà faits. La valeur déjà
+  /// sélectionnée reste affichée pour que le client puisse la changer.
+  List<VariantOptionValue> visibleValues(
+    VariantOptionGroup group,
+    Map<String, String> selection,
+  ) => group.values
+      .where(
+        (v) =>
+            selection[group.name] == v.value ||
+            isAvailable(group.name, v.value, selection),
+      )
+      .toList();
 
   Map<String, dynamic>? find(Map<String, String> selection) {
     if (selection.length < groups.length) return null;
@@ -318,9 +332,14 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
       _selection.addAll(VariantCatalog.attributesOf(selected.first));
       return;
     }
-    // Choix évident : une option à valeur unique (ex. une seule couleur).
+    // Choix évident : une option à valeur unique et disponible.
     for (final group in _catalog.groups) {
-      if (group.values.length == 1) {
+      if (group.values.length == 1 &&
+          _catalog.isAvailable(
+            group.name,
+            group.values.first.value,
+            const {},
+          )) {
         _selection[group.name] = group.values.first.value;
       }
     }
@@ -354,30 +373,91 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
 
   void _notify() {
     final variant = _catalog.find(_selection);
-    final usable =
-        variant != null && VariantCatalog.stockOf(variant) > 0 ? variant : null;
+    final usable = variant != null && VariantCatalog.stockOf(variant) > 0
+        ? variant
+        : null;
     widget.onChanged(usable);
+  }
+
+  /// Des valeurs sont-elles masquées à cause des choix en cours ?
+  bool get _hasHiddenValues => _catalog.groups.any(
+    (g) => _catalog.visibleValues(g, _selection).length < g.values.length,
+  );
+
+  void _reset() {
+    setState(_selection.clear);
+    _notify();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_catalog.isEmpty) return const SizedBox.shrink();
+    if (!_catalog.hasStock) return _buildOutOfStock(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final group in _catalog.groups) ...[
-          _buildGroupHeader(context, group),
-          const SizedBox(height: 10),
-          group.isColor
-              ? _buildColorGroup(context, group)
-              : _buildChipGroup(context, group),
-          const SizedBox(height: 18),
-        ],
+        for (final group in _catalog.groups)
+          ...() {
+            final values = _catalog.visibleValues(group, _selection);
+            if (values.isEmpty) return <Widget>[];
+            return [
+              _buildGroupHeader(context, group),
+              const SizedBox(height: 10),
+              group.isColor
+                  ? _buildColorGroup(context, group, values)
+                  : _buildChipGroup(context, group, values),
+              const SizedBox(height: 18),
+            ];
+          }(),
         _buildStatus(context),
+        if (_selection.isNotEmpty && _hasHiddenValues)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _reset,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Voir tous les choix'),
+              style: TextButton.styleFrom(
+                foregroundColor: context.secondaryTextColor,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
       ],
     );
   }
+
+  Widget _buildOutOfStock(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: AppThemeSystem.errorColor.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: AppThemeSystem.errorColor.withValues(alpha: 0.3),
+      ),
+    ),
+    child: const Row(
+      children: [
+        Icon(
+          Icons.remove_shopping_cart_outlined,
+          size: 20,
+          color: AppThemeSystem.errorColor,
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Ce produit est actuellement épuisé',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppThemeSystem.errorColor,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildGroupHeader(BuildContext context, VariantOptionGroup group) {
     final selected = _selection[group.name];
@@ -415,18 +495,17 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
     );
   }
 
-  Widget _buildColorGroup(BuildContext context, VariantOptionGroup group) {
+  Widget _buildColorGroup(
+    BuildContext context,
+    VariantOptionGroup group,
+    List<VariantOptionValue> values,
+  ) {
     return Wrap(
       spacing: 14,
       runSpacing: 14,
-      children: group.values.map((option) {
+      children: values.map((option) {
         final color = option.color ?? VariantPalette.guess(option.value);
         final selected = _selection[group.name] == option.value;
-        final available = _catalog.isAvailable(
-          group.name,
-          option.value,
-          _selection,
-        );
         return Semantics(
           button: true,
           selected: selected,
@@ -462,26 +541,15 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
                               color: Colors.black.withValues(alpha: 0.12),
                             ),
                             boxShadow: [
-                              if (available)
-                                BoxShadow(
-                                  color: color.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
                             ],
                           ),
                         ),
-                        if (!available)
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.55),
-                            ),
-                            child: CustomPaint(painter: _StrikePainter()),
-                          ),
-                        if (selected && available)
+                        if (selected)
                           Icon(
                             Icons.check_rounded,
                             size: 22,
@@ -499,9 +567,7 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: available
-                          ? context.primaryTextColor
-                          : context.secondaryTextColor,
+                      color: context.primaryTextColor,
                     ),
                   ),
                 ],
@@ -513,17 +579,16 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
     );
   }
 
-  Widget _buildChipGroup(BuildContext context, VariantOptionGroup group) {
+  Widget _buildChipGroup(
+    BuildContext context,
+    VariantOptionGroup group,
+    List<VariantOptionValue> values,
+  ) {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: group.values.map((option) {
+      children: values.map((option) {
         final selected = _selection[group.name] == option.value;
-        final available = _catalog.isAvailable(
-          group.name,
-          option.value,
-          _selection,
-        );
         return Semantics(
           button: true,
           selected: selected,
@@ -543,9 +608,7 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
                 border: Border.all(
                   color: selected
                       ? AppThemeSystem.primaryColor
-                      : available
-                      ? context.borderColor
-                      : context.borderColor.withValues(alpha: 0.5),
+                      : context.borderColor,
                   width: selected ? 2 : 1.2,
                 ),
                 boxShadow: selected
@@ -566,12 +629,7 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: selected
-                      ? Colors.white
-                      : available
-                      ? context.primaryTextColor
-                      : context.secondaryTextColor.withValues(alpha: 0.6),
-                  decoration: available ? null : TextDecoration.lineThrough,
+                  color: selected ? Colors.white : context.primaryTextColor,
                 ),
               ),
             ),
@@ -594,25 +652,19 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
       icon = Icons.touch_app_outlined;
       color = AppThemeSystem.infoColor;
       text = 'Sélectionnez : ${missing.join(', ')}';
-    } else if (variant == null) {
+    } else if (variant == null || VariantCatalog.stockOf(variant) <= 0) {
       icon = Icons.block;
       color = AppThemeSystem.errorColor;
-      text = "Cette combinaison n'est pas proposée";
+      text = "Cette combinaison n'est pas disponible";
     } else {
       final stock = VariantCatalog.stockOf(variant);
-      if (stock <= 0) {
-        icon = Icons.remove_shopping_cart_outlined;
-        color = AppThemeSystem.errorColor;
-        text = 'Épuisé pour ce choix';
-      } else {
-        icon = Icons.check_circle_rounded;
-        color = AppThemeSystem.successColor;
-        text = widget.showStock
-            ? (stock <= 5
-                  ? 'Plus que $stock en stock'
-                  : 'En stock ($stock disponibles)')
-            : 'Disponible';
-      }
+      icon = Icons.check_circle_rounded;
+      color = AppThemeSystem.successColor;
+      text = widget.showStock
+          ? (stock <= 5
+                ? 'Plus que $stock en stock'
+                : 'En stock ($stock disponibles)')
+          : 'Disponible';
       final adjustment =
           (variant['price_adjustment_xaf'] as num?)?.toDouble() ??
           (variant['price_adjustment'] as num?)?.toDouble() ??
@@ -665,22 +717,4 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
       ),
     );
   }
-}
-
-class _StrikePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black54
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.2, size.height * 0.8),
-      Offset(size.width * 0.8, size.height * 0.2),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
