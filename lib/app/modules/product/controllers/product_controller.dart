@@ -10,6 +10,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/product_service.dart';
+import '../../../data/providers/statistics_service.dart';
 import '../../../data/providers/storage_service.dart';
 
 /// Pourquoi la position automatique n'a pas pu être obtenue.
@@ -48,6 +49,16 @@ class ProductController extends GetxController {
   final TextEditingController addressDetailsController =
       TextEditingController();
   final TextEditingController customerPhoneController = TextEditingController();
+
+  /// Produits dont la consultation a déjà été signalée (statistiques vendeur).
+  final Set<String> _trackedProductIds = {};
+
+  /// Signale une consultation de fiche produit (une fois par produit affiché).
+  void trackProductView(Map<String, dynamic> product) {
+    final id = product['id']?.toString();
+    if (id == null || id.isEmpty || !_trackedProductIds.add(id)) return;
+    StatisticsService.trackProductView(id);
+  }
 
   @override
   void onInit() {
@@ -495,6 +506,12 @@ class ProductController extends GetxController {
       final conversation = response.data?['conversation'] ?? response.data;
       final conversationId =
           conversation?['id'] ?? conversation?['conversation_id'];
+      if (response.success && conversationId != null) {
+        StatisticsService.trackContact(
+          productId: productId,
+          shopId: shop?['id'],
+        );
+      }
       if (!response.success || conversationId == null) {
         Get.snackbar(
           'Erreur',

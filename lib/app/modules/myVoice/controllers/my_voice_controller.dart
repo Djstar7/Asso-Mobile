@@ -8,10 +8,16 @@ class MyVoiceController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = true.obs;
+  final RxBool isSubmitting = false.obs;
+  final RxnString loadError = RxnString();
   final RxString sortBy = 'recent'.obs; // 'recent' | 'popular'
 
   int currentPage = 1;
   final int perPage = 10;
+
+  /// Incrémenté à chaque rafraîchissement : ignore les réponses d'une page
+  /// demandée avant un changement de tri ou un rafraîchissement.
+  int _generation = 0;
 
   @override
   void onInit() {
@@ -21,16 +27,17 @@ class MyVoiceController extends GetxController {
 
   /// Fetch posts
   Future<void> fetchPosts({bool refresh = false}) async {
-    if (isLoading.value || isLoadingMore.value) {
+    if (refresh) {
+      _generation++;
+      currentPage = 1;
+      hasMore.value = true;
+    } else if (isLoading.value || isLoadingMore.value) {
       return;
     }
 
-    if (refresh) {
-      currentPage = 1;
-      hasMore.value = true;
-    }
-
-    if (currentPage == 1) {
+    final generation = _generation;
+    final page = currentPage;
+    if (page == 1) {
       isLoading.value = true;
     } else {
       isLoadingMore.value = true;
@@ -38,147 +45,161 @@ class MyVoiceController extends GetxController {
 
     try {
       final response = await PostService.getPosts(
-        page: currentPage,
+        page: page,
         perPage: perPage,
         sort: sortBy.value,
       );
+      if (generation != _generation) return;
 
-      if (response.success && response.data != null) {
-        // La réponse contient un objet de pagination Laravel enveloppé
-        final pagination = response.data?['data'];
-        final data = pagination['data'] as List;
-
-        // 🔍 LOG: Afficher la réponse brute
-        print('📦 RESPONSE DATA: ${response.data}');
-        print('📋 POSTS COUNT: ${data.length}');
-
-        final newPosts = data.map((json) {
-          // 🔍 LOG: Afficher chaque post reçu
-          print('🔍 POST JSON: $json');
-          print('   - is_anonymous: ${json['is_anonymous']}');
-          print('   - is_my_post: ${json['is_my_post']}');
-          print('   - user: ${json['user']}');
-
-          final post = Post.fromJson(json);
-
-          // 🔍 LOG: Afficher le post parsé
-          print('✅ POST PARSED:');
-          print('   - isAnonymous: ${post.isAnonymous}');
-          print('   - isMyPost: ${post.isMyPost}');
-          print('   - user.firstName: ${post.user?.firstName}');
-          print('   - user.avatar: ${post.user?.avatar}');
-
-          return post;
-        }).toList();
-
-        if (refresh || currentPage == 1) {
-          posts.value = newPosts;
-        } else {
-          posts.addAll(newPosts);
-        }
-
-        // Vérifier s'il y a plus de pages
-        final nextPageUrl = pagination['next_page_url'];
-        hasMore.value = nextPageUrl != null;
-        currentPage++;
+      final pagination = response.data?['data'];
+      if (!response.success || pagination is! Map) {
+        loadError.value = response.message.isNotEmpty
+            ? response.message
+            : 'Impossible de charger les publications';
+        return;
       }
+
+      loadError.value = null;
+      final newPosts = (pagination['data'] as List? ?? [])
+          .map((json) => Post.fromJson(Map<String, dynamic>.from(json as Map)))
+          .toList();
+
+      if (page == 1) {
+        posts.assignAll(newPosts);
+      } else {
+        final known = posts.map((p) => p.id).toSet();
+        posts.addAll(newPosts.where((p) => !known.contains(p.id)));
+      }
+
+      hasMore.value = pagination['next_page_url'] != null;
+      currentPage = page + 1;
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de charger les posts',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (generation == _generation) {
+        loadError.value = 'Impossible de charger les publications';
+      }
     } finally {
-      isLoading.value = false;
-      isLoadingMore.value = false;
+      if (generation == _generation) {
+        isLoading.value = false;
+        isLoadingMore.value = false;
+      }
     }
   }
 
   /// Change sorting
   void changeSorting(String newSort) {
+    if (sortBy.value == newSort) return;
     sortBy.value = newSort;
     fetchPosts(refresh: true);
   }
 
-  /// Create a new post
-  Future<void> createPost({
+  void _snack(String title, String message, {bool error = false}) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: error ? Colors.red : Colors.green,
+      colorText: Colors.white,
+    );
+  }
+
+  /// Publie un message. Retourne true en cas de succès : la feuille de saisie
+  /// n'est fermée qu'à ce moment-là, le texte n'est donc jamais perdu.
+  Future<bool> createPost({
     required String content,
     bool isAnonymous = false,
   }) async {
+    if (isSubmitting.value) return false;
+    isSubmitting.value = true;
     try {
       final response = await PostService.createPost(
         content: content,
         isAnonymous: isAnonymous,
       );
 
-      if (response.success && response.data != null) {
-        final createdData = response.data?['data'];
-        if (createdData is Map) {
-          final createdPost = Post.fromJson(
-            Map<String, dynamic>.from(createdData),
-          );
-          posts.removeWhere((post) => post.id == createdPost.id);
-          posts.insert(0, createdPost);
-        }
-
-        Get.back();
-
-        // Refresh the posts list to get the latest data
-        await fetchPosts(refresh: true);
-
-        Get.snackbar(
-          'Succès',
-          'Votre post a été créé avec succès',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-      } else {
-        Get.snackbar(
+      final created = response.data?['data'];
+      if (!response.success || created is! Map) {
+        _snack(
           'Erreur',
-          response.message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+          response.message.isNotEmpty ? response.message : 'Impossible de publier le message',
+          error: true,
         );
+        return false;
       }
+
+      final post = Post.fromJson(Map<String, dynamic>.from(created));
+      posts.removeWhere((p) => p.id == post.id);
+      if (sortBy.value == 'recent') {
+        posts.insert(0, post);
+      } else {
+        posts.add(post);
+      }
+      _snack('Succès', 'Votre message a été publié');
+      return true;
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de créer le post',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _snack('Erreur', 'Impossible de publier le message', error: true);
+      return false;
+    } finally {
+      isSubmitting.value = false;
     }
   }
 
-  /// Delete a post
+  /// Modifie un de mes messages.
+  Future<bool> updatePost(Post post, String content) async {
+    if (isSubmitting.value) return false;
+    isSubmitting.value = true;
+    try {
+      final response = await PostService.updatePost(id: post.id, content: content);
+      final updated = response.data?['data'];
+      if (!response.success || updated is! Map) {
+        _snack(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Modification impossible',
+          error: true,
+        );
+        return false;
+      }
+      updatePostInList(Post.fromJson(Map<String, dynamic>.from(updated)));
+      _snack('Succès', 'Message modifié');
+      return true;
+    } catch (_) {
+      _snack('Erreur', 'Modification impossible', error: true);
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  /// Supprime un de mes messages après confirmation.
   Future<void> deletePost(int postId) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Supprimer le message ?'),
+        content: const Text('Il sera retiré du fil avec ses commentaires.'),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     try {
       final response = await PostService.deletePost(postId);
-
       if (response.success) {
         posts.removeWhere((post) => post.id == postId);
-
-        Get.snackbar(
-          'Succès',
-          'Post supprimé avec succès',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+        _snack('Succès', 'Message supprimé');
+      } else {
+        _snack(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Suppression impossible',
+          error: true,
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de supprimer le post',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _snack('Erreur', 'Suppression impossible', error: true);
     }
   }
 
@@ -193,28 +214,17 @@ class MyVoiceController extends GetxController {
         type: type,
       );
 
-      if (response.success && response.data != null) {
-        final data = response.data?['data'];
+      final data = response.data?['data'];
+      if (response.success && data is Map) {
         final index = posts.indexWhere((post) => post.id == postId);
-
         if (index != -1) {
-          posts[index] = posts[index].copyWith(
-            likesCount: data['likes_count'],
-            dislikesCount: data['dislikes_count'],
-            userReaction: data['user_reaction'],
-            isLiked: data['user_reaction'] == 'like',
-            isDisliked: data['user_reaction'] == 'dislike',
-          );
+          posts[index] = posts[index].withReaction(data);
         }
+      } else if (!response.success) {
+        _snack('Erreur', response.message, error: true);
       }
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de réagir au post',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _snack('Erreur', 'Impossible de réagir au message', error: true);
     }
   }
 

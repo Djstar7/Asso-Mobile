@@ -135,13 +135,16 @@ class StoreManagementController extends GetxController {
           print('✅ CONTROLLER: Storage stats loaded');
 
           // Parser les statistiques d'audience depuis stats
+          // Audience cumulée (P8) ; le détail par période est sur l'écran Statistiques.
+          final visitors = (stats['unique_visitors'] as num?)?.toInt() ?? 0;
+          final sales = (stats['sales_count'] as num?)?.toInt() ?? 0;
           audienceStats.value = AudienceStats(
-            totalViews: 0, // TODO: À implémenter dans le backend
-            totalClicks: 0, // TODO: À implémenter dans le backend
-            totalOrders: stats['total_orders'] ?? 0,
-            conversionRate: 0.0, // TODO: À calculer
-            dailyStats: [], // TODO: À implémenter dans le backend
-            topProducts: {}, // TODO: À implémenter dans le backend
+            totalViews: (stats['total_visits'] as num?)?.toInt() ?? 0,
+            totalClicks: (stats['total_product_views'] as num?)?.toInt() ?? 0,
+            totalOrders: (stats['total_orders'] as num?)?.toInt() ?? 0,
+            conversionRate: visitors > 0 ? (sales / visitors * 100).clamp(0, 100).toDouble() : 0.0,
+            dailyStats: [],
+            topProducts: {},
           );
           print('✅ CONTROLLER: Audience stats loaded');
         } else {
@@ -237,6 +240,11 @@ class StoreManagementController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// Écran des statistiques détaillées de la boutique
+  void openStatistics() {
+    Get.toNamed(Routes.SHOP_STATISTICS);
   }
 
   /// Convert dynamic value to double (handles both String and num)

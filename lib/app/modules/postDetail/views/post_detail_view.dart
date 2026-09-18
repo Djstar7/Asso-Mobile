@@ -381,28 +381,53 @@ class PostDetailView extends GetView<PostDetailController> {
             ),
             const SizedBox(height: 8),
 
-            // Like button
-            InkWell(
-              onTap: () => controller.reactToComment(comment.id),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    comment.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                    size: 16,
-                    color: comment.isLiked ? AppThemeSystem.primaryColor : Colors.grey,
+            // Actions : j'aime, répondre, supprimer (mes commentaires)
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => controller.reactToComment(comment.id),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        comment.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                        size: 16,
+                        color: comment.isLiked ? AppThemeSystem.primaryColor : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${comment.likesCount}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: comment.isLiked ? AppThemeSystem.primaryColor : Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${comment.likesCount}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: comment.isLiked ? AppThemeSystem.primaryColor : Colors.grey,
-                      fontWeight: FontWeight.w500,
+                ),
+                const SizedBox(width: 20),
+                InkWell(
+                  onTap: () => _showAddCommentDialog(context, replyTo: comment),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.reply, size: 16, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Text('Répondre', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                if (comment.isMyComment)
+                  InkWell(
+                    onTap: () => controller.deleteComment(comment),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.delete_outline, size: 18, color: Colors.grey),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
 
             // Replies (if any)
@@ -412,7 +437,9 @@ class PostDetailView extends GetView<PostDetailController> {
                 margin: const EdgeInsets.only(left: 24),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: AppThemeSystem.isDarkMode(context)
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -435,10 +462,17 @@ class PostDetailView extends GetView<PostDetailController> {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                '· ${timeago.format(reply.createdAt, locale: 'fr')}',
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              Expanded(
+                                child: Text(
+                                  '· ${timeago.format(reply.createdAt, locale: 'fr')}',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                ),
                               ),
+                              if (reply.isMyComment)
+                                InkWell(
+                                  onTap: () => controller.deleteComment(reply),
+                                  child: const Icon(Icons.delete_outline, size: 16, color: Colors.grey),
+                                ),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -469,7 +503,7 @@ class PostDetailView extends GetView<PostDetailController> {
   }
 
   /// Show add comment dialog
-  void _showAddCommentDialog(BuildContext context) {
+  void _showAddCommentDialog(BuildContext context, {PostComment? replyTo}) {
     final TextEditingController contentController = TextEditingController();
     final RxBool isAnonymous = false.obs;
     final isDark = AppThemeSystem.isDarkMode(context);
@@ -493,13 +527,19 @@ class PostDetailView extends GetView<PostDetailController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Ajouter un commentaire',
+                    Flexible(
+                      child: Text(
+                      replyTo == null
+                          ? 'Ajouter un commentaire'
+                          : 'Répondre à ${(replyTo.isAnonymous && !replyTo.isMyComment) ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black,
                       ),
+                    ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -564,7 +604,7 @@ class PostDetailView extends GetView<PostDetailController> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Obx(() => ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppThemeSystem.primaryColor,
                       foregroundColor: Colors.white,
@@ -573,20 +613,38 @@ class PostDetailView extends GetView<PostDetailController> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      final content = contentController.text.trim();
-                      if (content.isNotEmpty) {
-                        controller.createComment(
-                          content: content,
-                          isAnonymous: isAnonymous.value,
-                        );
-                      }
-                    },
-                    child: const Text(
-                      'Publier',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                    onPressed: controller.isSubmitting.value
+                        ? null
+                        : () async {
+                            final content = contentController.text.trim();
+                            if (content.isEmpty) {
+                              Get.snackbar(
+                                'Commentaire vide',
+                                'Écrivez quelques mots avant de publier.',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                              return;
+                            }
+                            final ok = await controller.createComment(
+                              content: content,
+                              isAnonymous: isAnonymous.value,
+                              parentId: replyTo?.id,
+                            );
+                            if (ok && (Get.isBottomSheetOpen ?? false)) {
+                              Get.back();
+                            }
+                          },
+                    child: controller.isSubmitting.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text(
+                            'Publier',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                  )),
                 ),
                 const SizedBox(height: 8),
               ],

@@ -33,6 +33,11 @@ class VendorDashboardController extends GetxController {
   final totalSales = 0.0.obs;
   final totalProducts = 0.obs;
   final rating = 0.0.obs;
+  // Audience (P8)
+  final totalVisits = 0.obs;
+  final totalProductViews = 0.obs;
+  final visitsLast7Days = 0.obs;
+  final totalContacts = 0.obs;
 
   // Package info
   final hasPackage = false.obs;
@@ -112,6 +117,10 @@ class VendorDashboardController extends GetxController {
           totalSales.value = (stats['total_sales'] ?? 0).toDouble();
           totalProducts.value = stats['total_products'] ?? 0;
           rating.value = (stats['rating'] ?? 0).toDouble();
+          totalVisits.value = (stats['total_visits'] as num?)?.toInt() ?? 0;
+          totalProductViews.value = (stats['total_product_views'] as num?)?.toInt() ?? 0;
+          visitsLast7Days.value = (stats['visits_last_7_days'] as num?)?.toInt() ?? 0;
+          totalContacts.value = (stats['total_contacts'] as num?)?.toInt() ?? 0;
           print('  └─ Total Orders: ${totalOrders.value}');
           print('  └─ Pending Orders: ${pendingOrders.value}');
           print('  └─ Total Sales: ${totalSales.value}');
@@ -304,6 +313,11 @@ class VendorDashboardController extends GetxController {
         refreshData();
       });
     }
+  }
+
+  /// Écran des statistiques détaillées (visites, consultations, ventes, CA)
+  void navigateToStatistics() {
+    Get.toNamed('/shop-statistics')?.then((_) => refreshData());
   }
 
   /// Navigate to product management

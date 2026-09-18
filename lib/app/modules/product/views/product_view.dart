@@ -41,6 +41,9 @@ class ProductView extends GetView<ProductController> {
           'seller': {'name': 'Vendeur', 'rating': 4.5, 'reviews': 120},
         };
 
+    // Statistiques vendeur : consultation de la fiche (dédoublonnée).
+    controller.trackProductView(product);
+
     // 🔍 DEBUG: Afficher tous les détails du produit
     print('');
     print('═══════════════════════════════════════════════════════════════');

@@ -74,12 +74,38 @@ class PostDetailController extends GetxController {
     }
   }
 
-  /// Create a comment
-  Future<void> createComment({
+  /// Envoi en cours (désactive le bouton « Publier »)
+  final RxBool isSubmitting = false.obs;
+
+  void _applyCommentsCount(dynamic serverCount, {int fallbackDelta = 0}) {
+    final current = post.value;
+    if (current == null) return;
+    final count = serverCount is num
+        ? serverCount.toInt()
+        : (current.commentsCount + fallbackDelta).clamp(0, 1 << 31);
+    post.value = current.copyWith(commentsCount: count);
+  }
+
+  void _showError(String message) {
+    Get.snackbar(
+      'Erreur',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  }
+
+  /// Ajoute un commentaire (ou une réponse si [parentId]). Retourne true si
+  /// l'envoi a réussi : la feuille de saisie n'est fermée qu'à ce moment-là,
+  /// pour ne jamais perdre le texte saisi.
+  Future<bool> createComment({
     required String content,
     bool isAnonymous = false,
     int? parentId,
   }) async {
+    if (isSubmitting.value) return false;
+    isSubmitting.value = true;
     try {
       final response = await PostService.createComment(
         postId: postId,
@@ -88,35 +114,62 @@ class PostDetailController extends GetxController {
         parentId: parentId,
       );
 
-      if (response.success && response.data != null) {
-        Get.back(); // Close bottom sheet
-
-        // Refresh comments
-        await fetchComments();
-
-        // Update comment count in post
-        if (post.value != null) {
-          post.value = post.value!.copyWith(
-            commentsCount: post.value!.commentsCount + 1,
-          );
-        }
-
-        Get.snackbar(
-          'Succès',
-          'Commentaire ajouté avec succès',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+      if (!response.success) {
+        _showError(response.message.isNotEmpty
+            ? response.message
+            : 'Impossible d\'ajouter le commentaire');
+        return false;
       }
-    } catch (e) {
+
+      _applyCommentsCount(response.data?['comments_count'], fallbackDelta: 1);
+      await fetchComments();
+
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'ajouter le commentaire',
+        'Succès',
+        parentId == null ? 'Commentaire ajouté' : 'Réponse ajoutée',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.green,
         colorText: Colors.white,
       );
+      return true;
+    } catch (e) {
+      _showError('Impossible d\'ajouter le commentaire');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  /// Supprime un de mes commentaires (et ses réponses).
+  Future<void> deleteComment(PostComment comment) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Supprimer le commentaire ?'),
+        content: const Text('Cette action est définitive.'),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final response = await PostService.deleteComment(postId: postId, commentId: comment.id);
+      if (!response.success) {
+        _showError(response.message.isNotEmpty ? response.message : 'Suppression impossible');
+        return;
+      }
+      _applyCommentsCount(
+        response.data?['comments_count'],
+        fallbackDelta: -(1 + (comment.replies?.length ?? 0)),
+      );
+      await fetchComments();
+    } catch (_) {
+      _showError('Suppression impossible');
     }
   }
 
@@ -163,13 +216,7 @@ class PostDetailController extends GetxController {
 
       if (response.success && response.data != null) {
         final data = response.data?['data'];
-        post.value = post.value!.copyWith(
-          likesCount: data['likes_count'],
-          dislikesCount: data['dislikes_count'],
-          userReaction: data['user_reaction'],
-          isLiked: data['user_reaction'] == 'like',
-          isDisliked: data['user_reaction'] == 'dislike',
-        );
+        if (data is Map) post.value = post.value!.withReaction(data);
       }
     } catch (e) {
       Get.snackbar(

@@ -17,6 +17,28 @@ class MyVoiceView extends GetView<MyVoiceController> {
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
       body: Column(
         children: [
+          // Tri du fil
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Obx(() => Row(
+                  children: [
+                    for (final entry in const {'recent': 'Récents', 'popular': 'Populaires'}.entries) ...[
+                      ChoiceChip(
+                        label: Text(entry.value),
+                        selected: controller.sortBy.value == entry.key,
+                        selectedColor: AppThemeSystem.primaryColor,
+                        labelStyle: TextStyle(
+                          color: controller.sortBy.value == entry.key
+                              ? Colors.white
+                              : (isDark ? Colors.white70 : Colors.black87),
+                        ),
+                        onSelected: (_) => controller.changeSorting(entry.key),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                )),
+          ),
           // Content
           Expanded(
             child: Obx(() {
@@ -25,16 +47,34 @@ class MyVoiceView extends GetView<MyVoiceController> {
         }
 
         if (controller.posts.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          final error = controller.loadError.value;
+          return RefreshIndicator(
+            onRefresh: controller.refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                Icon(Icons.forum_outlined, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 120),
+                Icon(
+                  error != null ? Icons.cloud_off_outlined : Icons.forum_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 16),
                 Text(
-                  'Aucun post pour le moment',
+                  error ?? 'Aucun message pour le moment.\nPartagez le premier votre avis sur ASSO !',
+                  textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
+                if (error != null) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: OutlinedButton.icon(
+                      onPressed: controller.refresh,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Réessayer'),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -82,7 +122,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreatePostDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Nouveau post'),
+        label: const Text('Nouveau message'),
         backgroundColor: AppThemeSystem.primaryColor,
       ),
     );
@@ -99,14 +139,6 @@ class MyVoiceView extends GetView<MyVoiceController> {
   }
 
   Widget _buildPostCard(BuildContext context, Post post) {
-    // 🔍 LOG: Afficher les infos du post dans la vue
-    print('🎨 RENDERING POST ${post.id}:');
-    print('   - isAnonymous: ${post.isAnonymous}');
-    print('   - isMyPost: ${post.isMyPost}');
-    print('   - userName: ${post.user?.fullName}');
-    print('   - Should show badge: ${post.isAnonymous && post.isMyPost}');
-    print('   - Should mask identity: ${post.isAnonymous && !post.isMyPost}');
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -185,6 +217,21 @@ class MyVoiceView extends GetView<MyVoiceController> {
                     ],
                   ),
                 ),
+                if (post.isMyPost)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.grey),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showCreatePostDialog(context, editing: post);
+                      } else if (value == 'delete') {
+                        controller.deletePost(post.id);
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Modifier')),
+                      PopupMenuItem(value: 'delete', child: Text('Supprimer', style: TextStyle(color: Colors.red))),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -295,8 +342,9 @@ class MyVoiceView extends GetView<MyVoiceController> {
     );
   }
 
-  void _showCreatePostDialog(BuildContext context) {
-    final TextEditingController contentController = TextEditingController();
+  void _showCreatePostDialog(BuildContext context, {Post? editing}) {
+    final TextEditingController contentController =
+        TextEditingController(text: editing?.content ?? '');
     final RxBool isAnonymous = false.obs;
     final isDark = AppThemeSystem.isDarkMode(context);
 
@@ -320,7 +368,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Nouveau post',
+                      editing == null ? 'Nouveau message' : 'Modifier le message',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -367,7 +415,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Obx(
+                if (editing == null) Obx(
                   () => CheckboxListTile(
                     title: Text(
                       'Publier en mode anonyme',
@@ -390,7 +438,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Obx(() => ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppThemeSystem.primaryColor,
                       foregroundColor: Colors.white,
@@ -399,20 +447,39 @@ class MyVoiceView extends GetView<MyVoiceController> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      final content = contentController.text.trim();
-                      if (content.isNotEmpty) {
-                        controller.createPost(
-                          content: content,
-                          isAnonymous: isAnonymous.value,
-                        );
-                      }
-                    },
-                    child: const Text(
-                      'Publier',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                    onPressed: controller.isSubmitting.value
+                        ? null
+                        : () async {
+                            final content = contentController.text.trim();
+                            if (content.length < 2) {
+                              Get.snackbar(
+                                'Message trop court',
+                                'Écrivez quelques mots avant de publier.',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                              return;
+                            }
+                            final ok = editing == null
+                                ? await controller.createPost(
+                                    content: content,
+                                    isAnonymous: isAnonymous.value,
+                                  )
+                                : await controller.updatePost(editing, content);
+                            if (ok && (Get.isBottomSheetOpen ?? false)) {
+                              Get.back();
+                            }
+                          },
+                    child: controller.isSubmitting.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text(
+                            editing == null ? 'Publier' : 'Enregistrer',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                  )),
                 ),
                 const SizedBox(height: 8),
               ],

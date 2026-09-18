@@ -332,13 +332,51 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Statistiques',
-          style: context.h4.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Statistiques',
+                style: context.h4.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: controller.navigateToStatistics,
+              icon: const Icon(Icons.insights_outlined, size: 18),
+              label: const Text('Voir le détail'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppThemeSystem.primaryColor,
+              ),
+            ),
+          ],
         ),
         SizedBox(height: context.elementSpacing),
+        Row(
+          children: [
+            Expanded(
+              child: Obx(() => _buildStatCard(
+                context,
+                icon: Icons.storefront_outlined,
+                title: 'Visites (${formatter.format(controller.visitsLast7Days.value)} sur 7 j)',
+                value: formatter.format(controller.totalVisits.value),
+                onTap: controller.navigateToStatistics,
+              )),
+            ),
+            SizedBox(width: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
+            Expanded(
+              child: Obx(() => _buildStatCard(
+                context,
+                icon: Icons.visibility_outlined,
+                title: 'Produits consultés',
+                value: formatter.format(controller.totalProductViews.value),
+                onTap: controller.navigateToStatistics,
+              )),
+            ),
+          ],
+        ),
+        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
         Row(
           children: [
             Expanded(

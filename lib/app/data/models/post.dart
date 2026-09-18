@@ -69,6 +69,28 @@ class Post {
     };
   }
 
+  /// Applique le résultat d'une réaction renvoyé par l'API. Contrairement à
+  /// [copyWith], permet de remettre la réaction à null (réaction retirée).
+  Post withReaction(Map data) {
+    final reaction = data['user_reaction'] as String?;
+    return Post(
+      id: id,
+      userId: userId,
+      content: content,
+      isAnonymous: isAnonymous,
+      likesCount: (data['likes_count'] as num?)?.toInt() ?? likesCount,
+      dislikesCount: (data['dislikes_count'] as num?)?.toInt() ?? dislikesCount,
+      commentsCount: commentsCount,
+      userReaction: reaction,
+      isLiked: reaction == 'like',
+      isDisliked: reaction == 'dislike',
+      isMyPost: isMyPost,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      user: user,
+    );
+  }
+
   Post copyWith({
     int? id,
     int? userId,

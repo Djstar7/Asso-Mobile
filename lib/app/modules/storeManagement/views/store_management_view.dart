@@ -752,8 +752,8 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
               children: [
                 Expanded(
                   child: _StatBox(
-                    icon: Icons.visibility_outlined,
-                    label: 'Vues',
+                    icon: Icons.storefront_outlined,
+                    label: 'Visites',
                     value: NumberFormat('#,###').format(stats.totalViews),
                     color: AppThemeSystem.infoColor,
                   ),
@@ -761,8 +761,8 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _StatBox(
-                    icon: Icons.touch_app_outlined,
-                    label: 'Clics',
+                    icon: Icons.visibility_outlined,
+                    label: 'Produits consultés',
                     value: NumberFormat('#,###').format(stats.totalClicks),
                     color: AppThemeSystem.primaryColor,
                   ),
@@ -792,6 +792,19 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
               ],
             ),
             SizedBox(height: context.elementSpacing),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: controller.openStatistics,
+                icon: const Icon(Icons.insights_outlined),
+                label: const Text('Voir mes statistiques détaillées'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

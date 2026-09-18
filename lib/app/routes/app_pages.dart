@@ -96,6 +96,8 @@ import '../modules/myVoice/bindings/my_voice_binding.dart';
 import '../modules/myVoice/views/my_voice_view.dart';
 import '../modules/postDetail/bindings/post_detail_binding.dart';
 import '../modules/postDetail/views/post_detail_view.dart';
+import '../modules/shopStatistics/bindings/shop_statistics_binding.dart';
+import '../modules/shopStatistics/views/shop_statistics_view.dart';
 import '../modules/countrySelection/bindings/country_selection_binding.dart';
 import '../modules/countrySelection/views/country_selection_view.dart';
 
@@ -321,6 +323,11 @@ class AppPages {
       name: _Paths.MY_VOICE,
       page: () => const MyVoiceView(),
       binding: MyVoiceBinding(),
+    ),
+    GetPage(
+      name: _Paths.SHOP_STATISTICS,
+      page: () => const ShopStatisticsView(),
+      binding: ShopStatisticsBinding(),
     ),
     GetPage(
       name: _Paths.POST_DETAIL,

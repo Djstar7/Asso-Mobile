@@ -47,6 +47,7 @@ abstract class Routes {
   static const INVOICES = _Paths.INVOICES;
   static const VENDOR_DETAILS = _Paths.VENDOR_DETAILS;
   static const MY_VOICE = _Paths.MY_VOICE;
+  static const SHOP_STATISTICS = _Paths.SHOP_STATISTICS;
   static const POST_DETAIL = _Paths.POST_DETAIL;
   static const DIASPO = _Paths.DIASPO;
   static const DIASPO_CREATE = _Paths.DIASPO_CREATE;
@@ -102,6 +103,7 @@ abstract class _Paths {
   static const INVOICES = '/invoices';
   static const VENDOR_DETAILS = '/vendor-details';
   static const MY_VOICE = '/my-voice';
+  static const SHOP_STATISTICS = '/shop-statistics';
   static const POST_DETAIL = '/post-detail';
   static const DIASPO = '/diaspo';
   static const DIASPO_CREATE = '/diaspo/create';
