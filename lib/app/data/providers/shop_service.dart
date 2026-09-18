@@ -36,6 +36,8 @@ class ShopService {
     String? shopName,
     String? shopDescription,
     String? shopAddress,
+    String? shopCity,
+    String? shopCountry,
     String? shopPhone,
     double? shopLatitude,
     double? shopLongitude,
@@ -54,6 +56,11 @@ class ShopService {
     if (shopName != null) fields['shop_name'] = shopName;
     if (shopDescription != null) fields['shop_description'] = shopDescription;
     if (shopAddress != null) fields['shop_address'] = shopAddress;
+    // Toujours envoyés ensemble : le serveur recalcule sinon depuis l'adresse.
+    if (shopCity != null || shopCountry != null) {
+      fields['shop_city'] = shopCity ?? '';
+      fields['shop_country'] = shopCountry ?? '';
+    }
     if (shopPhone != null) fields['shop_phone'] = shopPhone;
     if (shopLatitude != null) fields['shop_latitude'] = shopLatitude.toString();
     if (shopLongitude != null) {

@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../core/utils/location_label.dart';
 import '../controllers/store_management_controller.dart';
 
 class EditStoreView extends GetView<StoreManagementController> {
@@ -44,6 +45,30 @@ class EditStoreView extends GetView<StoreManagementController> {
     });
 
     final mapController = MapController();
+
+    // « Ville, Pays » recalculé quand le vendeur déplace le repère.
+    final resolvedLocation = Rxn<LocationLabel>();
+    final locationLabel = RxnString(
+      (controller.storeInfo.value?.city.isNotEmpty ?? false)
+          ? controller.storeInfo.value!.city
+          : null,
+    );
+    final isResolvingLocation = false.obs;
+
+    Future<void> onPositionChanged(LatLng point) async {
+      selectedPosition.value = point;
+      controller.checkDeliveryAvailability(point.latitude, point.longitude);
+      isResolvingLocation.value = true;
+      final location = await LocationLabel.reverseGeocode(
+        point.latitude,
+        point.longitude,
+      );
+      isResolvingLocation.value = false;
+      if (location == null) return;
+      resolvedLocation.value = location;
+      locationLabel.value = location.label;
+      addressController.text = location.address;
+    }
 
     // Catégories disponibles
     final availableCategories = [
@@ -279,14 +304,8 @@ class EditStoreView extends GetView<StoreManagementController> {
                           options: MapOptions(
                             initialCenter: selectedPosition.value,
                             initialZoom: 15.0,
-                            onTap: (tapPosition, point) {
-                              selectedPosition.value = point;
-                              // Vérifier la zone de livraison quand l'utilisateur change la position
-                              controller.checkDeliveryAvailability(
-                                point.latitude,
-                                point.longitude,
-                              );
-                            },
+                            onTap: (tapPosition, point) =>
+                                onPositionChanged(point),
                           ),
                           children: [
                             TileLayer(
@@ -342,19 +361,12 @@ class EditStoreView extends GetView<StoreManagementController> {
                                 }
 
                                 Position position = await Geolocator.getCurrentPosition();
-                                selectedPosition.value = LatLng(
+                                final point = LatLng(
                                   position.latitude,
                                   position.longitude,
                                 );
-                                mapController.move(
-                                  selectedPosition.value,
-                                  15.0,
-                                );
-                                // Vérifier la zone de livraison
-                                controller.checkDeliveryAvailability(
-                                  position.latitude,
-                                  position.longitude,
-                                );
+                                mapController.move(point, 15.0);
+                                await onPositionChanged(point);
                               } catch (e) {
                                 Get.snackbar(
                                   'Erreur',
@@ -373,14 +385,35 @@ class EditStoreView extends GetView<StoreManagementController> {
                     )),
               ),
 
-              const SizedBox(height: 8),
-              Obx(() => Text(
-                    'Latitude: ${selectedPosition.value.latitude.toStringAsFixed(6)}, '
-                    'Longitude: ${selectedPosition.value.longitude.toStringAsFixed(6)}',
-                    style: context.caption.copyWith(
-                      color: context.secondaryTextColor,
-                    ),
+              const SizedBox(height: 10),
+              Obx(() => Row(
+                    children: [
+                      const Icon(
+                        Icons.place_rounded,
+                        size: 20,
+                        color: AppThemeSystem.primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          isResolvingLocation.value
+                              ? 'Recherche de la ville…'
+                              : (locationLabel.value ??
+                                    'Touchez la carte pour placer votre boutique'),
+                          style: context.body1.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   )),
+              const SizedBox(height: 4),
+              Text(
+                'Touchez la carte ou le bouton de position : l’adresse et la ville se remplissent automatiquement.',
+                style: context.caption.copyWith(
+                  color: context.secondaryTextColor,
+                ),
+              ),
 
               SizedBox(height: context.elementSpacing),
 
@@ -592,7 +625,9 @@ class EditStoreView extends GetView<StoreManagementController> {
                           name: name,
                           description: description.isEmpty ? null : description,
                           address: address,
-                          city: '', // Sera extrait de l'adresse
+                          city: locationLabel.value ?? '',
+                          locationCity: resolvedLocation.value?.city,
+                          locationCountry: resolvedLocation.value?.country,
                           phone: phone,
                           latitude: selectedPosition.value.latitude,
                           longitude: selectedPosition.value.longitude,

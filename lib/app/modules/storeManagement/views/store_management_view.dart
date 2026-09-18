@@ -1250,7 +1250,7 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
             const SizedBox(height: 8),
             _InfoRow(
               icon: Icons.location_city,
-              label: 'Ville',
+              label: 'Localisation',
               value: store.city.isNotEmpty ? store.city : 'Non renseignée',
               isEmpty: store.city.isEmpty,
             ),

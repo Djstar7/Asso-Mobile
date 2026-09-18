@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/location_label.dart';
 import '../../../data/models/deliverer_model.dart';
 
 class MapLocationPickerView extends StatefulWidget {
@@ -42,28 +43,18 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
   // Selected deliverer for info display
   DelivererModel? selectedDeliverer;
 
+  String? selectedCity;
+  String? selectedCountry;
+
   String _readableAddress(Map<String, dynamic> data, LatLng position) {
-    final address = Map<String, dynamic>.from(data['address'] ?? const {});
-    final locality =
-        address['city'] ??
-        address['town'] ??
-        address['municipality'] ??
-        address['village'] ??
-        address['county'];
-    final area =
-        address['road'] ?? address['suburb'] ?? address['neighbourhood'];
-    final country = address['country'];
-    final parts = <String>{
-      if (area != null && area.toString().trim().isNotEmpty) area.toString(),
-      if (locality != null && locality.toString().trim().isNotEmpty)
-        locality.toString(),
-      if (country != null && country.toString().trim().isNotEmpty)
-        country.toString(),
-    }.toList();
-    return parts.isNotEmpty
-        ? parts.join(', ')
-        : (data['display_name']?.toString() ??
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}');
+    final location = LocationLabel.fromNominatim(
+      data,
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+    selectedCity = location.city;
+    selectedCountry = location.country;
+    return location.address;
   }
 
   // Calculer le centre et le zoom pour voir tous les marqueurs
@@ -194,7 +185,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         'lat=${position.latitude}&'
         'lon=${position.longitude}&'
         'zoom=18&'
-        'addressdetails=1',
+        'addressdetails=1&'
+        'accept-language=fr',
       );
 
       final response = await http.get(
@@ -216,6 +208,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
       } else {
         if (mounted) {
           setState(() {
+            selectedCity = null;
+            selectedCountry = null;
             selectedAddress =
                 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
             isGeocodingInProgress = false;
@@ -225,6 +219,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          selectedCity = null;
+          selectedCountry = null;
           selectedAddress =
               'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
           isGeocodingInProgress = false;
@@ -256,7 +252,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         'format=json&'
         'q=$query&'
         'limit=5&'
-        'addressdetails=1',
+        'addressdetails=1&'
+        'accept-language=fr',
       );
 
       final response = await http.get(
@@ -272,6 +269,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                 .map(
                   (item) => {
                     'display_name': item['display_name'],
+                    'raw': Map<String, dynamic>.from(item as Map),
                     'lat': double.parse(item['lat']),
                     'lon': double.parse(item['lon']),
                   },
@@ -312,7 +310,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
 
     setState(() {
       selectedPosition = position;
-      selectedAddress = result['display_name'];
+      selectedAddress = result['raw'] is Map<String, dynamic>
+          ? _readableAddress(result['raw'] as Map<String, dynamic>, position)
+          : result['display_name'];
       searchResults = [];
       searchController.clear();
     });
@@ -329,6 +329,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         'address': selectedAddress.isEmpty
             ? 'Position: ${selectedPosition.latitude.toStringAsFixed(4)}, ${selectedPosition.longitude.toStringAsFixed(4)}'
             : selectedAddress,
+        'city': selectedCity,
+        'country': selectedCountry,
       },
     );
   }

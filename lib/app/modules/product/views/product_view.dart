@@ -4,6 +4,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/values/constants.dart';
@@ -635,7 +636,11 @@ class ProductView extends GetView<ProductController> {
         product['location']?.toString() ??
         product['shop']?['address']?.toString() ??
         'Non spécifiée';
-    final shortLocation = _getShortLocation(fullLocation);
+    // « Ville, Pays » fourni par le serveur ; sinon on raccourcit l'adresse brute.
+    final shopLabel = product['shop'] is Map
+        ? LocationLabel.fromApi(Map<String, dynamic>.from(product['shop'] as Map))
+        : null;
+    final shortLocation = shopLabel ?? _getShortLocation(fullLocation);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -1289,6 +1294,11 @@ class ProductView extends GetView<ProductController> {
     // Format examples: "Douala, Bonapriso" -> "Douala"
     //                  "Yaoundé - Centre Ville" -> "Yaoundé"
     //                  "Bafoussam, Quartier..." -> "Bafoussam"
+
+    // Déjà au format « Ville, Pays » (deux segments) : on le garde tel quel.
+    if (fullLocation.split(',').length == 2 && fullLocation.length <= 40) {
+      return fullLocation.trim();
+    }
 
     // Split by common separators
     final separators = [',', '-', '–', '|', '/'];

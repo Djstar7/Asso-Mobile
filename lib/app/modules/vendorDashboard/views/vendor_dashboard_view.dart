@@ -287,6 +287,34 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     }),
                   ],
                 ),
+                Obx(() {
+                  if (controller.shopLocation.value.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.place_outlined,
+                          size: 15,
+                          color: context.secondaryTextColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            controller.shopLocation.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.caption.copyWith(
+                              color: context.secondaryTextColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 SizedBox(height: 4),
                 Obx(() => _buildVerificationBadge(context)),
               ],

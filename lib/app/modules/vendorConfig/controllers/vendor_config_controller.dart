@@ -60,6 +60,8 @@ class VendorConfigController extends GetxController {
   final shopLogo = Rx<XFile?>(null);
   final isPickingShopLogo = false.obs;
   final shopLocation = ''.obs;
+  final shopCity = RxnString();
+  final shopCountry = RxnString();
   final shopLatitude = 0.0.obs;
   final shopLongitude = 0.0.obs;
   final isDeliveryAvailable = false.obs;
@@ -800,6 +802,8 @@ class VendorConfigController extends GetxController {
           shopLatitude.value = latitude;
           shopLongitude.value = longitude;
           shopLocation.value = address;
+          shopCity.value = result['city'] as String?;
+          shopCountry.value = result['country'] as String?;
 
           print('  └─ Address validated and saved: "$address"');
         }
@@ -981,6 +985,8 @@ class VendorConfigController extends GetxController {
         shopName: shopNameController.text.trim(),
         shopDescription: shopDescriptionController.text.trim(),
         shopAddress: shopLocation.value,
+        shopCity: shopCity.value,
+        shopCountry: shopCountry.value,
         shopLatitude: shopLatitude.value,
         shopLongitude: shopLongitude.value,
         categories: selectedCategories.toList(),

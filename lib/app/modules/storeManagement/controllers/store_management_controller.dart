@@ -9,6 +9,7 @@ import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/location_label.dart';
 
 class StoreManagementController extends GetxController {
   // État de chargement
@@ -83,11 +84,8 @@ class StoreManagementController extends GetxController {
             address = '';
           }
 
-          // Extraire la ville de l'adresse si présente
-          String city = '';
-          if (address != null && address.isNotEmpty && address.contains(',')) {
-            city = address.split(',').first.trim();
-          }
+          // « Ville, Pays » calculé par le serveur (ex. « Douala, Cameroun »).
+          final city = LocationLabel.fromApi(Map<String, dynamic>.from(shop)) ?? '';
 
           // Parser les catégories
           List<String> categories = [];
@@ -415,6 +413,8 @@ class StoreManagementController extends GetxController {
     required String address,
     required String city,
     required String phone,
+    String? locationCity,
+    String? locationCountry,
     double? latitude,
     double? longitude,
     List<String>? categories,
@@ -510,6 +510,8 @@ class StoreManagementController extends GetxController {
         shopName: name,
         shopDescription: description,
         shopAddress: address,
+        shopCity: locationCity,
+        shopCountry: locationCountry,
         shopPhone: phone,
         shopLatitude: latitude ?? storeInfo.value?.latitude,
         shopLongitude: longitude ?? storeInfo.value?.longitude,
@@ -537,11 +539,8 @@ class StoreManagementController extends GetxController {
             updatedAddress = '';
           }
 
-          // Extraire la ville de l'adresse si présente
-          String updatedCity = '';
-          if (updatedAddress != null && updatedAddress.isNotEmpty && updatedAddress.contains(',')) {
-            updatedCity = updatedAddress.split(',').first.trim();
-          }
+          final updatedCity =
+              LocationLabel.fromApi(Map<String, dynamic>.from(shop)) ?? '';
 
           // Parser les catégories
           List<String> updatedCategories = [];

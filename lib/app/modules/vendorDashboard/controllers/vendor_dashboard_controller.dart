@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart' show XFile;
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/location_label.dart';
 
 class VendorDashboardController extends GetxController {
   // State management
@@ -19,6 +20,7 @@ class VendorDashboardController extends GetxController {
 
   // Données du vendeur
   final shopName = ''.obs;
+  final shopLocation = ''.obs;
   final shopDescription = ''.obs;
   final shopLogo = Rx<XFile?>(null);
   final shopLogoUrl = Rx<String?>(null); // Logo URL from backend
@@ -90,6 +92,8 @@ class VendorDashboardController extends GetxController {
           final shop = data['shop'];
           shopId.value = shop['id'];
           shopName.value = shop['name'] ?? '';
+          shopLocation.value =
+              LocationLabel.fromApi(Map<String, dynamic>.from(shop)) ?? '';
           shopDescription.value = shop['description'] ?? '';
           shopLogoUrl.value = shop['logo_url'] ?? shop['logo'];
           print('  └─ Shop ID: ${shopId.value}');

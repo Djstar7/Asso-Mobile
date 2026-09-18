@@ -8,6 +8,8 @@ class VendorService {
     required String shopName,
     String? shopDescription,
     String? shopAddress,
+    String? shopCity,
+    String? shopCountry,
     double? shopLatitude,
     double? shopLongitude,
     List<String>? categories,
@@ -32,6 +34,8 @@ class VendorService {
     print('📦 VENDOR SERVICE: Building fields...');
     if (shopDescription != null) fields['shop_description'] = shopDescription;
     if (shopAddress != null) fields['shop_address'] = shopAddress;
+    if (shopCity != null) fields['shop_city'] = shopCity;
+    if (shopCountry != null) fields['shop_country'] = shopCountry;
     if (shopLatitude != null) fields['shop_latitude'] = shopLatitude.toString();
     if (shopLongitude != null) fields['shop_longitude'] = shopLongitude.toString();
 
