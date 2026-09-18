@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
@@ -12,7 +11,6 @@ import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
-import '../../wallet/views/payment_webview.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
@@ -800,11 +798,18 @@ class ProductView extends GetView<ProductController> {
             ],
           ),
           const SizedBox(height: 16),
-          ProductVariantSelector(
-            catalog: catalog,
-            selectedVariantId: controller.selectedVariant.value?['id'] as int?,
-            onChanged: (variant) => controller.selectedVariant.value = variant,
-            formatAdjustment: controller.formatPrice,
+          Obx(
+            () => ProductVariantSelector(
+              key: ValueKey(
+                'page-variants-${controller.variantSelectorEpoch.value}',
+              ),
+              catalog: catalog,
+              selectedVariantId:
+                  controller.selectedVariant.value?['id'] as int?,
+              onChanged: (variant) =>
+                  controller.onVariantChanged(product, variant),
+              formatAdjustment: controller.formatPrice,
+            ),
           ),
         ],
       ),
@@ -1238,16 +1243,6 @@ class ProductView extends GetView<ProductController> {
                     flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        if (controller.productHasVariants(product) &&
-                            controller.selectedVariant.value == null) {
-                          Get.snackbar(
-                            'Faites votre choix',
-                            'Sélectionnez les options du produit (couleur, taille…) avant de commander.',
-                            snackPosition: SnackPosition.BOTTOM,
-                            icon: const Icon(Icons.tune_rounded),
-                          );
-                          return;
-                        }
                         AuthGuard.requireAuth(
                           context,
                           onAuthenticated: () {
@@ -1703,8 +1698,6 @@ class ProductView extends GetView<ProductController> {
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
-    final productPrice = controller.unitPriceXaf(product);
-    final variantLabel = VariantCatalog.labelOf(controller.selectedVariant.value);
     final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
 
     // Réinitialiser les valeurs
@@ -1715,9 +1708,15 @@ class ProductView extends GetView<ProductController> {
     controller.orderQuantity.value =
         1; // réinitialiser la quantité à chaque ouverture
 
-    // Charger la position + partenaires
-    controller.fetchCurrentLocation().then((_) {
-      controller.loadDeliveryPartners(productId);
+    // Position GPS seulement si aucune adresse n'a déjà été choisie : une
+    // adresse modifiée par l'acheteur ne doit pas être écrasée.
+    final locationReady = controller.hasValidLocation
+        ? Future<void>.value()
+        : controller.fetchCurrentLocation();
+    locationReady.then((_) {
+      if (controller.hasValidLocation) {
+        controller.loadDeliveryPartners(productId);
+      }
     });
 
     Get.bottomSheet(
@@ -1790,15 +1789,20 @@ class ProductView extends GetView<ProductController> {
                                 ),
                               ),
                               SizedBox(height: 4),
-                              Text(
-                                '${product['name']}${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''} — ${controller.formatPrice(productPrice)}',
-                                style: context.textStyle(
-                                  FontSizeType.caption,
-                                  color: AppThemeSystem.grey600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+              Obx(() {
+                                final variantLabel = VariantCatalog.labelOf(
+                                  controller.selectedVariant.value,
+                                );
+                                return Text(
+                                  '${product['name']}${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''} — ${controller.formatPrice(controller.unitPriceXaf(product))}',
+                                  style: context.textStyle(
+                                    FontSizeType.caption,
+                                    color: AppThemeSystem.grey600,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              }),
                             ],
                           ),
                         ),
@@ -1807,110 +1811,10 @@ class ProductView extends GetView<ProductController> {
 
                     SizedBox(height: 20),
 
-                    // Adresse de livraison
-                    Obx(() {
-                      final isLoading =
-                          controller.isLoadingLocation.value ||
-                          controller.isLoadingPartners.value;
+                    _buildOrderVariantSection(context, product),
 
-                      return Opacity(
-                        opacity: isLoading ? 0.6 : 1.0,
-                        child: InkWell(
-                          onTap: isLoading
-                              ? null
-                              : () => _showChangeAddressDialog(context),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isLoading
-                                  ? AppThemeSystem.grey200
-                                  : AppThemeSystem.primaryColor.withValues(
-                                      alpha: 0.05,
-                                    ),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isLoading
-                                    ? AppThemeSystem.grey400
-                                    : AppThemeSystem.primaryColor.withValues(
-                                        alpha: 0.2,
-                                      ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: isLoading
-                                        ? AppThemeSystem.grey300
-                                        : AppThemeSystem.primaryColor
-                                              .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: controller.isLoadingLocation.value
-                                      ? SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  AppThemeSystem.primaryColor,
-                                                ),
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.location_on_rounded,
-                                          color: isLoading
-                                              ? AppThemeSystem.grey600
-                                              : AppThemeSystem.primaryColor,
-                                          size: 20,
-                                        ),
-                                ),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Adresse de livraison',
-                                        style: context.textStyle(
-                                          FontSizeType.caption,
-                                          color: isLoading
-                                              ? AppThemeSystem.grey500
-                                              : AppThemeSystem.grey600,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        controller.currentLocation.value,
-                                        style: context.textStyle(
-                                          FontSizeType.body2,
-                                          fontWeight: FontWeight.w600,
-                                          color: isLoading
-                                              ? AppThemeSystem.grey700
-                                              : null,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (!isLoading)
-                                  Icon(
-                                    Icons.edit_outlined,
-                                    color: AppThemeSystem.primaryColor,
-                                    size: 20,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                    // Adresse de livraison
+                    _buildDeliveryAddressCard(context, productId),
 
                     SizedBox(height: 12),
 
@@ -1920,8 +1824,8 @@ class ProductView extends GetView<ProductController> {
                       maxLength: 500,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Précision de l’adresse (facultatif)',
-                        hintText: 'Ex. portail bleu, près de..., étage, repère',
+                        labelText: 'Complément d’adresse (facultatif)',
+                        hintText: 'Quartier, rue, portail, étage, point de repère…',
                         prefixIcon: Icon(Icons.signpost_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1937,8 +1841,9 @@ class ProductView extends GetView<ProductController> {
                       textInputAction: TextInputAction.done,
                       maxLength: 30,
                       decoration: InputDecoration(
-                        labelText: 'Téléphone à joindre par le livreur',
+                        labelText: 'Numéro à contacter *',
                         hintText: 'Ex. 6XXXXXXXX',
+                        helperText: 'Le livreur appellera ce numéro',
                         prefixIcon: Icon(Icons.phone_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -2376,10 +2281,7 @@ class ProductView extends GetView<ProductController> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     InkWell(
-                                      onTap: () {
-                                        if (controller.orderQuantity.value > 1)
-                                          controller.orderQuantity.value--;
-                                      },
+                                      onTap: controller.decrementQuantity,
                                       borderRadius: BorderRadius.circular(8),
                                       child: Container(
                                         width: 34,
@@ -2412,7 +2314,7 @@ class ProductView extends GetView<ProductController> {
                                     ),
                                     InkWell(
                                       onTap: () =>
-                                          controller.orderQuantity.value++,
+                                          controller.incrementQuantity(product),
                                       borderRadius: BorderRadius.circular(8),
                                       child: Container(
                                         width: 34,
@@ -2447,7 +2349,9 @@ class ProductView extends GetView<ProductController> {
                                 ),
                                 Text(
                                   controller.formatPrice(
-                                    controller.subtotal(productPrice),
+                                    controller.subtotal(
+                                    controller.unitPriceXaf(product),
+                                  ),
                                   ),
                                   style: context.textStyle(
                                     FontSizeType.body2,
@@ -2499,7 +2403,9 @@ class ProductView extends GetView<ProductController> {
                                 ),
                                 Text(
                                   controller.formatPrice(
-                                    controller.calculateTotal(productPrice),
+                                    controller.calculateTotal(
+                                      controller.unitPriceXaf(product),
+                                    ),
                                   ),
                                   style: context.textStyle(
                                     FontSizeType.h5,
@@ -2516,29 +2422,77 @@ class ProductView extends GetView<ProductController> {
 
                     SizedBox(height: 20),
 
-                    // Boutons Wallet (KPay / PayPal)
+                    // Étapes manquantes puis résumé avant paiement
                     Obx(() {
-                      final hasPartner =
-                          controller.selectedPartner.value != null;
+                      final missing = controller.missingOrderSteps(product);
+                      final ready =
+                          missing.isEmpty &&
+                          !controller.isLoadingPartners.value &&
+                          !controller.isCreatingOrder.value;
 
                       return Column(
                         children: [
-                          // Bouton unique : ouvre le sélecteur STANDARD de moyen de paiement
-                          // (Mobile Money / PayPal / Carte), commun à toutes les pages de paiement.
+                          if (missing.isNotEmpty)
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppThemeSystem.warningColor.withValues(
+                                  alpha: 0.08,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppThemeSystem.warningColor.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pour continuer :',
+                                    style: context.textStyle(
+                                      FontSizeType.body2,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ...missing.map(
+                                    (step) => Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.radio_button_unchecked,
+                                            size: 14,
+                                            color: AppThemeSystem.warningColor,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              step,
+                                              style: context.textStyle(
+                                                FontSizeType.caption,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed:
-                                  !hasPartner ||
-                                      controller.isCreatingOrder.value
-                                  ? null
-                                  : () => _choosePaymentAndOrder(
-                                      context,
-                                      product,
-                                      productId,
-                                    ),
+                              onPressed: ready
+                                  ? () => _showOrderSummary(context, product)
+                                  : null,
                               icon: controller.isCreatingOrder.value
-                                  ? SizedBox(
+                                  ? const SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
@@ -2546,12 +2500,12 @@ class ProductView extends GetView<ProductController> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : Icon(
-                                      Icons.account_balance_wallet_rounded,
+                                  : const Icon(
+                                      Icons.fact_check_rounded,
                                       color: Colors.white,
                                     ),
                               label: Text(
-                                'Choisir un moyen de paiement',
+                                'Vérifier ma commande',
                                 style: context.textStyle(
                                   FontSizeType.body1,
                                   fontWeight: FontWeight.bold,
@@ -2559,29 +2513,18 @@ class ProductView extends GetView<ProductController> {
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: hasPartner
-                                    ? AppThemeSystem.primaryColor
-                                    : AppThemeSystem.grey400,
-                                padding: EdgeInsets.symmetric(vertical: 16),
+                                backgroundColor: AppThemeSystem.primaryColor,
+                                disabledBackgroundColor: AppThemeSystem.grey400,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: hasPartner ? 4 : 0,
+                                elevation: ready ? 4 : 0,
                               ),
                             ),
                           ),
-                          if (!hasPartner)
-                            Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Text(
-                                'Sélectionnez un partenaire de livraison pour continuer',
-                                style: context.textStyle(
-                                  FontSizeType.caption,
-                                  color: AppThemeSystem.grey500,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
                         ],
                       );
                     }),
@@ -2594,35 +2537,488 @@ class ProductView extends GetView<ProductController> {
       ),
       isScrollControlled: true,
       enableDrag: true,
+    ).then((_) {
+      // La variante a pu changer dans la feuille : resynchroniser la fiche.
+      controller.variantSelectorEpoch.value++;
+    });
+  }
+
+  /// Choix des options (taille, pointure, couleur…) directement dans la feuille
+  /// de commande, pour pouvoir le faire ou le corriger juste avant de payer.
+  Widget _buildOrderVariantSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    final catalog = VariantCatalog.fromApi(
+      product['variants'],
+      product['variant_options'],
+    );
+    if (catalog.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppThemeSystem.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: AppThemeSystem.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Vos options',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ProductVariantSelector(
+            catalog: catalog,
+            selectedVariantId: controller.selectedVariant.value?['id'] as int?,
+            onChanged: (variant) =>
+                controller.onVariantChanged(product, variant),
+            formatAdjustment: controller.formatPrice,
+          ),
+        ],
+      ),
     );
   }
 
-  /// Ouvre le sélecteur STANDARD de moyen de paiement puis lance le sous-parcours
-  /// correspondant au rail choisi (identique à toutes les pages de paiement).
-  void _choosePaymentAndOrder(
+  /// Adresse de livraison : position GPS automatique, modification sur la carte,
+  /// et explication claire quand la localisation est indisponible.
+  Widget _buildDeliveryAddressCard(BuildContext context, int productId) {
+    return Obx(() {
+      final isLocating = controller.isLoadingLocation.value;
+      final issue = controller.locationIssue.value;
+      final hasAddress = controller.hasValidLocation;
+
+      final issueText = switch (issue) {
+        LocationIssue.serviceDisabled =>
+          'La localisation de votre téléphone est désactivée.',
+        LocationIssue.permissionDenied =>
+          'Autorisez l’accès à votre position pour la détecter automatiquement.',
+        LocationIssue.deniedForever =>
+          'L’accès à la position est bloqué. Activez-le dans les réglages de l’application.',
+        LocationIssue.failed => 'Votre position n’a pas pu être détectée.',
+        LocationIssue.none => null,
+      };
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasAddress || isLocating
+                ? AppThemeSystem.primaryColor.withValues(alpha: 0.2)
+                : AppThemeSystem.warningColor.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: isLocating
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppThemeSystem.primaryColor,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          Icons.location_on_rounded,
+                          color: AppThemeSystem.primaryColor,
+                          size: 20,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Adresse de livraison',
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          color: AppThemeSystem.grey600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isLocating
+                            ? 'Détection de votre position…'
+                            : hasAddress
+                            ? controller.currentLocation.value
+                            : 'Aucune adresse sélectionnée',
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (!isLocating && !hasAddress && issueText != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                issueText,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  color: AppThemeSystem.warningColor,
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isLocating
+                        ? null
+                        : () async {
+                            if (issue == LocationIssue.serviceDisabled ||
+                                issue == LocationIssue.deniedForever) {
+                              await controller.openLocationSettings();
+                              return;
+                            }
+                            await controller.fetchCurrentLocation();
+                            if (controller.hasValidLocation) {
+                              await controller.loadDeliveryPartners(productId);
+                            }
+                          },
+                    icon: const Icon(Icons.my_location_rounded, size: 18),
+                    label: Text(
+                      issue == LocationIssue.serviceDisabled ||
+                              issue == LocationIssue.deniedForever
+                          ? 'Réglages'
+                          : 'Ma position',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppThemeSystem.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isLocating
+                        ? null
+                        : () => _showChangeAddressDialog(context),
+                    icon: const Icon(
+                      Icons.edit_location_alt_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      hasAddress ? 'Modifier' : 'Choisir sur la carte',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppThemeSystem.primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Résumé complet de la commande, affiché avant tout paiement.
+  Future<void> _showOrderSummary(
     BuildContext context,
     Map<String, dynamic> product,
-    int productId,
   ) async {
-    final price = double.tryParse(product['price'].toString()) ?? 0;
-    final total = controller.calculateTotal(price);
+    final unitPrice = controller.unitPriceXaf(product);
+    final quantity = controller.orderQuantity.value;
+    final partner = controller.selectedPartner.value;
+    final variant = controller.selectedVariant.value;
+    final details = controller.addressDetailsController.text.trim();
+    final total = controller.calculateTotal(unitPrice);
+    final images = _getProductImages(product);
 
+    Widget line(String label, String value, {bool strong = false}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: context.textStyle(
+                FontSizeType.body2,
+                color: AppThemeSystem.grey600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: context.textStyle(
+                strong ? FontSizeType.h5 : FontSizeType.body2,
+                fontWeight: strong ? FontWeight.bold : FontWeight.w600,
+                color: strong ? AppThemeSystem.primaryColor : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Widget section(IconData icon, String title, List<Widget> children) =>
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppThemeSystem.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: AppThemeSystem.primaryColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: context.textStyle(
+                      FontSizeType.body1,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...children,
+            ],
+          ),
+        );
+
+    final confirmed = await Get.bottomSheet<bool>(
+      Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getBackgroundColor(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      tooltip: 'Modifier la commande',
+                      onPressed: () => Get.back(result: false),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Résumé de la commande',
+                        style: context.textStyle(
+                          FontSizeType.h5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                  child: Column(
+                    children: [
+                      section(Icons.shopping_bag_rounded, 'Article', [
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SizedBox(
+                                width: 64,
+                                height: 64,
+                                child: _buildImageWidget(images.first),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                product['name']?.toString() ?? 'Produit',
+                                style: context.textStyle(
+                                  FontSizeType.body1,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (variant != null)
+                          ...VariantCatalog.attributesOf(
+                            variant,
+                          ).entries.map((e) => line(e.key, e.value)),
+                        line('Prix unitaire', controller.formatPrice(unitPrice)),
+                        line('Quantité', '$quantity'),
+                      ]),
+                      section(Icons.local_shipping_rounded, 'Livraison', [
+                        line('Adresse', controller.currentLocation.value),
+                        if (details.isNotEmpty) line('Complément', details),
+                        line('Numéro à contacter', controller.customerPhone.value),
+                        if (partner != null)
+                          line(
+                            'Livreur',
+                            [
+                              partner['company_name']?.toString() ??
+                                  'Partenaire',
+                              if ((partner['zone_name']?.toString() ?? '')
+                                  .isNotEmpty)
+                                partner['zone_name'].toString(),
+                            ].join(' · '),
+                          ),
+                      ]),
+                      section(Icons.receipt_long_rounded, 'Montant', [
+                        line(
+                          'Sous-total',
+                          controller.formatPrice(controller.subtotal(unitPrice)),
+                        ),
+                        line(
+                          'Livraison',
+                          controller.formatPrice(controller.deliveryPrice.value),
+                        ),
+                        const Divider(height: 16),
+                        line(
+                          'Total à payer',
+                          controller.formatPrice(total),
+                          strong: true,
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Get.back(result: false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Modifier'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Get.back(result: true),
+                        icon: const Icon(
+                          Icons.lock_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: Text(
+                          'Confirmer et payer',
+                          style: context.textStyle(
+                            FontSizeType.body1,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeSystem.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _choosePaymentAndOrder(context, product, total);
+    }
+  }
+
+  /// Ouvre le sélecteur STANDARD de moyen de paiement puis lance le sous-parcours
+  /// correspondant. Seuls les rails acceptés par /v1/orders sont proposés.
+  Future<void> _choosePaymentAndOrder(
+    BuildContext context,
+    Map<String, dynamic> product,
+    double total,
+  ) async {
     final method = await PaymentMethodSelector.show(
       amount: total,
       currency: 'XAF',
       amountLabel: 'Total à payer',
+      allowedCodes: const {'kpay', 'stripe'},
     );
     if (method == null) return; // annulé
 
     switch (method.code) {
       case 'kpay':
-        await _confirmOrder(context, product, productId, 'kpay');
-        break;
-      case 'paypal':
-        await _payViaRedirect(product, productId, 'paypal_direct', 'paypal');
+        await _payViaMobileMoney(product, total);
         break;
       case 'stripe':
-        await _payViaCard(product, productId);
+        await _payViaCard(product);
         break;
       default:
         Get.snackbar(
@@ -2633,90 +3029,34 @@ class ProductView extends GetView<ProductController> {
     }
   }
 
-  /// Sous-parcours de paiement par redirection (PayPal / carte Stripe) : crée la
-  /// commande, ouvre le checkout hébergé en WebView, puis suit la confirmation serveur.
-  Future<void> _payViaRedirect(
+  /// Paiement Mobile Money (KPay direct, validation USSD sur le téléphone).
+  Future<void> _payViaMobileMoney(
     Map<String, dynamic> product,
-    int productId,
-    String paymentMode,
-    String methodCode,
+    double total,
   ) async {
-    final data = await controller.createRedirectOrder(
-      productId: productId,
-      quantity: controller.orderQuantity.value,
-      paymentMode: paymentMode,
+    final selection = await KpayDirectPaymentSheet.show(
+      amount: total,
+      amountLabel: 'Total à payer',
     );
-    if (data == null)
-      return; // échec / lien indisponible (snackbar déjà affiché)
+    if (selection == null) return; // paiement annulé
 
-    final orderId = data['order_id'] as int;
-    final approvalUrl = data['approval_url'] as String;
-
-    Get.back(); // fermer le bottomsheet de commande
-
-    // La WebView intégrée n'est disponible que sur mobile (Android/iOS). Sur les
-    // plateformes non supportées (desktop Linux/Windows, web), on ouvre le checkout
-    // dans le navigateur système : la confirmation se fait de toute façon côté serveur
-    // (polling), ce qui rend le paiement fonctionnel partout.
-    if (!(GetPlatform.isAndroid || GetPlatform.isIOS)) {
-      final launched = await launchUrl(
-        Uri.parse(approvalUrl),
-        mode: LaunchMode.externalApplication,
-      );
-      if (launched) {
-        controller.pollOrderPayment(orderId);
-        Get.snackbar(
-          'Paiement ouvert dans le navigateur',
-          'Terminez le paiement, la confirmation est automatique.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 6),
-        );
-        Get.toNamed('/shipment');
-      } else {
-        Get.snackbar(
-          'Erreur',
-          "Impossible d'ouvrir la page de paiement.",
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
-      return;
-    }
-
-    final result = await Get.to<Map<String, dynamic>>(
-      () => PaymentWebView(
-        paymentUrl: approvalUrl,
-        paymentMethod: methodCode,
-        paymentId: orderId,
-      ),
+    final data = await controller.createOrder(
+      product: product,
+      paymentMode: 'kpay_direct',
+      kpayProvider: selection['provider'],
+      kpayPhone: selection['phone'],
     );
+    if (data == null) return; // snackbar déjà affiché
 
-    if (result != null && result['success'] == true) {
-      controller.pollOrderPayment(orderId);
-      Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
-      Get.toNamed('/shipment');
-    } else {
-      Get.snackbar(
-        'Paiement annulé',
-        'Le paiement n\'a pas été finalisé. Votre commande reste en attente.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 4),
-      );
-    }
+    controller.pollOrderPayment(_orderIdOf(data));
+    _showOrderConfirmation(
+      data,
+      'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès sa confirmation.',
+    );
   }
 
-  /// Sous-parcours de paiement par CARTE (Payment Sheet Stripe native) : crée la
-  /// commande en mode stripe_direct, présente la Payment Sheet, puis suit la
-  /// confirmation serveur (polling + webhook).
-  Future<void> _payViaCard(Map<String, dynamic> product, int productId) async {
+  /// Paiement par CARTE (Payment Sheet Stripe native), confirmé côté serveur.
+  Future<void> _payViaCard(Map<String, dynamic> product) async {
     if (!StripeNativeService.isSupported) {
       Get.snackbar(
         'Indisponible',
@@ -2726,22 +3066,30 @@ class ProductView extends GetView<ProductController> {
       return;
     }
 
-    final data = await controller.createCardOrder(
-      productId: productId,
-      quantity: controller.orderQuantity.value,
+    final data = await controller.createOrder(
+      product: product,
+      paymentMode: 'stripe_direct',
     );
     if (data == null) return; // échec (snackbar déjà affiché)
 
-    final orderId = data['order_id'] as int;
+    final orderId = _orderIdOf(data);
+    final clientSecret = data['client_secret']?.toString() ?? '';
+    final publishableKey = data['publishable_key']?.toString() ?? '';
+    if (clientSecret.isEmpty || publishableKey.isEmpty) {
+      Get.snackbar(
+        'Erreur',
+        'Données de paiement carte indisponibles. Votre commande reste en attente.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
 
     try {
       final ok = await StripeNativeService().payWithCard(
-        publishableKey: data['publishable_key'] as String,
-        clientSecret: data['client_secret'] as String,
+        publishableKey: publishableKey,
+        clientSecret: clientSecret,
       );
-
       if (!ok) {
-        // Annulation utilisateur : la commande reste en attente.
         Get.snackbar(
           'Paiement annulé',
           "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
@@ -2751,17 +3099,11 @@ class ProductView extends GetView<ProductController> {
         return;
       }
 
-      Get.back(); // fermer le bottomsheet de commande
       controller.pollOrderPayment(orderId);
-      Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      _showOrderConfirmation(
+        data,
+        'Votre paiement par carte est en cours de confirmation. Vous serez notifié.',
       );
-      Get.toNamed('/shipment');
     } catch (e) {
       Get.snackbar(
         'Erreur',
@@ -2772,328 +3114,114 @@ class ProductView extends GetView<ProductController> {
     }
   }
 
-  /// Confirmer et créer la commande — paiement Mobile Money (KPay direct, USSD).
-  /// Les paiements par redirection (PayPal / carte Stripe) passent par [_payViaRedirect].
-  Future<void> _confirmOrder(
-    BuildContext context,
-    Map<String, dynamic> product,
-    int productId,
-    String walletProvider,
-  ) async {
-    final price = double.tryParse(product['price'].toString()) ?? 0;
-    final total = controller.calculateTotal(price);
+  int _orderIdOf(Map<String, dynamic> data) =>
+      int.tryParse(
+        (data['order_id'] ?? data['order']?['id'])?.toString() ?? '',
+      ) ??
+      0;
 
-    final selection = await KpayDirectPaymentSheet.show(
-      amount: total,
-      amountLabel: 'Total à payer',
-    );
-    if (selection == null) return; // paiement annulé
+  /// Confirmation de commande : ferme la feuille puis propose le suivi ou le
+  /// retour à l'accueil (le retour depuis le suivi ramène aussi à l'accueil).
+  void _showOrderConfirmation(Map<String, dynamic> data, String message) {
+    Get.back(); // fermer la feuille de commande
+    final order = data['order'] as Map?;
+    final orderNumber = order?['order_number']?.toString();
+    final total = (order?['total'] as num?)?.toDouble();
 
-    final success = await controller.createOrder(
-      productId: productId,
-      quantity: controller.orderQuantity.value,
-      walletProvider: 'kpay',
-      paymentMode: 'kpay_direct',
-      kpayProvider: selection['provider'],
-      kpayPhone: selection['phone'],
-    );
-
-    if (success) {
-      Get.back(); // Fermer le bottomsheet de commande
-      Get.snackbar(
-        'Commande créée !',
-        'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
-      Get.toNamed('/shipment');
+    void leaveTo(String? route) {
+      Get.back(); // fermer la confirmation
+      Get.until((r) => r.settings.name == Routes.HOME || r.isFirst);
+      if (Get.currentRoute != Routes.HOME && route == null) {
+        Get.offAllNamed(Routes.HOME);
+      } else if (route != null) {
+        Get.toNamed(route);
+      }
     }
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(
+          Icons.check_circle_rounded,
+          color: Colors.green,
+          size: 56,
+        ),
+        title: const Text('Commande enregistrée', textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (orderNumber != null)
+              Text(
+                'N° $orderNumber',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            if (total != null) ...[
+              const SizedBox(height: 4),
+              Text(controller.formatPrice(total)),
+            ],
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => leaveTo(null),
+            child: const Text('Retour à l’accueil'),
+          ),
+          ElevatedButton(
+            onPressed: () => leaveTo(Routes.SHIPMENT),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+            ),
+            child: const Text(
+              'Suivre ma commande',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
   Future<void> _showChangeAddressDialog(BuildContext context) async {
-    // Ouvrir directement la carte
+    final hasPosition = controller.hasValidLocation;
     final result = await Get.to<Map<String, dynamic>>(
-      () => MapSelectionView(),
+      () => MapSelectionView(
+        initialLatitude: hasPosition ? controller.clientLatitude.value : null,
+        initialLongitude: hasPosition ? controller.clientLongitude.value : null,
+        locationName: hasPosition ? controller.currentLocation.value : null,
+      ),
       transition: Transition.rightToLeft,
     );
+    if (result == null) return; // annulé
 
-    if (result != null) {
-      print('');
-      print('═══════════════════════════════════════════════════════════════');
-      print('📍 NOUVELLE POSITION SÉLECTIONNÉE SUR LA CARTE');
-      print('═══════════════════════════════════════════════════════════════');
+    final lat = (result['latitude'] as num?)?.toDouble();
+    final lon = (result['longitude'] as num?)?.toDouble();
+    if (lat == null || lon == null) return;
 
-      // Récupérer les coordonnées
-      final lat = result['latitude'] as double?;
-      final lon = result['longitude'] as double?;
-
-      print('📍 Coordonnées reçues:');
-      print('   Latitude: $lat');
-      print('   Longitude: $lon');
-      print('   Adresse brute: ${result['address']}');
-
-      if (lat != null && lon != null) {
-        // Mettre à jour les coordonnées GPS
-        controller.clientLatitude.value = lat;
-        controller.clientLongitude.value = lon;
-
-        print('');
-        print('🔍 MISE À JOUR DES COORDONNÉES GPS:');
-        print(
-          '   controller.clientLatitude: ${controller.clientLatitude.value}',
-        );
-        print(
-          '   controller.clientLongitude: ${controller.clientLongitude.value}',
-        );
-
-        // Faire du reverse geocoding pour obtenir l'adresse lisible
-        try {
-          controller.isLoadingLocation.value = true;
-
-          print('');
-          print('🔄 Reverse geocoding en cours...');
-          final placemarks = await placemarkFromCoordinates(lat, lon);
-
-          if (placemarks.isNotEmpty) {
-            final placemark = placemarks.first;
-
-            // Construire une adresse lisible
-            final parts = <String>[];
-
-            if (placemark.locality != null && placemark.locality!.isNotEmpty) {
-              parts.add(placemark.locality!); // Ville
-            } else if (placemark.subAdministrativeArea != null &&
-                placemark.subAdministrativeArea!.isNotEmpty) {
-              parts.add(placemark.subAdministrativeArea!);
-            } else if (placemark.administrativeArea != null &&
-                placemark.administrativeArea!.isNotEmpty) {
-              parts.add(placemark.administrativeArea!);
-            }
-
-            if (placemark.subLocality != null &&
-                placemark.subLocality!.isNotEmpty) {
-              parts.add(placemark.subLocality!); // Quartier
-            }
-
-            controller.currentLocation.value = parts.isNotEmpty
-                ? parts.join(', ')
-                : result['address'] ?? '$lat, $lon';
-
-            print('✅ Adresse formatée: ${controller.currentLocation.value}');
-            print('   Détails placemark:');
-            print('   - locality: ${placemark.locality}');
-            print('   - subLocality: ${placemark.subLocality}');
-            print('   - administrativeArea: ${placemark.administrativeArea}');
-            print(
-              '   - subAdministrativeArea: ${placemark.subAdministrativeArea}',
-            );
-          } else {
-            controller.currentLocation.value =
-                result['address'] ?? '$lat, $lon';
-            print(
-              '⚠️ Pas de placemark trouvé, utilisation de l\'adresse brute',
-            );
-          }
-        } catch (e) {
-          print('❌ Erreur reverse geocoding: $e');
-          controller.currentLocation.value = result['address'] ?? '$lat, $lon';
-        } finally {
-          controller.isLoadingLocation.value = false;
-        }
-
-        // Recharger les partenaires de livraison avec la nouvelle position
-        print('');
-        print(
-          '═══════════════════════════════════════════════════════════════',
-        );
-        print('🔍 VÉRIFICATION AVANT RECHARGEMENT DES PARTENAIRES');
-        print(
-          '═══════════════════════════════════════════════════════════════',
-        );
-        print(
-          '📦 controller.currentProductId: ${controller.currentProductId.value}',
-        );
-        print('📍 Nouvelle position: ${controller.currentLocation.value}');
-        print(
-          '📍 GPS: ${controller.clientLatitude.value}, ${controller.clientLongitude.value}',
-        );
-
-        final productId = controller.currentProductId.value;
-        if (productId != 0) {
-          print('');
-          print('✅ ProductId trouvé, rechargement en cours...');
-          print('🔄 Rechargement des partenaires avec la nouvelle position...');
-          print(
-            '═══════════════════════════════════════════════════════════════',
-          );
-          await controller.loadDeliveryPartners(productId);
-          print('');
-          print('✅ RECHARGEMENT DES PARTENAIRES TERMINÉ');
-          print(
-            '   Nombre de partenaires: ${controller.deliveryPartners.length}',
-          );
-          print(
-            '═══════════════════════════════════════════════════════════════',
-          );
-        } else {
-          print('');
-          print('❌ IMPOSSIBLE DE RECHARGER LES PARTENAIRES');
-          print('   Raison: controller.currentProductId est à 0');
-          print('   Get.arguments disponible: ${Get.arguments != null}');
-          if (Get.arguments != null) {
-            final product = Get.arguments as Map<String, dynamic>?;
-            print('   Get.arguments[\'id\']: ${product?['id']}');
-          }
-          print(
-            '═══════════════════════════════════════════════════════════════',
-          );
-        }
-
-        Get.snackbar(
-          'Position mise à jour',
-          'Votre position de livraison a été modifiée',
-          snackPosition: SnackPosition.BOTTOM,
-          icon: Icon(Icons.check_circle_rounded, color: Colors.green),
-        );
-      } else {
-        print('❌ Coordonnées invalides reçues du MapSelectionView');
-        controller.currentLocation.value =
-            result['address'] ?? 'Position invalide';
-      }
-    } else {
-      print('ℹ️ Aucune position sélectionnée (annulé)');
+    controller.isLoadingLocation.value = true;
+    try {
+      await controller.setDeliveryPosition(
+        lat,
+        lon,
+        fallbackAddress: result['address']?.toString(),
+      );
+    } finally {
+      controller.isLoadingLocation.value = false;
     }
-  }
 
-  void _showManualAddressDialog(BuildContext context) {
-    final TextEditingController addressController = TextEditingController(
-      text: controller.currentLocation.value,
-    );
+    // Les tarifs de livraison dépendent de la position.
+    if (controller.currentProductId.value != 0) {
+      await controller.loadDeliveryPartners(controller.currentProductId.value);
+    }
 
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.edit_rounded,
-                      color: AppThemeSystem.primaryColor,
-                      size: 24,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Entrer l\'adresse',
-                      style: context.textStyle(
-                        FontSizeType.h5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Adresse de livraison',
-                style: context.textStyle(
-                  FontSizeType.body2,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: addressController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Ex: Douala, Bonapriso - Rue des Cocotiers',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppThemeSystem.getBorderColor(context),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppThemeSystem.primaryColor,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Get.back(),
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text('Annuler'),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (addressController.text.trim().isNotEmpty) {
-                          controller.currentLocation.value = addressController
-                              .text
-                              .trim();
-                          Get.back();
-                          Get.snackbar(
-                            'Adresse mise à jour',
-                            'Votre adresse de livraison a été modifiée',
-                            snackPosition: SnackPosition.BOTTOM,
-                            icon: Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.green,
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemeSystem.primaryColor,
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Enregistrer',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    Get.snackbar(
+      'Adresse mise à jour',
+      'Votre adresse de livraison a été modifiée',
+      snackPosition: SnackPosition.BOTTOM,
+      icon: const Icon(Icons.check_circle_rounded, color: Colors.green),
     );
   }
 

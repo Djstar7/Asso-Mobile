@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
@@ -80,19 +81,55 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       _isLoadingAddress = true;
     });
 
-    // Simuler un délai de récupération GPS
-    await Future.delayed(Duration(seconds: 1));
+    String? problem;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        problem = 'La localisation de votre téléphone est désactivée.';
+      } else {
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          problem = 'Autorisez l’accès à votre position dans les réglages.';
+        } else {
+          Position? position;
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: Duration(seconds: 15),
+              ),
+            );
+          } catch (_) {
+            position = await Geolocator.getLastKnownPosition();
+          }
+          if (position == null) {
+            problem = 'Votre position n’a pas pu être détectée.';
+          } else {
+            _selectedPosition = LatLng(position.latitude, position.longitude);
+          }
+        }
+      }
+    } catch (_) {
+      problem = 'Votre position n’a pas pu être détectée.';
+    }
 
-    setState(() {
-      _selectedPosition = LatLng(4.0511, 9.7679); // Position de Douala
-      _isLoadingAddress = false;
-    });
+    if (!mounted) return;
+    if (problem != null) {
+      setState(() => _isLoadingAddress = false);
+      Get.snackbar(
+        'Position indisponible',
+        '$problem Déplacez le repère sur la carte ou recherchez votre adresse.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
 
-    // Récupérer l'adresse via reverse geocoding
+    _mapController.move(_selectedPosition, 16.0);
     await _reverseGeocode(_selectedPosition);
-
-    // Centrer la carte sur la position
-    _mapController.move(_selectedPosition, 15.0);
   }
 
   Future<void> _reverseGeocode(LatLng position) async {
@@ -117,6 +154,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         },
       );
 
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -130,6 +168,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _selectedAddress = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
         _isLoadingAddress = false;
@@ -152,14 +191,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     });
 
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?'
-        'q=$query&'
-        'format=json&'
-        'addressdetails=1&'
-        'limit=5&'
-        'countrycodes=cm' // Limiter au Cameroun
-      );
+      final url = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': query,
+        'format': 'json',
+        'addressdetails': '1',
+        'limit': '5',
+        'countrycodes': 'cm', // Limiter au Cameroun
+      });
 
       final response = await http.get(
         url,

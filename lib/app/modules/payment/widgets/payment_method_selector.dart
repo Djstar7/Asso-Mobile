@@ -26,6 +26,10 @@ class PaymentMethodSelector extends StatefulWidget {
   /// sélecteur pour le RETRAIT (rails KPay / PayPal / IBAN) à partir des soldes.
   final List<PaymentMethodOption>? options;
 
+  /// Limite l'affichage aux rails acceptés par le parcours appelant
+  /// (ex. commandes produit : Mobile Money et carte). null = tous.
+  final Set<String>? allowedCodes;
+
   const PaymentMethodSelector({
     super.key,
     required this.amount,
@@ -33,6 +37,7 @@ class PaymentMethodSelector extends StatefulWidget {
     this.amountLabel = 'Montant à payer',
     this.title = 'Choisir un moyen de paiement',
     this.options,
+    this.allowedCodes,
   });
 
   static Future<PaymentMethodOption?> show({
@@ -41,6 +46,7 @@ class PaymentMethodSelector extends StatefulWidget {
     String amountLabel = 'Montant à payer',
     String title = 'Choisir un moyen de paiement',
     List<PaymentMethodOption>? options,
+    Set<String>? allowedCodes,
   }) {
     return Get.bottomSheet<PaymentMethodOption>(
       PaymentMethodSelector(
@@ -49,6 +55,7 @@ class PaymentMethodSelector extends StatefulWidget {
         amountLabel: amountLabel,
         title: title,
         options: options,
+        allowedCodes: allowedCodes,
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -88,8 +95,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         amount: widget.amount,
         currency: widget.currency,
       );
-      _methods.assignAll(methods);
-      if (methods.isEmpty) {
+      final allowed = widget.allowedCodes;
+      final visible = allowed == null
+          ? methods
+          : methods.where((m) => allowed.contains(m.code)).toList();
+      _methods.assignAll(visible);
+      if (visible.isEmpty) {
         _error.value = 'Aucun moyen de paiement disponible pour le moment.';
       }
     } catch (e) {
