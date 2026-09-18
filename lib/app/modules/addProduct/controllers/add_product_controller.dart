@@ -8,6 +8,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/currency_model.dart';
+import 'variant_editor_state.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -131,36 +132,15 @@ class AddProductController extends GetxController {
     'Dimensions': ['S', 'M', 'L'],
   };
   final selectedSizes = <String>[].obs;
-  final variants = <Map<String, String>>[].obs;
 
-  void addVariant({
-    required String attributes,
-    required String stock,
-    String sku = '',
-    String priceAdjustment = '0',
-  }) {
-    variants.add({
-      'attributes': attributes.trim(),
-      'stock': stock.trim(),
-      'sku': sku.trim(),
-      'price_adjustment': priceAdjustment.trim(),
-    });
-    stockController.text = variants
-        .fold<int>(
-          0,
-          (sum, item) => sum + (int.tryParse(item['stock'] ?? '') ?? 0),
-        )
-        .toString();
-  }
+  /// Couleurs, tailles, pointures… et quantité par combinaison.
+  final variantEditor = VariantEditorState();
 
-  void removeVariant(int index) {
-    variants.removeAt(index);
-    stockController.text = variants
-        .fold<int>(
-          0,
-          (sum, item) => sum + (int.tryParse(item['stock'] ?? '') ?? 0),
-        )
-        .toString();
+  /// Avec des variantes, la quantité générale = somme des combinaisons.
+  void syncStockFromVariants() {
+    if (variantEditor.hasVariants) {
+      stockController.text = '${variantEditor.totalStock}';
+    }
   }
 
   Map<String, List<String>> get sizeGroupsForCategory {
@@ -658,24 +638,10 @@ class AddProductController extends GetxController {
         selectedSizes.assignAll(sizes.map((size) => size.toString()));
       }
 
-      final productVariants = product['variants'];
-      variants.clear();
-      if (productVariants is List) {
-        for (final raw in productVariants) {
-          final variant = Map<String, dynamic>.from(raw as Map);
-          final attributes = Map<String, dynamic>.from(
-            variant['attributes'] as Map? ?? const {},
-          );
-          variants.add({
-            'attributes': attributes.entries
-                .map((entry) => '${entry.key}: ${entry.value}')
-                .join('; '),
-            'stock': '${variant['stock'] ?? 0}',
-            'sku': variant['sku']?.toString() ?? '',
-            'price_adjustment': variant['price_adjustment']?.toString() ?? '0',
-          });
-        }
-      }
+      variantEditor.loadFromApi(
+        product['variants'],
+        product['variant_options'],
+      );
 
       // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
       final images = product['images'] as List?;
@@ -1103,27 +1069,12 @@ class AddProductController extends GetxController {
         fieldsMap['sizes[$i]'] = selectedSizes[i];
       }
 
-      for (var i = 0; i < variants.length; i++) {
-        final variant = variants[i];
-        final attributes = (variant['attributes'] ?? '').split(';');
-        var attributeIndex = 0;
-        for (final attribute in attributes) {
-          final parts = attribute.split(':');
-          if (parts.length < 2) continue;
-          final name = parts.first.trim();
-          final value = parts.sublist(1).join(':').trim();
-          if (name.isEmpty || value.isEmpty) continue;
-          fieldsMap['variants[$i][attributes][$name]'] = value;
-          attributeIndex++;
-        }
-        if (attributeIndex > 0) {
-          fieldsMap['variants[$i][stock]'] = variant['stock'] ?? '0';
-          fieldsMap['variants[$i][sku]'] = variant['sku'] ?? '';
-          fieldsMap['variants[$i][price_adjustment]'] =
-              variant['price_adjustment'] ?? '0';
-          fieldsMap['variants[$i][is_active]'] = '1';
-        }
+      if (variantEditor.hasVariants) {
+        fieldsMap['stock'] = '${variantEditor.totalStock}';
       }
+      fieldsMap.addAll(variantEditor.toFields());
+      // En modification, on envoie toujours l'état complet (y compris « plus aucune variante »).
+      if (isEditMode.value) fieldsMap['replace_variants'] = '1';
 
       // Ajouter weight si disponible
       print('📦 ADD_PRODUCT: Processing weight data...');

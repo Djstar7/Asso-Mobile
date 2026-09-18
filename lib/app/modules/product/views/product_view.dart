@@ -4,6 +4,9 @@ import 'package:geocoding/geocoding.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/widgets/product_image_viewer.dart';
+import '../../../core/widgets/product_variant_selector.dart';
+import '../../../core/values/constants.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
@@ -104,7 +107,10 @@ class ProductView extends GetView<ProductController> {
                   size: 20,
                 ),
               ),
-              onPressed: () => Get.back(),
+              // Ouverte depuis une notification, la fiche n'a pas de page précédente.
+              onPressed: () => Navigator.of(context).canPop()
+                  ? Get.back()
+                  : Get.offAllNamed(Routes.HOME),
             ),
             actions: [
               IconButton(
@@ -182,11 +188,12 @@ class ProductView extends GetView<ProductController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildThumbnails(context, product),
                 _buildProductHeader(context, product),
+                _buildVariantsSection(context, product),
                 _buildLocationSection(context, product),
                 Divider(height: 32),
                 _buildDescriptionSection(context, product),
-                _buildVariantsSection(context, product),
                 _buildProductCharacteristics(context, product),
                 Divider(height: 32),
                 _buildSellerSection(context, product),
@@ -211,44 +218,90 @@ class ProductView extends GetView<ProductController> {
     return Stack(
       children: [
         PageView.builder(
+          controller: controller.imagePageController,
           itemCount: images.length,
           onPageChanged: (index) {
             controller.currentImageIndex.value = index;
           },
           itemBuilder: (context, index) {
             return GestureDetector(
-              onTap: () => _showZoomableImage(context, images, index),
-              child: _buildImageWidget(images[index]),
+              onTap: () => _openImageViewer(context, images, index),
+              child: Hero(
+                tag: 'product-image-${product['id']}-$index',
+                child: _buildImageWidget(images[index], fit: BoxFit.cover),
+              ),
             );
           },
+        ),
+        // Compteur + invitation à zoomer
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: GestureDetector(
+            onTap: () => _openImageViewer(
+              context,
+              images,
+              controller.currentImageIndex.value,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
+                  if (images.length > 1) ...[
+                    const SizedBox(width: 6),
+                    Obx(
+                      () => Text(
+                        '${controller.currentImageIndex.value + 1}/${images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
         // Indicateurs d'images
         if (images.length > 1)
           Positioned(
-            bottom: 16,
+            bottom: 22,
             left: 0,
             right: 0,
-            child: Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  images.length,
-                  (index) => AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    margin: EdgeInsets.symmetric(horizontal: 4),
-                    width: controller.currentImageIndex.value == index ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: controller.currentImageIndex.value == index
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 4,
-                        ),
-                      ],
+            child: IgnorePointer(
+              child: Obx(
+                () => Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    images.length,
+                    (index) => AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      margin: EdgeInsets.symmetric(horizontal: 4),
+                      width: controller.currentImageIndex.value == index
+                          ? 24
+                          : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: controller.currentImageIndex.value == index
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -256,6 +309,39 @@ class ProductView extends GetView<ProductController> {
             ),
           ),
       ],
+    );
+  }
+
+  Future<void> _openImageViewer(
+    BuildContext context,
+    List<String> images,
+    int index,
+  ) async {
+    final lastIndex = await ProductImageViewer.open(
+      context,
+      images: images,
+      initialIndex: index,
+      imageBuilder: (image, fit) => _buildImageWidget(image, fit: fit),
+    );
+    if (lastIndex != null && lastIndex != controller.currentImageIndex.value) {
+      controller.imagePageController.jumpToPage(lastIndex);
+      controller.currentImageIndex.value = lastIndex;
+    }
+  }
+
+  Widget _buildThumbnails(BuildContext context, Map<String, dynamic> product) {
+    final images = _getProductImages(product);
+    if (images.length < 2) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Obx(
+        () => ProductThumbnailStrip(
+          images: images,
+          currentIndex: controller.currentImageIndex.value,
+          onSelected: controller.goToImage,
+          imageBuilder: (image, fit) => _buildImageWidget(image, fit: fit),
+        ),
+      ),
     );
   }
 
@@ -287,17 +373,14 @@ class ProductView extends GetView<ProductController> {
                 ),
               ],
             ),
-            child: Text(
-              controller.formatPrice(
-                double.tryParse(
-                      (product['price_xaf'] ?? product['price']).toString(),
-                    ) ??
-                    0,
-              ),
-              style: context.textStyle(
-                FontSizeType.h3,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            child: Obx(
+              () => Text(
+                controller.formatPrice(controller.unitPriceXaf(product)),
+                style: context.textStyle(
+                  FontSizeType.h3,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -324,7 +407,7 @@ class ProductView extends GetView<ProductController> {
     final stockValue = stock is int
         ? stock
         : int.tryParse(stock.toString()) ?? 0;
-    final hasStock = stockValue > 0;
+    final hasStock = stock != null;
 
     // Extraire le poids (PRIORITÉ au poids personnalisé, sinon weight_category)
     final weightCategory = product['weight_category']?.toString();
@@ -363,6 +446,11 @@ class ProductView extends GetView<ProductController> {
     final commercialInformation = product['commercial_information']
         ?.toString()
         .trim();
+    final originCode = product['origin_country']
+        ?.toString()
+        .trim()
+        .toUpperCase();
+    final originLabel = _originLabel(originCode);
     final sizes =
         (product['sizes'] as List?)
             ?.map((size) => size.toString())
@@ -372,6 +460,7 @@ class ProductView extends GetView<ProductController> {
     final hasDetails =
         characteristics?.isNotEmpty == true ||
         commercialInformation?.isNotEmpty == true ||
+        originLabel.isNotEmpty ||
         sizes.isNotEmpty;
 
     // Si aucune caractéristique n'est disponible, ne rien afficher
@@ -418,6 +507,13 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(height: 14),
             ],
+            _buildCharacteristicItem(
+              context: context,
+              icon: Icons.public_rounded,
+              label: 'Provenance',
+              value: originLabel,
+            ),
+            const SizedBox(height: 14),
             if (sizes.isNotEmpty) ...[
               const Text(
                 'Tailles disponibles',
@@ -441,7 +537,9 @@ class ProductView extends GetView<ProductController> {
                         context: context,
                         icon: Icons.inventory_2_rounded,
                         label: 'Stock disponible',
-                        value: '$stockValue unité${stockValue > 1 ? "s" : ""}',
+                        value: stockValue > 0
+                            ? '$stockValue unité${stockValue > 1 ? "s" : ""}'
+                            : 'Rupture de stock',
                       ),
                     ),
 
@@ -470,6 +568,16 @@ class ProductView extends GetView<ProductController> {
         ),
       ),
     );
+  }
+
+  String _originLabel(String? code) {
+    if (code == null || code.isEmpty || code == 'NULL') return 'Produit local';
+    const countries = {
+      'CN': 'Chine',
+      'AE': 'Dubaï / Émirats arabes unis',
+      'TR': 'Turquie',
+    };
+    return countries[code] ?? code;
   }
 
   Widget _buildCharacteristicItem({
@@ -652,101 +760,50 @@ class ProductView extends GetView<ProductController> {
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    final variants =
-        (product['variants'] as List?)
-            ?.map((item) => Map<String, dynamic>.from(item as Map))
-            .where((item) => (item['stock'] as num? ?? 0) > 0)
-            .toList() ??
-        const <Map<String, dynamic>>[];
-    if (variants.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    final catalog = VariantCatalog.fromApi(
+      product['variants'],
+      product['variant_options'],
+    );
+    if (catalog.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Choisissez votre variante',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 20,
+                color: AppThemeSystem.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Choisissez vos options',
+                style: context.textStyle(
+                  FontSizeType.subtitle1,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Obx(
-            () => Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: variants.map((variant) {
-                final attributes = Map<String, dynamic>.from(
-                  variant['attributes'] as Map? ?? const {},
-                );
-                final label = attributes.entries
-                    .map((entry) => '${entry.key}: ${entry.value}')
-                    .join(' · ');
-                String? colorName;
-                for (final entry in attributes.entries) {
-                  final key = entry.key.toLowerCase();
-                  if (key.contains('couleur') || key.contains('color')) {
-                    colorName = entry.value.toString();
-                    break;
-                  }
-                }
-                final selected =
-                    controller.selectedVariant.value?['id'] == variant['id'];
-                return ChoiceChip(
-                  selected: selected,
-                  avatar: colorName == null
-                      ? null
-                      : CircleAvatar(
-                          backgroundColor: _productVariantColor(colorName),
-                          radius: 10,
-                        ),
-                  label: Text('$label (${variant['stock']} dispo.)'),
-                  onSelected: (_) => controller.selectedVariant.value = variant,
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'La variante choisie sera jointe automatiquement à votre commande.',
-            style: TextStyle(fontSize: 12, color: context.secondaryTextColor),
+          const SizedBox(height: 16),
+          ProductVariantSelector(
+            catalog: catalog,
+            selectedVariantId: controller.selectedVariant.value?['id'] as int?,
+            onChanged: (variant) => controller.selectedVariant.value = variant,
+            formatAdjustment: controller.formatPrice,
           ),
         ],
       ),
     );
-  }
-
-  Color _productVariantColor(String name) {
-    final value = name.toLowerCase().trim();
-    const colors = <String, Color>{
-      'rouge': Color(0xFFE53935),
-      'red': Color(0xFFE53935),
-      'bleu': Color(0xFF1E88E5),
-      'blue': Color(0xFF1E88E5),
-      'vert': Color(0xFF43A047),
-      'green': Color(0xFF43A047),
-      'noir': Color(0xFF212121),
-      'black': Color(0xFF212121),
-      'blanc': Color(0xFFFAFAFA),
-      'white': Color(0xFFFAFAFA),
-      'jaune': Color(0xFFFDD835),
-      'yellow': Color(0xFFFDD835),
-      'orange': Color(0xFFFB8C00),
-      'rose': Color(0xFFEC407A),
-      'pink': Color(0xFFEC407A),
-      'violet': Color(0xFF8E24AA),
-      'purple': Color(0xFF8E24AA),
-      'marron': Color(0xFF795548),
-      'brown': Color(0xFF795548),
-      'gris': Color(0xFF757575),
-      'grey': Color(0xFF757575),
-      'gray': Color(0xFF757575),
-      'beige': Color(0xFFD7CCC8),
-    };
-    return colors.entries
-        .firstWhere(
-          (entry) => value.contains(entry.key),
-          orElse: () => const MapEntry('', Color(0xFFBDBDBD)),
-        )
-        .value;
   }
 
   Widget _buildSellerSection(
@@ -1176,6 +1233,16 @@ class ProductView extends GetView<ProductController> {
                     flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: () {
+                        if (controller.productHasVariants(product) &&
+                            controller.selectedVariant.value == null) {
+                          Get.snackbar(
+                            'Faites votre choix',
+                            'Sélectionnez les options du produit (couleur, taille…) avant de commander.',
+                            snackPosition: SnackPosition.BOTTOM,
+                            icon: const Icon(Icons.tune_rounded),
+                          );
+                          return;
+                        }
                         AuthGuard.requireAuth(
                           context,
                           onAuthenticated: () {
@@ -1626,14 +1693,8 @@ class ProductView extends GetView<ProductController> {
   }
 
   void _showOrderDialog(BuildContext context, Map<String, dynamic> product) {
-    final productPrice =
-        double.tryParse(
-          (product['price_xaf'] ?? product['price']).toString().replaceAll(
-            ' ',
-            '',
-          ),
-        ) ??
-        0.0;
+    final productPrice = controller.unitPriceXaf(product);
+    final variantLabel = VariantCatalog.labelOf(controller.selectedVariant.value);
     final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
 
     // Réinitialiser les valeurs
@@ -1720,7 +1781,7 @@ class ProductView extends GetView<ProductController> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                '${product['name']} — ${controller.formatPrice(productPrice)}',
+                                '${product['name']}${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''} — ${controller.formatPrice(productPrice)}',
                                 style: context.textStyle(
                                   FontSizeType.caption,
                                   color: AppThemeSystem.grey600,
@@ -3067,62 +3128,16 @@ class ProductView extends GetView<ProductController> {
     return images;
   }
 
-  void _showZoomableImage(
-    BuildContext context,
-    List<String> images,
-    int initialIndex,
-  ) {
-    final pageController = PageController(initialPage: initialIndex);
-    showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.96),
-      builder: (dialogContext) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: pageController,
-              itemCount: images.length,
-              itemBuilder: (_, index) => InteractiveViewer(
-                minScale: 1,
-                maxScale: 5,
-                child: Center(child: _buildImageWidget(images[index])),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: SafeArea(
-                child: IconButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                ),
-              ),
-            ),
-            const Positioned(
-              bottom: 28,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                child: Text(
-                  'Pincez pour zoomer · balayez pour changer d’image',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).whenComplete(pageController.dispose);
-  }
-
   /// Build image widget (network or asset)
-  Widget _buildImageWidget(String imageUrl) {
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+  Widget _buildImageWidget(String imageUrl, {BoxFit fit = BoxFit.cover}) {
+    final resolvedUrl = _resolveImageUrl(imageUrl);
+    if (resolvedUrl.startsWith('http://') ||
+        resolvedUrl.startsWith('https://')) {
       return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
+        resolvedUrl,
+        fit: fit,
+        width: double.infinity,
+        height: double.infinity,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Center(
@@ -3140,6 +3155,8 @@ class ProductView extends GetView<ProductController> {
         },
         errorBuilder: (context, error, stackTrace) {
           return Container(
+            width: double.infinity,
+            height: double.infinity,
             color: AppThemeSystem.grey200,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -3165,10 +3182,14 @@ class ProductView extends GetView<ProductController> {
     } else {
       // Try as local asset
       return Image.asset(
-        imageUrl,
-        fit: BoxFit.cover,
+        resolvedUrl,
+        fit: fit,
+        width: double.infinity,
+        height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
           return Container(
+            width: double.infinity,
+            height: double.infinity,
             color: AppThemeSystem.grey200,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -3192,6 +3213,30 @@ class ProductView extends GetView<ProductController> {
         },
       );
     }
+  }
+
+  /// Les URLs d'images viennent parfois de APP_URL côté Laravel (IP de
+  /// développement différente de celle utilisée par l'application). On garde
+  /// le chemin du fichier, mais on l'aligne sur l'hôte réel de l'API.
+  String _resolveImageUrl(String value) {
+    final image = Uri.tryParse(value.trim());
+    final api = Uri.tryParse(AppConstants.baseUrl);
+    if (image == null || api == null) return value;
+
+    if (image.hasScheme && image.host.isNotEmpty) {
+      return image
+          .replace(
+            scheme: api.scheme,
+            host: api.host,
+            port: api.hasPort ? api.port : null,
+          )
+          .toString();
+    }
+
+    if (value.startsWith('/')) {
+      return api.replace(path: value, query: null, fragment: null).toString();
+    }
+    return value;
   }
 
   /// Build similar products section

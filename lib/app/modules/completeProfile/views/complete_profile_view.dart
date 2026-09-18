@@ -24,8 +24,18 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           ),
         ),
         centerTitle: true,
-        leading: null,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          tooltip: 'Retour',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: controller.navigateBack,
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Menu principal',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: controller.goToMainDestination,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -108,7 +118,8 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
 
                   // Espacement pour la barre de navigation native du téléphone
                   SizedBox(
-                    height: MediaQuery.of(context).viewPadding.bottom +
+                    height:
+                        MediaQuery.of(context).viewPadding.bottom +
                         context.verticalPadding,
                   ),
                 ],
@@ -126,10 +137,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
       padding: EdgeInsets.all(context.horizontalPadding * 1.5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppThemeSystem.primaryColor,
-            AppThemeSystem.tertiaryColor,
-          ],
+          colors: [AppThemeSystem.primaryColor, AppThemeSystem.tertiaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -344,8 +352,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color:
-                        AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: Offset(0, 2),
                   ),
@@ -360,8 +367,8 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
               color: isSelected
                   ? Colors.white
                   : (isDark
-                      ? AppThemeSystem.grey300
-                      : context.secondaryTextColor),
+                        ? AppThemeSystem.grey300
+                        : context.secondaryTextColor),
               size: deviceType == DeviceType.mobile ? 20 : 24,
             ),
             SizedBox(width: context.elementSpacing * 0.75),
@@ -372,9 +379,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                     ? FontSizeType.body1
                     : FontSizeType.subtitle1,
                 fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? Colors.white
-                    : context.primaryTextColor,
+                color: isSelected ? Colors.white : context.primaryTextColor,
               ),
             ),
           ],
@@ -427,10 +432,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           ),
           decoration: BoxDecoration(
             color: context.surfaceColor,
-            border: Border.all(
-              color: context.borderColor,
-              width: 1,
-            ),
+            border: Border.all(color: context.borderColor, width: 1),
             borderRadius: context.borderRadius(BorderRadiusType.medium),
           ),
           child: Row(
@@ -487,9 +489,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                   height: deviceType == DeviceType.mobile ? 20 : 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      buttonTextColor,
-                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(buttonTextColor),
                   ),
                 )
               : Icon(

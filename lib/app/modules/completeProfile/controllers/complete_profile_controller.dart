@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../profile/controllers/profile_controller.dart';
+import '../../../routes/app_pages.dart';
 
 class CompleteProfileController extends GetxController {
   final firstNameController = TextEditingController();
@@ -13,10 +14,17 @@ class CompleteProfileController extends GetxController {
   final Rx<DateTime?> birthDate = Rx<DateTime?>(null);
   final RxString address = ''.obs;
   final RxBool isLoading = false.obs;
+  late final String returnRoute;
 
   @override
   void onInit() {
     super.onInit();
+    final arguments = Get.arguments;
+    returnRoute = arguments is Map && arguments['returnTo'] is String
+        ? arguments['returnTo'] as String
+        : (StorageService.getUser()?.role == 'vendeur'
+              ? Routes.VENDOR_DASHBOARD
+              : Routes.HOME);
     // Pre-fill from cached user data
     final user = StorageService.getUser();
     if (user != null) {
@@ -26,10 +34,7 @@ class CompleteProfileController extends GetxController {
 
       // Mapper les valeurs backend vers les valeurs UI
       final backendGender = user.gender ?? '';
-      final reverseGenderMap = {
-        'male': 'H',
-        'female': 'F',
-      };
+      final reverseGenderMap = {'male': 'H', 'female': 'F'};
       selectedGender.value = reverseGenderMap[backendGender] ?? '';
 
       // Pré-remplir la date de naissance si elle existe
@@ -81,11 +86,9 @@ class CompleteProfileController extends GetxController {
       }
       if (selectedGender.value.isNotEmpty) {
         // Mapper les valeurs UI vers les valeurs backend
-        final genderMap = {
-          'H': 'male',
-          'F': 'female',
-        };
-        data['gender'] = genderMap[selectedGender.value] ?? selectedGender.value;
+        final genderMap = {'H': 'male', 'F': 'female'};
+        data['gender'] =
+            genderMap[selectedGender.value] ?? selectedGender.value;
       }
       if (birthDate.value != null) {
         data['birth_date'] = birthDate.value!.toIso8601String().split('T')[0];
@@ -124,7 +127,7 @@ class CompleteProfileController extends GetxController {
         }
 
         // Utiliser Get.back() au lieu de Get.offAllNamed() pour éviter le duplicate GlobalKey
-        Get.back(); // Retour à la page précédente (HOME avec tab Profile)
+        navigateBack();
       } else {
         Get.snackbar(
           'Erreur',
@@ -158,4 +161,15 @@ class CompleteProfileController extends GetxController {
   void selectBirthDate(DateTime date) {
     birthDate.value = date;
   }
+
+  void navigateBack() {
+    final navigator = Get.key.currentState;
+    if (navigator != null && navigator.canPop()) {
+      Get.back();
+      return;
+    }
+    Get.offAllNamed(returnRoute);
+  }
+
+  void goToMainDestination() => Get.offAllNamed(returnRoute);
 }

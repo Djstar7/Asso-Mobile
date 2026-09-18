@@ -207,6 +207,55 @@ class ProductManagementController extends GetxController {
     }
   }
 
+  Future<void> toggleProductStatus(Map<String, dynamic> product) async {
+    final currentStatus = product['status']?.toString() ?? 'inactive';
+    final nextStatus = currentStatus == 'active' ? 'inactive' : 'active';
+    final verb = nextStatus == 'active' ? 'réactiver' : 'désactiver';
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(
+          nextStatus == 'active'
+              ? 'Réactiver le produit'
+              : 'Désactiver le produit',
+        ),
+        content: Text('Voulez-vous $verb « ${product['name']} » ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final response = await VendorProductService.updateProductStatus(
+      product['id'] as int,
+      nextStatus,
+    );
+    if (response.success) {
+      product['status'] = nextStatus;
+      products.refresh();
+      Get.snackbar(
+        'Succès',
+        response.message.isNotEmpty ? response.message : 'Statut mis à jour',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } else {
+      Get.snackbar(
+        'Erreur',
+        response.message.isNotEmpty
+            ? response.message
+            : 'Impossible de modifier le statut',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
   /// Navigate to edit product
   void editProduct(Map<String, dynamic> product) {
     print('');

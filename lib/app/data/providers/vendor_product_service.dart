@@ -14,10 +14,7 @@ class VendorProductService {
     print('  └─ Per Page: $perPage');
 
     try {
-      final queryParams = {
-        'page': page,
-        'per_page': perPage,
-      };
+      final queryParams = {'page': page, 'per_page': perPage};
 
       print('🌐 Calling API: GET /v1/vendor/products');
 
@@ -120,6 +117,14 @@ class VendorProductService {
     }
   }
 
+  /// Activate or deactivate a product without altering its catalog data.
+  static Future<ApiResponse> updateProductStatus(int productId, String status) {
+    return ApiProvider.put(
+      '/v1/vendor/products/$productId/status',
+      body: {'status': status},
+    );
+  }
+
   /// Get inventory history for the vendor
   static Future<ApiResponse> getInventory({
     int page = 1,
@@ -137,10 +142,7 @@ class VendorProductService {
     if (productId != null) print('  └─ Product ID Filter: $productId');
 
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'per_page': perPage,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       if (type != null) queryParams['type'] = type;
       if (productId != null) queryParams['product_id'] = productId;

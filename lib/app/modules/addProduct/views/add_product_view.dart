@@ -4,6 +4,9 @@ import 'package:dotted_border/dotted_border.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/add_product_controller.dart';
+import '../../../core/widgets/product_variant_selector.dart';
+import '../../../routes/app_pages.dart';
+import 'variant_editor_page.dart';
 import '../../../data/models/currency_model.dart';
 
 class AddProductView extends GetView<AddProductController> {
@@ -17,8 +20,11 @@ class AddProductView extends GetView<AddProductController> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Retour',
           icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
+          onPressed: () => Navigator.of(context).canPop()
+              ? Get.back()
+              : Get.offAllNamed(Routes.VENDOR_DASHBOARD),
         ),
         title: Obx(
           () => Text(
@@ -28,6 +34,13 @@ class AddProductView extends GetView<AddProductController> {
             style: context.h5.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Menu principal',
+            icon: Icon(Icons.home_outlined, color: context.primaryTextColor),
+            onPressed: () => _confirmGoHome(context),
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -1886,128 +1899,185 @@ class AddProductView extends GetView<AddProductController> {
     );
   }
 
-  /// Section Stock
-  Widget _buildVariantsSection(BuildContext context) {
-    return Obx(
-      () => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Variantes du produit',
-                  style: context.subtitle1.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => _showVariantDialog(context),
-                icon: const Icon(Icons.add),
-                label: const Text('Ajouter'),
-              ),
-            ],
-          ),
-          Text(
-            'Exemples : Couleur: Rouge; Taille: M ou Pointure: 42',
-            style: context.caption,
-          ),
-          if (controller.variants.isNotEmpty) ...[
-            SizedBox(height: context.elementSpacing),
-            ...controller.variants.asMap().entries.map(
-              (entry) => Card(
-                child: ListTile(
-                  leading: const Icon(Icons.tune),
-                  title: Text(entry.value['attributes'] ?? ''),
-                  subtitle: Text(
-                    'Stock : ${entry.value['stock']} · SKU : ${entry.value['sku']?.isEmpty == true ? '—' : entry.value['sku']}',
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => controller.removeVariant(entry.key),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showVariantDialog(BuildContext context) async {
-    final attributes = TextEditingController();
-    final stock = TextEditingController(text: '0');
-    final sku = TextEditingController();
-    final adjustment = TextEditingController(text: '0');
-    await showDialog<void>(
+  Future<void> _confirmGoHome(BuildContext context) async {
+    final leave = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Ajouter une variante'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: attributes,
-                decoration: const InputDecoration(
-                  labelText: 'Attributs',
-                  hintText: 'Couleur: Rouge; Taille: M',
-                ),
-              ),
-              TextField(
-                controller: stock,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Stock'),
-              ),
-              TextField(
-                controller: sku,
-                decoration: const InputDecoration(
-                  labelText: 'Référence / SKU (facultatif)',
-                ),
-              ),
-              TextField(
-                controller: adjustment,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Écart de prix',
-                  hintText: '0',
-                ),
-              ),
-            ],
-          ),
+        title: const Text('Retour au menu principal'),
+        content: const Text(
+          'Les modifications non enregistrées de ce produit seront perdues.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Rester'),
           ),
           FilledButton(
-            onPressed: () {
-              if (attributes.text.trim().isEmpty ||
-                  int.tryParse(stock.text) == null)
-                return;
-              controller.addVariant(
-                attributes: attributes.text,
-                stock: stock.text,
-                sku: sku.text,
-                priceAdjustment: adjustment.text,
-              );
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Ajouter'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Quitter'),
           ),
         ],
       ),
     );
-    attributes.dispose();
-    stock.dispose();
-    sku.dispose();
-    adjustment.dispose();
+    if (leave == true) Get.offAllNamed(Routes.VENDOR_DASHBOARD);
+  }
+
+  Future<void> _openVariantEditor(BuildContext context) async {
+    FocusScope.of(context).unfocus();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => VariantEditorPage(state: controller.variantEditor),
+      ),
+    );
+    controller.syncStockFromVariants();
+  }
+
+  /// Section variantes : résumé lisible + accès à l'éditeur dédié.
+  Widget _buildVariantsSection(BuildContext context) {
+    final editor = controller.variantEditor;
+    return Obx(() {
+      editor.revision.value;
+      final groups = editor.groups
+          .where((g) => g.name.trim().isNotEmpty && g.values.isNotEmpty)
+          .toList();
+      final combos = editor.combinations;
+
+      return InkWell(
+        onTap: () => _openVariantEditor(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: combos.isEmpty
+                  ? context.borderColor
+                  : AppThemeSystem.primaryColor.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppThemeSystem.primaryColor.withValues(
+                        alpha: 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.style_outlined,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Couleurs, tailles & options',
+                          style: context.subtitle1.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          combos.isEmpty
+                              ? 'Facultatif · ex. couleur d’un téléphone, pointure d’une chaussure'
+                              : '${combos.length} choix · ${editor.totalStock} en stock au total',
+                          style: context.caption.copyWith(
+                            color: context.secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    combos.isEmpty
+                        ? Icons.add_circle_outline
+                        : Icons.edit_outlined,
+                    color: AppThemeSystem.primaryColor,
+                  ),
+                ],
+              ),
+              if (groups.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                for (final group in groups)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            group.name,
+                            style: context.caption.copyWith(
+                              color: context.secondaryTextColor,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: group.values.map((v) {
+                              if (group.isColor) {
+                                return Tooltip(
+                                  message: v.value,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          VariantPalette.parseHex(v.hex) ??
+                                          VariantPalette.guess(v.value),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.black26),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.backgroundColor,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  v.value,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   /// Section Stock
@@ -2020,32 +2090,40 @@ class AddProductView extends GetView<AddProductController> {
           style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
-        TextField(
-          controller: controller.stockController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: 'Ex: 200',
-            filled: true,
-            fillColor: context.inputFieldColor,
-            prefixIcon: const Icon(Icons.inventory_outlined),
-            suffixText: 'unités',
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: const BorderSide(
-                color: AppThemeSystem.primaryColor,
-                width: 2,
+        Obx(() {
+          controller.variantEditor.revision.value;
+          final fromVariants = controller.variantEditor.hasVariants;
+          return TextField(
+            controller: controller.stockController,
+            readOnly: fromVariants,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              helperText: fromVariants
+                  ? 'Calculée automatiquement à partir des couleurs / tailles'
+                  : null,
+              hintText: 'Ex: 200',
+              filled: true,
+              fillColor: context.inputFieldColor,
+              prefixIcon: const Icon(Icons.inventory_outlined),
+              suffixText: 'unités',
+              border: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: BorderSide(color: context.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: BorderSide(color: context.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: const BorderSide(
+                  color: AppThemeSystem.primaryColor,
+                  width: 2,
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }

@@ -25,6 +25,7 @@ class ProductController extends GetxController {
   final deliveryPrice = 0.0.obs;
   final currentImageIndex = 0.obs;
   final selectedVariant = Rx<Map<String, dynamic>?>(null);
+  final PageController imagePageController = PageController();
 
   final deliveryPartners = <Map<String, dynamic>>[].obs;
   final similarProducts = <Map<String, dynamic>>[].obs;
@@ -47,9 +48,44 @@ class ProductController extends GetxController {
 
   @override
   void onClose() {
+    imagePageController.dispose();
     addressDetailsController.dispose();
     customerPhoneController.dispose();
     super.onClose();
+  }
+
+  void goToImage(int index) {
+    currentImageIndex.value = index;
+    if (imagePageController.hasClients) {
+      imagePageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  bool productHasVariants(Map<String, dynamic> product) =>
+      (product['variants'] as List?)?.isNotEmpty == true;
+
+  /// Prix unitaire en XAF, supplément de la variante choisie compris.
+  double unitPriceXaf(Map<String, dynamic> product) {
+    final variant = selectedVariant.value;
+    final variantPrice = variant?['price_xaf'];
+    if (variantPrice is num) return variantPrice.toDouble();
+    final base =
+        double.tryParse(
+          (product['price_xaf'] ?? product['price'] ?? 0).toString().replaceAll(
+            ' ',
+            '',
+          ),
+        ) ??
+        0;
+    final adjustment =
+        (variant?['price_adjustment_xaf'] as num?)?.toDouble() ??
+        (variant?['price_adjustment'] as num?)?.toDouble() ??
+        0;
+    return base + adjustment;
   }
 
   Future<void> fetchCurrentLocation() async {
@@ -247,7 +283,12 @@ class ProductController extends GetxController {
     try {
       final response = await OrderService.createOrder(
         items: [
-          {'product_id': productId, 'quantity': quantity},
+          {
+            'product_id': productId,
+            'quantity': quantity,
+            if (selectedVariant.value?['id'] != null)
+              'variant_id': selectedVariant.value!['id'],
+          },
         ],
         deliveryCompanyId: deliveryCompanyId,
         deliveryZoneId: deliveryZoneId,

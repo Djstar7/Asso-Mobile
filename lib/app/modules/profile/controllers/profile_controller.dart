@@ -35,11 +35,7 @@ class ProfileController extends GetxController {
       'location': 'Cameroun',
       'memberSince': '',
       'role': 'guest',
-      'stats': {
-        'orders': 0,
-        'reviews': 0,
-        'favorites': 0,
-      },
+      'stats': {'orders': 0, 'reviews': 0, 'favorites': 0},
     };
   }
 
@@ -106,11 +102,13 @@ class ProfileController extends GetxController {
       'location': data['address'] ?? data['city'] ?? 'Cameroun',
       'memberSince': _formatMemberSince(data['created_at']),
       'role': data['role'] ?? 'client',
-      'stats': data['stats'] ?? {
-        'orders': data['orders_count'] ?? 0,
-        'reviews': data['reviews_count'] ?? 0,
-        'favorites': data['favorites_count'] ?? 0,
-      },
+      'stats':
+          data['stats'] ??
+          {
+            'orders': data['orders_count'] ?? 0,
+            'reviews': data['reviews_count'] ?? 0,
+            'favorites': data['favorites_count'] ?? 0,
+          },
     };
   }
 
@@ -118,7 +116,20 @@ class ProfileController extends GetxController {
     if (createdAt == null) return 'Membre récent';
     try {
       final date = DateTime.parse(createdAt.toString());
-      final months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+      final months = [
+        'Jan',
+        'Fév',
+        'Mar',
+        'Avr',
+        'Mai',
+        'Jun',
+        'Jul',
+        'Aoû',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Déc',
+      ];
       return 'Membre depuis ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return 'Membre récent';
@@ -135,7 +146,7 @@ class ProfileController extends GetxController {
   String get memberSince => profile['memberSince'] ?? '';
   String get role => profile['role'] ?? 'client';
   String get address => profile['location'] ?? '';
- 
+
   void editProfile() {
     // Garde: l'edition du profil necessite une connexion (mode invite bloque).
     if (AuthGuard.isGuest) {
@@ -154,7 +165,12 @@ class ProfileController extends GetxController {
     }
 
     try {
-      Get.toNamed(Routes.COMPLETE_PROFILE);
+      Get.toNamed(
+        Routes.COMPLETE_PROFILE,
+        arguments: {
+          'returnTo': role == 'vendeur' ? Routes.VENDOR_DASHBOARD : Routes.HOME,
+        },
+      );
     } catch (e) {
       Get.snackbar(
         'Erreur',

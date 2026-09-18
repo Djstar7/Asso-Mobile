@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/product_management_controller.dart';
+import '../../../routes/app_pages.dart';
 
 class ProductManagementView extends GetView<ProductManagementController> {
   const ProductManagementView({super.key});
@@ -15,32 +16,39 @@ class ProductManagementView extends GetView<ProductManagementController> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: context.primaryTextColor,
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: context.primaryTextColor),
           onPressed: () {
             if (Get.isOverlaysOpen) {
               Get.back();
             } else if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
+            } else {
+              Get.offAllNamed(Routes.VENDOR_DASHBOARD);
             }
           },
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Menu principal',
+            icon: Icon(Icons.home_outlined, color: context.primaryTextColor),
+            onPressed: () => Get.offAllNamed(Routes.VENDOR_DASHBOARD),
+          ),
+        ],
         title: Obx(() {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Mes Produits',
-                style: context.h5.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: context.h5.copyWith(fontWeight: FontWeight.w600),
               ),
               if (controller.totalProducts.value > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppThemeSystem.primaryColor,
                     borderRadius: BorderRadius.circular(12),
@@ -106,16 +114,12 @@ class ProductManagementView extends GetView<ProductManagementController> {
             SizedBox(height: context.elementSpacing),
             Text(
               'Aucun produit publié',
-              style: context.h6.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: context.h6.copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: context.elementSpacing / 2),
             Text(
               'Commencez à vendre en ajoutant votre premier produit',
-              style: context.body2.copyWith(
-                color: context.secondaryTextColor,
-              ),
+              style: context.body2.copyWith(color: context.secondaryTextColor),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: context.sectionSpacing),
@@ -152,14 +156,16 @@ class ProductManagementView extends GetView<ProductManagementController> {
         onNotification: (ScrollNotification scrollInfo) {
           if (!controller.isLoading.value &&
               controller.hasMore.value &&
-              scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+              scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent - 200) {
             controller.loadMoreProducts();
           }
           return false;
         },
         child: ListView.builder(
           padding: EdgeInsets.all(context.horizontalPadding),
-          itemCount: controller.products.length + (controller.hasMore.value ? 1 : 0),
+          itemCount:
+              controller.products.length + (controller.hasMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == controller.products.length) {
               // Loading indicator for pagination
@@ -277,7 +283,14 @@ class ProductManagementView extends GetView<ProductManagementController> {
 
                         // Price
                         Text(
-                          controller.formatPrice(double.tryParse((product['price_xaf'] ?? product['price'])?.toString() ?? '0') ?? 0),
+                          controller.formatPrice(
+                            double.tryParse(
+                                  (product['price_xaf'] ?? product['price'])
+                                          ?.toString() ??
+                                      '0',
+                                ) ??
+                                0,
+                          ),
                           style: context.h6.copyWith(
                             color: AppThemeSystem.primaryColor,
                             fontWeight: FontWeight.bold,
@@ -294,7 +307,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(status).withValues(alpha: 0.1),
+                                color: _getStatusColor(
+                                  status,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _getStatusColor(status),
@@ -354,11 +369,43 @@ class ProductManagementView extends GetView<ProductManagementController> {
                     ),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: context.borderColor,
+                Container(width: 1, height: 40, color: context.borderColor),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => controller.toggleProductStatus(product),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            status == 'active'
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 18,
+                            color: status == 'active'
+                                ? AppThemeSystem.warningColor
+                                : AppThemeSystem.successColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              status == 'active' ? 'Désactiver' : 'Réactiver',
+                              overflow: TextOverflow.ellipsis,
+                              style: context.button.copyWith(
+                                color: status == 'active'
+                                    ? AppThemeSystem.warningColor
+                                    : AppThemeSystem.successColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
+                Container(width: 1, height: 40, color: context.borderColor),
                 Expanded(
                   child: InkWell(
                     onTap: () => controller.deleteProduct(

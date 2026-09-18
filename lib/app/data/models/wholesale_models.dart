@@ -95,6 +95,7 @@ class WholesaleProduct {
   final double? unitWeightKg;
   final List<PriceTier> priceTiers;
   final List<Map<String, dynamic>> variants;
+  final List<Map<String, dynamic>> variantOptions;
   final String? image;
   final List<String> images;
 
@@ -110,6 +111,7 @@ class WholesaleProduct {
     this.unitWeightKg,
     required this.priceTiers,
     this.variants = const [],
+    this.variantOptions = const [],
     this.image,
     this.images = const [],
   });
@@ -131,6 +133,11 @@ class WholesaleProduct {
         const [],
     variants:
         (j['variants'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        const [],
+    variantOptions:
+        (j['variant_options'] as List?)
             ?.map((e) => Map<String, dynamic>.from(e as Map))
             .toList() ??
         const [],
