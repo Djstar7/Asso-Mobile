@@ -177,6 +177,19 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
         }
         break;
 
+      case 'new_order_vendor':
+      case 'order_cancelled_vendor':
+      case 'order_shipped_vendor':
+      case 'order_delivered_vendor':
+      case 'order_rated':
+        if (fromClick) Get.toNamed(Routes.ORDER_MANAGEMENT);
+        break;
+
+      case 'package_expiring':
+      case 'package_purchase':
+        if (fromClick) Get.toNamed(Routes.PACKAGE_SUBSCRIPTION);
+        break;
+
       default:
         print('⚠️  [FCM] Type de notification non géré: $type');
     }

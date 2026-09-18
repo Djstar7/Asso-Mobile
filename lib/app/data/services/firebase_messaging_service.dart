@@ -377,6 +377,20 @@ class FirebaseMessagingService extends GetxService {
         }
         break;
 
+      // Notifications vendeur : ouvrir la gestion des commandes / des forfaits.
+      case 'new_order_vendor':
+      case 'order_cancelled_vendor':
+      case 'order_shipped_vendor':
+      case 'order_delivered_vendor':
+      case 'order_rated':
+        Get.toNamed(Routes.ORDER_MANAGEMENT);
+        break;
+
+      case 'package_expiring':
+      case 'package_purchase':
+        Get.toNamed(Routes.PACKAGE_SUBSCRIPTION);
+        break;
+
       default:
         print('⚠️ Type de notification non géré: $type');
         break;

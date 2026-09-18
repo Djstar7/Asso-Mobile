@@ -218,8 +218,12 @@ class VendorDashboardController extends GetxController {
       print('  └─ Success: ${response.success}');
 
       if (response.success && response.data != null) {
-        final data = response.data!['data'];
-        if (data is Map && data['data'] is List) {
+        // Format actuel de l'API : { orders: [...], pagination: { total } }.
+        final pagination = response.data!['pagination'];
+        final data = response.data!['orders'] ?? response.data!['data'];
+        if (pagination is Map && pagination['total'] is num) {
+          pendingOrders.value = (pagination['total'] as num).toInt();
+        } else if (data is Map && data['data'] is List) {
           final orders = data['data'] as List;
           pendingOrders.value = orders.length;
           print('  └─ Pending Orders Count: ${pendingOrders.value}');

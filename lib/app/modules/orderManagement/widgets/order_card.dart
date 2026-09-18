@@ -50,7 +50,7 @@ class OrderCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Commande #${order.id}',
+                    'Commande ${order.displayNumber}',
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -59,6 +59,22 @@ class OrderCard extends StatelessWidget {
                 _buildStatusBadge(context),
               ],
             ),
+
+            if (!order.isPaid || order.deliveryAssigned) ...[
+              const SizedBox(height: 8),
+              _buildHint(
+                context,
+                icon: !order.isPaid
+                    ? Icons.hourglass_top_rounded
+                    : Icons.delivery_dining_rounded,
+                color: !order.isPaid
+                    ? AppThemeSystem.warningColor
+                    : AppThemeSystem.infoColor,
+                text: !order.isPaid
+                    ? 'Paiement du client en attente : ne préparez pas encore'
+                    : 'Livreur assigné${order.deliveryPersonName != null ? ' : ${order.deliveryPersonName}' : ''}',
+              ),
+            ],
 
             SizedBox(height: context.elementSpacing),
 
@@ -77,7 +93,7 @@ class OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  order.city,
+                  order.city.isNotEmpty ? order.city : 'Ville inconnue',
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -117,14 +133,18 @@ class OrderCard extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Total:',
+                    'Pour vous :',
                     style: context.body2.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    controller.formatPrice(order.totalAmount),
+                    controller.formatPrice(
+                      order.vendorAmount > 0
+                          ? order.vendorAmount
+                          : order.totalAmount,
+                    ),
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppThemeSystem.primaryColor,
@@ -202,6 +222,37 @@ class OrderCard extends StatelessWidget {
     );
   }
 
+  Widget _buildHint(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: context.caption.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildClientInfo(BuildContext context) {
     return Row(
       children: [
@@ -241,7 +292,9 @@ class OrderCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                order.clientPhone,
+                order.deliveryPhone.isNotEmpty
+                    ? order.deliveryPhone
+                    : order.clientPhone,
                 style: context.caption.copyWith(
                   color: context.secondaryTextColor,
                 ),
@@ -274,11 +327,26 @@ class OrderCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  '${item.productName} x${item.quantity}',
-                  style: context.body2,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.productName} x${item.quantity}',
+                      style: context.body2,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (item.variantLabel != null || item.tierLabel != null)
+                      Text(
+                        [item.variantLabel, item.tierLabel]
+                            .whereType<String>()
+                            .join(' · '),
+                        style: context.caption.copyWith(
+                          color: AppThemeSystem.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],

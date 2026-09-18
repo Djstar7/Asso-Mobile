@@ -114,6 +114,20 @@ class OrderManagementController extends GetxController {
             ? (order['delivery_person']['name'] ?? '${order['delivery_person']['first_name'] ?? ''} ${order['delivery_person']['last_name'] ?? ''}'.trim())
             : null,
         notes: order['notes'],
+        orderNumber: order['order_number']?.toString() ?? '',
+        deliveryPhone:
+            (order['customer_phone'] ?? customer?['phone'] ?? '').toString(),
+        addressDetails: order['delivery_address_details']?.toString(),
+        paymentStatus: order['payment_status']?.toString() ?? 'paid',
+        vendorAmount:
+            double.tryParse(
+              (order['vendor_amount'] ?? order['subtotal'] ?? order['total'])
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0,
+        deliveryCompanyName: order['delivery_company']?['name']?.toString(),
+        deliveryAssigned: order['status'] == 'preparing',
       );
     }).toList();
   }
@@ -131,6 +145,9 @@ class OrderManagementController extends GetxController {
         quantity: orderItem['quantity'] ?? 1,
         unitPrice: double.tryParse(orderItem['unit_price']?.toString() ?? '0') ?? 0,
         totalPrice: double.tryParse(orderItem['total_price']?.toString() ?? '0') ?? 0,
+        productImage: orderItem['product_image']?.toString() ?? '',
+        variantLabel: orderItem['variant_label']?.toString(),
+        tierLabel: orderItem['tier_label']?.toString(),
       );
     }).toList();
   }
@@ -595,49 +612,204 @@ class OrderManagementController extends GetxController {
 
   /// Afficher les détails d'une commande
   void showOrderDetails(OrderModel order) {
+    final context = Get.context!;
+    final phone = order.deliveryPhone.isNotEmpty
+        ? order.deliveryPhone
+        : order.clientPhone;
+
+    Widget section(String title, List<Widget> children) => Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      ),
+    );
+
+    Widget line(IconData icon, String text, {VoidCallback? onCopy}) => Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: context.secondaryTextColor),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: context.body2)),
+          if (onCopy != null)
+            InkWell(
+              onTap: onCopy,
+              child: const Padding(
+                padding: EdgeInsets.all(2),
+                child: Icon(Icons.copy_rounded, size: 18),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    void copy(String value, String what) {
+      Clipboard.setData(ClipboardData(text: value));
+      Get.snackbar('Copié', '$what copié', snackPosition: SnackPosition.BOTTOM);
+    }
+
     Get.bottomSheet(
       Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Commande #${order.id}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Commande ${order.displayNumber}',
+                        style: context.h5.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Chip(label: Text(order.status.label)),
+                  ],
+                ),
+                Text(
+                  order.isPaid
+                      ? 'Paiement reçu'
+                      : 'Paiement du client en attente',
+                  style: context.caption.copyWith(
+                    color: order.isPaid
+                        ? AppThemeSystem.successColor
+                        : AppThemeSystem.warningColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                section('À préparer', [
+                  for (final item in order.items)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: item.productImage.isNotEmpty
+                                  ? Image.network(
+                                      item.productImage,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) =>
+                                          const Icon(Icons.image_outlined),
+                                    )
+                                  : const Icon(Icons.inventory_2_outlined),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: context.body1.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (item.variantLabel != null)
+                                  Text(
+                                    item.variantLabel!,
+                                    style: context.body2.copyWith(
+                                      color: AppThemeSystem.primaryColor,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                if (item.tierLabel != null)
+                                  Text(item.tierLabel!, style: context.caption),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '×${item.quantity}',
+                            style: context.h6.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ]),
+
+                section('Client et livraison', [
+                  line(Icons.person_outline, order.clientName),
+                  if (phone.isNotEmpty)
+                    line(
+                      Icons.phone_outlined,
+                      phone,
+                      onCopy: () => copy(phone, 'Numéro'),
+                    ),
+                  if (order.address.isNotEmpty)
+                    line(
+                      Icons.place_outlined,
+                      order.address,
+                      onCopy: () => copy(order.address, 'Adresse'),
+                    ),
+                  if (order.addressDetails?.isNotEmpty == true)
+                    line(Icons.info_outline, order.addressDetails!),
+                  if (order.deliveryCompanyName != null)
+                    line(
+                      Icons.local_shipping_outlined,
+                      'Livraison : ${order.deliveryCompanyName}',
+                    ),
+                  if (order.deliveryPersonName != null)
+                    line(
+                      Icons.delivery_dining_outlined,
+                      'Livreur : ${order.deliveryPersonName}',
+                    ),
+                ]),
+
+                if (order.notes?.isNotEmpty == true)
+                  section('Note du client', [
+                    line(Icons.sticky_note_2_outlined, order.notes!),
+                  ]),
+
+                if (order.cancelReason?.isNotEmpty == true)
+                  section('Motif d’annulation', [
+                    line(Icons.cancel_outlined, order.cancelReason!),
+                  ]),
+
+                section('Montants', [
+                  line(
+                    Icons.payments_outlined,
+                    'Pour vous : ${formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount)}',
+                  ),
+                  line(
+                    Icons.receipt_long_outlined,
+                    'Total payé par le client : ${formatPrice(order.totalAmount)}',
+                  ),
+                ]),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text('Client: ${order.clientName}'),
-            Text('Téléphone: ${order.clientPhone}'),
-            Text('Ville: ${order.city}'),
-            Text('Adresse: ${order.address}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Articles:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            ...order.items.map((item) => Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text('• ${item.productName} x${item.quantity} - ${item.totalPrice} XAF'),
-            )),
-            const SizedBox(height: 16),
-            Text(
-              'Total: ${order.totalAmount} XAF',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+      isScrollControlled: true,
     );
   }
 

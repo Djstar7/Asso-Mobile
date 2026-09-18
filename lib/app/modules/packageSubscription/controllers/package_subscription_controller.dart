@@ -144,7 +144,13 @@ class PackageSubscriptionController extends GetxController {
         await _subscribeViaKpay(package, price);
         break;
       case 'paypal':
-        await _subscribeViaRedirect(package, price, 'paypal_direct', 'paypal');
+        // Le serveur n'accepte pas encore PayPal pour les forfaits (wallet,
+        // KPay et carte uniquement) : on l'explique au lieu d'échouer.
+        Get.snackbar(
+          'PayPal bientôt disponible',
+          'Pour votre forfait, payez par Mobile Money ou par carte bancaire.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
         break;
       case 'stripe':
         await _subscribeViaCard(package, price);
@@ -281,6 +287,8 @@ class PackageSubscriptionController extends GetxController {
   }
 
   /// Abonnement payé par redirection (PayPal / carte Stripe) via WebView.
+  // Conservé pour quand le serveur acceptera PayPal sur les forfaits.
+  // ignore: unused_element
   Future<void> _subscribeViaRedirect(
     Map<String, dynamic> package,
     double price,

@@ -18,6 +18,22 @@ class OrderModel {
   final String? deliveryPersonName;
   final String? notes;
 
+  /// Numéro lisible (CMD123456), celui que voit aussi le client.
+  final String orderNumber;
+
+  /// Numéro à appeler pour la livraison (peut différer du compte client).
+  final String deliveryPhone;
+  final String? addressDetails;
+  final String paymentStatus;
+  final double vendorAmount;
+  final String? deliveryCompanyName;
+
+  /// Livreur déjà assigné (statut serveur « preparing »).
+  final bool deliveryAssigned;
+
+  String get displayNumber => orderNumber.isNotEmpty ? orderNumber : '#$id';
+  bool get isPaid => paymentStatus == 'paid';
+
   OrderModel({
     required this.id,
     required this.clientId,
@@ -36,6 +52,13 @@ class OrderModel {
     this.deliveryPersonId,
     this.deliveryPersonName,
     this.notes,
+    this.orderNumber = '',
+    this.deliveryPhone = '',
+    this.addressDetails,
+    this.paymentStatus = 'paid',
+    this.vendorAmount = 0,
+    this.deliveryCompanyName,
+    this.deliveryAssigned = false,
   });
 
   /// Nombre total d'articles
@@ -147,6 +170,12 @@ class OrderItem {
   final double unitPrice;
   final double totalPrice;
 
+  /// Choix du client à préparer, ex. « Couleur : Noir · Pointure : 42 ».
+  final String? variantLabel;
+
+  /// Conditionnement choisi pour une commande en gros.
+  final String? tierLabel;
+
   OrderItem({
     required this.productId,
     required this.productName,
@@ -154,6 +183,8 @@ class OrderItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.variantLabel,
+    this.tierLabel,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
