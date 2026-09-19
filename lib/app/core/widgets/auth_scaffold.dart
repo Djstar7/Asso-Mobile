@@ -22,6 +22,7 @@ class AuthScaffold extends StatelessWidget {
     required this.children,
     this.onSkip,
     this.skipLabel = 'Passer',
+    this.bannerRatio = 0.30,
   });
 
   /// Animation Lottie affichée dans le bandeau.
@@ -41,6 +42,12 @@ class AuthScaffold extends StatelessWidget {
 
   final String skipLabel;
 
+  /// Part de la hauteur d'écran occupée par le bandeau.
+  ///
+  /// Réglable par écran : un formulaire long a besoin d'un bandeau plus
+  /// court, sinon son action principale démarre hors de l'écran.
+  final double bannerRatio;
+
   @override
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
@@ -51,7 +58,7 @@ class AuthScaffold extends StatelessWidget {
     // il ne garde que de quoi porter le bouton « Passer ».
     final bannerHeight = keyboardOpen
         ? 0.0
-        : (screenHeight * 0.30).clamp(180.0, 300.0);
+        : (screenHeight * bannerRatio).clamp(120.0, 300.0);
 
     return Scaffold(
       backgroundColor: AppDesign.accentSubtle,

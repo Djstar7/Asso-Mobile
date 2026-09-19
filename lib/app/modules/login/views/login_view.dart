@@ -32,7 +32,17 @@ class LoginView extends GetView<LoginController> {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () => _showPasswordReset(context),
-            child: const Text('Mot de passe oublié ?'),
+            // Sans couleur explicite, le lien tombe sur le violet Material
+            // par défaut, étranger à la palette de l'application.
+            style: TextButton.styleFrom(foregroundColor: AppDesign.accent),
+            child: Text(
+              'Mot de passe oublié ?',
+              style: context.textStyle(
+                FontSizeType.caption,
+                fontWeight: FontWeight.w600,
+                color: AppDesign.accent,
+              ),
+            ),
           ),
         ),
         SizedBox(height: AppDesign.space3),

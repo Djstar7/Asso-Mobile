@@ -25,6 +25,10 @@ class WelcomerView extends GetView<WelcomerController> {
       subtitle:
           'Achetez, vendez et suivez vos commandes depuis un seul endroit.',
       onSkip: controller.skipWelcome,
+      // Formulaire long (trois champs, conditions, bouton) : un bandeau
+      // aussi haut qu'à la connexion repoussait « Créer mon compte »
+      // hors de l'écran à l'ouverture.
+      bannerRatio: 0.18,
       children: [
         _buildForm(context),
         SizedBox(height: AppDesign.space5),
