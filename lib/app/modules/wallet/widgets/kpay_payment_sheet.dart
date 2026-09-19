@@ -146,7 +146,9 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF7900).withValues(alpha: 0.10),
+                // Décor de la feuille : l'accent de marque, et non un
+                // orange voisin qui faisait cohabiter deux primaires.
+                color: AppDesign.accentSubtle,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -163,7 +165,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF7900),
+                          color: AppDesign.accentText,
                         ),
                       ),
                     ],
@@ -252,7 +254,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                       )
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF7900),
+                  backgroundColor: AppDesign.accent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

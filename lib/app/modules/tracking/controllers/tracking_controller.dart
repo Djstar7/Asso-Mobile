@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
@@ -116,34 +117,36 @@ class TrackingController extends GetxController {
     // Déterminer le statut display + couleur
     String displayStatus;
     int statusColor;
+    // Couleurs prises aux tokens sémantiques : la palette écrite en dur ici
+    // introduisait un second orange, concurrent de l'accent de marque.
     switch (status) {
       case 'pending':
         displayStatus = 'En attente';
-        statusColor = 0xFFF59E0B; // Orange
+        statusColor = AppDesign.warning.toARGB32();
         break;
       case 'confirmed':
         displayStatus = 'En attente livreur';
-        statusColor = 0xFF3B82F6; // Blue
+        statusColor = AppDesign.info.toARGB32();
         break;
       case 'preparing':
         displayStatus = 'En préparation';
-        statusColor = 0xFF3B82F6; // Blue
+        statusColor = AppDesign.info.toARGB32();
         break;
       case 'shipped':
         displayStatus = 'En livraison';
-        statusColor = 0xFF6366F1; // Indigo
+        statusColor = AppDesign.accent.toARGB32();
         break;
       case 'delivered':
         displayStatus = 'Livré';
-        statusColor = 0xFF10B981; // Green
+        statusColor = AppDesign.success.toARGB32();
         break;
       case 'cancelled':
         displayStatus = 'Annulé';
-        statusColor = 0xFFEF4444; // Red
+        statusColor = AppDesign.danger.toARGB32();
         break;
       default:
         displayStatus = 'En attente';
-        statusColor = 0xFFF59E0B;
+        statusColor = AppDesign.warning.toARGB32();
     }
 
     // Items info
