@@ -284,9 +284,15 @@ class DeliveryPartnerQuote {
   /// Libellé du trajet : route transporteur, sinon zone urbaine.
   String? get routeOrZone => routeLabel ?? zoneName;
 
-  /// Avis explicite pour les envois d'agence en agence.
+  /// Option choisie : retrait en agence ou livraison à domicile.
+  bool get isAgencyPickup => raw['delivery_option']?.toString() == 'agency_pickup';
+  String get deliveryOptionLabel =>
+      _toText(raw['delivery_option_label']) ??
+      (isAgencyPickup ? 'Retrait en agence' : 'Livraison à domicile');
+
+  /// Avis explicite quand le colis est à retirer en agence.
   String? get pickupNotice {
-    if (!isAgencyToAgency) return null;
+    if (!isAgencyPickup) return null;
     final where = city != null ? ' de $city' : '';
     return 'Vous retirerez votre colis à l’agence $companyName$where.';
   }

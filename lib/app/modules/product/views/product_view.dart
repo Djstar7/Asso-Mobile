@@ -2898,11 +2898,13 @@ class ProductView extends GetView<ProductController> {
                         if (details.isNotEmpty) line('Complément', details),
                         line('Numéro à contacter', controller.customerPhone.value),
                         if (quote != null) ...[
-                          line('Partenaire', quote.companyName),
-                          line('Catégorie', quote.serviceTypeLabel),
-                          line('Mode', quote.serviceModeLabel),
-                          if (quote.routeOrZone != null)
-                            line('Trajet', quote.routeOrZone!),
+                          line(
+                            'Livreur',
+                            quote.vehicleLabel != null
+                                ? '${quote.companyName} · ${quote.vehicleLabel}'
+                                : quote.companyName,
+                          ),
+                          line('Mode', quote.deliveryOptionLabel),
                           if (quote.leadTime != null)
                             line('Délai', quote.leadTime!),
                           if (quote.pickupNotice != null) ...[
@@ -2914,26 +2916,13 @@ class ProductView extends GetView<ProductController> {
                           ],
                         ],
                       ]),
-                      if (quote != null)
-                        section(Icons.scale_outlined, 'Prix de la livraison', [
-                          DeliveryBreakdownView(
-                            breakdown: quote.breakdown,
-                            priceGrid: quote.priceGrid,
-                            conditions: quote.conditions,
-                            weightKg: controller.deliveryWeightKg,
-                            fallbackTotal: quote.price,
-                            formatPrice: controller.formatPrice,
-                          ),
-                        ]),
                       section(Icons.receipt_long_rounded, 'Montant', [
                         line(
                           'Sous-total',
                           controller.formatPrice(controller.subtotal(unitPrice)),
                         ),
                         line(
-                          controller.deliveryWeightKg != null
-                              ? 'Livraison (${formatKg(controller.deliveryWeightKg)})'
-                              : 'Livraison',
+                          'Livraison',
                           controller.formatPrice(controller.deliveryPrice.value),
                         ),
                         const Divider(height: 16),
