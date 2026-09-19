@@ -109,7 +109,7 @@ class _ImportViewState extends State<ImportView> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   sliver: SliverGrid(
-                    gridDelegate: _importGridDelegate(context),
+                    gridDelegate: ProductCard.gridDelegate(context),
                     delegate: SliverChildBuilderDelegate(
                       (_, i) => _buildProductCard(_products[i], country),
                       childCount: _products.length,
@@ -407,131 +407,59 @@ class _ImportViewState extends State<ImportView> {
       ),
     );
   }
-  SliverGridDelegate _importGridDelegate(BuildContext context) {
-    final columns = AppDesign.productColumns(context);
-    final width = ProductCard.widthInGrid(context, columns: columns);
-    final textBlock = ProductCard.textBlockHeight(context) + AppDesign.space5;
-
-    return SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: columns,
-      mainAxisExtent: width + textBlock,
-      crossAxisSpacing: AppDesign.space3,
-      mainAxisSpacing: AppDesign.space3,
-    );
-  }
-
   Widget _buildProductCard(WholesaleProduct p, _ImportCountry c) {
-    final name = p.name;
     final entry = p.entryTier;
     final image = p.image;
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => WholesaleOrderSheet.show(product: p, shippingOptions: _shipping, countryFlag: c.flag),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppDesign.neutral200),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _buildProductImage(image),
-                    ),
-                    // Badge drapeau pays (origine)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6)],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(c.flag, style: const TextStyle(fontSize: 12)),
-                            const SizedBox(width: 4),
-                            Text(c.code,
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: AppDesign.neutral700)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(11, 10, 11, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.25, color: AppDesign.neutral800)),
-                    const SizedBox(height: 6),
-                    // Prix d'entrée (« à partir de ») + quantité minimale (cota)
-                    Text(
-                      entry != null
-                          ? 'À partir de ${CurrencyService.formatAmountInCurrency(entry.unitPrice, entry.currency)}'
-                          : 'Sur devis',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w800, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppDesign.accent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              entry != null ? 'GROS · min ${entry.minQuantity}' : 'GROS',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: AppDesign.accentText, fontWeight: FontWeight.w700, fontSize: 10.5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor,
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: const Icon(Icons.add_rounded, color: Colors.white, size: 19),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    // Même carte que sur l'accueil et la recherche : un produit doit avoir
+    // partout la même apparence. Les deux spécificités du gros — quantité
+    // minimale et ajout direct au panier — s'y greffent.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ProductCard(
+          name: p.name,
+          price: entry == null
+              ? '—'
+              : 'Dès ${CurrencyService.formatAmountInCurrency(entry.unitPrice, entry.currency)}',
+          location: entry == null ? null : 'Minimum ${entry.minQuantity} pièces',
+          badgeLabel: 'GROS',
+          badgeTone: AppBadgeTone.accent,
+          imageBuilder: image == null || image.isEmpty
+              ? null
+              : (context) => _buildProductImage(image),
+          onTap: () => WholesaleOrderSheet.show(
+            product: p,
+            shippingOptions: _shipping,
+            countryFlag: c.flag,
           ),
         ),
-      ),
+        // Ajout direct, posé sur l'angle du visuel.
+        Positioned(
+          right: AppDesign.space1,
+          top: AppDesign.space1,
+          child: Material(
+            color: AppDesign.accent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            elevation: 1,
+            child: InkWell(
+              onTap: () => WholesaleOrderSheet.show(
+                product: p,
+                shippingOptions: _shipping,
+                countryFlag: c.flag,
+              ),
+              child: const SizedBox(
+                width: 32,
+                height: 32,
+                child: Icon(Icons.add_rounded, color: Colors.white, size: 19),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
-
   Widget _imgPlaceholder() => Container(
         color: AppDesign.neutral100,
         child: Icon(Icons.image_outlined, color: Colors.grey.shade400, size: 40),

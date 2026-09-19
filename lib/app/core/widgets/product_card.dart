@@ -65,16 +65,19 @@ class ProductCard extends StatelessWidget {
     final priceSize = AppThemeSystem.getFontSize(context, FontSizeType.subtitle1);
     final metaSize = AppThemeSystem.getFontSize(context, FontSizeType.overline);
 
-    // 2 lignes de titre + prix + ligne de lieu + interlignes + paddings.
-    // Les hauteurs de ligne sont majorées (1.35) et complétées par une marge
-    // de sécurité : sur certaines densités, l'arrondi du moteur de rendu
-    // rognait le bas de la deuxième ligne du titre.
-    return (titleSize * 1.35 * 2) +
-        (priceSize * 1.3) +
-        (metaSize * 1.35) +
+    // 2 lignes de titre + prix + ligne de lieu, leurs deux interlignes, et
+    // les paddings réellement appliqués par `build` (space3 en haut,
+    // space2 en bas). Les hauteurs de ligne sont majorées et complétées par
+    // une marge : le moteur de rendu arrondit à la hausse selon la densité,
+    // et une sous-estimation de deux pixels suffit à déclencher un
+    // débordement.
+    return (titleSize * 1.4 * 2) +
+        (priceSize * 1.35) +
+        (metaSize * 1.4) +
         (AppDesign.space1 * 2) +
-        (AppDesign.space3 * 2) +
-        6;
+        AppDesign.space3 +
+        AppDesign.space2 +
+        8;
   }
 
   /// Hauteur totale d'une carte pour une largeur donnée.
@@ -142,8 +145,14 @@ class ProductCard extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+            // `max` est nécessaire pour que le `Flexible` du bloc texte ait
+            // un espace à partager : avec `min`, la colonne prenait la somme
+            // des hauteurs intrinsèques et débordait de la cellule.
+            mainAxisSize: MainAxisSize.max,
             children: [
+              // L'image garde son ratio ; le texte occupe le reste. Une
+              // hauteur figée des deux côtés faisait déborder la cellule de
+              // quelques pixels selon la densité de l'écran.
               AspectRatio(
                 aspectRatio: imageAspectRatio,
                 child: ClipRRect(
@@ -185,8 +194,7 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(
-                height: textBlockHeight(context),
+              Flexible(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     AppDesign.space1,
