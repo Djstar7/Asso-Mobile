@@ -13,6 +13,7 @@ import 'app/data/services/websocket_service.dart';
 import 'app/data/services/firebase_messaging_service.dart';
 import 'app/data/providers/diaspo_service.dart';
 import 'app/data/providers/currency_service.dart';
+import 'app/data/services/deep_link_service.dart';
 import 'app/modules/notification/controllers/notification_controller.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -53,6 +54,11 @@ void main() async {
   // Initialiser le CurrencyService pour la conversion automatique des devises
   Get.put(CurrencyService(), permanent: true);
   print('✅ CurrencyService initialized');
+
+  // Liens partagés : le service est enregistré ici, mais n'écoute qu'une fois
+  // le routeur monté (voir SplashController), pour qu'un lien de démarrage à
+  // froid ne vise pas un navigateur inexistant.
+  Get.put(DeepLinkService(), permanent: true);
 
   // Initialiser AppConfigController pour charger les paramètres de l'app
   final appConfigController = Get.put(AppConfigController(), permanent: true);

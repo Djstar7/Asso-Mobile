@@ -102,17 +102,30 @@ class ChatdetailView extends GetView<ChatdetailController> {
       ),
       body: Column(
         children: [
-          // Messages list
+          // Fil des messages
           Expanded(
-            child: Obx(() => ListView.builder(
-              controller: controller.scrollController,
-              padding: EdgeInsets.all(16),
-              itemCount: controller.messages.length,
-              itemBuilder: (context, index) {
-                final message = controller.messages[index];
-                return _buildMessageBubble(context, message);
-              },
-            )),
+            child: Obx(() {
+              // Trois situations bien distinctes, qui donnaient toutes la
+              // même page blanche : le chargement, la conversation encore
+              // vierge, et le fil garni.
+              if (controller.isLoading.value && controller.messages.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (controller.messages.isEmpty) {
+                return _buildConversationStart(context);
+              }
+
+              return ListView.builder(
+                controller: controller.scrollController,
+                padding: EdgeInsets.all(16),
+                itemCount: controller.messages.length,
+                itemBuilder: (context, index) {
+                  final message = controller.messages[index];
+                  return _buildMessageBubble(context, message);
+                },
+              );
+            }),
           ),
 
           // Typing indicator (for other user)
@@ -124,6 +137,49 @@ class ChatdetailView extends GetView<ChatdetailController> {
           // Input bar
           _buildInputBar(context, isDark),
         ],
+      ),
+    );
+  }
+
+  /// Conversation ouverte mais encore sans message.
+  ///
+  /// Mieux vaut une invitation à écrire qu'une page blanche : on vient
+  /// souvent ici depuis une fiche produit, sans savoir par quoi commencer.
+  Widget _buildConversationStart(BuildContext context) {
+    final name = controller.conversation['name'] ?? 'votre interlocuteur';
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.forum_outlined,
+              size: 56,
+              color: AppThemeSystem.getSecondaryTextColor(context),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Démarrez la conversation',
+              style: context.textStyle(
+                FontSizeType.h6,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Envoyez un premier message à $name pour lancer l\'échange.',
+              style: context.textStyle(
+                FontSizeType.body2,
+                color: AppThemeSystem.getSecondaryTextColor(context),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

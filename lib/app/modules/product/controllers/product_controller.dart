@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../../../core/values/constants.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../data/models/delivery_info.dart';
@@ -86,6 +88,51 @@ class ProductController extends GetxController {
     // Même point d'entrée, dédoublonné : la fiche est reconstruite à chaque
     // changement d'état et relancerait sinon la requête en boucle.
     loadSimilarProducts(product);
+  }
+
+  /// Lien public du produit, celui que l'on partage.
+  ///
+  /// Sans identifiant — produit de démonstration, fiche incomplète — il n'y a
+  /// rien à partager : mieux vaut masquer l'action que diffuser un lien mort.
+  String? shareUrl(Map<String, dynamic> product) {
+    final id = product['id']?.toString().trim();
+    if (id == null || id.isEmpty) return null;
+    return AppConstants.productUrl(id);
+  }
+
+  /// Ouvre la feuille de partage du système avec le lien du produit.
+  ///
+  /// [origin] ancre la fenêtre sur iPad : sans ce rectangle, iOS refuse
+  /// d'afficher la feuille.
+  Future<void> shareProduct(
+    Map<String, dynamic> product, {
+    Rect? origin,
+  }) async {
+    final url = shareUrl(product);
+    if (url == null) {
+      Get.snackbar(
+        'Partage indisponible',
+        'Ce produit ne peut pas encore être partagé.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final name = product['name']?.toString().trim() ?? '';
+    final price = product['formatted_price']?.toString().trim() ?? '';
+
+    // Le message porte le nom et le prix : dans une conversation, un lien nu
+    // n'apprend rien tant qu'on ne l'a pas ouvert.
+    final lines = <String>[
+      if (name.isNotEmpty) price.isEmpty ? name : '$name — $price',
+      url,
+    ];
+
+    await Share.share(
+      lines.join('\n'),
+      subject: name.isEmpty ? null : name,
+      sharePositionOrigin: origin,
+    );
   }
 
   /// Charge les produits proches de celui affiché.

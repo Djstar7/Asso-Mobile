@@ -136,6 +136,11 @@ class AuthService {
 
         StorageService.saveAuthSession(token, user);
 
+        // Le mode invité laisse des controllers permanents et un cache anonymes :
+        // les purger ici, une fois le token écrit, pour que l'app recharge tout
+        // sous l'identité du compte qui vient de se connecter.
+        SessionReset.onLogin();
+
         print('✅ Session saved successfully');
         developer.log(
           '✓ Session saved successfully',
@@ -211,6 +216,11 @@ class AuthService {
 
         final user = UserModel.fromJson(userData);
         StorageService.saveAuthSession(token, user);
+
+        // Le mode invité laisse des controllers permanents et un cache anonymes :
+        // les purger ici, une fois le token écrit, pour que l'app recharge tout
+        // sous l'identité du compte qui vient de se connecter.
+        SessionReset.onLogin();
 
         developer.log(
           'Session saved',
@@ -314,6 +324,11 @@ class AuthService {
         final user = UserModel.fromJson(userData);
         StorageService.saveAuthSession(token, user);
 
+        // Le mode invité laisse des controllers permanents et un cache anonymes :
+        // les purger ici, une fois le token écrit, pour que l'app recharge tout
+        // sous l'identité du compte qui vient de se connecter.
+        SessionReset.onLogin();
+
         developer.log(
           'Session saved',
           name: 'AuthService',
@@ -395,6 +410,11 @@ class AuthService {
         );
 
         StorageService.saveAuthSession(token, user);
+
+        // Le mode invité laisse des controllers permanents et un cache anonymes :
+        // les purger ici, une fois le token écrit, pour que l'app recharge tout
+        // sous l'identité du compte qui vient de se connecter.
+        SessionReset.onLogin();
 
         print('✅ Session saved successfully');
         developer.log(
@@ -680,6 +700,7 @@ class AuthService {
     // Réinitialiser l'état applicatif lié à l'ancien compte (controllers GetX
     // permanents, WebSocket) pour éviter que les données d'un utilisateur
     // ne persistent au logout ou au changement de compte.
+    // `clearAuth` vide déjà le cache ; `clearControllers` suffit donc ici.
     SessionReset.clearControllers();
 
     developer.log('Local session cleared', name: 'AuthService');

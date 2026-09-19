@@ -5,8 +5,6 @@ import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/guest_access.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
-import '../../profile/controllers/profile_controller.dart';
-import '../../home/controllers/home_controller.dart';
 
 class LoginController extends GetxController {
   late TextEditingController emailController;
@@ -178,19 +176,12 @@ class LoginController extends GetxController {
     // de la pile de navigation.
     await WidgetsBinding.instance.endOfFrame;
 
-    final homeAlreadyMounted =
-        Get.isRegistered<HomeController>() && Get.previousRoute == Routes.HOME;
-
-    if (homeAlreadyMounted) {
-      // Connexion ouverte depuis l'accueil invité : revenir à l'instance Home
-      // existante au lieu de recréer ses controllers permanents.
-      Get.back();
-      await WidgetsBinding.instance.endOfFrame;
-      _refreshAuthState();
-    } else {
-      // Connexion depuis le démarrage/welcomer : créer Home normalement.
-      Get.offAllNamed(Routes.HOME);
-    }
+    // Reconstruire l'accueil depuis zéro, y compris quand la connexion a été
+    // ouverte depuis l'accueil invité : `SessionReset.onLogin()` vient de
+    // supprimer les controllers permanents remplis de données anonymes, et
+    // `Get.back()` réafficherait une vue dont les controllers n'existent plus.
+    // `offAllNamed` rejoue HomeBinding, qui les recrée sous l'identité connectée.
+    Get.offAllNamed(Routes.HOME);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.snackbar(
@@ -204,18 +195,6 @@ class LoginController extends GetxController {
         borderRadius: 12,
       );
     });
-  }
-
-  /// Met a jour les controllers persistants dependant de l'authentification.
-  /// HomeController lit l'etat d'auth en direct (StorageService), seul
-  /// ProfileController memorise isGuest a l'init : on le rafraichit ici.
-  void _refreshAuthState() {
-    if (Get.isRegistered<ProfileController>()) {
-      Get.find<ProfileController>().refreshAuthState();
-    }
-    if (Get.isRegistered<HomeController>()) {
-      Get.find<HomeController>().refreshAuthState();
-    }
   }
 
   void goToRegister() {

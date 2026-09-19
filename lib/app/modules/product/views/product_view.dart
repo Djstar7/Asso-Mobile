@@ -144,11 +144,18 @@ class ProductView extends GetView<ProductController> {
                     size: 20,
                   ),
                 ),
+                // Le bouton se contentait d'annoncer le partage sans rien
+                // partager. Il ouvre désormais la feuille du système avec le
+                // lien public du produit.
                 onPressed: () {
-                  Get.snackbar(
-                    'Partager',
-                    'Partagez ce produit avec vos amis',
-                    snackPosition: SnackPosition.BOTTOM,
+                  // Rectangle d'ancrage réclamé par iPad : sans lui, iOS
+                  // refuse d'afficher la feuille.
+                  final box = context.findRenderObject() as RenderBox?;
+                  controller.shareProduct(
+                    product,
+                    origin: box == null
+                        ? null
+                        : box.localToGlobal(Offset.zero) & box.size,
                   );
                 },
               ),

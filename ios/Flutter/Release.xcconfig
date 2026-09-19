@@ -1,2 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Liens partagés : rattache Runner.entitlements, qui déclare le domaine
+// associé (applinks:asso-dashboard.sbs). Sans lui, iOS ouvre Safari.
+CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements

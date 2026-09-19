@@ -41,59 +41,105 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      // Un en-tête en bonne et due forme : sans lui, la liste commençait au
+      // tout premier pixel et la barre de recherche passait sous l'heure et
+      // les icônes de réseau.
+      appBar: AppBar(
+        backgroundColor: AppThemeSystem.getBackgroundColor(context),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        titleSpacing: AppThemeSystem.getHorizontalPadding(context),
+        title: Text(
+          'Messages',
+          style: context.textStyle(
+            FontSizeType.h5,
+            fontWeight: FontWeight.w700,
+            color: AppThemeSystem.getPrimaryTextColor(context),
+          ),
+        ),
+        actions: [
+          Obx(
+            () => IconButton(
+              icon: controller.isLoading.value
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppThemeSystem.getSecondaryTextColor(context),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.refresh_rounded,
+                      color: AppThemeSystem.getSecondaryTextColor(context),
+                    ),
+              // Recharger pendant un chargement relançait une seconde
+              // requête par-dessus la première.
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => controller.loadConversations(refresh: true),
+              tooltip: 'Recharger',
+            ),
+          ),
+          SizedBox(width: AppDesign.space1),
+        ],
+      ),
       body: Obx(() {
         final conversations = controller.filteredConversations;
 
-        // Si vide, afficher l'état vide avec barre de recherche
-        if (conversations.isEmpty &&
-            controller.conversations.isNotEmpty &&
-            controller.searchQuery.value.isNotEmpty) {
-          return CustomScrollView(
+        // Aucune conversation du tout : l'écran est vide pour de bon, la
+        // barre de recherche n'aurait rien à filtrer.
+        if (controller.conversations.isEmpty) {
+          return controller.isLoading.value
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: controller.refreshConversations,
+                  color: AppDesign.accent,
+                  child: ListView(
+                    // La liste ne déborde pas : sans cela, on ne peut pas la
+                    // tirer pour réessayer.
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.6,
+                        child: _buildEmptyState(context),
+                      ),
+                    ],
+                  ),
+                );
+        }
+
+        return RefreshIndicator(
+          onRefresh: controller.refreshConversations,
+          color: AppDesign.accent,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               _buildStickySearchBar(context),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _buildSearchEmptyState(context),
-              ),
-            ],
-          );
-        }
-
-        // Si aucune conversation du tout
-        if (controller.conversations.isEmpty) {
-          return _buildEmptyState(context);
-        }
-
-        // Affichage normal avec conversations
-        return CustomScrollView(
-          slivers: [
-            // Barre de recherche épinglée et raflraichessemnt
-            _buildStickySearchBar(context),
-            // Liste des conversations
-            SliverPadding(
-              padding: const EdgeInsets.only(top: 8),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final conversation = conversations[index];
-                    return Column(
-                      children: [
-                        _buildConversationItem(context, conversation),
-                        if (index < conversations.length - 1)
-                          Divider(
-                            height: 1,
-                            indent: 88,
-                            color: AppThemeSystem.getBorderColor(context)
-                                .withOpacity(0.3),
-                          ),
-                      ],
-                    );
-                  },
-                  childCount: conversations.length,
+              if (conversations.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildSearchEmptyState(context),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.only(bottom: AppDesign.space6),
+                  sliver: SliverList.separated(
+                    itemCount: conversations.length,
+                    itemBuilder: (context, index) =>
+                        _buildConversationItem(context, conversations[index]),
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      indent: 88,
+                      endIndent: AppThemeSystem.getHorizontalPadding(context),
+                      color: AppThemeSystem.getBorderColor(context),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       }),
     );
@@ -102,103 +148,20 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
   // ================================
   // BARRE DE RECHERCHE ÉPINGLÉE
   // ================================
-    Widget _buildStickySearchBar(BuildContext context) {
+
+  /// Recherche épinglée en tête de liste.
+  ///
+  /// Le bouton « Recharger » qui la doublait est remonté dans l'en-tête : il
+  /// prenait la largeur d'un carré de 48 px en permanence, alors qu'on s'en
+  /// sert une fois de loin en loin.
+  Widget _buildStickySearchBar(BuildContext context) {
     return SliverPersistentHeader(
       pinned: true,
-      delegate: _SliverAppBarDelegate(
-        minHeight: 80,
-        maxHeight: 80,
-        child: Container(
-          color: AppThemeSystem.getBackgroundColor(context),
-          padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-          child: Row(
-            children: [
-              // Barre de recherche (prend tout l'espace disponible)
-              Expanded(
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.getSurfaceColor(context),
-                    borderRadius: BorderRadius.circular(
-                      AppThemeSystem.getBorderRadius(
-                        context,
-                        BorderRadiusType.medium,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    onChanged: (value) => controller.searchQuery.value = value,
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une conversation...',
-                      hintStyle: context.textStyle(
-                        FontSizeType.body2,
-                        color: AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                      suffixIcon: Obx(
-                        () => controller.searchQuery.value.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () => controller.searchQuery.value = '',
-                                color: AppThemeSystem.getSecondaryTextColor(context),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    style: context.textStyle(FontSizeType.body2),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Bouton de rafraîchissement, à côté
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.getSurfaceColor(context),
-                  borderRadius: BorderRadius.circular(
-                    AppThemeSystem.getBorderRadius(
-                      context,
-                      BorderRadiusType.medium,
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.refresh_rounded,
-                    color: AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                  onPressed: () => controller.loadConversations(refresh: true),
-                  tooltip: 'Recharger',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      delegate: _SearchBarDelegate(controller: controller, context: context),
     );
-  }// ================================
+  }
+
+  // ================================
   // ITEM DE CONVERSATION
   // ================================
 
@@ -573,27 +536,47 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
     );
   }
 }
-
 // ================================
-// SLIVER PERSISTENT HEADER DELEGATE
+// EN-TÊTE ÉPINGLÉ DE LA RECHERCHE
 // ================================
 
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  final double minHeight;
-  final double maxHeight;
-  final Widget child;
+/// Porte la barre de recherche en tête de liste.
+///
+/// Sa hauteur se mesure sur le texte réellement rendu plutôt que d'être fixée
+/// à l'avance : une valeur en dur déborde dès que l'appareil grossit
+/// l'écriture, et un en-tête épinglé doit annoncer sa hauteur d'avance.
+class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
+  _SearchBarDelegate({required this.controller, required BuildContext context})
+      : _height = _measure(context);
 
-  _SliverAppBarDelegate({
-    required this.minHeight,
-    required this.maxHeight,
-    required this.child,
-  });
+  final ChatController controller;
+  final double _height;
+
+  static double _measure(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'Ag',
+        style: TextStyle(
+          fontSize: AppThemeSystem.getFontSize(context, FontSizeType.body2),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    // Le champ : une ligne de texte, son rembourrage vertical, sa bordure ;
+    // puis les marges de la barre elle-même.
+    return painter.height + AppDesign.space3 * 2 + 2 + AppDesign.space3 * 2;
+  }
 
   @override
-  double get minExtent => minHeight;
+  double get minExtent => _height;
 
   @override
-  double get maxExtent => maxHeight;
+  double get maxExtent => _height;
+
+  @override
+  bool shouldRebuild(_SearchBarDelegate oldDelegate) =>
+      oldDelegate._height != _height || oldDelegate.controller != controller;
 
   @override
   Widget build(
@@ -601,13 +584,62 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return SizedBox.expand(child: child);
-  }
+    return Container(
+      // Opaque : les conversations défilent dessous.
+      color: AppThemeSystem.getBackgroundColor(context),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppThemeSystem.getHorizontalPadding(context),
+        vertical: AppDesign.space3,
+      ),
+      alignment: Alignment.center,
+      child: Obx(() {
+        final hasQuery = controller.searchQuery.value.isNotEmpty;
 
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight ||
-        minHeight != oldDelegate.minHeight ||
-        child != oldDelegate.child;
+        return TextField(
+          onChanged: (value) => controller.searchQuery.value = value,
+          textInputAction: TextInputAction.search,
+          style: context.textStyle(FontSizeType.body2),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: 'Rechercher une conversation',
+            hintStyle: context.textStyle(
+              FontSizeType.body2,
+              color: AppThemeSystem.getSecondaryTextColor(context),
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 20,
+              color: AppThemeSystem.getSecondaryTextColor(context),
+            ),
+            suffixIcon: hasQuery
+                ? IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: AppThemeSystem.getSecondaryTextColor(context),
+                    tooltip: 'Effacer',
+                    onPressed: () => controller.searchQuery.value = '',
+                  )
+                : null,
+            filled: true,
+            fillColor: context.ds.surfaceMuted,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: AppDesign.space3,
+              vertical: AppDesign.space3,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              borderSide: BorderSide(color: AppDesign.accent, width: 1.5),
+            ),
+          ),
+        );
+      }),
+    );
   }
 }

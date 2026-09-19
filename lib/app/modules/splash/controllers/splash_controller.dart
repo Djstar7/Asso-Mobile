@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:get/get.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/services/deep_link_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
@@ -17,6 +18,11 @@ class SplashController extends GetxController {
     print('🎬 SPLASH CONTROLLER: onInit CALLED');
     print('========================================');
     developer.log('========== SPLASH STARTED ==========', name: 'SplashController');
+    // Le routeur est monté à ce stade : les liens partagés peuvent viser une
+    // route sans risquer d'arriver avant la première image.
+    if (Get.isRegistered<DeepLinkService>()) {
+      Get.find<DeepLinkService>().start();
+    }
     _initializeCurrencyAndNavigate();
   }
 

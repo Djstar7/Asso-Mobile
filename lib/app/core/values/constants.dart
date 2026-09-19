@@ -48,6 +48,26 @@ class AppConstants {
 
   static const Duration apiTimeout = Duration(seconds: 30);
 
+  // ==========================================================================
+  // Partage & liens universels
+  // --------------------------------------------------------------------------
+  // Un produit partagé prend la forme https://<shareDomain>/produit/{id}.
+  // Sur un appareil où l'application est installée, le système la lui remet
+  // directement (DeepLinkService) ; ailleurs, le serveur redirige vers la
+  // fiche du magasin d'applications.
+  //
+  // Le domaine est surchargeable au build, comme l'URL d'API :
+  //   flutter build apk --dart-define=SHARE_DOMAIN=asso.cm
+  // ==========================================================================
+
+  static const String _envShareDomain = String.fromEnvironment('SHARE_DOMAIN');
+
+  static String get shareDomain =>
+      _envShareDomain.isNotEmpty ? _envShareDomain : 'asso-dashboard.sbs';
+
+  /// Lien public d'un produit, celui que l'on partage.
+  static String productUrl(Object id) => 'https://$shareDomain/produit/$id';
+
   // Storage Keys
   static const String keyUser = 'user';
   static const String keyToken = 'token';

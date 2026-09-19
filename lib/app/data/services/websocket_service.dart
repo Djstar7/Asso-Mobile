@@ -361,6 +361,18 @@ class WebSocketService extends GetxService {
     }
   }
 
+  /// Reconnecter avec le token courant.
+  ///
+  /// Le service est `permanent: true` (main.dart) : son `onInit` ne rejoue
+  /// jamais. Démarrée en mode invité, l'application n'avait aucun token et la
+  /// connexion avait été abandonnée ; après un login il faut donc relancer
+  /// explicitement l'initialisation, sinon le temps réel (chat, suivi de
+  /// commande) reste muet jusqu'au prochain démarrage.
+  Future<void> reconnect() async {
+    await disconnect();
+    await _initializeWebSocket();
+  }
+
   /// Se déconnecter
   Future<void> disconnect() async {
     try {

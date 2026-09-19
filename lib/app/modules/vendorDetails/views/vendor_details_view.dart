@@ -113,13 +113,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
           // La recherche reste sous la main pendant qu'on parcourt la grille :
           // dans une boutique fournie, la faire défiler hors de l'écran
           // obligeait à remonter tout le catalogue pour affiner.
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SearchBarHeader(
-              controller: controller,
-              textScale: MediaQuery.textScalerOf(context).scale(1),
-            ),
-          ),
+          _buildSearchHeader(context),
           Obx(() {
             final visible = controller.visibleProducts;
 
@@ -345,6 +339,28 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
         actionLabel: filtered ? 'Tout afficher' : null,
         onAction: filtered ? controller.resetFilters : null,
       ),
+    );
+  }
+
+  /// Barre de recherche et filtres, épinglée en tête du catalogue.
+  ///
+  /// Portée par un [SliverAppBar] plutôt qu'un [SliverPersistentHeader] : ce
+  /// dernier réclame une hauteur annoncée d'avance, que le champ de saisie
+  /// dépassait de quelques pixels dès que la police rendue s'écartait de
+  /// l'estimation. Ici la barre se mesure sur son propre contenu.
+  Widget _buildSearchHeader(BuildContext context) {
+    final bar = _SearchBar(controller: controller, context: context);
+
+    return SliverAppBar(
+      pinned: true,
+      primary: false,
+      automaticallyImplyLeading: false,
+      backgroundColor: context.ds.canvas,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      // Toute la hauteur passe dans `bottom` : le corps de la barre reste vide.
+      toolbarHeight: 0,
+      bottom: bar,
     );
   }
 
@@ -676,45 +692,53 @@ class _OwnerAvatar extends StatelessWidget {
   }
 }
 
-/// Barre de recherche et filtres, épinglée en tête du catalogue.
+/// Barre de recherche et pastilles de filtre, posée sous l'en-tête.
 ///
-/// Un [SliverPersistentHeader] plutôt qu'un simple bloc : la barre doit
-/// rester atteignable une fois la grille parcourue.
-class _SearchBarHeader extends SliverPersistentHeaderDelegate {
-  _SearchBarHeader({required this.controller, required this.textScale});
+/// Sa hauteur préférée est mesurée sur le texte réellement rendu — police et
+/// réglage d'accessibilité compris — au lieu d'être devinée : un écart de
+/// quelques pixels suffisait à faire déborder la colonne.
+class _SearchBar extends StatelessWidget implements PreferredSizeWidget {
+  _SearchBar({required this.controller, required BuildContext context})
+      : preferredSize = Size.fromHeight(_measure(context));
 
   final VendorDetailsController controller;
 
-  /// Agrandissement de texte choisi par l'appareil.
-  ///
-  /// La hauteur d'un en-tête épinglé est figée d'avance : calculée sur la
-  /// taille de texte par défaut, elle débordait dès que l'appareil réglait
-  /// l'écriture en plus gros.
-  final double textScale;
+  /// Hauteur mesurée à la construction, sur le contexte de la vue.
+  @override
+  final Size preferredSize;
 
-  double get _height {
-    // Champ de saisie, écart, rangée de pastilles, puis marges.
-    const chrome = 12.0 + 24.0;
-    return 44 * textScale + chrome + 32 * textScale;
+  /// Hauteur réellement occupée par les deux rangées et leurs marges.
+  static double _measure(BuildContext context) {
+    // Une ligne de saisie : le texte tel qu'il sera rendu, le rembourrage
+    // vertical du champ, puis sa bordure.
+    final field =
+        _lineHeight(context, FontSizeType.body2) + AppDesign.space3 * 2 + 2;
+    // Une pastille : le texte et son rembourrage.
+    final chips =
+        _lineHeight(context, FontSizeType.caption) + AppDesign.space2 * 2;
+    // Marges de la barre : au-dessus du champ, entre les rangées, en dessous.
+    final chrome = AppDesign.space4 + AppDesign.space3 + AppDesign.space2;
+    return field + chips + chrome;
+  }
+
+  /// Hauteur d'une ligne pour un style donné, réglage d'accessibilité inclus.
+  ///
+  /// Mesurer plutôt qu'estimer : la valeur devinée tombait quelques pixels
+  /// sous la réalité et la colonne débordait de son en-tête.
+  static double _lineHeight(BuildContext context, FontSizeType type) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'Ag',
+        style: TextStyle(fontSize: AppThemeSystem.getFontSize(context, type)),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    return painter.height;
   }
 
   @override
-  double get minExtent => _height;
-
-  @override
-  double get maxExtent => _height;
-
-  @override
-  bool shouldRebuild(_SearchBarHeader oldDelegate) =>
-      oldDelegate.controller != controller ||
-      oldDelegate.textScale != textScale;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       // Opaque : la grille défile dessous, et une barre translucide la
       // laissait transparaître derrière le champ de saisie.
@@ -731,36 +755,47 @@ class _SearchBarHeader extends SliverPersistentHeaderDelegate {
         children: [
           _SearchField(controller: controller),
           SizedBox(height: AppDesign.space3),
-          SizedBox(
-            height: 32 * textScale,
-            child: Obx(() {
-              final sort = controller.sort.value;
-              return ListView(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.zero,
-                children: [
-                  _FilterChip(
-                    label: 'En stock',
-                    icon: Icons.check_circle_outline_rounded,
-                    selected: controller.inStockOnly.value,
-                    onTap: controller.toggleInStockOnly,
-                  ),
-                  SizedBox(width: AppDesign.space2),
-                  for (final option in ShopProductSort.values) ...[
-                    _FilterChip(
-                      label: option.label,
-                      selected: sort == option,
-                      onTap: () => controller.setSort(option),
-                    ),
-                    SizedBox(width: AppDesign.space2),
-                  ],
-                ],
-              );
-            }),
-          ),
+          _FilterRow(controller: controller),
         ],
       ),
     );
+  }
+}
+
+/// Rangée horizontale des filtres et du tri.
+class _FilterRow extends StatelessWidget {
+  const _FilterRow({required this.controller});
+
+  final VendorDetailsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final sort = controller.sort.value;
+
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _FilterChip(
+              label: 'En stock',
+              icon: Icons.check_circle_outline_rounded,
+              selected: controller.inStockOnly.value,
+              onTap: controller.toggleInStockOnly,
+            ),
+            SizedBox(width: AppDesign.space2),
+            for (final option in ShopProductSort.values) ...[
+              _FilterChip(
+                label: option.label,
+                selected: sort == option,
+                onTap: () => controller.setSort(option),
+              ),
+              SizedBox(width: AppDesign.space2),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 

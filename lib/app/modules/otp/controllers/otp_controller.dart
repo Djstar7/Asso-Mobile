@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
-import '../../profile/controllers/profile_controller.dart';
 
 class OtpController extends GetxController {
   late List<TextEditingController> otpControllers;
@@ -304,11 +303,10 @@ class OtpController extends GetxController {
             // On ne bloque pas la navigation même si l'opération échoue
           }
 
-          // Rafraichir l'etat d'auth des controllers persistants pour que le
-          // profil/menus refletent immediatement l'utilisateur connecte.
-          if (Get.isRegistered<ProfileController>()) {
-            Get.find<ProfileController>().refreshAuthState();
-          }
+          // Aucun rafraichissement manuel ici : `SessionReset.onLogin()` a
+          // supprime les controllers permanents de la session invite, et le
+          // `offAllNamed` ci-dessous les recree via les bindings sous l'identite
+          // du compte connecte.
 
           // Navigate based on profile completeness
           final isNew = response.data?['is_new_user'] ?? false;
