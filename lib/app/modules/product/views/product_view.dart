@@ -2191,67 +2191,111 @@ class ProductView extends GetView<ProductController> {
     final options = (grid['quarter_options'] as List? ?? const []).whereType<Map>().toList();
     if (options.isEmpty) return null;
 
+    // Le quartier se déduit de la position choisie sur la carte : pas de liste à parcourir.
     final required = grid['quarter_required'] == true;
-    // Quartier choisi, sinon celui déduit de la position de l'acheteur.
-    final selected = controller.deliveryQuarter.value ?? grid['detected_quarter']?.toString();
+    final quarter = controller.deliveryQuarter.value ?? grid['detected_quarter']?.toString();
+    final zone = grid['destination_zone'];
+    final fromList = controller.deliveryQuarter.value != null;
+
+    if (!required) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.getSurfaceColor(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.location_on_rounded, size: 20, color: AppThemeSystem.primaryColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Livraison à ${quarter ?? grid['city']}${zone != null ? ' (Zone $zone)' : ''}',
+                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    fromList ? 'Quartier choisi dans la liste' : 'D’après votre position sur la carte',
+                    style: context.caption,
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => _showChangeAddressDialog(context),
+              child: const Text('Changer'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final items = <DropdownMenuItem<String>>[
       for (final zone in options)
-        for (final quarter in (zone['quarters'] as List? ?? const []))
+        for (final q in (zone['quarters'] as List? ?? const []))
           DropdownMenuItem(
-            value: quarter.toString(),
-            child: Text('$quarter — ${zone['label']}', overflow: TextOverflow.ellipsis),
+            value: q.toString(),
+            child: Text('$q — ${zone['label']}', overflow: TextOverflow.ellipsis),
           ),
     ];
-    final zoneLabel = grid['destination_zone_label']?.toString();
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: required
-            ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
-            : AppThemeSystem.getSurfaceColor(context),
+        color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: required ? AppThemeSystem.primaryColor : AppThemeSystem.getBorderColor(context),
-        ),
+        border: Border.all(color: AppThemeSystem.primaryColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            required
-                ? 'Choisissez votre quartier à ${grid['city']} pour voir les prix de livraison'
-                : 'Quartier de livraison à ${grid['city']}',
+            'Indiquez où vous faire livrer à ${grid['city']}',
             style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: items.any((i) => i.value == selected) ? selected : null,
-            hint: const Text('Sélectionner un quartier'),
-            items: items,
-            onChanged: (value) {
-              controller.deliveryQuarter.value = value;
-              final productId = controller.currentProductId.value;
-              if (productId != 0) controller.loadDeliveryPartners(productId);
-            },
-          ),
-          if (!required && zoneLabel != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              controller.deliveryQuarter.value == null && grid['detected_quarter'] != null
-                  ? 'Quartier détecté d’après votre position : ${grid['detected_quarter']} ($zoneLabel). Modifiez-le si besoin.'
-                  : 'Vous êtes en $zoneLabel.',
-              style: context.caption,
-            ),
-          ],
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'Le prix dépend de la zone de la boutique, de votre zone et du véhicule (selon le poids du colis).',
+            'Votre position actuelle n’est proche d’aucun quartier desservi. Placez le repère près de chez vous : le prix se calcule tout seul.',
             style: context.caption,
           ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showChangeAddressDialog(context),
+              icon: const Icon(Icons.map_rounded, color: Colors.white),
+              label: const Text('Placer ma position sur la carte', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
+            ),
+          ),
+          if (!controller.showQuarterList.value)
+            Center(
+              child: TextButton(
+                onPressed: () => controller.showQuarterList.value = true,
+                child: const Text('Choisir mon quartier dans la liste'),
+              ),
+            )
+          else ...[
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: items.any((i) => i.value == quarter) ? quarter : null,
+              hint: const Text('Sélectionner un quartier'),
+              items: items,
+              onChanged: (value) {
+                controller.deliveryQuarter.value = value;
+                final productId = controller.currentProductId.value;
+                if (productId != 0) controller.loadDeliveryPartners(productId);
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -3267,6 +3311,10 @@ class ProductView extends GetView<ProductController> {
     final lat = (result['latitude'] as num?)?.toDouble();
     final lon = (result['longitude'] as num?)?.toDouble();
     if (lat == null || lon == null) return;
+
+    // La position choisie sur la carte remplace un quartier choisi dans la liste.
+    controller.deliveryQuarter.value = null;
+    controller.showQuarterList.value = false;
 
     controller.isLoadingLocation.value = true;
     try {

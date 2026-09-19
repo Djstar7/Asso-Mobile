@@ -49,6 +49,18 @@ class DeliveryService {
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }
 
+  /// Couverture de livraison autour d'un point : quartiers et zones desservis,
+  /// partenaires qui livrent à domicile ici, agences de la ville (interurbain).
+  static Future<ApiResponse> getCoverage({
+    required double latitude,
+    required double longitude,
+  }) async {
+    return await ApiProvider.get('/v1/delivery/coverage', queryParams: {
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+  }
+
   /// Check if delivery is available at a location
   static Future<ApiResponse> checkDeliveryAvailability({
     required double latitude,

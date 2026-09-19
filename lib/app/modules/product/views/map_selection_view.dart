@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -6,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/delivery_service.dart';
 
 class MapSelectionView extends StatefulWidget {
   final double? initialLatitude;
@@ -37,6 +39,50 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   List<Map<String, dynamic>> _searchResults = [];
   bool _showSearchResults = false;
 
+  // Couverture de livraison autour de la position (quartiers, zones, partenaires).
+  Map<String, dynamic>? _coverage;
+  bool _isLoadingCoverage = false;
+  Timer? _coverageDebounce;
+  int _coverageRequest = 0;
+
+  /// Mêmes couleurs de zone que l'admin (Partenaires logistiques).
+  static const List<Color> _zoneColors = [
+    Color(0xFFEF4444), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFF3B82F6), Color(0xFF8B5CF6),
+    Color(0xFFEC4899), Color(0xFF14B8A6), Color(0xFFEAB308), Color(0xFF6366F1), Color(0xFF84CC16),
+  ];
+
+  Color _zoneColor(dynamic zone) {
+    final code = zone is num ? zone.toInt() : int.tryParse('$zone') ?? 1;
+    return _zoneColors[(code - 1).clamp(0, 1 << 20) % _zoneColors.length];
+  }
+
+  void _loadCoverage(LatLng position) {
+    if (widget.readOnly) return;
+    _coverageDebounce?.cancel();
+    setState(() => _isLoadingCoverage = true);
+    _coverageDebounce = Timer(const Duration(milliseconds: 400), () async {
+      final request = ++_coverageRequest;
+      final response = await DeliveryService.getCoverage(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      if (!mounted || request != _coverageRequest) return;
+      setState(() {
+        _isLoadingCoverage = false;
+        final coverage = response.data?['coverage'];
+        _coverage = response.success && coverage is Map ? Map<String, dynamic>.from(coverage) : null;
+      });
+    });
+  }
+
+  List<Map<String, dynamic>> _coverageList(String key) =>
+      ((_coverage?[key] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+
+  double _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +92,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       _selectedPosition = LatLng(widget.initialLatitude!, widget.initialLongitude!);
       if (widget.locationName != null && widget.locationName!.isNotEmpty) {
         _selectedAddress = widget.locationName!;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _loadCoverage(_selectedPosition));
       } else {
         _reverseGeocode(_selectedPosition);
       }
@@ -70,6 +117,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
   @override
   void dispose() {
+    _coverageDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _mapController.dispose();
@@ -133,6 +181,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   }
 
   Future<void> _reverseGeocode(LatLng position) async {
+    _loadCoverage(position);
     setState(() {
       _isLoadingAddress = true;
     });
@@ -242,6 +291,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
     _searchFocusNode.unfocus();
     _mapController.move(position, 16.0);
+    _loadCoverage(position);
   }
 
   @override
@@ -293,6 +343,39 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.asso.app',
                 maxZoom: 19,
+              ),
+              // Zones des livreurs (rayon autour du centre).
+              CircleLayer(
+                circles: _coverageList('zones')
+                    .map((z) => CircleMarker(
+                          point: LatLng(_toDouble(z['latitude']), _toDouble(z['longitude'])),
+                          radius: _toDouble(z['radius_km']) * 1000,
+                          useRadiusInMeter: true,
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                          borderColor: const Color(0xFF3B82F6).withValues(alpha: 0.6),
+                          borderStrokeWidth: 1.5,
+                        ))
+                    .toList(),
+              ),
+              // Quartiers desservis, colorés par zone (ex. SOLEX Douala).
+              MarkerLayer(
+                markers: _coverageList('quarters')
+                    .map((q) => Marker(
+                          width: 16,
+                          height: 16,
+                          point: LatLng(_toDouble(q['latitude']), _toDouble(q['longitude'])),
+                          child: Tooltip(
+                            message: '${q['name']} · ${q['zone_label']} (${q['company_name']})',
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _zoneColor(q['zone']).withValues(alpha: 0.85),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
               ),
               MarkerLayer(
                 markers: [
@@ -672,6 +755,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         ],
                       ),
 
+                      if (!widget.readOnly) ...[
+                        const SizedBox(height: 12),
+                        _buildCoverageCard(context),
+                      ],
+
                       // Afficher les coordonnées en mode lecture seule
                       if (widget.readOnly) ...[
                         SizedBox(height: 12),
@@ -744,6 +832,141 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// « Livré ici par … » : partenaires qui livrent à domicile à ce point, sinon agences de la ville.
+  Widget _buildCoverageCard(BuildContext context) {
+    if (_isLoadingCoverage && _coverage == null) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+          ),
+          const SizedBox(width: 8),
+          Text('Recherche des livreurs…',
+              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+        ],
+      );
+    }
+    if (_coverage == null) return const SizedBox.shrink();
+
+    final servedBy = _coverageList('served_by');
+    final agencies = _coverageList('agencies');
+    final served = servedBy.isNotEmpty;
+    final color = served ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
+
+    final lines = <Widget>[
+      for (final s in servedBy)
+        _coverageLine(
+          context,
+          Icons.local_shipping_rounded,
+          s['company_name'].toString(),
+          [
+            if (s['quarter'] != null) 'Quartier ${s['quarter']}',
+            if (s['zone'] != null) 'Zone ${s['zone']}' else s['zone_label']?.toString() ?? '',
+            if ((s['vehicles'] as List?)?.isNotEmpty ?? false) (s['vehicles'] as List).join(', '),
+          ].where((e) => e.isNotEmpty).join(' · '),
+          dotColor: s['zone'] != null ? _zoneColor(s['zone']) : null,
+        ),
+      for (final a in agencies)
+        _coverageLine(
+          context,
+          Icons.warehouse_rounded,
+          '${a['company_name']} — agence à ${a['city']}',
+          (((a['destinations'] as List?) ?? const [])
+                  .whereType<Map>()
+                  .map((d) => d['lead_time'] != null ? '${d['city']} (${d['lead_time']})' : '${d['city']}')
+                  .join(', ')),
+        ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(served ? Icons.check_circle_rounded : Icons.info_outline_rounded, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  served
+                      ? 'Livraison à domicile possible ici'
+                      : agencies.isNotEmpty
+                          ? 'Pas de livraison à domicile ici : retrait en agence'
+                          : 'Aucun livreur ne dessert ce point',
+                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (_isLoadingCoverage)
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+                ),
+            ],
+          ),
+          if (lines.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 120),
+              child: SingleChildScrollView(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: lines),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Text(
+              'Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison.',
+              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _coverageLine(BuildContext context, IconData icon, String title, String detail, {Color? dotColor}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppThemeSystem.grey600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
+                if (detail.isNotEmpty)
+                  Text(detail,
+                      style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          if (dotColor != null)
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(top: 4, left: 6),
+              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
         ],
       ),
     );
