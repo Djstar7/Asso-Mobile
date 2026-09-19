@@ -17,6 +17,8 @@ import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
+import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class ProductView extends GetView<ProductController> {
   const ProductView({super.key});
@@ -90,7 +92,10 @@ class ProductView extends GetView<ProductController> {
         slivers: [
           // App Bar avec images
           SliverAppBar(
-            expandedHeight: 400,
+            // Hauteur proportionnelle : 400 px fixes mangeaient la moitié
+            // d'un petit écran et paraissaient timides sur une tablette.
+            expandedHeight:
+                (MediaQuery.sizeOf(context).height * 0.42).clamp(280.0, 460.0),
             pinned: true,
             backgroundColor: isDark
                 ? AppThemeSystem.darkCardColor
@@ -367,6 +372,39 @@ class ProductView extends GetView<ProductController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // La boutique vient en premier : sur une place de marché, savoir
+          // à qui l'on achète conditionne la confiance avant même le prix.
+          if ((product['shop']?['name']?.toString() ?? '').isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: AppDesign.space2),
+              child: Row(
+                children: [
+                  Icon(Icons.storefront_outlined,
+                      size: 15, color: context.ds.textTertiary),
+                  SizedBox(width: AppDesign.space1 + 2),
+                  Flexible(
+                    child: Text(
+                      product['shop']['name'].toString(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyle(
+                        FontSizeType.caption,
+                        fontWeight: FontWeight.w600,
+                        color: context.ds.textSecondary,
+                      ),
+                    ),
+                  ),
+                  if (ProductCard.isShopCertified(product)) ...[
+                    SizedBox(width: AppDesign.space2),
+                    const AppBadge(
+                      label: 'Vérifié',
+                      tone: AppBadgeTone.info,
+                      icon: Icons.verified_rounded,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           Text(
             product['name']?.toString() ?? 'Produit',
             style: context.textStyle(
@@ -381,7 +419,7 @@ class ProductView extends GetView<ProductController> {
             () => Text(
               controller.formatPrice(controller.unitPriceXaf(product)),
               style: context.textStyle(
-                FontSizeType.h4,
+                FontSizeType.h3,
                 fontWeight: FontWeight.w700,
                 color: context.ds.textPrimary,
               ),
