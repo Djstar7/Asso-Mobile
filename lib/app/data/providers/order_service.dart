@@ -30,6 +30,9 @@ class OrderService {
     int? deliveryCompanyId,
     int? deliveryZoneId,
     int? deliveryRouteId,
+    int? deliveryGridId,
+    String? deliveryVehicle,
+    String? deliveryQuarter,
     String? deliveryCity,
     String? deliveryCountry,
     String walletProvider = 'kpay',
@@ -50,6 +53,10 @@ class OrderService {
       // à domicile depuis l'agence (sans zone = retrait en agence).
       'delivery_route_id': ?deliveryRouteId,
       'delivery_zone_id': ?deliveryZoneId,
+      // Grille zone à zone (ex. SOLEX Douala) : véhicule et quartier choisis.
+      'delivery_grid_id': ?deliveryGridId,
+      'delivery_vehicle': ?deliveryVehicle,
+      'delivery_quarter': ?deliveryQuarter,
       if (deliveryCity != null && deliveryCity.isNotEmpty)
         'delivery_city': deliveryCity,
       if (deliveryCountry != null && deliveryCountry.isNotEmpty)

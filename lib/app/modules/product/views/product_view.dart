@@ -2183,6 +2183,74 @@ class ProductView extends GetView<ProductController> {
 
   /// Partenaires de livraison chiffrés au poids réel (poids × quantité), avec
   /// catégorie, mode, trajet, délai, prix et accès au détail complet.
+  /// Quartier de livraison pour les grilles zone à zone (ex. SOLEX Douala) :
+  /// le prix dépend de la zone du quartier de l'acheteur. Null hors grille.
+  Widget? _buildQuarterPicker(BuildContext context) {
+    final grid = controller.deliveryQuote.value?['city_grid'];
+    if (grid is! Map) return null;
+    final options = (grid['quarter_options'] as List? ?? const []).whereType<Map>().toList();
+    if (options.isEmpty) return null;
+
+    final required = grid['quarter_required'] == true;
+    final selected = controller.deliveryQuarter.value;
+    final items = <DropdownMenuItem<String>>[
+      for (final zone in options)
+        for (final quarter in (zone['quarters'] as List? ?? const []))
+          DropdownMenuItem(
+            value: quarter.toString(),
+            child: Text('$quarter — ${zone['label']}', overflow: TextOverflow.ellipsis),
+          ),
+    ];
+    final zoneLabel = grid['destination_zone_label']?.toString();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: required
+            ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
+            : AppThemeSystem.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: required ? AppThemeSystem.primaryColor : AppThemeSystem.getBorderColor(context),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            required
+                ? 'Choisissez votre quartier à ${grid['city']} pour voir les prix de livraison'
+                : 'Quartier de livraison à ${grid['city']}',
+            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: items.any((i) => i.value == selected) ? selected : null,
+            hint: const Text('Sélectionner un quartier'),
+            items: items,
+            onChanged: (value) {
+              controller.deliveryQuarter.value = value;
+              final productId = controller.currentProductId.value;
+              if (productId != 0) controller.loadDeliveryPartners(productId);
+            },
+          ),
+          if (!required && zoneLabel != null) ...[
+            const SizedBox(height: 6),
+            Text('Vous êtes en $zoneLabel.', style: context.caption),
+          ],
+          const SizedBox(height: 6),
+          Text(
+            'Le prix dépend de la zone de la boutique, de votre zone et du véhicule (selon le poids du colis).',
+            style: context.caption,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDeliveryPartnersSection(BuildContext context) {
     return Obx(() {
       if (controller.isLoadingPartners.value) {
@@ -2229,8 +2297,25 @@ class ProductView extends GetView<ProductController> {
         );
       }
 
+      final quarterPicker = _buildQuarterPicker(context);
+      final quarterRequired =
+          controller.deliveryQuote.value?['city_grid'] is Map &&
+          controller.deliveryQuote.value!['city_grid']['quarter_required'] == true;
+
       if (controller.deliveryPartners.isEmpty) {
         final message = controller.deliveryQuote.value?['message']?.toString();
+        if (quarterPicker != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              quarterPicker,
+              if (!quarterRequired) ...[
+                const SizedBox(height: 12),
+                Text(message ?? 'Aucun partenaire de livraison disponible.', style: context.caption),
+              ],
+            ],
+          );
+        }
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -2257,6 +2342,7 @@ class ProductView extends GetView<ProductController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          ?quarterPicker,
           if (weight != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -2359,6 +2445,12 @@ class ProductView extends GetView<ProductController> {
                               partner.categoryLabel,
                               color: deliveryCategoryColor(partner.serviceType),
                             ),
+                            if (partner.vehicleLabel != null)
+                              DeliveryChip(
+                                partner.vehicleLabel!,
+                                color: AppThemeSystem.primaryColor,
+                                icon: Icons.local_shipping_outlined,
+                              ),
                             DeliveryChip(
                               partner.isAgencyToAgency
                                   ? 'Agence → agence'
@@ -2402,7 +2494,7 @@ class ProductView extends GetView<ProductController> {
                 _partnerInfoRow(
                   context,
                   Icons.schedule_rounded,
-                  'Délai : ${partner.leadTime}',
+                  'Livraison estimée : ${partner.leadTime}',
                 ),
               if (partner.distanceKm != null)
                 _partnerInfoRow(

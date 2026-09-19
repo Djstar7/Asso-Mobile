@@ -251,6 +251,9 @@ class DeliveryPartnerQuote {
   int? get companyId => int.tryParse(raw['company_id']?.toString() ?? '');
   int? get zoneId => int.tryParse(raw['zone_id']?.toString() ?? '');
   int? get routeId => int.tryParse(raw['route_id']?.toString() ?? '');
+  int? get gridId => int.tryParse(raw['grid_id']?.toString() ?? '');
+  String? get vehicle => _toText(raw['vehicle']);
+  String? get vehicleLabel => _toText(raw['vehicle_label']);
   double get price => _toDouble(raw['delivery_price']) ?? 0;
   double get assoCommission => _toDouble(raw['asso_commission']) ?? 0;
   List<DeliveryPriceGridRow> get priceGrid =>
@@ -289,7 +292,8 @@ class DeliveryPartnerQuote {
   }
 
   /// Identifie un devis (même partenaire + même zone/route).
-  String get key => '${raw['company_id']}-${raw['zone_id']}-${raw['route_id']}';
+  String get key =>
+      '${raw['company_id']}-${raw['zone_id']}-${raw['route_id']}-${raw['grid_id']}-${raw['vehicle']}';
 }
 
 /// Formatage commun du poids (« 6 kg », « 2,5 kg »).

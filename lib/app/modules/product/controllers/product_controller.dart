@@ -54,6 +54,9 @@ class ProductController extends GetxController {
   /// (poids manquant côté vendeur) : la commande est alors impossible.
   final deliveryBlockedMessage = RxnString();
 
+  /// Quartier de livraison (grille zone à zone, ex. SOLEX Douala).
+  final deliveryQuarter = RxnString();
+
   /// Ville envoyée pour le devis, reprise telle quelle à la commande.
   String _quotedCity = '';
 
@@ -327,6 +330,7 @@ class ProductController extends GetxController {
         latitude: clientLatitude.value,
         longitude: clientLongitude.value,
         city: _quotedCity,
+        quarter: deliveryQuarter.value,
       );
       if (request != _partnersRequest) return; // réponse périmée
 
@@ -433,8 +437,9 @@ class ProductController extends GetxController {
     // Transporteur : route interurbaine/internationale ; sinon zone urbaine.
     final deliveryRouteId = partner.routeId;
     final deliveryZoneId = partner.zoneId;
+    final deliveryGridId = partner.gridId;
     if (deliveryCompanyId == null ||
-        (deliveryRouteId == null && deliveryZoneId == null)) {
+        (deliveryRouteId == null && deliveryZoneId == null && deliveryGridId == null)) {
       Get.snackbar(
         'Erreur',
         'Le partenaire sélectionné ne contient pas de zone ou de trajet de livraison valide.',
@@ -464,6 +469,9 @@ class ProductController extends GetxController {
         deliveryCompanyId: deliveryCompanyId,
         deliveryZoneId: deliveryZoneId,
         deliveryRouteId: deliveryRouteId,
+        deliveryGridId: deliveryGridId,
+        deliveryVehicle: partner.vehicle,
+        deliveryQuarter: deliveryQuarter.value,
         deliveryCity: _quotedCity.isNotEmpty
             ? _quotedCity
             : currentLocation.value,

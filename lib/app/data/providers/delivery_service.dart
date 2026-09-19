@@ -33,6 +33,7 @@ class DeliveryService {
     double? longitude,
     String? city,
     String? country,
+    String? quarter,
   }) async {
     final params = <String, dynamic>{
       'product_id': productId,
@@ -42,6 +43,8 @@ class DeliveryService {
     if (longitude != null) params['longitude'] = longitude;
     if (city != null && city.isNotEmpty) params['city'] = city;
     if (country != null && country.isNotEmpty) params['country'] = country;
+    // Quartier (grille zone à zone, ex. SOLEX Douala).
+    if (quarter != null && quarter.isNotEmpty) params['quarter'] = quarter;
 
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }
