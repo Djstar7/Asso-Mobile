@@ -57,8 +57,13 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   }
 
   /// Libellé de devise affiché (FCFA pour XAF/XOF, sinon le code ISO).
+  /// Nom court de la devise, tel qu'on l'écrit sur un montant.
+  ///
+  /// Le franc CFA s'écrit « FCFA » à l'usage ; afficher « XAF (FCFA) » dans
+  /// un libellé donnait « Montant (XAF (FCFA)) », avec deux parenthèses
+  /// imbriquées.
   String _currencyLabel(String c) =>
-      (c == 'XAF' || c == 'XOF') ? '$c (FCFA)' : c;
+      (c == 'XAF' || c == 'XOF') ? 'FCFA' : c;
 
   /// Convertit le montant déjà saisi lorsqu'on change de devise d'opérateur.
   Future<void> _convertFieldToCurrency(String from, String to) async {
