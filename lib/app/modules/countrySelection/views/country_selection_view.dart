@@ -449,7 +449,10 @@ class _AlphabetIndex extends GetView<CountrySelectionController> {
 class _CountryTile extends StatelessWidget {
   const _CountryTile({required this.option});
 
-  /// Hauteur d'une ligne, partagée avec [_AlphabetIndex].
+  /// Hauteur d'une ligne à réglage de police normal, partagée avec
+  /// [_AlphabetIndex]. Une police agrandie peut la dépasser : le saut de
+  /// l'index vise alors un peu court, ce qui reste préférable à une ligne
+  /// tronquée.
   static const double height = 60;
 
   final CountryOption option;
@@ -461,10 +464,15 @@ class _CountryTile extends StatelessWidget {
       child: InkWell(
         onTap: () => _showConfirmationSheet(context, option),
         child: Container(
-          // Hauteur fixe : l'index alphabétique calcule sa position de
-          // défilement à partir de cette constante (_CountryTile.height).
-          height: height,
-          padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+          // Hauteur minimale, et non fixe : l'index alphabétique s'appuie
+          // sur cette constante pour calculer sa position de défilement,
+          // mais un grand réglage de police système doit pouvoir la
+          // dépasser plutôt que de déborder.
+          constraints: const BoxConstraints(minHeight: height),
+          padding: EdgeInsets.symmetric(
+            horizontal: context.ds.gutter,
+            vertical: AppDesign.space2,
+          ),
           child: Row(
             children: [
               _CountryAvatar(option: option),
