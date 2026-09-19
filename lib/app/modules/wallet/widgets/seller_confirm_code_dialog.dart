@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/diaspo_service.dart';
 
@@ -52,7 +53,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         'Veuillez entrer le code de confirmation',
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -62,7 +63,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         'Le code doit contenir 6 caractères',
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -94,12 +95,12 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppDesign.success,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.check_circle,
-                    color: Colors.green.shade600,
+                    color: AppDesign.success,
                     size: 48,
                   ),
                 ),
@@ -126,7 +127,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppDesign.success,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -142,7 +143,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                          color: AppDesign.success,
                         ),
                       ),
                     ],
@@ -175,7 +176,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         e.toString().replaceAll('Exception: ', ''),
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
       );
@@ -206,8 +207,8 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.shade400,
-                      Colors.blue.shade600,
+                      AppDesign.info,
+                      AppDesign.info,
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -238,17 +239,17 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: AppDesign.info,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Colors.blue.shade200,
+                      backgroundColor: AppDesign.info,
                       child: Text(
                         widget.buyerName[0].toUpperCase(),
                         style: TextStyle(
-                          color: Colors.blue.shade900,
+                          color: AppDesign.info,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -262,7 +263,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                             'Client',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.blue.shade700,
+                              color: AppDesign.info,
                             ),
                           ),
                           Text(
@@ -270,7 +271,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade900,
+                              color: AppDesign.info,
                             ),
                           ),
                         ],
@@ -281,7 +282,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900,
+                        color: AppDesign.info,
                       ),
                     ),
                   ],
@@ -294,10 +295,10 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                  color: AppDesign.warning,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.amber.shade200,
+                    color: AppDesign.warning,
                     width: 1,
                   ),
                 ),
@@ -305,7 +306,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.amber.shade900,
+                      color: AppDesign.warning,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -314,7 +315,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                         'Demandez au client de vous donner le code secret à 6 chiffres',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.amber.shade900,
+                          color: AppDesign.warning,
                         ),
                       ),
                     ),

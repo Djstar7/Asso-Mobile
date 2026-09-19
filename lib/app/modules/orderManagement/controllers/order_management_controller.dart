@@ -7,6 +7,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/app_design.dart';
 
 class OrderManagementController extends GetxController {
   // Liste complète des commandes
@@ -77,7 +78,7 @@ class OrderManagementController extends GetxController {
         'Erreur',
         'Impossible de charger les commandes',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -267,7 +268,7 @@ class OrderManagementController extends GetxController {
             'Commande validée',
             'Fonds crédités et disponibles. Le livreur a été notifié.',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
+            backgroundColor: AppDesign.success,
             colorText: Colors.white,
           );
         } else {
@@ -275,7 +276,7 @@ class OrderManagementController extends GetxController {
             'Erreur',
             response.message.isNotEmpty ? response.message : 'Impossible de valider la commande',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
         }
@@ -285,7 +286,7 @@ class OrderManagementController extends GetxController {
         'Erreur',
         'Impossible de valider la commande',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -324,7 +325,7 @@ class OrderManagementController extends GetxController {
             ),
             ElevatedButton(
               onPressed: () => Get.back(result: true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: AppDesign.danger),
               child: const Text('Refuser la commande', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -348,7 +349,7 @@ class OrderManagementController extends GetxController {
             'Commande refusée',
             'Le client a été notifié et remboursé.',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.orange,
+            backgroundColor: AppDesign.accent,
             colorText: Colors.white,
           );
         } else {
@@ -356,7 +357,7 @@ class OrderManagementController extends GetxController {
             'Erreur',
             response.message.isNotEmpty ? response.message : 'Impossible de refuser la commande',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
         }
@@ -366,7 +367,7 @@ class OrderManagementController extends GetxController {
         'Erreur',
         'Impossible de refuser la commande',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -408,7 +409,7 @@ class OrderManagementController extends GetxController {
           'Erreur',
           response.message.isNotEmpty ? response.message : 'Impossible de charger les livreurs',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -417,7 +418,7 @@ class OrderManagementController extends GetxController {
         'Erreur',
         'Impossible de charger les livreurs',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

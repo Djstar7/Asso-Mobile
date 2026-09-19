@@ -19,6 +19,7 @@ import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../../../data/services/stripe_native_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Fiche produit GROS + tunnel de commande : palier (cota) → quantité → expédition
 /// → moyen de paiement (sélecteur unifié). Réservé aux commandes en gros.
@@ -156,7 +157,11 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                     icon: const Icon(Icons.arrow_back_rounded),
                     color: AppThemeSystem.getPrimaryTextColor(context),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    // Cible tactile minimale conservée (recommandation Material/WCAG).
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesign.minTapTarget,
+                        minHeight: AppDesign.minTapTarget,
+                      ),
                   ),
                   const Spacer(),
                   Container(
@@ -194,7 +199,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withValues(alpha: 0.15),
+                                color: AppDesign.accent.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text(
@@ -202,7 +207,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFFB45309),
+                                  color: AppDesign.accentText,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -390,8 +395,8 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
   Widget _imgPh() => Container(
     width: 56,
     height: 56,
-    color: const Color(0xFFF1F2F5),
-    child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFB4BCC6)),
+    color: AppDesign.neutral100,
+    child: const Icon(Icons.inventory_2_outlined, color: AppDesign.neutral400),
   );
 
   Widget _buildProductGallery(BuildContext context, WholesaleProduct product) {
@@ -659,7 +664,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                     'Minimum ${t.minQuantity}',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFFB45309),
+                      color: AppDesign.accentText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1015,7 +1020,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         Get.snackbar(
           'Commande payée',
           'Payée avec votre Wallet ASSO. En cas de refus, le montant vous est rendu immédiatement.',
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
           snackPosition: SnackPosition.BOTTOM,
@@ -1028,7 +1033,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
         Get.snackbar(
           'Commande créée',
           'Validez le paiement sur votre téléphone (USSD).',
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
           snackPosition: SnackPosition.BOTTOM,
@@ -1063,7 +1068,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       Get.snackbar(
         'Paiement en cours',
         'La confirmation est automatique. Vous serez notifié.',
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
         snackPosition: SnackPosition.BOTTOM,
@@ -1146,7 +1151,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
       Get.snackbar(
         'Paiement en cours',
         'La confirmation est automatique. Vous serez notifié.',
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
         snackPosition: SnackPosition.BOTTOM,
@@ -1173,7 +1178,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
           Get.snackbar(
             'Paiement confirmé',
             'Votre commande en gros est payée. En attente de validation du vendeur.',
-            backgroundColor: Colors.green,
+            backgroundColor: AppDesign.success,
             colorText: Colors.white,
             duration: const Duration(seconds: 4),
             snackPosition: SnackPosition.BOTTOM,
@@ -1183,7 +1188,7 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
           Get.snackbar(
             'Paiement échouéPaiement confirm',
             "Le paiement n'a pas abouti.",
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),
             snackPosition: SnackPosition.BOTTOM,

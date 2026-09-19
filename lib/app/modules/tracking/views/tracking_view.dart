@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../controllers/tracking_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class TrackingView extends GetView<TrackingController> {
   const TrackingView({super.key});
@@ -262,19 +263,19 @@ class TrackingView extends GetView<TrackingController> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.1),
+                        color: AppDesign.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppDesign.warning.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.key_rounded, color: Colors.amber.shade800, size: 18),
+                          Icon(Icons.key_rounded, color: AppDesign.warning, size: 18),
                           const SizedBox(width: 8),
                           Text('Code: ',
-                            style: context.textStyle(FontSizeType.body2, color: Colors.amber.shade800)),
+                            style: context.textStyle(FontSizeType.body2, color: AppDesign.warning)),
                           Text(shipment['confirmationCode'],
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4, color: Colors.amber.shade800)),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4, color: AppDesign.warning)),
                         ],
                       ),
                     ),
@@ -285,10 +286,10 @@ class TrackingView extends GetView<TrackingController> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded, size: 16, color: Colors.green),
+                      const Icon(Icons.check_circle_rounded, size: 16, color: AppDesign.success),
                       const SizedBox(width: 6),
                       Text('Livré le ${shipment['deliveredDate'] ?? ''}',
-                        style: context.textStyle(FontSizeType.caption, color: Colors.green, fontWeight: FontWeight.w600)),
+                        style: context.textStyle(FontSizeType.caption, color: AppDesign.success, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],
@@ -297,11 +298,11 @@ class TrackingView extends GetView<TrackingController> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.cancel_rounded, size: 16, color: Colors.red),
+                      const Icon(Icons.cancel_rounded, size: 16, color: AppDesign.danger),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text('Raison: ${shipment['cancelReason'] ?? 'Non spécifiée'}',
-                          style: context.textStyle(FontSizeType.caption, color: Colors.red)),
+                          style: context.textStyle(FontSizeType.caption, color: AppDesign.danger)),
                       ),
                     ],
                   ),
@@ -462,26 +463,26 @@ class TrackingView extends GetView<TrackingController> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.1),
+                          color: AppDesign.warning.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                          border: Border.all(color: AppDesign.warning.withValues(alpha: 0.3)),
                         ),
                         child: Column(
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.key_rounded, color: Colors.amber.shade800, size: 20),
+                                Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
                                 const SizedBox(width: 8),
-                                Text('Code de confirmation', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: Colors.amber.shade800)),
+                                Text('Code de confirmation', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppDesign.warning)),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Text(shipment['confirmationCode'],
-                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: Colors.amber.shade800)),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: AppDesign.warning)),
                             const SizedBox(height: 8),
                             Text('Communiquez ce code au livreur',
-                              style: context.textStyle(FontSizeType.caption, color: Colors.amber.shade800)),
+                              style: context.textStyle(FontSizeType.caption, color: AppDesign.warning)),
                           ],
                         ),
                       ),
@@ -514,7 +515,7 @@ class TrackingView extends GetView<TrackingController> {
                             ),
                             if (shipment['deliveryPersonPhone'] != null)
                               IconButton(
-                                icon: const Icon(Icons.phone, color: Colors.green),
+                                icon: const Icon(Icons.phone, color: AppDesign.success),
                                 onPressed: () {},
                               ),
                           ],

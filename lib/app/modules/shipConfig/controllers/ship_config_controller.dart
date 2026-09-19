@@ -7,6 +7,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/deliverer_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../models/sync_models.dart';
+import '../../../core/utils/app_design.dart';
 
 class ShipConfigController extends GetxController {
   // Storage
@@ -436,7 +437,7 @@ class ShipConfigController extends GetxController {
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.blue.shade600,
+      backgroundColor: AppDesign.info,
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,

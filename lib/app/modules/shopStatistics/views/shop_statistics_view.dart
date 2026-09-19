@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/shop_statistics_controller.dart';
 
 /// Écran « Statistiques de ma boutique » (P8).
@@ -77,35 +79,30 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
         label: 'Visites de la boutique',
         value: _count.format(controller.intOf(t, 'visits')),
         trendKey: 'visits',
-        color: AppThemeSystem.infoColor,
       ),
       _KpiCard(
         icon: Icons.people_outline,
         label: 'Visiteurs uniques',
         value: _count.format(controller.intOf(t, 'unique_visitors')),
         trendKey: 'unique_visitors',
-        color: Colors.indigo,
       ),
       _KpiCard(
         icon: Icons.visibility_outlined,
         label: 'Produits consultés',
         value: _count.format(controller.intOf(t, 'product_views')),
         trendKey: 'product_views',
-        color: Colors.purple,
       ),
       _KpiCard(
         icon: Icons.chat_bubble_outline,
         label: 'Contacts reçus',
         value: _count.format(controller.intOf(t, 'contacts')),
         trendKey: 'contacts',
-        color: Colors.teal,
       ),
       _KpiCard(
         icon: Icons.shopping_cart_outlined,
         label: 'Commandes',
         value: _count.format(controller.intOf(t, 'orders')),
         trendKey: 'orders',
-        color: AppThemeSystem.warningColor,
         hint: '${controller.intOf(t, 'pending_orders')} en attente',
       ),
       _KpiCard(
@@ -113,7 +110,6 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
         label: 'Ventes validées',
         value: _count.format(controller.intOf(t, 'validated_orders')),
         trendKey: 'validated_orders',
-        color: AppThemeSystem.successColor,
         hint: '${_count.format(controller.intOf(t, 'items_sold'))} article(s)',
       ),
       _KpiCard(
@@ -121,14 +117,12 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
         label: 'Chiffre d\'affaires',
         value: controller.formatPrice(controller.doubleOf(t, 'revenue')),
         trendKey: 'revenue',
-        color: Colors.green.shade700,
         hint: 'Panier moyen ${controller.formatPrice(controller.doubleOf(t, 'average_basket'))}',
       ),
       _KpiCard(
         icon: Icons.percent,
         label: 'Taux de conversion',
         value: '${controller.doubleOf(t, 'conversion_rate').toStringAsFixed(1)} %',
-        color: Colors.pink,
         hint: 'Ventes / visiteurs',
       ),
     ];
@@ -177,7 +171,6 @@ class _KpiCard extends GetView<ShopStatisticsController> {
   final IconData icon;
   final String label;
   final String value;
-  final Color color;
   final String? trendKey;
   final String? hint;
 
@@ -185,7 +178,6 @@ class _KpiCard extends GetView<ShopStatisticsController> {
     required this.icon,
     required this.label,
     required this.value,
-    required this.color,
     this.trendKey,
     this.hint,
   });
@@ -205,12 +197,12 @@ class _KpiCard extends GetView<ShopStatisticsController> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: EdgeInsets.all(AppDesign.space2 - 1),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  color: context.ds.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppDesign.radiusXs),
                 ),
-                child: Icon(icon, color: color, size: 18),
+                child: Icon(icon, color: context.ds.textSecondary, size: 17),
               ),
               const Spacer(),
               if (trendKey != null && controller.hasTrends) _trendBadge(controller.trendOf(trendKey!)),
@@ -244,30 +236,27 @@ class _KpiCard extends GetView<ShopStatisticsController> {
     );
   }
 
+  /// Badge d'évolution.
+  ///
+  /// C'est le seul endroit coloré de la carte : la teinte y porte une
+  /// information (hausse, baisse, stabilité) et non une décoration.
   Widget _trendBadge(double? trend) {
-    final Color c;
-    final String text;
     if (trend == null) {
-      c = AppThemeSystem.successColor;
-      text = 'nouveau';
-    } else if (trend > 0) {
-      c = AppThemeSystem.successColor;
-      text = '+${trend.toStringAsFixed(0)} %';
-    } else if (trend < 0) {
-      c = AppThemeSystem.errorColor;
-      text = '${trend.toStringAsFixed(0)} %';
-    } else {
-      c = Colors.grey;
-      text = '=';
+      return const AppBadge(label: 'nouveau', tone: AppBadgeTone.info);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text, style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w600)),
-    );
+    if (trend > 0) {
+      return AppBadge(
+        label: '+${trend.toStringAsFixed(0)} %',
+        tone: AppBadgeTone.success,
+      );
+    }
+    if (trend < 0) {
+      return AppBadge(
+        label: '${trend.toStringAsFixed(0)} %',
+        tone: AppBadgeTone.danger,
+      );
+    }
+    return const AppBadge(label: 'stable');
   }
 }
 
@@ -311,7 +300,6 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
                     )
                   : _BarChart(
                       values: values,
-                      color: AppThemeSystem.primaryColor,
                       formatter: (v) => metric == StatsMetric.revenue
                           ? controller.formatPrice(v)
                           : v.toStringAsFixed(0),
@@ -344,10 +332,9 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
 /// Histogramme léger sans dépendance ; un appui long affiche la valeur.
 class _BarChart extends StatelessWidget {
   final List<double> values;
-  final Color color;
   final String Function(double) formatter;
 
-  const _BarChart({required this.values, required this.color, required this.formatter});
+  const _BarChart({required this.values, required this.formatter});
 
   @override
   Widget build(BuildContext context) {
@@ -366,7 +353,11 @@ class _BarChart extends StatelessWidget {
                 child: Container(
                   height: math.max(2, constraints.maxHeight * ratio),
                   decoration: BoxDecoration(
-                    color: v > 0 ? color : color.withValues(alpha: 0.15),
+                    // Les barres reprennent l'accent de marque ; les valeurs
+                    // nulles restent visibles en trace discrète.
+                    color: v > 0
+                        ? AppDesign.accent
+                        : AppDesign.accent.withValues(alpha: 0.15),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
                   ),
                 ),
@@ -414,8 +405,7 @@ class _TopProductsCard extends GetView<ShopStatisticsController> {
                 controller.formatPrice(controller.doubleOf(p, 'revenue')),
                 style: context.body2.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppThemeSystem.successColor,
-                ),
+                          ),
               ),
             );
           }).toList(),

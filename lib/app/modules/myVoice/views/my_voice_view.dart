@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../controllers/my_voice_controller.dart';
 import '../../../data/models/post.dart';
+import '../../../core/utils/app_design.dart';
 
 class MyVoiceView extends GetView<MyVoiceController> {
   const MyVoiceView({super.key});
@@ -178,13 +179,18 @@ class MyVoiceView extends GetView<MyVoiceController> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            (post.isAnonymous && !post.isMyPost)
-                                ? 'ANONYME'
-                                : (post.user?.fullName ?? 'Anonyme'),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Flexible(
+                            child: Text(
+                              (post.isAnonymous && !post.isMyPost)
+                                  ? 'ANONYME'
+                                  : (post.user?.fullName ?? 'Anonyme'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                fontWeight: FontWeight.w700,
+                                color: context.ds.textPrimary,
+                              ),
                             ),
                           ),
                           // Afficher le badge "Anonyme" uniquement sur MES posts anonymes
@@ -229,7 +235,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                     },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'edit', child: Text('Modifier')),
-                      PopupMenuItem(value: 'delete', child: Text('Supprimer', style: TextStyle(color: Colors.red))),
+                      PopupMenuItem(value: 'delete', child: Text('Supprimer', style: TextStyle(color: AppDesign.danger))),
                     ],
                   ),
               ],
@@ -285,13 +291,13 @@ class MyVoiceView extends GetView<MyVoiceController> {
                             ? Icons.thumb_down
                             : Icons.thumb_down_outlined,
                         size: 20,
-                        color: post.isDisliked ? Colors.red : Colors.grey,
+                        color: post.isDisliked ? AppDesign.danger : Colors.grey,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${post.dislikesCount}',
                         style: TextStyle(
-                          color: post.isDisliked ? Colors.red : Colors.grey,
+                          color: post.isDisliked ? AppDesign.danger : Colors.grey,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

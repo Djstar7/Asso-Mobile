@@ -8,6 +8,7 @@ import '../../../routes/app_pages.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import 'kpay_phone_selector.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Bottom sheet pour initier un retrait Mobile Money (KPay)
 class WithdrawalBottomSheet extends StatefulWidget {
@@ -142,7 +143,11 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                       onPressed: () => Get.back(),
                       icon: const Icon(Icons.close),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      // Cible tactile minimale conservée (recommandation Material/WCAG).
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesign.minTapTarget,
+                        minHeight: AppDesign.minTapTarget,
+                      ),
                     ),
                   ],
                 ),

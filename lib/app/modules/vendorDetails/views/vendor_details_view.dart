@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/vendor_details_controller.dart';
+import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class VendorDetailsView extends GetView<VendorDetailsController> {
   const VendorDetailsView({super.key});
@@ -140,12 +143,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
               horizontal: AppThemeSystem.getHorizontalPadding(context),
             ),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isTablet ? 3 : 2,
-                childAspectRatio: 0.7,
-                mainAxisSpacing: AppThemeSystem.getElementSpacing(context),
-                crossAxisSpacing: AppThemeSystem.getElementSpacing(context),
-              ),
+              gridDelegate: ProductCard.gridDelegate(context),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final product = controller.products[index];
@@ -208,12 +206,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppThemeSystem.primaryColor,
-                            AppThemeSystem.tertiaryColor,
-                          ],
-                        ),
+                        color: AppDesign.accent,
                       ),
                     ),
                   ),
@@ -233,12 +226,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
               )
             : Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppThemeSystem.primaryColor,
-                      AppThemeSystem.tertiaryColor,
-                    ],
-                  ),
+                  color: AppDesign.accent,
                 ),
                 child: Center(
                   child: Icon(
@@ -294,10 +282,10 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Color(0xFF1E88E5).withValues(alpha: 0.1),
+                    color: AppDesign.info.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Color(0xFF1E88E5).withValues(alpha: 0.3),
+                      color: AppDesign.info.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -306,14 +294,14 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
                       Icon(
                         Icons.verified_rounded,
                         size: 16,
-                        color: Color(0xFF1E88E5),
+                        color: AppDesign.info,
                       ),
                       SizedBox(width: 4),
                       Text(
                         'Certifié',
                         style: context.textStyle(
                           FontSizeType.caption,
-                          color: Color(0xFF1E88E5),
+                          color: AppDesign.info,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -418,12 +406,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
   Widget _buildOwnerAvatarPlaceholder() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppThemeSystem.primaryColor,
-            AppThemeSystem.tertiaryColor,
-          ],
-        ),
+        color: AppDesign.accent,
       ),
       child: Icon(
         Icons.person_rounded,
@@ -458,7 +441,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             icon: Icons.star_rounded,
             label: 'Note moyenne',
             value: averageRating is num ? averageRating.toStringAsFixed(1) : averageRating.toString(),
-            valueColor: Colors.amber,
+            valueColor: AppDesign.warning,
           ),
         ),
         SizedBox(width: AppThemeSystem.getElementSpacing(context)),
@@ -568,145 +551,48 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
   }
 
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
-    final productName = product['name']?.toString() ?? 'Produit';
-    final productPrice = product['price_xaf'] ?? product['price'] ?? 0;
-    final productStock = product['stock'] ?? 0;
+    final price = product['price_xaf'] ?? product['price'] ?? 0;
+    final stock = product['stock'] ?? 0;
+    final isOutOfStock = stock is num && stock <= 0;
 
-    // Get images - prioritize primary_image, then try images array
-    String? productImage;
-    if (product['primary_image'] != null && product['primary_image'].toString().isNotEmpty) {
-      productImage = product['primary_image'].toString();
-    } else if (product['images'] != null && product['images'] is List && (product['images'] as List).isNotEmpty) {
-      final images = product['images'] as List;
-      if (images.isNotEmpty) {
-        productImage = images[0].toString();
-      }
+    String? image;
+    final primary = product['primary_image']?.toString();
+    if (primary != null && primary.isNotEmpty) {
+      image = primary;
+    } else if (product['images'] is List &&
+        (product['images'] as List).isNotEmpty) {
+      image = (product['images'] as List).first.toString();
     }
 
-    return InkWell(
+    return ProductCard(
+      name: product['name']?.toString() ?? 'Produit',
+      price: controller.formatPrice(
+        price is num ? price.toDouble() : double.tryParse('$price') ?? 0,
+      ),
+      badgeLabel: isOutOfStock ? 'Épuisé' : null,
+      badgeTone: AppBadgeTone.neutral,
+      imageBuilder: image == null || image.isEmpty
+          ? null
+          : (context) => Image.network(
+                image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+              ),
       onTap: () => controller.onProductTap(product),
-      borderRadius: BorderRadius.circular(
-        AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(
-            AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
-                    AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-                  ),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    productImage != null && productImage.isNotEmpty
-                        ? Image.network(
-                            productImage,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppThemeSystem.primaryColor,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                          )
-                        : _buildImagePlaceholder(),
-                    // Stock badge
-                    if (productStock <= 0)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.errorColor,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Épuisé',
-                            style: context.textStyle(
-                              FontSizeType.overline,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            // Product Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      productName,
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      controller.formatPrice(double.tryParse(productPrice.toString()) ?? 0),
-                      style: context.textStyle(
-                        FontSizeType.body1,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildImagePlaceholder() {
-    return Container(
-      color: AppThemeSystem.grey200,
-      child: Icon(
-        Icons.image_outlined,
-        size: 40,
-        color: AppThemeSystem.grey400,
+    return Builder(
+      builder: (context) => ColoredBox(
+        color: context.ds.surfaceMuted,
+        child: Center(
+          child: Icon(
+            Icons.image_outlined,
+            size: 26,
+            color: context.ds.textTertiary,
+          ),
+        ),
       ),
     );
   }

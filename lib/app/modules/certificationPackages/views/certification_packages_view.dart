@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/certification_packages_controller.dart';
 import '../../packageSubscription/widgets/sales_code_field.dart';
@@ -32,7 +33,7 @@ class CertificationPackagesView
         centerTitle: false,
         title: Row(
           children: [
-            Icon(Icons.verified, color: const Color(0xFF1DA1F2), size: 28),
+            Icon(Icons.verified, color: AppDesign.info, size: 28),
             const SizedBox(width: 12),
             Text(
               'Certification',
@@ -125,14 +126,14 @@ class CertificationPackagesView
       padding: EdgeInsets.all(context.horizontalPadding * 1.5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF1DA1F2), const Color(0xFF0D7FC6)],
+          colors: [AppDesign.info, AppDesign.infoText],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: context.borderRadius(BorderRadiusType.large),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1DA1F2).withValues(alpha: 0.3),
+            color: AppDesign.info.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -183,7 +184,7 @@ class CertificationPackagesView
         'icon': Icons.verified_user,
         'title': 'Badge de confiance',
         'description': 'Badge bleu affiché sur votre profil',
-        'color': const Color(0xFF1DA1F2),
+        'color': AppDesign.info,
       },
       {
         'icon': Icons.star,
@@ -407,12 +408,7 @@ class CertificationPackagesView
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppThemeSystem.warningColor,
-                            AppThemeSystem.warningColor.withValues(alpha: 0.8),
-                          ],
-                        ),
+                        color: AppThemeSystem.warningColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -615,7 +611,7 @@ class CertificationPackagesView
         'Commande créée !',
         'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );
@@ -643,7 +639,7 @@ class CertificationPackagesView
       'Boutique certifiée ✅',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
+      backgroundColor: AppDesign.success,
       colorText: Colors.white,
       duration: const Duration(seconds: 5),
     );
@@ -686,7 +682,7 @@ class CertificationPackagesView
         'Paiement en cours',
         'Votre paiement est en cours de confirmation. Vous serez notifié.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );

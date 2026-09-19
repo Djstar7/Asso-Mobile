@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_booking_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoBookingView extends GetView<DiaspoBookingController> {
   const DiaspoBookingView({super.key});
@@ -12,7 +13,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : const Color(0xFFF5F6F8),
+      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
         title: const Text('Réserver des kilos'),
         centerTitle: true,
@@ -52,14 +53,14 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
   }
 
   Color _card(bool isDark) => isDark ? AppThemeSystem.darkCardColor : Colors.white;
-  Color _muted(bool isDark) => isDark ? Colors.white70 : const Color(0xFF6B7280);
-  Color _title(bool isDark) => isDark ? Colors.white : const Color(0xFF111827);
+  Color _muted(bool isDark) => isDark ? Colors.white70 : AppDesign.neutral500;
+  Color _title(bool isDark) => isDark ? Colors.white : AppDesign.neutral900;
 
   BoxDecoration _cardDeco(bool isDark) => BoxDecoration(
         color: _card(isDark),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFECECEF),
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppDesign.neutral200,
         ),
         boxShadow: isDark
             ? null
@@ -97,14 +98,14 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
             children: [
               Column(
                 children: [
-                  const Icon(Icons.flight_takeoff, color: Color(0xFF16A34A), size: 20),
+                  const Icon(Icons.flight_takeoff, color: AppDesign.success, size: 20),
                   Container(
                     width: 2,
                     height: 26,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     color: _muted(isDark).withValues(alpha: 0.3),
                   ),
-                  const Icon(Icons.flight_land, color: Color(0xFFDC2626), size: 20),
+                  const Icon(Icons.flight_land, color: AppDesign.danger, size: 20),
                 ],
               ),
               const SizedBox(width: 14),
@@ -149,7 +150,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                   isDark,
                   label: 'Disponible',
                   value: '${offer.remainingKg.toStringAsFixed(1)} kg',
-                  valueColor: const Color(0xFF16A34A),
+                  valueColor: AppDesign.success,
                 ),
               ),
             ],
@@ -195,7 +196,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                   decoration: InputDecoration(
                     suffixText: 'kg',
                     filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF5F6F8),
+                    fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : AppDesign.neutral50,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,

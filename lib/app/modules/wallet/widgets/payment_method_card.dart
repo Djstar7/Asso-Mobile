@@ -2,6 +2,8 @@ import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:asso/app/core/utils/responsive.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/app_design.dart';
+
 /// Card pour afficher les méthodes de paiement avec image en background
 class PaymentMethodCard extends StatelessWidget {
   final String imageAsset;
@@ -54,8 +56,8 @@ class PaymentMethodCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            overlayColor ?? Colors.blue.shade700,
-                            overlayColor?.withValues(alpha: 0.8) ?? Colors.blue.shade900,
+                            overlayColor ?? AppDesign.info,
+                            overlayColor?.withValues(alpha: 0.8) ?? AppDesign.info,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,

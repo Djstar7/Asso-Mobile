@@ -46,12 +46,17 @@ android {
         versionName = flutter.versionName
     }
 
+    // La config de signature n'est creee que si key.properties est present.
+    // Sans ce garde-fou, file("") leve "Cannot convert '' to File" et casse
+    // aussi les builds debug sur un poste sans keystore.
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "")
-            storePassword = keystoreProperties.getProperty("storePassword")
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
@@ -59,7 +64,9 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("release")
+            // Retombe sur la signature debug quand aucun keystore n'est configure.
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

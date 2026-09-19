@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../utils/app_theme_system.dart';
+import '../../core/utils/app_design.dart';
 
 /// Couleurs par défaut quand l'équipe ASSO n'a pas choisi de teinte précise.
 class VariantPalette {

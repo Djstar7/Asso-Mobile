@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../storeManagement/models/store_models.dart';
 import '../controllers/inventory_list_controller.dart';
@@ -101,12 +102,7 @@ class InventoryListView extends GetView<InventoryListController> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    AppThemeSystem.tertiaryColor.withValues(alpha: 0.1),
-                  ],
-                ),
+                color: AppDesign.accentSubtle,
                 shape: BoxShape.circle,
               ),
               child: Icon(

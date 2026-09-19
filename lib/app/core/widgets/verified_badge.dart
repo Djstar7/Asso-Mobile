@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/app_design.dart';
 
 /// Blue verified badge widget for certified shops/vendors
 /// Usage: VerifiedBadge(isCertified: shop['is_certified'] ?? false)
@@ -21,7 +22,7 @@ class VerifiedBadge extends StatelessWidget {
     return Icon(
       Icons.verified,
       size: size,
-      color: color ?? const Color(0xFF1DA1F2), // Twitter blue
+      color: color ?? AppDesign.info, // Twitter blue
     );
   }
 }
@@ -45,7 +46,7 @@ class VerifiedBadgeWithLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isCertified) return const SizedBox.shrink();
 
-    final badgeColor = color ?? const Color(0xFF1DA1F2);
+    final badgeColor = color ?? AppDesign.info;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

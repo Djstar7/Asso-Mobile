@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'kpay_phone_selector.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Bottom sheet de paiement KPay direct (achat produit, diaspo…).
 /// Affiche le montant à payer + le sélecteur pays→opérateur→numéro et renvoie
@@ -207,7 +208,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B2530),
+                                  color: AppDesign.neutral900,
                                 ),
                               ),
                       ],

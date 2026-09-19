@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
 import '../controllers/search_controller.dart' as search;
+import '../../../core/utils/app_design.dart';
 
 class SearchView extends GetView<search.SearchController> {
   const SearchView({super.key});
@@ -512,7 +513,7 @@ class SearchView extends GetView<search.SearchController> {
                             : Icons.favorite_border,
                         size: 16,
                         color: isFavorite
-                            ? Colors.red
+                            ? AppDesign.danger
                             : AppThemeSystem.grey600,
                       ),
                     ),

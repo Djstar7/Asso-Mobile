@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/vendor_dashboard_controller.dart';
@@ -269,7 +270,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF1DA1F2).withValues(alpha: 0.5),
+                                  color: AppDesign.info.withValues(alpha: 0.5),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -277,7 +278,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                             ),
                             child: Icon(
                               Icons.verified,
-                              color: const Color(0xFF1DA1F2),
+                              color: AppDesign.info,
                               size: 22,
                             ),
                           ),
@@ -470,6 +471,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           SizedBox(height: 4),
           Text(
             title,
+            // Les libellés sont dynamiques (« Visites (12 sur 7 j) ») et la
+            // carte n'occupe qu'une demi-largeur : sans ces contraintes, le
+            // texte débordait.
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: context.caption.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -531,6 +537,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             title: 'Gérer les commandes',
             subtitle: 'Consultez vos commandes',
             badge: controller.pendingOrders.value,
+            isUrgent: true,
             onTap: () async {
               await Get.to(
                 () => const OrderManagementView(),
@@ -584,7 +591,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    int? badge, // NEW: Badge parameter
+    int? badge,
+    /// Colore le compteur en rouge : réservé à ce qui demande une action.
+    bool isUrgent = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -617,37 +626,37 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     size: context.deviceType == DeviceType.mobile ? 24 : 32,
                   ),
                 ),
-                // Badge
-                if (badge != null)
+                // Compteur.
+                //
+                // Masqué à zéro : un « 0 » en rouge signalait une urgence
+                // là où il n'y a simplement rien à traiter. Le rouge est
+                // réservé aux commandes réellement en attente ; un simple
+                // décompte informatif reste neutre.
+                if (badge != null && badge > 0)
                   Positioned(
-                    top: -2,
-                    right: 2,
+                    top: -4,
+                    right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.errorColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppThemeSystem.errorColor.withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDesign.space1 + 1,
+                        vertical: 1,
                       ),
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      decoration: BoxDecoration(
+                        color: isUrgent ? AppDesign.danger : AppDesign.neutral700,
+                        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                        border: Border.all(color: context.ds.surface, width: 2),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 20),
                       child: Text(
                         badge > 99 ? '99+' : badge.toString(),
-                        style: context.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
                         textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'SF-Pro',
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ),
@@ -755,17 +764,20 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         // Pas de package : afficher CTA
         return Container(
           padding: EdgeInsets.all(context.horizontalPadding),
+          // Bandeau d'information : fond très clair et bordure discrète.
+          // L'ancien liseré plein pleine largeur criait plus fort que les
+          // chiffres de la boutique, qui sont le vrai sujet de l'écran.
           decoration: BoxDecoration(
-            color: AppThemeSystem.warningColor.withValues(alpha: 0.1),
+            color: AppDesign.warningSubtle,
             borderRadius: context.borderRadius(BorderRadiusType.medium),
             border: Border.all(
-              color: AppThemeSystem.warningColor,
+              color: AppDesign.warning.withValues(alpha: 0.35),
               width: 2,
             ),
           ),
           child: Column(
             children: [
-              Icon(Icons.warning_amber, color: AppThemeSystem.warningColor, size: 48),
+              Icon(Icons.info_outline_rounded, color: AppDesign.warningText, size: 28),
               SizedBox(height: 12),
               Text(
                 'Aucun package actif',
@@ -818,14 +830,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           Container(
             padding: EdgeInsets.all(context.horizontalPadding),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  AppThemeSystem.successColor.withValues(alpha: 0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppDesign.accentSubtle,
               borderRadius: context.borderRadius(BorderRadiusType.large),
               border: Border.all(
                 color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),

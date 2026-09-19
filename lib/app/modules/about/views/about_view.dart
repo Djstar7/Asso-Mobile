@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/about_controller.dart';
 
@@ -60,14 +61,7 @@ class AboutView extends GetView<AboutController> {
       width: double.infinity,
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppThemeSystem.primaryColor,
-            AppThemeSystem.primaryColor.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppThemeSystem.primaryColor,
       ),
       child: Column(
         children: [

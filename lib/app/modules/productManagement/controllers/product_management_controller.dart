@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class ProductManagementController extends GetxController {
   // Observable variables
@@ -140,7 +141,7 @@ class ProductManagementController extends GetxController {
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF44336),
+              backgroundColor: AppDesign.danger,
             ),
             child: const Text(
               'Supprimer',
@@ -179,7 +180,7 @@ class ProductManagementController extends GetxController {
           'Succès',
           message,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF4CAF50),
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
@@ -189,7 +190,7 @@ class ProductManagementController extends GetxController {
           'Erreur',
           response.message ?? 'Impossible de supprimer le produit',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFF44336),
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -199,7 +200,7 @@ class ProductManagementController extends GetxController {
         'Erreur',
         'Une erreur est survenue: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFF44336),
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/profile_controller.dart';
 
@@ -106,11 +107,7 @@ class ProfileView extends GetView<ProfileController> {
         bottom: AppThemeSystem.getHorizontalPadding(context),
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppThemeSystem.primaryColor, AppThemeSystem.tertiaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppDesign.accent,
       ),
       child: Column(
         children: [
@@ -156,12 +153,7 @@ class ProfileView extends GetView<ProfileController> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 4),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.3),
-                      Colors.white.withValues(alpha: 0.1),
-                    ],
-                  ),
+                  color: Colors.white.withValues(alpha: 0.10),
                 ),
                 child: Center(
                   child: Text(
@@ -180,7 +172,7 @@ class ProfileView extends GetView<ProfileController> {
                 child: Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: AppDesign.success,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),

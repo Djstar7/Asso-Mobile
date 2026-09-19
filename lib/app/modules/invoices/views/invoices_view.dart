@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/models/invoice_model.dart';
 import '../controllers/invoices_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class InvoicesView extends GetView<InvoicesController> {
   const InvoicesView({super.key});
@@ -276,11 +277,11 @@ class InvoicesView extends GetView<InvoicesController> {
   Color _getTypeColor(String type) {
     switch (type) {
       case 'vendor_package':
-        return Colors.purple;
+        return AppDesign.neutral500;
       case 'wallet_recharge':
-        return Colors.green;
+        return AppDesign.success;
       default:
-        return Colors.blue;
+        return AppDesign.info;
     }
   }
 }

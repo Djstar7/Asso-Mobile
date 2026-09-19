@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/post.dart';
 import '../../../data/models/post_comment.dart';
 import '../../../data/providers/post_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class PostDetailController extends GetxController {
   final Rx<Post?> post = Rx<Post?>(null);
@@ -43,7 +44,7 @@ class PostDetailController extends GetxController {
         'Erreur',
         'Impossible de charger le post',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -66,7 +67,7 @@ class PostDetailController extends GetxController {
         'Erreur',
         'Impossible de charger les commentaires',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -91,7 +92,7 @@ class PostDetailController extends GetxController {
       'Erreur',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
+      backgroundColor: AppDesign.danger,
       colorText: Colors.white,
     );
   }
@@ -128,7 +129,7 @@ class PostDetailController extends GetxController {
         'Succès',
         parentId == null ? 'Commentaire ajouté' : 'Réponse ajoutée',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
       return true;
@@ -150,7 +151,7 @@ class PostDetailController extends GetxController {
           TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+            child: const Text('Supprimer', style: TextStyle(color: AppDesign.danger)),
           ),
         ],
       ),
@@ -198,7 +199,7 @@ class PostDetailController extends GetxController {
         'Erreur',
         'Impossible de réagir au commentaire',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -223,7 +224,7 @@ class PostDetailController extends GetxController {
         'Erreur',
         'Impossible de réagir au post',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }

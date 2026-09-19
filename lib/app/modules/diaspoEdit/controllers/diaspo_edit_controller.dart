@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoEditController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -63,7 +64,7 @@ class DiaspoEditController extends GetxController {
         'Erreur',
         'Offre introuvable',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -123,7 +124,7 @@ class DiaspoEditController extends GetxController {
         'Erreur',
         'Veuillez sélectionner les dates de départ et d\'arrivée',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -135,7 +136,7 @@ class DiaspoEditController extends GetxController {
         'Erreur',
         'La date d\'arrivée doit être après la date de départ',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -163,7 +164,7 @@ class DiaspoEditController extends GetxController {
         'Succès',
         'Votre offre a été mise à jour avec succès',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
@@ -182,7 +183,7 @@ class DiaspoEditController extends GetxController {
         'Erreur',
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -250,7 +251,7 @@ class DiaspoEditController extends GetxController {
             'Erreur',
             'L\'heure d\'arrivée doit être après l\'heure de départ',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
           return;

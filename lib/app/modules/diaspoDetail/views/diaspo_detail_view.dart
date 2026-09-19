@@ -2,6 +2,7 @@ import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_detail_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoDetailView extends GetView<DiaspoDetailController> {
   const DiaspoDetailView({super.key});
@@ -11,7 +12,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : const Color(0xFFF5F6F8),
+      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
         title: const Text('Détails de l\'offre'),
         centerTitle: true,
@@ -61,14 +62,14 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
 
   // --- Helpers de style partagés ---
   Color _card(bool isDark) => isDark ? AppThemeSystem.darkCardColor : Colors.white;
-  Color _muted(bool isDark) => isDark ? Colors.white70 : const Color(0xFF6B7280);
-  Color _titleColor(bool isDark) => isDark ? Colors.white : const Color(0xFF111827);
+  Color _muted(bool isDark) => isDark ? Colors.white70 : AppDesign.neutral500;
+  Color _titleColor(bool isDark) => isDark ? Colors.white : AppDesign.neutral900;
 
   BoxDecoration _cardDeco(bool isDark) => BoxDecoration(
         color: _card(isDark),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFECECEF),
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppDesign.neutral200,
         ),
         boxShadow: isDark
             ? null
@@ -89,7 +90,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
   /// Carte voyageur
   Widget _buildUserCard(BuildContext context, offer, bool isDark) {
     final verified = offer.profileVerified;
-    const unverifiedColor = Colors.orange;
+    const unverifiedColor = AppDesign.accent;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDeco(isDark),
@@ -120,7 +121,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     ),
                     if (verified) ...[
                       const SizedBox(width: 6),
-                      const Icon(Icons.verified, size: 18, color: Color(0xFF2563EB)),
+                      const Icon(Icons.verified, size: 18, color: AppDesign.info),
                     ],
                   ],
                 ),
@@ -128,7 +129,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (verified ? const Color(0xFF16A34A) : unverifiedColor).withValues(alpha: 0.12),
+                    color: (verified ? AppDesign.success : unverifiedColor).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -136,7 +137,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: verified ? const Color(0xFF16A34A) : unverifiedColor,
+                      color: verified ? AppDesign.success : unverifiedColor,
                     ),
                   ),
                 ),
@@ -150,7 +151,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
 
   /// Explication de la mention « Profil non vérifié » (acheteur ou voyageur).
   Widget _buildUnverifiedNotice(offer, bool isDark) {
-    const color = Colors.orange;
+    const color = AppDesign.accent;
     final deadline = offer.formattedVerificationDeadline;
     final text = controller.isMyOffer.value
         ? 'Votre offre est en ligne avec la mention « Profil non vérifié » et ne peut pas encore être réservée. '
@@ -201,14 +202,14 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             children: [
               Column(
                 children: [
-                  const Icon(Icons.flight_takeoff, color: Color(0xFF16A34A), size: 22),
+                  const Icon(Icons.flight_takeoff, color: AppDesign.success, size: 22),
                   Container(
                     width: 2,
                     height: 30,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     color: _muted(isDark).withValues(alpha: 0.3),
                   ),
-                  const Icon(Icons.flight_land, color: Color(0xFFDC2626), size: 22),
+                  const Icon(Icons.flight_land, color: AppDesign.danger, size: 22),
                 ],
               ),
               const SizedBox(width: 14),
@@ -281,7 +282,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+              color: AppDesign.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -289,13 +290,13 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.inventory_2_outlined, size: 18, color: Color(0xFF16A34A)),
+                    const Icon(Icons.inventory_2_outlined, size: 18, color: AppDesign.success),
                     const SizedBox(width: 8),
                     Text('Disponibilité', style: TextStyle(fontWeight: FontWeight.w600, color: _titleColor(isDark))),
                   ],
                 ),
                 Text('${offer.remainingKg.toStringAsFixed(1)} kg',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppDesign.success)),
               ],
             ),
           ),
@@ -364,11 +365,11 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     onPressed: controller.isDeleting.value ? null : controller.deleteOffer,
                     icon: controller.isDeleting.value
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.delete_outline, color: Colors.red),
+                        : const Icon(Icons.delete_outline, color: AppDesign.danger),
                     label: Text('Supprimer',
-                        style: TextStyle(color: controller.isDeleting.value ? Colors.grey : Colors.red)),
+                        style: TextStyle(color: controller.isDeleting.value ? Colors.grey : AppDesign.danger)),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: controller.isDeleting.value ? Colors.grey : Colors.red),
+                      side: BorderSide(color: controller.isDeleting.value ? Colors.grey : AppDesign.danger),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),

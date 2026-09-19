@@ -1,182 +1,161 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/onboarding_controller.dart';
 
+/// Présentation en trois écrans, affichée au premier lancement.
+///
+/// Chaque page tient dans la hauteur disponible sans défilement : le contenu
+/// est réparti par `Expanded` plutôt que centré sur des espacements fixes,
+/// qui débordaient sur les écrans courts.
 class OnboardingView extends GetView<OnboardingController> {
   const OnboardingView({super.key});
+
+  static const List<_OnboardingPage> _pages = [
+    _OnboardingPage(
+      icon: Icons.storefront_outlined,
+      title: 'Le marché, à portée de main',
+      description:
+          'Des milliers de produits proposés par des vendeurs proches de chez vous, réunis au même endroit.',
+    ),
+    _OnboardingPage(
+      icon: Icons.local_shipping_outlined,
+      title: 'Livré où vous êtes',
+      description:
+          'Suivez chaque commande étape par étape, de la validation du vendeur jusqu\'à votre porte.',
+    ),
+    _OnboardingPage(
+      icon: Icons.shield_outlined,
+      title: 'Des paiements protégés',
+      description:
+          'Votre argent n\'est versé au vendeur qu\'une fois la commande reçue et confirmée.',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: context.ds.canvas,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppThemeSystem.getHorizontalPadding(context),
-                vertical: 16,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: controller.skipOnboarding,
-                    child: Text(
-                      'Passer',
-                      style: context.textStyle(
-                        FontSizeType.button,
-                        color: AppThemeSystem.primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // PageView
-            Expanded(
-              child: PageView(
-                controller: controller.pageController,
-                children: [
-                  _buildOnboardingPage(
-                    context,
-                    icon: Icons.shopping_bag_rounded,
-                    title: 'Découvrez des Produits Incroyables',
-                    description: 'Parcourez des milliers de produits de vendeurs locaux et trouvez exactement ce dont vous avez besoin.',
-                  ),
-                  _buildOnboardingPage(
-                    context,
-                    icon: Icons.local_shipping_rounded,
-                    title: 'Livraison Rapide et Sécurisée',
-                    description: 'Recevez vos commandes rapidement et en toute sécurité à votre porte.',
-                  ),
-                  _buildOnboardingPage(
-                    context,
-                    icon: Icons.verified_user_rounded,
-                    title: 'Sûr et Fiable',
-                    description: 'Achetez en toute confiance. Toutes les transactions sont sécurisées et protégées.',
-                  ),
-                ],
-              ),
-            ),
-
-            // Page indicators and button
-            Padding(
-              padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-              child: Column(
-                children: [
-                  // Dots indicator
-                  Obx(() => Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      controller.totalPages,
-                      (index) => _buildDot(context, index),
-                    ),
-                  )),
-                  SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-                  // Next/Get Started button
-                  Obx(() => SizedBox(
-                    width: double.infinity,
-                    height: AppThemeSystem.getButtonHeight(context),
-                    child: ElevatedButton(
-                      onPressed: controller.nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemeSystem.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        ),
+        child: AppContentWidth(
+          maxWidth: 560,
+          child: Column(
+            children: [
+              // En-tête : le bouton « Passer » reste accessible en permanence.
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: controller.skipOnboarding,
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.ds.textSecondary,
                       ),
                       child: Text(
-                        controller.currentPage.value == controller.totalPages - 1
-                            ? 'Commencer'
-                            : 'Suivant',
+                        'Passer',
                         style: context.textStyle(
-                          FontSizeType.button,
+                          FontSizeType.body2,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: context.ds.textSecondary,
                         ),
                       ),
                     ),
-                  )),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              Expanded(
+                child: PageView.builder(
+                  controller: controller.pageController,
+                  itemCount: _pages.length,
+                  itemBuilder: (context, index) =>
+                      _buildPage(context, _pages[index]),
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  context.ds.gutter,
+                  AppDesign.space4,
+                  context.ds.gutter,
+                  AppDesign.space6,
+                ),
+                child: Column(
+                  children: [
+                    Obx(
+                      () => Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          controller.totalPages,
+                          (index) => _buildDot(context, index),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: AppDesign.space6),
+                    Obx(
+                      () => AppButton(
+                        label: controller.currentPage.value ==
+                                controller.totalPages - 1
+                            ? 'Commencer'
+                            : 'Continuer',
+                        onPressed: controller.nextPage,
+                        size: AppButtonSize.large,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildOnboardingPage(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
+  Widget _buildPage(BuildContext context, _OnboardingPage page) {
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon
+          const Spacer(flex: 4),
+          // Un cadre neutre avec une icône sobre, à la place de l'ancien
+          // pavé orange en dégradé qui saturait l'écran.
           Container(
-            width: 140,
-            height: 140,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppThemeSystem.primaryColor,
-                  AppThemeSystem.tertiaryColor,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: [
-                BoxShadow(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              color: context.ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusXl),
+              border: Border.all(color: context.ds.border),
             ),
-            child: Icon(
-              icon,
-              size: 70,
-              color: Colors.white,
-            ),
+            child: Icon(page.icon, size: 38, color: AppDesign.accent),
           ),
-          SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-          // Title
+          SizedBox(height: AppDesign.space8),
           Text(
-            title,
+            page.title,
             textAlign: TextAlign.center,
             style: context.textStyle(
-              FontSizeType.h3,
-              fontWeight: FontWeight.bold,
+              FontSizeType.h4,
+              fontWeight: FontWeight.w700,
+              color: context.ds.textPrimary,
+              height: 1.25,
             ),
           ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-          // Description
+          SizedBox(height: AppDesign.space3),
           Text(
-            description,
+            page.description,
             textAlign: TextAlign.center,
             style: context.textStyle(
-              FontSizeType.body1,
-              color: context.secondaryTextColor,
-              height: 1.5,
+              FontSizeType.body2,
+              color: context.ds.textSecondary,
+              height: 1.6,
             ),
           ),
+          const Spacer(flex: 5),
         ],
       ),
     );
@@ -185,16 +164,28 @@ class OnboardingView extends GetView<OnboardingController> {
   Widget _buildDot(BuildContext context, int index) {
     final isActive = controller.currentPage.value == index;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 8,
-      width: isActive ? 24 : 8,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      height: 6,
+      width: isActive ? 22 : 6,
       decoration: BoxDecoration(
-        color: isActive
-          ? AppThemeSystem.primaryColor
-          : AppThemeSystem.grey300,
-        borderRadius: BorderRadius.circular(4),
+        color: isActive ? AppDesign.accent : context.ds.borderStrong,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
       ),
     );
   }
+}
+
+/// Contenu d'une page d'introduction.
+class _OnboardingPage {
+  const _OnboardingPage({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
 }

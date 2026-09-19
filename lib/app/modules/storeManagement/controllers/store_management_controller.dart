@@ -10,6 +10,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/location_label.dart';
+import '../../../core/utils/app_design.dart';
 
 class StoreManagementController extends GetxController {
   // État de chargement
@@ -234,7 +235,7 @@ class StoreManagementController extends GetxController {
         'Erreur',
         'Impossible de charger les données: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -617,7 +618,7 @@ class StoreManagementController extends GetxController {
           'Succès',
           message,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
         );
@@ -628,7 +629,7 @@ class StoreManagementController extends GetxController {
               ? response.message
               : 'Impossible de sauvegarder les informations',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -637,7 +638,7 @@ class StoreManagementController extends GetxController {
         'Erreur',
         'Impossible de sauvegarder les informations: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

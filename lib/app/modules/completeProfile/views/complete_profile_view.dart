@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/complete_profile_controller.dart';
 
@@ -136,11 +137,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
       width: double.infinity,
       padding: EdgeInsets.all(context.horizontalPadding * 1.5),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppThemeSystem.primaryColor, AppThemeSystem.tertiaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppDesign.accent,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

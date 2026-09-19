@@ -2,6 +2,8 @@ import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_list_controller.dart';
+import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class DiaspoListView extends GetView<DiaspoListController> {
   const DiaspoListView({super.key});
@@ -32,11 +34,18 @@ class DiaspoListView extends GetView<DiaspoListController> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: controller.handleCreateOffer,
-        backgroundColor: AppThemeSystem.primaryColor,
-        icon: const Icon(Icons.add),
-        label: const Text('Créer mon offre'),
+      // Masqué quand la liste est vide : l'état vide propose déjà la même
+      // action, et deux boutons identiques à l'écran se concurrencent.
+      floatingActionButton: Obx(
+        () => controller.offers.isEmpty
+            ? const SizedBox.shrink()
+            : FloatingActionButton.extended(
+                onPressed: controller.handleCreateOffer,
+                backgroundColor: AppDesign.accent,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.add),
+                label: const Text('Créer mon offre'),
+              ),
       ),
     );
   }
@@ -47,7 +56,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
     final isPending = status == 'pending';
     final isRejected = status == 'rejected';
-    final color = isRejected ? Colors.red : Colors.orange;
+    final color = isRejected ? AppDesign.danger : AppDesign.accent;
     final title = isPending
         ? 'Vérification d\'identité en cours'
         : isRejected
@@ -227,51 +236,22 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
       }
 
       if (displayedOffers.isEmpty) {
-        return ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.flight_takeoff_rounded, size: 80, color: Colors.grey[400]),
-                const SizedBox(height: 24),
-                Text(
-                  controller.searchQuery.value.isNotEmpty
-                      ? 'Aucun résultat pour "${controller.searchQuery.value}"'
-                      : 'Aucune offre disponible',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.grey[800],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  controller.searchQuery.value.isNotEmpty
-                      ? 'Essayez une autre ville ou un autre pays.'
-                      : 'Soyez le premier à publier une offre de transport!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
-                if (controller.searchQuery.value.isNotEmpty)
-                  ElevatedButton.icon(
-                    onPressed: () => controller.searchQuery.value = '',
-                    icon: const Icon(Icons.clear),
-                    label: const Text('Effacer la recherche'),
-                  )
-                else
-                  ElevatedButton.icon(
-                    onPressed: controller.handleCreateOffer,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Créer mon offre'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                    ),
-                  ),
-              ],
-            ),
-          ],
+        final searching = controller.searchQuery.value.isNotEmpty;
+        return AppEmptyState(
+          icon: searching
+              ? Icons.search_off_rounded
+              : Icons.flight_takeoff_rounded,
+          title: searching
+              ? 'Aucun résultat pour « ${controller.searchQuery.value} »'
+              : 'Aucune offre disponible',
+          message: searching
+              ? 'Essayez une autre ville ou un autre pays.'
+              : 'Soyez le premier à publier une offre de transport.',
+          actionLabel:
+              searching ? 'Effacer la recherche' : 'Créer mon offre',
+          onAction: searching
+              ? () => controller.searchQuery.value = ''
+              : controller.handleCreateOffer,
         );
       }
 
@@ -461,8 +441,8 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
     final isOwnOffer = controller.isMyOffer(offer);
     final showMine = isMyOffer || isOwnOffer;
 
-    final muted = isDark ? Colors.white70 : const Color(0xFF6B7280);
-    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+    final muted = isDark ? Colors.white70 : AppDesign.neutral500;
+    final titleColor = isDark ? Colors.white : AppDesign.neutral900;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -470,7 +450,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
         color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFECECEF),
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppDesign.neutral200,
         ),
         boxShadow: isDark
             ? null
@@ -502,7 +482,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.flight_takeoff, color: Color(0xFF16A34A), size: 18),
+                              const Icon(Icons.flight_takeoff, color: AppDesign.success, size: 18),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -524,7 +504,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                           ),
                           Row(
                             children: [
-                              const Icon(Icons.flight_land, color: Color(0xFFDC2626), size: 18),
+                              const Icon(Icons.flight_land, color: AppDesign.danger, size: 18),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -599,20 +579,20 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                        color: AppDesign.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.inventory_2_outlined, size: 15, color: Color(0xFF16A34A)),
+                          const Icon(Icons.inventory_2_outlined, size: 15, color: AppDesign.success),
                           const SizedBox(width: 6),
                           Text(
                             '${offer.remainingKg.toStringAsFixed(1)} kg dispo',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
+                              color: AppDesign.success,
                             ),
                           ),
                         ],
@@ -630,7 +610,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
 
   /// Mention publique : le voyageur n'a pas encore fait valider son identité.
   Widget _buildUnverifiedProfileChip() {
-    const color = Colors.orange;
+    const color = AppDesign.accent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -658,22 +638,22 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
     late final String label;
 
     if (offer.verificationStatus == 'rejected' || offer.status == 'rejected') {
-      color = Colors.red;
+      color = AppDesign.danger;
       icon = Icons.cancel_outlined;
       label = 'Offre refusée';
     } else if (offer.verificationStatus != 'verified') {
       final deadline = offer.formattedVerificationDeadline;
-      color = Colors.orange;
+      color = AppDesign.accent;
       icon = Icons.badge_outlined;
       label = deadline != null
           ? 'Publiée · Profil non vérifié — à régulariser avant le $deadline'
           : 'Publiée · Profil non vérifié';
     } else if (offer.status == 'pending') {
-      color = Colors.orange;
+      color = AppDesign.accent;
       icon = Icons.hourglass_top;
       label = 'En attente d\'approbation';
     } else if (offer.status == 'approved' || offer.status == 'active') {
-      color = const Color(0xFF16A34A);
+      color = AppDesign.success;
       icon = Icons.check_circle_outline;
       label = 'Offre publiée';
     } else {
@@ -809,13 +789,13 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.shade50,
-                      Colors.indigo.shade50,
+                      AppDesign.info,
+                      AppDesign.neutral500,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.shade300,
+                    color: AppDesign.info,
                     width: 2,
                   ),
                 ),
@@ -827,12 +807,12 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade100,
+                            color: AppDesign.info,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             Icons.key,
-                            color: Colors.blue.shade700,
+                            color: AppDesign.info,
                             size: 20,
                           ),
                         ),
@@ -846,7 +826,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.blue.shade900,
+                                  color: AppDesign.info,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -856,7 +836,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 4,
-                                  color: Colors.blue.shade900,
+                                  color: AppDesign.info,
                                 ),
                               ),
                             ],
@@ -876,7 +856,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Colors.blue.shade700,
+                            color: AppDesign.info,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -884,7 +864,7 @@ Widget _buildAllOffers(BuildContext context, bool isDark) {
                               'Donnez ce code au voyageur au moment de la remise',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.blue.shade900,
+                                color: AppDesign.info,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),

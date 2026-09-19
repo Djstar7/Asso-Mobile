@@ -4,6 +4,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/notification_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class NotificationView extends GetView<NotificationController> {
   const NotificationView({super.key});
@@ -276,7 +277,7 @@ class NotificationView extends GetView<NotificationController> {
       case 'new_message':
         return AppThemeSystem.primaryColor;
       case 'test':
-        return Colors.purple;
+        return AppDesign.neutral500;
       default:
         return AppThemeSystem.primaryColor;
     }

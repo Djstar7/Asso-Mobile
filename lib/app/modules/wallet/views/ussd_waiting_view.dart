@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/wallet_controller.dart';
 
@@ -310,7 +311,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                               ? AppThemeSystem.successColor.withValues(alpha: 0.1)
                               : _isError
                                   ? AppThemeSystem.errorColor.withValues(alpha: 0.1)
-                                  : Colors.orange.withValues(alpha: 0.1),
+                                  : AppDesign.accent.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -324,7 +325,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                               ? AppThemeSystem.successColor
                               : _isError
                                   ? AppThemeSystem.errorColor
-                                  : Colors.orange,
+                                  : AppDesign.accent,
                         ),
                       ),
                     );
@@ -411,10 +412,10 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
+                      color: AppDesign.accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.3),
+                        color: AppDesign.accent.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
@@ -422,7 +423,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.orange),
+                            Icon(Icons.info_outline, color: AppDesign.accent),
                             SizedBox(width: 12),
                             Expanded(
                               child: Text(

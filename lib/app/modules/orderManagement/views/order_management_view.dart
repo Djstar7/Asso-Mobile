@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/order_management_controller.dart';
 import '../widgets/filters_section.dart';
 import '../widgets/order_card.dart';
@@ -73,7 +75,11 @@ class OrderManagementView extends GetView<OrderManagementController> {
               // Liste des commandes
               Obx(() {
                 if (controller.filteredOrders.isEmpty) {
-                  return SliverFillRemaining(
+                  // `hasScrollBody: false` laisse le bloc prendre sa hauteur
+                  // naturelle et défiler avec la page. Sans cela, il était
+                  // contraint à l'espace restant et débordait sous les
+                  // filtres déployés.
+                  return SliverToBoxAdapter(
                     child: _buildEmptyState(context),
                   );
                 }
@@ -117,23 +123,13 @@ class OrderManagementView extends GetView<OrderManagementController> {
     return Obx(() {
       return Container(
         padding: EdgeInsets.all(context.horizontalPadding),
+        // Carte neutre plutôt qu'un aplat orange : ce bandeau affiche des
+        // chiffres à lire, pas une action à déclencher. Les valeurs ressortent
+        // par leur taille, et l'orange reste disponible pour les boutons.
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppThemeSystem.primaryColor,
-              AppThemeSystem.primaryColor.withValues(alpha: 0.7),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: context.ds.surface,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
-          boxShadow: [
-            BoxShadow(
-              color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: context.ds.border),
         ),
         child: Row(
           children: [
@@ -147,8 +143,8 @@ class OrderManagementView extends GetView<OrderManagementController> {
             ),
             Container(
               width: 1,
-              height: 40,
-              color: Colors.white.withValues(alpha: 0.3),
+              height: 36,
+              color: context.ds.border,
             ),
             Expanded(
               child: _buildStatItem(
@@ -164,8 +160,8 @@ class OrderManagementView extends GetView<OrderManagementController> {
             ),
             Container(
               width: 1,
-              height: 40,
-              color: Colors.white.withValues(alpha: 0.3),
+              height: 36,
+              color: context.ds.border,
             ),
             Expanded(
               child: _buildStatItem(
@@ -195,22 +191,26 @@ class OrderManagementView extends GetView<OrderManagementController> {
       children: [
         Icon(
           icon,
-          color: Colors.white,
-          size: 28,
+          color: context.ds.textSecondary,
+          size: 20,
         ),
         const SizedBox(height: 8),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: context.h4.copyWith(
-            color: Colors.white,
+            color: context.ds.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: context.caption.copyWith(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: context.ds.textSecondary,
             fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
@@ -242,61 +242,24 @@ class OrderManagementView extends GetView<OrderManagementController> {
 
   /// État vide
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(context.horizontalPadding * 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.inbox_outlined,
-                size: 60,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            SizedBox(height: context.sectionSpacing),
-            Text(
-              'Aucune commande trouvée',
-              style: context.h5.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: context.elementSpacing),
-            Text(
-              'Il n\'y a aucune commande correspondant à vos critères de recherche.',
-              style: context.body2.copyWith(
-                color: context.secondaryTextColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: context.sectionSpacing),
-            if (controller.selectedStatus.value != null ||
-                controller.selectedCity.value != 'Toutes les villes' ||
-                controller.selectedDate.value != null ||
-                controller.searchQuery.value.isNotEmpty)
-              ElevatedButton.icon(
-                onPressed: controller.resetFilters,
-                icon: const Icon(Icons.clear_all),
-                label: const Text('Réinitialiser les filtres'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    final hasFilters = controller.selectedStatus.value != null ||
+        controller.selectedCity.value != 'Toutes les villes' ||
+        controller.selectedDate.value != null ||
+        controller.searchQuery.value.isNotEmpty;
+
+    // Le message distingue « aucune commande » de « aucun résultat pour ces
+    // filtres » : sans cette nuance, un vendeur croit n'avoir aucune vente
+    // alors qu'il a simplement un filtre actif.
+    return AppEmptyState(
+      icon: Icons.inbox_outlined,
+      title: hasFilters
+          ? 'Aucune commande pour ces filtres'
+          : 'Aucune commande pour le moment',
+      message: hasFilters
+          ? 'Aucune commande ne correspond à votre recherche.'
+          : 'Vos commandes apparaîtront ici dès qu’un client aura acheté un de vos produits.',
+      actionLabel: hasFilters ? 'Réinitialiser les filtres' : null,
+      onAction: hasFilters ? controller.resetFilters : null,
     );
   }
 }

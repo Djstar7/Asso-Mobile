@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../../core/utils/app_design.dart';
 import '../../../core/values/kpay_catalog.dart';
 
 /// Sélecteur KPay : pays (drapeau + indicatif) → opérateur → numéro.
@@ -248,7 +250,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
               _country.iso3 == 'CMR'
                   ? 'Saisissez les 9 chiffres du numéro'
                   : 'Numéro incomplet ou invalide',
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: const TextStyle(color: AppDesign.danger, fontSize: 12),
             ),
           ),
       ],

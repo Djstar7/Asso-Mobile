@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/help_controller.dart';
 
@@ -104,14 +105,7 @@ class HelpView extends GetView<HelpController> {
       margin: EdgeInsets.all(context.horizontalPadding),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppThemeSystem.primaryColor,
-            AppThemeSystem.primaryColor.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppThemeSystem.primaryColor,
         borderRadius: context.borderRadius(BorderRadiusType.medium),
         boxShadow: [
           BoxShadow(

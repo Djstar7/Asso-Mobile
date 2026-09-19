@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/delivery_dashboard_controller.dart';
 import '../models/delivery_models.dart';
@@ -123,7 +124,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: controller.isOnline.value ? Colors.green : AppThemeSystem.grey500,
+                      color: controller.isOnline.value ? AppDesign.success : AppThemeSystem.grey500,
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
@@ -354,14 +355,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
         ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppThemeSystem.primaryColor,
-              AppThemeSystem.primaryColor.withValues(alpha: 0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppDesign.accent,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           boxShadow: [
             BoxShadow(

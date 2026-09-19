@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/markdown_bottom_sheet.dart';
 import '../controllers/register_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class RegisterView extends GetView<RegisterController> {
   const RegisterView({super.key});
@@ -440,7 +441,7 @@ class RegisterView extends GetView<RegisterController> {
             context,
             icon: Icons.apple_rounded,
             label: 'Apple',
-            backgroundColor: const Color(0xFF8BC34A),
+            backgroundColor: AppDesign.success,
             textColor: Colors.white,
             onPressed: () {
               // TODO: Implémenter Apple Sign In

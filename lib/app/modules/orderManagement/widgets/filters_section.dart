@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../models/order_model.dart';
 import '../controllers/order_management_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class FiltersSection extends GetView<OrderManagementController> {
   const FiltersSection({super.key});
@@ -293,7 +294,11 @@ class FiltersSection extends GetView<OrderManagementController> {
                   IconButton(
                     icon: const Icon(Icons.clear, size: 18),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    // Cible tactile minimale conservée (recommandation Material/WCAG).
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesign.minTapTarget,
+                        minHeight: AppDesign.minTapTarget,
+                      ),
                     onPressed: () => controller.selectedDate.value = null,
                   ),
               ],

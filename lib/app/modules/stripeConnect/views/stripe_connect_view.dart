@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/stripe_connect_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Écran vendeur : saisir son IBAN pour être payé par virement, et suivre le
 /// statut de validation par ASSO.
@@ -84,14 +85,14 @@ class StripeConnectView extends GetView<StripeConnectController> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.10),
+        color: AppDesign.accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+        border: Border.all(color: AppDesign.accent.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.assignment_late_outlined, color: Colors.orange),
+          const Icon(Icons.assignment_late_outlined, color: AppDesign.accent),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -99,7 +100,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
               children: [
                 const Text(
                   'Informations complémentaires demandées',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppDesign.accent),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -130,10 +131,10 @@ class StripeConnectView extends GetView<StripeConnectController> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.12),
+            color: AppDesign.accent.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.cloud_off_rounded, size: 40, color: Colors.orange),
+          child: const Icon(Icons.cloud_off_rounded, size: 40, color: AppDesign.accent),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -177,19 +178,19 @@ class StripeConnectView extends GetView<StripeConnectController> {
   Widget _statusBanner(BuildContext context) {
     final (Color color, IconData icon, String label, String detail) = switch (controller.status.value) {
       'approved' => (
-          Colors.green,
+          AppDesign.success,
           Icons.verified,
           'Compte validé',
           'Vous pouvez être payé par virement sur cet IBAN.'
         ),
       'rejected' => (
-          Colors.red,
+          AppDesign.danger,
           Icons.cancel,
           'Compte rejeté',
           controller.rejectionReason.value ?? 'Veuillez corriger vos informations et renvoyer.'
         ),
       _ => (
-          Colors.orange,
+          AppDesign.accent,
           Icons.hourglass_top,
           'En attente de validation',
           'Votre IBAN est en cours de vérification (24-48h).'
@@ -235,7 +236,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
   /// vérification : plus de formulaire, seulement le rappel des informations
   /// (IBAN masqué + titulaire) et le statut.
   Widget _pendingCard(BuildContext context) {
-    const orange = Colors.orange;
+    const orange = AppDesign.accent;
     final holder = controller.holderName.value;
     final last4 = controller.ibanLast4.value;
     final country = controller.bankCountry.value;
@@ -309,7 +310,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
   /// Le vendeur n'a plus rien à saisir — lui reproposer les champs laisse croire
   /// que sa demande n'a pas abouti.
   Widget _approvedCard(BuildContext context) {
-    const green = Color(0xFF16A34A);
+    const green = AppDesign.success;
     final holder = controller.holderName.value;
     final last4 = controller.ibanLast4.value;
     final country = controller.bankCountry.value;
@@ -405,14 +406,14 @@ class StripeConnectView extends GetView<StripeConnectController> {
         margin: const EdgeInsets.only(top: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.10),
+          color: AppDesign.accent.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+          border: Border.all(color: AppDesign.accent.withValues(alpha: 0.35)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+            const Icon(Icons.info_outline, size: 18, color: AppDesign.accent),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -426,7 +427,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
                       'Les virements resteront indisponibles tant que ce point '
                       "n'est pas réglé.",
                       style: TextStyle(
-                          fontSize: 12, color: Colors.orange.shade900, height: 1.3),
+                          fontSize: 12, color: AppDesign.accent, height: 1.3),
                     ),
                   ],
                 ],

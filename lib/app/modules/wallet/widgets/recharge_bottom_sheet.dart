@@ -9,6 +9,7 @@ import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'kpay_phone_selector.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Bottom sheet pour recharger le wallet en 2 étapes
 /// Step 1: Choix de la méthode de paiement
@@ -122,7 +123,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                           }),
                           icon: const Icon(Icons.arrow_back_ios_new_rounded),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          // Cible tactile minimale conservée (recommandation Material/WCAG).
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesign.minTapTarget,
+                        minHeight: AppDesign.minTapTarget,
+                      ),
                           color: AppThemeSystem.getPrimaryTextColor(context),
                         ),
                       if (_currentStep == 2) const SizedBox(width: 12),
@@ -145,7 +150,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    // Cible tactile minimale conservée (recommandation Material/WCAG).
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesign.minTapTarget,
+                        minHeight: AppDesign.minTapTarget,
+                      ),
                     color: AppThemeSystem.getSecondaryTextColor(context),
                   ),
                 ],

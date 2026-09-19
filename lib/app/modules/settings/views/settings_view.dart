@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/settings_controller.dart';
 
@@ -96,7 +97,7 @@ class SettingsView extends GetView<SettingsController> {
                   title: 'Supprimer mon compte',
                   subtitle: 'Supprimer définitivement votre compte',
                   onTap: controller.deleteAccount,
-                  textColor: Colors.red,
+                  textColor: AppDesign.danger,
                 ),
               ],
             ),
@@ -132,8 +133,8 @@ class SettingsView extends GetView<SettingsController> {
                   icon: const Icon(Icons.logout),
                   label: const Text('Se déconnecter'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: AppDesign.danger,
+                    side: const BorderSide(color: AppDesign.danger),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
@@ -160,14 +161,7 @@ class SettingsView extends GetView<SettingsController> {
           margin: EdgeInsets.all(context.horizontalPadding),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppThemeSystem.primaryColor,
-                AppThemeSystem.primaryColor.withValues(alpha: 0.7),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppThemeSystem.primaryColor,
             borderRadius: context.borderRadius(BorderRadiusType.medium),
             boxShadow: [
               BoxShadow(
@@ -293,8 +287,8 @@ class SettingsView extends GetView<SettingsController> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: textColor == Colors.red
-              ? Colors.red.withValues(alpha: 0.1)
+          color: textColor == AppDesign.danger
+              ? AppDesign.danger.withValues(alpha: 0.1)
               : AppThemeSystem.primaryColor.withValues(alpha: 0.1),
           borderRadius: context.borderRadius(BorderRadiusType.small),
         ),

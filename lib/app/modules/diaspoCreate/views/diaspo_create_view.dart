@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_create_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoCreateView extends GetView<DiaspoCreateController> {
   const DiaspoCreateView({super.key});
@@ -117,7 +118,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             // Departure
             Row(
               children: [
-                const Icon(Icons.flight_takeoff, color: Colors.green),
+                const Icon(Icons.flight_takeoff, color: AppDesign.success),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
                   'Départ',
@@ -191,7 +192,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             // Arrival
             Row(
               children: [
-                const Icon(Icons.flight_land, color: Colors.red),
+                const Icon(Icons.flight_land, color: AppDesign.danger),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
                   'Arrivée',
@@ -449,7 +450,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   // Route
                   Row(
                     children: [
-                      Icon(Icons.flight_takeoff, color: Colors.green, size: iconSize),
+                      Icon(Icons.flight_takeoff, color: AppDesign.success, size: iconSize),
                       SizedBox(width: elementSpacing * 0.5),
                       Expanded(
                         child: Text(
@@ -466,7 +467,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   SizedBox(height: elementSpacing * 0.5),
                   Row(
                     children: [
-                      Icon(Icons.flight_land, color: Colors.red, size: iconSize),
+                      Icon(Icons.flight_land, color: AppDesign.danger, size: iconSize),
                       SizedBox(width: elementSpacing * 0.5),
                       Expanded(
                         child: Text(

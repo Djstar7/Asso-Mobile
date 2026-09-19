@@ -1,413 +1,286 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lottie/lottie.dart';
+
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/markdown_bottom_sheet.dart';
 import '../controllers/welcomer_controller.dart';
 
+/// Création de compte, premier écran après l'introduction.
+///
+/// La mise en page a été resserrée : l'illustration occupait plus du
+/// tiers de la hauteur et repoussait le formulaire hors de l'écran. Les
+/// champs portent désormais un libellé permanent et le mot de passe indique
+/// sa règle de validité avant l'envoi plutôt qu'après.
 class WelcomerView extends GetView<WelcomerController> {
   const WelcomerView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: context.ds.canvas,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Bouton SAUTER en haut à droite
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppThemeSystem.getHorizontalPadding(context),
-                vertical: 8,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: controller.skipWelcome,
-                    child: Text(
-                      'SAUTER',
-                      style: context.textStyle(
-                        FontSizeType.button,
-                        color: AppThemeSystem.primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Contenu principal avec scroll si nécessaire
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppThemeSystem.getHorizontalPadding(context),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+        child: AppContentWidth(
+          maxWidth: 520,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // Animation Lottie compacte
-                    SizedBox(
-                      height: AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 200 : 240,
-                      child: Lottie.asset(
-                        'assets/lotties/Sales and Consulting.json',
-                        fit: BoxFit.contain,
-                        repeat: true,
-                        animate: true,
+                    TextButton(
+                      onPressed: controller.skipWelcome,
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.ds.textSecondary,
+                      ),
+                      child: Text(
+                        'Passer',
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w600,
+                          color: context.ds.textSecondary,
+                        ),
                       ),
                     ),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Titre
-                    Text(
-                      'Marketplace Asso',
-                      textAlign: TextAlign.center,
-                      style: context.textStyle(
-                        FontSizeType.h2,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    // Slogan
-                    Text(
-                      'Ton marché dans ta poche',
-                      textAlign: TextAlign.center,
-                      style: context.textStyle(
-                        FontSizeType.subtitle1,
-                        color: AppThemeSystem.primaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-                    // Input email
-                    TextField(
-                      controller: controller.emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: (value) => controller.email.value = value,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'exemple@email.com',
-                        border: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: AppThemeSystem.getSurfaceColor(context),
-                      ),
-                      style: context.textStyle(FontSizeType.body1),
-                    ),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Input password
-                    Obx(() => TextField(
-                      controller: controller.passwordController,
-                      obscureText: controller.obscurePassword.value,
-                      onChanged: (value) => controller.password.value = value,
-                      decoration: InputDecoration(
-                        labelText: 'Mot de passe',
-                        hintText: 'Minimum 6 caractères',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            controller.obscurePassword.value
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: controller.togglePasswordVisibility,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: AppThemeSystem.getSurfaceColor(context),
-                      ),
-                      style: context.textStyle(FontSizeType.body1),
-                    )),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Input confirm password
-                    Obx(() => TextField(
-                      controller: controller.confirmPasswordController,
-                      obscureText: controller.obscureConfirmPassword.value,
-                      onChanged: (value) => controller.confirmPassword.value = value,
-                      decoration: InputDecoration(
-                        labelText: 'Confirmer le mot de passe',
-                        hintText: 'Retapez votre mot de passe',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            controller.obscureConfirmPassword.value
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: controller.toggleConfirmPasswordVisibility,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.grey300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          borderSide: BorderSide(color: AppThemeSystem.primaryColor, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: AppThemeSystem.getSurfaceColor(context),
-                      ),
-                      style: context.textStyle(FontSizeType.body1),
-                    )),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Checkbox d'acceptation de la Politique de Confidentialité
-                    Obx(() => Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Checkbox(
-                          value: controller.termsAccepted.value,
-                          onChanged: (value) {
-                            controller.termsAccepted.value = value ?? false;
-                          },
-                          activeColor: AppThemeSystem.primaryColor,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: RichText(
-                              text: TextSpan(
-                                style: context.textStyle(
-                                  FontSizeType.caption,
-                                  color: context.secondaryTextColor,
-                                ),
-                                children: [
-                                  const TextSpan(text: 'En continuant, vous acceptez notre '),
-                                  TextSpan(
-                                    text: 'Politique de Confidentialité',
-                                    style: TextStyle(
-                                      color: AppThemeSystem.primaryColor,
-                                      fontWeight: FontWeight.w600,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        MarkdownBottomSheet.show(
-                                          context: context,
-                                          title: 'Politique de Confidentialité',
-                                          assetPath: 'Politique de confidentialité.md',
-                                        );
-                                      },
-                                  ),
-                                  const TextSpan(text: '.'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Bouton principal "Créer mon compte"
-                    Obx(() {
-                      final isLoading = controller.isLoading.value;
-                      final isValid = controller.isFormValid.value;
-
-                      return SizedBox(
-                        width: double.infinity,
-                        height: AppThemeSystem.getButtonHeight(context),
-                        child: ElevatedButton(
-                          onPressed: (isValid && !isLoading) ? controller.createAccountWithEmail : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppThemeSystem.primaryColor,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppThemeSystem.grey300,
-                            disabledForegroundColor: AppThemeSystem.grey600,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: context.borderRadius(BorderRadiusType.medium),
-                            ),
-                            elevation: 2,
-                          ),
-                          child: isLoading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  'Créer mon compte',
-                                  style: context.textStyle(
-                                    FontSizeType.button,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      );
-                    }),
-
-                    SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-                    // Séparateur "OU"
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: AppThemeSystem.grey300)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'OU',
-                            style: context.textStyle(
-                              FontSizeType.caption,
-                              color: context.secondaryTextColor,
-                            ),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: AppThemeSystem.grey300)),
-                      ],
-                    ),
-
-                    // SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-                    // // Lien "Continuer en tant qu'invité"
-                    // TextButton(
-                    //   onPressed: controller.continueAsGuest,
-                    //   child: Row(
-                    //     mainAxisSize: MainAxisSize.min,
-                    //     children: [
-                    //       Icon(
-                    //         Icons.person_outline_rounded,
-                    //         size: 18,
-                    //         color: context.secondaryTextColor,
-                    //       ),
-                    //       SizedBox(width: 6),
-                    //       Text(
-                    //         'Continuer en tant qu\'invité',
-                    //         style: context.textStyle(
-                    //           FontSizeType.body2,
-                    //           color: context.secondaryTextColor,
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // Lien "Se connecter"
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Vous avez déjà un compte ? ',
-                          style: context.textStyle(
-                            FontSizeType.body2,
-                            color: context.secondaryTextColor,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: controller.goToLogin,
-                          child: Text(
-                            'Se connecter',
-                            style: context.textStyle(
-                              FontSizeType.body2,
-                              color: AppThemeSystem.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppThemeSystem.getVerticalPadding(context)),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    context.ds.gutter,
+                    0,
+                    context.ds.gutter,
+                    AppDesign.space8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeader(context),
+                      SizedBox(height: AppDesign.space8),
+                      _buildForm(context),
+                      SizedBox(height: AppDesign.space5),
+                      _buildTermsRow(context),
+                      SizedBox(height: AppDesign.space5),
+                      _buildSubmit(context),
+                      SizedBox(height: AppDesign.space6),
+                      _buildLoginLink(context),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCompactButton(
-    BuildContext context, {
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required Color backgroundColor,
-    required Color textColor,
-    Color? borderColor,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: textColor,
-          elevation: borderColor != null ? 0 : 1,
-          shadowColor: Colors.black.withValues(alpha: 0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: context.borderRadius(BorderRadiusType.medium),
-            side: borderColor != null
-                ? BorderSide(color: borderColor, width: 1.5)
-                : BorderSide.none,
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      children: [
+        // Le logo de marque remplace l'illustration jaune, dont la palette
+        // n'avait aucun rapport avec l'identité de l'application.
+        Container(
+          width: 72,
+          height: 72,
+          padding: EdgeInsets.all(AppDesign.space3),
+          decoration: BoxDecoration(
+            color: context.ds.surface,
+            shape: BoxShape.circle,
+            border: Border.all(color: context.ds.border),
           ),
-          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: textColor),
-            SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
+        SizedBox(height: AppDesign.space5),
+        Text(
+          'Créer votre compte',
+          textAlign: TextAlign.center,
+          style: context.textStyle(
+            FontSizeType.h4,
+            fontWeight: FontWeight.w700,
+            color: context.ds.textPrimary,
+          ),
+        ),
+        SizedBox(height: AppDesign.space2),
+        Text(
+          'Achetez, vendez et suivez vos commandes depuis un seul endroit.',
+          textAlign: TextAlign.center,
+          style: context.textStyle(
+            FontSizeType.body2,
+            color: context.ds.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppTextField(
+          label: 'Adresse e-mail',
+          hint: 'exemple@email.com',
+          controller: controller.emailController,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          onChanged: (value) => controller.email.value = value,
+        ),
+        SizedBox(height: AppDesign.space4),
+        Obx(
+          () => AppTextField(
+            label: 'Mot de passe',
+            hint: 'Au moins 6 caractères',
+            controller: controller.passwordController,
+            obscureText: controller.obscurePassword.value,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
+            onChanged: (value) => controller.password.value = value,
+            helperText: 'Utilisez 6 caractères ou plus.',
+            suffixIcon: _visibilityToggle(
+              context,
+              isObscured: controller.obscurePassword.value,
+              onPressed: controller.togglePasswordVisibility,
+            ),
+          ),
+        ),
+        SizedBox(height: AppDesign.space4),
+        Obx(() {
+          // L'écart entre les deux mots de passe est signalé pendant la
+          // saisie, au lieu d'être découvert au moment de l'envoi.
+          final confirm = controller.confirmPassword.value;
+          final mismatch =
+              confirm.isNotEmpty && confirm != controller.password.value;
+
+          return AppTextField(
+            label: 'Confirmer le mot de passe',
+            hint: 'Saisissez à nouveau le mot de passe',
+            controller: controller.confirmPasswordController,
+            obscureText: controller.obscureConfirmPassword.value,
+            textInputAction: TextInputAction.done,
+            onChanged: (value) => controller.confirmPassword.value = value,
+            errorText: mismatch ? 'Les deux mots de passe diffèrent.' : null,
+            suffixIcon: _visibilityToggle(
+              context,
+              isObscured: controller.obscureConfirmPassword.value,
+              onPressed: controller.toggleConfirmPasswordVisibility,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _visibilityToggle(
+    BuildContext context, {
+    required bool isObscured,
+    required VoidCallback onPressed,
+  }) {
+    return AppIconButton(
+      icon: isObscured
+          ? Icons.visibility_off_outlined
+          : Icons.visibility_outlined,
+      size: 19,
+      color: context.ds.textTertiary,
+      tooltip: isObscured ? 'Afficher' : 'Masquer',
+      onPressed: onPressed,
+    );
+  }
+
+  Widget _buildTermsRow(BuildContext context) {
+    return Obx(
+      () => Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: controller.termsAccepted.value,
+              onChanged: (value) =>
+                  controller.termsAccepted.value = value ?? false,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          SizedBox(width: AppDesign.space3),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
                 style: context.textStyle(
                   FontSizeType.caption,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+                  color: context.ds.textSecondary,
+                  height: 1.45,
                 ),
-                overflow: TextOverflow.ellipsis,
+                children: [
+                  const TextSpan(text: "J'accepte la "),
+                  TextSpan(
+                    text: 'politique de confidentialité',
+                    style: TextStyle(
+                      color: AppDesign.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => MarkdownBottomSheet.show(
+                            context: context,
+                            title: 'Politique de confidentialité',
+                            assetPath: 'Politique de confidentialité.md',
+                          ),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildSubmit(BuildContext context) {
+    return Obx(
+      () => AppButton(
+        label: 'Créer mon compte',
+        size: AppButtonSize.large,
+        isLoading: controller.isLoading.value,
+        onPressed: controller.isFormValid.value
+            ? controller.createAccountWithEmail
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildLoginLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            'Vous avez déjà un compte ?',
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textSecondary,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: controller.goToLogin,
+          child: Text(
+            'Se connecter',
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w600,
+              color: AppDesign.accent,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

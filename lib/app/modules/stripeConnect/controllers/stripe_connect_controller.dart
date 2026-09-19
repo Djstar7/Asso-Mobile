@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/providers/stripe_connect_service.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Onboarding Stripe Connect côté vendeur : saisie de l'IBAN + suivi du statut
 /// de validation (null → pending → approved / rejected).
@@ -171,7 +172,7 @@ class StripeConnectController extends GetxController {
         'Date de naissance requise',
         'Notre partenaire bancaire exige votre date de naissance pour activer les virements.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -199,7 +200,7 @@ class StripeConnectController extends GetxController {
               ? res.message
               : 'Votre compte de virement sera vérifié sous 24-48h.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
@@ -207,7 +208,7 @@ class StripeConnectController extends GetxController {
           'Erreur',
           _friendlyError(res.message),
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -216,7 +217,7 @@ class StripeConnectController extends GetxController {
         'Erreur',
         'Une erreur est survenue. Réessayez.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

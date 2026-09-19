@@ -9,6 +9,7 @@ import '../../wallet/views/payment_webview.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../../data/services/stripe_native_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -163,7 +164,7 @@ class DiaspoBookingController extends GetxController {
       );
       if (!ok) {
         Get.snackbar('Paiement annulé', "Le paiement n'a pas été finalisé.",
-            backgroundColor: Colors.orange, colorText: Colors.white,
+            backgroundColor: AppDesign.accent, colorText: Colors.white,
             duration: const Duration(seconds: 4));
         return;
       }
@@ -196,7 +197,7 @@ class DiaspoBookingController extends GetxController {
       Get.snackbar(
         'Paiement en attente',
         'Validez le paiement sur votre téléphone (USSD). La réservation sera confirmée ensuite.',
-        backgroundColor: Colors.orange, colorText: Colors.white,
+        backgroundColor: AppDesign.accent, colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );
       _pollBookingPayment(booking);
@@ -246,7 +247,7 @@ class DiaspoBookingController extends GetxController {
     Get.snackbar(
       'Erreur',
       e.toString().replaceAll('Exception: ', ''),
-      backgroundColor: Colors.red,
+      backgroundColor: AppDesign.danger,
       colorText: Colors.white,
     );
   }
@@ -262,7 +263,7 @@ class DiaspoBookingController extends GetxController {
         return;
       } else if (status == 'failed') {
         Get.snackbar('Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
-            backgroundColor: Colors.red, colorText: Colors.white,
+            backgroundColor: AppDesign.danger, colorText: Colors.white,
             duration: const Duration(seconds: 5));
         return;
       }
@@ -270,7 +271,7 @@ class DiaspoBookingController extends GetxController {
     // Délai dépassé sans confirmation : on reste prudent, pas de « confirmée ».
     Get.snackbar('Paiement en attente',
         "La confirmation n'est pas encore arrivée. Vérifiez dans « Mes Achats ».",
-        backgroundColor: Colors.orange, colorText: Colors.white,
+        backgroundColor: AppDesign.accent, colorText: Colors.white,
         duration: const Duration(seconds: 5));
   }
 
@@ -285,7 +286,7 @@ class DiaspoBookingController extends GetxController {
             children: [
               const Icon(
                 Icons.check_circle,
-                color: Colors.green,
+                color: AppDesign.success,
                 size: 64,
               ),
               const SizedBox(height: 16),

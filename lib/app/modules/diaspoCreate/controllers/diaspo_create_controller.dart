@@ -5,6 +5,7 @@ import '../../../data/models/currency_model.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
+import '../../../core/utils/app_design.dart';
 class DiaspoCreateController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
 
@@ -241,7 +242,7 @@ class DiaspoCreateController extends GetxController {
         'Erreur',
         'Veuillez sélectionner les dates de départ et d\'arrivée',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -253,7 +254,7 @@ class DiaspoCreateController extends GetxController {
         'Erreur',
         'La date d\'arrivée doit être après la date de départ',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -284,7 +285,7 @@ class DiaspoCreateController extends GetxController {
             : 'Elle sera réservable dès la validation de votre identité'
                 '${deadline != null ? ' (à régulariser avant le $deadline)' : ''}.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: createdOffer.profileVerified ? Colors.green : Colors.orange,
+        backgroundColor: createdOffer.profileVerified ? AppDesign.success : AppDesign.accent,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );
@@ -300,7 +301,7 @@ class DiaspoCreateController extends GetxController {
         'Erreur',
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -368,7 +369,7 @@ class DiaspoCreateController extends GetxController {
             'Erreur',
             'L\'heure d\'arrivée doit être après l\'heure de départ',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
           return;

@@ -6,6 +6,8 @@ import '../../../data/models/wholesale_models.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import 'wholesale_order_sheet.dart';
+import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/product_card.dart';
 
 /// Section « Produits importés » : pays d'origine gérés côté backend
 /// (Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪, Inde 🇮🇳…).
@@ -34,7 +36,7 @@ class _ImportViewState extends State<ImportView> {
     [Color(0xFF0B6B3A), Color(0xFF2FB56E)],
     [Color(0xFF1D4ED8), Color(0xFF60A5FA)],
     [Color(0xFF7C3AED), Color(0xFFA78BFA)],
-    [Color(0xFFB45309), Color(0xFFF59E0B)],
+    [AppDesign.accentText, AppDesign.warning],
   ];
 
   static List<_ImportCountry> _mapCountries(List<Map<String, String>> raw) {
@@ -99,7 +101,7 @@ class _ImportViewState extends State<ImportView> {
   Widget build(BuildContext context) {
     final country = _current;
     return Container(
-      color: const Color(0xFFF7F8FA),
+      color: AppDesign.neutral50,
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -119,12 +121,7 @@ class _ImportViewState extends State<ImportView> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.66,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
+                    gridDelegate: _importGridDelegate(context),
                     delegate: SliverChildBuilderDelegate(
                       (_, i) => _buildProductCard(_products[i], country),
                       childCount: _products.length,
@@ -260,7 +257,7 @@ class _ImportViewState extends State<ImportView> {
                 color: selected ? null : Colors.white,
                 borderRadius: BorderRadius.circular(26),
                 border: Border.all(
-                  color: selected ? Colors.transparent : const Color(0xFFE6E9EE),
+                  color: selected ? Colors.transparent : AppDesign.neutral200,
                 ),
                 boxShadow: selected
                     ? [BoxShadow(color: c.gradient.first.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))]
@@ -272,7 +269,7 @@ class _ImportViewState extends State<ImportView> {
                   const SizedBox(width: 8),
                   Text(c.name,
                       style: TextStyle(
-                          color: selected ? Colors.white : const Color(0xFF33404A),
+                          color: selected ? Colors.white : AppDesign.neutral700,
                           fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                           fontSize: 14)),
                 ],
@@ -291,10 +288,10 @@ class _ImportViewState extends State<ImportView> {
       child: Row(
         children: [
           Text('Sélection ${c.name}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1B2530))),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppDesign.neutral900)),
           const Spacer(),
           Text('${_products.length} article${_products.length > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 12.5, color: Color(0xFF8A97A3), fontWeight: FontWeight.w600)),
+              style: const TextStyle(fontSize: 12.5, color: AppDesign.neutral500, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -324,7 +321,7 @@ class _ImportViewState extends State<ImportView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDEFF3)),
+        border: Border.all(color: AppDesign.neutral200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +329,7 @@ class _ImportViewState extends State<ImportView> {
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
-                color: Color(0xFFEFF1F4),
+                color: AppDesign.neutral100,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
@@ -342,11 +339,11 @@ class _ImportViewState extends State<ImportView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(height: 12, width: double.infinity, color: const Color(0xFFEFF1F4)),
+                Container(height: 12, width: double.infinity, color: AppDesign.neutral100),
                 const SizedBox(height: 8),
-                Container(height: 12, width: 90, color: const Color(0xFFEFF1F4)),
+                Container(height: 12, width: 90, color: AppDesign.neutral100),
                 const SizedBox(height: 12),
-                Container(height: 14, width: 70, color: const Color(0xFFEFF1F4)),
+                Container(height: 14, width: 70, color: AppDesign.neutral100),
               ],
             ),
           ),
@@ -375,7 +372,7 @@ class _ImportViewState extends State<ImportView> {
           const SizedBox(height: 18),
           Text('Aucun produit ${c.name} pour l\'instant',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2A3540))),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppDesign.neutral800)),
           const SizedBox(height: 6),
           Text('Reviens bientôt : de nouveaux articles importés de ${c.name} arrivent régulièrement.',
               textAlign: TextAlign.center,
@@ -398,6 +395,25 @@ class _ImportViewState extends State<ImportView> {
   }
 
   // ─────────────────────────── Carte produit ───────────────────────────
+
+  /// Gabarit des grilles « import ».
+  ///
+  /// La carte de gros affiche un nom sur deux lignes, un prix et un badge
+  /// de quantité minimale : on réserve cette hauteur explicitement au lieu
+  /// de la déduire d'un ratio, qui se dégradait sur les écrans étroits.
+  SliverGridDelegate _importGridDelegate(BuildContext context) {
+    final columns = AppDesign.productColumns(context);
+    final width = ProductCard.widthInGrid(context, columns: columns);
+    final textBlock = ProductCard.textBlockHeight(context) + AppDesign.space5;
+
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: columns,
+      mainAxisExtent: width + textBlock,
+      crossAxisSpacing: AppDesign.space3,
+      mainAxisSpacing: AppDesign.space3,
+    );
+  }
+
   Widget _buildProductCard(WholesaleProduct p, _ImportCountry c) {
     final name = p.name;
     final entry = p.entryTier;
@@ -412,7 +428,7 @@ class _ImportViewState extends State<ImportView> {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEDEFF3)),
+            border: Border.all(color: AppDesign.neutral200),
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
             ],
@@ -443,7 +459,7 @@ class _ImportViewState extends State<ImportView> {
                             Text(c.flag, style: const TextStyle(fontSize: 12)),
                             const SizedBox(width: 4),
                             Text(c.code,
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF33404A))),
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: AppDesign.neutral700)),
                           ],
                         ),
                       ),
@@ -459,7 +475,7 @@ class _ImportViewState extends State<ImportView> {
                     Text(name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.25, color: Color(0xFF23303B))),
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.25, color: AppDesign.neutral800)),
                     const SizedBox(height: 6),
                     // Prix d'entrée (« à partir de ») + quantité minimale (cota)
                     Text(
@@ -477,14 +493,14 @@ class _ImportViewState extends State<ImportView> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.12),
+                              color: AppDesign.accent.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               entry != null ? 'GROS · min ${entry.minQuantity}' : 'GROS',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700, fontSize: 10.5),
+                              style: const TextStyle(color: AppDesign.accentText, fontWeight: FontWeight.w700, fontSize: 10.5),
                             ),
                           ),
                         ),
@@ -511,7 +527,7 @@ class _ImportViewState extends State<ImportView> {
   }
 
   Widget _imgPlaceholder() => Container(
-        color: const Color(0xFFF1F2F5),
+        color: AppDesign.neutral100,
         child: Icon(Icons.image_outlined, color: Colors.grey.shade400, size: 40),
       );
 
@@ -526,7 +542,7 @@ class _ImportViewState extends State<ImportView> {
       _imageUrlForDevice(value),
       fit: BoxFit.contain,
       loadingBuilder: (_, child, progress) =>
-          progress == null ? child : Container(color: const Color(0xFFF1F2F5)),
+          progress == null ? child : Container(color: AppDesign.neutral100),
       errorBuilder: (_, __, ___) => _imgPlaceholder(),
     );
   }

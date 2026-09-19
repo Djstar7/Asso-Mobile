@@ -8,6 +8,7 @@ import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoListController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -355,7 +356,7 @@ class DiaspoListController extends GetxController {
           AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.hourglass_empty, color: Colors.orange),
+                const Icon(Icons.hourglass_empty, color: AppDesign.accent),
                 const SizedBox(width: 12),
                 const Flexible(
                   child: Text(
@@ -382,7 +383,7 @@ class DiaspoListController extends GetxController {
           AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.red),
+                const Icon(Icons.error_outline, color: AppDesign.danger),
                 const SizedBox(width: 12),
                 Flexible(
                   child: Text(
@@ -419,7 +420,7 @@ class DiaspoListController extends GetxController {
           AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.verified_user, color: Colors.blue),
+                const Icon(Icons.verified_user, color: AppDesign.info),
                 const SizedBox(width: 12),
                 Flexible(
                   child: Text(
@@ -480,7 +481,7 @@ class DiaspoListController extends GetxController {
               // Title
               Row(
                 children: [
-                  const Icon(Icons.verified_user, color: Colors.blue),
+                  const Icon(Icons.verified_user, color: AppDesign.info),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -730,7 +731,7 @@ class DiaspoListController extends GetxController {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border.all(
-          color: image != null ? Colors.green : Colors.grey[300]!,
+          color: image != null ? AppDesign.success : Colors.grey[300]!,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(12),
@@ -775,7 +776,7 @@ class DiaspoListController extends GetxController {
                     onPressed: onRemove,
                     icon: const Icon(Icons.close),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppDesign.danger,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -789,7 +790,7 @@ class DiaspoListController extends GetxController {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppDesign.success,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -852,7 +853,7 @@ class DiaspoListController extends GetxController {
         'Succès',
         'Votre $docTypeName a été soumis pour vérification. Vous recevrez une notification dans 24-48h.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );
@@ -865,7 +866,7 @@ class DiaspoListController extends GetxController {
         'Erreur',
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }

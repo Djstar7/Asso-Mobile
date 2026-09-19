@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../controllers/variant_editor_state.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Éditeur plein écran des variantes vendeur :
 /// 1. options proposées (couleurs en pastilles, tailles, pointures…)
@@ -314,7 +315,7 @@ class _GroupCardState extends State<_GroupCard> {
                 decoration: BoxDecoration(
                   color:
                       (group.isColor
-                              ? Colors.pink
+                              ? AppDesign.neutral500
                               : AppThemeSystem.primaryColor)
                           .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
@@ -322,7 +323,7 @@ class _GroupCardState extends State<_GroupCard> {
                 child: Icon(
                   group.isColor ? Icons.palette_outlined : Icons.sell_outlined,
                   color: group.isColor
-                      ? Colors.pink
+                      ? AppDesign.neutral500
                       : AppThemeSystem.primaryColor,
                 ),
               ),
@@ -372,7 +373,7 @@ class _GroupCardState extends State<_GroupCard> {
                     value: 'delete',
                     child: Text(
                       'Supprimer cette option',
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: AppDesign.danger),
                     ),
                   ),
                 ],

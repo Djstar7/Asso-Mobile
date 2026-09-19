@@ -10,6 +10,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/services/fcm_service.dart';
 import '../../shipConfig/models/sync_models.dart';
+import '../../../core/utils/app_design.dart';
 
 class DeliveryDashboardController extends GetxController {
   // Contrôleur de la carte
@@ -189,7 +190,7 @@ class DeliveryDashboardController extends GetxController {
         'Erreur',
         'Impossible de charger les demandes de livraison',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -351,7 +352,7 @@ class DeliveryDashboardController extends GetxController {
           ? 'Vous pouvez recevoir des demandes de livraison'
           : 'Vous ne recevrez plus de demandes',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isOnline.value ? Colors.green : Colors.orange,
+      backgroundColor: isOnline.value ? AppDesign.success : AppDesign.accent,
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );
@@ -371,7 +372,7 @@ class DeliveryDashboardController extends GetxController {
           'Livraison acceptée',
           'Course démarrée — dirigez-vous vers le point de retrait',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
@@ -379,7 +380,7 @@ class DeliveryDashboardController extends GetxController {
           'Erreur',
           response.message.isNotEmpty ? response.message : 'Impossible d\'accepter',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -388,7 +389,7 @@ class DeliveryDashboardController extends GetxController {
         'Erreur',
         'Impossible d\'accepter la demande',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -430,7 +431,7 @@ class DeliveryDashboardController extends GetxController {
         'Demande refusée',
         'La demande a été refusée',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     } catch (e) {
@@ -438,7 +439,7 @@ class DeliveryDashboardController extends GetxController {
         'Erreur',
         'Impossible de refuser la demande',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -500,7 +501,7 @@ class DeliveryDashboardController extends GetxController {
           'Livraison confirmée !',
           'Commission créditée sur votre wallet.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
@@ -508,7 +509,7 @@ class DeliveryDashboardController extends GetxController {
           'Erreur',
           response.message.isNotEmpty ? response.message : 'Code incorrect',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -517,7 +518,7 @@ class DeliveryDashboardController extends GetxController {
         'Erreur',
         'Impossible de confirmer la livraison',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -574,7 +575,7 @@ class DeliveryDashboardController extends GetxController {
       'Zone changée',
       'Vous êtes maintenant à ${zone.name}',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.blue,
+      backgroundColor: AppDesign.info,
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
       icon: const Icon(Icons.warehouse, color: Colors.white),
@@ -600,7 +601,7 @@ class DeliveryDashboardController extends GetxController {
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppDesign.danger,
             ),
             child: const Text('Désynchroniser'),
           ),
@@ -620,7 +621,7 @@ class DeliveryDashboardController extends GetxController {
           'Désynchronisation réussie',
           'Vous n\'êtes plus livreur',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
@@ -634,7 +635,7 @@ class DeliveryDashboardController extends GetxController {
           'Erreur',
           response.message.isNotEmpty ? response.message : 'Impossible de se désynchroniser',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -644,7 +645,7 @@ class DeliveryDashboardController extends GetxController {
         'Erreur',
         'Une erreur est survenue lors de la désynchronisation',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }

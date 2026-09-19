@@ -7,6 +7,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../diaspoList/controllers/diaspo_list_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoDetailController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -145,7 +146,7 @@ class DiaspoDetailController extends GetxController {
       AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: Colors.orange),
+            Icon(Icons.warning, color: AppDesign.accent),
             SizedBox(width: 12),
             Flexible(
               child: Text(
@@ -170,7 +171,7 @@ class DiaspoDetailController extends GetxController {
               _performDelete();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppDesign.danger,
             ),
             child: const Text('Supprimer'),
           ),
@@ -200,7 +201,7 @@ class DiaspoDetailController extends GetxController {
         'Succès',
         'Offre supprimée avec succès',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
@@ -208,7 +209,7 @@ class DiaspoDetailController extends GetxController {
         'Erreur',
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

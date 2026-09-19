@@ -7,6 +7,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../core/utils/location_label.dart';
 import '../controllers/store_management_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class EditStoreView extends GetView<StoreManagementController> {
   const EditStoreView({super.key});
@@ -589,7 +590,7 @@ class EditStoreView extends GetView<StoreManagementController> {
                             'Erreur',
                             'Le nom de la boutique est requis',
                             snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red,
+                            backgroundColor: AppDesign.danger,
                             colorText: Colors.white,
                           );
                           return;
@@ -600,7 +601,7 @@ class EditStoreView extends GetView<StoreManagementController> {
                             'Erreur',
                             'L\'adresse est requise',
                             snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red,
+                            backgroundColor: AppDesign.danger,
                             colorText: Colors.white,
                           );
                           return;
@@ -611,7 +612,7 @@ class EditStoreView extends GetView<StoreManagementController> {
                             'Erreur',
                             'Le téléphone est requis',
                             snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red,
+                            backgroundColor: AppDesign.danger,
                             colorText: Colors.white,
                           );
                           return;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../controllers/search_controller.dart' as search_ctrl;
 
@@ -223,13 +225,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
   Widget _buildLoadingState(BuildContext context) {
     return GridView.builder(
       padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount:
-            AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
+      gridDelegate: ProductCard.gridDelegate(context),
       itemCount: 6,
       itemBuilder: (context, index) =>
           ShimmerWidgets.productCardShimmer(context),
@@ -510,15 +506,7 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
               horizontal: AppThemeSystem.getHorizontalPadding(context),
             ),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount:
-                    AppThemeSystem.getDeviceType(context) == DeviceType.mobile
-                        ? 2
-                        : 3,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
+              gridDelegate: ProductCard.gridDelegate(context),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final product = controller.searchResults[index];
@@ -565,126 +553,39 @@ class _SearchTabContent extends GetView<search_ctrl.SearchController> {
     Map<String, dynamic> product,
   ) {
     final primaryImage = product['primary_image']?.toString();
-    final name = product['name']?.toString() ?? 'Produit';
-    final price = double.tryParse((product['price_xaf'] ?? product['price'])?.toString() ?? '0') ?? 0.0;
-    final location = product['location']?.toString() ?? '';
+    final price = double.tryParse(
+            (product['price_xaf'] ?? product['price'])?.toString() ?? '0') ??
+        0.0;
 
-    return GestureDetector(
+    return ProductCard(
+      name: product['name']?.toString() ?? 'Produit',
+      price: controller.formatPrice(price),
+      location: product['location']?.toString() ?? '',
+      isCertified: ProductCard.isShopCertified(product),
+      imageBuilder: (context) =>
+          primaryImage != null && primaryImage.isNotEmpty
+              ? Image.network(
+                  primaryImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(),
+                )
+              : _buildPlaceholder(),
       onTap: () => controller.onProductTap(product),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: primaryImage != null && primaryImage.isNotEmpty
-                    ? Image.network(
-                        primaryImage,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
-              ),
-            ),
-
-            // Infos
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      controller.formatPrice(price),
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.primaryColor,
-                      ),
-                    ),
-                  ),
-                  if (location.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: AppThemeSystem.grey600,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            location,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(
-                              FontSizeType.caption,
-                              color: AppThemeSystem.grey600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildPlaceholder() {
-    return Container(
-      width: double.infinity,
-      color: AppThemeSystem.grey200,
-      child: Icon(
-        Icons.image_outlined,
-        size: 40,
-        color: AppThemeSystem.grey400,
+    return Builder(
+      builder: (context) => ColoredBox(
+        color: context.ds.surfaceMuted,
+        child: Center(
+          child: Icon(
+            Icons.image_outlined,
+            size: 28,
+            color: context.ds.textTertiary,
+          ),
+        ),
       ),
     );
   }

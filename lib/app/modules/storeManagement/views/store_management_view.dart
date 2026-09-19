@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/store_management_controller.dart';
@@ -160,11 +161,7 @@ class _BannerItem extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: color,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           boxShadow: [
             BoxShadow(
@@ -424,19 +421,12 @@ class _CertificationCard extends GetView<StoreManagementController> {
             ? AppThemeSystem.errorColor
             : isExpiringSoon
                 ? AppThemeSystem.warningColor
-                : const Color(0xFF1DA1F2);
+                : AppDesign.info;
 
         return Container(
           padding: EdgeInsets.all(context.horizontalPadding),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                certColor.withValues(alpha: 0.15),
-                certColor.withValues(alpha: 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: certColor.withValues(alpha: 0.10),
             borderRadius: context.borderRadius(BorderRadiusType.medium),
             border: Border.all(
               color: certColor.withValues(alpha: 0.4),
@@ -592,14 +582,7 @@ class _CertificationCard extends GetView<StoreManagementController> {
       return Container(
         padding: EdgeInsets.all(context.horizontalPadding),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-              AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppDesign.accentSubtle,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           border: Border.all(
             color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),

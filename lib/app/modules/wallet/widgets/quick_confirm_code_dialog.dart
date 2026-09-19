@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/diaspo_service.dart';
 
@@ -48,7 +49,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         'Veuillez entrer le code de confirmation',
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -58,7 +59,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         'Le code doit contenir 6 caractères',
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -90,12 +91,12 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppDesign.success,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.check_circle,
-                    color: Colors.green.shade600,
+                    color: AppDesign.success,
                     size: 48,
                   ),
                 ),
@@ -122,7 +123,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppDesign.success,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -138,7 +139,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                          color: AppDesign.success,
                         ),
                       ),
                     ],
@@ -177,7 +178,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
       Get.snackbar(
         'Erreur',
         e.toString().replaceAll('Exception: ', ''),
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
       );
@@ -208,8 +209,8 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.shade400,
-                      Colors.blue.shade600,
+                      AppDesign.info,
+                      AppDesign.info,
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -240,10 +241,10 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                  color: AppDesign.warning,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.amber.shade200,
+                    color: AppDesign.warning,
                     width: 1,
                   ),
                 ),
@@ -251,7 +252,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.amber.shade900,
+                      color: AppDesign.warning,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -260,7 +261,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                         'Entrez le code à 6 caractères fourni par le client',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.amber.shade900,
+                          color: AppDesign.warning,
                         ),
                       ),
                     ),

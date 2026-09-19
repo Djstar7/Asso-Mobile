@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../data/models/deliverer_model.dart';
@@ -491,7 +492,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: AppDesign.danger,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -506,7 +507,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         const SizedBox(height: 2),
                         const Icon(
                           Icons.location_pin,
-                          color: Colors.red,
+                          color: AppDesign.danger,
                           size: 50,
                         ),
                       ],
@@ -761,7 +762,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_pin, color: Colors.red, size: 20),
+                        Icon(Icons.location_pin, color: AppDesign.danger, size: 20),
                         const SizedBox(width: 6),
                         Text(
                           'Ma boutique',
@@ -840,16 +841,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppThemeSystem.primaryColor,
-                                AppThemeSystem.primaryColor.withValues(
-                                  alpha: 0.7,
-                                ),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: AppDesign.accent,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
@@ -1050,23 +1042,23 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                           context.horizontalPadding * 0.75,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
+                          color: AppDesign.info.withValues(alpha: 0.1),
                           borderRadius: context.borderRadius(
                             BorderRadiusType.medium,
                           ),
                           border: Border.all(
-                            color: Colors.blue.withValues(alpha: 0.3),
+                            color: AppDesign.info.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.touch_app, color: Colors.blue, size: 20),
+                            Icon(Icons.touch_app, color: AppDesign.info, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Appuyez sur la carte pour choisir l\'emplacement de votre boutique',
                                 style: context.body2.copyWith(
-                                  color: Colors.blue[700],
+                                  color: AppDesign.info,
                                   fontSize: 12,
                                 ),
                               ),

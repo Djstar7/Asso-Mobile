@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../myOrder/controllers/my_order_controller.dart';
 import '../../myOrder/models/customer_order_models.dart';
+import '../../../core/utils/app_design.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
   const ShipmentView({super.key});
@@ -259,18 +260,18 @@ class ShipmentView extends GetView<MyOrderController> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                border: Border(top: BorderSide(color: Colors.amber.withValues(alpha: 0.3))),
+                color: AppDesign.warning.withValues(alpha: 0.1),
+                border: Border(top: BorderSide(color: AppDesign.warning.withValues(alpha: 0.3))),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.key_rounded, color: Colors.amber.shade800, size: 20),
+                      Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
                       const SizedBox(width: 8),
                       Text('Code de confirmation',
-                        style: context.body2.copyWith(fontWeight: FontWeight.w600, color: Colors.amber.shade800)),
+                        style: context.body2.copyWith(fontWeight: FontWeight.w600, color: AppDesign.warning)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -283,7 +284,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade800,
+                        color: AppDesign.warning,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -297,7 +298,7 @@ class ShipmentView extends GetView<MyOrderController> {
                   ),
                   const SizedBox(height: 8),
                   Text('Communiquez ce code au livreur pour confirmer la reception',
-                    style: context.caption.copyWith(color: Colors.amber.shade800),
+                    style: context.caption.copyWith(color: AppDesign.warning),
                     textAlign: TextAlign.center),
                 ],
               ),
@@ -322,8 +323,8 @@ class ShipmentView extends GetView<MyOrderController> {
                 icon: const Icon(Icons.cancel_outlined, size: 18),
                 label: const Text('Annuler'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: AppDesign.danger,
+                  side: const BorderSide(color: AppDesign.danger),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -335,8 +336,8 @@ class ShipmentView extends GetView<MyOrderController> {
               onPressed: () => controller.contactDelivery(order.deliveryPersonPhone!),
               icon: const Icon(Icons.phone),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.green.withValues(alpha: 0.1),
-                foregroundColor: Colors.green,
+                backgroundColor: AppDesign.success.withValues(alpha: 0.1),
+                foregroundColor: AppDesign.success,
               ),
             ),
           ],
@@ -348,7 +349,7 @@ class ShipmentView extends GetView<MyOrderController> {
                 icon: const Icon(Icons.star_rounded, size: 18, color: Colors.white),
                 label: const Text('Noter', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber.shade700,
+                  backgroundColor: AppDesign.warning,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -360,12 +361,12 @@ class ShipmentView extends GetView<MyOrderController> {
 
   Color _statusColor(CustomerOrderStatus status) {
     switch (status) {
-      case CustomerOrderStatus.pending: return Colors.orange;
-      case CustomerOrderStatus.confirmed: return Colors.blue;
-      case CustomerOrderStatus.preparing: return Colors.purple;
-      case CustomerOrderStatus.shipped: return Colors.indigo;
-      case CustomerOrderStatus.delivered: return Colors.green;
-      case CustomerOrderStatus.cancelled: return Colors.red;
+      case CustomerOrderStatus.pending: return AppDesign.accent;
+      case CustomerOrderStatus.confirmed: return AppDesign.info;
+      case CustomerOrderStatus.preparing: return AppDesign.neutral500;
+      case CustomerOrderStatus.shipped: return AppDesign.neutral500;
+      case CustomerOrderStatus.delivered: return AppDesign.success;
+      case CustomerOrderStatus.cancelled: return AppDesign.danger;
     }
   }
 }

@@ -12,6 +12,7 @@ import '../../../data/providers/order_service.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/statistics_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../core/utils/app_design.dart';
 
 /// Pourquoi la position automatique n'a pas pu être obtenue.
 enum LocationIssue { none, serviceDisabled, permissionDenied, deniedForever, failed }
@@ -444,7 +445,7 @@ class ProductController extends GetxController {
             'Paiement confirmé',
             'Votre commande est payée. Le vendeur va la préparer.',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
+            backgroundColor: AppDesign.success,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),
           );
@@ -455,7 +456,7 @@ class ProductController extends GetxController {
             'Paiement échoué',
             "Le paiement n'a pas abouti. Vous pouvez réessayer depuis vos commandes.",
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
             duration: const Duration(seconds: 6),
           );

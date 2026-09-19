@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/location_label.dart';
@@ -160,7 +161,7 @@ class ProductView extends GetView<ProductController> {
                       isFav
                           ? Icons.favorite_rounded
                           : Icons.favorite_border_rounded,
-                      color: isFav ? Colors.red : Colors.white,
+                      color: isFav ? AppDesign.danger : Colors.white,
                       size: 20,
                     ),
                   ),
@@ -353,48 +354,37 @@ class ProductView extends GetView<ProductController> {
     BuildContext context,
     Map<String, dynamic> product,
   ) {
+    // Le nom passe avant le prix : on identifie l'article, puis on en lit
+    // le montant. Le prix n'est plus posé dans un bloc orange plein — sa
+    // taille et sa graisse suffisent à le rendre immédiatement repérable.
     return Padding(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space5,
+        context.ds.gutter,
+        AppDesign.space4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Prix
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppThemeSystem.primaryColor,
-                  AppThemeSystem.primaryColor.withValues(alpha: 0.8),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Obx(
-              () => Text(
-                controller.formatPrice(controller.unitPriceXaf(product)),
-                style: context.textStyle(
-                  FontSizeType.h3,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+          Text(
+            product['name']?.toString() ?? 'Produit',
+            style: context.textStyle(
+              FontSizeType.h5,
+              fontWeight: FontWeight.w600,
+              color: context.ds.textPrimary,
+              height: 1.3,
             ),
           ),
-          SizedBox(height: 16),
-          // Nom du produit
-          Text(
-            product['name'],
-            style: context.textStyle(
-              FontSizeType.h4,
-              fontWeight: FontWeight.bold,
+          SizedBox(height: AppDesign.space3),
+          Obx(
+            () => Text(
+              controller.formatPrice(controller.unitPriceXaf(product)),
+              style: context.textStyle(
+                FontSizeType.h4,
+                fontWeight: FontWeight.w700,
+                color: context.ds.textPrimary,
+              ),
             ),
           ),
         ],
@@ -871,10 +861,10 @@ class ProductView extends GetView<ProductController> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color(0xFF1E88E5).withValues(alpha: 0.1),
+                      color: AppDesign.info.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: Color(0xFF1E88E5).withValues(alpha: 0.3),
+                        color: AppDesign.info.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -884,14 +874,14 @@ class ProductView extends GetView<ProductController> {
                         Icon(
                           Icons.verified_rounded,
                           size: 14,
-                          color: Color(0xFF1E88E5),
+                          color: AppDesign.info,
                         ),
                         SizedBox(width: 4),
                         Text(
                           'Certifié',
                           style: context.textStyle(
                             FontSizeType.overline,
-                            color: Color(0xFF1E88E5),
+                            color: AppDesign.info,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -939,12 +929,7 @@ class ProductView extends GetView<ProductController> {
                                     },
                                 errorBuilder: (_, __, ___) => Container(
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppThemeSystem.primaryColor,
-                                        AppThemeSystem.tertiaryColor,
-                                      ],
-                                    ),
+                                    color: AppDesign.accent,
                                   ),
                                   child: Icon(
                                     Icons.person_rounded,
@@ -955,12 +940,7 @@ class ProductView extends GetView<ProductController> {
                               )
                             : Container(
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppThemeSystem.primaryColor,
-                                      AppThemeSystem.tertiaryColor,
-                                    ],
-                                  ),
+                                  color: AppDesign.accent,
                                 ),
                                 child: Icon(
                                   Icons.person_rounded,
@@ -977,7 +957,7 @@ class ProductView extends GetView<ProductController> {
                         child: Container(
                           padding: EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: Color(0xFF1E88E5),
+                            color: AppDesign.info,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: AppThemeSystem.getSurfaceColor(context),
@@ -1076,7 +1056,7 @@ class ProductView extends GetView<ProductController> {
                         children: [
                           Icon(
                             Icons.star_rounded,
-                            color: Colors.amber,
+                            color: AppDesign.warning,
                             size: 16,
                           ),
                           SizedBox(width: 4),
@@ -1451,12 +1431,7 @@ class ProductView extends GetView<ProductController> {
               child: Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                      AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-                    ],
-                  ),
+                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
@@ -1763,16 +1738,7 @@ class ProductView extends GetView<ProductController> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppThemeSystem.primaryColor.withValues(
-                                  alpha: 0.2,
-                                ),
-                                AppThemeSystem.primaryColor.withValues(
-                                  alpha: 0.1,
-                                ),
-                              ],
-                            ),
+                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1904,15 +1870,27 @@ class ProductView extends GetView<ProductController> {
                               color: AppThemeSystem.getBorderColor(context),
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              'Aucun partenaire de livraison disponible à ${controller.currentLocation.value}',
-                              style: context.textStyle(
-                                FontSizeType.body2,
-                                color: AppThemeSystem.grey600,
-                                fontWeight: FontWeight.bold,
+                          // Le nom de ville vient du serveur : sans retour à
+                          // la ligne ni centrage, la phrase était coupée net.
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 18,
+                                color: context.ds.textTertiary,
                               ),
-                            ),
+                              SizedBox(width: AppDesign.space2),
+                              Expanded(
+                                child: Text(
+                                  'Aucun partenaire de livraison ne dessert encore ${controller.currentLocation.value}.',
+                                  style: context.textStyle(
+                                    FontSizeType.caption,
+                                    color: context.ds.textSecondary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }
@@ -2255,12 +2233,7 @@ class ProductView extends GetView<ProductController> {
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                            AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-                          ],
-                        ),
+                        color: context.ds.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: AppThemeSystem.primaryColor.withValues(
@@ -2289,8 +2262,11 @@ class ProductView extends GetView<ProductController> {
                                       onTap: controller.decrementQuantity,
                                       borderRadius: BorderRadius.circular(8),
                                       child: Container(
-                                        width: 34,
-                                        height: 34,
+                                        // 40 px : les boutons +/- sont
+                                        // manipulés au pouce, 34 px était
+                                        // sous le seuil confortable.
+                                        width: 40,
+                                        height: 40,
                                         decoration: BoxDecoration(
                                           color: AppThemeSystem.primaryColor
                                               .withValues(alpha: 0.1),
@@ -2322,8 +2298,11 @@ class ProductView extends GetView<ProductController> {
                                           controller.incrementQuantity(product),
                                       borderRadius: BorderRadius.circular(8),
                                       child: Container(
-                                        width: 34,
-                                        height: 34,
+                                        // 40 px : les boutons +/- sont
+                                        // manipulés au pouce, 34 px était
+                                        // sous le seuil confortable.
+                                        width: 40,
+                                        height: 40,
                                         decoration: BoxDecoration(
                                           color: AppThemeSystem.primaryColor,
                                           borderRadius: BorderRadius.circular(
@@ -2623,7 +2602,7 @@ class ProductView extends GetView<ProductController> {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+          color: context.ds.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: hasAddress || isLocating
@@ -3178,7 +3157,7 @@ class ProductView extends GetView<ProductController> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(
           Icons.check_circle_rounded,
-          color: Colors.green,
+          color: AppDesign.success,
           size: 56,
         ),
         title: const Text('Commande enregistrée', textAlign: TextAlign.center),
@@ -3256,7 +3235,7 @@ class ProductView extends GetView<ProductController> {
       'Adresse mise à jour',
       'Votre adresse de livraison a été modifiée',
       snackPosition: SnackPosition.BOTTOM,
-      icon: const Icon(Icons.check_circle_rounded, color: Colors.green),
+      icon: const Icon(Icons.check_circle_rounded, color: AppDesign.success),
     );
   }
 
@@ -3327,29 +3306,7 @@ class ProductView extends GetView<ProductController> {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: AppThemeSystem.grey200,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.broken_image_outlined,
-                  size: 64,
-                  color: AppThemeSystem.grey400,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Image non disponible',
-                  style: context.textStyle(
-                    FontSizeType.caption,
-                    color: AppThemeSystem.grey600,
-                  ),
-                ),
-              ],
-            ),
-          );
+          return _ImagePlaceholder(icon: Icons.broken_image_outlined);
         },
       );
     } else {
@@ -3360,29 +3317,7 @@ class ProductView extends GetView<ProductController> {
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: AppThemeSystem.grey200,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.image_outlined,
-                  size: 64,
-                  color: AppThemeSystem.grey400,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Image non disponible',
-                  style: context.textStyle(
-                    FontSizeType.caption,
-                    color: AppThemeSystem.grey600,
-                  ),
-                ),
-              ],
-            ),
-          );
+          return _ImagePlaceholder(icon: Icons.image_outlined);
         },
       );
     }
@@ -3671,6 +3606,52 @@ class ProductView extends GetView<ProductController> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// Substitut affiché quand une image produit est absente ou illisible.
+///
+/// Il s'adapte à la taille qu'on lui donne : en vignette (60 px) seule
+/// l'icône apparaît, en grand format le libellé s'y ajoute. L'ancienne
+/// version imposait une icône de 64 px et un texte, ce qui débordait des
+/// miniatures et affichait le bandeau d'overflow de Flutter.
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = constraints.biggest.shortestSide;
+        final compact = side < 120;
+        final iconSize = compact ? (side * 0.4).clamp(16.0, 40.0) : 56.0;
+
+        return ColoredBox(
+          color: context.ds.surfaceMuted,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: iconSize, color: context.ds.textTertiary),
+                if (!compact) ...[
+                  SizedBox(height: AppDesign.space2),
+                  Text(
+                    'Image non disponible',
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: context.ds.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/storage_service.dart';
 import '../controllers/chat_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -261,7 +262,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50),
+                          color: AppDesign.success,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppThemeSystem.getBackgroundColor(context),
@@ -544,7 +545,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
               // Icône et titre
               Icon(
                 Icons.delete_outline_rounded,
-                color: Colors.red,
+                color: AppDesign.danger,
                 size: 48,
               ),
               SizedBox(height: 16),
@@ -611,7 +612,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                           controller.deleteConversation(conversation);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppDesign.danger,
                           padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

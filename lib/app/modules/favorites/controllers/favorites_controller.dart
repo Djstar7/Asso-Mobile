@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../home/controllers/home_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class FavoritesController extends GetxController {
   final RxList<Map<String, dynamic>> favoriteProducts = <Map<String, dynamic>>[].obs;
@@ -158,7 +159,7 @@ class FavoritesController extends GetxController {
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppDesign.danger,
             ),
             child: Text('Supprimer tout'),
           ),

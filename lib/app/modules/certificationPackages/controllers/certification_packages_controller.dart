@@ -6,6 +6,7 @@ import '../../../data/models/wallet_model.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../packageSubscription/widgets/sales_code_field.dart';
+import '../../../core/utils/app_design.dart';
 
 class CertificationPackagesController extends GetxController {
   bool _isDisposed = false;
@@ -200,7 +201,7 @@ void _pollOrderPayment(int subscriptionId) async {
         loadPackages();
         Get.snackbar('Paiement confirmé', 'Votre certification a été activée.',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green, colorText: Colors.white,
+            backgroundColor: AppDesign.success, colorText: Colors.white,
             duration: const Duration(seconds: 4));
         return;
       } else if (status == 'failed') {

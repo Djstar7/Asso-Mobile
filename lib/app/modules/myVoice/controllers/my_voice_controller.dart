@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/post.dart';
 import '../../../data/providers/post_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class MyVoiceController extends GetxController {
   final RxList<Post> posts = <Post>[].obs;
@@ -97,7 +98,7 @@ class MyVoiceController extends GetxController {
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: error ? Colors.red : Colors.green,
+      backgroundColor: error ? AppDesign.danger : AppDesign.success,
       colorText: Colors.white,
     );
   }
@@ -179,7 +180,7 @@ class MyVoiceController extends GetxController {
           TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+            child: const Text('Supprimer', style: TextStyle(color: AppDesign.danger)),
           ),
         ],
       ),

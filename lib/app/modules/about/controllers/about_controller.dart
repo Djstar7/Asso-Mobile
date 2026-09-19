@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../core/utils/app_design.dart';
 
 class AboutController extends GetxController {
   final isLoading = false.obs;
@@ -148,7 +149,7 @@ class AboutController extends GetxController {
         'Erreur',
         'URL non disponible',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -165,7 +166,7 @@ class AboutController extends GetxController {
           'Erreur',
           'Impossible d\'ouvrir le lien',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -175,7 +176,7 @@ class AboutController extends GetxController {
         'Erreur',
         'Impossible d\'ouvrir le lien',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -195,7 +196,7 @@ class AboutController extends GetxController {
         'Non disponible',
         'Les conditions d\'utilisation ne sont pas encore disponibles',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     }
@@ -210,7 +211,7 @@ class AboutController extends GetxController {
         'Non disponible',
         'La politique de confidentialité n\'est pas encore disponible',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     }
@@ -225,7 +226,7 @@ class AboutController extends GetxController {
         'Non disponible',
         'Les licences ne sont pas encore disponibles',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     }
@@ -240,7 +241,7 @@ class AboutController extends GetxController {
         'Non disponible',
         'Email de contact non disponible',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     }
@@ -255,7 +256,7 @@ class AboutController extends GetxController {
         'Non disponible',
         'Email de contact non disponible',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     }

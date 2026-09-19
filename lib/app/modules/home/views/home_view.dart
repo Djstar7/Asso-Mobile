@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/product_card.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/values/constants.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
-import '../../../widgets/currency_debug_widget.dart';
 import '../../../routes/app_pages.dart';
 import '../../chat/views/chat_view.dart';
 import '../../tracking/views/tracking_view.dart';
@@ -23,478 +25,359 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    print('');
-    print('========================================');
-    print('🎨 HOME VIEW: build() CALLED');
-    print('========================================');
-    print('  └─ Controller found: ${Get.isRegistered<HomeController>()}');
-    if (Get.isRegistered<HomeController>()) {
-      print('  └─ Controller hashCode: ${controller.hashCode}');
-      print('  └─ TabController exists: ${controller.tabController != null}');
-      if (controller.tabController != null) {
-        print('  └─ TabController hashCode: ${controller.tabController.hashCode}');
-      }
-    }
-    print('========================================');
-    print('');
-
-    final isDark = AppThemeSystem.isDarkMode(context);
-    final deviceType = AppThemeSystem.getDeviceType(context);
-
     // Protection contre l'utilisation d'un controller disposé
     if (!controller.isSafe) {
       return Scaffold(
-        backgroundColor: AppThemeSystem.getBackgroundColor(context),
+        backgroundColor: context.ds.canvas,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Stack(
-      children: [
-        Scaffold(
-          // Supprimé key pour éviter le problème de GlobalKey duplicate
-          backgroundColor: isDark ? AppThemeSystem.darkCardColor : const Color(0xFFF7F8FA),
-          drawer: _buildDrawer(context),
-          body: NestedScrollView(
-        controller: controller.nestedScrollController,
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              floating: false,
-              pinned: true,
-              snap: false,
-              stretch: false,
-              elevation: 0,
-              shadowColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              backgroundColor: isDark
-                  ? AppThemeSystem.darkCardColor
-                  : Colors.white,
-              toolbarHeight: deviceType == DeviceType.mobile ? 64 : 72,
-              titleSpacing: 0,
-              forceElevated: true,
-              primary: true,
-              flexibleSpace: SafeArea(
-                child: Container(
-                  height: deviceType == DeviceType.mobile ? 64 : 72,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppThemeSystem.getHorizontalPadding(context),
-                  ),
-                  child: Row(
-                    children: [
-                      // Hamburger menu button (left side)
-                      Builder(
-                        builder: (BuildContext scaffoldContext) {
-                          return IconButton(
-                            icon: Icon(
-                              Icons.menu_rounded,
-                              color: AppThemeSystem.getPrimaryTextColor(context),
-                              size: deviceType == DeviceType.mobile ? 24 : 28,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(
-                              minWidth: deviceType == DeviceType.mobile ? 40 : 48,
-                              minHeight: deviceType == DeviceType.mobile ? 40 : 48,
-                            ),
-                            onPressed: () {
-                              Scaffold.of(scaffoldContext).openDrawer();
-                            },
-                          );
-                        },
-                      ),
-
-                      // User profile section
-                      Expanded(
-                        child: Row(
-                          children: [
-                            SizedBox(width: AppThemeSystem.getElementSpacing(context) * 0.3),
-                            Container(
-                              width: deviceType == DeviceType.mobile ? 36 : 40,
-                              height: deviceType == DeviceType.mobile ? 36 : 40,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppThemeSystem.primaryColor,
-                                    AppThemeSystem.tertiaryColor,
-                                  ],
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  fit: BoxFit.cover,
-                                  width: deviceType == DeviceType.mobile ? 36 : 40,
-                                  height: deviceType == DeviceType.mobile ? 36 : 40,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: AppThemeSystem.getElementSpacing(context) * 0.4),
-                            Flexible(
-                              child: Text(
-                                'ASSO',
-                                style: context.textStyle(
-                                  deviceType == DeviceType.mobile
-                                    ? FontSizeType.body2
-                                    : FontSizeType.body1,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Action icons (right side)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Wishlist icon
-                          _buildCompactIconButton(
-                            context: context,
-                            icon: Icon(
-                              Icons.favorite_border_rounded,
-                              color: AppThemeSystem.getPrimaryTextColor(context),
-                            ),
-                            onPressed: () {
-                              AuthGuard.navigateIfAuthenticated(
-                                context,
-                                '/favorites',
-                                featureName: 'vos favoris',
-                                useDialog: false,
-                              );
-                            },
-                          ),
-
-                          // Notifications icon with badge
-                          GetX<NotificationController>(
-                            builder: (notifController) {
-                              final count = notifController.unreadCount.value;
-                              return _buildCompactIconButtonWithBadge(
-                                context: context,
-                                icon: Icon(
-                                  Icons.notifications_outlined,
-                                  color: AppThemeSystem.getPrimaryTextColor(context),
-                                ),
-                                badgeCount: count > 0 ? count.toString() : null,
-                                onPressed: () {
-                                  AuthGuard.navigateIfAuthenticated(
-                                    context,
-                                    '/notification',
-                                    featureName: 'les notifications',
-                                    useDialog: false,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              bottom: PreferredSize(
-                preferredSize: Size.fromHeight(
-                  deviceType == DeviceType.mobile ? 120 : 128,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppThemeSystem.darkCardColor
-                        : Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isDark
-                            ? AppThemeSystem.grey800.withValues(alpha: 0.6)
-                            : AppThemeSystem.grey200,
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // Search Bar
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppThemeSystem.getHorizontalPadding(context),
-                          vertical: 8,
-                        ),
-                        child: GestureDetector(
-                          onTap: () => Get.toNamed('/search'),
-                          child: Container(
-                            height: deviceType == DeviceType.mobile ? 44 : 48,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppThemeSystem.grey800.withValues(alpha: 0.3)
-                                  : AppThemeSystem.grey100,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark
-                                    ? AppThemeSystem.grey700.withValues(alpha: 0.5)
-                                    : AppThemeSystem.grey300.withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.search_rounded,
-                                  color: isDark
-                                      ? AppThemeSystem.grey400
-                                      : AppThemeSystem.grey600,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Rechercher des produits...',
-                                    style: context.textStyle(FontSizeType.caption).copyWith(
-                                      color: isDark
-                                          ? AppThemeSystem.grey400
-                                          : AppThemeSystem.grey600,
-                                      fontSize: deviceType == DeviceType.mobile ? 14 : 15,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.tune_rounded,
-                                  color: isDark
-                                      ? AppThemeSystem.grey400
-                                      : AppThemeSystem.grey600,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // TabBar
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
-                        ),
-                        child: controller.isSafe
-                            ? TabBar(
-                          controller: controller.tabController,
-                          onTap: controller.handleTabTap,
-                          indicatorColor: AppThemeSystem.primaryColor,
-                          indicatorWeight: 3,
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          labelColor: AppThemeSystem.primaryColor,
-                          unselectedLabelColor: isDark
-                              ? AppThemeSystem.grey400
-                              : AppThemeSystem.grey600,
-                          labelStyle: context.textStyle(FontSizeType.caption).copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: deviceType == DeviceType.mobile ? 11 : 13,
-                          ),
-                          unselectedLabelStyle: context.textStyle(FontSizeType.caption).copyWith(
-                            fontWeight: FontWeight.normal,
-                            fontSize: deviceType == DeviceType.mobile ? 11 : 13,
-                          ),
-                          tabs: [
-                            // Accueil
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.home_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                            // Messages
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.chat_bubble_outline_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                            // Import (produits importés)
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.travel_explore_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                            // Tracking
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.local_shipping_outlined, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                            // My Voice
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.campaign_outlined, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                            // Profile
-                            Tab(
-                              height: deviceType == DeviceType.mobile ? 48 : 56,
-                              icon: Icon(Icons.person_outline_rounded, size: deviceType == DeviceType.mobile ? 24 : 28),
-                            ),
-                          ],
-                        )
-                      : SizedBox(
-                          height: deviceType == DeviceType.mobile ? 48 : 56,
-                          child: const Center(child: CircularProgressIndicator()),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ];
-        },
-        body: controller.isSafe
-            ? TabBarView(
+    return Scaffold(
+      backgroundColor: context.ds.canvas,
+      drawer: _buildDrawer(context),
+      // La navigation principale passe en bas de l'écran : c'est la zone
+      // atteignable au pouce, et chaque destination porte désormais un
+      // libellé — une rangée d'icônes seules laissait deviner le contenu.
+      bottomNavigationBar: _buildBottomNav(context),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildTopBar(context),
+            Expanded(
+              child: TabBarView(
                 controller: controller.tabController,
+                // Le balayage latéral est désactivé : il entrait en conflit
+                // avec les carrousels horizontaux de la page d'accueil.
+                physics: const NeverScrollableScrollPhysics(),
                 children: const [
                   HomeItemView(),
                   ChatView(),
-                  const ImportView(),
+                  ImportView(),
                   TrackingView(),
                   MyVoiceView(),
                   ProfileView(),
                 ],
-              )
-            : const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Destinations de la navigation principale.
+  static const List<_NavDestination> _destinations = [
+    _NavDestination(
+      label: 'Accueil',
+      icon: Icons.storefront_outlined,
+      activeIcon: Icons.storefront_rounded,
+    ),
+    _NavDestination(
+      label: 'Messages',
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+    ),
+    _NavDestination(
+      label: 'Import',
+      icon: Icons.travel_explore_outlined,
+      activeIcon: Icons.travel_explore_rounded,
+    ),
+    _NavDestination(
+      label: 'Suivi',
+      icon: Icons.local_shipping_outlined,
+      activeIcon: Icons.local_shipping_rounded,
+    ),
+    _NavDestination(
+      label: 'Ma voix',
+      icon: Icons.campaign_outlined,
+      activeIcon: Icons.campaign_rounded,
+    ),
+    _NavDestination(
+      label: 'Compte',
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+    ),
+  ];
+
+  /// Barre de navigation basse.
+  Widget _buildBottomNav(BuildContext context) {
+    return Obx(() {
+      final current = controller.currentTabIndex.value;
+
+      return Container(
+        decoration: BoxDecoration(
+          color: context.ds.surface,
+          border: Border(top: BorderSide(color: context.ds.border)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              children: List.generate(_destinations.length, (index) {
+                final destination = _destinations[index];
+                final isActive = current == index;
+
+                return Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      controller.handleTabTap(index);
+                      // `handleTabTap` peut refuser l'accès (onglet protégé)
+                      // et forcer le retour à l'accueil : on suit l'index
+                      // réellement retenu par le contrôleur.
+                      final target = controller.currentTabIndex.value;
+                      if (controller.tabController.index != target) {
+                        controller.tabController.animateTo(target);
+                      }
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isActive ? destination.activeIcon : destination.icon,
+                          size: 22,
+                          color: isActive
+                              ? AppDesign.accent
+                              : context.ds.textTertiary,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          destination.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'SF-Pro',
+                            fontSize: 10,
+                            height: 1.1,
+                            fontWeight:
+                                isActive ? FontWeight.w600 : FontWeight.w500,
+                            color: isActive
+                                ? AppDesign.accent
+                                : context.ds.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
-        // Widget de debug pour afficher les infos de devise
-        // const CurrencyDebugWidget(),
-      ],
+      );
+    });
+  }
+
+  /// En-tête : identité, actions, puis recherche.
+  ///
+  /// La barre de recherche n'est affichée que sur l'accueil et l'import ;
+  /// sur les autres onglets elle ne correspondait à rien de cherchable.
+  Widget _buildTopBar(BuildContext context) {
+    return Obx(() {
+      final tab = controller.currentTabIndex.value;
+      final showSearch = tab == 0 || tab == 2;
+
+      return Container(
+        decoration: BoxDecoration(
+          color: context.ds.surface,
+          border: Border(bottom: BorderSide(color: context.ds.border)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppDesign.space2,
+          0,
+          AppDesign.space2,
+          showSearch ? AppDesign.space3 : 0,
+        ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  Builder(
+                    builder: (scaffoldContext) => AppIconButton(
+                      icon: Icons.menu_rounded,
+                      tooltip: 'Menu',
+                      onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _destinations[tab].label == 'Accueil'
+                          ? 'ASSO'
+                          : _destinations[tab].label,
+                      style: context.textStyle(
+                        FontSizeType.h6,
+                        fontWeight: FontWeight.w700,
+                        color: context.ds.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: Icons.favorite_border_rounded,
+                    tooltip: 'Favoris',
+                    onPressed: () => AuthGuard.navigateIfAuthenticated(
+                      context,
+                      '/favorites',
+                      featureName: 'vos favoris',
+                      useDialog: false,
+                    ),
+                  ),
+                  GetX<NotificationController>(
+                    builder: (notifController) => AppIconButton(
+                      icon: Icons.notifications_none_rounded,
+                      tooltip: 'Notifications',
+                      badgeCount: notifController.unreadCount.value,
+                      onPressed: () => AuthGuard.navigateIfAuthenticated(
+                        context,
+                        '/notification',
+                        featureName: 'les notifications',
+                        useDialog: false,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (showSearch)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+                child: _buildSearchEntry(context),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Champ de recherche factice qui ouvre l'écran de recherche dédié.
+  Widget _buildSearchEntry(BuildContext context) {
+    return Material(
+      color: context.ds.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      child: InkWell(
+        onTap: () => Get.toNamed('/search'),
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+        child: Container(
+          height: AppDesign.minTapTarget,
+          padding: EdgeInsets.symmetric(horizontal: AppDesign.space3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+            border: Border.all(color: context.ds.border),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, size: 20, color: context.ds.textTertiary),
+              SizedBox(width: AppDesign.space2),
+              Expanded(
+                child: Text(
+                  'Rechercher un produit, une boutique…',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: context.ds.textTertiary,
+                  ),
+                ),
+              ),
+              Icon(Icons.tune_rounded, size: 18, color: context.ds.textTertiary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: context.ds.surface,
       width: MediaQuery.of(context).size.width * 0.85,
       child: Column(
         children: [
-          // Header du drawer avec dégradé
+          // En-tête du menu.
+          //
+          // L'aplat orange pleine largeur écrasait la liste qui le suit ;
+          // l'identité passe désormais par l'avatar et l'adresse, et l'accent
+          // reste réservé aux éléments sur lesquels on peut agir.
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppThemeSystem.primaryColor,
-                  AppThemeSystem.tertiaryColor,
-                ],
-              ),
+              color: context.ds.surfaceMuted,
+              border: Border(bottom: BorderSide(color: context.ds.border)),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppThemeSystem.getHorizontalPadding(context),
-                  vertical: AppThemeSystem.getVerticalPadding(context) * 1.5,
+                padding: EdgeInsets.fromLTRB(
+                  context.ds.gutter,
+                  AppDesign.space5,
+                  context.ds.gutter,
+                  AppDesign.space5,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Avatar avec bordure
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                child: Builder(
+                  builder: (context) {
+                    final user = StorageService.getUser();
+                    final isAuthenticated = StorageService.isAuthenticated;
+                    final hasAccount =
+                        isAuthenticated && user != null && user.email.isNotEmpty;
+
+                    return Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppDesign.accentSubtle,
+                            shape: BoxShape.circle,
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: AppThemeSystem.primaryColor,
-                        size: 36,
-                      ),
-                    ),
-
-                    SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                    // User info from storage
-                    Builder(
-                      builder: (context) {
-                        final user = StorageService.getUser();
-                        final isAuthenticated = StorageService.isAuthenticated;
-
-                        if (isAuthenticated && user != null && user.email.isNotEmpty) {
-                          return Row(
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: AppDesign.accentText,
+                            size: 24,
+                          ),
+                        ),
+                        SizedBox(width: AppDesign.space3),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Email icon
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                                ),
-                                child: Icon(
-                                  Icons.email_outlined,
-                                  color: Colors.white,
-                                  size: 16,
+                              Text(
+                                hasAccount ? 'Mon compte' : 'Mode invité',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textStyle(
+                                  FontSizeType.body2,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.ds.textPrimary,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  user.email,
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
+                              const SizedBox(height: 2),
+                              Text(
+                                hasAccount
+                                    ? user.email
+                                    : 'Connectez-vous pour commander',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textStyle(
+                                  FontSizeType.caption,
+                                  color: context.ds.textSecondary,
                                 ),
                               ),
                             ],
-                          );
-                        } else {
-                          // Guest mode
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: context.borderRadius(BorderRadiusType.small),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.person_outline,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Mode invité',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
           ),
+
 
           // Menu items avec scroll
           Expanded(
@@ -982,12 +865,7 @@ class HomeView extends GetView<HomeController> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppThemeSystem.primaryColor,
-                        AppThemeSystem.tertiaryColor,
-                      ],
-                    ),
+                    color: AppDesign.accent,
                     borderRadius: context.borderRadius(BorderRadiusType.small),
                   ),
                   child: Text(
@@ -1015,91 +893,6 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildCompactIconButton({
-    required BuildContext context,
-    required Widget icon,
-    required VoidCallback onPressed,
-  }) {
-    final deviceType = AppThemeSystem.getDeviceType(context);
-    return IconButton(
-      icon: icon,
-      onPressed: onPressed,
-      iconSize: deviceType == DeviceType.mobile ? 20 : 24,
-      padding: EdgeInsets.all(deviceType == DeviceType.mobile ? 4 : 6),
-      constraints: BoxConstraints(
-        minWidth: deviceType == DeviceType.mobile ? 32 : 40,
-        minHeight: deviceType == DeviceType.mobile ? 32 : 40,
-      ),
-    );
-  }
-
-  Widget _buildCompactIconButtonWithBadge({
-    required BuildContext context,
-    required Widget icon,
-    String? badgeCount,
-    required VoidCallback onPressed,
-  }) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-    final deviceType = AppThemeSystem.getDeviceType(context);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          icon: icon,
-          onPressed: onPressed,
-          iconSize: deviceType == DeviceType.mobile ? 20 : 24,
-          padding: EdgeInsets.all(deviceType == DeviceType.mobile ? 4 : 6),
-          constraints: BoxConstraints(
-            minWidth: deviceType == DeviceType.mobile ? 32 : 40,
-            minHeight: deviceType == DeviceType.mobile ? 32 : 40,
-          ),
-        ),
-        // Badge (affiché seulement si badgeCount != null)
-        if (badgeCount != null)
-          Positioned(
-            right: deviceType == DeviceType.mobile ? 4 : 6,
-            top: deviceType == DeviceType.mobile ? 4 : 6,
-            child: Container(
-              padding: EdgeInsets.all(deviceType == DeviceType.mobile ? 2 : 3),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.errorColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark
-                      ? AppThemeSystem.darkCardColor
-                      : Colors.white,
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              constraints: BoxConstraints(
-                minWidth: deviceType == DeviceType.mobile ? 14 : 16,
-                minHeight: deviceType == DeviceType.mobile ? 14 : 16,
-              ),
-              child: Center(
-                child: Text(
-                  badgeCount,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: deviceType == DeviceType.mobile ? 8 : 9,
-                    fontWeight: FontWeight.bold,
-                    height: 1.0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 
@@ -1181,13 +974,7 @@ class HomeItemView extends GetView<HomeController> {
                             horizontal: AppThemeSystem.getHorizontalPadding(context),
                           ),
                           sliver: SliverGrid(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.7,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
+                            gridDelegate: ProductCard.gridDelegate(context),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) => ShimmerWidgets.productCardShimmer(context),
                               childCount: 6,
@@ -1199,13 +986,7 @@ class HomeItemView extends GetView<HomeController> {
                             horizontal: AppThemeSystem.getHorizontalPadding(context),
                           ),
                           sliver: SliverGrid(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.7,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
+                            gridDelegate: ProductCard.gridDelegate(context),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
                                 final product = controller.recentProducts[index];
@@ -1275,13 +1056,7 @@ class HomeItemView extends GetView<HomeController> {
                             horizontal: AppThemeSystem.getHorizontalPadding(context),
                           ),
                           sliver: SliverGrid(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
-                              childAspectRatio: 0.7,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
+                            gridDelegate: ProductCard.gridDelegate(context),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
                                 final product = controller.products[index];
@@ -1397,20 +1172,18 @@ class HomeItemView extends GetView<HomeController> {
 
   Widget _buildCategories(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      height: 44,
-      child: ListView.builder(
+      margin: EdgeInsets.only(bottom: AppDesign.space2),
+      height: 40,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppThemeSystem.getHorizontalPadding(context),
-        ),
+        padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
         itemCount: controller.categories.length,
+        separatorBuilder: (_, __) => SizedBox(width: AppDesign.space2),
         itemBuilder: (context, index) {
           final category = controller.categories[index];
 
-          // Find the full category object for SVG icon
           Map<String, dynamic>? categoryData;
-          if (index > 0) { // Skip "Tous" at index 0
+          if (index > 0) {
             categoryData = controller.apiCategories.firstWhereOrNull(
               (cat) => cat['name'] == category,
             );
@@ -1419,61 +1192,57 @@ class HomeItemView extends GetView<HomeController> {
           return Obx(() {
             final isSelected = controller.selectedCategory.value == category;
 
-            return GestureDetector(
-              onTap: () => controller.selectCategory(category),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppThemeSystem.primaryColor
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppThemeSystem.primaryColor
-                        : const Color(0xFFE0E0E0),
-                    width: 1.5,
+            // Le filtre actif se signale par un fond teinté et un texte
+            // accentué plutôt que par un aplat de couleur pleine : la rangée
+            // reste lisible et ne capte plus tout le regard.
+            final background =
+                isSelected ? AppDesign.accentSubtle : context.ds.surface;
+            final foreground =
+                isSelected ? AppDesign.accentText : context.ds.textSecondary;
+            final borderColor =
+                isSelected ? AppDesign.accentBorder : context.ds.border;
+
+            return Material(
+              color: background,
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              child: InkWell(
+                onTap: () => controller.selectCategory(category),
+                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    border: Border.all(color: borderColor),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Display category icon
-                    if (index == 0)
-                      // "Tous" category - use default icon
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: Icon(
-                          Icons.grid_view_rounded,
-                          size: 16,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF666666),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (index == 0)
+                        Padding(
+                          padding: EdgeInsets.only(right: AppDesign.space1 + 2),
+                          child: Icon(Icons.grid_view_rounded,
+                              size: 15, color: foreground),
+                        )
+                      else if (categoryData?['svg_icon'] != null)
+                        Padding(
+                          padding: EdgeInsets.only(right: AppDesign.space1 + 2),
+                          child: _buildCategorySvgIcon(
+                            categoryData!['svg_icon'],
+                            isSelected,
+                            context,
+                          ),
                         ),
-                      )
-                    else if (categoryData?['svg_icon'] != null)
-                      // Category with SVG icon
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: _buildCategorySvgIcon(
-                          categoryData!['svg_icon'],
-                          isSelected,
-                          context,
+                      Text(
+                        category,
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: foreground,
                         ),
                       ),
-                    Text(
-                      category,
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF333333),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1485,38 +1254,33 @@ class HomeItemView extends GetView<HomeController> {
 
   /// Build category SVG icon
   Widget _buildCategorySvgIcon(String svgIcon, bool isSelected, BuildContext context) {
+    final color =
+        isSelected ? AppDesign.accentText : context.ds.textSecondary;
     try {
       return SvgPicture.string(
         svgIcon,
-        width: 16,
-        height: 16,
-        colorFilter: ColorFilter.mode(
-          isSelected
-              ? Colors.white
-              : const Color(0xFF666666),
-          BlendMode.srcIn,
-        ),
+        width: 15,
+        height: 15,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       );
     } catch (e) {
-      // Fallback to default icon if SVG parsing fails
-      return Icon(
-        Icons.category_rounded,
-        size: 16,
-        color: isSelected
-            ? Colors.white
-            : const Color(0xFF666666),
-      );
+      return Icon(Icons.category_rounded, size: 15, color: color);
     }
   }
 
   /// DIASPO EXCHANGE Promo Card
   Widget _buildDiaspoPromoCard(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: 16,
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space2,
+        context.ds.gutter,
+        AppDesign.space2,
       ),
-      child: GestureDetector(
+      // Anciennement un aplat bleu en dégradé qui rivalisait avec la marque.
+      // La carte reprend la surface standard : c'est le libellé et le badge
+      // qui signalent la nouveauté, pas la couleur de fond.
+      child: AppCard(
         onTap: () {
           if (AuthGuard.isGuest) {
             AppDialogs.showLoginRequiredDialog(
@@ -1527,106 +1291,63 @@ class HomeItemView extends GetView<HomeController> {
             Get.toNamed('/diaspo');
           }
         },
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E88E5),
-                const Color(0xFF1565C0),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        padding: EdgeInsets.all(AppDesign.space4),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppDesign.accentSubtle,
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              ),
+              child: const Icon(
+                Icons.flight_takeoff_rounded,
+                color: AppDesign.accentText,
+                size: 22,
+              ),
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E88E5).withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon and badge
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.flight_takeoff_rounded,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'DIASPO EXCHANGE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+            SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Diaspo Exchange',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            fontWeight: FontWeight.w600,
+                            color: context.ds.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'NEW',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Vendez ou achetez des kilos de bagage pour vos envois internationaux',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
-                        height: 1.3,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      SizedBox(width: AppDesign.space2),
+                      const AppBadge(label: 'NOUVEAU', tone: AppBadgeTone.accent),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Achetez ou vendez des kilos de bagage',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: context.ds.textSecondary,
+                      height: 1.35,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
-              // Arrow
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withValues(alpha: 0.8),
-                size: 20,
-              ),
-            ],
-          ),
+            ),
+            SizedBox(width: AppDesign.space2),
+            Icon(Icons.chevron_right_rounded,
+                color: context.ds.textTertiary, size: 20),
+          ],
         ),
       ),
     );
@@ -1872,232 +1593,37 @@ class HomeItemView extends GetView<HomeController> {
   }
 
   /// Check if shop is certified (handles bool, int, string)
-  bool _isShopCertified(Map<String, dynamic> product) {
-    final shop = product['shop'];
-    if (shop == null) {
-      return false;
-    }
-
-    final isCertified = shop['is_certified'];
-
-    // Handle different types
-    if (isCertified is bool) return isCertified;
-    if (isCertified is int) return isCertified == 1;
-    if (isCertified is String) return isCertified == '1' || isCertified.toLowerCase() == 'true';
-
-    return false;
-  }
-
   Widget _buildSectionTitle(BuildContext context, String title, IconData icon, {VoidCallback? onSeeAll}) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppThemeSystem.getHorizontalPadding(context),
-        right: AppThemeSystem.getHorizontalPadding(context),
-        top: 16,
-        bottom: 12,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: context.textStyle(
-              FontSizeType.h5,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF222222),
-            ),
-          ),
-          if (onSeeAll != null)
-            GestureDetector(
-              onTap: onSeeAll,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Voir tout',
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      color: const Color(0xFF666666),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 12,
-                    color: const Color(0xFF666666),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+    return AppSectionHeader(
+      title: title,
+      actionLabel: onSeeAll != null ? 'Voir tout' : null,
+      onAction: onSeeAll,
     );
   }
 
   Widget _buildHorizontalProductList(BuildContext context, List<Map<String, dynamic>> products) {
     if (products.isEmpty) {
-      return const SizedBox(height: 16);
+      return SizedBox(height: AppDesign.space4);
     }
 
-    return Container(
-      height: 260,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListView.builder(
+    // La largeur des vignettes suit celle de la grille : on retrouve le même
+    // objet visuel que l'on scrolle horizontalement ou verticalement.
+    final cardWidth = ProductCard.widthInGrid(context);
+
+    return SizedBox(
+      height: ProductCard.totalHeight(context, cardWidth),
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: AppThemeSystem.getHorizontalPadding(context),
-        ),
+        padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
         itemCount: products.length,
+        separatorBuilder: (_, __) => SizedBox(width: AppDesign.space3),
         itemBuilder: (context, index) {
           final product = products[index];
           return _FadeInProduct(
             delay: Duration(milliseconds: index * 50),
-            child: Container(
-              width: 170,
-              margin: const EdgeInsets.only(right: 14),
-              child: GestureDetector(
-              onTap: () => Get.toNamed('/product', arguments: product),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              topRight: Radius.circular(12),
-                            ),
-                            child: SizedBox.expand(child: _buildProductImage(product)),
-                          ),
-                          // Badge boutique certifiée
-                          if (product['shop'] != null && _isShopCertified(product))
-                            Positioned(
-                              top: 8,
-                              left: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E88E5),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.star_rounded,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          // Bouton favori
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () {
-                                final productId = product['id'] is int
-                                    ? product['id']
-                                    : int.tryParse(product['id'].toString()) ?? 0;
-                                if (productId > 0) {
-                                  controller.toggleFavorite(productId);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  product['is_favorite'] == true
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  size: 14,
-                                  color: product['is_favorite'] == true
-                                      ? AppThemeSystem.errorColor
-                                      : const Color(0xFF999999),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            product['name'] ?? 'Produit',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(
-                              FontSizeType.caption,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF333333),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _formatPrice(product),
-                            style: context.textStyle(
-                              FontSizeType.body2,
-                              fontWeight: FontWeight.bold,
-                              color: AppThemeSystem.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          if (_getLocation(product).isNotEmpty)
-                            Row(
-                              children: [
-                                Icon(Icons.location_on_outlined, size: 11, color: const Color(0xFF999999)),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: Text(
-                                    _getLocation(product),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textStyle(
-                                      FontSizeType.overline,
-                                      color: const Color(0xFF999999),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: SizedBox(
+              width: cardWidth,
+              child: _buildProductCard(context, product),
             ),
           );
         },
@@ -2106,237 +1632,52 @@ class HomeItemView extends GetView<HomeController> {
   }
 
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
-    return GestureDetector(
+    final productId = product['id'] is int
+        ? product['id'] as int
+        : int.tryParse('${product['id']}') ?? 0;
+
+    return ProductCard(
+      name: product['name']?.toString() ?? 'Produit',
+      price: _formatPrice(product),
+      location: _getLocation(product),
+      isFavorite: product['is_favorite'] == true,
+      isCertified: ProductCard.isShopCertified(product),
+      imageBuilder: (context) => _buildProductImage(product),
       onTap: () => Get.toNamed('/product', arguments: product),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    child: SizedBox.expand(child: _buildProductImage(product)),
-                  ),
-                  // Badge boutique certifiée
-                  if (product['shop'] != null && _isShopCertified(product))
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E88E5),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.star_rounded,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  // Bouton favori
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () {
-                        final productId = product['id'] is int
-                            ? product['id']
-                            : int.tryParse(product['id'].toString()) ?? 0;
-                        if (productId > 0) {
-                          controller.toggleFavorite(productId);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          product['is_favorite'] == true
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 14,
-                          color: product['is_favorite'] == true
-                              ? AppThemeSystem.errorColor
-                              : const Color(0xFF999999),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    product['name'] ?? 'Produit',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textStyle(
-                      FontSizeType.caption,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatPrice(product),
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (_getLocation(product).isNotEmpty)
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 11, color: const Color(0xFF999999)),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            _getLocation(product),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(
-                              FontSizeType.overline,
-                              color: const Color(0xFF999999),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      onFavoriteTap:
+          productId > 0 ? () => controller.toggleFavorite(productId) : null,
     );
   }
 
   /// Bouton "Voir plus" stylé
   Widget _buildSeeMoreButton(BuildContext context, VoidCallback onTap) {
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: 16,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space5,
+        context.ds.gutter,
+        AppDesign.space2,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFFE0E0E0),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Voir tous les produits',
-                style: context.textStyle(
-                  FontSizeType.body2,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_rounded,
-                color: const Color(0xFF666666),
-                size: 18,
-              ),
-            ],
-          ),
-        ),
+      child: AppButton(
+        label: 'Voir plus de produits',
+        onPressed: onTap,
+        variant: AppButtonVariant.secondary,
       ),
     );
   }
 
-  /// État vide professionnel
   Widget _buildEmptyState(BuildContext context) {
-    final deviceType = AppThemeSystem.getDeviceType(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: deviceType == DeviceType.mobile ? 72 : 88,
-              color: const Color(0xFFCCCCCC),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aucun produit disponible',
-              style: context.textStyle(
-                FontSizeType.h5,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF333333),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Il n\'y a pas encore de produits disponibles dans votre région.',
-              style: context.textStyle(
-                FontSizeType.body2,
-                color: const Color(0xFF999999),
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.storefront_outlined,
+      title: 'Aucun produit disponible',
+      message:
+          "Il n'y a pas encore de produits dans votre région. Revenez bientôt ou explorez une autre catégorie.",
+      actionLabel: 'Actualiser',
+      onAction: controller.refreshProducts,
     );
   }
 }
 
-/// Fade-in animation widget for smooth product appearance
 class _FadeInProduct extends StatefulWidget {
   final Widget child;
   final Duration delay;
@@ -2399,4 +1740,17 @@ class _FadeInProductState extends State<_FadeInProduct>
       ),
     );
   }
+}
+
+/// Destination de la barre de navigation principale.
+class _NavDestination {
+  const _NavDestination({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
+
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
 }

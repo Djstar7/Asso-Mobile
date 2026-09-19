@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'app_design.dart';
+import '../../core/utils/app_design.dart';
+
 /// Système de theming automatique et responsive pour Estuaire Emploi
 /// Gère automatiquement les thèmes sombre/clair et toutes les tailles d'écran
 class AppThemeSystem {
@@ -17,9 +20,10 @@ class AppThemeSystem {
   // COULEURS DU DESIGN SYSTEM
   // ================================
 
-  static const Color primaryColor = Color(0xFFF58A3A); // Orange marque
+  /// Conservée pour compatibilité : alias de l'accent unique `AppDesign.accent`.
+  static const Color primaryColor = AppDesign.accent;
   static const Color secondaryColor = Color(0xFF2B2B2B); // Noir doux UI
-  static const Color tertiaryColor = Color(0xFFFFB066); // Orange clair accent
+  static const Color tertiaryColor = AppDesign.accentHover;
 
   // Couleurs neutres
   static const Color whiteColor = Color(0xFFFFFFFF);
@@ -42,15 +46,15 @@ class AppThemeSystem {
   static const Color grey900 = Color(0xFF212121);
 
   // Couleurs sémantiques
-  static const Color successColor = Color(0xFF4CAF50);
-  static const Color errorColor = Color(0xFFF44336);
-  static const Color warningColor = Color(0xFFFF9800);
-  static const Color infoColor = Color(0xFF2196F3);
+  static const Color successColor = AppDesign.success;
+  static const Color errorColor = AppDesign.danger;
+  static const Color warningColor = AppDesign.warning;
+  static const Color infoColor = AppDesign.info;
 
   // Couleurs des providers de paiement
   static const Color kpayColor = Color(0xFFFF6F00); // Orange
   static const Color paypalColor = Color(0xFF0070ba); // Bleu PayPal
-  static const Color bankColor = Color(0xFF16A34A); // Vert virement bancaire (IBAN)
+  static const Color bankColor = AppDesign.success; // Vert virement bancaire (IBAN)
 
   // ================================
   // BREAKPOINTS RESPONSIVE
@@ -442,35 +446,30 @@ class AppThemeSystem {
   // COULEURS AUTOMATIQUES PAR THÈME
   // ================================
 
+  // Ces accesseurs historiques délèguent désormais aux tokens d'`AppDesign`.
+  // C'est ce qui permet aux vues encore écrites avec `AppThemeSystem` /
+  // `context.surfaceColor` de suivre la nouvelle charte sans être réécrites :
+  // il n'existe plus qu'une seule source de vérité pour les couleurs.
+
   /// Couleur de surface basée sur le thème
-  static Color getSurfaceColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? darkCardColor : cardColor;
-  }
+  static Color getSurfaceColor(BuildContext context) =>
+      AppDesign.surface(context);
 
   /// Couleur de background basée sur le thème
-  static Color getBackgroundColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? darkBackgroundColor : backgroundColor;
-  }
+  static Color getBackgroundColor(BuildContext context) =>
+      AppDesign.canvas(context);
 
   /// Couleur de texte primaire basée sur le thème
-  static Color getPrimaryTextColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? whiteColor : blackColor;
-  }
+  static Color getPrimaryTextColor(BuildContext context) =>
+      AppDesign.textPrimary(context);
 
   /// Couleur de texte secondaire basée sur le thème
-  static Color getSecondaryTextColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? grey300 : grey600;
-  }
+  static Color getSecondaryTextColor(BuildContext context) =>
+      AppDesign.textSecondary(context);
 
   /// Couleur de bordure basée sur le thème
-  static Color getBorderColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? grey700 : grey300;
-  }
+  static Color getBorderColor(BuildContext context) =>
+      AppDesign.border(context);
 
   /// Vérifie si le mode sombre est activé (méthode statique pour éviter les conflits d'extensions)
   static bool isDarkMode(BuildContext context) {
@@ -478,10 +477,8 @@ class AppThemeSystem {
   }
 
   /// Couleur de fond pour les champs de saisie (TextField, TextFormField)
-  static Color getInputFieldColor(BuildContext context) {
-    final isDark = enableDynamicTheming && Theme.of(context).brightness == Brightness.dark;
-    return isDark ? grey800 : grey50; // Gris très clair en light, gris foncé en dark
-  }
+  static Color getInputFieldColor(BuildContext context) =>
+      AppDesign.surfaceMuted(context);
 
   // ================================
   // CONFIGURATIONS DE WIDGETS
@@ -706,153 +703,347 @@ class AppThemeSystem {
   }
 
   // ================================
-  // THÈME LIGHT
+  // THÈMES
   // ================================
+  //
+  // Les thèmes sont construits sur les tokens d'`AppDesign` : une seule
+  // couleur d'accent (l'orange de marque), des neutres pour tout le reste.
+  // Configurer ici évite d'avoir à styliser chaque widget Material
+  // individuellement dans les vues.
 
-  static ThemeData getLightTheme() {
+  /// Construit le thème commun, décliné en clair ou sombre.
+  static ThemeData _buildTheme({required Brightness brightness}) {
+    final isDark = brightness == Brightness.dark;
+
+    final canvas = isDark ? AppDesign.neutralDark900 : AppDesign.neutral50;
+    final surface = isDark ? AppDesign.neutralDark800 : AppDesign.neutral0;
+    final surfaceMuted = isDark ? AppDesign.neutralDark700 : AppDesign.neutral100;
+    final border = isDark ? AppDesign.neutralDark600 : AppDesign.neutral200;
+    final borderStrong =
+        isDark ? const Color(0xFF3D3D39) : AppDesign.neutral300;
+    final textPrimary =
+        isDark ? const Color(0xFFF5F5F3) : AppDesign.neutral900;
+    final textSecondary =
+        isDark ? const Color(0xFFB0B0AA) : AppDesign.neutral600;
+    final textTertiary =
+        isDark ? const Color(0xFF85857F) : AppDesign.neutral500;
+
+    final radiusSm = BorderRadius.circular(AppDesign.radiusSm);
+
+    OutlineInputBorder outline(Color color, {double width = 1}) =>
+        OutlineInputBorder(
+          borderRadius: radiusSm,
+          borderSide: BorderSide(color: color, width: width),
+        );
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundColor,
+      brightness: brightness,
+      primaryColor: AppDesign.accent,
+      scaffoldBackgroundColor: canvas,
+      canvasColor: canvas,
       fontFamily: 'SF-Pro',
+      splashFactory: InkSparkle.splashFactory,
 
-      colorScheme: const ColorScheme.light(
-        primary: primaryColor,
-        secondary: secondaryColor,
-        tertiary: tertiaryColor,
-        surface: cardColor,
-        surfaceContainerHighest: backgroundColor,
-        error: errorColor,
-        onPrimary: whiteColor,
-        onSecondary: whiteColor,
-        onSurface: blackColor,
-        onError: whiteColor,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: AppDesign.accent,
+        onPrimary: Colors.white,
+        primaryContainer: AppDesign.accentSubtle,
+        onPrimaryContainer: AppDesign.accentText,
+        secondary: isDark ? const Color(0xFFD8D8D3) : AppDesign.neutral800,
+        onSecondary: isDark ? AppDesign.neutral900 : Colors.white,
+        tertiary: AppDesign.accent,
+        onTertiary: Colors.white,
+        surface: surface,
+        onSurface: textPrimary,
+        surfaceContainerLowest: canvas,
+        surfaceContainerLow: surface,
+        surfaceContainer: surfaceMuted,
+        surfaceContainerHigh: surfaceMuted,
+        surfaceContainerHighest: surfaceMuted,
+        onSurfaceVariant: textSecondary,
+        outline: borderStrong,
+        outlineVariant: border,
+        error: AppDesign.danger,
+        onError: Colors.white,
+        errorContainer: AppDesign.dangerSubtle,
+        onErrorContainer: AppDesign.dangerText,
       ),
 
-      appBarTheme: const AppBarTheme(
-        backgroundColor: whiteColor,
-        foregroundColor: blackColor,
+      appBarTheme: AppBarTheme(
+        backgroundColor: surface,
+        foregroundColor: textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: 'SF-Pro',
+          color: textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: textPrimary, size: 22),
       ),
 
       cardTheme: CardThemeData(
-        color: cardColor,
-        elevation: 2,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+        color: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+          side: BorderSide(color: border),
         ),
+      ),
+
+      dividerTheme: DividerThemeData(
+        color: border,
+        thickness: 1,
+        space: 1,
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: whiteColor,
-          minimumSize: const Size(double.infinity, 48),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          backgroundColor: AppDesign.accent,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: isDark ? AppDesign.neutralDark600 : AppDesign.neutral200,
+          disabledForegroundColor: textTertiary,
+          elevation: 0,
+          minimumSize: const Size(double.infinity, AppDesign.minTapTarget),
+          textStyle: const TextStyle(
+            fontFamily: 'SF-Pro',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: radiusSm),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: textPrimary,
+          minimumSize: const Size(0, AppDesign.minTapTarget),
+          side: BorderSide(color: borderStrong),
+          textStyle: const TextStyle(
+            fontFamily: 'SF-Pro',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: radiusSm),
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppDesign.accent,
+          minimumSize: const Size(0, AppDesign.minTapTarget),
+          textStyle: const TextStyle(
+            fontFamily: 'SF-Pro',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
 
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppDesign.accent,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, AppDesign.minTapTarget),
+          shape: RoundedRectangleBorder(borderRadius: radiusSm),
+        ),
+      ),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(foregroundColor: textPrimary),
+      ),
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: grey100,
-        hintStyle: const TextStyle(color: grey500),
-        labelStyle: const TextStyle(color: grey700),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: grey300),
+        fillColor: surface,
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppDesign.space4,
+          vertical: AppDesign.space3 + 2,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: grey300),
+        hintStyle: TextStyle(color: textTertiary, fontFamily: 'SF-Pro'),
+        labelStyle: TextStyle(color: textSecondary, fontFamily: 'SF-Pro'),
+        floatingLabelStyle: const TextStyle(
+          color: AppDesign.accent,
+          fontFamily: 'SF-Pro',
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+        prefixIconColor: textTertiary,
+        suffixIconColor: textTertiary,
+        border: outline(borderStrong),
+        enabledBorder: outline(borderStrong),
+        focusedBorder: outline(AppDesign.accent, width: 1.5),
+        errorBorder: outline(AppDesign.danger),
+        focusedErrorBorder: outline(AppDesign.danger, width: 1.5),
+        disabledBorder: outline(border),
+      ),
+
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceMuted,
+        selectedColor: AppDesign.accentSubtle,
+        side: BorderSide(color: border),
+        labelStyle: TextStyle(
+          color: textSecondary,
+          fontFamily: 'SF-Pro',
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesign.radiusPill),
         ),
       ),
 
-      // Force text color in text fields
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: blackColor),
-        bodyMedium: TextStyle(color: blackColor),
-        bodySmall: TextStyle(color: blackColor),
-      ),
-    );
-  }
-
-  // ================================
-  // THÈME DARK
-  // ================================
-
-  static ThemeData getDarkTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: darkBackgroundColor,
-      fontFamily: 'SF-Pro',
-
-      colorScheme: const ColorScheme.dark(
-        primary: primaryColor,
-        secondary: secondaryColor,
-        tertiary: tertiaryColor,
-        surface: darkCardColor,
-        surfaceContainerHighest: darkBackgroundColor,
-        error: errorColor,
-        onPrimary: whiteColor,
-        onSecondary: whiteColor,
-        onSurface: whiteColor,
-        onError: whiteColor,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDesign.radiusXl),
+          ),
+        ),
       ),
 
-      appBarTheme: const AppBarTheme(
-        backgroundColor: darkCardColor,
-        foregroundColor: whiteColor,
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-      ),
-
-      cardTheme: CardThemeData(
-        color: darkCardColor,
-        elevation: 4,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        ),
+        titleTextStyle: TextStyle(
+          fontFamily: 'SF-Pro',
+          color: textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        contentTextStyle: TextStyle(
+          fontFamily: 'SF-Pro',
+          color: textSecondary,
+          fontSize: 14,
+          height: 1.5,
         ),
       ),
 
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: whiteColor,
-          minimumSize: const Size(double.infinity, 48),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: isDark ? AppDesign.neutral100 : AppDesign.neutral900,
+        contentTextStyle: TextStyle(
+          fontFamily: 'SF-Pro',
+          color: isDark ? AppDesign.neutral900 : Colors.white,
+          fontSize: 14,
+        ),
+        actionTextColor: AppDesign.accent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: radiusSm),
+      ),
+
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppDesign.accent,
+        unselectedLabelColor: textSecondary,
+        indicatorColor: AppDesign.accent,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: border,
+        labelStyle: const TextStyle(
+          fontFamily: 'SF-Pro',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'SF-Pro',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       ),
 
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: grey800,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: grey700),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: surface,
+        selectedItemColor: AppDesign.accent,
+        unselectedItemColor: textTertiary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        showUnselectedLabels: true,
+        selectedLabelStyle: const TextStyle(
+          fontFamily: 'SF-Pro',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: grey700),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'SF-Pro',
+          fontSize: 11,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.white
+              : (isDark ? AppDesign.neutral400 : AppDesign.neutral0),
         ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppDesign.accent
+              : (isDark ? AppDesign.neutralDark600 : AppDesign.neutral300),
+        ),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
+
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppDesign.accent
+              : Colors.transparent,
+        ),
+        checkColor: WidgetStateProperty.all(Colors.white),
+        side: BorderSide(color: borderStrong, width: 1.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesign.radiusXs - 2),
+        ),
+      ),
+
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppDesign.accent
+              : borderStrong,
+        ),
+      ),
+
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppDesign.accent,
+      ),
+
+      listTileTheme: ListTileThemeData(
+        iconColor: textSecondary,
+        textColor: textPrimary,
+        shape: RoundedRectangleBorder(borderRadius: radiusSm),
+      ),
+
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppDesign.accent,
+        selectionColor: AppDesign.accent.withValues(alpha: 0.25),
+        selectionHandleColor: AppDesign.accent,
+      ),
+
+      textTheme: TextTheme(
+        bodyLarge: TextStyle(color: textPrimary),
+        bodyMedium: TextStyle(color: textPrimary),
+        bodySmall: TextStyle(color: textSecondary),
+        titleLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+        labelLarge: TextStyle(color: textPrimary),
       ),
     );
   }
+
+  static ThemeData getLightTheme() => _buildTheme(brightness: Brightness.light);
+
+  static ThemeData getDarkTheme() => _buildTheme(brightness: Brightness.dark);
 }
 
 // ================================

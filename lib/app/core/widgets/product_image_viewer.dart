@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
 
 typedef ProductImageBuilder = Widget Function(String image, BoxFit fit);
@@ -397,34 +398,49 @@ class ProductThumbnailStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (images.length < 2) return const SizedBox.shrink();
+    const thumbSize = 60.0;
+
     return SizedBox(
-      height: 68,
+      // La bande fait exactement la taille d'une vignette plus ses marges :
+      // le contenu du placeholder est rogné par le ClipRRect et ne peut plus
+      // provoquer de débordement.
+      height: thumbSize + AppDesign.space2,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDesign.space4,
+          vertical: AppDesign.space1,
+        ),
         itemCount: images.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => SizedBox(width: AppDesign.space2),
         itemBuilder: (context, index) {
           final selected = index == currentIndex;
           return GestureDetector(
             onTap: () => onSelected(index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 60,
+              width: thumbSize,
+              height: thumbSize,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                color: context.ds.surfaceMuted,
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                 border: Border.all(
-                  color: selected
-                      ? AppThemeSystem.primaryColor
-                      : context.borderColor,
-                  width: selected ? 2.5 : 1,
+                  color: selected ? AppDesign.accent : context.ds.border,
+                  width: selected ? 2 : 1,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Opacity(
-                  opacity: selected ? 1 : 0.7,
-                  child: imageBuilder(images[index], BoxFit.cover),
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm - 2),
+                // FittedBox contient tout visuel plus grand que la vignette,
+                // y compris les placeholders à taille intrinsèque.
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: thumbSize,
+                    height: thumbSize,
+                    child: imageBuilder(images[index], BoxFit.cover),
+                  ),
                 ),
               ),
             ),

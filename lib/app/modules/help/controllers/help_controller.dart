@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/app_design.dart';
 
 class HelpController extends GetxController {
   // État de chargement
@@ -277,7 +278,7 @@ class HelpController extends GetxController {
           'Erreur',
           'Impossible d\'ouvrir le client email',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -286,7 +287,7 @@ class HelpController extends GetxController {
         'Erreur',
         'Une erreur est survenue',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -304,7 +305,7 @@ class HelpController extends GetxController {
           'Erreur',
           'Impossible d\'ouvrir le dialer',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -313,7 +314,7 @@ class HelpController extends GetxController {
         'Erreur',
         'Une erreur est survenue',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -333,7 +334,7 @@ class HelpController extends GetxController {
           'Erreur',
           'Impossible d\'ouvrir WhatsApp',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -342,7 +343,7 @@ class HelpController extends GetxController {
         'Erreur',
         'Une erreur est survenue',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }

@@ -10,6 +10,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/currency_model.dart';
 import 'variant_editor_state.dart';
+import '../../../core/utils/app_design.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -1239,7 +1240,7 @@ class AddProductController extends GetxController {
                     Get.toNamed('/package-subscription');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF58A3A),
+                    backgroundColor: AppDesign.accent,
                   ),
                   child: const Text(
                     'Voir les packages',
@@ -1272,7 +1273,7 @@ class AddProductController extends GetxController {
                     Get.toNamed('/package-subscription');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF58A3A),
+                    backgroundColor: AppDesign.accent,
                   ),
                   child: const Text(
                     'Voir les packages',
@@ -1287,7 +1288,7 @@ class AddProductController extends GetxController {
             'Erreur',
             response.message ?? 'Impossible d\'ajouter le produit',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFF44336),
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
         }
@@ -1297,7 +1298,7 @@ class AddProductController extends GetxController {
         'Erreur',
         'Une erreur est survenue lors de l\'ajout du produit: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

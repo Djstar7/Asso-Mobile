@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/product_management_controller.dart';
 import '../../../routes/app_pages.dart';
@@ -163,7 +164,14 @@ class ProductManagementView extends GetView<ProductManagementController> {
           return false;
         },
         child: ListView.builder(
-          padding: EdgeInsets.all(context.horizontalPadding),
+          // Marge basse élargie : sans elle, le bouton flottant « Ajouter »
+          // recouvrait les actions de la dernière fiche produit.
+          padding: EdgeInsets.fromLTRB(
+            context.ds.gutter,
+            context.ds.gutter,
+            context.ds.gutter,
+            context.ds.gutter + AppDesign.space12 + AppDesign.space4,
+          ),
           itemCount:
               controller.products.length + (controller.hasMore.value ? 1 : 0),
           itemBuilder: (context, index) {
@@ -351,17 +359,22 @@ class ProductManagementView extends GetView<ProductManagementController> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          // Action courante : elle reste neutre. Seule la
+                          // suppression, irréversible, garde une couleur.
                           Icon(
                             Icons.edit_outlined,
                             size: 18,
-                            color: AppThemeSystem.infoColor,
+                            color: context.ds.textSecondary,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Modifier',
-                            style: context.button.copyWith(
-                              color: AppThemeSystem.infoColor,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              'Modifier',
+                              overflow: TextOverflow.ellipsis,
+                              style: context.button.copyWith(
+                                color: context.ds.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -383,9 +396,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
                             size: 18,
-                            color: status == 'active'
-                                ? AppThemeSystem.warningColor
-                                : AppThemeSystem.successColor,
+                            color: context.ds.textSecondary,
                           ),
                           const SizedBox(width: 6),
                           Flexible(
@@ -393,9 +404,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
                               status == 'active' ? 'Désactiver' : 'Réactiver',
                               overflow: TextOverflow.ellipsis,
                               style: context.button.copyWith(
-                                color: status == 'active'
-                                    ? AppThemeSystem.warningColor
-                                    : AppThemeSystem.successColor,
+                                color: context.ds.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

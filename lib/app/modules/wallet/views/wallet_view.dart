@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
   import 'package:get/get.dart';
 
   import '../controllers/wallet_controller.dart';
-  import '../../../core/utils/app_theme_system.dart';
+  import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_theme_system.dart';
   import '../../../data/providers/storage_service.dart';
   import '../widgets/withdrawal_bottom_sheet.dart';
   import '../widgets/recharge_bottom_sheet.dart';
@@ -195,8 +196,11 @@ Widget _buildBackButton(BuildContext context) {
           return const SizedBox.shrink();
         }
 
-        const Color accent = Color(0xFFC62828); // rouge (à faire / refusé)
-        final Color bg = accent.withValues(alpha: 0.10);
+        // Rouge sémantique : l'IBAN est absent ou refusé, c'est une
+        // anomalie à corriger. (Renommé : « accent » désignait ici un rouge,
+        // en collision avec l'accent orange de la marque.)
+        const Color tone = AppDesign.danger;
+        final Color bg = AppDesign.dangerSubtle;
 
         final String title =
             rejected ? 'IBAN refusé - à corriger' : 'IBAN non configuré';
@@ -216,7 +220,7 @@ Widget _buildBackButton(BuildContext context) {
                 decoration: BoxDecoration(
                   color: bg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: accent.withValues(alpha: 0.35)),
+                  border: Border.all(color: tone.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   children: [
@@ -224,12 +228,12 @@ Widget _buildBackButton(BuildContext context) {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.15),
+                        color: tone.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.account_balance_rounded,
-                        color: accent,
+                        color: tone,
                         size: 22,
                       ),
                     ),
@@ -243,7 +247,7 @@ Widget _buildBackButton(BuildContext context) {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: accent,
+                              color: tone,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -258,7 +262,7 @@ Widget _buildBackButton(BuildContext context) {
                         ],
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded, color: accent),
+                    Icon(Icons.chevron_right_rounded, color: tone),
                   ],
                 ),
               ),
@@ -320,49 +324,28 @@ Widget _buildBackButton(BuildContext context) {
           return Container(
             margin: EdgeInsets.symmetric(horizontal: horizontalMargin),
             height: cardHeight,
+            // La carte adopte un neutre sombre de la charte plutôt qu'un
+            // dégradé bleu-violet sans lien avec la marque. Le montant y
+            // ressort par contraste, et l'accent orange reste réservé aux
+            // actions (recharger, retirer).
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1e3c72), // Bleu foncé
-                  Color(0xFF2a5298), // Bleu moyen
-                  Color(0xFF7e22ce), // Violet
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              color: AppDesign.neutral900,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              boxShadow: context.ds.shadowMd,
             ),
             child: Stack(
               children: [
-                // Motif de fond (cercles décoratifs)
+                // Un seul halo, teinté de l'accent, pour éviter une surface
+                // parfaitement plate sans pour autant charger la carte.
                 Positioned(
-                  right: -50,
-                  top: -50,
+                  right: -60,
+                  top: -60,
                   child: Container(
-                    width: 200,
-                    height: 200,
+                    width: 190,
+                    height: 190,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -30,
-                  bottom: -30,
-                  child: Container(
-                    width: 150,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: AppDesign.accent.withValues(alpha: 0.10),
                     ),
                   ),
                 ),
@@ -393,7 +376,7 @@ Widget _buildBackButton(BuildContext context) {
                               style: TextStyle(
                                 fontSize: logoFontSize,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1e3c72),
+                                color: AppDesign.neutral900,
                                 letterSpacing: 2,
                               ),
                             ),
@@ -759,7 +742,7 @@ Widget _buildBackButton(BuildContext context) {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.lock_clock, size: 20, color: Colors.orange),
+                  const Icon(Icons.lock_clock, size: 20, color: AppDesign.accent),
                   const SizedBox(width: 8),
                   Text(
                     'Fonds en Attente',
@@ -773,7 +756,7 @@ Widget _buildBackButton(BuildContext context) {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
+                      color: AppDesign.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -781,7 +764,7 @@ Widget _buildBackButton(BuildContext context) {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade900,
+                        color: AppDesign.accent,
                       ),
                     ),
                   ),
@@ -797,15 +780,15 @@ Widget _buildBackButton(BuildContext context) {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.orange.shade50,
-                        Colors.amber.shade50,
+                        AppDesign.accent,
+                        AppDesign.warning,
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.orange.shade200,
+                      color: AppDesign.accent,
                       width: 2,
                     ),
                   ),
@@ -816,7 +799,7 @@ Widget _buildBackButton(BuildContext context) {
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Colors.orange.shade700,
+                            color: AppDesign.accent,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -824,7 +807,7 @@ Widget _buildBackButton(BuildContext context) {
                               'Vous avez des fonds bloqués qui seront débloqués après confirmation de livraison',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.orange.shade700,
+                                color: AppDesign.accent,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -883,20 +866,20 @@ Widget _buildBackButton(BuildContext context) {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.orange.shade50,
-              Colors.amber.shade50,
+              AppDesign.accent,
+              AppDesign.warning,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.orange.shade200,
+            color: AppDesign.accent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.orange.withValues(alpha: 0.1),
+              color: AppDesign.accent.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -911,7 +894,7 @@ Widget _buildBackButton(BuildContext context) {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
+                    color: AppDesign.accent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -929,7 +912,7 @@ Widget _buildBackButton(BuildContext context) {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
+                          color: AppDesign.accent,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -939,7 +922,7 @@ Widget _buildBackButton(BuildContext context) {
                         '${kgBooked.toStringAsFixed(1)} kg',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.orange.shade700,
+                          color: AppDesign.accent,
                         ),
                       ),
                     ],
@@ -961,7 +944,7 @@ Widget _buildBackButton(BuildContext context) {
                     'Montant',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.orange.shade700,
+                      color: AppDesign.accent,
                     ),
                   ),
                   Text(
@@ -969,7 +952,7 @@ Widget _buildBackButton(BuildContext context) {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+                      color: AppDesign.accent,
                     ),
                   ),
                 ],
@@ -1228,7 +1211,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
   if (status == 'approved') return const SizedBox.shrink();
 
   final color = status == 'rejected'
-      ? const Color(0xFFC62828)
+      ? AppDesign.danger
       : AppThemeSystem.primaryColor;
 
   final label = switch (status) {

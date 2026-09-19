@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../controllers/post_detail_controller.dart';
 import '../../../data/models/post_comment.dart';
+import '../../../core/utils/app_design.dart';
 
 class PostDetailView extends GetView<PostDetailController> {
   const PostDetailView({super.key});
@@ -166,13 +167,18 @@ class PostDetailView extends GetView<PostDetailController> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            (post.isAnonymous && !post.isMyPost)
-                                ? 'ANONYME'
-                                : (post.user?.fullName ?? 'Anonyme'),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Flexible(
+                            child: Text(
+                              (post.isAnonymous && !post.isMyPost)
+                                  ? 'ANONYME'
+                                  : (post.user?.fullName ?? 'Anonyme'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                fontWeight: FontWeight.w700,
+                                color: context.ds.textPrimary,
+                              ),
                             ),
                           ),
                           if (post.isAnonymous && post.isMyPost) ...[
@@ -249,13 +255,13 @@ class PostDetailView extends GetView<PostDetailController> {
                       Icon(
                         post.isDisliked ? Icons.thumb_down : Icons.thumb_down_outlined,
                         size: 20,
-                        color: post.isDisliked ? Colors.red : Colors.grey,
+                        color: post.isDisliked ? AppDesign.danger : Colors.grey,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${post.dislikesCount}',
                         style: TextStyle(
-                          color: post.isDisliked ? Colors.red : Colors.grey,
+                          color: post.isDisliked ? AppDesign.danger : Colors.grey,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -332,13 +338,18 @@ class PostDetailView extends GetView<PostDetailController> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            (comment.isAnonymous && !comment.isMyComment)
-                                ? 'ANONYME'
-                                : (comment.user?.fullName ?? 'Anonyme'),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                          Flexible(
+                            child: Text(
+                              (comment.isAnonymous && !comment.isMyComment)
+                                  ? 'ANONYME'
+                                  : (comment.user?.fullName ?? 'Anonyme'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textStyle(
+                                FontSizeType.caption,
+                                fontWeight: FontWeight.w700,
+                                color: context.ds.textPrimary,
+                              ),
                             ),
                           ),
                           if (comment.isAnonymous && comment.isMyComment) ...[

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_edit_controller.dart';
+import '../../../core/utils/app_design.dart';
 
 class DiaspoEditView extends GetView<DiaspoEditController> {
   const DiaspoEditView({super.key});
@@ -117,7 +118,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             // Departure
             Row(
               children: [
-                const Icon(Icons.flight_takeoff, color: Colors.green),
+                const Icon(Icons.flight_takeoff, color: AppDesign.success),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
                   'Départ',
@@ -186,7 +187,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             // Arrival
             Row(
               children: [
-                const Icon(Icons.flight_land, color: Colors.red),
+                const Icon(Icons.flight_land, color: AppDesign.danger),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
                   'Arrivée',
@@ -441,7 +442,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   // Route
                   Row(
                     children: [
-                      Icon(Icons.flight_takeoff, color: Colors.green, size: iconSize),
+                      Icon(Icons.flight_takeoff, color: AppDesign.success, size: iconSize),
                       SizedBox(width: elementSpacing * 0.5),
                       Expanded(
                         child: Text(
@@ -458,7 +459,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   SizedBox(height: elementSpacing * 0.5),
                   Row(
                     children: [
-                      Icon(Icons.flight_land, color: Colors.red, size: iconSize),
+                      Icon(Icons.flight_land, color: AppDesign.danger, size: iconSize),
                       SizedBox(width: elementSpacing * 0.5),
                       Expanded(
                         child: Text(
@@ -514,13 +515,13 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
           Container(
             padding: EdgeInsets.all(elementSpacing),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
+              color: AppDesign.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(color: Colors.blue),
+              border: Border.all(color: AppDesign.info),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Colors.blue),
+                const Icon(Icons.info_outline, color: AppDesign.info),
                 SizedBox(width: elementSpacing),
                 Expanded(
                   child: Text(

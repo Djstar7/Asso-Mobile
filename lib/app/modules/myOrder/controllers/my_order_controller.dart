@@ -5,6 +5,7 @@ import '../../../data/providers/order_service.dart';
 import '../../../data/providers/wallet_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../models/customer_order_models.dart';
+import '../../../core/utils/app_design.dart';
 
 class MyOrderController extends GetxController {
   final RxList<CustomerOrder> allOrders = <CustomerOrder>[].obs;
@@ -170,7 +171,7 @@ class MyOrderController extends GetxController {
       if (response.success) {
         Get.snackbar('Merci !', 'Votre avis a été envoyé au vendeur.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
           margin: const EdgeInsets.all(16),
           borderRadius: 12,
@@ -215,7 +216,7 @@ class MyOrderController extends GetxController {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Icon(
                     i < selectedRating.value ? Icons.star_rounded : Icons.star_border_rounded,
-                    color: i < selectedRating.value ? Colors.amber : Colors.grey,
+                    color: i < selectedRating.value ? AppDesign.warning : Colors.grey,
                     size: 40,
                   ),
                 ),

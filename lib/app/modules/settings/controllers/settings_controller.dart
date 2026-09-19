@@ -7,6 +7,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
+import '../../../core/utils/app_design.dart';
 
 class SettingsController extends GetxController {
   // États
@@ -313,7 +314,7 @@ class SettingsController extends GetxController {
             'Erreur',
             'Numéro de téléphone invalide',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
           return;
@@ -339,7 +340,7 @@ class SettingsController extends GetxController {
             'Code envoyé',
             response.message,
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
+            backgroundColor: AppDesign.success,
             colorText: Colors.white,
           );
         } else {
@@ -347,7 +348,7 @@ class SettingsController extends GetxController {
             'Erreur',
             response.message,
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
+            backgroundColor: AppDesign.danger,
             colorText: Colors.white,
           );
         }
@@ -357,7 +358,7 @@ class SettingsController extends GetxController {
         'Erreur',
         'Impossible de modifier le numéro de téléphone',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -530,7 +531,7 @@ class SettingsController extends GetxController {
         'Succès',
         'Cache effacé avec succès',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
@@ -538,7 +539,7 @@ class SettingsController extends GetxController {
         'Erreur',
         'Impossible d\'effacer le cache',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -925,7 +926,7 @@ class SettingsController extends GetxController {
           'Compte supprimé',
           'Votre compte a été supprimé avec succès',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
@@ -938,7 +939,7 @@ class SettingsController extends GetxController {
           'Erreur',
           response.message,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -947,7 +948,7 @@ class SettingsController extends GetxController {
         'Erreur',
         'Impossible de supprimer le compte',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -1089,7 +1090,7 @@ class SettingsController extends GetxController {
         'Erreur',
         'Impossible de se déconnecter',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
@@ -1852,19 +1853,19 @@ class SettingsController extends GetxController {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: AppDesign.info,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    Icon(Icons.info_outline, color: AppDesign.info, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Les prix seront affichés en ${currency.code}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.blue[900],
+                          color: AppDesign.info,
                         ),
                       ),
                     ),
@@ -1928,7 +1929,7 @@ class SettingsController extends GetxController {
         'Erreur',
         'Impossible de définir le pays sélectionné',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {

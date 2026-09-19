@@ -11,6 +11,7 @@ import '../widgets/payment_loading_dialog.dart';
 import '../widgets/payment_success_dialog.dart';
 import '../widgets/sales_code_field.dart';
 import '../../../data/services/stripe_native_service.dart';
+import '../../../core/utils/app_design.dart';
 
 class PackageSubscriptionController extends GetxController {
   // State management
@@ -325,7 +326,7 @@ class PackageSubscriptionController extends GetxController {
         'Paiement en cours',
         'Votre paiement est en cours de confirmation. Vous serez notifié.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
       );

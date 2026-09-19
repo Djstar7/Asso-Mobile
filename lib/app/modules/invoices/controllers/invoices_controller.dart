@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/models/invoice_model.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../core/utils/app_design.dart';
 
 class InvoicesController extends GetxController {
   final isLoading = false.obs;
@@ -87,7 +88,7 @@ class InvoicesController extends GetxController {
           'Erreur',
           response.message,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -102,7 +103,7 @@ class InvoicesController extends GetxController {
         'Erreur',
         'Impossible de charger les factures',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -150,7 +151,7 @@ class InvoicesController extends GetxController {
         'Erreur',
         'URL de t�l�chargement non disponible',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
       return;
@@ -171,7 +172,7 @@ class InvoicesController extends GetxController {
           'Erreur',
           'Impossible d\'ouvrir le lien',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
@@ -185,7 +186,7 @@ class InvoicesController extends GetxController {
         'Erreur',
         'Impossible de t�l�charger la facture',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }

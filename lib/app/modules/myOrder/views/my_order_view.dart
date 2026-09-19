@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
+import '../../../core/utils/app_design.dart';
 
 class MyOrderView extends GetView<MyOrderController> {
   const MyOrderView({super.key});
@@ -448,8 +449,8 @@ class MyOrderView extends GetView<MyOrderController> {
                 icon: const Icon(Icons.cancel_outlined, size: 18),
                 label: const Text('Annuler'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: AppDesign.danger,
+                  side: const BorderSide(color: AppDesign.danger),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -498,8 +499,8 @@ class MyOrderView extends GetView<MyOrderController> {
               onPressed: () => controller.contactDelivery(order.deliveryPersonPhone!),
               icon: const Icon(Icons.phone),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.green.withValues(alpha: 0.1),
-                foregroundColor: Colors.green,
+                backgroundColor: AppDesign.success.withValues(alpha: 0.1),
+                foregroundColor: AppDesign.success,
                 padding: const EdgeInsets.all(12),
               ),
             ),
@@ -513,7 +514,7 @@ class MyOrderView extends GetView<MyOrderController> {
                 icon: const Icon(Icons.check_circle_outline, size: 18),
                 label: const Text('Confirmer la réception'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppDesign.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -527,17 +528,17 @@ class MyOrderView extends GetView<MyOrderController> {
   Color _getStatusColor(CustomerOrderStatus status) {
     switch (status) {
       case CustomerOrderStatus.pending:
-        return Colors.orange;
+        return AppDesign.accent;
       case CustomerOrderStatus.confirmed:
-        return Colors.blue;
+        return AppDesign.info;
       case CustomerOrderStatus.preparing:
-        return Colors.purple;
+        return AppDesign.neutral500;
       case CustomerOrderStatus.shipped:
-        return Colors.indigo;
+        return AppDesign.neutral500;
       case CustomerOrderStatus.delivered:
-        return Colors.green;
+        return AppDesign.success;
       case CustomerOrderStatus.cancelled:
-        return Colors.red;
+        return AppDesign.danger;
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/chatdetail_controller.dart';
 
@@ -33,12 +34,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppThemeSystem.primaryColor,
-                        AppThemeSystem.tertiaryColor,
-                      ],
-                    ),
+                    color: AppDesign.accent,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -60,7 +56,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: AppDesign.success,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
@@ -154,12 +150,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
               height: 32,
               margin: EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppThemeSystem.primaryColor,
-                    AppThemeSystem.tertiaryColor,
-                  ],
-                ),
+                color: AppDesign.accent,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -252,7 +243,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                               : Icons.done_rounded,
                           size: 14,
                           color: message['isRead']
-                              ? Colors.blue[300]
+                              ? AppDesign.info
                               : Colors.white.withValues(alpha: 0.8),
                         ),
                       ],
@@ -359,12 +350,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
             height: 32,
             margin: EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppThemeSystem.primaryColor,
-                  AppThemeSystem.tertiaryColor,
-                ],
-              ),
+              color: AppDesign.accent,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -589,12 +575,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppThemeSystem.primaryColor,
-                        AppThemeSystem.primaryColor.withValues(alpha: 0.8),
-                      ],
-                    ),
+                    color: AppThemeSystem.primaryColor,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -667,7 +648,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     context,
                     Icons.photo_library_rounded,
                     'Galerie',
-                    Colors.purple,
+                    AppDesign.neutral500,
                     () {
                       Get.back();
                       controller.pickImageFromGallery();
@@ -878,19 +859,19 @@ class ChatdetailView extends GetView<ChatdetailController> {
                         context,
                         Icons.camera_alt_rounded,
                         'Caméra',
-                        Colors.pink,
+                        AppDesign.neutral500,
                       ),
                     _buildAttachmentOption(
                       context,
                       Icons.insert_drive_file_rounded,
                       'Document',
-                      Colors.blue,
+                      AppDesign.info,
                     ),
                     _buildAttachmentOption(
                       context,
                       Icons.location_on_rounded,
                       'Position',
-                      Colors.green,
+                      AppDesign.success,
                     ),
                   ],
                 ),
@@ -1274,19 +1255,19 @@ class ChatdetailView extends GetView<ChatdetailController> {
               end: Alignment.bottomRight,
               colors: isDark
                   ? [
-                      Color(0xFF2D3748).withValues(alpha: 0.7),
-                      Color(0xFF1A202C).withValues(alpha: 0.7),
+                      AppDesign.neutral800.withValues(alpha: 0.7),
+                      AppDesign.neutral900.withValues(alpha: 0.7),
                     ]
                   : [
-                      Color(0xFFFFF9E6),
-                      Color(0xFFFFF4D6),
+                      AppDesign.warningSubtle,
+                      AppDesign.warningSubtle,
                     ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
                   ? AppThemeSystem.primaryColor.withValues(alpha: 0.3)
-                  : Color(0xFFFFE4B3),
+                  : AppDesign.warningSubtle,
               width: 2,
             ),
             boxShadow: [
@@ -1311,7 +1292,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? AppThemeSystem.primaryColor.withValues(alpha: 0.2)
-                      : Color(0xFFFFE4B3),
+                      : AppDesign.warningSubtle,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(14),
                     topRight: Radius.circular(14),
@@ -1347,7 +1328,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                         fontWeight: FontWeight.bold,
                         color: isDark
                             ? AppThemeSystem.primaryColor
-                            : Color(0xFFD97706),
+                            : AppDesign.warningText,
                       ),
                     ),
                   ],
@@ -1367,13 +1348,13 @@ class ChatdetailView extends GetView<ChatdetailController> {
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Color(0xFFFBBF24).withValues(alpha: 0.15)
-                                : Color(0xFFFBBF24).withValues(alpha: 0.2),
+                                ? AppDesign.warning.withValues(alpha: 0.15)
+                                : AppDesign.warning.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             Icons.warning_amber_rounded,
-                            color: isDark ? Color(0xFFFBBF24) : Color(0xFFD97706),
+                            color: isDark ? AppDesign.warning : AppDesign.warningText,
                             size: 24,
                           ),
                         ),
@@ -1385,8 +1366,8 @@ class ChatdetailView extends GetView<ChatdetailController> {
                               FontSizeType.body1,
                               fontWeight: FontWeight.bold,
                               color: isDark
-                                  ? Color(0xFFFBBF24)
-                                  : Color(0xFFD97706),
+                                  ? AppDesign.warning
+                                  : AppDesign.warningText,
                               height: 1.4,
                             ),
                           ),
@@ -1407,7 +1388,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                           border: Border.all(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.1)
-                                : Color(0xFFFFE4B3),
+                                : AppDesign.warningSubtle,
                             width: 1,
                           ),
                         ),
@@ -1434,7 +1415,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     top: BorderSide(
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.1)
-                          : Color(0xFFFFE4B3),
+                          : AppDesign.warningSubtle,
                       width: 1,
                     ),
                   ),
