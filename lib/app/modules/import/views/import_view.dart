@@ -8,6 +8,7 @@ import '../../../core/values/constants.dart';
 import 'wholesale_order_sheet.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/app_ui.dart';
 
 /// Section « Produits importés » : pays d'origine gérés côté backend
 /// (Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪, Inde 🇮🇳…).
@@ -23,22 +24,10 @@ class _ImportCountry {
   final String code; // ISO2 : CN, TR, AE
   final String name;
   final String flag;
-  final List<Color> gradient;
-  const _ImportCountry(this.code, this.name, this.flag, this.gradient);
+  const _ImportCountry(this.code, this.name, this.flag);
 }
 
 class _ImportViewState extends State<ImportView> {
-  // Palette de dégradés attribuée par index : un pays ajouté en base reçoit
-  // automatiquement un dégradé, sans modification de code.
-  static const _gradients = <List<Color>>[
-    [Color(0xFFDE2910), Color(0xFFFF6B4A)],
-    [Color(0xFFE30A17), Color(0xFFFF5C68)],
-    [Color(0xFF0B6B3A), Color(0xFF2FB56E)],
-    [Color(0xFF1D4ED8), Color(0xFF60A5FA)],
-    [Color(0xFF7C3AED), Color(0xFFA78BFA)],
-    [AppDesign.accentText, AppDesign.warning],
-  ];
-
   static List<_ImportCountry> _mapCountries(List<Map<String, String>> raw) {
     return [
       for (var i = 0; i < raw.length; i++)
@@ -46,7 +35,6 @@ class _ImportViewState extends State<ImportView> {
           raw[i]['code'] ?? '',
           raw[i]['name'] ?? '',
           (raw[i]['flag'] ?? '').isNotEmpty ? raw[i]['flag']! : '🏳️',
-          _gradients[i % _gradients.length],
         ),
     ];
   }
@@ -101,11 +89,11 @@ class _ImportViewState extends State<ImportView> {
   Widget build(BuildContext context) {
     final country = _current;
     return Container(
-      color: AppDesign.neutral50,
+      color: context.ds.canvas,
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          color: country.gradient.first,
+          color: AppDesign.accent,
           onRefresh: _load,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -141,25 +129,15 @@ class _ImportViewState extends State<ImportView> {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: c.gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(color: c.gradient.first.withValues(alpha: 0.35), blurRadius: 22, offset: const Offset(0, 10)),
-        ],
+        color: context.ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        border: Border.all(color: context.ds.border),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           // Motif décoratif discret
-          Positioned(
-            right: -18,
-            top: -22,
-            child: Icon(Icons.public_rounded, size: 120, color: Colors.white.withValues(alpha: 0.10)),
-          ),
+
           Row(
             children: [
               Container(
@@ -167,9 +145,8 @@ class _ImportViewState extends State<ImportView> {
                 height: 62,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: context.ds.surfaceMuted,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.5),
                 ),
                 child: Text(c.flag, style: const TextStyle(fontSize: 32)),
               ),
@@ -180,19 +157,28 @@ class _ImportViewState extends State<ImportView> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.flight_takeoff_rounded, color: Colors.white70, size: 15),
+                        Icon(Icons.flight_takeoff_rounded,
+                            color: context.ds.textTertiary, size: 14),
                         const SizedBox(width: 6),
-                        Text('PRODUITS IMPORTÉS',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2)),
+                        Flexible(
+                          child: Text('PRODUITS IMPORTÉS',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context
+                                  .textStyle(FontSizeType.overline,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.ds.textTertiary)
+                                  .copyWith(letterSpacing: 1.1)),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text('Made in ${c.name}',
-                        style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w800)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(FontSizeType.h5,
+                            fontWeight: FontWeight.w700,
+                            color: context.ds.textPrimary)),
                     const SizedBox(height: 8),
                     _headerCountChip(),
                   ],
@@ -212,15 +198,21 @@ class _ImportViewState extends State<ImportView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.20),
+        color: context.ds.surfaceMuted,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 13),
+          Icon(Icons.inventory_2_outlined,
+              color: context.ds.textSecondary, size: 13),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textStyle(FontSizeType.overline,
+                  fontWeight: FontWeight.w600,
+                  color: context.ds.textSecondary)),
         ],
       ),
     );
@@ -251,27 +243,27 @@ class _ImportViewState extends State<ImportView> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                gradient: selected
-                    ? LinearGradient(colors: c.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight)
-                    : null,
-                color: selected ? null : Colors.white,
-                borderRadius: BorderRadius.circular(26),
+                color: selected ? AppDesign.accentSubtle : context.ds.surface,
+                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
                 border: Border.all(
-                  color: selected ? Colors.transparent : AppDesign.neutral200,
+                  color: selected ? AppDesign.accentBorder : context.ds.border,
                 ),
-                boxShadow: selected
-                    ? [BoxShadow(color: c.gradient.first.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))]
-                    : null,
               ),
               child: Row(
                 children: [
                   Text(c.flag, style: const TextStyle(fontSize: 18)),
                   const SizedBox(width: 8),
                   Text(c.name,
-                      style: TextStyle(
-                          color: selected ? Colors.white : AppDesign.neutral700,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                          fontSize: 14)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyle(
+                        FontSizeType.caption,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected
+                            ? AppDesign.accentText
+                            : context.ds.textSecondary,
+                      )),
                 ],
               ),
             ),
@@ -355,52 +347,66 @@ class _ImportViewState extends State<ImportView> {
   // ─────────────────────────── État vide ───────────────────────────
   Widget _buildEmpty(_ImportCountry c) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Le drapeau tient lieu d'illustration, sur une pastille neutre :
+          // la teinte du pays ne colore plus tout l'écran.
           Container(
-            width: 96,
-            height: 96,
+            width: 72,
+            height: 72,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: c.gradient.first.withValues(alpha: 0.10),
+              color: context.ds.surfaceMuted,
               shape: BoxShape.circle,
             ),
-            child: Text(c.flag, style: const TextStyle(fontSize: 46)),
+            child: Text(c.flag, style: const TextStyle(fontSize: 34)),
           ),
-          const SizedBox(height: 18),
-          Text('Aucun produit ${c.name} pour l\'instant',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppDesign.neutral800)),
-          const SizedBox(height: 6),
-          Text('Reviens bientôt : de nouveaux articles importés de ${c.name} arrivent régulièrement.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13.5, color: Colors.grey.shade600, height: 1.4)),
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: c.gradient.first,
-              side: BorderSide(color: c.gradient.first.withValues(alpha: 0.5)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          SizedBox(height: AppDesign.space4),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+            child: Column(
+              children: [
+                Text(
+                  'Aucun produit ${c.name} pour le moment',
+                  textAlign: TextAlign.center,
+                  style: context.textStyle(
+                    FontSizeType.subtitle1,
+                    fontWeight: FontWeight.w600,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
+                SizedBox(height: AppDesign.space2),
+                Text(
+                  'De nouveaux articles importés de ${c.name} arrivent régulièrement.',
+                  textAlign: TextAlign.center,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: context.ds.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
-            label: const Text('Actualiser'),
+          ),
+          SizedBox(height: AppDesign.space5),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppButton(
+                label: 'Actualiser',
+                icon: Icons.refresh_rounded,
+                variant: AppButtonVariant.secondary,
+                expand: false,
+                onPressed: _load,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-
-  // ─────────────────────────── Carte produit ───────────────────────────
-
-  /// Gabarit des grilles « import ».
-  ///
-  /// La carte de gros affiche un nom sur deux lignes, un prix et un badge
-  /// de quantité minimale : on réserve cette hauteur explicitement au lieu
-  /// de la déduire d'un ratio, qui se dégradait sur les écrans étroits.
   SliverGridDelegate _importGridDelegate(BuildContext context) {
     final columns = AppDesign.productColumns(context);
     final width = ProductCard.widthInGrid(context, columns: columns);
