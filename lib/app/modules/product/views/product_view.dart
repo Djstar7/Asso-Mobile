@@ -3261,6 +3261,22 @@ class ProductView extends GetView<ProductController> {
         product['category']?['name']?.toString() ?? 'cette catégorie';
     final categoryId = product['category']?['id'];
 
+    return Obx(() {
+      // Rien de proche à proposer : la section disparaît au lieu d'afficher
+      // un bloc vide en bas de fiche.
+      if (!controller.isLoadingSimilarProducts.value &&
+          controller.similarProducts.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return _similarProductsBody(context, categoryName, categoryId);
+    });
+  }
+
+  Widget _similarProductsBody(
+    BuildContext context,
+    String categoryName,
+    dynamic categoryId,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppThemeSystem.getHorizontalPadding(context),
@@ -3313,21 +3329,6 @@ class ProductView extends GetView<ProductController> {
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
                       AppThemeSystem.primaryColor,
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            if (controller.similarProducts.isEmpty) {
-              return SizedBox(
-                height: 120,
-                child: Center(
-                  child: Text(
-                    'Aucun produit similaire trouvé',
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      color: AppThemeSystem.grey600,
                     ),
                   ),
                 ),

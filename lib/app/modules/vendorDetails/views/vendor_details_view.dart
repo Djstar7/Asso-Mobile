@@ -100,452 +100,250 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
     final shop = controller.shopData.value;
     if (shop == null) return SizedBox.shrink();
 
-    final deviceType = AppThemeSystem.getDeviceType(context);
-    final isTablet = deviceType == DeviceType.tablet ||
-        deviceType == DeviceType.largeTablet ||
-        deviceType == DeviceType.iPadPro13 ||
-        deviceType == DeviceType.desktop;
-
-    return CustomScrollView(
-      slivers: [
-        // App Bar with shop header
-        _buildAppBar(context, shop),
-
-        // Shop Info Section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(
-              AppThemeSystem.getHorizontalPadding(context),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildShopInfo(context, shop),
-                SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-                _buildShopStats(context),
-                SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-                _buildProductsHeader(context),
-              ],
+    return RefreshIndicator(
+      onRefresh: controller.refreshShopDetails,
+      color: AppDesign.accent,
+      child: CustomScrollView(
+        // Sans cela, une boutique au catalogue court ne se laisse pas tirer
+        // pour se rafraîchir : la liste ne déborde pas, donc ne défile pas.
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          _buildAppBar(context, shop),
+          SliverToBoxAdapter(child: _buildIdentity(context, shop)),
+          // La recherche reste sous la main pendant qu'on parcourt la grille :
+          // dans une boutique fournie, la faire défiler hors de l'écran
+          // obligeait à remonter tout le catalogue pour affiner.
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SearchBarHeader(
+              controller: controller,
+              textScale: MediaQuery.textScalerOf(context).scale(1),
             ),
           ),
-        ),
+          Obx(() {
+            final visible = controller.visibleProducts;
 
-        // Products Grid
-        Obx(() {
-          if (controller.products.isEmpty) {
-            return SliverToBoxAdapter(
-              child: _buildEmptyProducts(context),
-            );
-          }
+            if (visible.isEmpty) {
+              return SliverToBoxAdapter(
+                child: _buildEmptyProducts(context),
+              );
+            }
 
-          return SliverPadding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppThemeSystem.getHorizontalPadding(context),
-            ),
-            sliver: SliverGrid(
-              gridDelegate: ProductCard.gridDelegate(context),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = controller.products[index];
-                  return _buildProductCard(context, product);
-                },
-                childCount: controller.products.length,
+            return SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                context.ds.gutter,
+                AppDesign.space4,
+                context.ds.gutter,
+                AppDesign.space6,
               ),
-            ),
-          );
-        }),
-
-        // Bottom padding
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: AppThemeSystem.getSectionSpacing(context),
+              sliver: SliverGrid(
+                gridDelegate: ProductCard.gridDelegate(context),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildProductCard(context, visible[index]),
+                  childCount: visible.length,
+                ),
+              ),
+            );
+          }),
+          SliverToBoxAdapter(
+            child: SizedBox(height: context.ds.gutter),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
+  /// Bandeau de la boutique : image de couverture, logo et nom.
+  ///
+  /// Le nom ne figure plus qu'ici : répété juste en dessous dans la fiche, il
+  /// occupait deux fois la même place sans rien apprendre de plus.
   Widget _buildAppBar(BuildContext context, Map<String, dynamic> shop) {
     final shopName = shop['name']?.toString() ?? 'Boutique';
     final shopLogo = shop['logo']?.toString();
+    final cover = shop['cover']?.toString() ?? shop['banner']?.toString();
 
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 220,
       pinned: true,
-      backgroundColor: AppThemeSystem.getSurfaceColor(context),
-      leading: IconButton(
-        icon: Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
+      stretch: true,
+      backgroundColor: AppDesign.accent,
+      foregroundColor: Colors.white,
+      leading: Padding(
+        padding: EdgeInsets.only(left: AppDesign.space2),
+        child: _GlassIconButton(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Retour',
+          onPressed: Get.back<void>,
         ),
-        onPressed: () => Get.back(),
       ),
       flexibleSpace: FlexibleSpaceBar(
+        titlePadding: EdgeInsetsDirectional.only(
+          start: 56,
+          end: 56,
+          bottom: AppDesign.space4,
+        ),
+        centerTitle: true,
         title: Text(
           shopName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: context.textStyle(
-            FontSizeType.h6,
-            fontWeight: FontWeight.bold,
+            FontSizeType.subtitle1,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
-        background: shopLogo != null && shopLogo.isNotEmpty
-            ? Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    shopLogo,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      decoration: BoxDecoration(
-                        color: AppDesign.accent,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  color: AppDesign.accent,
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.store_rounded,
-                    size: 80,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                ),
-              ),
+        background: _ShopCover(cover: cover, logo: shopLogo),
       ),
     );
   }
 
-  Widget _buildShopInfo(BuildContext context, Map<String, dynamic> shop) {
-    final shopName = shop['name']?.toString() ?? 'Boutique';
-    final shopDescription = shop['description']?.toString() ?? '';
-    final shopAddress = shop['address']?.toString() ?? 'Adresse non spécifiée';
-    final isCertified = shop['is_certified'] == true || shop['is_certified'] == 1;
-    final ownerName = shop['owner']?['name']?.toString() ?? 'Propriétaire';
+  /// Carte d'identité : description, tenue de boutique, adresse et chiffres.
+  Widget _buildIdentity(BuildContext context, Map<String, dynamic> shop) {
+    final description = shop['description']?.toString() ?? '';
+    final address = shop['address']?.toString() ?? '';
+    final isCertified =
+        shop['is_certified'] == true || shop['is_certified'] == 1;
+    final ownerName = shop['owner']?['name']?.toString();
     final ownerAvatar = shop['owner']?['profile_picture']?.toString();
 
-    return Container(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(
-          AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Shop Name with certification badge
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  shopName,
-                  style: context.textStyle(
-                    FontSizeType.h4,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (isCertified)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppDesign.info.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppDesign.info.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.verified_rounded,
-                        size: 16,
-                        color: AppDesign.info,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Certifié',
-                        style: context.textStyle(
-                          FontSizeType.caption,
-                          color: AppDesign.info,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+          if (isCertified) ...[
+            const AppBadge(
+              label: 'Boutique certifiée',
+              tone: AppBadgeTone.info,
+              icon: Icons.verified_rounded,
+            ),
+            SizedBox(height: AppDesign.space3),
+          ],
 
-          if (shopDescription.isNotEmpty) ...[
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+          if (description.isNotEmpty) ...[
             Text(
-              shopDescription,
+              description,
               style: context.textStyle(
                 FontSizeType.body2,
-                color: AppThemeSystem.getSecondaryTextColor(context),
+                color: context.ds.textSecondary,
                 height: 1.5,
               ),
             ),
+            SizedBox(height: AppDesign.space4),
           ],
 
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-          Divider(),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+          // Les chiffres d'abord : c'est ce qui décide d'entrer ou non dans
+          // le catalogue, et ils tiennent sur une seule ligne lisible.
+          _buildShopStats(context),
 
-          // Owner info
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: ClipOval(
-                  child: ownerAvatar != null && ownerAvatar.isNotEmpty
-                      ? Image.network(
-                          ownerAvatar,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildOwnerAvatarPlaceholder(),
-                        )
-                      : _buildOwnerAvatarPlaceholder(),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Propriétaire',
-                      style: context.textStyle(
-                        FontSizeType.caption,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ),
-                    Text(
-                      ownerName,
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          SizedBox(height: AppDesign.space4),
 
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-          // Address
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
+          // Tenue et adresse réunies dans une même ligne discrète : ce sont
+          // des renseignements de confiance, pas le sujet de l'écran.
+          if (ownerName != null && ownerName.isNotEmpty)
+            _MetaRow(
+              leading: _OwnerAvatar(url: ownerAvatar),
+              label: 'Tenue par',
+              value: ownerName,
+            ),
+          if (address.isNotEmpty) ...[
+            SizedBox(height: AppDesign.space3),
+            _MetaRow(
+              leading: Icon(
                 Icons.location_on_rounded,
-                color: AppThemeSystem.primaryColor,
+                color: AppDesign.accent,
                 size: 20,
               ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  shopAddress,
-                  style: context.textStyle(
-                    FontSizeType.body2,
-                    color: AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                ),
-              ),
-            ],
-          ),
+              label: 'Adresse',
+              value: address,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildOwnerAvatarPlaceholder() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppDesign.accent,
-      ),
-      child: Icon(
-        Icons.person_rounded,
-        color: Colors.white,
-        size: 20,
-      ),
-    );
-  }
-
+  /// Les trois chiffres de la boutique, sur une ligne.
+  ///
+  /// Trois cartes encadrées pour trois nombres faisaient beaucoup de
+  /// contours : une seule surface, séparée de traits fins, pèse moins.
   Widget _buildShopStats(BuildContext context) {
     final stats = controller.shopStats.value;
     if (stats == null) return SizedBox.shrink();
 
-    final productsCount = stats['products_count'] ?? 0;
-    final averageRating = stats['average_rating'] ?? 0.0;
-    final reviewsCount = stats['reviews_count'] ?? 0;
+    final rating = stats['average_rating'];
+    final ratingLabel = rating is num
+        ? rating.toStringAsFixed(1)
+        : (rating?.toString() ?? '—');
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.inventory_2_rounded,
-            label: 'Produits',
-            value: productsCount.toString(),
-          ),
-        ),
-        SizedBox(width: AppThemeSystem.getElementSpacing(context)),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.star_rounded,
-            label: 'Note moyenne',
-            value: averageRating is num ? averageRating.toStringAsFixed(1) : averageRating.toString(),
-            valueColor: AppDesign.warning,
-          ),
-        ),
-        SizedBox(width: AppThemeSystem.getElementSpacing(context)),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.rate_review_rounded,
-            label: 'Avis',
-            value: reviewsCount.toString(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    Color? valueColor,
-  }) {
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: EdgeInsets.symmetric(vertical: AppDesign.space4),
       decoration: BoxDecoration(
-        color: AppThemeSystem.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(
-          AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-        ),
-        border: Border.all(
-          color: AppThemeSystem.getBorderColor(context),
-        ),
+        color: context.ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        border: Border.all(color: context.ds.border),
       ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: AppThemeSystem.primaryColor,
-            size: 24,
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: context.textStyle(
-              FontSizeType.h5,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            label,
-            style: context.textStyle(
-              FontSizeType.caption,
-              color: AppThemeSystem.grey600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductsHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Produits',
-          style: context.textStyle(
-            FontSizeType.h5,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Obx(() => Text(
-              '${controller.products.length} article${controller.products.length > 1 ? 's' : ''}',
-              style: context.textStyle(
-                FontSizeType.body2,
-                color: AppThemeSystem.grey600,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                value: '${stats['products_count'] ?? 0}',
+                label: 'Produits',
               ),
-            )),
-      ],
+            ),
+            _StatSeparator(),
+            Expanded(
+              child: _StatTile(
+                value: ratingLabel,
+                label: 'Note',
+                icon: Icons.star_rounded,
+                iconColor: AppDesign.warning,
+              ),
+            ),
+            _StatSeparator(),
+            Expanded(
+              child: _StatTile(
+                value: '${stats['reviews_count'] ?? 0}',
+                label: 'Avis',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  /// Message affiché quand la grille ne montre rien.
+  ///
+  /// Deux situations à ne pas confondre : une boutique vide, sur laquelle on
+  /// ne peut rien, et une recherche trop étroite, dont on peut revenir.
   Widget _buildEmptyProducts(BuildContext context) {
+    final filtered = controller.hasActiveFilters;
+
     return Padding(
-      padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context) * 2),
-      child: Column(
-        children: [
-          Icon(
-            Icons.shopping_bag_outlined,
-            size: 80,
-            color: AppThemeSystem.grey400,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Aucun produit disponible',
-            style: context.textStyle(
-              FontSizeType.body1,
-              color: AppThemeSystem.grey600,
-            ),
-          ),
-        ],
+      padding: EdgeInsets.symmetric(
+        horizontal: context.ds.gutter,
+        vertical: AppDesign.space10,
+      ),
+      child: AppEmptyState(
+        icon: filtered
+            ? Icons.search_off_rounded
+            : Icons.shopping_bag_outlined,
+        title: filtered
+            ? 'Aucun produit ne correspond'
+            : 'Boutique encore vide',
+        message: filtered
+            ? 'Essayez un autre mot, ou revenez au catalogue complet.'
+            : 'Cette boutique n\'a pas encore mis d\'article en vente.',
+        actionLabel: filtered ? 'Tout afficher' : null,
+        onAction: filtered ? controller.resetFilters : null,
       ),
     );
   }
@@ -591,6 +389,489 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             Icons.image_outlined,
             size: 26,
             color: context.ds.textTertiary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Couverture du bandeau : image de la boutique, ou aplat de marque.
+///
+/// Un dégradé sombre couvre le bas quelle que soit la source : posé sur la
+/// seule image, le titre blanc disparaissait sur les couvertures claires.
+class _ShopCover extends StatelessWidget {
+  const _ShopCover({required this.cover, required this.logo});
+
+  final String? cover;
+  final String? logo;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCover = cover != null && cover!.isNotEmpty;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (hasCover)
+          Image.network(
+            cover!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const _CoverFallback(),
+          )
+        else
+          const _CoverFallback(),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.25),
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.65),
+              ],
+              stops: const [0, 0.45, 1],
+            ),
+          ),
+        ),
+        if (logo != null && logo!.isNotEmpty)
+          Align(
+            alignment: const Alignment(0, -0.15),
+            child: _ShopLogo(url: logo!),
+          ),
+      ],
+    );
+  }
+}
+
+/// Aplat de marque, quand la boutique n'a pas de couverture.
+class _CoverFallback extends StatelessWidget {
+  const _CoverFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppDesign.accent,
+            Color.lerp(AppDesign.accent, Colors.black, 0.25)!,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Logo de la boutique, posé en médaillon sur la couverture.
+class _ShopLogo extends StatelessWidget {
+  const _ShopLogo({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: context.ds.surface,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.storefront_rounded,
+            color: AppDesign.accent,
+            size: 32,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bouton rond translucide, lisible sur n'importe quelle couverture.
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.32),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: IconButton(
+          icon: Icon(icon, color: Colors.white, size: 20),
+          tooltip: tooltip,
+          // Le bouton reste sous la taille tactile réglementaire sans cela :
+          // la surface colorée ne fait que 40 px.
+          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          padding: EdgeInsets.zero,
+          onPressed: onPressed,
+        ),
+      ),
+    );
+  }
+}
+
+/// Un chiffre de la boutique et son libellé.
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.value,
+    required this.label,
+    this.icon,
+    this.iconColor,
+  });
+
+  final String value;
+  final String label;
+  final IconData? icon;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18, color: iconColor ?? AppDesign.accent),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              value,
+              style: context.textStyle(
+                FontSizeType.h5,
+                fontWeight: FontWeight.w700,
+                color: context.ds.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppDesign.space1),
+        Text(
+          label,
+          style: context.textStyle(
+            FontSizeType.caption,
+            color: context.ds.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Trait fin entre deux chiffres.
+class _StatSeparator extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return VerticalDivider(
+      width: 1,
+      thickness: 1,
+      indent: AppDesign.space1,
+      endIndent: AppDesign.space1,
+      color: context.ds.border,
+    );
+  }
+}
+
+/// Ligne de renseignement : une icône, un libellé, une valeur.
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.leading,
+    required this.label,
+    required this.value,
+  });
+
+  final Widget leading;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 32, child: Center(child: leading)),
+        SizedBox(width: AppDesign.space3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: context.textStyle(
+                  FontSizeType.overline,
+                  color: context.ds.textTertiary,
+                ),
+              ),
+              Text(
+                value,
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w600,
+                  color: context.ds.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Portrait du tenancier, initiale à défaut de photo.
+class _OwnerAvatar extends StatelessWidget {
+  const _OwnerAvatar({required this.url});
+
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = DecoratedBox(
+      decoration: BoxDecoration(color: AppDesign.accent),
+      child: const Icon(Icons.person_rounded, color: Colors.white, size: 18),
+    );
+
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: ClipOval(
+        child: url != null && url!.isNotEmpty
+            ? Image.network(
+                url!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => placeholder,
+              )
+            : placeholder,
+      ),
+    );
+  }
+}
+
+/// Barre de recherche et filtres, épinglée en tête du catalogue.
+///
+/// Un [SliverPersistentHeader] plutôt qu'un simple bloc : la barre doit
+/// rester atteignable une fois la grille parcourue.
+class _SearchBarHeader extends SliverPersistentHeaderDelegate {
+  _SearchBarHeader({required this.controller, required this.textScale});
+
+  final VendorDetailsController controller;
+
+  /// Agrandissement de texte choisi par l'appareil.
+  ///
+  /// La hauteur d'un en-tête épinglé est figée d'avance : calculée sur la
+  /// taille de texte par défaut, elle débordait dès que l'appareil réglait
+  /// l'écriture en plus gros.
+  final double textScale;
+
+  double get _height {
+    // Champ de saisie, écart, rangée de pastilles, puis marges.
+    const chrome = 12.0 + 24.0;
+    return 44 * textScale + chrome + 32 * textScale;
+  }
+
+  @override
+  double get minExtent => _height;
+
+  @override
+  double get maxExtent => _height;
+
+  @override
+  bool shouldRebuild(_SearchBarHeader oldDelegate) =>
+      oldDelegate.controller != controller ||
+      oldDelegate.textScale != textScale;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      // Opaque : la grille défile dessous, et une barre translucide la
+      // laissait transparaître derrière le champ de saisie.
+      color: context.ds.canvas,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space2,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SearchField(controller: controller),
+          SizedBox(height: AppDesign.space3),
+          SizedBox(
+            height: 32 * textScale,
+            child: Obx(() {
+              final sort = controller.sort.value;
+              return ListView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                children: [
+                  _FilterChip(
+                    label: 'En stock',
+                    icon: Icons.check_circle_outline_rounded,
+                    selected: controller.inStockOnly.value,
+                    onTap: controller.toggleInStockOnly,
+                  ),
+                  SizedBox(width: AppDesign.space2),
+                  for (final option in ShopProductSort.values) ...[
+                    _FilterChip(
+                      label: option.label,
+                      selected: sort == option,
+                      onTap: () => controller.setSort(option),
+                    ),
+                    SizedBox(width: AppDesign.space2),
+                  ],
+                ],
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Champ de recherche du catalogue.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final VendorDetailsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final hasQuery = controller.query.value.isNotEmpty;
+
+      return TextField(
+        controller: controller.searchController,
+        onChanged: controller.onSearchChanged,
+        textInputAction: TextInputAction.search,
+        style: context.textStyle(
+          FontSizeType.body2,
+          color: context.ds.textPrimary,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Rechercher dans la boutique',
+          hintStyle: context.textStyle(
+            FontSizeType.body2,
+            color: context.ds.textTertiary,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: context.ds.textTertiary,
+          ),
+          suffixIcon: hasQuery
+              ? IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: context.ds.textSecondary,
+                  ),
+                  tooltip: 'Effacer',
+                  onPressed: controller.clearSearch,
+                )
+              : null,
+          filled: true,
+          fillColor: context.ds.surfaceMuted,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: AppDesign.space3,
+            vertical: AppDesign.space3,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: BorderSide(color: AppDesign.accent, width: 1.5),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+/// Pastille de filtre ou de tri.
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.white : context.ds.textSecondary;
+
+    return Material(
+      color: selected ? AppDesign.accent : context.ds.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppDesign.space3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 15, color: foreground),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: foreground,
+                ),
+              ),
+            ],
           ),
         ),
       ),

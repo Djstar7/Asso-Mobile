@@ -48,8 +48,16 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
   /// Mêmes couleurs de zone que l'admin (Partenaires logistiques).
   static const List<Color> _zoneColors = [
-    Color(0xFFEF4444), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFF3B82F6), Color(0xFF8B5CF6),
-    Color(0xFFEC4899), Color(0xFF14B8A6), Color(0xFFEAB308), Color(0xFF6366F1), Color(0xFF84CC16),
+    Color(0xFFEF4444),
+    Color(0xFFF59E0B),
+    Color(0xFF10B981),
+    Color(0xFF3B82F6),
+    Color(0xFF8B5CF6),
+    Color(0xFFEC4899),
+    Color(0xFF14B8A6),
+    Color(0xFFEAB308),
+    Color(0xFF6366F1),
+    Color(0xFF84CC16),
   ];
 
   Color _zoneColor(dynamic zone) {
@@ -72,7 +80,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         _isLoadingCoverage = false;
         final coverage = response.data?['coverage'];
         _coverageFailed = !(response.success && coverage is Map);
-        if (!_coverageFailed) _coverage = Map<String, dynamic>.from(coverage as Map);
+        if (!_coverageFailed)
+          _coverage = Map<String, dynamic>.from(coverage as Map);
       });
     });
   }
@@ -83,9 +92,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
 
-  double _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
+  double _toDouble(dynamic v) =>
+      v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
 
-  LatLng _latLng(Map p) => LatLng(_toDouble(p['latitude']), _toDouble(p['longitude']));
+  LatLng _latLng(Map p) =>
+      LatLng(_toDouble(p['latitude']), _toDouble(p['longitude']));
 
   /// Cadre la carte sur toutes les zones de livraison.
   void _showAllZones() {
@@ -98,11 +109,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       _mapController.move(points.first, 13);
       return;
     }
-    _mapController.fitCamera(CameraFit.bounds(
-      bounds: LatLngBounds.fromPoints(points),
-      padding: const EdgeInsets.fromLTRB(40, 140, 40, 300),
-      maxZoom: 15,
-    ));
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.fromLTRB(40, 140, 40, 300),
+        maxZoom: 15,
+      ),
+    );
   }
 
   @override
@@ -111,10 +124,15 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
     // Si des coordonnées initiales sont fournies, les utiliser
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
-      _selectedPosition = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      _selectedPosition = LatLng(
+        widget.initialLatitude!,
+        widget.initialLongitude!,
+      );
       if (widget.locationName != null && widget.locationName!.isNotEmpty) {
         _selectedAddress = widget.locationName!;
-        WidgetsBinding.instance.addPostFrameCallback((_) => _loadCoverage(_selectedPosition));
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _loadCoverage(_selectedPosition),
+        );
       } else {
         _reverseGeocode(_selectedPosition);
       }
@@ -215,14 +233,12 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         'lat=${position.latitude}&'
         'lon=${position.longitude}&'
         'zoom=18&'
-        'addressdetails=1'
+        'addressdetails=1',
       );
 
       final response = await http.get(
         url,
-        headers: {
-          'User-Agent': 'AssoApp/1.0',
-        },
+        headers: {'User-Agent': 'AssoApp/1.0'},
       );
 
       if (!mounted) return;
@@ -234,14 +250,16 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         });
       } else {
         setState(() {
-          _selectedAddress = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+          _selectedAddress =
+              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
           _isLoadingAddress = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _selectedAddress = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+        _selectedAddress =
+            'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
         _isLoadingAddress = false;
       });
     }
@@ -272,19 +290,21 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
       final response = await http.get(
         url,
-        headers: {
-          'User-Agent': 'AssoApp/1.0',
-        },
+        headers: {'User-Agent': 'AssoApp/1.0'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          _searchResults = data.map((item) => {
-            'display_name': item['display_name'],
-            'lat': double.parse(item['lat']),
-            'lon': double.parse(item['lon']),
-          }).toList();
+          _searchResults = data
+              .map(
+                (item) => {
+                  'display_name': item['display_name'],
+                  'lat': double.parse(item['lat']),
+                  'lon': double.parse(item['lon']),
+                },
+              )
+              .toList();
           _isSearching = false;
         });
       } else {
@@ -348,12 +368,14 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             options: MapOptions(
               initialCenter: _selectedPosition,
               initialZoom: 15.0,
-              onTap: widget.readOnly ? null : (tapPosition, point) {
-                setState(() {
-                  _selectedPosition = point;
-                });
-                _reverseGeocode(point);
-              },
+              onTap: widget.readOnly
+                  ? null
+                  : (tapPosition, point) {
+                      setState(() {
+                        _selectedPosition = point;
+                      });
+                      _reverseGeocode(point);
+                    },
               interactionOptions: InteractionOptions(
                 flags: widget.readOnly
                     ? InteractiveFlag.drag | InteractiveFlag.pinchZoom
@@ -369,56 +391,80 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               // Surface de chaque zone urbaine (ex. SOLEX Douala), couleur de la zone.
               CircleLayer(
                 circles: _coverageList('quarters')
-                    .map((q) => CircleMarker(
-                          point: _latLng(q),
-                          radius: 700,
-                          useRadiusInMeter: true,
-                          color: _zoneColor(q['zone']).withValues(alpha: 0.18),
-                        ))
+                    .map(
+                      (q) => CircleMarker(
+                        point: _latLng(q),
+                        radius: 700,
+                        useRadiusInMeter: true,
+                        color: _zoneColor(q['zone']).withValues(alpha: 0.18),
+                      ),
+                    )
                     .toList(),
               ),
               PolygonLayer(
                 polygons: _coverageList('zone_areas')
-                    .where((a) => ((a['polygon'] as List?) ?? const []).length >= 3)
-                    .map((a) => Polygon(
-                          points: ((a['polygon'] as List)).whereType<Map>().map(_latLng).toList(),
-                          color: _zoneColor(a['zone']).withValues(alpha: 0.18),
-                          borderColor: _zoneColor(a['zone']),
-                          borderStrokeWidth: 2,
-                        ))
+                    .where(
+                      (a) => ((a['polygon'] as List?) ?? const []).length >= 3,
+                    )
+                    .map(
+                      (a) => Polygon(
+                        points: ((a['polygon'] as List))
+                            .whereType<Map>()
+                            .map(_latLng)
+                            .toList(),
+                        color: _zoneColor(a['zone']).withValues(alpha: 0.18),
+                        borderColor: _zoneColor(a['zone']),
+                        borderStrokeWidth: 2,
+                      ),
+                    )
                     .toList(),
               ),
               // Zones des livreurs (rayon autour du centre).
               CircleLayer(
                 circles: _coverageList('zones')
-                    .map((z) => CircleMarker(
-                          point: LatLng(_toDouble(z['latitude']), _toDouble(z['longitude'])),
-                          radius: _toDouble(z['radius_km']) * 1000,
-                          useRadiusInMeter: true,
-                          color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
-                          borderColor: const Color(0xFF3B82F6).withValues(alpha: 0.6),
-                          borderStrokeWidth: 1.5,
-                        ))
+                    .map(
+                      (z) => CircleMarker(
+                        point: LatLng(
+                          _toDouble(z['latitude']),
+                          _toDouble(z['longitude']),
+                        ),
+                        radius: _toDouble(z['radius_km']) * 1000,
+                        useRadiusInMeter: true,
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                        borderColor: const Color(
+                          0xFF3B82F6,
+                        ).withValues(alpha: 0.6),
+                        borderStrokeWidth: 1.5,
+                      ),
+                    )
                     .toList(),
               ),
               // Quartiers desservis, colorés par zone (ex. SOLEX Douala).
               MarkerLayer(
                 markers: _coverageList('quarters')
-                    .map((q) => Marker(
-                          width: 16,
-                          height: 16,
-                          point: LatLng(_toDouble(q['latitude']), _toDouble(q['longitude'])),
-                          child: Tooltip(
-                            message: '${q['name']} · ${q['zone_label']} (${q['company_name']})',
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _zoneColor(q['zone']).withValues(alpha: 0.85),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
+                    .map(
+                      (q) => Marker(
+                        width: 16,
+                        height: 16,
+                        point: LatLng(
+                          _toDouble(q['latitude']),
+                          _toDouble(q['longitude']),
+                        ),
+                        child: Tooltip(
+                          message:
+                              '${q['name']} · ${q['zone_label']} (${q['company_name']})',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _zoneColor(
+                                q['zone'],
+                              ).withValues(alpha: 0.85),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
                           ),
-                        ))
+                        ),
+                      ),
+                    )
                     .toList(),
               ),
               MarkerLayer(
@@ -430,7 +476,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                       point: _latLng(a),
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: _zoneColor(a['zone']),
                             borderRadius: BorderRadius.circular(12),
@@ -440,7 +489,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                             '${a['label']} · ${a['company_name']}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -452,7 +505,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                       point: _latLng(z),
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF3B82F6),
                             borderRadius: BorderRadius.circular(12),
@@ -462,7 +518,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                             '${z['name']} · ${z['company_name']}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -480,7 +540,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.4),
+                            color: AppThemeSystem.primaryColor.withValues(
+                              alpha: 0.4,
+                            ),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -511,77 +573,78 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               left: 16,
               right: 80,
               child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Rechercher une adresse...',
-                  hintStyle: context.textStyle(
-                    FontSizeType.body2,
-                    color: AppThemeSystem.grey600,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear_rounded,
-                            color: AppThemeSystem.grey600,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _searchResults = [];
-                              _showSearchResults = false;
-                            });
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                style: context.textStyle(FontSizeType.body2),
-                onChanged: (value) {
-                  if (value.length > 2) {
-                    _searchLocation(value);
-                  } else {
-                    setState(() {
-                      _searchResults = [];
-                      _showSearchResults = false;
-                    });
-                  }
-                },
-                onTap: () {
-                  if (_searchController.text.isNotEmpty) {
-                    setState(() {
-                      _showSearchResults = true;
-                    });
-                  }
-                },
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher une adresse...',
+                    hintStyle: context.textStyle(
+                      FontSizeType.body2,
+                      color: AppThemeSystem.grey600,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear_rounded,
+                              color: AppThemeSystem.grey600,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchResults = [];
+                                _showSearchResults = false;
+                              });
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
+                  style: context.textStyle(FontSizeType.body2),
+                  onChanged: (value) {
+                    if (value.length > 2) {
+                      _searchLocation(value);
+                    } else {
+                      setState(() {
+                        _searchResults = [];
+                        _showSearchResults = false;
+                      });
+                    }
+                  },
+                  onTap: () {
+                    if (_searchController.text.isNotEmpty) {
+                      setState(() {
+                        _showSearchResults = true;
+                      });
+                    }
+                  },
+                ),
               ),
             ),
-          ),
 
           // Voir toutes les zones de livraison d'un coup.
           if (!widget.readOnly &&
               !_showSearchResults &&
-              (_coverageList('zone_areas').isNotEmpty || _coverageList('zones').isNotEmpty))
+              (_coverageList('zone_areas').isNotEmpty ||
+                  _coverageList('zones').isNotEmpty))
             Positioned(
               top: 76,
               left: 16,
@@ -593,15 +656,25 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                   borderRadius: BorderRadius.circular(20),
                   onTap: _showAllZones,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.layers_rounded, size: 18, color: AppThemeSystem.primaryColor),
+                        Icon(
+                          Icons.layers_rounded,
+                          size: 18,
+                          color: AppThemeSystem.primaryColor,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Toutes les zones de livraison (${_coverageList('zone_areas').length + _coverageList('zones').length})',
-                          style: context.textStyle(FontSizeType.caption, fontWeight: FontWeight.w600),
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -656,62 +729,62 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         ),
                       )
                     : _searchResults.isEmpty
-                        ? Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.search_off_rounded,
-                                  color: AppThemeSystem.grey400,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Aucun résultat trouvé',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: AppThemeSystem.grey600,
-                                  ),
-                                ),
-                              ],
+                    ? Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              color: AppThemeSystem.grey400,
+                              size: 20,
                             ),
-                          )
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            itemCount: _searchResults.length,
-                            separatorBuilder: (context, index) => Divider(
-                              height: 1,
-                              color: AppThemeSystem.grey200,
+                            SizedBox(width: 12),
+                            Text(
+                              'Aucun résultat trouvé',
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                color: AppThemeSystem.grey600,
+                              ),
                             ),
-                            itemBuilder: (context, index) {
-                              final result = _searchResults[index];
-                              return ListTile(
-                                leading: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.location_on_rounded,
-                                    color: AppThemeSystem.primaryColor,
-                                    size: 20,
-                                  ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _searchResults.length,
+                        separatorBuilder: (context, index) =>
+                            Divider(height: 1, color: AppThemeSystem.grey200),
+                        itemBuilder: (context, index) {
+                          final result = _searchResults[index];
+                          return ListTile(
+                            leading: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.1,
                                 ),
-                                title: Text(
-                                  result['display_name'],
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                onTap: () => _selectSearchResult(result),
-                              );
-                            },
-                          ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.location_on_rounded,
+                                color: AppThemeSystem.primaryColor,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              result['display_name'],
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onTap: () => _selectSearchResult(result),
+                          );
+                        },
+                      ),
               ),
             ),
 
@@ -726,7 +799,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               onPressed: widget.readOnly ? null : _getCurrentLocation,
               child: Icon(
                 Icons.my_location_rounded,
-                color: widget.readOnly ? AppThemeSystem.grey400 : AppThemeSystem.primaryColor,
+                color: widget.readOnly
+                    ? AppThemeSystem.grey400
+                    : AppThemeSystem.primaryColor,
               ),
             ),
           ),
@@ -745,10 +820,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                   _mapController.camera.zoom + 1,
                 );
               },
-              child: Icon(
-                Icons.add,
-                color: AppThemeSystem.grey700,
-              ),
+              child: Icon(Icons.add, color: AppThemeSystem.grey700),
             ),
           ),
 
@@ -766,10 +838,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                   _mapController.camera.zoom - 1,
                 );
               },
-              child: Icon(
-                Icons.remove,
-                color: AppThemeSystem.grey700,
-              ),
+              child: Icon(Icons.remove, color: AppThemeSystem.grey700),
             ),
           ),
 
@@ -819,7 +888,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                           Container(
                             padding: EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                              color: AppThemeSystem.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
@@ -834,7 +905,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.readOnly ? 'Localisation' : 'Position sélectionnée',
+                                  widget.readOnly
+                                      ? 'Localisation'
+                                      : 'Position sélectionnée',
                                   style: context.textStyle(
                                     FontSizeType.caption,
                                     color: AppThemeSystem.grey600,
@@ -849,9 +922,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                             height: 16,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                AppThemeSystem.primaryColor,
-                                              ),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    AppThemeSystem.primaryColor,
+                                                  ),
                                             ),
                                           ),
                                           SizedBox(width: 8),
@@ -890,10 +964,14 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                            color: AppThemeSystem.primaryColor.withValues(
+                              alpha: 0.05,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                              color: AppThemeSystem.primaryColor.withValues(
+                                alpha: 0.2,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -926,11 +1004,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              Get.back(result: {
-                                'address': _selectedAddress,
-                                'latitude': _selectedPosition.latitude,
-                                'longitude': _selectedPosition.longitude,
-                              });
+                              Get.back(
+                                result: {
+                                  'address': _selectedAddress,
+                                  'latitude': _selectedPosition.latitude,
+                                  'longitude': _selectedPosition.longitude,
+                                },
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppThemeSystem.primaryColor,
@@ -969,11 +1049,19 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppThemeSystem.primaryColor,
+            ),
           ),
           const SizedBox(width: 8),
-          Text('Recherche des livreurs…',
-              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+          Text(
+            'Recherche des livreurs…',
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: AppThemeSystem.grey600,
+            ),
+          ),
         ],
       );
     }
@@ -981,13 +1069,25 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       if (!_coverageFailed) return const SizedBox.shrink();
       return Row(
         children: [
-          Icon(Icons.cloud_off_rounded, size: 16, color: AppThemeSystem.grey600),
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 16,
+            color: AppThemeSystem.grey600,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('Zones de livraison indisponibles pour le moment.',
-                style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+            child: Text(
+              'Zones de livraison indisponibles pour le moment.',
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: AppThemeSystem.grey600,
+              ),
+            ),
           ),
-          TextButton(onPressed: () => _loadCoverage(_selectedPosition), child: const Text('Réessayer')),
+          TextButton(
+            onPressed: () => _loadCoverage(_selectedPosition),
+            child: const Text('Réessayer'),
+          ),
         ],
       );
     }
@@ -1005,8 +1105,12 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           s['company_name'].toString(),
           [
             if (s['quarter'] != null) 'Quartier ${s['quarter']}',
-            if (s['zone'] != null) 'Zone ${s['zone']}' else s['zone_label']?.toString() ?? '',
-            if ((s['vehicles'] as List?)?.isNotEmpty ?? false) (s['vehicles'] as List).join(', '),
+            if (s['zone'] != null)
+              'Zone ${s['zone']}'
+            else
+              s['zone_label']?.toString() ?? '',
+            if ((s['vehicles'] as List?)?.isNotEmpty ?? false)
+              (s['vehicles'] as List).join(', '),
           ].where((e) => e.isNotEmpty).join(' · '),
           dotColor: s['zone'] != null ? _zoneColor(s['zone']) : null,
         ),
@@ -1016,9 +1120,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           Icons.warehouse_rounded,
           '${a['company_name']} — agence à ${a['city']}',
           (((a['destinations'] as List?) ?? const [])
-                  .whereType<Map>()
-                  .map((d) => d['lead_time'] != null ? '${d['city']} (${d['lead_time']})' : '${d['city']}')
-                  .join(', ')),
+              .whereType<Map>()
+              .map(
+                (d) => d['lead_time'] != null
+                    ? '${d['city']} (${d['lead_time']})'
+                    : '${d['city']}',
+              )
+              .join(', ')),
         ),
     ];
 
@@ -1036,23 +1144,35 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         children: [
           Row(
             children: [
-              Icon(served ? Icons.check_circle_rounded : Icons.info_outline_rounded, size: 18, color: color),
+              Icon(
+                served
+                    ? Icons.check_circle_rounded
+                    : Icons.info_outline_rounded,
+                size: 18,
+                color: color,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   served
                       ? 'Livreurs présents dans cette zone'
                       : agencies.isNotEmpty
-                          ? 'Retrait en agence possible ici'
-                          : 'Aucun livreur ne dessert ce point',
-                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
+                      ? 'Retrait en agence possible ici'
+                      : 'Aucun livreur ne dessert ce point',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (_isLoadingCoverage)
                 SizedBox(
                   width: 12,
                   height: 12,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppThemeSystem.primaryColor),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppThemeSystem.primaryColor,
+                  ),
                 ),
             ],
           ),
@@ -1060,20 +1180,29 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             const SizedBox(height: 4),
             Text(
               'Les offres et les prix dépendent de la boutique : ils s’affichent à l’étape suivante.',
-              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: AppThemeSystem.grey600,
+              ),
             ),
             const SizedBox(height: 8),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 120),
               child: SingleChildScrollView(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: lines),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: lines,
+                ),
               ),
             ),
           ] else ...[
             const SizedBox(height: 4),
             Text(
               'Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison.',
-              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: AppThemeSystem.grey600,
+              ),
             ),
           ],
         ],
@@ -1081,7 +1210,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     );
   }
 
-  Widget _coverageLine(BuildContext context, IconData icon, String title, String detail, {Color? dotColor}) {
+  Widget _coverageLine(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String detail, {
+    Color? dotColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -1093,12 +1228,23 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (detail.isNotEmpty)
-                  Text(detail,
-                      style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    detail,
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: AppThemeSystem.grey600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),
@@ -1107,7 +1253,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               width: 10,
               height: 10,
               margin: const EdgeInsets.only(top: 4, left: 6),
-              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
             ),
         ],
       ),

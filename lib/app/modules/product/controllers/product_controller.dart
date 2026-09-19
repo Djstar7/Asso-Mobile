@@ -16,7 +16,13 @@ import '../../../data/providers/storage_service.dart';
 import '../../../core/utils/app_design.dart';
 
 /// Pourquoi la position automatique n'a pas pu être obtenue.
-enum LocationIssue { none, serviceDisabled, permissionDenied, deniedForever, failed }
+enum LocationIssue {
+  none,
+  serviceDisabled,
+  permissionDenied,
+  deniedForever,
+  failed,
+}
 
 class ProductController extends GetxController {
   final currentLocation = ''.obs;
@@ -77,6 +83,96 @@ class ProductController extends GetxController {
     final id = product['id']?.toString();
     if (id == null || id.isEmpty || !_trackedProductIds.add(id)) return;
     StatisticsService.trackProductView(id);
+    // Même point d'entrée, dédoublonné : la fiche est reconstruite à chaque
+    // changement d'état et relancerait sinon la requête en boucle.
+    loadSimilarProducts(product);
+  }
+
+  /// Charge les produits proches de celui affiché.
+  ///
+  /// La section existait dans la vue mais sa liste n'était jamais remplie :
+  /// elle affichait donc toujours « Aucun produit similaire trouvé ».
+  ///
+  /// On cherche d'abord dans la sous-catégorie, plus précise ; si elle ne
+  /// donne pas assez de résultats on élargit à la catégorie. Le produit
+  /// affiché est retiré de sa propre liste.
+  Future<void> loadSimilarProducts(Map<String, dynamic> product) async {
+    final productId = product['id']?.toString();
+    final categoryId = int.tryParse(
+      product['category_id']?.toString() ??
+          product['category']?['id']?.toString() ??
+          '',
+    );
+    final subcategoryId = int.tryParse(
+      product['subcategory_id']?.toString() ??
+          product['subcategory']?['id']?.toString() ??
+          '',
+    );
+
+    if (categoryId == null && subcategoryId == null) {
+      similarProducts.clear();
+      return;
+    }
+
+    try {
+      isLoadingSimilarProducts.value = true;
+      var results = subcategoryId != null
+          ? await _fetchSimilar(
+              subcategoryId: subcategoryId,
+              excluding: productId,
+            )
+          : <Map<String, dynamic>>[];
+
+      // Repli : une sous-catégorie trop étroite ne remplit pas la rangée.
+      if (results.length < 4 && categoryId != null) {
+        final wider = await _fetchSimilar(
+          categoryId: categoryId,
+          excluding: productId,
+        );
+        final seen = results.map((p) => p['id']?.toString()).toSet();
+        results = [
+          ...results,
+          ...wider.where((p) => seen.add(p['id']?.toString())),
+        ];
+      }
+
+      similarProducts.value = results.take(10).toList();
+    } catch (e) {
+      // Une section de suggestions vide ne doit jamais empêcher de consulter
+      // la fiche : on la laisse masquée.
+      similarProducts.clear();
+    } finally {
+      isLoadingSimilarProducts.value = false;
+    }
+  }
+
+  /// Une page de produits filtrée, sans celui déjà affiché.
+  Future<List<Map<String, dynamic>>> _fetchSimilar({
+    int? categoryId,
+    int? subcategoryId,
+    String? excluding,
+  }) async {
+    final response = await ProductService.getProducts(
+      categoryId: categoryId,
+      subcategoryId: subcategoryId,
+      perPage: 12,
+    );
+
+    if (!response.success || response.data == null) return [];
+
+    // L'API répond {success, products, pagination} ; certaines routes
+    // paginent sous `data`. On accepte les deux plutôt que de renvoyer
+    // une liste vide sans bruit.
+    final body = response.data!;
+    final raw = body['products'] ?? body['data'];
+    final list = raw is List ? raw : (raw is Map ? raw['data'] as List? : null);
+    if (list == null) return [];
+
+    return list
+        .whereType<Map>()
+        .map((p) => Map<String, dynamic>.from(p))
+        .where((p) => p['id']?.toString() != excluding)
+        .toList();
   }
 
   @override
@@ -121,9 +217,11 @@ class ProductController extends GetxController {
     }
   }
 
-  bool productHasVariants(Map<String, dynamic> product) => !VariantCatalog
-      .fromApi(product['variants'], product['variant_options'])
-      .isEmpty;
+  bool productHasVariants(Map<String, dynamic> product) =>
+      !VariantCatalog.fromApi(
+        product['variants'],
+        product['variant_options'],
+      ).isEmpty;
 
   /// Prix unitaire en XAF, supplément de la variante choisie compris.
   double unitPriceXaf(Map<String, dynamic> product) {
@@ -339,7 +437,8 @@ class ProductController extends GetxController {
       if (quote is Map) {
         deliveryQuote.value = Map<String, dynamic>.from(quote);
         if (quote['reason'] == 'missing_weight') {
-          final products = (quote['missing_weight_products'] as List?)
+          final products =
+              (quote['missing_weight_products'] as List?)
                   ?.map((e) => e.toString())
                   .join(', ') ??
               '';
@@ -440,7 +539,9 @@ class ProductController extends GetxController {
     final deliveryZoneId = partner.zoneId;
     final deliveryGridId = partner.gridId;
     if (deliveryCompanyId == null ||
-        (deliveryRouteId == null && deliveryZoneId == null && deliveryGridId == null)) {
+        (deliveryRouteId == null &&
+            deliveryZoneId == null &&
+            deliveryGridId == null)) {
       Get.snackbar(
         'Erreur',
         'Le partenaire sélectionné ne contient pas de zone ou de trajet de livraison valide.',

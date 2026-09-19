@@ -1,6 +1,19 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/shop_service.dart';
 import '../../../data/providers/currency_service.dart';
+
+/// Critères de tri du catalogue d'une boutique.
+enum ShopProductSort {
+  recent('Nouveautés'),
+  priceAsc('Prix croissant'),
+  priceDesc('Prix décroissant'),
+  nameAsc('A → Z');
+
+  const ShopProductSort(this.label);
+
+  final String label;
+}
 
 class VendorDetailsController extends GetxController {
   final RxBool isLoading = true.obs;
@@ -11,7 +24,95 @@ class VendorDetailsController extends GetxController {
   final RxList<Map<String, dynamic>> products = <Map<String, dynamic>>[].obs;
   final Rxn<Map<String, dynamic>> shopStats = Rxn<Map<String, dynamic>>();
 
+  /// Recherche dans le catalogue de la boutique.
+  ///
+  /// Une boutique bien fournie devient vite illisible à la seule molette :
+  /// on cherche un produit précis, pas la vingtième vignette.
+  final TextEditingController searchController = TextEditingController();
+  final RxString query = ''.obs;
+  final Rx<ShopProductSort> sort = ShopProductSort.recent.obs;
+
+  /// N'afficher que ce qui est réellement commandable.
+  final RxBool inStockOnly = false.obs;
+
   String? shopId;
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
+  }
+
+  /// Catalogue après recherche, filtre et tri.
+  List<Map<String, dynamic>> get visibleProducts {
+    final terms = query.value.trim().toLowerCase();
+    final result = products.where((product) {
+      if (inStockOnly.value && _stockOf(product) <= 0) return false;
+      if (terms.isEmpty) return true;
+      // La description compte aussi : on cherche souvent « bissap » ou
+      // « piment » sans que le mot figure dans le nom du produit.
+      final category = product['category'];
+      final haystack = [
+        product['name'],
+        product['description'],
+        // La catégorie arrive tantôt en objet, tantôt en simple libellé
+        // selon l'endpoint : lire ['name'] à l'aveugle plantait sur le second.
+        if (category is Map) category['name'] else category,
+      ].whereType<Object>().map((v) => v.toString().toLowerCase()).join(' ');
+      return haystack.contains(terms);
+    }).toList();
+
+    switch (sort.value) {
+      case ShopProductSort.recent:
+        break;
+      case ShopProductSort.priceAsc:
+        result.sort((a, b) => _priceOf(a).compareTo(_priceOf(b)));
+      case ShopProductSort.priceDesc:
+        result.sort((a, b) => _priceOf(b).compareTo(_priceOf(a)));
+      case ShopProductSort.nameAsc:
+        result.sort(
+          (a, b) => _nameOf(a).toLowerCase().compareTo(_nameOf(b).toLowerCase()),
+        );
+    }
+    return result;
+  }
+
+  /// Vrai dès qu'une recherche ou un filtre restreint la liste.
+  bool get hasActiveFilters =>
+      query.value.trim().isNotEmpty || inStockOnly.value;
+
+  void onSearchChanged(String value) => query.value = value;
+
+  void clearSearch() {
+    searchController.clear();
+    query.value = '';
+  }
+
+  void setSort(ShopProductSort value) => sort.value = value;
+
+  void toggleInStockOnly() => inStockOnly.value = !inStockOnly.value;
+
+  /// Remet le catalogue à plat, recherche comprise.
+  void resetFilters() {
+    clearSearch();
+    inStockOnly.value = false;
+    sort.value = ShopProductSort.recent;
+  }
+
+  static double _priceOf(Map<String, dynamic> product) {
+    final raw = product['price_xaf'] ?? product['price'] ?? 0;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse('$raw') ?? 0;
+  }
+
+  static num _stockOf(Map<String, dynamic> product) {
+    final raw = product['stock'] ?? 0;
+    if (raw is num) return raw;
+    return num.tryParse('$raw') ?? 0;
+  }
+
+  static String _nameOf(Map<String, dynamic> product) =>
+      product['name']?.toString() ?? '';
 
   @override
   void onInit() {
