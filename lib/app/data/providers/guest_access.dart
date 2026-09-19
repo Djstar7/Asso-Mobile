@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:get/get.dart';
@@ -22,10 +23,37 @@ class GuestAccess {
     developer.log('Passer — activation du mode invité', name: 'GuestAccess');
     StorageService.enableGuestMode();
 
-    // L'abonnement aux annonces ne doit jamais retenir la navigation :
-    // un échec réseau ici n'empêche pas de visiter l'application.
+    // L'abonnement aux annonces part de son côté, sans être attendu.
+    //
+    // L'attendre bloquait « Passer » pour de bon : quand les services Google
+    // Play sont hors d'atteinte, `subscribeToTopic` ne rend jamais la main —
+    // il ne lève pas d'erreur non plus, donc le `catch` ne rattrapait rien et
+    // la navigation n'arrivait jamais. Chaque appui relançait un abonnement
+    // de plus, sans rien changer à l'écran.
+    unawaited(_subscribeToAnnouncements());
+
+    Get.offAllNamed(nextRoute());
+  }
+
+  /// Abonnement aux annonces, mené à part de la navigation.
+  static Future<void> _subscribeToAnnouncements() async {
+    // Le service manque à l'appel sur un appareil sans services Google Play,
+    // où son initialisation a échoué au démarrage : `Get.find` lèverait alors
+    // une erreur, ici sans conséquence, mais autant ne pas la provoquer.
+    if (!Get.isRegistered<FirebaseMessagingService>()) {
+      developer.log(
+        'Service de messagerie absent — abonnement ignoré',
+        name: 'GuestAccess',
+      );
+      return;
+    }
+
     try {
-      await FirebaseMessagingService.to.subscribeToAnnouncementsTopic();
+      await FirebaseMessagingService.to
+          .subscribeToAnnouncementsTopic()
+          // Une borne de temps, faute de quoi l'appel reste en suspens tant
+          // que dure la session.
+          .timeout(const Duration(seconds: 10));
     } catch (e) {
       developer.log(
         'Abonnement aux annonces impossible',
@@ -33,8 +61,6 @@ class GuestAccess {
         error: e,
       );
     }
-
-    Get.offAllNamed(nextRoute());
   }
 
   /// Écran suivant une fois le mode invité actif.

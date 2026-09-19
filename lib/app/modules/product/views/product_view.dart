@@ -127,39 +127,46 @@ class ProductView extends GetView<ProductController> {
                   : Get.offAllNamed(Routes.HOME),
             ),
             actions: [
-              IconButton(
-                icon: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.share_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                // Le bouton se contentait d'annoncer le partage sans rien
-                // partager. Il ouvre désormais la feuille du système avec le
-                // lien public du produit.
-                onPressed: () {
-                  // Rectangle d'ancrage réclamé par iPad : sans lui, iOS
-                  // refuse d'afficher la feuille.
-                  final box = context.findRenderObject() as RenderBox?;
-                  controller.shareProduct(
-                    product,
-                    origin: box == null
-                        ? null
-                        : box.localToGlobal(Offset.zero) & box.size,
-                  );
-                },
-              ),
-              SizedBox(width: 8),
+              // Partage masqué en attendant la mise en ligne : les liens
+              // n'ouvriront la fiche que lorsque le domaine servira les
+              // fichiers d'association renseignés (empreinte Android, Team ID
+              // Apple). D'ici là, un lien partagé ne ferait que renvoyer vers
+              // la boutique d'applications.
+              //
+              // Pour le rétablir : décommenter ce bloc. Le reste de la chaîne
+              // est en place — AppConstants.productUrl, shareProduct() et
+              // DeepLinkService.
+              //
+              // IconButton(
+              //   icon: Container(
+              //     padding: EdgeInsets.all(8),
+              //     decoration: BoxDecoration(
+              //       color: Colors.black.withValues(alpha: 0.3),
+              //       shape: BoxShape.circle,
+              //       border: Border.all(
+              //         color: Colors.white.withValues(alpha: 0.3),
+              //         width: 1,
+              //       ),
+              //     ),
+              //     child: Icon(
+              //       Icons.share_rounded,
+              //       color: Colors.white,
+              //       size: 20,
+              //     ),
+              //   ),
+              //   onPressed: () {
+              //     // Rectangle d'ancrage réclamé par iPad : sans lui, iOS
+              //     // refuse d'afficher la feuille.
+              //     final box = context.findRenderObject() as RenderBox?;
+              //     controller.shareProduct(
+              //       product,
+              //       origin: box == null
+              //           ? null
+              //           : box.localToGlobal(Offset.zero) & box.size,
+              //     );
+              //   },
+              // ),
+              // SizedBox(width: 8),
               Obx(() {
                 final isFav = controller.isFavorite.value;
                 return IconButton(
