@@ -6,346 +6,289 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../controllers/my_voice_controller.dart';
 import '../../../data/models/post.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class MyVoiceView extends GetView<MyVoiceController> {
   const MyVoiceView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
-      body: Column(
-        children: [
-          // Tri du fil
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Obx(() => Row(
-                  children: [
-                    for (final entry in const {'recent': 'Récents', 'popular': 'Populaires'}.entries) ...[
-                      ChoiceChip(
-                        label: Text(entry.value),
-                        selected: controller.sortBy.value == entry.key,
-                        selectedColor: AppThemeSystem.primaryColor,
-                        labelStyle: TextStyle(
-                          color: controller.sortBy.value == entry.key
-                              ? Colors.white
-                              : (isDark ? Colors.white70 : Colors.black87),
-                        ),
-                        onSelected: (_) => controller.changeSorting(entry.key),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ],
-                )),
-          ),
-          // Content
-          Expanded(
-            child: Obx(() {
-        if (controller.isLoading.value && controller.posts.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (controller.posts.isEmpty) {
-          final error = controller.loadError.value;
-          return RefreshIndicator(
-            onRefresh: controller.refresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 120),
-                Icon(
-                  error != null ? Icons.cloud_off_outlined : Icons.forum_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  error ?? 'Aucun message pour le moment.\nPartagez le premier votre avis sur ASSO !',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                if (error != null) ...[
-                  const SizedBox(height: 12),
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: controller.refresh,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }
+      backgroundColor: context.ds.canvas,
+      body: Obx(() {
+        final posts = controller.posts;
+        final loading = controller.isLoading.value && posts.isEmpty;
 
         return RefreshIndicator(
           onRefresh: controller.refresh,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification.metrics.pixels >=
-                      notification.metrics.maxScrollExtent - 200 &&
-                  controller.hasMore.value &&
-                  !controller.isLoading.value &&
-                  !controller.isLoadingMore.value) {
-                controller.loadMore();
-              }
-              return false;
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: controller.posts.length +
-                  (controller.hasMore.value ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == controller.posts.length) {
-                  return Obx(() => controller.isLoadingMore.value
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : const SizedBox(height: 24));
-                }
+          color: AppDesign.accent,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Invite à publier, en tête de fil : c'est ainsi qu'on lit un
+              // réseau social — on voit d'abord ce qu'on peut y écrire.
+              SliverToBoxAdapter(child: _buildComposer(context)),
+              SliverToBoxAdapter(child: _buildSortBar(context)),
 
-                final post = controller.posts[index];
-                return _buildPostCard(context, post);
-              },
-            ),
+              if (loading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (posts.isEmpty)
+                SliverToBoxAdapter(child: _buildEmpty(context))
+              else
+                SliverList.separated(
+                  itemCount: posts.length + 1,
+                  separatorBuilder: (_, _) => SizedBox(height: AppDesign.space3),
+                  itemBuilder: (context, index) {
+                    if (index == posts.length) {
+                      return _buildFooter(context);
+                    }
+                    return _buildPostCard(context, posts[index]);
+                  },
+                ),
+            ],
           ),
         );
-            }),
+      }),
+    );
+  }
+
+  /// Zone d'appel à publier.
+  Widget _buildComposer(BuildContext context) {
+    return Container(
+      color: context.ds.surface,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space3,
+        context.ds.gutter,
+        AppDesign.space3,
+      ),
+      child: Row(
+        children: [
+          _Avatar(name: controller.currentUserInitials, size: 40),
+          SizedBox(width: AppDesign.space3),
+          Expanded(
+            child: Material(
+              color: context.ds.surfaceMuted,
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              child: InkWell(
+                onTap: () => _showCreatePostDialog(context),
+                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                child: Container(
+                  height: AppDesign.minTapTarget,
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
+                  child: Text(
+                    'Partagez votre avis sur ASSO…',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: context.ds.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreatePostDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nouveau message'),
-        backgroundColor: AppThemeSystem.primaryColor,
       ),
     );
   }
 
-  /// Build full avatar URL
-  String _buildAvatarUrl(String avatar) {
-    if (avatar.startsWith('http')) {
-      return avatar;
-    }
-    // Remove leading slash if present
-    final cleanAvatar = avatar.startsWith('/') ? avatar.substring(1) : avatar;
-    return '${AppConstants.baseUrl.replaceAll('/api', '')}/storage/$cleanAvatar';
-  }
+  /// Bascule entre fil chronologique et fil populaire.
+  Widget _buildSortBar(BuildContext context) {
+    const options = {'recent': 'Récents', 'popular': 'Populaires'};
 
-  Widget _buildPostCard(BuildContext context, Post post) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      color: context.ds.surface,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        0,
+        context.ds.gutter,
+        AppDesign.space3,
+      ),
+      child: Obx(
+        () => Row(
           children: [
-            // Header avec avatar et nom
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: (post.isAnonymous && !post.isMyPost)
-                      ? Colors.grey[400]
-                      : AppThemeSystem.primaryColor,
-                  backgroundImage: post.user?.avatar != null && !(post.isAnonymous && !post.isMyPost)
-                      ? NetworkImage(_buildAvatarUrl(post.user!.avatar!))
-                      : null,
-                  child: post.user?.avatar == null || (post.isAnonymous && !post.isMyPost)
-                      ? Text(
-                          (post.isAnonymous && !post.isMyPost)
-                              ? '?'
-                              : (post.user?.firstName[0].toUpperCase() ?? '?'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              (post.isAnonymous && !post.isMyPost)
-                                  ? 'ANONYME'
-                                  : (post.user?.fullName ?? 'Anonyme'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.textStyle(
-                                FontSizeType.body2,
-                                fontWeight: FontWeight.w700,
-                                color: context.ds.textPrimary,
-                              ),
-                            ),
-                          ),
-                          // Afficher le badge "Anonyme" uniquement sur MES posts anonymes
-                          if (post.isAnonymous && post.isMyPost) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppThemeSystem.primaryColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Anonyme',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      Text(
-                        timeago.format(post.createdAt, locale: 'fr'),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                if (post.isMyPost)
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Colors.grey),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _showCreatePostDialog(context, editing: post);
-                      } else if (value == 'delete') {
-                        controller.deletePost(post.id);
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Modifier')),
-                      PopupMenuItem(value: 'delete', child: Text('Supprimer', style: TextStyle(color: AppDesign.danger))),
-                    ],
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Content
-            Text(
-              post.content,
-              style: const TextStyle(fontSize: 15, height: 1.4),
-            ),
-            const SizedBox(height: 16),
-
-            // Actions (like, dislike, comment)
-            Row(
-              children: [
-                // Like button
-                InkWell(
-                  onTap: () =>
-                      controller.reactToPost(postId: post.id, type: 'like'),
-                  child: Row(
-                    children: [
-                      Icon(
-                        post.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                        size: 20,
-                        color: post.isLiked
-                            ? AppThemeSystem.primaryColor
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.likesCount}',
-                        style: TextStyle(
-                          color: post.isLiked
-                              ? AppThemeSystem.primaryColor
-                              : Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-
-                // Dislike button
-                InkWell(
-                  onTap: () =>
-                      controller.reactToPost(postId: post.id, type: 'dislike'),
-                  child: Row(
-                    children: [
-                      Icon(
-                        post.isDisliked
-                            ? Icons.thumb_down
-                            : Icons.thumb_down_outlined,
-                        size: 20,
-                        color: post.isDisliked ? AppDesign.danger : Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.dislikesCount}',
-                        style: TextStyle(
-                          color: post.isDisliked ? AppDesign.danger : Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-
-                // Comment button
-                InkWell(
-                  onTap: () async {
-                    final result = await Get.toNamed(
-                      '/post-detail',
-                      arguments: {
-                        'postId': post.id,
-                        'post': post,
-                      },
-                    );
-
-                    // Update post with latest data if returned
-                    if (result != null && result is Post) {
-                      controller.updatePostInList(result);
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.comment_outlined,
-                        size: 20,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.commentsCount}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            for (final entry in options.entries) ...[
+              _SortChip(
+                label: entry.value,
+                selected: controller.sortBy.value == entry.key,
+                onTap: () => controller.changeSorting(entry.key),
+              ),
+              SizedBox(width: AppDesign.space2),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    final error = controller.loadError.value;
+    return AppEmptyState(
+      icon: error != null ? Icons.cloud_off_outlined : Icons.forum_outlined,
+      title: error != null
+          ? 'Fil indisponible'
+          : 'Personne n’a encore pris la parole',
+      message: error ??
+          'Posez une question, signalez un problème ou partagez une bonne expérience.',
+      actionLabel: error != null ? 'Réessayer' : 'Écrire un message',
+      onAction: error != null
+          ? controller.refresh
+          : () => _showCreatePostDialog(context),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Obx(() {
+      if (controller.isLoadingMore.value) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (!controller.hasMore.value && controller.posts.isNotEmpty) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
+          child: Center(
+            child: Text(
+              'Vous avez tout lu.',
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: context.ds.textTertiary,
+              ),
+            ),
+          ),
+        );
+      }
+      // Charge la page suivante dès que le pied de liste est construit.
+      WidgetsBinding.instance.addPostFrameCallback((_) => controller.loadMore());
+      return SizedBox(height: AppDesign.space10);
+    });
+  }
+
+  /// Carte d'un message du fil.
+  Widget _buildPostCard(BuildContext context, Post post) {
+    final anonymous = post.isAnonymous && !post.isMyPost;
+    final author = anonymous
+        ? 'Membre anonyme'
+        : (post.user == null
+            ? 'Membre ASSO'
+            : '${post.user!.firstName} ${post.user!.lastName}'.trim());
+
+    return Container(
+      color: context.ds.surface,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space2,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _Avatar(name: anonymous ? '?' : author, size: 40),
+              SizedBox(width: AppDesign.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            author,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.body2,
+                              fontWeight: FontWeight.w600,
+                              color: context.ds.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (post.isMyPost) ...[
+                          SizedBox(width: AppDesign.space2),
+                          const AppBadge(label: 'VOUS', tone: AppBadgeTone.accent),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      timeago.format(post.createdAt, locale: 'fr'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyle(
+                        FontSizeType.overline,
+                        color: context.ds.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (post.isMyPost)
+                _PostMenu(
+                  onEdit: () => _showCreatePostDialog(context, editing: post),
+                  onDelete: () => controller.deletePost(post.id),
+                ),
+            ],
+          ),
+          SizedBox(height: AppDesign.space3),
+          Text(
+            post.content,
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textPrimary,
+              height: 1.55,
+            ),
+          ),
+          SizedBox(height: AppDesign.space2),
+          Row(
+            children: [
+              _ReactionButton(
+                icon: post.isLiked
+                    ? Icons.thumb_up_rounded
+                    : Icons.thumb_up_outlined,
+                count: post.likesCount,
+                active: post.isLiked,
+                onTap: () =>
+                    controller.reactToPost(postId: post.id, type: 'like'),
+              ),
+              _ReactionButton(
+                icon: post.isDisliked
+                    ? Icons.thumb_down_rounded
+                    : Icons.thumb_down_outlined,
+                count: post.dislikesCount,
+                active: post.isDisliked,
+                onTap: () =>
+                    controller.reactToPost(postId: post.id, type: 'dislike'),
+              ),
+              _ReactionButton(
+                icon: Icons.mode_comment_outlined,
+                count: post.commentsCount,
+                onTap: () => _openDetail(post),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDetail(Post post) async {
+    final result = await Get.toNamed(
+      '/post-detail',
+      arguments: {'postId': post.id, 'post': post},
+    );
+    if (result is Post) {
+      controller.updatePostInList(result);
+    }
   }
 
   void _showCreatePostDialog(BuildContext context, {Post? editing}) {
@@ -495,6 +438,170 @@ class MyVoiceView extends GetView<MyVoiceController> {
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+    );
+  }
+}
+
+
+/// Pastille d'identité, construite sur les initiales.
+///
+/// L'API ne renvoie pas encore de photo de profil ; des initiales sur fond
+/// teinté valent mieux qu'une silhouette générique répétée à chaque message.
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.name, this.size = 40});
+
+  final String name;
+  final double size;
+
+  String get _initials {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first)
+        .toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppDesign.accentSubtle,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initials,
+        style: context.textStyle(
+          FontSizeType.caption,
+          fontWeight: FontWeight.w700,
+          color: AppDesign.accentText,
+        ),
+      ),
+    );
+  }
+}
+
+/// Filtre du fil (récents / populaires).
+class _SortChip extends StatelessWidget {
+  const _SortChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppDesign.accentSubtle : context.ds.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        child: Container(
+          height: 34,
+          padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            border: Border.all(
+              color: selected ? AppDesign.accentBorder : Colors.transparent,
+            ),
+          ),
+          child: Text(
+            label,
+            style: context.textStyle(
+              FontSizeType.caption,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? AppDesign.accentText : context.ds.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bouton de réaction : icône, compteur, état actif.
+class _ReactionButton extends StatelessWidget {
+  const _ReactionButton({
+    required this.icon,
+    required this.count,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final int count;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? AppDesign.accent : context.ds.textSecondary;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+        child: Container(
+          // Cible tactile confortable : ces boutons sont les plus sollicités
+          // du fil.
+          height: AppDesign.minTapTarget,
+          padding: EdgeInsets.symmetric(horizontal: AppDesign.space3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: color),
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '$count',
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Menu contextuel d'un message dont on est l'auteur.
+class _PostMenu extends StatelessWidget {
+  const _PostMenu({required this.onEdit, required this.onDelete});
+
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_horiz_rounded, color: context.ds.textTertiary),
+      tooltip: 'Options',
+      onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'edit', child: Text('Modifier')),
+        PopupMenuItem(
+          value: 'delete',
+          child: Text(
+            'Supprimer',
+            style: TextStyle(color: AppDesign.danger),
+          ),
+        ),
+      ],
     );
   }
 }

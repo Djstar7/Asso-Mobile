@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/post.dart';
 import '../../../data/providers/post_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../data/providers/api_provider.dart';
 
 class MyVoiceController extends GetxController {
   final RxList<Post> posts = <Post>[].obs;
@@ -15,6 +16,17 @@ class MyVoiceController extends GetxController {
 
   int currentPage = 1;
   final int perPage = 10;
+
+  /// Nom affiché de l'utilisateur courant, pour l'avatar du composeur.
+  ///
+  /// Retombe sur « Vous » hors session : l'avatar reste alors neutre plutôt
+  /// que d'afficher un point d'interrogation.
+  String get currentUserInitials {
+    final user = ApiProvider.cachedUser;
+    if (user == null) return 'Vous';
+    final name = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
+    return name.isEmpty ? 'Vous' : name;
+  }
 
   /// Incrémenté à chaque rafraîchissement : ignore les réponses d'une page
   /// demandée avant un changement de tri ou un rafraîchissement.

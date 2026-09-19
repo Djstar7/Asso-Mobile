@@ -14,6 +14,7 @@ import 'app/data/services/firebase_messaging_service.dart';
 import 'app/data/providers/diaspo_service.dart';
 import 'app/data/providers/currency_service.dart';
 import 'app/modules/notification/controllers/notification_controller.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   print('');
@@ -60,6 +61,12 @@ void main() async {
 
   // Initialiser les données de formatage de dates pour les locales
   await initializeDateFormatting('fr_FR', null);
+
+  // Les durées relatives (« il y a 3 heures ») sont enregistrées une fois
+  // pour toute l'application : la locale était déclarée dans une seule vue,
+  // les autres retombaient donc sur l'anglais.
+  timeago.setLocaleMessages('fr', timeago.FrMessages());
+  timeago.setDefaultLocale('fr');
   print('✅ Date formatting initialized');
 
   print('🎯 Initial route: ${AppPages.INITIAL}');

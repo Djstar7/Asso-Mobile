@@ -175,7 +175,10 @@ class HomeView extends GetView<HomeController> {
   Widget _buildTopBar(BuildContext context) {
     return Obx(() {
       final tab = controller.currentTabIndex.value;
-      final showSearch = tab == 0 || tab == 2;
+      // Recherche affichée sur les deux vitrines (Accueil, Import), où elle
+      // porte sur un catalogue. Ailleurs — fil de discussion, suivi de
+      // commandes, compte — elle ne correspondait à rien de cherchable.
+      final showSearch = tab == 0 || tab == 1;
 
       return Container(
         decoration: BoxDecoration(
