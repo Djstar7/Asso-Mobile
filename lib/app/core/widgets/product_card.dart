@@ -53,12 +53,16 @@ class ProductCard extends StatelessWidget {
   final AppBadgeTone badgeTone;
 
   /// Ratio largeur/hauteur du visuel.
-  static const double imageAspectRatio = 1;
+  ///
+  /// Légèrement portrait (4:5) : les produits sont majoritairement
+  /// photographiés debout, et l'image gagne en présence sans allonger
+  /// démesurément la carte.
+  static const double imageAspectRatio = 4 / 5;
 
   /// Hauteur réservée au bloc texte, selon la densité typographique.
   static double textBlockHeight(BuildContext context) {
     final titleSize = AppThemeSystem.getFontSize(context, FontSizeType.caption);
-    final priceSize = AppThemeSystem.getFontSize(context, FontSizeType.body2);
+    final priceSize = AppThemeSystem.getFontSize(context, FontSizeType.subtitle1);
     final metaSize = AppThemeSystem.getFontSize(context, FontSizeType.overline);
 
     // 2 lignes de titre + prix + ligne de lieu + interlignes + paddings.
@@ -66,11 +70,11 @@ class ProductCard extends StatelessWidget {
     // de sécurité : sur certaines densités, l'arrondi du moteur de rendu
     // rognait le bas de la deuxième ligne du titre.
     return (titleSize * 1.35 * 2) +
-        (priceSize * 1.35) +
+        (priceSize * 1.3) +
         (metaSize * 1.35) +
         (AppDesign.space1 * 2) +
         (AppDesign.space3 * 2) +
-        4;
+        6;
   }
 
   /// Hauteur totale d'une carte pour une largeur donnée.
@@ -126,16 +130,16 @@ class ProductCard extends StatelessWidget {
     final radius = BorderRadius.circular(AppDesign.radiusMd);
 
     return Material(
-      color: context.ds.surface,
+      color: Colors.transparent,
       borderRadius: radius,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(color: context.ds.border),
-          ),
+        child: Padding(
+          // La carte n'a plus ni cadre ni fond : le visuel du produit tient
+          // lieu de surface. Sur une grille de plusieurs dizaines d'articles,
+          // les bordures empilées créaient un quadrillage qui fatiguait l'œil.
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -143,9 +147,7 @@ class ProductCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: imageAspectRatio,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(AppDesign.radiusMd),
-                  ),
+                  borderRadius: BorderRadius.circular(AppDesign.radiusMd),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -187,26 +189,27 @@ class ProductCard extends StatelessWidget {
                 height: textBlockHeight(context),
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
+                    AppDesign.space1,
                     AppDesign.space3,
-                    AppDesign.space3,
-                    AppDesign.space3,
-                    AppDesign.space3,
+                    AppDesign.space1,
+                    AppDesign.space2,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            fontWeight: FontWeight.w500,
-                            color: context.ds.textPrimary,
-                            height: 1.3,
-                          ),
+                      // Hauteur naturelle : dans un `Expanded`, le titre
+                      // absorbait l'espace restant et repoussait le prix en
+                      // bas de la carte, loin du produit qu'il chiffre.
+                      Text(
+                        name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          fontWeight: FontWeight.w500,
+                          color: context.ds.textSecondary,
+                          height: 1.3,
                         ),
                       ),
                       SizedBox(height: AppDesign.space1),
@@ -220,7 +223,7 @@ class ProductCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
-                                FontSizeType.body2,
+                                FontSizeType.subtitle1,
                                 fontWeight: FontWeight.w700,
                                 color: context.ds.textPrimary,
                               ),
@@ -285,17 +288,32 @@ class ProductCard extends StatelessWidget {
 class _CertifiedMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Pastille lisible sur n'importe quelle photo : fond plein, libellé
+    // court. « Vérifié » dit ce que l'icône seule laissait deviner.
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesign.space2 - 2,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: context.ds.surface,
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
         boxShadow: context.ds.shadowSm,
       ),
-      child: const Icon(
-        Icons.verified_rounded,
-        size: 13,
-        color: AppDesign.info,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_rounded, size: 12, color: AppDesign.info),
+          const SizedBox(width: 3),
+          Text(
+            'Vérifié',
+            style: context.textStyle(
+              FontSizeType.overline,
+              fontWeight: FontWeight.w600,
+              color: context.ds.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -310,15 +328,19 @@ class _FavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pastille opaque et légèrement ombrée : posée sur une photo, une
+    // surface translucide devenait illisible sur les visuels clairs.
     return Material(
-      color: context.ds.surface.withValues(alpha: 0.92),
+      color: context.ds.surface,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      shadowColor: AppDesign.neutral900.withValues(alpha: 0.2),
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 32,
           child: Icon(
             isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             size: 17,
