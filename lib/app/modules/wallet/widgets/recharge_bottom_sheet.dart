@@ -481,7 +481,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               labelText: _selectedMethod == 'kpay'
                   ? 'Montant (${_currencyLabel(_kpayCurrency)})'
                   : 'Montant (FCFA)',
-              hintText: '10000',
+              // Le libellé reste au-dessus du champ, même vide : en
+              // placeholder, il disparaissait à la première frappe et on ne
+              // savait plus dans quelle devise on saisissait.
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              hintText: 'Ex. 10 000',
               prefixIcon: const Icon(Icons.attach_money),
               filled: true,
               fillColor: AppThemeSystem.getSurfaceColor(context),

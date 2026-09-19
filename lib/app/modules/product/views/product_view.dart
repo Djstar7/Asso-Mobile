@@ -2306,16 +2306,18 @@ class ProductView extends GetView<ProductController> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: AppThemeSystem.primaryColor
-                                              .withValues(alpha: 0.1),
+                                          color: context.ds.surfaceMuted,
                                           borderRadius: BorderRadius.circular(
-                                            8,
+                                            AppDesign.radiusSm,
+                                          ),
+                                          border: Border.all(
+                                            color: context.ds.borderStrong,
                                           ),
                                         ),
                                         child: Icon(
-                                          Icons.remove,
+                                          Icons.remove_rounded,
                                           size: 18,
-                                          color: AppThemeSystem.primaryColor,
+                                          color: context.ds.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -2342,15 +2344,18 @@ class ProductView extends GetView<ProductController> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: AppThemeSystem.primaryColor,
+                                          color: context.ds.surfaceMuted,
+                                          border: Border.all(
+                                            color: context.ds.borderStrong,
+                                          ),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
                                         ),
-                                        child: const Icon(
-                                          Icons.add,
+                                        child: Icon(
+                                          Icons.add_rounded,
                                           size: 18,
-                                          color: Colors.white,
+                                          color: context.ds.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -2751,22 +2756,22 @@ class ProductView extends GetView<ProductController> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: isLocating
                         ? null
                         : () => _showChangeAddressDialog(context),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.edit_location_alt_rounded,
                       size: 18,
-                      color: Colors.white,
+                      color: context.ds.textPrimary,
                     ),
                     label: Text(
                       hasAddress ? 'Modifier' : 'Choisir sur la carte',
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.ds.textPrimary),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: context.ds.borderStrong),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                   ),
