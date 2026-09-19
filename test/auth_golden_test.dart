@@ -9,6 +9,8 @@ import 'package:get_storage/get_storage.dart';
 
 import 'package:asso/app/modules/login/controllers/login_controller.dart';
 import 'package:asso/app/modules/login/views/login_view.dart';
+import 'package:asso/app/modules/preferences/controllers/preferences_controller.dart';
+import 'package:asso/app/modules/preferences/views/preferences_view.dart';
 import 'package:asso/app/modules/welcomer/controllers/welcomer_controller.dart';
 import 'package:asso/app/modules/welcomer/views/welcomer_view.dart';
 
@@ -52,5 +54,16 @@ void main() {
   testWidgets('inscription', (tester) async {
     Get.put(WelcomerController());
     await render(tester, const WelcomerView(), 'register');
+  });
+
+  testWidgets('préférences, rien de sélectionné', (tester) async {
+    Get.put(PreferencesController());
+    await render(tester, const PreferencesView(), 'preferences');
+  });
+
+  testWidgets('préférences, avec sélection', (tester) async {
+    final c = Get.put(PreferencesController());
+    c.selectedSubcategories.addAll(['fashion_women', 'fashion_shoes', 'food_fresh']);
+    await render(tester, const PreferencesView(), 'preferences_selected');
   });
 }

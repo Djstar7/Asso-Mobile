@@ -152,10 +152,23 @@ class StorageService {
     }
   }
 
+  /// Retenir que l'écran des centres d'intérêt a déjà été proposé.
+  ///
+  /// Il s'affiche une seule fois, y compris en mode invité : le reproposer
+  /// à chaque ouverture harcèlerait celui qui veut seulement regarder.
+  static void setPreferencesPrompted() {
+    _storage.write(AppConstants.keyPreferencesPrompted, true);
+  }
+
+  /// Vrai si l'écran des centres d'intérêt a déjà été proposé.
+  static bool get wasPreferencesPrompted =>
+      _storage.read(AppConstants.keyPreferencesPrompted) ?? false;
+
   /// Clear preferences
   static void clearPreferences() {
     developer.log('Clearing preferences', name: 'StorageService');
     _storage.remove(AppConstants.keyPreferences);
+    _storage.remove(AppConstants.keyPreferencesPrompted);
   }
 
   // ==================== Onboarding Management ====================

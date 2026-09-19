@@ -54,6 +54,7 @@ class AppConstants {
   static const String keyThemeMode = 'theme_mode';
   static const String keyPreferences = 'preferences';
   static const String keyOnboardingDone = 'onboarding_done';
+  static const String keyPreferencesPrompted = 'preferences_prompted';
 
   // Pagination
   static const int defaultPageSize = 20;

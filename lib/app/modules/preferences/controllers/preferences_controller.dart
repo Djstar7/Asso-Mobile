@@ -143,6 +143,7 @@ class PreferencesController extends GetxController {
     super.onInit();
     _loadPreferences();
   }
+
   // true si l'utilisateur ouvre la page volontairement pour modifier
   // (depuis le drawer), false si c'est l'étape d'onboarding après inscription.
   bool get _isEditMode => (Get.arguments as Map?)?['isEditing'] == true;
@@ -151,7 +152,9 @@ class PreferencesController extends GetxController {
     // Mode vitrine (invite): pas de token, on n'appelle pas l'API et on laisse
     // l'utilisateur parcourir/selectionner ses centres d'interet librement.
     if (!StorageService.isAuthenticated) {
-      print('ℹ️ Mode invité: chargement des préférences distant ignoré');
+      // Mode invité : pas de compte à interroger, mais les choix déjà faits
+      // sur cet appareil sont repris — et resserviront à l'inscription.
+      _restoreLocalSelection();
       return;
     }
 
@@ -176,7 +179,9 @@ class PreferencesController extends GetxController {
 
           // AUTO-NAVIGATE : uniquement en onboarding, jamais en mode édition.
           if (!_isEditMode && selectedSubcategories.isNotEmpty) {
-            print('🏠 AUTO-NAVIGATE: User has existing preferences, navigating to HOME');
+            print(
+              '🏠 AUTO-NAVIGATE: User has existing preferences, navigating to HOME',
+            );
             await Future.delayed(const Duration(milliseconds: 300));
             Get.offAllNamed(Routes.HOME);
           }
@@ -223,29 +228,24 @@ class PreferencesController extends GetxController {
   }
 
   Future<void> saveAndContinue() async {
-    // Vérifier qu'au moins une sous-catégorie est sélectionnée
-    if (selectedSubcategories.isEmpty) {
-      Get.snackbar(
-        'Préférences',
-        'Veuillez sélectionner au moins une catégorie d\'intérêt',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-      return;
-    }
+    // Le bouton est désactivé tant que rien n'est choisi : on ne peut pas
+    // arriver ici les mains vides, et il n'y a donc plus d'alerte à afficher.
+    if (selectedSubcategories.isEmpty) return;
 
     // Sauvegarder les préférences via l'API
-    final prefs = {
-      'categories': selectedSubcategories.toList(),
-    };
+    final prefs = {'categories': selectedSubcategories.toList()};
 
-    try {
-      await AuthService.updatePreferences(prefs);
-    } catch (e) {
-      // Silent fail - prefs saved locally anyway
+    // Toujours conservées sur l'appareil : en mode invité c'est le seul
+    // endroit, et à l'inscription elles évitent de tout redemander.
+    StorageService.savePreferences(prefs);
+    StorageService.setPreferencesPrompted();
+
+    if (StorageService.isAuthenticated) {
+      try {
+        await AuthService.updatePreferences(prefs);
+      } catch (e) {
+        // L'échec réseau ne fait pas perdre la sélection, déjà enregistrée.
+      }
     }
 
     // Afficher un message de succès
@@ -266,7 +266,20 @@ class PreferencesController extends GetxController {
   }
 
   void skipPreferences() {
+    // Passer compte comme une réponse : l'écran ne sera pas reproposé.
+    StorageService.setPreferencesPrompted();
     Get.offAllNamed(Routes.HOME);
+  }
+
+  /// Reprend la sélection enregistrée sur l'appareil, s'il y en a une.
+  void _restoreLocalSelection() {
+    final saved = StorageService.getPreferences();
+    final categories = saved?['categories'];
+    if (categories is List) {
+      selectedSubcategories
+        ..clear()
+        ..addAll(categories.map((c) => c.toString()));
+    }
   }
 }
 
@@ -288,8 +301,5 @@ class SubcategoryItem {
   final String id;
   final String name;
 
-  SubcategoryItem({
-    required this.id,
-    required this.name,
-  });
+  SubcategoryItem({required this.id, required this.name});
 }

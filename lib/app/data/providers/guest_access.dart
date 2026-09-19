@@ -34,10 +34,17 @@ class GuestAccess {
       );
     }
 
-    Get.offAllNamed(
-      StorageService.hasSelectedCountry
-          ? Routes.HOME
-          : Routes.COUNTRY_SELECTION,
-    );
+    Get.offAllNamed(nextRoute());
+  }
+
+  /// Écran suivant une fois le mode invité actif.
+  ///
+  /// Le pays d'abord — sans lui les prix n'ont pas de devise —, puis les
+  /// centres d'intérêt, proposés une seule fois, à l'invité comme à
+  /// l'inscrit.
+  static String nextRoute() {
+    if (!StorageService.hasSelectedCountry) return Routes.COUNTRY_SELECTION;
+    if (!StorageService.wasPreferencesPrompted) return Routes.PREFERENCES;
+    return Routes.HOME;
   }
 }

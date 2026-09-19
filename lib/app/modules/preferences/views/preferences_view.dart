@@ -1,457 +1,443 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import '../../../core/utils/app_theme_system.dart';
+
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/preferences_controller.dart'
     show PreferencesController, CategoryItem, SubcategoryItem;
 
+/// Centres d'intérêt, proposés une fois au premier lancement.
+///
+/// L'écran d'origine n'était qu'une pile d'accordéons fermés : rien
+/// n'indiquait ce qu'il y avait derrière, ni ce qui avait déjà été choisi.
+/// Chaque carte montre désormais ses premières sous-catégories directement,
+/// et l'en-tête rappelle en continu le nombre de sélections.
 class PreferencesView extends GetView<PreferencesController> {
   const PreferencesView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: context.ds.canvas,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header avec bouton Skip
-            _buildHeader(context),
-
-            // Contenu scrollable
-            Expanded(
-              child: Obx(() {
-                // Show loading indicator while fetching preferences
-                if (controller.isLoading.value) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          color: AppThemeSystem.primaryColor,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Chargement de vos préférences...',
-                          style: context.textStyle(
-                            FontSizeType.body2,
-                            color: context.secondaryTextColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppThemeSystem.getHorizontalPadding(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-                      // Titre principal
-                      Text(
-                        'Vos centres d\'intérêt',
-                        style: context.textStyle(
-                          FontSizeType.h2,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(height: 8),
-
-                      Text(
-                        'Sélectionnez les catégories qui vous intéressent pour personnaliser votre expérience',
-                        style: context.textStyle(
-                          FontSizeType.body2,
-                          color: context.secondaryTextColor,
-                        ),
-                      ),
-
-                    SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-                    // Liste des catégories
-                    Obx(() => Column(
-                          children: controller.categories.map((category) {
-                            final isExpanded =
-                                controller.expandedCategories.contains(category.id);
-                            final selectionCount =
-                                controller.getCategorySelectionCount(category.id);
-                            final isSelected =
-                                controller.isCategorySelected(category.id);
-
-                            return _buildCategoryCard(
-                              context,
-                              category: category,
-                              isExpanded: isExpanded,
-                              isSelected: isSelected,
-                              selectionCount: selectionCount,
-                            );
-                          }).toList(),
-                        )),
-
-                      SizedBox(height: AppThemeSystem.getSectionSpacing(context) * 1.5),
-                    ],
-                  ),
-                );
-              }),
-            ),
-
-            // Bouton fixe en bas
-            _buildBottomButton(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: 8,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Logo ou titre app
-          Row(
+        bottom: false,
+        child: AppContentWidth(
+          child: Column(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                ),
-                child: const Icon(
-                  Icons.tune_rounded,
-                  color: AppThemeSystem.primaryColor,
-                  size: 20,
-                ),
+              const _Header(),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return const _LoadingState();
+                  }
+                  return const _CategoryList();
+                }),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Préférences',
-                style: context.textStyle(
-                  FontSizeType.h5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const _BottomBar(),
             ],
           ),
-
-          // Bouton Skip
-          TextButton(
-            onPressed: controller.skipPreferences,
-            child: Text(
-              'PASSER',
-              style: context.textStyle(
-                FontSizeType.button,
-                color: context.secondaryTextColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildCategoryCard(
-    BuildContext context, {
-    required CategoryItem category,
-    required bool isExpanded,
-    required bool isSelected,
-    required int selectionCount,
-  }) {
-    return Container(
-      margin: EdgeInsets.only(
-        bottom: AppThemeSystem.getElementSpacing(context),
-      ),
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getSurfaceColor(context),
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(
-          color: isSelected ? AppDesign.accentBorder : context.ds.border,
-        ),
+/// Titre de l'écran et sortie sans choisir.
+class _Header extends GetView<PreferencesController> {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space4,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header de la catégorie
-          InkWell(
-            onTap: () => controller.toggleCategory(category.id),
-            borderRadius: context.borderRadius(BorderRadiusType.medium),
-            child: Padding(
-              padding: EdgeInsets.all(
-                AppThemeSystem.getHorizontalPadding(context) * 0.75,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  'Vos centres d\'intérêt',
+                  style: context.textStyle(
+                    FontSizeType.h4,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
               ),
-              child: Row(
-                children: [
-                  // SVG Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                          : context.backgroundColor,
-                      borderRadius: context.borderRadius(BorderRadiusType.small),
-                    ),
-                    child: SvgPicture.asset(
-                      category.svgPath,
-                      colorFilter: ColorFilter.mode(
-                        isSelected
-                            ? AppThemeSystem.primaryColor
-                            : context.secondaryTextColor,
-                        BlendMode.srcIn,
-                      ),
-                    ),
+              SizedBox(width: AppDesign.space2),
+              // « Passer » en casse normale : les capitales criaient une
+              // action qui doit rester secondaire.
+              TextButton(
+                onPressed: controller.skipPreferences,
+                style: TextButton.styleFrom(
+                  foregroundColor: context.ds.textSecondary,
+                  padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+                ),
+                child: Text(
+                  'Passer',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                    color: context.ds.textSecondary,
                   ),
-
-                  SizedBox(width: 12),
-
-                  // Nom de la catégorie
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          category.name,
-                          style: context.textStyle(
-                            FontSizeType.body1,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (selectionCount > 0)
-                          Text(
-                            '$selectionCount sélectionné${selectionCount > 1 ? 's' : ''}',
-                            style: context.textStyle(
-                              FontSizeType.caption,
-                              color: AppThemeSystem.primaryColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // Icône expand/collapse
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: context.secondaryTextColor,
-                      size: 24,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-
-          // Sous-catégories (collapsable)
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Container(
-              padding: EdgeInsets.fromLTRB(
-                AppThemeSystem.getHorizontalPadding(context) * 0.75,
-                0,
-                AppThemeSystem.getHorizontalPadding(context) * 0.75,
-                AppThemeSystem.getHorizontalPadding(context) * 0.75,
-              ),
-              child: Column(
-                children: [
-                  Divider(
-                    color: context.borderColor,
-                    height: 1,
-                  ),
-                  SizedBox(height: 12),
-                  Obx(() => Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: category.subcategories.map((subcategory) {
-                          final isSubSelected = controller.selectedSubcategories
-                              .contains(subcategory.id);
-                          return _buildSubcategoryChip(
-                            context,
-                            subcategory: subcategory,
-                            isSelected: isSubSelected,
-                            onTap: () =>
-                                controller.toggleSubcategory(subcategory.id),
-                          );
-                        }).toList(),
-                      )),
-                ],
-              ),
+          SizedBox(height: AppDesign.space1),
+          Text(
+            'Nous mettrons en avant ces produits sur votre accueil. '
+            'Vous pourrez changer d\'avis à tout moment.',
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
+              height: 1.5,
             ),
-            crossFadeState: isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSubcategoryChip(
-    BuildContext context, {
-    required SubcategoryItem subcategory,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(
-          horizontal: AppDesign.space3 + 2,
-          vertical: AppDesign.space2 + 1,
-        ),
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          SizedBox(height: AppDesign.space4),
+          Text(
+            'Chargement de vos préférences…',
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryList extends GetView<PreferencesController> {
+  const _CategoryList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        0,
+        context.ds.gutter,
+        AppDesign.space6,
+      ),
+      itemCount: controller.categories.length,
+      separatorBuilder: (_, _) => SizedBox(height: AppDesign.space3),
+      itemBuilder: (context, index) =>
+          _CategoryCard(category: controller.categories[index]),
+    );
+  }
+}
+
+/// Une catégorie et ses sous-catégories.
+///
+/// Les sous-catégories sont visibles d'emblée — c'est ce qu'on demande à
+/// l'utilisateur de choisir. Au-delà de [_visibleChips], le reste se déplie
+/// à la demande pour que la liste reste parcourable.
+class _CategoryCard extends GetView<PreferencesController> {
+  const _CategoryCard({required this.category});
+
+  final CategoryItem category;
+
+  /// Nombre de sous-catégories montrées avant « Plus ».
+  static const int _visibleChips = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final expanded = controller.expandedCategories.contains(category.id);
+      final count = controller.getCategorySelectionCount(category.id);
+      final selected = count > 0;
+
+      final visible = expanded
+          ? category.subcategories
+          : category.subcategories.take(_visibleChips).toList();
+      final hidden = category.subcategories.length - visible.length;
+
+      return Container(
         decoration: BoxDecoration(
-          color: isSelected ? AppDesign.accentSubtle : context.ds.surfaceMuted,
-          borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+          color: context.ds.surface,
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
           border: Border.all(
-            color: isSelected ? AppDesign.accentBorder : context.ds.border,
+            color: selected ? AppDesign.accentBorder : context.ds.border,
+            // Une carte retenue se repère au premier coup d'œil, sans avoir
+            // à lire le compteur.
+            width: selected ? 1.5 : 1,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        padding: EdgeInsets.all(AppDesign.space3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isSelected) ...[
-              const Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: AppDesign.accentText,
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              subcategory.name,
-              style: context.textStyle(
-                FontSizeType.caption,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected
-                    ? AppDesign.accentText
-                    : context.ds.textSecondary,
-              ),
+            Row(
+              children: [
+                _CategoryIcon(category: category, selected: selected),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: Text(
+                    category.name,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textPrimary,
+                    ),
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesign.space2,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppDesign.accentSubtle,
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: context.textStyle(
+                        FontSizeType.overline,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesign.accentText,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: AppDesign.space3),
+            Wrap(
+              spacing: AppDesign.space2,
+              runSpacing: AppDesign.space2,
+              children: [
+                for (final sub in visible)
+                  _SubcategoryChip(
+                    subcategory: sub,
+                    selected: controller.selectedSubcategories.contains(sub.id),
+                    onTap: () => controller.toggleSubcategory(sub.id),
+                  ),
+                if (hidden > 0 || expanded)
+                  _MoreChip(
+                    label: expanded ? 'Moins' : '+$hidden',
+                    expanded: expanded,
+                    onTap: () => controller.toggleCategory(category.id),
+                  ),
+              ],
             ),
           ],
+        ),
+      );
+    });
+  }
+}
+
+class _CategoryIcon extends StatelessWidget {
+  const _CategoryIcon({required this.category, required this.selected});
+
+  final CategoryItem category;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      padding: EdgeInsets.all(AppDesign.space2),
+      decoration: BoxDecoration(
+        color: selected ? AppDesign.accentSubtle : context.ds.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      ),
+      child: SvgPicture.asset(
+        category.svgPath,
+        colorFilter: ColorFilter.mode(
+          selected ? AppDesign.accent : context.ds.textSecondary,
+          BlendMode.srcIn,
         ),
       ),
     );
   }
+}
 
-  Widget _buildBottomButton(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: AppThemeSystem.getVerticalPadding(context) * 0.75,
-      ),
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getSurfaceColor(context),
-        border: Border(
-          top: BorderSide(
-            color: context.borderColor,
-            width: 1,
+/// Une sous-catégorie sélectionnable.
+class _SubcategoryChip extends StatelessWidget {
+  const _SubcategoryChip({
+    required this.subcategory,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SubcategoryItem subcategory;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDesign.space3,
+            vertical: AppDesign.space2,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? AppDesign.accent : context.ds.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            border: Border.all(
+              color: selected ? AppDesign.accent : context.ds.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                subcategory.name,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : context.ds.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Déplie ou replie le reste des sous-catégories.
+class _MoreChip extends StatelessWidget {
+  const _MoreChip({
+    required this.label,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        // Sans contour ni fond : une pastille identique aux autres se
+        // lirait comme une sous-catégorie de plus, alors qu'elle déplie.
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDesign.space2,
+            vertical: AppDesign.space2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesign.accent,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                expanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: AppDesign.accent,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Action principale, maintenue visible au-dessus de la liste.
+class _BottomBar extends GetView<PreferencesController> {
+  const _BottomBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.ds.surface,
+        border: Border(top: BorderSide(color: context.ds.border)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space3,
+        context.ds.gutter,
+        AppDesign.space3,
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Compteur de sélections
-            Obx(() {
-              final count = controller.selectedSubcategories.length;
-              if (count == 0) return const SizedBox.shrink();
+        child: Obx(() {
+          final count = controller.selectedSubcategories.length;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: context.borderRadius(BorderRadiusType.small),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: AppThemeSystem.primaryColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$count catégorie${count > 1 ? 's' : ''} sélectionnée${count > 1 ? 's' : ''}',
-                            style: context.textStyle(
-                              FontSizeType.caption,
-                              color: AppThemeSystem.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-            // Bouton Continuer
-            SizedBox(
-              width: double.infinity,
-              height: AppThemeSystem.getButtonHeight(context),
-              child: ElevatedButton(
-                onPressed: controller.saveAndContinue,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: context.borderRadius(BorderRadiusType.medium),
-                  ),
-                  elevation: 2,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Continuer',
-                      style: context.textStyle(
-                        FontSizeType.button,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                count == 0
+                    ? 'Choisissez au moins un centre d\'intérêt'
+                    : '$count sélectionné${count > 1 ? 's' : ''}',
+                style: context.textStyle(
+                  FontSizeType.overline,
+                  color: count == 0
+                      ? context.ds.textTertiary
+                      : AppDesign.accentText,
+                  fontWeight: count == 0 ? FontWeight.w400 : FontWeight.w600,
                 ),
               ),
-            ),
-          ],
-        ),
+              SizedBox(height: AppDesign.space2),
+              AppButton(
+                label: 'Continuer',
+                size: AppButtonSize.large,
+                icon: Icons.arrow_forward_rounded,
+                // Désactivé plutôt qu'actif-puis-refusé : l'attente se lit
+                // avant d'appuyer, au lieu d'être signalée par une erreur.
+                onPressed: count == 0 ? null : controller.saveAndContinue,
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
