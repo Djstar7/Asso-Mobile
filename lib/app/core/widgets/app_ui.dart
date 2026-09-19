@@ -182,10 +182,19 @@ class AppButton extends StatelessWidget {
         borderColor = null;
     }
 
+    // Un bouton inactif prend un fond neutre plutôt qu'un accent éclairci :
+    // un orange pâle ressemble encore à un bouton disponible, et on clique
+    // dans le vide.
+    final isIdle = disabled && !isLoading;
+    final effectiveBackground = isIdle && variant != AppButtonVariant.secondary
+        ? context.ds.surfaceMuted
+        : background;
+    final effectiveForeground = isIdle ? context.ds.textTertiary : foreground;
+
     final textStyle = context.textStyle(
       size == AppButtonSize.small ? FontSizeType.caption : FontSizeType.button,
       fontWeight: FontWeight.w600,
-      color: foreground,
+      color: effectiveForeground,
     );
 
     final child = isLoading
@@ -196,7 +205,7 @@ class AppButton extends StatelessWidget {
             width: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(foreground),
+              valueColor: AlwaysStoppedAnimation<Color>(effectiveForeground),
             ),
           )
         : Row(
@@ -204,7 +213,9 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: size == AppButtonSize.small ? 16 : 18, color: foreground),
+                Icon(icon,
+                    size: size == AppButtonSize.small ? 16 : 18,
+                    color: effectiveForeground),
                 SizedBox(width: AppDesign.space2),
               ],
               Flexible(
@@ -219,13 +230,11 @@ class AppButton extends StatelessWidget {
             ],
           );
 
-    return Opacity(
-      opacity: disabled && !isLoading ? 0.45 : 1,
-      child: SizedBox(
+    return SizedBox(
         height: _height,
         width: expand ? double.infinity : null,
         child: Material(
-          color: background,
+          color: effectiveBackground,
           borderRadius: radius,
           child: InkWell(
             onTap: disabled ? null : onPressed,
@@ -246,7 +255,6 @@ class AppButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }

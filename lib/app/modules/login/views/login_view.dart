@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/login_controller.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/utils/app_design.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
@@ -149,120 +151,45 @@ class LoginView extends GetView<LoginController> {
 
   /// Formulaire email
   Widget _buildEmailForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Label
-        Text(
-          'Email',
-          style: context.subtitle1.copyWith(
-            color: context.primaryTextColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        SizedBox(height: context.elementSpacing),
-
-        // Champ email
-        TextField(
-          controller: controller.emailController,
-          keyboardType: TextInputType.emailAddress,
-          onChanged: (value) => controller.email.value = value,
-          decoration: InputDecoration(
-            hintText: 'exemple@email.com',
-            hintStyle: context.body1.copyWith(
-              color: context.secondaryTextColor,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor, width: 1.5),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor, width: 1.5),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: const BorderSide(
-                color: AppThemeSystem.primaryColor,
-                width: 2,
-              ),
-            ),
-            filled: true,
-            fillColor: context.inputFieldColor,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: context.horizontalPadding,
-              vertical: context.verticalPadding * 0.75,
-            ),
-          ),
-          style: context.body1.copyWith(color: context.primaryTextColor),
-        ),
-      ],
+    return AppTextField(
+      label: 'Adresse e-mail',
+      hint: 'exemple@email.com',
+      controller: controller.emailController,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      autofillHints: const [AutofillHints.email],
+      onChanged: (value) => controller.email.value = value,
     );
   }
 
   /// Formulaire mot de passe
   Widget _buildPasswordForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Label
-        Text(
-          'Mot de passe',
-          style: context.subtitle1.copyWith(
-            color: context.primaryTextColor,
-            fontWeight: FontWeight.w600,
-          ),
+    return Obx(
+      () => AppTextField(
+        label: 'Mot de passe',
+        hint: 'Votre mot de passe',
+        controller: controller.passwordController,
+        obscureText: controller.obscurePassword.value,
+        textInputAction: TextInputAction.done,
+        autofillHints: const [AutofillHints.password],
+        onChanged: (value) => controller.password.value = value,
+        // La connexion part directement depuis le clavier, sans obliger à
+        // le refermer pour atteindre le bouton.
+        onSubmitted: (_) {
+          if (controller.isFormValid.value && !controller.isLoading.value) {
+            controller.login();
+          }
+        },
+        suffixIcon: AppIconButton(
+          icon: controller.obscurePassword.value
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          size: 19,
+          color: context.ds.textTertiary,
+          tooltip: controller.obscurePassword.value ? 'Afficher' : 'Masquer',
+          onPressed: controller.togglePasswordVisibility,
         ),
-
-        SizedBox(height: context.elementSpacing),
-
-        // Champ mot de passe
-        Obx(
-          () => TextField(
-            controller: controller.passwordController,
-            obscureText: controller.obscurePassword.value,
-            onChanged: (value) => controller.password.value = value,
-            decoration: InputDecoration(
-              hintText: 'Votre mot de passe',
-              hintStyle: context.body1.copyWith(
-                color: context.secondaryTextColor,
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  controller.obscurePassword.value
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  color: context.secondaryTextColor,
-                ),
-                onPressed: controller.togglePasswordVisibility,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                borderSide: BorderSide(color: context.borderColor, width: 1.5),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                borderSide: BorderSide(color: context.borderColor, width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                borderSide: const BorderSide(
-                  color: AppThemeSystem.primaryColor,
-                  width: 2,
-                ),
-              ),
-              filled: true,
-              fillColor: context.inputFieldColor,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: context.horizontalPadding,
-                vertical: context.verticalPadding * 0.75,
-              ),
-            ),
-            style: context.body1.copyWith(color: context.primaryTextColor),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -280,28 +207,42 @@ class LoginView extends GetView<LoginController> {
           title: const Text('Réinitialiser le mot de passe'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
+              // Le libellé de l'étape en cours : sans lui, on recevait un
+              // code sans savoir qu'il fallait revenir ici pour le saisir.
+              Text(
+                codeSent
+                    ? 'Saisissez le code reçu par e-mail, puis votre nouveau mot de passe.'
+                    : 'Nous vous enverrons un code de vérification à cette adresse.',
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  color: context.ds.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              SizedBox(height: AppDesign.space4),
+              AppTextField(
+                label: 'Adresse e-mail',
+                hint: 'exemple@email.com',
                 controller: email,
                 enabled: !codeSent,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Adresse e-mail'),
               ),
               if (codeSent) ...[
-                TextField(
+                SizedBox(height: AppDesign.space4),
+                AppTextField(
+                  label: 'Code reçu',
+                  hint: '6 chiffres',
                   controller: code,
                   keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  decoration: const InputDecoration(
-                    labelText: 'Code reçu par e-mail',
-                  ),
                 ),
-                TextField(
+                SizedBox(height: AppDesign.space4),
+                AppTextField(
+                  label: 'Nouveau mot de passe',
+                  hint: 'Au moins 6 caractères',
                   controller: password,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Nouveau mot de passe',
-                  ),
                 ),
               ],
             ],
@@ -361,46 +302,14 @@ class LoginView extends GetView<LoginController> {
 
   /// Bouton de connexion
   Widget _buildLoginButton(BuildContext context) {
-    return Obx(() {
-      final isLoading = controller.isLoading.value;
-      final isValid = controller.isFormValid.value;
-
-      return SizedBox(
-        width: double.infinity,
-        height: context.buttonHeight,
-        child: ElevatedButton(
-          onPressed: (isValid && !isLoading) ? controller.login : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppThemeSystem.primaryColor,
-            foregroundColor: AppThemeSystem.whiteColor,
-            disabledBackgroundColor: context.borderColor,
-            disabledForegroundColor: context.secondaryTextColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-            ),
-            elevation: context.elevation(ElevationType.low),
-          ),
-          child: isLoading
-              ? SizedBox(
-                  height: AppThemeSystem.getFontSize(context, FontSizeType.h5),
-                  width: AppThemeSystem.getFontSize(context, FontSizeType.h5),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppThemeSystem.whiteColor,
-                    ),
-                  ),
-                )
-              : Text(
-                  'Se connecter',
-                  style: context.button.copyWith(
-                    color: AppThemeSystem.whiteColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-        ),
-      );
-    });
+    return Obx(
+      () => AppButton(
+        label: 'Se connecter',
+        size: AppButtonSize.large,
+        isLoading: controller.isLoading.value,
+        onPressed: controller.isFormValid.value ? controller.login : null,
+      ),
+    );
   }
 
   /// Séparateur "OU"
