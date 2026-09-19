@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/profile_controller.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -97,139 +98,116 @@ class ProfileView extends GetView<ProfileController> {
   ) {
     final profile = controller.userProfile;
 
+    // En-tête compact posé sur une surface neutre.
+    //
+    // L'aplat orange occupait le tiers haut de l'écran et répétait le titre
+    // « Compte » déjà présent dans la barre. La carte d'identité passe en
+    // disposition horizontale : même information, trois fois moins de place,
+    // et la liste de réglages devient visible sans défiler.
     return Container(
-      padding: EdgeInsets.only(
-        left: AppThemeSystem.getHorizontalPadding(context),
-        right: AppThemeSystem.getHorizontalPadding(context),
-        top:
-            MediaQuery.of(context).padding.top +
-            AppThemeSystem.getHorizontalPadding(context),
-        bottom: AppThemeSystem.getHorizontalPadding(context),
+      color: context.ds.surface,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space5,
+        context.ds.gutter,
+        AppDesign.space5,
       ),
-      decoration: BoxDecoration(
-        color: AppDesign.accent,
-      ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Mon Profil',
-                style: context.textStyle(
-                  FontSizeType.h5,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  print('✏️ Edit button tapped!'); // Debug
-                  controller.editProfile();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Icon(
-                    Icons.edit_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-          // Avatar
           Stack(
+            clipBehavior: Clip.none,
             children: [
               Container(
-                width: deviceType == DeviceType.mobile ? 100 : 120,
-                height: deviceType == DeviceType.mobile ? 100 : 120,
-                decoration: BoxDecoration(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: AppDesign.accentSubtle,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  color: Colors.white.withValues(alpha: 0.10),
                 ),
                 child: Center(
                   child: Text(
-                    profile['avatar'],
+                    profile['avatar']?.toString() ?? '',
                     style: context.textStyle(
-                      FontSizeType.h2,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      FontSizeType.h5,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesign.accentText,
                     ),
                   ),
                 ),
               ),
               Positioned(
-                right: 0,
-                bottom: 0,
+                right: -2,
+                bottom: -2,
                 child: Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: AppDesign.success,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: context.ds.surface, width: 2),
                   ),
-                  child: Icon(Icons.check, size: 16, color: Colors.white),
+                  child: const Icon(Icons.check, size: 11, color: Colors.white),
                 ),
               ),
             ],
           ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-          Text(
-            profile['name'],
-            style: context.textStyle(
-              deviceType == DeviceType.mobile
-                  ? FontSizeType.h4
-                  : FontSizeType.h3,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.5),
-          Text(
-            profile['email'],
-            style: context.textStyle(
-              deviceType == DeviceType.mobile
-                  ? FontSizeType.body2
-                  : FontSizeType.body1,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-          ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.5),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.location_on_rounded,
-                size: 16,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-              SizedBox(width: 4),
-              Text(
-                profile['location'],
-                style: context.textStyle(
-                  FontSizeType.caption,
-                  color: Colors.white.withValues(alpha: 0.9),
+          SizedBox(width: AppDesign.space4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  profile['name']?.toString() ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textStyle(
+                    FontSizeType.subtitle1,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppThemeSystem.getElementSpacing(context) * 0.75),
-          Text(
-            profile['memberSince'],
-            style: context.textStyle(
-              deviceType == DeviceType.mobile
-                  ? FontSizeType.caption
-                  : FontSizeType.body2,
-              color: Colors.white.withValues(alpha: 0.8),
+                const SizedBox(height: 2),
+                Text(
+                  profile['email']?.toString() ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    color: context.ds.textSecondary,
+                  ),
+                ),
+                if ((profile['location']?.toString() ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 13,
+                        color: context.ds.textTertiary,
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          profile['location'].toString(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            color: context.ds.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
+          ),
+          SizedBox(width: AppDesign.space2),
+          AppIconButton(
+            icon: Icons.edit_outlined,
+            tooltip: 'Modifier le profil',
+            onPressed: controller.editProfile,
           ),
         ],
       ),

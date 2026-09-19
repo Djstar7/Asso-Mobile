@@ -618,7 +618,7 @@ Widget _buildBackButton(BuildContext context) {
                 context: context,
                 icon: Icons.add_circle_outline_rounded,
                 label: 'Recharger',
-                color: AppThemeSystem.successColor,
+                isPrimary: true,
                 onTap: () => RechargeBottomSheet.show(context),
               ),
             ),
@@ -628,7 +628,6 @@ Widget _buildBackButton(BuildContext context) {
                 context: context,
                 icon: Icons.arrow_circle_up_outlined,
                 label: 'Retirer',
-                color: AppThemeSystem.warningColor,
                 onTap: () => _showWithdrawalOptions(context),
               ),
             ),
@@ -639,7 +638,6 @@ Widget _buildBackButton(BuildContext context) {
                   context: context,
                   icon: Icons.history_rounded,
                   label: 'Historique',
-                  color: AppThemeSystem.infoColor,
                   onTap: () => Get.toNamed('/wallet/history'),
                   badgeCount: controller.pendingTransactionsCount,
                 ),
@@ -654,21 +652,22 @@ Widget _buildBackButton(BuildContext context) {
       required BuildContext context,
       required IconData icon,
       required String label,
-      required Color color,
       required VoidCallback onTap,
+      bool isPrimary = false,
       int? badgeCount,
     }) {
+      final color = isPrimary ? AppDesign.accent : context.ds.textSecondary;
+
       return InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: isPrimary ? AppDesign.accentSubtle : context.ds.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withValues(alpha: 0.3),
-              width: 1,
+              color: isPrimary ? AppDesign.accentBorder : context.ds.border,
             ),
           ),
           child: Column(
@@ -676,7 +675,11 @@ Widget _buildBackButton(BuildContext context) {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Icon(icon, color: color, size: 28),
+                  Icon(icon,
+                      color: isPrimary
+                          ? AppDesign.accentText
+                          : context.ds.textSecondary,
+                      size: 24),
                   if (badgeCount != null && badgeCount > 0)
                     Positioned(
                       right: -6,

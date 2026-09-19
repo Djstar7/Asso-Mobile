@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/settings_controller.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class SettingsView extends GetView<SettingsController> {
   const SettingsView({super.key});
@@ -161,15 +162,9 @@ class SettingsView extends GetView<SettingsController> {
           margin: EdgeInsets.all(context.horizontalPadding),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppThemeSystem.primaryColor,
+            color: context.ds.surface,
             borderRadius: context.borderRadius(BorderRadiusType.medium),
-            boxShadow: [
-              BoxShadow(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: context.ds.border),
           ),
           child: Stack(
             children: [
@@ -177,17 +172,16 @@ class SettingsView extends GetView<SettingsController> {
                 children: [
                   // Avatar
                   Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: AppDesign.accentSubtle,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
                     ),
                     child: const Icon(
-                      Icons.person,
-                      size: 40,
-                      color: AppThemeSystem.primaryColor,
+                      Icons.person_rounded,
+                      size: 28,
+                      color: AppDesign.accentText,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -199,26 +193,32 @@ class SettingsView extends GetView<SettingsController> {
                       children: [
                         Text(
                           controller.userName.value,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.subtitle1,
+                            fontWeight: FontWeight.w700,
+                            color: context.ds.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           controller.userEmail.value,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            color: context.ds.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           controller.userPhone.value,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            color: context.ds.textSecondary,
                           ),
                         ),
                       ],
@@ -230,12 +230,8 @@ class SettingsView extends GetView<SettingsController> {
               Positioned(
                 top: 0,
                 right: 0,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.edit_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
+                child: AppIconButton(
+                  icon: Icons.edit_outlined,
                   onPressed: controller.editProfile,
                   tooltip: 'Modifier le profil',
                 ),
@@ -249,11 +245,14 @@ class SettingsView extends GetView<SettingsController> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
       child: Text(
-        title,
-        style: context.h6.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppThemeSystem.primaryColor,
-        ),
+        title.toUpperCase(),
+        style: context
+            .textStyle(
+              FontSizeType.overline,
+              fontWeight: FontWeight.w700,
+              color: context.ds.textSecondary,
+            )
+            .copyWith(letterSpacing: 0.8),
       ),
     );
   }
