@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/app_design.dart';
 import '../controllers/preferences_controller.dart'
     show PreferencesController, CategoryItem, SubcategoryItem;
 
@@ -177,20 +178,8 @@ class PreferencesView extends GetView<PreferencesController> {
         color: AppThemeSystem.getSurfaceColor(context),
         borderRadius: context.borderRadius(BorderRadiusType.medium),
         border: Border.all(
-          color: isSelected
-              ? AppThemeSystem.primaryColor
-              : context.borderColor,
-          width: isSelected ? 2 : 1,
+          color: isSelected ? AppDesign.accentBorder : context.ds.border,
         ),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
       ),
       child: Column(
         children: [
@@ -321,39 +310,39 @@ class PreferencesView extends GetView<PreferencesController> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: context.borderRadius(BorderRadiusType.small),
+      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDesign.space3 + 2,
+          vertical: AppDesign.space2 + 1,
+        ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppThemeSystem.primaryColor
-              : context.backgroundColor,
-          borderRadius: context.borderRadius(BorderRadiusType.small),
+          color: isSelected ? AppDesign.accentSubtle : context.ds.surfaceMuted,
+          borderRadius: BorderRadius.circular(AppDesign.radiusPill),
           border: Border.all(
-            color: isSelected
-                ? AppThemeSystem.primaryColor
-                : context.borderColor.withValues(alpha: 0.5),
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? AppDesign.accentBorder : context.ds.border,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isSelected) ...[
-              Icon(
-                Icons.check_circle,
-                size: 16,
-                color: Colors.white,
+              const Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: AppDesign.accentText,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
             ],
             Text(
               subcategory.name,
               style: context.textStyle(
                 FontSizeType.caption,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : context.primaryTextColor,
+                color: isSelected
+                    ? AppDesign.accentText
+                    : context.ds.textSecondary,
               ),
             ),
           ],
