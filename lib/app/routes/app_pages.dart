@@ -51,8 +51,6 @@ import '../modules/product/bindings/product_binding.dart';
 import '../modules/product/views/product_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
 import '../modules/profile/views/profile_view.dart';
-import '../modules/register/bindings/register_binding.dart';
-import '../modules/register/views/register_view.dart';
 import '../modules/search/bindings/search_binding.dart';
 import '../modules/search/views/search_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
@@ -128,11 +126,6 @@ class AppPages {
       name: _Paths.WELCOMER,
       page: () => const WelcomerView(),
       binding: WelcomerBinding(),
-    ),
-    GetPage(
-      name: _Paths.REGISTER,
-      page: () => const RegisterView(),
-      binding: RegisterBinding(),
     ),
     GetPage(
       name: _Paths.LOGIN,

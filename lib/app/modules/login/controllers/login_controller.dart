@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
+import '../../../data/providers/guest_access.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../profile/controllers/profile_controller.dart';
@@ -20,7 +21,10 @@ class LoginController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    developer.log('========== LOGIN CONTROLLER INIT ==========', name: 'LoginController');
+    developer.log(
+      '========== LOGIN CONTROLLER INIT ==========',
+      name: 'LoginController',
+    );
     emailController = TextEditingController();
     passwordController = TextEditingController();
     ever(email, (_) => _validateForm());
@@ -43,7 +47,8 @@ class LoginController extends GetxController {
     developer.log(
       'Form validation',
       name: 'LoginController',
-      error: 'Email: $emailValid, Password: $passwordValid, Valid: ${isFormValid.value}',
+      error:
+          'Email: $emailValid, Password: $passwordValid, Valid: ${isFormValid.value}',
     );
   }
 
@@ -97,13 +102,18 @@ class LoginController extends GetxController {
         );
 
         // Envoyer le token FCM au backend ET s'abonner au topic des annonces
-        developer.log('📱 Registering device and subscribing to topics...', name: 'LoginController');
+        developer.log(
+          '📱 Registering device and subscribing to topics...',
+          name: 'LoginController',
+        );
         try {
-          final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
+          final results = await FirebaseMessagingService.to
+              .registerDeviceAndSubscribe();
           developer.log(
             'FCM registration result',
             name: 'LoginController',
-            error: 'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
+            error:
+                'Token sent: ${results['token_sent']}, Topic subscribed: ${results['topic_subscribed']}',
           );
         } catch (e) {
           developer.log(
@@ -168,8 +178,8 @@ class LoginController extends GetxController {
     // de la pile de navigation.
     await WidgetsBinding.instance.endOfFrame;
 
-    final homeAlreadyMounted = Get.isRegistered<HomeController>() &&
-        Get.previousRoute == Routes.HOME;
+    final homeAlreadyMounted =
+        Get.isRegistered<HomeController>() && Get.previousRoute == Routes.HOME;
 
     if (homeAlreadyMounted) {
       // Connexion ouverte depuis l'accueil invité : revenir à l'instance Home
@@ -212,4 +222,10 @@ class LoginController extends GetxController {
     developer.log('Navigating to register/welcomer', name: 'LoginController');
     Get.offNamed(Routes.WELCOMER);
   }
+
+  /// Visiter l'application sans compte, depuis la connexion.
+  ///
+  /// Même parcours que « Passer » à l'inscription : on ne crée pas une
+  /// seconde définition du mode invité.
+  Future<void> continueAsGuest() => GuestAccess.enter();
 }

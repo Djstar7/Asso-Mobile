@@ -1,149 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/utils/app_theme_system.dart';
-import '../controllers/login_controller.dart';
-import '../../../data/providers/auth_service.dart';
-import '../../../core/widgets/app_ui.dart';
-import '../../../core/utils/app_design.dart';
 
+import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/auth_scaffold.dart';
+import '../../../data/providers/auth_service.dart';
+import '../controllers/login_controller.dart';
+
+/// Connexion.
+///
+/// L'écran repose sur [AuthScaffold] : bandeau animé, puis formulaire sur une
+/// feuille claire. La visite sans compte est proposée ici comme à
+/// l'inscription — on ne force pas à créer un compte pour regarder le
+/// catalogue.
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.horizontalPadding,
-            vertical: context.verticalPadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: context.sectionSpacing),
-
-              // Logo ASSO
-              _buildLogo(context),
-
-              SizedBox(height: context.sectionSpacing * 1.5),
-
-              // Titre et description
-              _buildHeader(context),
-
-              SizedBox(height: context.sectionSpacing * 1.5),
-
-              // Formulaire email et mot de passe
-              _buildEmailForm(context),
-
-              SizedBox(height: context.elementSpacing),
-
-              _buildPasswordForm(context),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => _showPasswordReset(context),
-                  child: const Text('Mot de passe oublié ?'),
-                ),
-              ),
-
-              SizedBox(height: context.sectionSpacing),
-
-              // Bouton de connexion
-              _buildLoginButton(context),
-
-              SizedBox(height: context.sectionSpacing),
-
-              // Séparateur "OU"
-              _buildDivider(context),
-
-              SizedBox(height: context.sectionSpacing),
-
-              // Lien vers inscription
-              _buildRegisterLink(context),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Logo ASSO
-  Widget _buildLogo(BuildContext context) {
-    final deviceType = context.deviceType;
-    double logoSize;
-
-    switch (deviceType) {
-      case DeviceType.mobile:
-        logoSize = 120;
-        break;
-      case DeviceType.tablet:
-        logoSize = 140;
-        break;
-      case DeviceType.largeTablet:
-        logoSize = 160;
-        break;
-      case DeviceType.iPadPro13:
-        logoSize = 180;
-        break;
-      case DeviceType.desktop:
-        logoSize = 160;
-        break;
-    }
-
-    return Hero(
-      tag: 'logo',
-      child: Container(
-        width: logoSize,
-        height: logoSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/images/logo.png',
-            fit: BoxFit.cover,
-            width: logoSize,
-            height: logoSize,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// En-tête avec titre et description
-  Widget _buildHeader(BuildContext context) {
-    return Column(
+    return AuthScaffold(
+      animationAsset: 'assets/lotties/Ecommerce.json',
+      title: 'Bon retour',
+      subtitle: 'Connectez-vous pour retrouver vos commandes et vos favoris.',
+      onSkip: controller.continueAsGuest,
       children: [
-        // Titre
-        Text(
-          'Bon retour !',
-          textAlign: TextAlign.center,
-          style: context.h1.copyWith(
-            color: context.primaryTextColor,
-            fontWeight: FontWeight.bold,
+        _buildEmailForm(context),
+        SizedBox(height: AppDesign.space4),
+        _buildPasswordForm(context),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => _showPasswordReset(context),
+            child: const Text('Mot de passe oublié ?'),
           ),
         ),
-
-        SizedBox(height: context.elementSpacing),
-
-        // Description
-        Text(
-          'Connectez-vous pour accéder à votre compte',
-          textAlign: TextAlign.center,
-          style: context.body1.copyWith(
-            color: context.secondaryTextColor,
-            height: 1.5,
-          ),
+        SizedBox(height: AppDesign.space3),
+        _buildLoginButton(context),
+        SizedBox(height: AppDesign.space6),
+        const AuthDivider(),
+        SizedBox(height: AppDesign.space2),
+        AuthSwitchLink(
+          question: 'Pas encore de compte ?',
+          action: "S'inscrire",
+          onPressed: controller.goToRegister,
         ),
       ],
     );
@@ -279,10 +179,11 @@ class LoginView extends GetView<LoginController> {
                         ),
                       );
                       if (response.success) {
-                        if (codeSent)
+                        if (codeSent) {
                           Navigator.pop(dialogContext);
-                        else
+                        } else {
                           setState(() => codeSent = true);
+                        }
                       }
                     },
               child: Text(
@@ -300,7 +201,7 @@ class LoginView extends GetView<LoginController> {
     password.dispose();
   }
 
-  /// Bouton de connexion
+  /// Action principale de l'écran.
   Widget _buildLoginButton(BuildContext context) {
     return Obx(
       () => AppButton(
@@ -308,50 +209,6 @@ class LoginView extends GetView<LoginController> {
         size: AppButtonSize.large,
         isLoading: controller.isLoading.value,
         onPressed: controller.isFormValid.value ? controller.login : null,
-      ),
-    );
-  }
-
-  /// Séparateur "OU"
-  Widget _buildDivider(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 1, color: context.borderColor)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: context.elementSpacing),
-          child: Text(
-            'OU',
-            style: context.caption.copyWith(
-              color: context.secondaryTextColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(child: Container(height: 1, color: context.borderColor)),
-      ],
-    );
-  }
-
-  /// Lien vers inscription
-  Widget _buildRegisterLink(BuildContext context) {
-    return Center(
-      child: TextButton(
-        onPressed: controller.goToRegister,
-        child: RichText(
-          text: TextSpan(
-            style: context.body2.copyWith(color: context.secondaryTextColor),
-            children: [
-              const TextSpan(text: 'Pas encore de compte ? '),
-              TextSpan(
-                text: 'S\'inscrire',
-                style: context.body2.copyWith(
-                  color: AppThemeSystem.primaryColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

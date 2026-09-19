@@ -2,8 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
-import '../../../data/providers/storage_service.dart';
-import '../../../data/services/firebase_messaging_service.dart';
+import '../../../data/providers/guest_access.dart';
 import '../../../routes/app_pages.dart';
 
 class WelcomerController extends GetxController {
@@ -46,7 +45,8 @@ class WelcomerController extends GetxController {
     developer.log(
       'Form validation',
       name: 'WelcomerController',
-      error: 'Email: $emailValid, Password: $passwordValid, Match: $passwordsMatch, Valid: ${isFormValid.value}',
+      error:
+          'Email: $emailValid, Password: $passwordValid, Match: $passwordsMatch, Valid: ${isFormValid.value}',
     );
   }
 
@@ -66,36 +66,11 @@ class WelcomerController extends GetxController {
     super.onClose();
   }
 
-  void skipWelcome() async {
-    developer.log('Skip welcome - going to GUEST MODE', name: 'WelcomerController');
-
-    // Enable guest mode
-    developer.log('🔓 Enabling guest mode', name: 'WelcomerController');
-    StorageService.enableGuestMode();
-
-    // S'abonner au topic des annonces même en mode invité
-    developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');
-    try {
-      await FirebaseMessagingService.to.subscribeToAnnouncementsTopic();
-      developer.log('✅ Subscribed to announcements topic', name: 'WelcomerController');
-    } catch (e) {
-      developer.log(
-        'Error subscribing to announcements topic',
-        name: 'WelcomerController',
-        error: e,
-      );
-      // On ne bloque pas la navigation même si l'opération échoue
-    }
-
-    // Check if user has selected a country
-    if (!StorageService.hasSelectedCountry) {
-      developer.log('No country selected - navigating to COUNTRY_SELECTION', name: 'WelcomerController');
-      Get.offAllNamed(Routes.COUNTRY_SELECTION);
-    } else {
-      developer.log('Country already selected - navigating to HOME', name: 'WelcomerController');
-      Get.offAllNamed(Routes.HOME);
-    }
-  }
+  /// Visiter l'application sans compte.
+  ///
+  /// La séquence est partagée avec la connexion, pour que « Passer » se
+  /// comporte de la même façon d'un écran à l'autre.
+  Future<void> skipWelcome() => GuestAccess.enter();
 
   Future<void> createAccountWithEmail() async {
     developer.log(
@@ -273,32 +248,7 @@ class WelcomerController extends GetxController {
     Get.offAllNamed(Routes.HOME);
   }
 
-  void continueAsGuest() async {
-    developer.log(
-      'Continue as guest - going to HOME in GUEST MODE',
-      name: 'WelcomerController',
-    );
-
-    // Enable guest mode
-    developer.log('🔓 Enabling guest mode', name: 'WelcomerController');
-    StorageService.enableGuestMode();
-
-    // S'abonner au topic des annonces même en mode invité
-    developer.log('📱 Subscribing to announcements topic as guest...', name: 'WelcomerController');
-    try {
-      await FirebaseMessagingService.to.subscribeToAnnouncementsTopic();
-      developer.log('✅ Subscribed to announcements topic', name: 'WelcomerController');
-    } catch (e) {
-      developer.log(
-        'Error subscribing to announcements topic',
-        name: 'WelcomerController',
-        error: e,
-      );
-      // On ne bloque pas la navigation même si l'opération échoue
-    }
-
-    Get.offAllNamed(Routes.HOME);
-  }
+  Future<void> continueAsGuest() => GuestAccess.enter();
 
   void goToLogin() {
     developer.log('Go to login', name: 'WelcomerController');
