@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../data/models/delivery_info.dart';
 import '../controllers/tracking_controller.dart';
 
 class TrackingView extends GetView<TrackingController> {
@@ -281,6 +283,22 @@ class TrackingView extends GetView<TrackingController> {
                   ),
                 ],
 
+                if (shipment['delivery'] is DeliveryInfo &&
+                    (shipment['delivery'] as DeliveryInfo).carrierTrackingNumber != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.qr_code_2_rounded, size: 16, color: AppThemeSystem.grey600),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Suivi ${(shipment['delivery'] as DeliveryInfo).companyName ?? ''} : ${(shipment['delivery'] as DeliveryInfo).carrierTrackingNumber}',
+                          style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ],
+
                 if (rawStatus == 'delivered') ...[
                   const SizedBox(height: 8),
                   Row(
@@ -422,6 +440,7 @@ class TrackingView extends GetView<TrackingController> {
   }
 
   void _showTrackingDetails(BuildContext context, Map<String, dynamic> shipment) {
+    final delivery = shipment['delivery'] is DeliveryInfo ? shipment['delivery'] as DeliveryInfo : null;
     Get.bottomSheet(
       Container(
         height: Get.height * 0.85,
@@ -522,10 +541,57 @@ class TrackingView extends GetView<TrackingController> {
                       ),
                     ],
 
+                    if (delivery != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.getSurfaceColor(context),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            OrderDeliveryDetails(
+                              delivery: delivery,
+                              deliveryFee: shipment['deliveryFee'] as double?,
+                              formatPrice: (v) => controller.formatPrice(v),
+                              showTimeline: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    if (delivery?.canConfirmReception == true) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final done = await controller.confirmReception(shipment);
+                            if (done) Get.back();
+                          },
+                          icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                          label: const Text('J’ai reçu mon colis'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 24),
                     Text('Suivi de livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    _buildTrackingTimeline(context, shipment['trackingSteps']),
+                    if (delivery != null && delivery.timeline.isNotEmpty)
+                      DeliveryTimelineView(steps: delivery.timeline)
+                    else
+                      _buildTrackingTimeline(context, shipment['trackingSteps']),
                   ],
                 ),
               ),

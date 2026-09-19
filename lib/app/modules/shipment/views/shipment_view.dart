@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../myOrder/controllers/my_order_controller.dart';
 import '../../myOrder/models/customer_order_models.dart';
+import '../../myOrder/views/order_delivery_section.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
   const ShipmentView({super.key});
@@ -252,6 +253,9 @@ class ShipmentView extends GetView<MyOrderController> {
               ],
             ),
           ),
+
+          // Livraison P4 : transporteur, suivi daté, détail du prix
+          CustomerOrderDeliverySection(order: order),
 
           // Code de confirmation (visible quand shipped)
           if (order.status == CustomerOrderStatus.shipped && order.confirmationCode != null)

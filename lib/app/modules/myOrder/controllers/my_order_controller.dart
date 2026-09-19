@@ -158,6 +158,58 @@ class MyOrderController extends GetxController {
     }
   }
 
+  /// Commande transporteur : l'acheteur confirme lui-même la réception du colis.
+  Future<void> confirmReception(CustomerOrder order) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Colis reçu ?'),
+        content: const Text(
+          'Confirmez uniquement si vous avez bien récupéré votre colis. '
+          'Le vendeur sera alors payé et la commande sera marquée comme livrée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Pas encore'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text(
+              'Oui, j’ai reçu mon colis',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final id = int.tryParse(order.id);
+    if (id == null) return;
+    final response = await OrderService.confirmReception(id);
+    if (response.success) {
+      Get.snackbar('Merci !', response.message.isNotEmpty && response.message != 'Succès'
+              ? response.message
+              : 'Réception confirmée.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      await loadOrders(refresh: true);
+    } else {
+      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de confirmer la réception',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
+  }
+
   /// Client rate une commande livrée
   Future<void> rateOrder(String orderId, {required int rating, String? comment}) async {
     try {

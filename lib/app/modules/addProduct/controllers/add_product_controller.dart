@@ -611,36 +611,20 @@ class AddProductController extends GetxController {
         }
       }
 
-      // Poids — priorité au poids personnalisé
-      final weightCategory = product['weight_category']?.toString().trim();
-      final customWeight = product['weight']?.toString().trim();
+      // Type (article physique ou service) : le poids n'est requis que pour un article.
+      final productType = product['type']?.toString();
+      if (productType == 'article' || productType == 'service') {
+        articleType.value = productType!;
+      }
 
-      print('📝 ADD_PRODUCT: Weight data from API:');
-      print('   └─ weight_category: $weightCategory');
-      print('   └─ weight: $customWeight');
-
-      if (customWeight != null &&
-          customWeight.isNotEmpty &&
-          customWeight != 'null' &&
-          customWeight != '0') {
-        selectedWeightType.value = 'custom';
-        final cleanWeight = customWeight
-            .replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '')
-            .trim();
-        weightKgController.text = cleanWeight;
-        customWeightValue.value = cleanWeight;
-        print('📝 ADD_PRODUCT: ✅ Custom weight set: $cleanWeight kg');
-      } else if (weightCategory != null &&
-          weightCategory.isNotEmpty &&
-          weightCategory != 'null') {
-        if (weightTypes.containsKey(weightCategory)) {
-          selectedWeightType.value = weightCategory;
-          print('📝 ADD_PRODUCT: ✅ Weight category set: $weightCategory');
-        } else {
-          print('⚠️ ADD_PRODUCT: Unknown weight category: $weightCategory');
-        }
+      // Poids réel en kg (utilisé pour chiffrer la livraison).
+      final weightKg = parseWeightKg(product['weight']?.toString());
+      if (weightKg != null) {
+        weightKgController.text = formatWeightInput(weightKg);
+        customWeightValue.value = weightKgController.text;
       } else {
-        print('⚠️ ADD_PRODUCT: No weight found in product data');
+        weightKgController.clear();
+        customWeightValue.value = '';
       }
 
       final sizes = product['sizes'];
@@ -883,6 +867,40 @@ class AddProductController extends GetxController {
     Get.toNamed('/package-subscription');
   }
 
+  /// Poids en kg lu depuis une saisie ou l'API (« 2,5 », « 2.5 kg », « 500 g »).
+  /// Null si absent, illisible ou nul.
+  static double? parseWeightKg(String? raw) {
+    final text = (raw ?? '').trim().toLowerCase();
+    final match = RegExp(r'(\d+(?:[.,]\d+)?)\s*(kg|g)?').firstMatch(text);
+    if (match == null) return null;
+    var value = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+    if (value == null) return null;
+    if (match.group(2) == 'g') value /= 1000;
+    return value > 0 ? value : null;
+  }
+
+  /// Valeur saisie strictement numérique (virgule ou point décimal).
+  static final _weightInput = RegExp(r'^\d+([.,]\d{1,3})?$');
+
+  /// Affichage d'un poids dans le champ (« 2,5 »).
+  static String formatWeightInput(double kg) {
+    final text = kg == kg.roundToDouble()
+        ? kg.toStringAsFixed(0)
+        : kg.toStringAsFixed(3).replaceAll(RegExp(r'0+$'), '');
+    return text.replaceAll('.', ',');
+  }
+
+  /// Erreur de saisie du poids, ou null si valide.
+  String? get weightError {
+    final text = weightKgController.text.trim();
+    if (articleType.value != 'article' && text.isEmpty) return null;
+    if (text.isEmpty) return 'Le poids est obligatoire pour un article';
+    if (!_weightInput.hasMatch(text)) return 'Saisissez un nombre, ex. 2,5';
+    final value = double.tryParse(text.replaceAll(',', '.')) ?? 0;
+    if (value <= 0) return 'Le poids doit être supérieur à 0';
+    return null;
+  }
+
   /// Valider et soumettre le produit
   Future<void> submitProduct() async {
     // Validation
@@ -932,7 +950,18 @@ class AddProductController extends GetxController {
       return;
     }
 
-    // Note: Les champs storage, weight et stock ne sont pas encore requis par l'API
+    // Poids réel obligatoire pour un article physique : il sert à chiffrer la livraison.
+    final weightProblem = weightError;
+    if (weightProblem != null) {
+      Get.snackbar(
+        'Poids requis',
+        '$weightProblem (poids réel du colis en kg).',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Note: Les champs storage et stock ne sont pas encore requis par l'API
     // Ces validations sont commentées pour le moment
 
     // if (selectedStorage.value == null) {
@@ -1086,44 +1115,10 @@ class AddProductController extends GetxController {
       // En modification, on envoie toujours l'état complet (y compris « plus aucune variante »).
       if (isEditMode.value) fieldsMap['replace_variants'] = '1';
 
-      // Ajouter weight si disponible
-      print('📦 ADD_PRODUCT: Processing weight data...');
-      print('   └─ selectedWeightType: ${selectedWeightType.value}');
-      print('   └─ weightKgController: "${weightKgController.text.trim()}"');
-
-      if (selectedWeightType.value != null) {
-        if (selectedWeightType.value == 'custom') {
-          // Poids personnalisé en KG
-          final customWeightText = weightKgController.text.trim();
-          if (customWeightText.isNotEmpty) {
-            // S'assurer que "kg" est ajouté une seule fois
-            final cleanWeight = customWeightText
-                .replaceAll(RegExp(r'\s*(kg|KG)\s*$', caseSensitive: false), '')
-                .trim();
-            fieldsMap['weight'] = '$cleanWeight kg';
-            // Ne pas envoyer weight_category du tout (pas de chaîne vide pour éviter NOT NULL constraint)
-            print(
-              '📦 ADD_PRODUCT: ✅ Adding custom weight: "${fieldsMap['weight']}"',
-            );
-            print(
-              '📦 ADD_PRODUCT: ✅ Not sending weight_category (using custom weight)',
-            );
-          } else {
-            print(
-              '⚠️ ADD_PRODUCT: Custom weight selected but no value entered',
-            );
-          }
-        } else {
-          // Catégorie de poids prédéfinie (X-small, 30 Deep, etc.)
-          fieldsMap['weight_category'] = selectedWeightType.value!;
-          // Ne pas envoyer weight du tout (pas de chaîne vide)
-          print(
-            '📦 ADD_PRODUCT: ✅ Adding weight_category: "${fieldsMap['weight_category']}"',
-          );
-          print('📦 ADD_PRODUCT: ✅ Not sending weight (using weight_category)');
-        }
-      } else {
-        print('⚠️ ADD_PRODUCT: No weight selected');
+      // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
+      final weightText = weightKgController.text.trim();
+      if (weightText.isNotEmpty) {
+        fieldsMap['weight'] = weightText.replaceAll(',', '.');
       }
 
       // Note: storage_id n'est pas encore supporté par l'API

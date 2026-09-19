@@ -29,6 +29,9 @@ class OrderService {
     required List<Map<String, dynamic>> items,
     int? deliveryCompanyId,
     int? deliveryZoneId,
+    int? deliveryRouteId,
+    String? deliveryCity,
+    String? deliveryCountry,
     String walletProvider = 'kpay',
     String paymentMode = 'wallet',
     String? kpayProvider,
@@ -43,7 +46,14 @@ class OrderService {
     return await ApiProvider.post(AppConstants.ordersUrl, body: {
       'items': items,
       'delivery_company_id': deliveryCompanyId,
-      'delivery_zone_id': deliveryZoneId,
+      // Urbain : zone. Transporteur : trajet, + zone d'arrivée pour la livraison
+      // à domicile depuis l'agence (sans zone = retrait en agence).
+      'delivery_route_id': ?deliveryRouteId,
+      'delivery_zone_id': ?deliveryZoneId,
+      if (deliveryCity != null && deliveryCity.isNotEmpty)
+        'delivery_city': deliveryCity,
+      if (deliveryCountry != null && deliveryCountry.isNotEmpty)
+        'delivery_country': deliveryCountry,
       'payment_mode': paymentMode,
       'wallet_provider': walletProvider,
       if (kpayProvider != null) 'provider': kpayProvider,
@@ -55,6 +65,14 @@ class OrderService {
       'delivery_longitude': deliveryLongitude,
       'notes': notes,
     });
+  }
+
+  /// L'acheteur confirme avoir reçu son colis (commandes transporteur).
+  static Future<ApiResponse> confirmReception(int orderId) async {
+    return await ApiProvider.post(
+      '${AppConstants.ordersUrl}/$orderId/confirm-reception',
+      body: {},
+    );
   }
 
   /// Statut de paiement d'une commande (mode kpay_direct) — re-vérifie chez KPay.

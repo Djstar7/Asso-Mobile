@@ -25,18 +25,23 @@ class DeliveryService {
   }
 
   /// Get delivery partners with calculated pricing for a product
+  /// Le prix dépend du poids réel : poids unitaire × [quantity].
   static Future<ApiResponse> getDeliveryPartnersWithPricing({
     required int productId,
+    int quantity = 1,
     double? latitude,
     double? longitude,
     String? city,
+    String? country,
   }) async {
     final params = <String, dynamic>{
       'product_id': productId,
+      'quantity': quantity < 1 ? 1 : quantity,
     };
     if (latitude != null) params['latitude'] = latitude;
     if (longitude != null) params['longitude'] = longitude;
     if (city != null && city.isNotEmpty) params['city'] = city;
+    if (country != null && country.isNotEmpty) params['country'] = country;
 
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }

@@ -1,3 +1,5 @@
+import '../../../data/models/delivery_info.dart';
+
 /// Statut de commande client
 enum CustomerOrderStatus {
   pending,
@@ -94,6 +96,11 @@ class CustomerOrder {
   final String? deliveryPersonPhone;
   final String? deliveryCompanyName;
 
+  /// Bloc `delivery` (P4) : partenaire, détail du prix, suivi daté.
+  final DeliveryInfo? delivery;
+
+  bool get isCarrier => delivery?.isCarrier == true;
+
   CustomerOrder({
     required this.id,
     this.orderNumber,
@@ -112,6 +119,7 @@ class CustomerOrder {
     this.deliveryPersonName,
     this.deliveryPersonPhone,
     this.deliveryCompanyName,
+    this.delivery,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
@@ -133,7 +141,9 @@ class CustomerOrder {
       ratedAt: map['rated_at'],
       deliveryPersonName: map['delivery_person'] != null ? '${map['delivery_person']['name'] ?? ''}' : null,
       deliveryPersonPhone: map['delivery_person']?['phone'],
-      deliveryCompanyName: map['delivery_company']?['name'],
+      deliveryCompanyName: map['delivery_company']?['name'] ??
+          map['delivery']?['company_name'],
+      delivery: DeliveryInfo.fromMap(map['delivery']),
     );
   }
 

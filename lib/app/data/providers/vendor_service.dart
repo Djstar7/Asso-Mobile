@@ -150,6 +150,34 @@ class VendorService {
     });
   }
 
+  /// Remet une commande transporteur au transporteur (SOLEX, DHL…).
+  static Future<ApiResponse> handToCarrier(
+    int orderId, {
+    required String trackingNumber,
+    String? location,
+    String? note,
+  }) async {
+    return await ApiProvider.post('${AppConstants.vendorOrdersUrl}/$orderId/hand-to-carrier', body: {
+      'carrier_tracking_number': trackingNumber,
+      if (location != null && location.isNotEmpty) 'location': location,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+  }
+
+  /// Ajoute une étape de suivi (in_transit, customs, arrived, ready_for_pickup).
+  static Future<ApiResponse> addTrackingStep(
+    int orderId, {
+    required String step,
+    String? location,
+    String? note,
+  }) async {
+    return await ApiProvider.post('${AppConstants.vendorOrdersUrl}/$orderId/tracking', body: {
+      'step': step,
+      if (location != null && location.isNotEmpty) 'location': location,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+  }
+
   /// Get available delivery persons for a specific order's delivery company
   static Future<ApiResponse> getAvailableDeliveryPersons({int? orderId, int? companyId}) async {
     final params = <String, String>{};

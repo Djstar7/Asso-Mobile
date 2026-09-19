@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/product_variant_selector.dart';
+import '../../../data/models/delivery_info.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/order_service.dart';
@@ -46,6 +47,20 @@ class ProductController extends GetxController {
   final similarProducts = <Map<String, dynamic>>[].obs;
   final selectedPartner = Rx<Map<String, dynamic>?>(null);
 
+  /// Bloc `quote` du dernier devis (poids total, origine, destination, TVA).
+  final deliveryQuote = Rx<Map<String, dynamic>?>(null);
+
+  /// Message bloquant quand la livraison ne peut pas être chiffrée
+  /// (poids manquant côté vendeur) : la commande est alors impossible.
+  final deliveryBlockedMessage = RxnString();
+
+  /// Ville envoyée pour le devis, reprise telle quelle à la commande.
+  String _quotedCity = '';
+
+  /// Jeton du dernier chargement : une réponse plus ancienne est ignorée.
+  int _partnersRequest = 0;
+  int? _quotedQuantity;
+
   final TextEditingController addressDetailsController =
       TextEditingController();
   final TextEditingController customerPhoneController = TextEditingController();
@@ -67,6 +82,15 @@ class ProductController extends GetxController {
     customerPhoneController.addListener(
       () => customerPhone.value = customerPhoneController.text.trim(),
     );
+    // Le prix de livraison dépend du poids total (poids × quantité).
+    debounce<int>(orderQuantity, (quantity) {
+      if (currentProductId.value != 0 &&
+          hasValidLocation &&
+          quantity != _quotedQuantity) {
+        loadDeliveryPartners(currentProductId.value);
+      }
+    }, time: const Duration(milliseconds: 500));
+
     final user = StorageService.getUser();
     final rawPhone = (user?.phone ?? '').trim();
     if (rawPhone.isNotEmpty) {
@@ -174,7 +198,10 @@ class ProductController extends GetxController {
       'Choisir les options du produit',
     if (!hasValidLocation) 'Indiquer l’adresse de livraison',
     if (!hasValidPhone) 'Renseigner un numéro à contacter valide',
-    if (selectedPartner.value == null) 'Choisir un partenaire de livraison',
+    if (deliveryBlockedMessage.value != null)
+      'Livraison impossible : le vendeur doit renseigner le poids du produit'
+    else if (selectedPartner.value == null)
+      'Choisir un partenaire de livraison',
   ];
 
   Future<void> fetchCurrentLocation() async {
@@ -268,10 +295,27 @@ class ProductController extends GetxController {
     }
   }
 
+  /// Poids total du colis (kg) d'après le dernier devis.
+  double? get deliveryWeightKg {
+    final raw = deliveryQuote.value?['weight_kg'];
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw?.toString() ?? '');
+  }
+
   Future<void> loadDeliveryPartners(int productId) async {
     currentProductId.value = productId;
+    final request = ++_partnersRequest;
+    final quantity = orderQuantity.value;
+    final previousKey = selectedPartner.value == null
+        ? null
+        : DeliveryPartnerQuote(selectedPartner.value!).key;
+    _quotedQuantity = quantity;
+    _quotedCity = currentLocation.value.trim();
+
     isLoadingPartners.value = true;
     deliveryPartners.clear();
+    deliveryQuote.value = null;
+    deliveryBlockedMessage.value = null;
     selectedPartner.value = null;
     withDelivery.value = false;
     deliveryPrice.value = 0;
@@ -279,10 +323,28 @@ class ProductController extends GetxController {
     try {
       final response = await DeliveryService.getDeliveryPartnersWithPricing(
         productId: productId,
+        quantity: quantity,
         latitude: clientLatitude.value,
         longitude: clientLongitude.value,
-        city: currentLocation.value,
+        city: _quotedCity,
       );
+      if (request != _partnersRequest) return; // réponse périmée
+
+      final quote = response.data?['quote'];
+      if (quote is Map) {
+        deliveryQuote.value = Map<String, dynamic>.from(quote);
+        if (quote['reason'] == 'missing_weight') {
+          final products = (quote['missing_weight_products'] as List?)
+                  ?.map((e) => e.toString())
+                  .join(', ') ??
+              '';
+          deliveryBlockedMessage.value =
+              quote['message']?.toString() ??
+              response.data?['message']?.toString() ??
+              'Livraison impossible à chiffrer : le vendeur doit renseigner le poids${products.isNotEmpty ? ' de $products' : ' du produit'}.';
+          return;
+        }
+      }
 
       if (!response.success) {
         Get.snackbar(
@@ -305,17 +367,21 @@ class ProductController extends GetxController {
 
       deliveryPartners.assignAll(partners);
       if (partners.isNotEmpty) {
-        final first = partners.first;
-        selectPartner(first);
+        // Garder le partenaire choisi si le nouveau devis le propose encore.
+        final kept = partners.firstWhereOrNull(
+          (p) => DeliveryPartnerQuote(p).key == previousKey,
+        );
+        selectPartner(kept ?? partners.first);
       }
     } catch (_) {
+      if (request != _partnersRequest) return;
       Get.snackbar(
         'Erreur',
         'Impossible de charger les partenaires de livraison.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
-      isLoadingPartners.value = false;
+      if (request == _partnersRequest) isLoadingPartners.value = false;
     }
   }
 
@@ -362,15 +428,16 @@ class ProductController extends GetxController {
     }
 
     final productId = int.tryParse(product['id']?.toString() ?? '') ?? 0;
-    final partner = selectedPartner.value!;
-    final deliveryCompanyId = int.tryParse(
-      partner['company_id']?.toString() ?? '',
-    );
-    final deliveryZoneId = int.tryParse(partner['zone_id']?.toString() ?? '');
-    if (deliveryCompanyId == null || deliveryZoneId == null) {
+    final partner = DeliveryPartnerQuote(selectedPartner.value!);
+    final deliveryCompanyId = partner.companyId;
+    // Transporteur : route interurbaine/internationale ; sinon zone urbaine.
+    final deliveryRouteId = partner.routeId;
+    final deliveryZoneId = partner.zoneId;
+    if (deliveryCompanyId == null ||
+        (deliveryRouteId == null && deliveryZoneId == null)) {
       Get.snackbar(
         'Erreur',
-        'Le partenaire sélectionné ne contient pas de zone de livraison valide.',
+        'Le partenaire sélectionné ne contient pas de zone ou de trajet de livraison valide.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
@@ -396,6 +463,13 @@ class ProductController extends GetxController {
         ],
         deliveryCompanyId: deliveryCompanyId,
         deliveryZoneId: deliveryZoneId,
+        deliveryRouteId: deliveryRouteId,
+        deliveryCity: _quotedCity.isNotEmpty
+            ? _quotedCity
+            : currentLocation.value,
+        deliveryCountry: deliveryQuote.value?['destination'] is Map
+            ? deliveryQuote.value!['destination']['country']?.toString()
+            : null,
         walletProvider: 'kpay',
         paymentMode: paymentMode,
         kpayProvider: kpayProvider,

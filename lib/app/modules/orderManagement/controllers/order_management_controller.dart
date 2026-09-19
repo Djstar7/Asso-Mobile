@@ -7,6 +7,8 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../data/models/delivery_info.dart';
 
 class OrderManagementController extends GetxController {
   // Liste complète des commandes
@@ -92,6 +94,7 @@ class OrderManagementController extends GetxController {
       // L'API retourne 'user' (objet) pour le client, pas des champs plats
       final customer = order['customer'] as Map<String, dynamic>?
           ?? order['user'] as Map<String, dynamic>?;
+      final delivery = DeliveryInfo.fromMap(order['delivery']);
 
       return OrderModel(
         id: (order['id'] ?? '').toString(),
@@ -127,8 +130,13 @@ class OrderManagementController extends GetxController {
                   '0',
             ) ??
             0,
-        deliveryCompanyName: order['delivery_company']?['name']?.toString(),
-        deliveryAssigned: order['status'] == 'preparing',
+        deliveryCompanyName: order['delivery_company']?['name']?.toString() ??
+            delivery?.companyName,
+        // Transporteur : « preparing » ne signifie pas qu'un livreur est assigné.
+        deliveryAssigned:
+            order['status'] == 'preparing' && delivery?.isCarrier != true,
+        rawStatus: order['status']?.toString() ?? '',
+        delivery: delivery,
       );
     }).toList();
   }
@@ -265,7 +273,9 @@ class OrderManagementController extends GetxController {
           await loadOrders(); // Recharger depuis l'API
           Get.snackbar(
             'Commande validée',
-            'Fonds crédités et disponibles. Le livreur a été notifié.',
+            order.isCarrier
+                ? 'Déposez le colis à l’agence ${order.delivery?.companyName ?? 'du transporteur'} puis appuyez sur « Remettre au transporteur ».'
+                : 'Fonds crédités et disponibles. Le livreur a été notifié.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.green,
             colorText: Colors.white,
@@ -611,6 +621,238 @@ class OrderManagementController extends GetxController {
     );
   }
 
+  // ================================
+  // TRANSPORTEUR (SOLEX, DHL, FedEx…)
+  // ================================
+
+  final RxBool isSubmittingTracking = false.obs;
+
+  InputDecoration _fieldDecoration(String label, {String? hint, IconData? icon}) =>
+      InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: icon != null ? Icon(icon) : null,
+        border: const OutlineInputBorder(),
+      );
+
+  /// Remise du colis au transporteur : numéro de suivi obligatoire.
+  Future<void> handToCarrier(OrderModel order) async {
+    final orderId = int.tryParse(order.id);
+    if (orderId == null) return;
+    final numberCtrl = TextEditingController();
+    final locationCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    final error = RxnString();
+    final company = order.delivery?.companyName ?? 'transporteur';
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Remettre à $company'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Déposez le colis à l’agence $company puis saisissez le numéro de suivi figurant sur le bordereau. Le client pourra suivre son colis.',
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (order.delivery?.routeLabel != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Trajet : ${order.delivery!.routeLabel}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Obx(() => TextField(
+                    controller: numberCtrl,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: _fieldDecoration(
+                      'Numéro de suivi *',
+                      hint: 'Ex. SLX123456',
+                      icon: Icons.qr_code_2_rounded,
+                    ).copyWith(errorText: error.value),
+                  )),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locationCtrl,
+                decoration: _fieldDecoration(
+                  'Agence de dépôt (facultatif)',
+                  hint: 'Ex. Agence SOLEX Douala Akwa',
+                  icon: Icons.store_mall_directory_outlined,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                maxLines: 2,
+                decoration: _fieldDecoration('Note (facultatif)', icon: Icons.notes_rounded),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (numberCtrl.text.trim().isEmpty) {
+                error.value = 'Le numéro de suivi est obligatoire';
+                return;
+              }
+              Get.back(result: true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
+            child: const Text('Confirmer la remise', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _submitTracking(
+      () => VendorService.handToCarrier(
+        orderId,
+        trackingNumber: numberCtrl.text.trim(),
+        location: locationCtrl.text.trim(),
+        note: noteCtrl.text.trim(),
+      ),
+      successTitle: 'Colis remis au transporteur',
+      successMessage: 'Le client a reçu le numéro de suivi.',
+    );
+  }
+
+  /// Nouvelle étape de suivi d'une commande transporteur expédiée.
+  Future<void> addTrackingStep(OrderModel order) async {
+    final orderId = int.tryParse(order.id);
+    if (orderId == null) return;
+    final step = RxnString();
+    final error = RxnString();
+    final locationCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Ajouter une étape'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (order.delivery?.carrierTrackingNumber != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'N° de suivi : ${order.delivery!.carrierTrackingNumber}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              Obx(() => DropdownButtonFormField<String>(
+                    initialValue: step.value,
+                    isExpanded: true,
+                    decoration: _fieldDecoration('Étape *', icon: Icons.timeline_rounded)
+                        .copyWith(errorText: error.value),
+                    items: DeliveryInfo.vendorTrackingSteps.entries
+                        .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                        .toList(),
+                    onChanged: (value) {
+                      step.value = value;
+                      error.value = null;
+                    },
+                  )),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locationCtrl,
+                decoration: _fieldDecoration(
+                  'Lieu (facultatif)',
+                  hint: 'Ex. Agence SOLEX Yaoundé',
+                  icon: Icons.place_outlined,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                maxLines: 2,
+                decoration: _fieldDecoration('Note (facultatif)', icon: Icons.notes_rounded),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (step.value == null) {
+                error.value = 'Choisissez une étape';
+                return;
+              }
+              Get.back(result: true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
+            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || step.value == null) return;
+
+    await _submitTracking(
+      () => VendorService.addTrackingStep(
+        orderId,
+        step: step.value!,
+        location: locationCtrl.text.trim(),
+        note: noteCtrl.text.trim(),
+      ),
+      successTitle: 'Suivi mis à jour',
+      successMessage:
+          '« ${DeliveryInfo.vendorTrackingSteps[step.value]} » ajouté. Le client est informé.',
+    );
+  }
+
+  Future<void> _submitTracking(
+    Future<ApiResponse> Function() call, {
+    required String successTitle,
+    required String successMessage,
+  }) async {
+    if (isSubmittingTracking.value) return;
+    isSubmittingTracking.value = true;
+    try {
+      final response = await call();
+      if (response.success) {
+        await loadOrders();
+        Get.snackbar(
+          successTitle,
+          successMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty ? response.message : 'Action impossible',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (_) {
+      Get.snackbar(
+        'Erreur',
+        'Action impossible pour le moment',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isSubmittingTracking.value = false;
+    }
+  }
+
   /// Afficher les détails d'une commande
   void showOrderDetails(OrderModel order) {
     final context = Get.context!;
@@ -784,6 +1026,44 @@ class OrderManagementController extends GetxController {
                       'Livreur : ${order.deliveryPersonName}',
                     ),
                 ]),
+
+                if (order.delivery != null)
+                  section('Livraison et suivi', [
+                    OrderDeliveryDetails(
+                      delivery: order.delivery!,
+                      formatPrice: (v) => formatPrice(v),
+                    ),
+                    if (order.canHandToCarrier || order.canAddTrackingStep)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Get.back();
+                              order.canHandToCarrier
+                                  ? handToCarrier(order)
+                                  : addTrackingStep(order);
+                            },
+                            icon: Icon(
+                              order.canHandToCarrier
+                                  ? Icons.local_shipping_rounded
+                                  : Icons.add_location_alt_outlined,
+                              color: Colors.white,
+                            ),
+                            label: Text(
+                              order.canHandToCarrier
+                                  ? 'Remettre au transporteur'
+                                  : 'Ajouter une étape',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppThemeSystem.primaryColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ]),
 
                 if (order.notes?.isNotEmpty == true)
                   section('Note du client', [
