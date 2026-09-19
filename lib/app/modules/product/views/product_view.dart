@@ -5,6 +5,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/location_label.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/values/constants.dart';
@@ -14,6 +15,7 @@ import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
+import '../../../data/models/delivery_info.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
@@ -1723,6 +1725,8 @@ class ProductView extends GetView<ProductController> {
     controller.selectedPartner.value = null;
     controller.deliveryPrice.value = 0;
     controller.deliveryPartners.clear();
+    controller.deliveryQuote.value = null;
+    controller.deliveryBlockedMessage.value = null;
     controller.orderQuantity.value =
         1; // réinitialiser la quantité à chaque ouverture
 
@@ -1872,398 +1876,7 @@ class ProductView extends GetView<ProductController> {
                     ),
                     SizedBox(height: 16),
 
-                    Obx(() {
-                      if (controller.isLoadingPartners.value) {
-                        return Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Column(
-                              children: [
-                                CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppThemeSystem.primaryColor,
-                                  ),
-                                ),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Chargement des partenaires...',
-                                  style: context.textStyle(
-                                    FontSizeType.caption,
-                                    color: AppThemeSystem.grey600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (controller.deliveryPartners.isEmpty) {
-                        return Container(
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.getSurfaceColor(context),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppThemeSystem.getBorderColor(context),
-                            ),
-                          ),
-                          // Le nom de ville vient du serveur : sans retour à
-                          // la ligne ni centrage, la phrase était coupée net.
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                size: 18,
-                                color: context.ds.textTertiary,
-                              ),
-                              SizedBox(width: AppDesign.space2),
-                              Expanded(
-                                child: Text(
-                                  'Aucun partenaire de livraison ne dessert encore ${controller.currentLocation.value}.',
-                                  style: context.textStyle(
-                                    FontSizeType.caption,
-                                    color: context.ds.textSecondary,
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // Carousel horizontal de partenaires
-                      return SizedBox(
-                        height:
-                            AppThemeSystem.getDeviceType(context) ==
-                                DeviceType.mobile
-                            ? 230
-                            : 250,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: controller.deliveryPartners.length,
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          itemBuilder: (context, index) {
-                            final partner = controller.deliveryPartners[index];
-                            final price =
-                                (partner['delivery_price'] as num?)
-                                    ?.toDouble() ??
-                                0;
-                            final distance =
-                                partner['distance_km']?.toString() ?? '';
-                            final logo = partner['company_logo'];
-                            final zoneName =
-                                partner['zone_name']?.toString() ?? '';
-
-                            // Dimensions responsives
-                            final deviceType = AppThemeSystem.getDeviceType(
-                              context,
-                            );
-                            final cardWidth = deviceType == DeviceType.mobile
-                                ? 160.0
-                                : 180.0;
-                            final logoSize = deviceType == DeviceType.mobile
-                                ? 60.0
-                                : 70.0;
-                            final cardPadding =
-                                AppThemeSystem.getElementSpacing(context);
-                            final borderRadius = AppThemeSystem.getBorderRadius(
-                              context,
-                              BorderRadiusType.medium,
-                            );
-
-                            // Wrapper Obx pour réagir aux changements de sélection
-                            return Obx(() {
-                              final isSelected =
-                                  controller
-                                          .selectedPartner
-                                          .value?['company_id'] ==
-                                      partner['company_id'] &&
-                                  controller
-                                          .selectedPartner
-                                          .value?['zone_id'] ==
-                                      partner['zone_id'];
-
-                              return AnimatedContainer(
-                                duration: Duration(milliseconds: 250),
-                                curve: Curves.easeInOut,
-                                width: cardWidth,
-                                margin: EdgeInsets.only(
-                                  right: cardPadding,
-                                  bottom: 4,
-                                  top: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppThemeSystem.primaryColor.withValues(
-                                          alpha: 0.12,
-                                        )
-                                      : AppThemeSystem.getSurfaceColor(context),
-                                  borderRadius: BorderRadius.circular(
-                                    borderRadius,
-                                  ),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppThemeSystem.primaryColor
-                                        : AppThemeSystem.getBorderColor(
-                                            context,
-                                          ),
-                                    width: isSelected ? 2.5 : 1,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: AppThemeSystem.primaryColor
-                                                .withValues(alpha: 0.2),
-                                            blurRadius: 12,
-                                            offset: Offset(0, 4),
-                                          ),
-                                        ]
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.04,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      controller.selectPartner(partner);
-                                      controller.withDelivery.value = true;
-                                    },
-                                    borderRadius: BorderRadius.circular(
-                                      borderRadius,
-                                    ),
-                                    splashColor: AppThemeSystem.primaryColor
-                                        .withValues(alpha: 0.2),
-                                    highlightColor: AppThemeSystem.primaryColor
-                                        .withValues(alpha: 0.1),
-                                    child: Padding(
-                                      padding: EdgeInsets.all(cardPadding),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // Logo dans un cercle
-                                          Stack(
-                                            alignment: Alignment.center,
-                                            children: [
-                                              Container(
-                                                width: logoSize,
-                                                height: logoSize,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: isSelected
-                                                      ? AppThemeSystem
-                                                            .primaryColor
-                                                            .withValues(
-                                                              alpha: 0.15,
-                                                            )
-                                                      : AppThemeSystem.grey200,
-                                                  border: Border.all(
-                                                    color: isSelected
-                                                        ? AppThemeSystem
-                                                              .primaryColor
-                                                              .withValues(
-                                                                alpha: 0.3,
-                                                              )
-                                                        : Colors.transparent,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                child: ClipOval(
-                                                  child:
-                                                      logo != null &&
-                                                          logo.isNotEmpty
-                                                      ? Image.network(
-                                                          logo,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder:
-                                                              (
-                                                                context,
-                                                                error,
-                                                                stackTrace,
-                                                              ) {
-                                                                return Icon(
-                                                                  Icons
-                                                                      .local_shipping_rounded,
-                                                                  size:
-                                                                      logoSize *
-                                                                      0.47,
-                                                                  color:
-                                                                      isSelected
-                                                                      ? AppThemeSystem
-                                                                            .primaryColor
-                                                                      : AppThemeSystem
-                                                                            .grey600,
-                                                                );
-                                                              },
-                                                        )
-                                                      : Icon(
-                                                          Icons
-                                                              .local_shipping_rounded,
-                                                          size: logoSize * 0.47,
-                                                          color: isSelected
-                                                              ? AppThemeSystem
-                                                                    .primaryColor
-                                                              : AppThemeSystem
-                                                                    .grey600,
-                                                        ),
-                                                ),
-                                              ),
-                                              if (isSelected)
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: Container(
-                                                    padding: EdgeInsets.all(2),
-                                                    decoration: BoxDecoration(
-                                                      color: AppThemeSystem
-                                                          .primaryColor,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.check,
-                                                      size: 12,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-
-                                          SizedBox(height: 6),
-
-                                          // Nom du partenaire et zone
-                                          Expanded(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 4,
-                                              ),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    partner['company_name'] ??
-                                                        'Partenaire',
-                                                    style: context.textStyle(
-                                                      FontSizeType.body2,
-                                                      fontWeight: isSelected
-                                                          ? FontWeight.bold
-                                                          : FontWeight.w600,
-                                                      color: isSelected
-                                                          ? AppThemeSystem
-                                                                .primaryColor
-                                                          : null,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  if (zoneName.isNotEmpty) ...[
-                                                    SizedBox(height: 3),
-                                                    Flexible(
-                                                      child: Text(
-                                                        zoneName,
-                                                        style: context.textStyle(
-                                                          FontSizeType.caption,
-                                                          color: isSelected
-                                                              ? AppThemeSystem
-                                                                    .primaryColor
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.8,
-                                                                    )
-                                                              : AppThemeSystem
-                                                                    .grey600,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-
-                                          SizedBox(height: 6),
-
-                                          // Prix
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: cardPadding * 0.83,
-                                              vertical: cardPadding * 0.42,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? AppThemeSystem.primaryColor
-                                                  : AppThemeSystem.grey100,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              controller.formatPrice(price),
-                                              style: context.textStyle(
-                                                FontSizeType.body2,
-                                                fontWeight: FontWeight.bold,
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppThemeSystem.grey800,
-                                              ),
-                                            ),
-                                          ),
-
-                                          // Distance (si disponible)
-                                          if (distance.isNotEmpty) ...[
-                                            SizedBox(height: 4),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.location_on,
-                                                  size: 11,
-                                                  color: AppThemeSystem.grey600,
-                                                ),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  '$distance km',
-                                                  style: context.textStyle(
-                                                    FontSizeType.caption,
-                                                    color:
-                                                        AppThemeSystem.grey600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            });
-                          },
-                        ),
-                      );
-                    }),
+                    _buildDeliveryPartnersSection(context),
 
                     SizedBox(height: 20),
 
@@ -2416,6 +2029,14 @@ class ProductView extends GetView<ProductController> {
                                   ),
                                 ],
                               ),
+                              if (controller.deliveryWeightKg != null)
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Poids total : ${formatKg(controller.deliveryWeightKg)}',
+                                    style: context.caption,
+                                  ),
+                                ),
                             ],
                             Divider(height: 24),
                             Row(
@@ -2568,6 +2189,369 @@ class ProductView extends GetView<ProductController> {
       // La variante a pu changer dans la feuille : resynchroniser la fiche.
       controller.variantSelectorEpoch.value++;
     });
+  }
+
+  /// Partenaires de livraison chiffrés au poids réel (poids × quantité), avec
+  /// catégorie, mode, trajet, délai, prix et accès au détail complet.
+  /// Quartier de livraison pour les grilles zone à zone (ex. SOLEX Douala) :
+  /// le prix dépend de la zone du quartier de l'acheteur. Null hors grille.
+  Widget? _buildQuarterPicker(BuildContext context) {
+    final grid = controller.deliveryQuote.value?['city_grid'];
+    // La position choisie sur la carte suffit : les partenaires qui couvrent la zone sont
+    // proposés directement. Rien à afficher, sauf si la position n'est dans aucune zone.
+    if (grid is! Map || grid['quarter_required'] != true) return null;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppThemeSystem.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppThemeSystem.primaryColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Aucun livreur ne couvre encore cette position à ${grid['city']}',
+            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Placez le repère au plus près de chez vous, dans une zone de livraison colorée.',
+            style: context.caption,
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showChangeAddressDialog(context),
+              icon: const Icon(Icons.map_rounded, color: Colors.white),
+              label: const Text('Voir les zones sur la carte', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliveryPartnersSection(BuildContext context) {
+    return Obx(() {
+      if (controller.isLoadingPartners.value) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppThemeSystem.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Calcul des tarifs de livraison...',
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    color: AppThemeSystem.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final blocked = controller.deliveryBlockedMessage.value;
+      if (blocked != null) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DeliveryNotice(
+              blocked,
+              icon: Icons.scale_outlined,
+              color: AppThemeSystem.errorColor,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'La commande avec livraison n’est pas possible tant que le vendeur n’a pas indiqué le poids réel du produit. Vous pouvez lui écrire pour le lui demander.',
+              style: context.caption,
+            ),
+          ],
+        );
+      }
+
+      final quarterPicker = _buildQuarterPicker(context);
+      final quarterRequired =
+          controller.deliveryQuote.value?['city_grid'] is Map &&
+          controller.deliveryQuote.value!['city_grid']['quarter_required'] == true;
+
+      if (controller.deliveryPartners.isEmpty) {
+        final message = controller.deliveryQuote.value?['message']?.toString();
+        if (quarterPicker != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              quarterPicker,
+              if (!quarterRequired) ...[
+                const SizedBox(height: 12),
+                Text(message ?? 'Aucun partenaire de livraison disponible.', style: context.caption),
+              ],
+            ],
+          );
+        }
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppThemeSystem.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
+          ),
+          // Le nom de ville vient du serveur : sans retour à la ligne ni
+          // centrage, la phrase était coupée net.
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: context.ds.textTertiary,
+              ),
+              SizedBox(width: AppDesign.space2),
+              Expanded(
+                child: Text(
+                  message?.isNotEmpty == true
+                      ? message!
+                      : 'Aucun partenaire de livraison ne dessert encore ${controller.currentLocation.value}.',
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    color: context.ds.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final weight = controller.deliveryWeightKg;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ?quarterPicker,
+          if (weight != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.scale_outlined, size: 16, color: AppThemeSystem.grey600),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Poids total du colis : ${formatKg(weight)} (${controller.orderQuantity.value} article${controller.orderQuantity.value > 1 ? 's' : ''})',
+                      style: context.caption,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          for (final raw in controller.deliveryPartners)
+            _buildPartnerCard(context, DeliveryPartnerQuote(raw)),
+        ],
+      );
+    });
+  }
+
+  Widget _buildPartnerCard(BuildContext context, DeliveryPartnerQuote partner) {
+    final selectedRaw = controller.selectedPartner.value;
+    final isSelected =
+        selectedRaw != null && DeliveryPartnerQuote(selectedRaw).key == partner.key;
+    final logo = partner.companyLogo;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppThemeSystem.primaryColor.withValues(alpha: 0.08)
+            : AppThemeSystem.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSelected
+              ? AppThemeSystem.primaryColor
+              : AppThemeSystem.getBorderColor(context),
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => controller.selectPartner(partner.raw),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppThemeSystem.grey200,
+                    ),
+                    child: ClipOval(
+                      child: logo != null
+                          ? Image.network(
+                              logo,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Icon(
+                                Icons.local_shipping_rounded,
+                                color: AppThemeSystem.grey600,
+                              ),
+                            )
+                          : Icon(
+                              Icons.local_shipping_rounded,
+                              color: AppThemeSystem.grey600,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          partner.companyName,
+                          style: context.textStyle(
+                            FontSizeType.body1,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? AppThemeSystem.primaryColor : null,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            DeliveryChip(
+                              partner.categoryLabel,
+                              color: deliveryCategoryColor(partner.serviceType),
+                            ),
+                            if (partner.vehicleLabel != null)
+                              DeliveryChip(
+                                partner.vehicleLabel!,
+                                color: AppThemeSystem.primaryColor,
+                                icon: Icons.local_shipping_outlined,
+                              ),
+                            DeliveryChip(
+                              partner.isAgencyToAgency
+                                  ? 'Agence → agence'
+                                  : 'À domicile',
+                              color: AppThemeSystem.grey700,
+                              icon: partner.isAgencyToAgency
+                                  ? Icons.store_mall_directory_outlined
+                                  : Icons.home_outlined,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        controller.formatPrice(partner.price),
+                        style: context.textStyle(
+                          FontSizeType.body1,
+                          fontWeight: FontWeight.bold,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 18,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (partner.routeOrZone != null)
+                _partnerInfoRow(context, Icons.alt_route_rounded, partner.routeOrZone!),
+              if (partner.leadTime != null)
+                _partnerInfoRow(
+                  context,
+                  Icons.schedule_rounded,
+                  'Livraison estimée : ${partner.leadTime}',
+                ),
+              if (partner.distanceKm != null)
+                _partnerInfoRow(
+                  context,
+                  Icons.location_on_outlined,
+                  '${partner.distanceKm!.toStringAsFixed(1)} km',
+                ),
+              _partnerInfoRow(
+                context,
+                partner.isAgencyToAgency
+                    ? Icons.store_mall_directory_outlined
+                    : Icons.home_outlined,
+                partner.serviceModeLabel,
+              ),
+              if (partner.pickupNotice != null) ...[
+                const SizedBox(height: 6),
+                DeliveryNotice(
+                  partner.pickupNotice!,
+                  icon: Icons.store_mall_directory_outlined,
+                ),
+              ],
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => showDeliveryQuoteDetails(
+                    context,
+                    partner,
+                    formatPrice: controller.formatPrice,
+                    weightKg: controller.deliveryWeightKg,
+                    onChoose: () => controller.selectPartner(partner.raw),
+                  ),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: const Text('Détails'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppThemeSystem.primaryColor,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _partnerInfoRow(BuildContext context, IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: AppThemeSystem.grey600),
+          const SizedBox(width: 6),
+          Expanded(child: Text(text, style: context.caption)),
+        ],
+      ),
+    );
   }
 
   /// Choix des options (taille, pointure, couleur…) directement dans la feuille
@@ -2792,6 +2776,7 @@ class ProductView extends GetView<ProductController> {
     final unitPrice = controller.unitPriceXaf(product);
     final quantity = controller.orderQuantity.value;
     final partner = controller.selectedPartner.value;
+    final quote = partner == null ? null : DeliveryPartnerQuote(partner);
     final variant = controller.selectedVariant.value;
     final details = controller.addressDetailsController.text.trim();
     final total = controller.calculateTotal(unitPrice);
@@ -2935,17 +2920,24 @@ class ProductView extends GetView<ProductController> {
                         line('Adresse', controller.currentLocation.value),
                         if (details.isNotEmpty) line('Complément', details),
                         line('Numéro à contacter', controller.customerPhone.value),
-                        if (partner != null)
+                        if (quote != null) ...[
                           line(
                             'Livreur',
-                            [
-                              partner['company_name']?.toString() ??
-                                  'Partenaire',
-                              if ((partner['zone_name']?.toString() ?? '')
-                                  .isNotEmpty)
-                                partner['zone_name'].toString(),
-                            ].join(' · '),
+                            quote.vehicleLabel != null
+                                ? '${quote.companyName} · ${quote.vehicleLabel}'
+                                : quote.companyName,
                           ),
+                          line('Mode', quote.deliveryOptionLabel),
+                          if (quote.leadTime != null)
+                            line('Délai', quote.leadTime!),
+                          if (quote.pickupNotice != null) ...[
+                            const SizedBox(height: 6),
+                            DeliveryNotice(
+                              quote.pickupNotice!,
+                              icon: Icons.store_mall_directory_outlined,
+                            ),
+                          ],
+                        ],
                       ]),
                       section(Icons.receipt_long_rounded, 'Montant', [
                         line(
@@ -3257,6 +3249,9 @@ class ProductView extends GetView<ProductController> {
     final lat = (result['latitude'] as num?)?.toDouble();
     final lon = (result['longitude'] as num?)?.toDouble();
     if (lat == null || lon == null) return;
+
+    // La position choisie sur la carte décide de la zone de livraison.
+    controller.deliveryQuarter.value = null;
 
     controller.isLoadingLocation.value = true;
     try {

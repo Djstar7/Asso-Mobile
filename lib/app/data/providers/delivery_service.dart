@@ -25,20 +25,40 @@ class DeliveryService {
   }
 
   /// Get delivery partners with calculated pricing for a product
+  /// Le prix dépend du poids réel : poids unitaire × [quantity].
   static Future<ApiResponse> getDeliveryPartnersWithPricing({
     required int productId,
+    int quantity = 1,
     double? latitude,
     double? longitude,
     String? city,
+    String? country,
+    String? quarter,
   }) async {
     final params = <String, dynamic>{
       'product_id': productId,
+      'quantity': quantity < 1 ? 1 : quantity,
     };
     if (latitude != null) params['latitude'] = latitude;
     if (longitude != null) params['longitude'] = longitude;
     if (city != null && city.isNotEmpty) params['city'] = city;
+    if (country != null && country.isNotEmpty) params['country'] = country;
+    // Quartier (grille zone à zone, ex. SOLEX Douala).
+    if (quarter != null && quarter.isNotEmpty) params['quarter'] = quarter;
 
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
+  }
+
+  /// Couverture de livraison autour d'un point : quartiers et zones desservis,
+  /// partenaires qui livrent à domicile ici, agences de la ville (interurbain).
+  static Future<ApiResponse> getCoverage({
+    required double latitude,
+    required double longitude,
+  }) async {
+    return await ApiProvider.get('/v1/delivery/coverage', queryParams: {
+      'latitude': latitude,
+      'longitude': longitude,
+    });
   }
 
   /// Check if delivery is available at a location

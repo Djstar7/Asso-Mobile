@@ -9,6 +9,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../../data/services/fcm_service.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../core/utils/string_utils.dart';
+import '../../../data/models/delivery_info.dart';
 
 class TrackingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
@@ -241,10 +242,22 @@ class TrackingController extends GetxController {
       });
     }
 
+    // Suivi daté (P4) : remplace les étapes calculées quand il est fourni.
+    final delivery = DeliveryInfo.fromMap(order['delivery']);
+
     // Localisation courante
     String currentLocation;
     if (status == 'delivered') {
       currentLocation = 'Livré';
+    } else if (delivery != null &&
+        delivery.isCarrier &&
+        delivery.trackingStatusLabel != null &&
+        status != 'cancelled') {
+      final last = delivery.timeline.isNotEmpty ? delivery.timeline.last : null;
+      currentLocation = [
+        delivery.trackingStatusLabel!,
+        if (last?.location != null) last!.location!,
+      ].join(' — ');
     } else if (status == 'shipped') {
       currentLocation = 'En livraison${deliveryPerson != null ? ' par ${deliveryPerson['name']}' : ''}';
     } else if (status == 'confirmed') {
@@ -284,7 +297,60 @@ class TrackingController extends GetxController {
       'cancelReason': order['cancel_reason'],
       'deliveredDate': deliveredAt != null ? fmtDate.format(deliveredAt) : null,
       'rawStatus': status,
+      'delivery': delivery,
+      'deliveryFee': double.tryParse(order['delivery_fee']?.toString() ?? ''),
     };
+  }
+
+  /// Commande transporteur : l'acheteur confirme lui-même la réception.
+  Future<bool> confirmReception(Map<String, dynamic> shipment) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Colis reçu ?'),
+        content: const Text(
+          'Confirmez uniquement si vous avez bien récupéré votre colis. '
+          'Le vendeur sera alors payé et la commande sera marquée comme livrée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Pas encore'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text(
+              'Oui, j’ai reçu mon colis',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return false;
+
+    final orderId = int.tryParse(shipment['orderId']?.toString() ?? '');
+    if (orderId == null) return false;
+    final response = await OrderService.confirmReception(orderId);
+    if (response.success) {
+      Get.snackbar(
+        'Merci !',
+        'Réception confirmée.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      await loadOrders();
+      return true;
+    }
+    Get.snackbar(
+      'Erreur',
+      response.message.isNotEmpty
+          ? response.message
+          : 'Impossible de confirmer la réception',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+    return false;
   }
 
   List<Map<String, dynamic>> get filteredShipments {

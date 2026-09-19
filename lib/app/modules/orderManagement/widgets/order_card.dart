@@ -60,6 +60,23 @@ class OrderCard extends StatelessWidget {
               ],
             ),
 
+            if (order.isCarrier) ...[
+              const SizedBox(height: 8),
+              _buildHint(
+                context,
+                icon: Icons.local_shipping_rounded,
+                color: AppThemeSystem.infoColor,
+                text: [
+                  'Transporteur ${order.delivery?.companyName ?? ''}'.trim(),
+                  if (order.delivery?.routeLabel != null) order.delivery!.routeLabel!,
+                  if (order.delivery?.carrierTrackingNumber != null)
+                    'Suivi ${order.delivery!.carrierTrackingNumber}'
+                  else if (order.delivery?.trackingStatusLabel != null)
+                    order.delivery!.trackingStatusLabel!,
+                ].join(' · '),
+              ),
+            ],
+
             if (!order.isPaid || order.deliveryAssigned) ...[
               const SizedBox(height: 8),
               _buildHint(
@@ -408,7 +425,42 @@ class OrderCard extends StatelessWidget {
           ),
         ],
       );
-    } else if (order.status == OrderStatus.validated) {
+    } else if (order.canHandToCarrier || order.canAddTrackingStep) {
+      // Commande transporteur : pas de livreur, remise en agence puis suivi.
+      final controller = Get.find<OrderManagementController>();
+      return Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: _buildCompactButton(
+              context,
+              icon: order.canHandToCarrier
+                  ? Icons.local_shipping_rounded
+                  : Icons.add_location_alt_outlined,
+              label: order.canHandToCarrier
+                  ? 'Remettre au transporteur'
+                  : 'Ajouter une étape',
+              color: AppThemeSystem.primaryColor,
+              onPressed: () => order.canHandToCarrier
+                  ? controller.handToCarrier(order)
+                  : controller.addTrackingStep(order),
+              isTablet: isTablet,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildCompactButton(
+              context,
+              icon: Icons.chat_bubble_outline,
+              label: 'Chat',
+              color: AppThemeSystem.infoColor,
+              onPressed: onChat,
+              isTablet: isTablet,
+            ),
+          ),
+        ],
+      );
+    } else if (order.status == OrderStatus.validated && !order.isCarrier) {
       final controller = Get.find<OrderManagementController>();
       return Row(
         children: [

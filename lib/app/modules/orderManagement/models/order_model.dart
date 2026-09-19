@@ -1,3 +1,5 @@
+import '../../../data/models/delivery_info.dart';
+
 /// Modèle de données pour une commande
 class OrderModel {
   final String id;
@@ -33,6 +35,22 @@ class OrderModel {
   /// Livreur déjà assigné (statut serveur « preparing »).
   final bool deliveryAssigned;
 
+  /// Statut brut du serveur (pending, confirmed, preparing, shipped…).
+  final String rawStatus;
+
+  /// Bloc `delivery` (P4) : mode, transporteur, suivi daté, détail du prix.
+  final DeliveryInfo? delivery;
+
+  /// Commande expédiée par un transporteur (SOLEX, DHL…) et non par un livreur.
+  bool get isCarrier => delivery?.isCarrier == true;
+
+  /// Le vendeur peut remettre le colis au transporteur.
+  bool get canHandToCarrier =>
+      isCarrier && (rawStatus == 'confirmed' || rawStatus == 'preparing');
+
+  /// Le vendeur peut ajouter une étape de suivi transporteur.
+  bool get canAddTrackingStep => isCarrier && rawStatus == 'shipped';
+
   String get displayNumber => orderNumber.isNotEmpty ? orderNumber : '#$id';
   bool get isPaid => paymentStatus == 'paid';
 
@@ -61,6 +79,8 @@ class OrderModel {
     this.vendorAmount = 0,
     this.deliveryCompanyName,
     this.deliveryAssigned = false,
+    this.rawStatus = '',
+    this.delivery,
   });
 
   /// Nombre total d'articles
@@ -166,6 +186,8 @@ class OrderModel {
       vendorAmount: vendorAmount,
       deliveryCompanyName: deliveryCompanyName,
       deliveryAssigned: deliveryAssigned,
+      rawStatus: rawStatus,
+      delivery: delivery,
     );
   }
 }

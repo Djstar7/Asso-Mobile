@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:dotted_border/dotted_border.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -1523,71 +1524,51 @@ class AddProductView extends GetView<AddProductController> {
     );
   }
 
-  /// Section Poids du produit
+  /// Section Poids du produit : poids réel en kg, obligatoire pour un article.
   Widget _buildWeightSection(BuildContext context) {
     return Obx(() {
-      final selectedWeight = controller.selectedWeightType.value;
-      final weightLabel = selectedWeight != null
-          ? (selectedWeight == 'custom'
-                ? controller.customWeightValue.value.isNotEmpty
-                      ? '${controller.customWeightValue.value} kg'
-                      : 'Saisir le poids personnalisé'
-                : '$selectedWeight (${controller.weightTypes[selectedWeight]})')
-          : null;
+      controller.customWeightValue.value; // réagit à la saisie
+      final isArticle = controller.articleType.value == 'article';
+      final hasText = controller.weightKgController.text.trim().isNotEmpty;
+      final error = hasText ? controller.weightError : null;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Poids du produit *',
+            isArticle ? 'Poids du produit (kg) *' : 'Poids du produit (kg)',
             style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
-          GestureDetector(
-            onTap: () => _showWeightBottomSheet(context),
-            child: Container(
-              padding: EdgeInsets.all(context.horizontalPadding),
-              decoration: BoxDecoration(
-                color: selectedWeight != null
-                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                    : context.surfaceColor,
+          TextField(
+            controller: controller.weightKgController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+            ],
+            decoration: InputDecoration(
+              hintText: 'Ex: 2,5',
+              helperText: 'Poids réel du colis en kg — utilisé pour calculer la livraison',
+              helperMaxLines: 2,
+              errorText: error,
+              filled: true,
+              fillColor: context.inputFieldColor,
+              prefixIcon: const Icon(Icons.scale_outlined),
+              suffixText: 'kg',
+              border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
-                border: Border.all(
-                  color: selectedWeight != null
-                      ? AppThemeSystem.primaryColor
-                      : context.borderColor,
-                  width: selectedWeight != null ? 2 : 1,
-                ),
+                borderSide: BorderSide(color: context.borderColor),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.scale_outlined,
-                    color: selectedWeight != null
-                        ? AppThemeSystem.primaryColor
-                        : context.secondaryTextColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      weightLabel ?? 'Sélectionnez le poids',
-                      style: context.body1.copyWith(
-                        color: selectedWeight != null
-                            ? AppThemeSystem.primaryColor
-                            : context.secondaryTextColor,
-                        fontWeight: selectedWeight != null
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: selectedWeight != null
-                        ? AppThemeSystem.primaryColor
-                        : context.secondaryTextColor,
-                  ),
-                ],
+              enabledBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: BorderSide(color: context.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderSide: const BorderSide(
+                  color: AppThemeSystem.primaryColor,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -1743,192 +1724,6 @@ class AddProductView extends GetView<AddProductController> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// Bottom sheet pour sélectionner le poids
-  void _showWeightBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: context.backgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: EdgeInsets.all(context.horizontalPadding),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(color: context.borderColor),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Handle
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.borderColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    SizedBox(height: context.elementSpacing),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Sélectionner le poids',
-                            style: context.h5.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Liste des poids avec padding bottom pour la barre de navigation
-              Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.only(
-                    left: context.horizontalPadding,
-                    right: context.horizontalPadding,
-                    top: context.horizontalPadding,
-                    bottom: context.bottomSheetPadding,
-                  ),
-                  itemCount: controller.weightTypes.length,
-                  separatorBuilder: (context, index) =>
-                      Divider(height: 1, color: context.borderColor),
-                  itemBuilder: (context, index) {
-                    final entry = controller.weightTypes.entries.elementAt(
-                      index,
-                    );
-
-                    return Obx(() {
-                      final isSelected =
-                          controller.selectedWeightType.value == entry.key;
-
-                      return ListTile(
-                        leading: Icon(
-                          Icons.scale_outlined,
-                          color: isSelected
-                              ? AppThemeSystem.primaryColor
-                              : context.secondaryTextColor,
-                        ),
-                        title: Text(
-                          entry.key,
-                          style: context.body1.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? AppThemeSystem.primaryColor
-                                : context.primaryTextColor,
-                          ),
-                        ),
-                        subtitle: Text(
-                          entry.value,
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppThemeSystem.successColor,
-                              )
-                            : null,
-                        onTap: () {
-                          controller.selectedWeightType.value = entry.key;
-
-                          if (entry.key == 'custom') {
-                            // Pour le poids personnalisé, garder le bottom sheet ouvert
-                            // et afficher un dialogue pour saisir le poids
-                            Navigator.pop(context);
-                            _showCustomWeightDialog(context);
-                          } else {
-                            // Pour les autres, fermer le bottom sheet
-                            Navigator.pop(context);
-                          }
-                        },
-                      );
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Dialogue pour saisir un poids personnalisé
-  void _showCustomWeightDialog(BuildContext context) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Poids personnalisé'),
-        content: TextField(
-          controller: controller.weightKgController,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'Poids en KG',
-            hintText: 'Ex: 25.5',
-            suffixText: 'KG',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.fitness_center),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              controller.selectedWeightType.value = null;
-              controller.weightKgController.clear();
-              Get.back();
-            },
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.weightKgController.text.trim().isEmpty) {
-                Get.snackbar(
-                  'Erreur',
-                  'Veuillez entrer un poids',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-                return;
-              }
-              Get.back();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppThemeSystem.primaryColor,
-            ),
-            child: const Text(
-              'Confirmer',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
       ),
     );
   }

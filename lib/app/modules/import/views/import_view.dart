@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/import_service.dart';
@@ -47,6 +48,47 @@ class _ImportViewState extends State<ImportView> {
   List<WholesaleProduct> _products = [];
   List<ShippingOption> _shipping = [];
 
+  // Recherche dans les produits importés : pays sélectionné + nombre de résultats par pays.
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  String _query = '';
+  Map<String, int> _counts = {};
+  int _loadRequest = 0;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      final query = value.trim();
+      if (query == _query) return;
+      setState(() => _query = query);
+      _load();
+    });
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    if (_query.isEmpty) return;
+    setState(() {
+      _query = '';
+      _counts = {};
+    });
+    _load();
+  }
+
+  void _selectCountry(String code) {
+    if (code == _selected) return;
+    setState(() => _selected = code);
+    _load();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,17 +111,30 @@ class _ImportViewState extends State<ImportView> {
   }
 
   Future<void> _load() async {
+    final request = ++_loadRequest;
     setState(() => _loading = true);
+    List<WholesaleProduct> products = [];
+    List<ShippingOption> shipping = [];
+    Map<String, int> counts = {};
     try {
-      // Catalogue GROS du pays : produits à paliers (cota) + options d'expédition.
-      final catalog = await ImportService.getCatalog(_selected);
-      _products = catalog?.products ?? [];
-      _shipping = catalog?.shippingOptions ?? [];
-    } catch (_) {
-      _products = [];
-      _shipping = [];
-    }
-    if (mounted) setState(() => _loading = false);
+      // Catalogue GROS du pays : produits à paliers (cota) + options d'expédition,
+      // filtré par la recherche ; en parallèle, le nombre de résultats de chaque pays.
+      final results = await Future.wait([
+        ImportService.getCatalog(_selected, query: _query),
+        if (_query.isNotEmpty) ImportService.searchCounts(_query),
+      ]);
+      final catalog = results[0] as WholesaleCatalog?;
+      products = catalog?.products ?? [];
+      shipping = catalog?.shippingOptions ?? [];
+      if (results.length > 1) counts = results[1] as Map<String, int>;
+    } catch (_) {}
+    if (!mounted || request != _loadRequest) return;
+    setState(() {
+      _products = products;
+      _shipping = shipping;
+      _counts = counts;
+      _loading = false;
+    });
   }
 
   _ImportCountry get _current =>
@@ -99,6 +154,7 @@ class _ImportViewState extends State<ImportView> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: _buildHeader(country)),
+              SliverToBoxAdapter(child: _buildSearchField(country)),
               SliverToBoxAdapter(child: _buildCountrySelector()),
               SliverToBoxAdapter(child: _buildSectionLabel(country)),
               if (_loading)
@@ -218,6 +274,45 @@ class _ImportViewState extends State<ImportView> {
     );
   }
 
+  // ─────────────────────────── Recherche ───────────────────────────
+  Widget _buildSearchField(_ImportCountry c) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        onSubmitted: (v) {
+          _searchDebounce?.cancel();
+          setState(() => _query = v.trim());
+          _load();
+        },
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Rechercher en Chine, Turquie, Dubaï…',
+          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8A97A3)),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: _clearSearch),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE6E9EE)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE6E9EE)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppDesign.accent, width: 1.5),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─────────────────────────── Sélecteur de pays ───────────────────────────
   Widget _buildCountrySelector() {
     return SizedBox(
@@ -231,12 +326,7 @@ class _ImportViewState extends State<ImportView> {
           final c = _countries[i];
           final selected = c.code == _selected;
           return GestureDetector(
-            onTap: () {
-              if (c.code != _selected) {
-                setState(() => _selected = c.code);
-                _load();
-              }
-            },
+            onTap: () => _selectCountry(c.code),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
@@ -264,6 +354,27 @@ class _ImportViewState extends State<ImportView> {
                             ? AppDesign.accentText
                             : context.ds.textSecondary,
                       )),
+                  // Recherche en cours : nombre de résultats dans ce pays.
+                  if (_query.isNotEmpty) ...[
+                    SizedBox(width: AppDesign.space2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppDesign.accentText.withValues(alpha: 0.18)
+                            : context.ds.textTertiary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${_counts[c.code] ?? 0}',
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            fontWeight: FontWeight.w600,
+                            color: selected
+                                ? AppDesign.accentText
+                                : context.ds.textSecondary,
+                          )),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -279,7 +390,7 @@ class _ImportViewState extends State<ImportView> {
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
       child: Row(
         children: [
-          Text('Sélection ${c.name}',
+          Text(_query.isEmpty ? 'Sélection ${c.name}' : 'Résultats en ${c.name}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppDesign.neutral900)),
           const Spacer(),
           Text('${_products.length} article${_products.length > 1 ? 's' : ''}',
@@ -346,6 +457,7 @@ class _ImportViewState extends State<ImportView> {
 
   // ─────────────────────────── État vide ───────────────────────────
   Widget _buildEmpty(_ImportCountry c) {
+    if (_query.isNotEmpty) return _buildNoResult(c);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
       child: Column(
@@ -407,6 +519,50 @@ class _ImportViewState extends State<ImportView> {
       ),
     );
   }
+
+  /// Aucun résultat dans ce pays : proposer les pays qui en ont.
+  Widget _buildNoResult(_ImportCountry c) {
+    final others = _countries.where((o) => o.code != c.code && (_counts[o.code] ?? 0) > 0).toList();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 56, color: AppDesign.neutral400),
+          const SizedBox(height: 14),
+          Text('Aucun résultat pour « $_query » en ${c.name}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppDesign.neutral900)),
+          const SizedBox(height: 6),
+          Text(
+            others.isEmpty ? 'Essayez un autre mot, ou un nom plus court.' : 'Disponible ailleurs :',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13.5, color: AppDesign.neutral500, height: 1.4),
+          ),
+          if (others.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final o in others)
+                  ActionChip(
+                    avatar: Text(o.flag),
+                    label: Text('${o.name} · ${_counts[o.code]}'),
+                    onPressed: () => _selectCountry(o.code),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          TextButton(onPressed: _clearSearch, child: const Text('Effacer la recherche')),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────── Carte produit ───────────────────────────
   Widget _buildProductCard(WholesaleProduct p, _ImportCountry c) {
     final entry = p.entryTier;
     final image = p.image;
