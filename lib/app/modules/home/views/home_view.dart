@@ -979,7 +979,7 @@ class HomeItemView extends GetView<HomeController> {
 
             // DIASPO EXCHANGE Promo Card
             SliverToBoxAdapter(
-              child: _buildDiaspoPromoCard(context),
+              child: _buildQuickAccess(context),
             ),
 
             // Catégories horizontales
@@ -1413,6 +1413,72 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
+  /// Accès rapides, sous la bannière.
+  ///
+  /// La carte « Diaspo Exchange » occupait seule une ligne entière pour un
+  /// service parmi d'autres. Quatre raccourcis tiennent dans la même hauteur
+  /// et donnent une vue d'ensemble de ce que propose l'application.
+  Widget _buildQuickAccess(BuildContext context) {
+    final entries = <_QuickLink>[
+      _QuickLink(
+        label: 'Diaspo',
+        icon: Icons.flight_takeoff_rounded,
+        isNew: true,
+        onTap: () => AuthGuard.navigateIfAuthenticated(
+          context,
+          Routes.DIASPO,
+          featureName: 'le mode Diaspora',
+          useDialog: true,
+        ),
+      ),
+      _QuickLink(
+        label: 'Import',
+        icon: Icons.travel_explore_rounded,
+        onTap: () {
+          controller.handleTabTap(1);
+          controller.tabController.animateTo(controller.currentTabIndex.value);
+        },
+      ),
+      _QuickLink(
+        label: 'Commandes',
+        icon: Icons.receipt_long_rounded,
+        onTap: () => AuthGuard.navigateIfAuthenticated(
+          context,
+          Routes.MY_ORDER,
+          featureName: 'vos commandes',
+          useDialog: true,
+        ),
+      ),
+      _QuickLink(
+        label: 'Favoris',
+        icon: Icons.favorite_rounded,
+        onTap: () => AuthGuard.navigateIfAuthenticated(
+          context,
+          Routes.FAVORITES,
+          featureName: 'vos favoris',
+          useDialog: true,
+        ),
+      ),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space2,
+      ),
+      child: Row(
+        children: [
+          for (final entry in entries) ...[
+            Expanded(child: _QuickLinkTile(link: entry)),
+            if (entry != entries.last) SizedBox(width: AppDesign.space2),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBannerCarousel(BuildContext context) {
     final deviceType = AppThemeSystem.getDeviceType(context);
 
@@ -1813,4 +1879,80 @@ class _NavDestination {
   final String label;
   final IconData icon;
   final IconData activeIcon;
+}
+
+
+/// Raccourci de la rangée d'accès rapides de l'accueil.
+class _QuickLink {
+  const _QuickLink({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.isNew = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isNew;
+}
+
+class _QuickLinkTile extends StatelessWidget {
+  const _QuickLinkTile({required this.link});
+
+  final _QuickLink link;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.ds.surface,
+      borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+      child: InkWell(
+        onTap: link.onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+            border: Border.all(color: context.ds.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(link.icon, size: 22, color: AppDesign.accent),
+                  if (link.isNew)
+                    Positioned(
+                      right: -5,
+                      top: -3,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppDesign.accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: AppDesign.space2),
+              Text(
+                link.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textStyle(
+                  FontSizeType.overline,
+                  fontWeight: FontWeight.w600,
+                  color: context.ds.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
