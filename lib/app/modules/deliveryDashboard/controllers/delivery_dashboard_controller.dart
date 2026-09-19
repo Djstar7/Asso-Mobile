@@ -247,7 +247,12 @@ class DeliveryDashboardController extends GetxController {
         customerName: customerName,
         customerPhone: customerPhone,
         pickupAddress: request['pickup_address'] ?? '',
-        pickupLocation: const LatLng(4.0511, 9.7679),
+        pickupLocation: request['pickup_latitude'] != null && request['pickup_longitude'] != null
+            ? LatLng(
+                double.tryParse(request['pickup_latitude'].toString()) ?? 4.0511,
+                double.tryParse(request['pickup_longitude'].toString()) ?? 9.7679,
+              )
+            : const LatLng(4.0511, 9.7679),
         deliveryAddress: request['delivery_address'] ?? '',
         deliveryLocation: deliveryLat != null && deliveryLng != null
             ? LatLng(deliveryLat, deliveryLng)

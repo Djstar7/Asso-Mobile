@@ -2192,7 +2192,8 @@ class ProductView extends GetView<ProductController> {
     if (options.isEmpty) return null;
 
     final required = grid['quarter_required'] == true;
-    final selected = controller.deliveryQuarter.value;
+    // Quartier choisi, sinon celui déduit de la position de l'acheteur.
+    final selected = controller.deliveryQuarter.value ?? grid['detected_quarter']?.toString();
     final items = <DropdownMenuItem<String>>[
       for (final zone in options)
         for (final quarter in (zone['quarters'] as List? ?? const []))
@@ -2239,7 +2240,12 @@ class ProductView extends GetView<ProductController> {
           ),
           if (!required && zoneLabel != null) ...[
             const SizedBox(height: 6),
-            Text('Vous êtes en $zoneLabel.', style: context.caption),
+            Text(
+              controller.deliveryQuarter.value == null && grid['detected_quarter'] != null
+                  ? 'Quartier détecté d’après votre position : ${grid['detected_quarter']} ($zoneLabel). Modifiez-le si besoin.'
+                  : 'Vous êtes en $zoneLabel.',
+              style: context.caption,
+            ),
           ],
           const SizedBox(height: 6),
           Text(
