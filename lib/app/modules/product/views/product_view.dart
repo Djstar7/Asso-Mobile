@@ -1041,15 +1041,15 @@ class ProductView extends GetView<ProductController> {
                 },
                 icon: Icon(Icons.storefront_rounded, size: 18),
                 label: Text('Voir la boutique'),
+                // Contour neutre : en orange, ce bouton faisait un second
+                // appel coloré à quelques pixels de « Commander », alors
+                // qu'il mène seulement à la boutique.
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemeSystem.primaryColor,
-                  side: BorderSide(
-                    color: AppThemeSystem.primaryColor,
-                    width: 1.5,
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  foregroundColor: context.ds.textPrimary,
+                  side: BorderSide(color: context.ds.borderStrong),
+                  padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                   ),
                 ),
               ),
