@@ -7,13 +7,16 @@ import 'currency_service.dart';
 /// API du module GROS (ASSO CHINA / DUBAÏ / TURQUIE).
 class ImportService {
   /// Catalogue gros d'un pays (produits à paliers + options d'expédition).
-  static Future<WholesaleCatalog?> getCatalog(String countryCode) async {
+  static Future<WholesaleCatalog?> getCatalog(String countryCode, {String? query}) async {
     final targetCurrency = Get.isRegistered<CurrencyService>()
         ? CurrencyService.to.currencyCode
         : 'XAF';
     final res = await ApiProvider.get(
       '/v1/import/$countryCode/products',
-      queryParams: {'currency': targetCurrency},
+      queryParams: {
+        'currency': targetCurrency,
+        if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+      },
     );
     if (res.success && res.data != null) {
       return WholesaleCatalog.fromJson(Map<String, dynamic>.from(res.data!));
@@ -46,5 +49,13 @@ class ImportService {
       if (deliveryAddress != null) 'delivery_address': deliveryAddress,
       if (notes != null) 'notes': notes,
     });
+  }
+
+  /// Nombre de résultats d'une recherche pour chaque pays d'import ({'CN': 2, 'TR': 1}).
+  static Future<Map<String, int>> searchCounts(String query) async {
+    final res = await ApiProvider.get('/v1/import/search', queryParams: {'q': query.trim()});
+    final counts = res.data?['counts'];
+    if (!res.success || counts is! Map) return {};
+    return counts.map((k, v) => MapEntry(k.toString(), v is num ? v.toInt() : int.tryParse('$v') ?? 0));
   }
 }

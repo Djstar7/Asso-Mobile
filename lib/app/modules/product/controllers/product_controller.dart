@@ -56,8 +56,6 @@ class ProductController extends GetxController {
 
   /// Quartier de livraison (grille zone à zone, ex. SOLEX Douala).
   final deliveryQuarter = RxnString();
-  // Liste des quartiers : dernier recours quand la position n'est dans aucun quartier connu.
-  final showQuarterList = false.obs;
 
   /// Ville envoyée pour le devis, reprise telle quelle à la commande.
   String _quotedCity = '';

@@ -42,6 +42,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   // Couverture de livraison autour de la position (quartiers, zones, partenaires).
   Map<String, dynamic>? _coverage;
   bool _isLoadingCoverage = false;
+  bool _coverageFailed = false;
   Timer? _coverageDebounce;
   int _coverageRequest = 0;
 
@@ -70,7 +71,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       setState(() {
         _isLoadingCoverage = false;
         final coverage = response.data?['coverage'];
-        _coverage = response.success && coverage is Map ? Map<String, dynamic>.from(coverage) : null;
+        _coverageFailed = !(response.success && coverage is Map);
+        if (!_coverageFailed) _coverage = Map<String, dynamic>.from(coverage as Map);
       });
     });
   }
@@ -82,6 +84,26 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           .toList();
 
   double _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
+
+  LatLng _latLng(Map p) => LatLng(_toDouble(p['latitude']), _toDouble(p['longitude']));
+
+  /// Cadre la carte sur toutes les zones de livraison.
+  void _showAllZones() {
+    final points = [
+      ..._coverageList('quarters').map(_latLng),
+      ..._coverageList('zones').map(_latLng),
+    ];
+    if (points.isEmpty) return;
+    if (points.length == 1) {
+      _mapController.move(points.first, 13);
+      return;
+    }
+    _mapController.fitCamera(CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: const EdgeInsets.fromLTRB(40, 140, 40, 300),
+      maxZoom: 15,
+    ));
+  }
 
   @override
   void initState() {
@@ -344,6 +366,28 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                 userAgentPackageName: 'com.asso.app',
                 maxZoom: 19,
               ),
+              // Surface de chaque zone urbaine (ex. SOLEX Douala), couleur de la zone.
+              CircleLayer(
+                circles: _coverageList('quarters')
+                    .map((q) => CircleMarker(
+                          point: _latLng(q),
+                          radius: 700,
+                          useRadiusInMeter: true,
+                          color: _zoneColor(q['zone']).withValues(alpha: 0.18),
+                        ))
+                    .toList(),
+              ),
+              PolygonLayer(
+                polygons: _coverageList('zone_areas')
+                    .where((a) => ((a['polygon'] as List?) ?? const []).length >= 3)
+                    .map((a) => Polygon(
+                          points: ((a['polygon'] as List)).whereType<Map>().map(_latLng).toList(),
+                          color: _zoneColor(a['zone']).withValues(alpha: 0.18),
+                          borderColor: _zoneColor(a['zone']),
+                          borderStrokeWidth: 2,
+                        ))
+                    .toList(),
+              ),
               // Zones des livreurs (rayon autour du centre).
               CircleLayer(
                 circles: _coverageList('zones')
@@ -376,6 +420,54 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                           ),
                         ))
                     .toList(),
+              ),
+              MarkerLayer(
+                markers: [
+                  for (final a in _coverageList('zone_areas'))
+                    Marker(
+                      width: 120,
+                      height: 26,
+                      point: _latLng(a),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _zoneColor(a['zone']),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            '${a['label']} · ${a['company_name']}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  for (final z in _coverageList('zones'))
+                    Marker(
+                      width: 140,
+                      height: 26,
+                      point: _latLng(z),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            '${z['name']} · ${z['company_name']}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               MarkerLayer(
                 markers: [
@@ -485,6 +577,38 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               ),
             ),
           ),
+
+          // Voir toutes les zones de livraison d'un coup.
+          if (!widget.readOnly &&
+              !_showSearchResults &&
+              (_coverageList('zone_areas').isNotEmpty || _coverageList('zones').isNotEmpty))
+            Positioned(
+              top: 76,
+              left: 16,
+              child: Material(
+                color: Colors.white,
+                elevation: 3,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: _showAllZones,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.layers_rounded, size: 18, color: AppThemeSystem.primaryColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Toutes les zones de livraison (${_coverageList('zone_areas').length + _coverageList('zones').length})',
+                          style: context.textStyle(FontSizeType.caption, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // Résultats de recherche (seulement si pas en lecture seule)
           if (!widget.readOnly && _showSearchResults)
@@ -853,7 +977,20 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         ],
       );
     }
-    if (_coverage == null) return const SizedBox.shrink();
+    if (_coverage == null) {
+      if (!_coverageFailed) return const SizedBox.shrink();
+      return Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 16, color: AppThemeSystem.grey600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Zones de livraison indisponibles pour le moment.',
+                style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+          ),
+          TextButton(onPressed: () => _loadCoverage(_selectedPosition), child: const Text('Réessayer')),
+        ],
+      );
+    }
 
     final servedBy = _coverageList('served_by');
     final agencies = _coverageList('agencies');
