@@ -494,11 +494,22 @@ class AppEmptyState extends StatelessWidget {
               ],
               if (actionLabel != null && onAction != null) ...[
                 SizedBox(height: AppDesign.space5),
-                AppButton(
-                  label: actionLabel!,
-                  onPressed: onAction,
-                  expand: false,
-                  size: AppButtonSize.medium,
+                // Le bouton se dimensionne sur son libellé : étiré sur
+                // toute la colonne, il pesait plus lourd que le message
+                // qu'il accompagne.
+                // `Row(mainAxisSize: min)` laisse le bouton prendre la
+                // largeur de son libellé ; un simple `Align` héritait encore
+                // des contraintes de la colonne et l'étirait.
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppButton(
+                      label: actionLabel!,
+                      onPressed: onAction,
+                      expand: false,
+                      size: AppButtonSize.medium,
+                    ),
+                  ],
                 ),
               ],
             ],

@@ -5,6 +5,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/storage_service.dart';
 import '../controllers/chat_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -423,89 +424,21 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
   // ================================
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                size: 80,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-            Text(
-              'Aucune conversation',
-              style: context.h4,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-            Text(
-              'Vos conversations avec les acheteurs\net vendeurs apparaîtront ici',
-              style: context.textStyle(
-                FontSizeType.body1,
-                color: AppThemeSystem.getSecondaryTextColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-            ElevatedButton.icon(
-              onPressed: () => Get.toNamed('/search'),
-              icon: const Icon(Icons.shopping_bag_outlined),
-              label: const Text('Parcourir les produits'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeSystem.primaryColor,
-                foregroundColor: AppThemeSystem.whiteColor,
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppThemeSystem.getHorizontalPadding(context),
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.chat_bubble_outline_rounded,
+      title: 'Aucune conversation',
+      message:
+          'Vos échanges avec les acheteurs et les vendeurs apparaîtront ici.',
+      actionLabel: 'Parcourir les produits',
+      onAction: () => Get.toNamed('/search'),
     );
   }
 
   Widget _buildSearchEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: AppThemeSystem.getSecondaryTextColor(context),
-            ),
-            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-            Text(
-              'Aucun résultat',
-              style: context.h5,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-            Text(
-              'Aucune conversation ne correspond à votre recherche',
-              style: context.textStyle(
-                FontSizeType.body1,
-                color: AppThemeSystem.getSecondaryTextColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return const AppEmptyState(
+      icon: Icons.search_off_rounded,
+      title: 'Aucun résultat',
+      message: 'Aucune conversation ne correspond à votre recherche.',
     );
   }
 

@@ -120,16 +120,12 @@ class CertificationPackagesView
     );
   }
 
-  /// Build header section with gradient
+  /// Bandeau d'en-tête de la page certification.
   Widget _buildHeaderSection(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(context.horizontalPadding * 1.5),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppDesign.info, AppDesign.infoText],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppDesign.info,
         borderRadius: context.borderRadius(BorderRadiusType.large),
         boxShadow: [
           BoxShadow(
@@ -327,17 +323,12 @@ class CertificationPackagesView
           duration: const Duration(milliseconds: 200),
           padding: EdgeInsets.all(context.horizontalPadding),
           decoration: BoxDecoration(
-            gradient: isPopular || isSelected
-                ? LinearGradient(
-                    colors: [
-                      primaryColor.withValues(alpha: 0.1),
-                      accentColor.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: isPopular || isSelected ? null : context.surfaceColor,
+            // Une formule mise en avant se signale par sa bordure et son
+            // badge, pas par un dégradé qui la rend moins lisible que les
+            // autres.
+            color: isPopular || isSelected
+                ? AppDesign.accentSubtle
+                : context.surfaceColor,
             borderRadius: context.borderRadius(BorderRadiusType.large),
             border: Border.all(
               color: isPopular || isSelected
@@ -364,11 +355,7 @@ class CertificationPackagesView
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [primaryColor, accentColor],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: primaryColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(

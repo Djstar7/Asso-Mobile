@@ -1018,6 +1018,21 @@ class AppThemeSystem {
         color: AppDesign.accent,
       ),
 
+      // Le libellé et l'icône d'un bouton flottant sont explicitement blancs :
+      // hérités du thème, ils prenaient la couleur d'accent et devenaient
+      // illisibles sur le fond orange du bouton.
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppDesign.accent,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        extendedTextStyle: TextStyle(
+          fontFamily: 'SF-Pro',
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+
       listTileTheme: ListTileThemeData(
         iconColor: textSecondary,
         textColor: textPrimary,

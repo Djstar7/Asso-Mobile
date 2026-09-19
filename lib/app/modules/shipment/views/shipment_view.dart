@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../myOrder/controllers/my_order_controller.dart';
 import '../../myOrder/models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
   const ShipmentView({super.key});
@@ -111,18 +112,10 @@ class ShipmentView extends GetView<MyOrderController> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.shopping_bag_outlined, size: 80,
-            color: context.secondaryTextColor.withValues(alpha: 0.5)),
-          const SizedBox(height: 16),
-          Text('Aucune commande', style: context.h6.copyWith(color: context.secondaryTextColor)),
-          const SizedBox(height: 8),
-          Text('Vos commandes apparaitront ici', style: context.caption),
-        ],
-      ),
+    return const AppEmptyState(
+      icon: Icons.inventory_2_outlined,
+      title: 'Aucune commande',
+      message: 'Les commandes à expédier apparaîtront ici.',
     );
   }
 

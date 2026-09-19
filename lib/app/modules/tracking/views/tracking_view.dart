@@ -67,12 +67,11 @@ class TrackingView extends GetView<TrackingController> {
       ),
       child: Row(
         children: [
-          Text('Suivi de commandes',
-            style: context.textStyle(FontSizeType.h4, fontWeight: FontWeight.bold)),
+          // Le libellé de l'onglet actif sert déjà de titre dans la barre
+          // du haut ; le répéter ici consommait une ligne pour rien.
           const Spacer(),
           GestureDetector(
             onTap: () async {
-              print('🔄 Refresh button tapped!'); // Debug
               await controller.loadOrders();
               Get.snackbar(
                 'Actualisé',
