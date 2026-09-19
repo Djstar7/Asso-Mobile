@@ -10,6 +10,19 @@ class ChatController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
+
+  /// Nombre total de messages non lus, toutes conversations confondues.
+  ///
+  /// Alimente la pastille de la barre du haut, d'où la messagerie est
+  /// désormais accessible.
+  int get totalUnreadCount => conversations.fold<int>(
+        0,
+        (total, conversation) {
+          final raw = conversation['unreadCount'];
+          final count = raw is int ? raw : int.tryParse('$raw') ?? 0;
+          return total + (count > 0 ? count : 0);
+        },
+      );
   int _currentPage = 1;
 
   @override

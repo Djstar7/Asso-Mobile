@@ -12,7 +12,7 @@ import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../routes/app_pages.dart';
-import '../../chat/views/chat_view.dart';
+import '../../chat/controllers/chat_controller.dart';
 import '../../tracking/views/tracking_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../import/views/import_view.dart';
@@ -53,10 +53,9 @@ class HomeView extends GetView<HomeController> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: const [
                   HomeItemView(),
-                  ChatView(),
                   ImportView(),
-                  TrackingView(),
                   MyVoiceView(),
+                  TrackingView(),
                   ProfileView(),
                 ],
               ),
@@ -67,7 +66,11 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  /// Destinations de la navigation principale.
+  /// Destinations de la navigation basse.
+  ///
+  /// L'ordre suit le parcours : on découvre (Accueil, Import), on s'exprime
+  /// (Ma voix), on suit ses achats (Suivi), on gère son compte.
+  /// La messagerie a rejoint la barre du haut.
   static const List<_NavDestination> _destinations = [
     _NavDestination(
       label: 'Accueil',
@@ -75,24 +78,19 @@ class HomeView extends GetView<HomeController> {
       activeIcon: Icons.storefront_rounded,
     ),
     _NavDestination(
-      label: 'Messages',
-      icon: Icons.chat_bubble_outline_rounded,
-      activeIcon: Icons.chat_bubble_rounded,
-    ),
-    _NavDestination(
       label: 'Import',
       icon: Icons.travel_explore_outlined,
       activeIcon: Icons.travel_explore_rounded,
     ),
     _NavDestination(
+      label: 'Ma voix',
+      icon: Icons.forum_outlined,
+      activeIcon: Icons.forum_rounded,
+    ),
+    _NavDestination(
       label: 'Suivi',
       icon: Icons.local_shipping_outlined,
       activeIcon: Icons.local_shipping_rounded,
-    ),
-    _NavDestination(
-      label: 'Ma voix',
-      icon: Icons.campaign_outlined,
-      activeIcon: Icons.campaign_rounded,
     ),
     _NavDestination(
       label: 'Compte',
@@ -204,16 +202,35 @@ class HomeView extends GetView<HomeController> {
                     ),
                   ),
                   Expanded(
-                    child: Text(
-                      _destinations[tab].label == 'Accueil'
-                          ? 'ASSO'
-                          : _destinations[tab].label,
-                      style: context.textStyle(
-                        FontSizeType.h6,
-                        fontWeight: FontWeight.w700,
-                        color: context.ds.textPrimary,
+                    // Sur l'accueil, on s'adresse à la personne plutôt que
+                    // de répéter le nom de l'application, déjà porté par
+                    // l'icône du téléphone.
+                    child: tab == 0
+                        ? _buildGreeting(context)
+                        : Text(
+                            _destinations[tab].label,
+                            style: context.textStyle(
+                              FontSizeType.h6,
+                              fontWeight: FontWeight.w700,
+                              color: context.ds.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                  ),
+                  // La messagerie a quitté la navigation basse : elle se
+                  // consulte ponctuellement, comme les favoris et les
+                  // notifications.
+                  GetX<ChatController>(
+                    builder: (chatController) => AppIconButton(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      tooltip: 'Messages',
+                      badgeCount: chatController.totalUnreadCount,
+                      onPressed: () => AuthGuard.navigateIfAuthenticated(
+                        context,
+                        '/chat',
+                        featureName: 'la messagerie',
+                        useDialog: false,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   AppIconButton(
@@ -249,6 +266,46 @@ class HomeView extends GetView<HomeController> {
               ),
           ],
         ),
+      );
+    });
+  }
+
+  /// Salutation de l'accueil.
+  ///
+  /// Affiche le prénom quand il est connu, « Invité » sinon. Le nom de
+  /// l'application n'y figure plus : on sait sur quelle application on est,
+  /// et cette ligne sert mieux à situer la session en cours.
+  Widget _buildGreeting(BuildContext context) {
+    return Obx(() {
+      final fullName = controller.userName.value.trim();
+      final firstName =
+          fullName.isEmpty ? '' : fullName.split(RegExp(r'\s+')).first;
+      final isGuest = AuthGuard.isGuest || firstName.isEmpty;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Bienvenue',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textStyle(
+              FontSizeType.overline,
+              color: context.ds.textTertiary,
+            ),
+          ),
+          Text(
+            isGuest ? 'Invité' : firstName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textStyle(
+              FontSizeType.subtitle1,
+              fontWeight: FontWeight.w700,
+              color: context.ds.textPrimary,
+            ),
+          ),
+        ],
       );
     });
   }

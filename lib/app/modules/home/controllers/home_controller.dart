@@ -24,13 +24,17 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   /// Getter pour vérifier si le controller est sûr à utiliser
   bool get isSafe => !_isDisposed && isClosed == false;
 
+  /// Destinations de la navigation basse.
+  ///
+  /// La messagerie n'y figure plus : elle est accessible depuis la barre du
+  /// haut, ce qui laisse cinq onglets — au-delà, les libellés deviennent
+  /// illisibles sur un téléphone étroit.
   final List<String> tabNames = [
     'Accueil',
-    'Messages',
     'Import',
-    'Tracking',
-    'My Voice',
-    'Profile',
+    'Ma voix',
+    'Suivi',
+    'Compte',
   ];
 
   // Banner
@@ -528,15 +532,13 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   void handleTabTap(int index) {
     if (_isDisposed) return;
 
-    // Tabs protégés : Messages (1), Portefeuille (2), Tracking (3), Profile (4)
-    // Tab Accueil (0) est accessible sans connexion
-    // Import (index 2) est public ; Messages/Tracking/MyVoice restent protégés
-    final protectedTabs = [1, 3, 4];
-    final tabFeatureNames = {
-      1: 'la messagerie',
-      2: 'le portefeuille',
-      3: 'le tracking de commandes',
-      4: 'votre profil',
+    // Accueil (0) et Import (1) restent consultables sans compte : ce sont
+    // les vitrines. Les trois autres supposent une identité.
+    const protectedTabs = [2, 3, 4];
+    const tabFeatureNames = {
+      2: 'la rubrique Ma voix',
+      3: 'le suivi de commandes',
+      4: 'votre compte',
     };
 
     if (protectedTabs.contains(index) && AuthGuard.isGuest) {
