@@ -1041,9 +1041,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               Expanded(
                 child: Text(
                   served
-                      ? 'Livraison à domicile possible ici'
+                      ? 'Livreurs présents dans cette zone'
                       : agencies.isNotEmpty
-                          ? 'Pas de livraison à domicile ici : retrait en agence'
+                          ? 'Retrait en agence possible ici'
                           : 'Aucun livreur ne dessert ce point',
                   style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
                 ),
@@ -1057,6 +1057,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             ],
           ),
           if (lines.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Les offres et les prix dépendent de la boutique : ils s’affichent à l’étape suivante.',
+              style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600),
+            ),
             const SizedBox(height: 8),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 120),

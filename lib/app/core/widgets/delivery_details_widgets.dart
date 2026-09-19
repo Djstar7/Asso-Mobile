@@ -112,8 +112,9 @@ Color deliveryCategoryColor(String serviceType) {
   }
 }
 
-/// Détail complet du prix : poids, tranche, kg supplémentaires, HT, TVA,
-/// commission ASSO, total, grille de la route et conditions.
+/// Détail du prix vu par l'acheteur : poids, tranche, prix HT (commission ASSO
+/// comprise), TVA et total, puis les conditions du transporteur. Les prix bruts
+/// du transporteur, la commission et la grille tarifaire ne sont pas affichés.
 class DeliveryBreakdownView extends StatelessWidget {
   final DeliveryBreakdown? breakdown;
   final List<DeliveryPriceGridRow> priceGrid;
@@ -136,98 +137,27 @@ class DeliveryBreakdownView extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = breakdown;
     final weight = b?.weightKg ?? weightKg;
-    final extraPerKg = b?.extraPerKg;
+    final total = b?.total ?? fallbackTotal;
+    final vat = b?.vatAmount ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (weight != null) DeliveryInfoLine('Poids total du colis', formatKg(weight)),
-        if (b != null) ...[
-          if (b.rangeLabel != null)
-            DeliveryInfoLine(
-              'Tranche appliquée',
-              b.rangePrice != null
-                  ? '${b.rangeLabel} — ${formatPrice(b.rangePrice!)}'
-                  : b.rangeLabel!,
-            ),
-          if (b.extraKg > 0)
-            DeliveryInfoLine(
-              'Kg supplémentaires',
-              '${formatKg(b.extraKg)} × ${formatPrice(extraPerKg ?? 0)} = ${formatPrice(b.extraPrice)}',
-            ),
-          // Transport + livraison à domicile : les deux volets du prix.
-          if (b.legs.length > 1)
-            for (final leg in b.legs)
-              DeliveryInfoLine(leg.label, formatPrice(leg.price)),
-          if (b.carrierPriceHt != null)
-            DeliveryInfoLine(
-              b.pricesExcludeVat
-                  ? 'Prix transporteur HT'
-                  : 'Prix transporteur',
-              formatPrice(b.carrierPriceHt!),
-            ),
-          if (b.pricesExcludeVat || b.vatAmount > 0)
-            DeliveryInfoLine(
-              'TVA ${formatRate(b.vatRate)}',
-              formatPrice(b.vatAmount),
-            ),
-          if (b.carrierPrice != null && b.vatAmount > 0)
-            DeliveryInfoLine('Prix transporteur TTC', formatPrice(b.carrierPrice!)),
-          if (b.assoCommission > 0)
-            DeliveryInfoLine('Commission ASSO', formatPrice(b.assoCommission)),
+        if (b?.rangeLabel != null) DeliveryInfoLine('Tranche appliquée', b!.rangeLabel!),
+        // Transport + livraison à domicile : les deux volets, sans leur prix.
+        if (b != null && b.legs.length > 1)
+          for (final leg in b.legs) DeliveryInfoLine('Inclus', leg.label),
+        if (total != null && vat > 0) ...[
+          DeliveryInfoLine('Prix livraison HT', formatPrice(total - vat)),
+          DeliveryInfoLine('TVA', formatPrice(vat)),
         ],
-        if ((b?.total ?? fallbackTotal) != null) ...[
+        if (total != null) ...[
           const Divider(height: 14),
           DeliveryInfoLine(
-            'Total livraison',
-            formatPrice(b?.total ?? fallbackTotal!),
+            vat > 0 ? 'Total livraison TTC' : 'Total livraison',
+            formatPrice(total),
             strong: true,
-          ),
-        ],
-        if (priceGrid.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Grille tarifaire',
-            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: context.backgroundColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final row in priceGrid)
-                  DeliveryInfoLine(
-                    row.label,
-                    formatPrice(row.price),
-                    valueColor: b?.rangeLabel == row.label
-                        ? AppThemeSystem.primaryColor
-                        : null,
-                  ),
-                if (extraPerKg != null && extraPerKg > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'puis ${formatPrice(extraPerKg)} / kg supplémentaire',
-                      style: context.caption,
-                    ),
-                  ),
-                if (b?.pricesExcludeVat == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Tarifs hors taxes, TVA ${formatRate(b?.vatRate)} en sus.',
-                      style: context.caption,
-                    ),
-                  ),
-              ],
-            ),
           ),
         ],
         if (conditions != null && conditions!.trim().isNotEmpty) ...[
@@ -667,8 +597,6 @@ Future<void> showDeliveryQuoteDetails(
                       routeLabel: quote.routeOrZone,
                       leadTime: quote.leadTime,
                     ),
-                    if (quote.maxWeightKg != null)
-                      DeliveryInfoLine('Poids maximum', formatKg(quote.maxWeightKg)),
                     if (quote.pickupNotice != null) ...[
                       const SizedBox(height: 8),
                       DeliveryNotice(
