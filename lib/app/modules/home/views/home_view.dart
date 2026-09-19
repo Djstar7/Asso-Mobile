@@ -104,7 +104,7 @@ class HomeView extends GetView<HomeController> {
     return Obx(() {
       final current = controller.currentTabIndex.value;
 
-      return Container(
+      return DecoratedBox(
         decoration: BoxDecoration(
           color: context.ds.surface,
           border: Border(top: BorderSide(color: context.ds.border)),
@@ -112,14 +112,16 @@ class HomeView extends GetView<HomeController> {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 60,
+            height: 62,
             child: Row(
               children: List.generate(_destinations.length, (index) {
                 final destination = _destinations[index];
                 final isActive = current == index;
 
                 return Expanded(
-                  child: InkWell(
+                  child: _NavItem(
+                    destination: destination,
+                    isActive: isActive,
                     onTap: () {
                       controller.handleTabTap(index);
                       // `handleTabTap` peut refuser l'accès (onglet protégé)
@@ -130,34 +132,6 @@ class HomeView extends GetView<HomeController> {
                         controller.tabController.animateTo(target);
                       }
                     },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isActive ? destination.activeIcon : destination.icon,
-                          size: 22,
-                          color: isActive
-                              ? AppDesign.accent
-                              : context.ds.textTertiary,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          destination.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'SF-Pro',
-                            fontSize: 10,
-                            height: 1.1,
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.w500,
-                            color: isActive
-                                ? AppDesign.accent
-                                : context.ds.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 );
               }),
@@ -1508,84 +1482,121 @@ class HomeItemView extends GetView<HomeController> {
               itemBuilder: (context, index) {
                 final data = bannerData[index % bannerData.length];
 
-                return Container(
-                  margin: EdgeInsets.symmetric(
-                    horizontal: AppThemeSystem.getHorizontalPadding(context),
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Image - API or local
-                        _buildBannerImage(index),
+                final apiBanner = controller.banners.isNotEmpty
+                    ? controller.banners[index]
+                    : null;
+                final title = apiBanner?['title']?.toString() ?? data['title']!;
+                final subtitle =
+                    apiBanner?['subtitle']?.toString() ?? data['subtitle']!;
 
-                        // Gradient overlay - améliore la lisibilité du texte
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.7),
-                              ],
-                              stops: const [0.5, 1.0],
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      // La bannière entière est cliquable, pas seulement le
+                      // bouton : c'est la cible la plus large de l'écran, et
+                      // le « Découvrir » n'était qu'un décor sans action.
+                      onTap: () => Get.toNamed(Routes.SEARCH),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _buildBannerImage(index),
+
+                          // Voile sombre, plus haut et plus dense que le
+                          // précédent : le sous-titre se perdait sur les
+                          // photos claires.
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  AppDesign.neutral900.withValues(alpha: 0.35),
+                                  AppDesign.neutral900.withValues(alpha: 0.85),
+                                ],
+                                stops: const [0.25, 0.6, 1.0],
+                              ),
                             ),
                           ),
-                        ),
 
-                        // Content - minimal
-                        Positioned(
-                          left: 20,
-                          right: 20,
-                          bottom: 20,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                controller.banners.isNotEmpty
-                                    ? (controller.banners[index]['title'] ?? data['title']!)
-                                    : data['title']!,
-                                style: context.textStyle(
-                                  deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'Découvrir',
+                          Positioned(
+                            left: AppDesign.space5,
+                            right: AppDesign.space5,
+                            bottom: AppDesign.space5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppThemeSystem.primaryColor,
+                                    FontSizeType.h4,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: AppDesign.space1 + 2),
+                                // Le sous-titre existait dans les données mais
+                                // n'était jamais rendu : la bannière ne disait
+                                // que « Bienvenue sur Asso ».
+                                Text(
+                                  subtitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textStyle(
+                                    FontSizeType.caption,
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                SizedBox(height: AppDesign.space4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: AppDesign.space4,
+                                        vertical: AppDesign.space2 + 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          AppDesign.radiusPill,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Découvrir',
+                                            style: context.textStyle(
+                                              FontSizeType.caption,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppDesign.neutral900,
+                                            ),
+                                          ),
+                                          SizedBox(width: AppDesign.space1),
+                                          const Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 15,
+                                            color: AppDesign.neutral900,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -1952,6 +1963,72 @@ class _QuickLinkTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Destination de la barre de navigation basse.
+///
+/// L'onglet actif se signale par une pastille teintée derrière son icône, et
+/// non par la seule couleur du trait : sur un écran lumineux, un simple
+/// changement de teinte se repère mal, surtout entre deux icônes voisines.
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.destination,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final _NavDestination destination;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppDesign.accentText : context.ds.textTertiary;
+
+    return InkWell(
+      onTap: onTap,
+      // Pas d'effet d'encre rectangulaire sur toute la colonne : il
+      // débordait de la pastille et donnait un retour visuel approximatif.
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesign.space4,
+              vertical: AppDesign.space1 + 1,
+            ),
+            decoration: BoxDecoration(
+              color: isActive ? AppDesign.accentSubtle : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            ),
+            child: Icon(
+              isActive ? destination.activeIcon : destination.icon,
+              size: 21,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            destination.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'SF-Pro',
+              fontSize: 10,
+              height: 1.15,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
