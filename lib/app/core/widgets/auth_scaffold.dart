@@ -13,6 +13,12 @@ import '../utils/app_theme_system.dart';
 ///
 /// Le bandeau se réduit dès que le clavier s'ouvre : l'animation est un
 /// accueil, elle ne doit pas disputer sa place au champ en cours de saisie.
+/// Hauteur que le bandeau conserve pendant la saisie.
+///
+/// Assez pour porter la sortie « Passer » et laisser respirer les coins
+/// arrondis de la feuille sous la barre d'état.
+const double _collapsedBannerHeight = 44;
+
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -52,120 +58,159 @@ class AuthScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final screenHeight = MediaQuery.sizeOf(context).height;
+    final topInset = MediaQuery.paddingOf(context).top;
 
     // Le bandeau prend une part de la hauteur plutôt qu'une valeur fixe, pour
-    // tenir aussi bien sur un petit téléphone que sur une tablette. Replié,
-    // il ne garde que de quoi porter le bouton « Passer ».
+    // tenir aussi bien sur un petit téléphone que sur une tablette.
+    //
+    // Clavier ouvert, il cède l'animation mais garde une bande : repliée à
+    // zéro, la feuille remontait jusque sous la barre d'état et l'écran
+    // paraissait sauter d'un cran, coins arrondis rognés et titre collé à
+    // l'heure. La bande conservée porte la sortie « Passer » et fait la
+    // marge que la barre d'état réclame.
     final bannerHeight = keyboardOpen
-        ? 0.0
+        ? _collapsedBannerHeight
         : (screenHeight * bannerRatio).clamp(120.0, 300.0);
 
     return Scaffold(
       backgroundColor: AppDesign.accentSubtle,
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              _Banner(height: bannerHeight, animationAsset: animationAsset),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: context.ds.canvas,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppDesign.radiusXl),
-                    ),
+          // L'animation et la sortie « Passer » vivent dans le même bloc, qui
+          // se replie d'un seul tenant. Posée à part, par-dessus la pile, la
+          // sortie restait à sa place quand le bandeau se repliait et venait
+          // barrer le sous-titre.
+          _Banner(
+            height: bannerHeight,
+            topInset: topInset,
+            animationAsset: animationAsset,
+            skip: onSkip == null
+                ? null
+                : _SkipButton(label: skipLabel, onPressed: onSkip!),
+          ),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: context.ds.canvas,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDesign.radiusXl),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  // Le clavier ouvert, on suit le doigt sans fermer la
+                  // saisie : refermer le clavier au moindre défilement
+                  // obligeait à retoucher le champ pour continuer.
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                    context.ds.gutter,
+                    AppDesign.space6,
+                    context.ds.gutter,
+                    AppDesign.space6,
                   ),
-                  child: SafeArea(
-                    top: false,
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        context.ds.gutter,
-                        AppDesign.space6,
-                        context.ds.gutter,
-                        AppDesign.space6,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        title,
+                        style: context.textStyle(
+                          FontSizeType.h3,
+                          fontWeight: FontWeight.w700,
+                          color: context.ds.textPrimary,
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            title,
-                            style: context.textStyle(
-                              FontSizeType.h3,
-                              fontWeight: FontWeight.w700,
-                              color: context.ds.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: AppDesign.space2),
-                          Text(
-                            subtitle,
-                            style: context.textStyle(
-                              FontSizeType.body2,
-                              color: context.ds.textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                          SizedBox(height: AppDesign.space6),
-                          ...children,
-                        ],
+                      SizedBox(height: AppDesign.space2),
+                      Text(
+                        subtitle,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          color: context.ds.textSecondary,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
+                      SizedBox(height: AppDesign.space6),
+                      ...children,
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-          // Posé par-dessus, et non dans le bandeau : celui-ci se replie
-          // quand le clavier s'ouvre, et emporterait la sortie avec lui.
-          if (onSkip != null)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + AppDesign.space2,
-              right: context.ds.gutter,
-              child: _SkipButton(label: skipLabel, onPressed: onSkip!),
             ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Bandeau de marque, réduit à l'animation d'accueil.
+/// Bandeau de marque : l'animation d'accueil et la sortie « Passer ».
+///
+/// Sa hauteur est pilotée par [AuthScaffold] : pleine au repos, réduite à
+/// [_collapsedBannerHeight] pendant la saisie. Il ne descend jamais plus bas,
+/// pour que la feuille garde sa marge sous la barre d'état.
 class _Banner extends StatelessWidget {
-  const _Banner({required this.height, required this.animationAsset});
+  const _Banner({
+    required this.height,
+    required this.topInset,
+    required this.animationAsset,
+    this.skip,
+  });
 
   final double height;
+
+  /// Hauteur de la barre d'état, que le bandeau couvre lui-même.
+  final double topInset;
+
   final String animationAsset;
+
+  /// Sortie sans compte, posée en haut à droite. Absente, rien n'est affiché.
+  final Widget? skip;
 
   @override
   Widget build(BuildContext context) {
-    final collapsed = height == 0;
+    // Sous ce seuil il ne reste plus de quoi dessiner l'animation sans la
+    // déformer : elle cède la place et seule la sortie demeure.
+    final showAnimation = height > _collapsedBannerHeight + 24;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
-      height: collapsed ? 0 : height,
+      height: topInset + height,
       // Le bandeau descend jusque sous la barre d'état : l'animation est
       // coupée par l'encoche si on ne réserve pas cette marge.
-      padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
-      child: collapsed
-          ? const SizedBox.shrink()
-          : ClipRect(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.ds.gutter,
-                  vertical: AppDesign.space4,
-                ),
-                child: Lottie.asset(
-                  animationAsset,
-                  fit: BoxFit.contain,
-                  // Une animation d'accueil qui boucle indéfiniment capte le
-                  // regard pendant toute la saisie.
-                  repeat: false,
-                  errorBuilder: (context, error, stack) =>
-                      const SizedBox.shrink(),
+      padding: EdgeInsets.only(top: topInset),
+      child: ClipRect(
+        child: Stack(
+          children: [
+            if (showAnimation)
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.ds.gutter,
+                    vertical: AppDesign.space4,
+                  ),
+                  child: Lottie.asset(
+                    animationAsset,
+                    fit: BoxFit.contain,
+                    // Une animation d'accueil qui boucle indéfiniment capte le
+                    // regard pendant toute la saisie.
+                    repeat: false,
+                    errorBuilder: (context, error, stack) =>
+                        const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            ),
+            if (skip != null)
+              Positioned(
+                top: AppDesign.space2,
+                right: context.ds.gutter,
+                child: skip!,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

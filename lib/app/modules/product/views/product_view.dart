@@ -1060,10 +1060,15 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
+  /// Barre d'achat, ancrée en bas de la fiche.
+  ///
+  /// Une seule action y est colorée. « Message » et « Commander » portaient
+  /// tous deux l'orange — l'un plein, l'autre en contour épais — et se
+  /// disputaient le regard ; le contact vendeur redevient une action
+  /// discrète. L'ombre portée qui séparait la barre du contenu cède la place
+  /// à un filet, et le prix y est rappelé : c'est le montant qu'on engage en
+  /// appuyant.
   Widget _buildBottomBar(BuildContext context, Map<String, dynamic> product) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-
-    // Vérifier si c'est le produit de l'utilisateur connecté
     final currentUser = StorageService.getUser();
     final seller = product['seller'] as Map<String, dynamic>?;
     final sellerId = int.tryParse(seller?['id']?.toString() ?? '');
@@ -1071,125 +1076,56 @@ class ProductView extends GetView<ProductController> {
         currentUser != null && sellerId != null && currentUser.id == sellerId;
 
     return Container(
-      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: Offset(0, -4),
-          ),
-        ],
+        color: context.ds.surface,
+        border: Border(top: BorderSide(color: context.ds.border)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space3,
+        context.ds.gutter,
+        AppDesign.space3,
       ),
       child: SafeArea(
+        top: false,
         child: isMyProduct
-            ? // Bouton pour gérer mes produits
-              ElevatedButton.icon(
-                onPressed: () {
-                  Get.toNamed(Routes.PRODUCT_MANAGEMENT);
-                },
-                icon: Icon(Icons.edit_rounded, color: Colors.white),
-                label: Text(
-                  'Gérer mes produits',
-                  style: context.textStyle(
-                    FontSizeType.body1,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
+            ? AppButton(
+                label: 'Gérer mes produits',
+                size: AppButtonSize.large,
+                icon: Icons.edit_rounded,
+                onPressed: () => Get.toNamed(Routes.PRODUCT_MANAGEMENT),
               )
             : Row(
                 children: [
-                  // Bouton Message
-                  Expanded(
-                    child: Obx(
-                      () => OutlinedButton.icon(
-                        onPressed: controller.isStartingConversation.value
-                            ? null
-                            : () {
-                                AuthGuard.requireAuth(
-                                  context,
-                                  onAuthenticated: () {
-                                    controller.openConversationWithSeller(
-                                      product: product,
-                                    );
-                                  },
-                                  featureName: 'la messagerie',
-                                );
-                              },
-                        icon: controller.isStartingConversation.value
-                            ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppThemeSystem.primaryColor,
-                                  ),
-                                ),
-                              )
-                            : Icon(Icons.chat_bubble_outline_rounded),
-                        label: Text(
-                          controller.isStartingConversation.value
-                              ? 'Ouverture...'
-                              : 'Message',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppThemeSystem.primaryColor,
-                          side: BorderSide(
-                            color: AppThemeSystem.primaryColor,
-                            width: 2,
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
+                  // Contact vendeur : action secondaire, en retrait.
+                  Obx(
+                    () => _SecondaryAction(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: controller.isStartingConversation.value
+                          ? 'Ouverture…'
+                          : 'Message',
+                      busy: controller.isStartingConversation.value,
+                      onPressed: controller.isStartingConversation.value
+                          ? null
+                          : () => AuthGuard.requireAuth(
+                              context,
+                              onAuthenticated: () => controller
+                                  .openConversationWithSeller(product: product),
+                              featureName: 'la messagerie',
+                            ),
                     ),
                   ),
-                  SizedBox(width: 12),
-                  // Bouton Commander
+                  SizedBox(width: AppDesign.space3),
                   Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        AuthGuard.requireAuth(
-                          context,
-                          onAuthenticated: () {
-                            _showOrderDialog(context, product);
-                          },
-                          featureName: 'passer une commande',
-                        );
-                      },
-                      icon: Icon(
-                        Icons.shopping_cart_rounded,
-                        color: Colors.white,
+                    child: _OrderButton(
+                      priceLabel: () => controller.formatPrice(
+                        controller.unitPriceXaf(product),
                       ),
-                      label: Text(
-                        'Commander',
-                        style: context.textStyle(
-                          FontSizeType.body1,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemeSystem.primaryColor,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
+                      onPressed: () => AuthGuard.requireAuth(
+                        context,
+                        onAuthenticated: () =>
+                            _showOrderDialog(context, product),
+                        featureName: 'passer une commande',
                       ),
                     ),
                   ),
@@ -3620,6 +3556,134 @@ class _ImagePlaceholder extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Action secondaire de la barre d'achat : contacter le vendeur.
+///
+/// Un bouton à contour orange épais rivalisait avec « Commander ». Réduit à
+/// une icône encadrée de neutre, il reste atteignable sans se disputer
+/// l'attention avec l'action principale.
+class _SecondaryAction extends StatelessWidget {
+  const _SecondaryAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.busy = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+          child: Container(
+            width: 56,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: context.ds.surface,
+              border: Border.all(color: context.ds.borderStrong),
+              borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+            ),
+            child: busy
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        context.ds.textSecondary,
+                      ),
+                    ),
+                  )
+                : Icon(icon, size: 21, color: context.ds.textPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Action principale de la barre d'achat.
+///
+/// Porte le prix sous son libellé : c'est le montant qu'on engage en
+/// appuyant, et le rappeler évite de remonter la page pour le vérifier.
+class _OrderButton extends StatelessWidget {
+  const _OrderButton({required this.priceLabel, required this.onPressed});
+
+  /// Évalué à la construction pour suivre la devise et la variante choisie.
+  final String Function() priceLabel;
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppDesign.accent,
+      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(horizontal: AppDesign.space3),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.shopping_cart_rounded,
+                size: 19,
+                color: Colors.white,
+              ),
+              SizedBox(width: AppDesign.space2),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Commander',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.15,
+                      ),
+                    ),
+                    Obx(
+                      () => Text(
+                        priceLabel(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.overline,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
