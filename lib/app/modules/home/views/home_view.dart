@@ -1288,6 +1288,8 @@ class HomeItemView extends GetView<HomeController> {
 
   /// Build category SVG icon
   Widget _buildCategorySvgIcon(String svgIcon, bool isSelected, BuildContext context) {
+    // Cette icône est posée sur le chip, dont le fond passe à accentSubtle
+    // quand il est actif : d'où accentText plutôt que l'accent plein.
     final color =
         isSelected ? AppDesign.accentText : context.ds.textSecondary;
     try {
@@ -1987,7 +1989,13 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppDesign.accentText : context.ds.textTertiary;
+    // Deux tons distincts, chacun sur son fond. L'icône est posée sur la
+    // pastille, dont le fond passe à accentSubtle quand l'onglet est actif ;
+    // le libellé, lui, reste sur le blanc de la barre et prend donc l'accent
+    // de marque. Employer accentText pour les deux faisait paraître la barre
+    // d'un autre orange que les raccourcis juste au-dessus.
+    final iconColor = isActive ? AppDesign.accentText : context.ds.textTertiary;
+    final labelColor = isActive ? AppDesign.accent : context.ds.textTertiary;
 
     return InkWell(
       onTap: onTap,
@@ -2012,7 +2020,7 @@ class _NavItem extends StatelessWidget {
             child: Icon(
               isActive ? destination.activeIcon : destination.icon,
               size: 21,
-              color: color,
+              color: iconColor,
             ),
           ),
           const SizedBox(height: 3),
@@ -2025,7 +2033,7 @@ class _NavItem extends StatelessWidget {
               fontSize: 10,
               height: 1.15,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: color,
+              color: labelColor,
             ),
           ),
         ],

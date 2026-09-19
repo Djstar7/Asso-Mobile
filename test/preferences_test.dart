@@ -52,6 +52,13 @@ void main() {
       StorageService.setPreferencesPrompted();
       expect(GuestAccess.nextRoute(), Routes.HOME);
     });
+
+    test('le pays prime, même si les centres ont déjà été proposés', () {
+      // Cas observé sur appareil : l'indicateur « déjà proposé » était posé
+      // alors qu'aucun pays n'était enregistré. La devise passe d'abord.
+      StorageService.setPreferencesPrompted();
+      expect(GuestAccess.nextRoute(), Routes.COUNTRY_SELECTION);
+    });
   });
 
   group('Contrôleur', () {

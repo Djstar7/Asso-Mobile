@@ -29,6 +29,59 @@ void main() {
         'métaux des paliers (bronze, argent, or)',
   };
 
+  /// accentText (#9C4A0A) est un brun sombre, pensé pour rester lisible sur
+  /// accentSubtle. Posé sur une surface blanche, il passe pour un second
+  /// orange — c'est ce qui faisait paraître la barre de navigation d'une
+  /// autre couleur que les raccourcis juste au-dessus.
+  test('accentText n\'est employé que sur un fond teinté', () {
+    final offenders = <String>[];
+
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (entity.path.endsWith('app_design.dart')) continue;
+
+      final lines = entity.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (!line.contains('AppDesign.accentText')) continue;
+        if (line.trimLeft().startsWith('//')) continue;
+
+        // Le fond teinté peut être déclaré bien plus haut, au début du
+        // widget : on remonte jusqu'à la signature de méthode précédente
+        // plutôt que de fixer une fenêtre arbitraire.
+        var from = i;
+        while (from > 0 && !_startsDeclaration(lines[from])) {
+          from--;
+        }
+        final to = (i + 12).clamp(0, lines.length);
+        final context = lines.sublist(from, to).join('\n');
+        // Le commentaire qui précède vaut justification quand le fond
+        // teinté appartient au widget parent, hors de portée d'une lecture
+        // statique.
+        final justified = i > 0 &&
+            lines[i - 1].trimLeft().startsWith('//') &&
+            lines.sublist((i - 4).clamp(0, i), i).join(' ').contains(
+                  'accentSubtle',
+                );
+        final tinted = justified ||
+            context.contains('accentSubtle') ||
+            context.contains('accentBorder') ||
+            context.contains('accent.withValues');
+
+        if (!tinted) {
+          offenders.add('${entity.path}:${i + 1}  ${line.trim()}');
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason: 'Sur une surface claire, utilisez AppDesign.accent ; '
+          'accentText suppose un fond accentSubtle :\n${offenders.join('\n')}',
+    );
+  });
+
   test('aucun orange en dur hors des exceptions déclarées', () {
     final offenders = <String>[];
     final pattern = RegExp(r'0x(?:[Ff][Ff])?([0-9A-Fa-f]{6})\b');
@@ -55,6 +108,16 @@ void main() {
           'orange en dur :\n${offenders.join('\n')}',
     );
   });
+}
+
+/// Début d'une déclaration de widget ou de méthode.
+bool _startsDeclaration(String line) {
+  final trimmed = line.trimLeft();
+  final indent = line.length - trimmed.length;
+  if (indent > 2) return false;
+  return trimmed.startsWith('Widget ') ||
+      trimmed.startsWith('class ') ||
+      trimmed.startsWith('@override');
 }
 
 /// Vrai pour un orange/ambre saturé, celui qui entre en concurrence avec

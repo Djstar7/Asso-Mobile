@@ -420,9 +420,11 @@ class _BottomBar extends GetView<PreferencesController> {
                     : '$count sélectionné${count > 1 ? 's' : ''}',
                 style: context.textStyle(
                   FontSizeType.overline,
+                  // Posé sur le blanc de la barre, donc l'accent de marque :
+                  // accentText est réservé aux fonds teintés.
                   color: count == 0
                       ? context.ds.textTertiary
-                      : AppDesign.accentText,
+                      : AppDesign.accent,
                   fontWeight: count == 0 ? FontWeight.w400 : FontWeight.w600,
                 ),
               ),

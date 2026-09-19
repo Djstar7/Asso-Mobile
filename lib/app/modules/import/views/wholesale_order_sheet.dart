@@ -664,7 +664,9 @@ class _WholesaleOrderSheetState extends State<WholesaleOrderSheet> {
                     'Minimum ${t.minQuantity}',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppDesign.accentText,
+                      // Sur la surface blanche de la carte : accent de
+                      // marque, accentText étant réservé aux fonds teintés.
+                      color: AppDesign.accent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
