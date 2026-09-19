@@ -623,13 +623,16 @@ class ProductView extends GetView<ProductController> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Neutre : ces pastilles décrivent le produit, elles ne se touchent
+        // pas. L'orange est réservé à ce sur quoi on peut agir, sans quoi
+        // neuf éléments se disputaient l'attention sur le même écran.
         Container(
           padding: EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+            color: context.ds.surfaceMuted,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppThemeSystem.primaryColor, size: 22),
+          child: Icon(icon, color: context.ds.textSecondary, size: 22),
         ),
         SizedBox(width: 12),
         Flexible(
@@ -694,12 +697,12 @@ class ProductView extends GetView<ProductController> {
               Container(
                 padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                  color: context.ds.surfaceMuted,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.location_on_rounded,
-                  color: AppThemeSystem.primaryColor,
+                  color: context.ds.textSecondary,
                   size: 24,
                 ),
               ),
@@ -766,7 +769,7 @@ class ProductView extends GetView<ProductController> {
             children: [
               Icon(
                 Icons.description_rounded,
-                color: AppThemeSystem.primaryColor,
+                color: context.ds.textSecondary,
                 size: 20,
               ),
               SizedBox(width: 8),
@@ -820,7 +823,7 @@ class ProductView extends GetView<ProductController> {
               Icon(
                 Icons.tune_rounded,
                 size: 20,
-                color: AppThemeSystem.primaryColor,
+                color: context.ds.textSecondary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -885,7 +888,7 @@ class ProductView extends GetView<ProductController> {
               children: [
                 Icon(
                   Icons.store_rounded,
-                  color: AppThemeSystem.primaryColor,
+                  color: context.ds.textSecondary,
                   size: 20,
                 ),
                 SizedBox(width: 8),
@@ -968,23 +971,21 @@ class ProductView extends GetView<ProductController> {
                                       );
                                     },
                                 errorBuilder: (_, __, ___) => Container(
-                                  decoration: BoxDecoration(
-                                    color: AppDesign.accent,
-                                  ),
+                                  color: context.ds.surfaceMuted,
                                   child: Icon(
                                     Icons.person_rounded,
-                                    color: Colors.white,
+                                    color: context.ds.textSecondary,
                                     size: 24,
                                   ),
                                 ),
                               )
                             : Container(
-                                decoration: BoxDecoration(
-                                  color: AppDesign.accent,
-                                ),
+                                // Avatar de repli : un aplat orange plein
+                                // rivalisait avec le bouton Commander.
+                                color: context.ds.surfaceMuted,
                                 child: Icon(
                                   Icons.person_rounded,
-                                  color: Colors.white,
+                                  color: context.ds.textSecondary,
                                   size: 24,
                                 ),
                               ),
@@ -1094,9 +1095,11 @@ class ProductView extends GetView<ProductController> {
                       SizedBox(height: 4),
                       Row(
                         children: [
+                          // La note n'est pas une alerte : le jeton warning
+                          // (#9A6700) y introduisait une couleur de plus.
                           Icon(
                             Icons.star_rounded,
-                            color: AppDesign.warning,
+                            color: AppDesign.accent,
                             size: 16,
                           ),
                           SizedBox(width: 4),
