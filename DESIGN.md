@@ -76,6 +76,31 @@ résultat pour ces filtres ».
 **Dégradés** — réservés aux voiles de lisibilité sur image
 (`transparent → noir`). Un dégradé décoratif est un aplat qui s'excuse.
 
+**Hauteur d'une carte en grille** — ne jamais figer à la fois la hauteur de
+l'image et celle du bloc texte : leur somme dépasse la cellule de quelques
+pixels selon la densité, et Flutter affiche un bandeau de débordement.
+L'image garde son ratio, le texte prend le reste via `Flexible`, et la
+colonne doit être en `mainAxisSize.max` — sinon le `Flexible` n'a aucun
+espace à partager.
+
+## Structure de navigation
+
+Cinq destinations en bas — **Accueil, Import, Ma voix, Suivi, Compte** — dans
+l'ordre du parcours : découvrir, s'exprimer, suivre ses achats, gérer son
+compte. Au-delà de cinq, les libellés deviennent illisibles sur un téléphone
+étroit.
+
+La messagerie, les favoris et les notifications sont en barre haute : on les
+consulte ponctuellement, sans y séjourner. L'accueil y affiche
+« Bienvenue / <prénom> », ou « Invité » hors session.
+
+Accueil et Import restent consultables sans compte — ce sont les vitrines.
+Les trois autres onglets déclenchent la demande de connexion.
+
+Ajouter un onglet suppose de modifier **deux** endroits cohérents :
+`tabNames` et `protectedTabs` dans `HomeController`, `_destinations` et le
+`TabBarView` dans `HomeView`. Les index doivent correspondre.
+
 ## Vérifier un écran
 
 ```bash
