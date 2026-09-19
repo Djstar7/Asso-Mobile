@@ -8,6 +8,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/values/country_catalog.dart';
 
 class SettingsController extends GetxController {
   // États
@@ -1688,17 +1689,33 @@ class SettingsController extends GetxController {
                       final String country = item['country'];
                       final CurrencyModel currency = item['currency'];
 
+                      // Drapeau du pays ; repli sur le symbole monétaire
+                      // pour un pays absent du catalogue.
+                      final flag = CountryCatalog.flagFor(country);
+
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                          child: Text(
-                            currency.symbol,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
+                        leading: flag.isNotEmpty
+                            ? SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Center(
+                                  child: Text(
+                                    flag,
+                                    style: const TextStyle(fontSize: 28),
+                                  ),
+                                ),
+                              )
+                            : CircleAvatar(
+                                backgroundColor: AppThemeSystem.primaryColor
+                                    .withValues(alpha: 0.1),
+                                child: Text(
+                                  currency.symbol,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
                         title: Text(
                           country,
                           style: const TextStyle(

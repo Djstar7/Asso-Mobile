@@ -1,15 +1,91 @@
 import 'package:get/get.dart';
+
+import '../../../core/values/country_catalog.dart';
+import '../../../data/models/currency_model.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
-import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
 
+/// Un pays sélectionnable, avec sa devise et son drapeau.
+///
+/// Remplace la `Map<String, dynamic>` d'origine : la liste est parcourue à
+/// chaque frappe dans la recherche, et un type concret évite autant de casts.
+class CountryOption {
+  CountryOption({required this.country, required this.currency})
+      : flag = CountryCatalog.flagFor(country),
+        _searchKey = _normalize(
+          '$country ${currency.code} ${currency.name}',
+        );
+
+  final String country;
+  final CurrencyModel currency;
+
+  /// Drapeau en emoji, vide si le pays n'est pas dans le catalogue.
+  final String flag;
+
+  /// Nom, code et libellé de devise, sans accents ni casse : la recherche
+  /// compare sur cette clé pour que « senegal » trouve « Sénégal ».
+  final String _searchKey;
+
+  /// Nom sans accents ni casse, utilisé pour trier : l'ordre des codes
+  /// UTF-16 rejetterait sinon « Égypte » et « États-Unis » après « Zimbabwe ».
+  String get sortKey => _normalize(country);
+
+  /// Initiale utilisée pour regrouper la liste ; les accents sont réduits
+  /// afin que « Égypte » se range sous « E » et non dans une section à part.
+  String get initial {
+    final normalized = sortKey;
+    return normalized.isEmpty ? '#' : normalized[0].toUpperCase();
+  }
+
+  bool matches(String normalizedQuery) => _searchKey.contains(normalizedQuery);
+
+  /// Minuscule sans accents, pour comparer des chaînes saisies au clavier.
+  static String _normalize(String input) {
+    const accented = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿœæ';
+    const plain = 'aaaaaaceeeeiiiinooooouuuuyyoa';
+
+    final buffer = StringBuffer();
+    for (final rune in input.toLowerCase().runes) {
+      final char = String.fromCharCode(rune);
+      final index = accented.indexOf(char);
+      buffer.write(index == -1 ? char : plain[index]);
+    }
+    return buffer.toString();
+  }
+}
+
+/// Une section de la liste : une initiale et les pays qu'elle regroupe.
+class CountrySection {
+  const CountrySection({required this.letter, required this.countries});
+
+  final String letter;
+  final List<CountryOption> countries;
+}
+
 class CountrySelectionController extends GetxController {
-  final RxList<Map<String, dynamic>> allCountries = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> filteredCountries = <Map<String, dynamic>>[].obs;
+  /// Pays mis en avant au-dessus de la liste : ils couvrent l'essentiel des
+  /// utilisateurs et évitent de faire défiler 199 entrées au premier lancement.
+  static const List<String> suggestedCountries = [
+    'Cameroun',
+    "Côte d'Ivoire",
+    'Sénégal',
+    'France',
+    'Bénin',
+    'Gabon',
+  ];
+
+  final RxList<CountryOption> allCountries = <CountryOption>[].obs;
+  final RxList<CountryOption> filteredCountries = <CountryOption>[].obs;
+  final RxList<CountrySection> sections = <CountrySection>[].obs;
+  final RxList<CountryOption> suggestions = <CountryOption>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool hasError = false.obs;
   final RxString searchQuery = ''.obs;
-  final Rx<CurrencyModel?> selectedCurrency = Rx<CurrencyModel?>(null);
+
+  /// Vrai tant que l'utilisateur n'a rien tapé : on affiche alors les
+  /// suggestions et les en-têtes de section.
+  bool get isBrowsing => searchQuery.value.trim().isEmpty;
 
   @override
   void onInit() {
@@ -17,54 +93,43 @@ class CountrySelectionController extends GetxController {
     fetchAllCountriesWithCurrencies();
   }
 
-  /// Fetch all countries with their currencies from backend
+  /// Charge les pays et leurs devises depuis le backend.
   Future<void> fetchAllCountriesWithCurrencies() async {
     try {
       isLoading.value = true;
-      print('🌍 Fetching all countries and currencies from API...');
+      hasError.value = false;
 
-      final response = await ApiProvider.get('/v1/currencies/all-with-countries');
+      final response = await ApiProvider.get(
+        '/v1/currencies/all-with-countries',
+      );
 
-      print('📡 API Response - Success: ${response.success}');
-      print('📡 API Response - Data null?: ${response.data == null}');
-
-      if (response.success && response.data != null) {
-        final List currencies = response.data!['data'];
-        print('💱 Received ${currencies.length} currencies from API');
-
-        // Transform data to country list with currency info
-        List<Map<String, dynamic>> countries = [];
-
-        for (var currency in currencies) {
-          final currencyModel = CurrencyModel.fromJson(currency);
-          print('   Processing: ${currencyModel.code} with ${currencyModel.countries.length} countries');
-
-          // Add each country from this currency
-          for (var country in currencyModel.countries) {
-            countries.add({
-              'country': country,
-              'currency': currencyModel,
-            });
-          }
-        }
-
-        print('📋 Total countries created: ${countries.length}');
-
-        // Sort countries alphabetically
-        countries.sort((a, b) =>
-          (a['country'] as String).compareTo(b['country'] as String)
-        );
-
-        allCountries.value = countries;
-        filteredCountries.value = countries;
-        print('✅ Countries loaded successfully!');
-      } else {
-        print('❌ API call failed or no data');
-        print('   Message: ${response.message}');
+      if (!response.success || response.data == null) {
+        hasError.value = true;
+        return;
       }
-    } catch (e, stackTrace) {
-      print('❌ Error fetching countries: $e');
-      print('Stack trace: $stackTrace');
+
+      final List currencies = response.data!['data'] as List;
+      final options = <CountryOption>[];
+
+      for (final currency in currencies) {
+        final currencyModel = CurrencyModel.fromJson(
+          currency as Map<String, dynamic>,
+        );
+        for (final country in currencyModel.countries) {
+          options.add(
+            CountryOption(country: country, currency: currencyModel),
+          );
+        }
+      }
+
+      // Tri sur la clé normalisée : sinon « Égypte » et « États-Unis » se
+      // retrouvent rejetés après « Zimbabwe » par l'ordre des codes UTF-16.
+      options.sort((a, b) => a.sortKey.compareTo(b.sortKey));
+
+      allCountries.value = options;
+      _applyFilter('');
+    } catch (e) {
+      hasError.value = true;
       Get.snackbar(
         'Erreur',
         'Impossible de charger la liste des pays',
@@ -75,42 +140,57 @@ class CountrySelectionController extends GetxController {
     }
   }
 
-  /// Filter countries based on search query
+  /// Filtre la liste sur le nom du pays, le code ou le nom de la devise.
   void filterCountries(String query) {
     searchQuery.value = query;
-
-    if (query.isEmpty) {
-      filteredCountries.value = allCountries;
-    } else {
-      filteredCountries.value = allCountries.where((item) {
-        final country = (item['country'] as String).toLowerCase();
-        final currency = (item['currency'] as CurrencyModel);
-        final currencyCode = currency.code.toLowerCase();
-        final currencyName = currency.name.toLowerCase();
-        final search = query.toLowerCase();
-
-        return country.contains(search) ||
-               currencyCode.contains(search) ||
-               currencyName.contains(search);
-      }).toList();
-    }
+    _applyFilter(query);
   }
 
-  /// Select a country and its currency
-  Future<void> selectCountry(Map<String, dynamic> countryData) async {
+  void _applyFilter(String query) {
+    final normalized = CountryOption._normalize(query.trim());
+
+    final matches = normalized.isEmpty
+        ? allCountries.toList()
+        : allCountries.where((c) => c.matches(normalized)).toList();
+
+    filteredCountries.value = matches;
+    sections.value = _groupByInitial(matches);
+    suggestions.value = normalized.isEmpty ? _buildSuggestions() : const [];
+  }
+
+  /// Regroupe les pays par initiale, en conservant l'ordre déjà trié.
+  List<CountrySection> _groupByInitial(List<CountryOption> countries) {
+    final grouped = <String, List<CountryOption>>{};
+    for (final country in countries) {
+      grouped.putIfAbsent(country.initial, () => []).add(country);
+    }
+    return [
+      for (final letter in grouped.keys)
+        CountrySection(letter: letter, countries: grouped[letter]!),
+    ];
+  }
+
+  /// Les pays suggérés, dans l'ordre déclaré, en ignorant ceux que le
+  /// backend ne renvoie pas.
+  List<CountryOption> _buildSuggestions() {
+    final result = <CountryOption>[];
+    for (final name in suggestedCountries) {
+      final match = allCountries.firstWhereOrNull((c) => c.country == name);
+      if (match != null) result.add(match);
+    }
+    return result;
+  }
+
+  /// Enregistre le pays choisi et sa devise, puis poursuit l'onboarding.
+  Future<void> selectCountry(CountryOption option) async {
     try {
-      final CurrencyModel currency = countryData['currency'];
-      final String country = countryData['country'];
-
       isLoading.value = true;
-
-      // Set the currency using CurrencyService
-      await CurrencyService.to.setCountryAndCurrency(country, currency);
-
-      // Navigate to the onboarding flow after country selection
+      await CurrencyService.to.setCountryAndCurrency(
+        option.country,
+        option.currency,
+      );
       Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {
-      print('Error selecting country: $e');
       Get.snackbar(
         'Erreur',
         'Impossible de définir le pays sélectionné',
