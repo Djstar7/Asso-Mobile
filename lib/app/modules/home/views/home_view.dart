@@ -175,7 +175,8 @@ class HomeView extends GetView<HomeController> {
                     builder: (scaffoldContext) => AppIconButton(
                       icon: Icons.menu_rounded,
                       tooltip: 'Menu',
-                      onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                      onPressed: () =>
+                          Scaffold.of(scaffoldContext).openDrawer(),
                     ),
                   ),
                   Expanded(
@@ -255,8 +256,9 @@ class HomeView extends GetView<HomeController> {
   Widget _buildGreeting(BuildContext context) {
     return Obx(() {
       final fullName = controller.userName.value.trim();
-      final firstName =
-          fullName.isEmpty ? '' : fullName.split(RegExp(r'\s+')).first;
+      final firstName = fullName.isEmpty
+          ? ''
+          : fullName.split(RegExp(r'\s+')).first;
       final isGuest = AuthGuard.isGuest || firstName.isEmpty;
 
       return Column(
@@ -304,7 +306,11 @@ class HomeView extends GetView<HomeController> {
           ),
           child: Row(
             children: [
-              Icon(Icons.search_rounded, size: 20, color: context.ds.textTertiary),
+              Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: context.ds.textTertiary,
+              ),
               SizedBox(width: AppDesign.space2),
               Expanded(
                 child: Text(
@@ -317,7 +323,11 @@ class HomeView extends GetView<HomeController> {
                   ),
                 ),
               ),
-              Icon(Icons.tune_rounded, size: 18, color: context.ds.textTertiary),
+              Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: context.ds.textTertiary,
+              ),
             ],
           ),
         ),
@@ -356,7 +366,9 @@ class HomeView extends GetView<HomeController> {
                     final user = StorageService.getUser();
                     final isAuthenticated = StorageService.isAuthenticated;
                     final hasAccount =
-                        isAuthenticated && user != null && user.email.isNotEmpty;
+                        isAuthenticated &&
+                        user != null &&
+                        user.email.isNotEmpty;
 
                     return Row(
                       children: [
@@ -412,7 +424,6 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
 
-
           // Menu items avec scroll
           Expanded(
             child: ListView(
@@ -428,7 +439,10 @@ class HomeView extends GetView<HomeController> {
                   title: 'Mes préférences',
                   onTap: () {
                     Get.back();
-                    Get.toNamed(Routes.PREFERENCES, arguments: {'isEditing': true});
+                    Get.toNamed(
+                      Routes.PREFERENCES,
+                      arguments: {'isEditing': true},
+                    );
                   },
                 ),
                 _buildDrawerItem(
@@ -491,7 +505,8 @@ class HomeView extends GetView<HomeController> {
 
                     return Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
+                        horizontal:
+                            AppThemeSystem.getHorizontalPadding(context) * 0.5,
                         vertical: 2,
                       ),
                       child: InkWell(
@@ -507,11 +522,17 @@ class HomeView extends GetView<HomeController> {
                             controller.handleVendorModeNavigation();
                           }
                         },
-                        borderRadius: context.borderRadius(BorderRadiusType.small),
+                        borderRadius: context.borderRadius(
+                          BorderRadiusType.small,
+                        ),
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
-                            vertical: AppThemeSystem.getVerticalPadding(context) * 0.5,
+                            horizontal:
+                                AppThemeSystem.getHorizontalPadding(context) *
+                                0.5,
+                            vertical:
+                                AppThemeSystem.getVerticalPadding(context) *
+                                0.5,
                           ),
                           child: Row(
                             children: [
@@ -520,8 +541,12 @@ class HomeView extends GetView<HomeController> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: context.borderRadius(BorderRadiusType.small),
+                                  color: AppThemeSystem.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: context.borderRadius(
+                                    BorderRadiusType.small,
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.store_rounded,
@@ -551,10 +576,14 @@ class HomeView extends GetView<HomeController> {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppThemeSystem.successColor.withValues(alpha: 0.15),
-                                    borderRadius: context.borderRadius(BorderRadiusType.small),
+                                    color: AppThemeSystem.successColor
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: context.borderRadius(
+                                      BorderRadiusType.small,
+                                    ),
                                     border: Border.all(
-                                      color: AppThemeSystem.successColor.withValues(alpha: 0.3),
+                                      color: AppThemeSystem.successColor
+                                          .withValues(alpha: 0.3),
                                       width: 1,
                                     ),
                                   ),
@@ -705,13 +734,12 @@ class HomeView extends GetView<HomeController> {
 
           // Footer avec déconnexion / connexion
           Container(
-            padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+            padding: EdgeInsets.all(
+              AppThemeSystem.getHorizontalPadding(context),
+            ),
             decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(
-                  color: context.borderColor,
-                  width: 1,
-                ),
+                top: BorderSide(color: context.borderColor, width: 1),
               ),
             ),
             child: SafeArea(
@@ -775,7 +803,8 @@ class HomeView extends GetView<HomeController> {
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.75,
+                    horizontal:
+                        AppThemeSystem.getHorizontalPadding(context) * 0.75,
                     vertical: AppThemeSystem.getVerticalPadding(context) * 0.75,
                   ),
                   decoration: BoxDecoration(
@@ -794,7 +823,9 @@ class HomeView extends GetView<HomeController> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        AuthGuard.isGuest ? Icons.login_rounded : Icons.logout_rounded,
+                        AuthGuard.isGuest
+                            ? Icons.login_rounded
+                            : Icons.logout_rounded,
                         color: AuthGuard.isGuest
                             ? AppThemeSystem.primaryColor
                             : AppThemeSystem.errorColor,
@@ -871,11 +902,7 @@ class HomeView extends GetView<HomeController> {
                   color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
                   borderRadius: context.borderRadius(BorderRadiusType.small),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppThemeSystem.primaryColor,
-                  size: 20,
-                ),
+                child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
               ),
 
               SizedBox(width: 12),
@@ -926,9 +953,7 @@ class HomeView extends GetView<HomeController> {
       ),
     );
   }
-
 }
-
 
 class HomeItemView extends GetView<HomeController> {
   const HomeItemView({super.key});
@@ -947,34 +972,32 @@ class HomeItemView extends GetView<HomeController> {
         child: CustomScrollView(
           slivers: [
             // Carousel de bannières
-            SliverToBoxAdapter(
-              child: _buildBannerCarousel(context),
-            ),
+            SliverToBoxAdapter(child: _buildBannerCarousel(context)),
 
             // DIASPO EXCHANGE Promo Card
-            SliverToBoxAdapter(
-              child: _buildQuickAccess(context),
-            ),
+            SliverToBoxAdapter(child: _buildQuickAccess(context)),
 
             // Catégories horizontales
-            SliverToBoxAdapter(
-              child: _buildCategories(context),
-            ),
+            SliverToBoxAdapter(child: _buildCategories(context)),
 
             // Afficher les sections "Proche de vous" et "Récemment postés" seulement si "Tous" est sélectionné
             if (controller.selectedCategory.value == 'Tous') ...[
               // Vérifier si on est en train de charger ou s'il y a des produits
-              if (controller.isLoadingNearby.value || controller.isLoadingRecent.value ||
-                  controller.nearbyProducts.isNotEmpty || controller.recentProducts.isNotEmpty) ...[
-
+              if (controller.isLoadingNearby.value ||
+                  controller.isLoadingRecent.value ||
+                  controller.nearbyProducts.isNotEmpty ||
+                  controller.recentProducts.isNotEmpty) ...[
                 // Section "Proche de vous" - afficher seulement s'il y a des produits ou en chargement
-                if (controller.isLoadingNearby.value || controller.nearbyProducts.isNotEmpty) ...[
+                if (controller.isLoadingNearby.value ||
+                    controller.nearbyProducts.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: _buildSectionTitle(
                       context,
                       'Proche de vous',
                       Icons.location_on_rounded,
-                      onSeeAll: controller.nearbyProducts.isNotEmpty ? controller.onSeeAllNearby : null,
+                      onSeeAll: controller.nearbyProducts.isNotEmpty
+                          ? controller.onSeeAllNearby
+                          : null,
                     ),
                   ),
 
@@ -986,13 +1009,17 @@ class HomeItemView extends GetView<HomeController> {
                       switchOutCurve: Curves.easeOut,
                       child: controller.isLoadingNearby.value
                           ? ShimmerWidgets.horizontalProductListShimmer(context)
-                          : _buildHorizontalProductList(context, controller.nearbyProducts),
+                          : _buildHorizontalProductList(
+                              context,
+                              controller.nearbyProducts,
+                            ),
                     ),
                   ),
                 ],
 
                 // Section "Récemment postés" - afficher seulement s'il y a des produits ou en chargement
-                if (controller.isLoadingRecent.value || controller.recentProducts.isNotEmpty) ...[
+                if (controller.isLoadingRecent.value ||
+                    controller.recentProducts.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: _buildSectionTitle(
                       context,
@@ -1005,39 +1032,47 @@ class HomeItemView extends GetView<HomeController> {
                   controller.isLoadingRecent.value
                       ? SliverPadding(
                           padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(context),
+                            horizontal: AppThemeSystem.getHorizontalPadding(
+                              context,
+                            ),
                           ),
                           sliver: SliverGrid(
                             gridDelegate: ProductCard.gridDelegate(context),
                             delegate: SliverChildBuilderDelegate(
-                              (context, index) => ShimmerWidgets.productCardShimmer(context),
+                              (context, index) =>
+                                  ShimmerWidgets.productCardShimmer(context),
                               childCount: 6,
                             ),
                           ),
                         )
                       : SliverPadding(
                           padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(context),
+                            horizontal: AppThemeSystem.getHorizontalPadding(
+                              context,
+                            ),
                           ),
                           sliver: SliverGrid(
                             gridDelegate: ProductCard.gridDelegate(context),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final product = controller.recentProducts[index];
-                                return _FadeInProduct(
-                                  delay: Duration(milliseconds: index * 50),
-                                  child: _buildProductCard(context, product),
-                                );
-                              },
-                              childCount: controller.recentProducts.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final product = controller.recentProducts[index];
+                              return _FadeInProduct(
+                                delay: Duration(milliseconds: index * 50),
+                                child: _buildProductCard(context, product),
+                              );
+                            }, childCount: controller.recentProducts.length),
                           ),
                         ),
 
                   // Bouton "Voir plus" stylé
                   if (controller.recentProducts.isNotEmpty)
                     SliverToBoxAdapter(
-                      child: _buildSeeMoreButton(context, controller.onSeeAllRecent),
+                      child: _buildSeeMoreButton(
+                        context,
+                        controller.onSeeAllRecent,
+                      ),
                     ),
                 ],
               ] else ...[
@@ -1064,45 +1099,47 @@ class HomeItemView extends GetView<HomeController> {
               controller.isLoadingProducts.value
                   ? ShimmerWidgets.productGridShimmer(context, itemCount: 6)
                   : controller.products.isEmpty
-                      ? SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(Icons.inventory_2_outlined,
-                                      size: 64, color: AppThemeSystem.grey400),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Aucun produit dans cette catégorie',
-                                    style: context.textStyle(
-                                      FontSizeType.body1,
-                                      color: AppThemeSystem.grey600,
-                                    ),
-                                  ),
-                                ],
+                  ? SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: AppThemeSystem.grey400,
                               ),
-                            ),
-                          ),
-                        )
-                      : SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(context),
-                          ),
-                          sliver: SliverGrid(
-                            gridDelegate: ProductCard.gridDelegate(context),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final product = controller.products[index];
-                                return _FadeInProduct(
-                                  delay: Duration(milliseconds: index * 50),
-                                  child: _buildProductCard(context, product),
-                                );
-                              },
-                              childCount: controller.products.length,
-                            ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Aucun produit dans cette catégorie',
+                                style: context.textStyle(
+                                  FontSizeType.body1,
+                                  color: AppThemeSystem.grey600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppThemeSystem.getHorizontalPadding(
+                          context,
+                        ),
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate: ProductCard.gridDelegate(context),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final product = controller.products[index];
+                          return _FadeInProduct(
+                            delay: Duration(milliseconds: index * 50),
+                            child: _buildProductCard(context, product),
+                          );
+                        }, childCount: controller.products.length),
+                      ),
+                    ),
 
               // Indicateur de chargement pour la pagination
               if (controller.isLoadingMore.value)
@@ -1120,7 +1157,9 @@ class HomeItemView extends GetView<HomeController> {
 
             // Espacement en bas
             SliverToBoxAdapter(
-              child: SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 2),
+              child: SizedBox(
+                height: AppThemeSystem.getVerticalPadding(context) * 2,
+              ),
             ),
           ],
         ),
@@ -1144,9 +1183,7 @@ class HomeItemView extends GetView<HomeController> {
         ),
 
         // Categories shimmer
-        SliverToBoxAdapter(
-          child: ShimmerWidgets.categoriesShimmer(context),
-        ),
+        SliverToBoxAdapter(child: ShimmerWidgets.categoriesShimmer(context)),
 
         // Section title placeholder
         SliverToBoxAdapter(
@@ -1198,7 +1235,9 @@ class HomeItemView extends GetView<HomeController> {
 
         // Espacement en bas
         SliverToBoxAdapter(
-          child: SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 2),
+          child: SizedBox(
+            height: AppThemeSystem.getVerticalPadding(context) * 2,
+          ),
         ),
       ],
     );
@@ -1229,12 +1268,15 @@ class HomeItemView extends GetView<HomeController> {
             // Le filtre actif se signale par un fond teinté et un texte
             // accentué plutôt que par un aplat de couleur pleine : la rangée
             // reste lisible et ne capte plus tout le regard.
-            final background =
-                isSelected ? AppDesign.accentSubtle : context.ds.surface;
-            final foreground =
-                isSelected ? AppDesign.accentText : context.ds.textSecondary;
-            final borderColor =
-                isSelected ? AppDesign.accentBorder : context.ds.border;
+            final background = isSelected
+                ? AppDesign.accentSubtle
+                : context.ds.surface;
+            final foreground = isSelected
+                ? AppDesign.accentText
+                : context.ds.textSecondary;
+            final borderColor = isSelected
+                ? AppDesign.accentBorder
+                : context.ds.border;
 
             return Material(
               color: background,
@@ -1254,8 +1296,11 @@ class HomeItemView extends GetView<HomeController> {
                       if (index == 0)
                         Padding(
                           padding: EdgeInsets.only(right: AppDesign.space1 + 2),
-                          child: Icon(Icons.grid_view_rounded,
-                              size: 15, color: foreground),
+                          child: Icon(
+                            Icons.grid_view_rounded,
+                            size: 15,
+                            color: foreground,
+                          ),
                         )
                       else if (categoryData?['svg_icon'] != null)
                         Padding(
@@ -1270,8 +1315,9 @@ class HomeItemView extends GetView<HomeController> {
                         category,
                         style: context.textStyle(
                           FontSizeType.caption,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           color: foreground,
                         ),
                       ),
@@ -1287,11 +1333,14 @@ class HomeItemView extends GetView<HomeController> {
   }
 
   /// Build category SVG icon
-  Widget _buildCategorySvgIcon(String svgIcon, bool isSelected, BuildContext context) {
+  Widget _buildCategorySvgIcon(
+    String svgIcon,
+    bool isSelected,
+    BuildContext context,
+  ) {
     // Cette icône est posée sur le chip, dont le fond passe à accentSubtle
     // quand il est actif : d'où accentText plutôt que l'accent plein.
-    final color =
-        isSelected ? AppDesign.accentText : context.ds.textSecondary;
+    final color = isSelected ? AppDesign.accentText : context.ds.textSecondary;
     try {
       return SvgPicture.string(
         svgIcon,
@@ -1363,7 +1412,10 @@ class HomeItemView extends GetView<HomeController> {
                         ),
                       ),
                       SizedBox(width: AppDesign.space2),
-                      const AppBadge(label: 'NOUVEAU', tone: AppBadgeTone.accent),
+                      const AppBadge(
+                        label: 'NOUVEAU',
+                        tone: AppBadgeTone.accent,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -1381,8 +1433,11 @@ class HomeItemView extends GetView<HomeController> {
               ),
             ),
             SizedBox(width: AppDesign.space2),
-            Icon(Icons.chevron_right_rounded,
-                color: context.ds.textTertiary, size: 20),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: context.ds.textTertiary,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -1459,9 +1514,18 @@ class HomeItemView extends GetView<HomeController> {
     final deviceType = AppThemeSystem.getDeviceType(context);
 
     final bannerData = [
-      {'title': 'Bienvenue sur Asso', 'subtitle': 'Découvrez les meilleures offres près de chez vous'},
-      {'title': 'Livraison Rapide', 'subtitle': 'Recevez vos commandes en moins de 24h'},
-      {'title': 'Prix Imbattables', 'subtitle': 'Les meilleurs prix du marché camerounais'},
+      {
+        'title': 'Bienvenue sur Asso',
+        'subtitle': 'Découvrez les meilleures offres près de chez vous',
+      },
+      {
+        'title': 'Livraison Rapide',
+        'subtitle': 'Recevez vos commandes en moins de 24h',
+      },
+      {
+        'title': 'Prix Imbattables',
+        'subtitle': 'Les meilleurs prix du marché camerounais',
+      },
     ];
 
     // Use API banners or fallback to local assets
@@ -1606,31 +1670,34 @@ class HomeItemView extends GetView<HomeController> {
             ),
           ),
           const SizedBox(height: 12),
-          Obx(() => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  bannerCount,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: controller.currentBannerIndex.value == index ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: controller.currentBannerIndex.value == index
-                          ? AppThemeSystem.primaryColor
-                          : AppThemeSystem.grey400,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+          Obx(
+            () => Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                bannerCount,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: controller.currentBannerIndex.value == index ? 20 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: controller.currentBannerIndex.value == index
+                        ? AppThemeSystem.primaryColor
+                        : AppThemeSystem.grey400,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildBannerImage(int index) {
-    if (controller.banners.isNotEmpty && controller.banners[index]['image'] != null) {
+    if (controller.banners.isNotEmpty &&
+        controller.banners[index]['image'] != null) {
       return Image.network(
         controller.banners[index]['image'],
         fit: BoxFit.cover,
@@ -1647,7 +1714,10 @@ class HomeItemView extends GetView<HomeController> {
   }
 
   /// Build product image widget (network or asset fallback)
-  Widget _buildProductImage(Map<String, dynamic> product, {BoxFit fit = BoxFit.cover}) {
+  Widget _buildProductImage(
+    Map<String, dynamic> product, {
+    BoxFit fit = BoxFit.cover,
+  }) {
     final primaryImage = product['primary_image'];
     final images = product['images'] as List?;
 
@@ -1668,7 +1738,8 @@ class HomeItemView extends GetView<HomeController> {
           return Center(
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
                   : null,
               strokeWidth: 2,
               color: AppThemeSystem.primaryColor,
@@ -1681,7 +1752,9 @@ class HomeItemView extends GetView<HomeController> {
     // Fallback: try as local asset
     final localImage = product['image'];
     if (localImage != null && localImage.toString().isNotEmpty) {
-      return Image.asset(localImage.toString(), fit: fit,
+      return Image.asset(
+        localImage.toString(),
+        fit: fit,
         errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
       );
     }
@@ -1728,11 +1801,18 @@ class HomeItemView extends GetView<HomeController> {
 
   /// Get product location
   String _getLocation(Map<String, dynamic> product) {
-    return product['location']?.toString() ?? product['shop']?['address']?.toString() ?? '';
+    return product['location']?.toString() ??
+        product['shop']?['address']?.toString() ??
+        '';
   }
 
   /// Check if shop is certified (handles bool, int, string)
-  Widget _buildSectionTitle(BuildContext context, String title, IconData icon, {VoidCallback? onSeeAll}) {
+  Widget _buildSectionTitle(
+    BuildContext context,
+    String title,
+    IconData icon, {
+    VoidCallback? onSeeAll,
+  }) {
     return AppSectionHeader(
       title: title,
       actionLabel: onSeeAll != null ? 'Voir tout' : null,
@@ -1740,7 +1820,10 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildHorizontalProductList(BuildContext context, List<Map<String, dynamic>> products) {
+  Widget _buildHorizontalProductList(
+    BuildContext context,
+    List<Map<String, dynamic>> products,
+  ) {
     if (products.isEmpty) {
       return SizedBox(height: AppDesign.space4);
     }
@@ -1783,8 +1866,9 @@ class HomeItemView extends GetView<HomeController> {
       isCertified: ProductCard.isShopCertified(product),
       imageBuilder: (context) => _buildProductImage(product),
       onTap: () => Get.toNamed('/product', arguments: product),
-      onFavoriteTap:
-          productId > 0 ? () => controller.toggleFavorite(productId) : null,
+      onFavoriteTap: productId > 0
+          ? () => controller.toggleFavorite(productId)
+          : null,
     );
   }
 
@@ -1821,10 +1905,7 @@ class _FadeInProduct extends StatefulWidget {
   final Widget child;
   final Duration delay;
 
-  const _FadeInProduct({
-    required this.child,
-    this.delay = Duration.zero,
-  });
+  const _FadeInProduct({required this.child, this.delay = Duration.zero});
 
   @override
   State<_FadeInProduct> createState() => _FadeInProductState();
@@ -1844,16 +1925,15 @@ class _FadeInProductState extends State<_FadeInProduct>
       vsync: this,
     );
 
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     // Start animation after delay
     Future.delayed(widget.delay, () {
@@ -1873,10 +1953,7 @@ class _FadeInProductState extends State<_FadeInProduct>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacityAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }
@@ -1893,7 +1970,6 @@ class _NavDestination {
   final IconData icon;
   final IconData activeIcon;
 }
-
 
 /// Raccourci de la rangée d'accès rapides de l'accueil.
 class _QuickLink {
@@ -1970,7 +2046,6 @@ class _QuickLinkTile extends StatelessWidget {
   }
 }
 
-
 /// Destination de la barre de navigation basse.
 ///
 /// L'onglet actif se signale par une pastille teintée derrière son icône, et
@@ -1989,13 +2064,12 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Deux tons distincts, chacun sur son fond. L'icône est posée sur la
-    // pastille, dont le fond passe à accentSubtle quand l'onglet est actif ;
-    // le libellé, lui, reste sur le blanc de la barre et prend donc l'accent
-    // de marque. Employer accentText pour les deux faisait paraître la barre
-    // d'un autre orange que les raccourcis juste au-dessus.
-    final iconColor = isActive ? AppDesign.accentText : context.ds.textTertiary;
-    final labelColor = isActive ? AppDesign.accent : context.ds.textTertiary;
+    // Un seul orange dans toute l'application : l'icône comme le libellé
+    // prennent l'accent de marque. accentText, plus sombre, faisait paraître
+    // l'onglet actif d'une autre couleur que les raccourcis juste au-dessus ;
+    // la pastille accentSubtle est assez claire pour que l'accent y reste
+    // lisible.
+    final color = isActive ? AppDesign.accent : context.ds.textTertiary;
 
     return InkWell(
       onTap: onTap,
@@ -2020,7 +2094,7 @@ class _NavItem extends StatelessWidget {
             child: Icon(
               isActive ? destination.activeIcon : destination.icon,
               size: 21,
-              color: iconColor,
+              color: color,
             ),
           ),
           const SizedBox(height: 3),
@@ -2033,7 +2107,7 @@ class _NavItem extends StatelessWidget {
               fontSize: 10,
               height: 1.15,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: labelColor,
+              color: color,
             ),
           ),
         ],

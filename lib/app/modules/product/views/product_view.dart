@@ -96,8 +96,10 @@ class ProductView extends GetView<ProductController> {
           SliverAppBar(
             // Hauteur proportionnelle : 400 px fixes mangeaient la moitié
             // d'un petit écran et paraissaient timides sur une tablette.
-            expandedHeight:
-                (MediaQuery.sizeOf(context).height * 0.42).clamp(280.0, 460.0),
+            expandedHeight: (MediaQuery.sizeOf(context).height * 0.42).clamp(
+              280.0,
+              460.0,
+            ),
             pinned: true,
             backgroundColor: isDark
                 ? AppThemeSystem.darkCardColor
@@ -201,15 +203,19 @@ class ProductView extends GetView<ProductController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildThumbnails(context, product),
+                // Blocs posés sur la surface, séparés par des bandes de
+                // fond : la page se lit par paliers au lieu d'une coulée
+                // continue de cartes flottantes.
                 _buildProductHeader(context, product),
+                _sectionGap(context),
                 _buildVariantsSection(context, product),
                 _buildLocationSection(context, product),
-                Divider(height: 32),
+                _sectionGap(context),
                 _buildDescriptionSection(context, product),
                 _buildProductCharacteristics(context, product),
-                Divider(height: 32),
+                _sectionGap(context),
                 _buildSellerSection(context, product),
-                Divider(height: 32),
+                _sectionGap(context),
                 _buildSimilarProductsSection(context, product),
                 SizedBox(height: 100),
               ],
@@ -264,7 +270,11 @@ class ProductView extends GetView<ProductController> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
+                  const Icon(
+                    Icons.zoom_in_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   if (images.length > 1) ...[
                     const SizedBox(width: 6),
                     Obx(
@@ -357,253 +367,256 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
+  /// En-tête : le prix domine, puis le nom, puis la boutique et la note.
+  ///
+  /// L'ordre suit celui des places de marché : on regarde l'image, on lit le
+  /// prix, puis on identifie l'article. Le prix était auparavant relégué
+  /// sous le nom, à une taille voisine, et ne ressortait pas.
   Widget _buildProductHeader(
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    // Le nom passe avant le prix : on identifie l'article, puis on en lit
-    // le montant. Le prix n'est plus posé dans un bloc orange plein — sa
-    // taille et sa graisse suffisent à le rendre immédiatement repérable.
-    return Padding(
+    final shopName = product['shop']?['name']?.toString() ?? '';
+
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         context.ds.gutter,
-        AppDesign.space5,
+        AppDesign.space4,
         context.ds.gutter,
         AppDesign.space4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // La boutique vient en premier : sur une place de marché, savoir
-          // à qui l'on achète conditionne la confiance avant même le prix.
-          if ((product['shop']?['name']?.toString() ?? '').isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(bottom: AppDesign.space2),
-              child: Row(
-                children: [
-                  Icon(Icons.storefront_outlined,
-                      size: 15, color: context.ds.textTertiary),
-                  SizedBox(width: AppDesign.space1 + 2),
-                  Flexible(
-                    child: Text(
-                      product['shop']['name'].toString(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textStyle(
-                        FontSizeType.caption,
-                        fontWeight: FontWeight.w600,
-                        color: context.ds.textSecondary,
-                      ),
-                    ),
-                  ),
-                  if (ProductCard.isShopCertified(product)) ...[
-                    SizedBox(width: AppDesign.space2),
-                    const AppBadge(
-                      label: 'Vérifié',
-                      tone: AppBadgeTone.info,
-                      icon: Icons.verified_rounded,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          Text(
-            product['name']?.toString() ?? 'Produit',
-            style: context.textStyle(
-              FontSizeType.h5,
-              fontWeight: FontWeight.w600,
-              color: context.ds.textPrimary,
-              height: 1.3,
-            ),
-          ),
-          SizedBox(height: AppDesign.space3),
           Obx(
             () => Text(
               controller.formatPrice(controller.unitPriceXaf(product)),
               style: context.textStyle(
-                FontSizeType.h3,
-                fontWeight: FontWeight.w700,
-                color: context.ds.textPrimary,
+                FontSizeType.h2,
+                fontWeight: FontWeight.w800,
+                color: AppDesign.accent,
+                height: 1.1,
               ),
             ),
           ),
+          SizedBox(height: AppDesign.space2),
+          Text(
+            product['name']?.toString() ?? 'Produit',
+            style: context.textStyle(
+              FontSizeType.body1,
+              fontWeight: FontWeight.w600,
+              color: context.ds.textPrimary,
+              height: 1.35,
+            ),
+          ),
+          if (shopName.isNotEmpty) ...[
+            SizedBox(height: AppDesign.space2),
+            Row(
+              children: [
+                Icon(
+                  Icons.storefront_outlined,
+                  size: 15,
+                  color: context.ds.textTertiary,
+                ),
+                SizedBox(width: AppDesign.space1 + 2),
+                Flexible(
+                  child: Text(
+                    shopName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
+                ),
+                if (ProductCard.isShopCertified(product)) ...[
+                  SizedBox(width: AppDesign.space2),
+                  const AppBadge(
+                    label: 'Vérifié',
+                    tone: AppBadgeTone.info,
+                    icon: Icons.verified_rounded,
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
+  /// Bande grise séparant deux blocs, à la manière des places de marché.
+  ///
+  /// Remplace les Divider pleine largeur : elle marque une rupture franche
+  /// entre des sections qui, sinon, se lisaient comme une seule coulée.
+  Widget _sectionGap(BuildContext context) =>
+      Container(height: AppDesign.space2, color: context.ds.canvas);
+
+  /// Ligne compacte libellé / valeur.
+  ///
+  /// Les caractéristiques occupaient chacune une carte à pastille colorée ;
+  /// en lignes, elles se comparent d'un coup d'œil et tiennent sur un écran.
+  Widget _specRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+  }) {
+    final row = Padding(
+      padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: context.ds.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.textStyle(
+                FontSizeType.caption,
+                fontWeight: FontWeight.w600,
+                color: context.ds.textPrimary,
+              ),
+            ),
+          ),
+          if (onTap != null)
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: context.ds.textTertiary,
+            ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return row;
+    return InkWell(onTap: onTap, child: row);
+  }
+
+  /// Détails textuels du produit : caractéristiques, mentions commerciales,
+  /// tailles.
+  ///
+  /// Stock, poids et provenance ne figurent plus ici : ils ont rejoint le
+  /// bloc d'informations pratiques, où ils se comparent en lignes.
   Widget _buildProductCharacteristics(
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    // Extraire le stock
-    final stock = product['stock'];
-    final stockValue = stock is int
-        ? stock
-        : int.tryParse(stock.toString()) ?? 0;
-    final hasStock = stock != null;
-
-    // Extraire le poids (PRIORITÉ au poids personnalisé, sinon weight_category)
-    final weightCategory = product['weight_category']?.toString();
-    final customWeight = product['weight']?.toString();
-
-    String? weightDisplay;
-
-    // PRIORITÉ 1 : Poids personnalisé (weight)
-    if (customWeight != null &&
-        customWeight.isNotEmpty &&
-        customWeight != '0' &&
-        customWeight != 'null') {
-      // Utiliser le poids personnalisé
-      weightDisplay = customWeight.contains('kg') || customWeight.contains('KG')
-          ? customWeight
-          : '$customWeight kg';
-    }
-    // PRIORITÉ 2 : Catégorie de poids prédéfinie (weight_category)
-    else if (weightCategory != null &&
-        weightCategory.isNotEmpty &&
-        weightCategory != 'null') {
-      // Utiliser la catégorie de poids
-      final weightMap = {
-        'X-small': '~5 kg',
-        '30 Deep': '~30 kg',
-        '50 Deep': '~50 kg',
-        '60 Deep': '~60 kg',
-        'Rainbow XL': '~100 kg',
-        'Pallet': '~500 kg',
-      };
-      weightDisplay = weightMap[weightCategory] ?? weightCategory;
-    }
-
-    final hasWeight = weightDisplay != null;
     final characteristics = product['characteristics']?.toString().trim();
     final commercialInformation = product['commercial_information']
         ?.toString()
         .trim();
-    final originCode = product['origin_country']
-        ?.toString()
-        .trim()
-        .toUpperCase();
-    final originLabel = _originLabel(originCode);
     final sizes =
         (product['sizes'] as List?)
             ?.map((size) => size.toString())
             .where((size) => size.isNotEmpty)
             .toList() ??
         const <String>[];
-    final hasDetails =
-        characteristics?.isNotEmpty == true ||
-        commercialInformation?.isNotEmpty == true ||
-        originLabel.isNotEmpty ||
-        sizes.isNotEmpty;
 
-    // Si aucune caractéristique n'est disponible, ne rien afficher
-    if (!hasStock && !hasWeight && !hasDetails) {
-      return SizedBox.shrink();
-    }
+    final rows = <Widget>[
+      if (characteristics?.isNotEmpty == true)
+        _specRow(context, label: 'Caractéristiques', value: characteristics!),
+      if (commercialInformation?.isNotEmpty == true)
+        _specRow(context, label: 'Informations', value: commercialInformation!),
+      if (sizes.isNotEmpty)
+        _specRow(context, label: 'Tailles', value: sizes.join(' · ')),
+    ];
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-        vertical: 16,
-      ),
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppThemeSystem.getBorderColor(context)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (characteristics?.isNotEmpty == true) ...[
-              const Text(
-                'Caractéristiques',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                characteristics!,
-                style: TextStyle(color: context.secondaryTextColor),
-              ),
-              const SizedBox(height: 14),
-            ],
-            if (commercialInformation?.isNotEmpty == true) ...[
-              const Text(
-                'Informations commerciales',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                commercialInformation!,
-                style: TextStyle(color: context.secondaryTextColor),
-              ),
-              const SizedBox(height: 14),
-            ],
-            _buildCharacteristicItem(
-              context: context,
-              icon: Icons.public_rounded,
-              label: 'Provenance',
-              value: originLabel,
-            ),
-            const SizedBox(height: 14),
-            if (sizes.isNotEmpty) ...[
-              const Text(
-                'Tailles disponibles',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: sizes.map((size) => Chip(label: Text(size))).toList(),
-              ),
-              const SizedBox(height: 14),
-            ],
-            if (hasStock || hasWeight)
-              Row(
-                children: [
-                  // Stock à gauche
-                  if (hasStock)
-                    Expanded(
-                      child: _buildCharacteristicItem(
-                        context: context,
-                        icon: Icons.inventory_2_rounded,
-                        label: 'Stock disponible',
-                        value: stockValue > 0
-                            ? '$stockValue unité${stockValue > 1 ? "s" : ""}'
-                            : 'Rupture de stock',
-                      ),
-                    ),
+    if (rows.isEmpty) return const SizedBox.shrink();
 
-                  // Séparateur si les deux sont présents
-                  if (hasStock && hasWeight)
-                    Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16),
-                      width: 1,
-                      height: 50,
-                      color: AppThemeSystem.getBorderColor(context),
-                    ),
-
-                  // Poids à droite
-                  if (hasWeight)
-                    Expanded(
-                      child: _buildCharacteristicItem(
-                        context: context,
-                        icon: Icons.scale_rounded,
-                        label: 'Poids',
-                        value: weightDisplay,
-                      ),
-                    ),
-                ],
-              ),
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) AppDivider(),
+            rows[i],
           ],
-        ),
+        ],
       ),
     );
   }
 
+  /// Bloc des informations pratiques : lieu, stock, poids, origine.
+  ///
+  /// Chacune occupait auparavant sa propre carte, avec pastille colorée et
+  /// grandes marges : trois écrans pour trois valeurs. Regroupées en lignes,
+  /// elles se lisent d'un coup.
+  Widget _buildLocationSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
+    final fullLocation =
+        product['location']?.toString() ??
+        product['shop']?['address']?.toString() ??
+        'Non spécifiée';
+    final shopLabel = product['shop'] is Map
+        ? LocationLabel.fromApi(
+            Map<String, dynamic>.from(product['shop'] as Map),
+          )
+        : null;
+    final shortLocation = shopLabel ?? _getShortLocation(fullLocation);
+
+    final stock = product['stock'];
+    final stockValue = stock is int ? stock : int.tryParse(stock.toString());
+    final weight = _weightDisplay(product);
+    final origin = _originLabel(
+      product['origin_country']?.toString().trim().toUpperCase(),
+    );
+
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _specRow(
+            context,
+            label: 'Livraison depuis',
+            value: shortLocation,
+            onTap: () => _openMapOptions(context, product),
+          ),
+          if (stockValue != null) ...[
+            AppDivider(),
+            _specRow(
+              context,
+              label: 'Stock',
+              value: stockValue > 0
+                  ? '$stockValue unité${stockValue > 1 ? 's' : ''}'
+                  : 'Épuisé',
+            ),
+          ],
+          if (weight != null) ...[
+            AppDivider(),
+            _specRow(context, label: 'Poids', value: weight),
+          ],
+          if (origin.isNotEmpty) ...[
+            AppDivider(),
+            _specRow(context, label: 'Provenance', value: origin),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Pays d'origine en clair. Absent, l'article est considéré local.
   String _originLabel(String? code) {
     if (code == null || code.isEmpty || code == 'NULL') return 'Produit local';
     const countries = {
@@ -614,181 +627,64 @@ class ProductView extends GetView<ProductController> {
     return countries[code] ?? code;
   }
 
-  Widget _buildCharacteristicItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required String? value,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Neutre : ces pastilles décrivent le produit, elles ne se touchent
-        // pas. L'orange est réservé à ce sur quoi on peut agir, sans quoi
-        // neuf éléments se disputaient l'attention sur le même écran.
-        Container(
-          padding: EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: context.ds.surfaceMuted,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: context.ds.textSecondary, size: 22),
-        ),
-        SizedBox(width: 12),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: context.textStyle(
-                  FontSizeType.caption,
-                  color: AppThemeSystem.grey600,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                value ?? '',
-                style: context.textStyle(
-                  FontSizeType.body1,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  /// Poids affichable : mesure personnalisée si elle existe, sinon la
+  /// catégorie prédéfinie traduite en ordre de grandeur.
+  String? _weightDisplay(Map<String, dynamic> product) {
+    final custom = product['weight']?.toString();
+    if (custom != null &&
+        custom.isNotEmpty &&
+        custom != '0' &&
+        custom != 'null') {
+      return custom.toLowerCase().contains('kg') ? custom : '$custom kg';
+    }
 
-  Widget _buildLocationSection(
-    BuildContext context,
-    Map<String, dynamic> product,
-  ) {
-    final fullLocation =
-        product['location']?.toString() ??
-        product['shop']?['address']?.toString() ??
-        'Non spécifiée';
-    // « Ville, Pays » fourni par le serveur ; sinon on raccourcit l'adresse brute.
-    final shopLabel = product['shop'] is Map
-        ? LocationLabel.fromApi(Map<String, dynamic>.from(product['shop'] as Map))
-        : null;
-    final shortLocation = shopLabel ?? _getShortLocation(fullLocation);
+    final category = product['weight_category']?.toString();
+    if (category == null || category.isEmpty || category == 'null') return null;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-      ),
-      child: InkWell(
-        onTap: () => _openMapOptions(context, product),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppThemeSystem.getSurfaceColor(context),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppThemeSystem.getBorderColor(context)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: context.ds.surfaceMuted,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.location_on_rounded,
-                  color: context.ds.textSecondary,
-                  size: 24,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Localisation',
-                      style: context.textStyle(
-                        FontSizeType.caption,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      shortLocation,
-                      style: context.textStyle(
-                        FontSizeType.body1,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (fullLocation.length > shortLocation.length)
-                      Padding(
-                        padding: EdgeInsets.only(top: 2),
-                        child: Text(
-                          'Toucher pour voir sur la carte',
-                          style: context.textStyle(
-                            FontSizeType.overline,
-                            color: AppThemeSystem.primaryColor,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.map_rounded,
-                color: AppThemeSystem.primaryColor,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    const map = {
+      'X-small': '~5 kg',
+      '30 Deep': '~30 kg',
+      '50 Deep': '~50 kg',
+      '60 Deep': '~60 kg',
+      'Rainbow XL': '~100 kg',
+      'Pallet': '~500 kg',
+    };
+    return map[category] ?? category;
   }
 
   Widget _buildDescriptionSection(
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.description_rounded,
-                color: context.ds.textSecondary,
-                size: 20,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Description',
-                style: context.textStyle(
-                  FontSizeType.h5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          // Titre seul, sans icône : la section se nomme déjà, et l'icône
+          // ajoutait une couleur de plus sans rien apprendre.
+          Text(
+            'Description',
+            style: context.textStyle(
+              FontSizeType.body1,
+              fontWeight: FontWeight.w700,
+              color: context.ds.textPrimary,
+            ),
           ),
-          SizedBox(height: 12),
+          SizedBox(height: AppDesign.space3),
           Text(
             product['description'] ??
                 'Aucune description disponible pour ce produit.',
             style: context.textStyle(
-              FontSizeType.body1,
-              color: AppThemeSystem.getSecondaryTextColor(context),
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
               height: 1.6,
             ),
           ),
@@ -870,17 +766,13 @@ class ProductView extends GetView<ProductController> {
     final rating = seller?['rating'] ?? shop?['rating'] ?? 4.5;
     final reviewCount = seller?['reviews_count'] ?? shop?['reviews_count'] ?? 0;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppThemeSystem.getBorderColor(context)),
-        ),
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.all(context.ds.gutter),
+        // La carte à bordure flottait au milieu d'une page désormais faite
+        // de bandes pleine largeur ; elle s'aligne sur le même principe.
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1783,7 +1675,9 @@ class ProductView extends GetView<ProductController> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.10),
+                            color: AppThemeSystem.primaryColor.withValues(
+                              alpha: 0.10,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1805,7 +1699,7 @@ class ProductView extends GetView<ProductController> {
                                 ),
                               ),
                               SizedBox(height: 4),
-              Obx(() {
+                              Obx(() {
                                 final variantLabel = VariantCatalog.labelOf(
                                   controller.selectedVariant.value,
                                 );
@@ -1841,7 +1735,8 @@ class ProductView extends GetView<ProductController> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Complément d’adresse (facultatif)',
-                        hintText: 'Quartier, rue, portail, étage, point de repère…',
+                        hintText:
+                            'Quartier, rue, portail, étage, point de repère…',
                         prefixIcon: Icon(Icons.signpost_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1993,8 +1888,8 @@ class ProductView extends GetView<ProductController> {
                                 Text(
                                   controller.formatPrice(
                                     controller.subtotal(
-                                    controller.unitPriceXaf(product),
-                                  ),
+                                      controller.unitPriceXaf(product),
+                                    ),
                                   ),
                                   style: context.textStyle(
                                     FontSizeType.body2,
@@ -2218,7 +2113,10 @@ class ProductView extends GetView<ProductController> {
         children: [
           Text(
             'Aucun livreur ne couvre encore cette position à ${grid['city']}',
-            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -2231,8 +2129,13 @@ class ProductView extends GetView<ProductController> {
             child: ElevatedButton.icon(
               onPressed: () => _showChangeAddressDialog(context),
               icon: const Icon(Icons.map_rounded, color: Colors.white),
-              label: const Text('Voir les zones sur la carte', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
+              label: const Text(
+                'Voir les zones sur la carte',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+              ),
             ),
           ),
         ],
@@ -2289,7 +2192,8 @@ class ProductView extends GetView<ProductController> {
       final quarterPicker = _buildQuarterPicker(context);
       final quarterRequired =
           controller.deliveryQuote.value?['city_grid'] is Map &&
-          controller.deliveryQuote.value!['city_grid']['quarter_required'] == true;
+          controller.deliveryQuote.value!['city_grid']['quarter_required'] ==
+              true;
 
       if (controller.deliveryPartners.isEmpty) {
         final message = controller.deliveryQuote.value?['message']?.toString();
@@ -2300,7 +2204,10 @@ class ProductView extends GetView<ProductController> {
               quarterPicker,
               if (!quarterRequired) ...[
                 const SizedBox(height: 12),
-                Text(message ?? 'Aucun partenaire de livraison disponible.', style: context.caption),
+                Text(
+                  message ?? 'Aucun partenaire de livraison disponible.',
+                  style: context.caption,
+                ),
               ],
             ],
           );
@@ -2350,7 +2257,11 @@ class ProductView extends GetView<ProductController> {
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
-                  Icon(Icons.scale_outlined, size: 16, color: AppThemeSystem.grey600),
+                  Icon(
+                    Icons.scale_outlined,
+                    size: 16,
+                    color: AppThemeSystem.grey600,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -2371,7 +2282,8 @@ class ProductView extends GetView<ProductController> {
   Widget _buildPartnerCard(BuildContext context, DeliveryPartnerQuote partner) {
     final selectedRaw = controller.selectedPartner.value;
     final isSelected =
-        selectedRaw != null && DeliveryPartnerQuote(selectedRaw).key == partner.key;
+        selectedRaw != null &&
+        DeliveryPartnerQuote(selectedRaw).key == partner.key;
     final logo = partner.companyLogo;
 
     return AnimatedContainer(
@@ -2433,7 +2345,9 @@ class ProductView extends GetView<ProductController> {
                           style: context.textStyle(
                             FontSizeType.body1,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AppThemeSystem.primaryColor : null,
+                            color: isSelected
+                                ? AppThemeSystem.primaryColor
+                                : null,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -2491,7 +2405,11 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(height: 8),
               if (partner.routeOrZone != null)
-                _partnerInfoRow(context, Icons.alt_route_rounded, partner.routeOrZone!),
+                _partnerInfoRow(
+                  context,
+                  Icons.alt_route_rounded,
+                  partner.routeOrZone!,
+                ),
               if (partner.leadTime != null)
                 _partnerInfoRow(
                   context,
@@ -2916,13 +2834,19 @@ class ProductView extends GetView<ProductController> {
                           ...VariantCatalog.attributesOf(
                             variant,
                           ).entries.map((e) => line(e.key, e.value)),
-                        line('Prix unitaire', controller.formatPrice(unitPrice)),
+                        line(
+                          'Prix unitaire',
+                          controller.formatPrice(unitPrice),
+                        ),
                         line('Quantité', '$quantity'),
                       ]),
                       section(Icons.local_shipping_rounded, 'Livraison', [
                         line('Adresse', controller.currentLocation.value),
                         if (details.isNotEmpty) line('Complément', details),
-                        line('Numéro à contacter', controller.customerPhone.value),
+                        line(
+                          'Numéro à contacter',
+                          controller.customerPhone.value,
+                        ),
                         if (quote != null) ...[
                           line(
                             'Livreur',
@@ -2945,11 +2869,15 @@ class ProductView extends GetView<ProductController> {
                       section(Icons.receipt_long_rounded, 'Montant', [
                         line(
                           'Sous-total',
-                          controller.formatPrice(controller.subtotal(unitPrice)),
+                          controller.formatPrice(
+                            controller.subtotal(unitPrice),
+                          ),
                         ),
                         line(
                           'Livraison',
-                          controller.formatPrice(controller.deliveryPrice.value),
+                          controller.formatPrice(
+                            controller.deliveryPrice.value,
+                          ),
                         ),
                         const Divider(height: 16),
                         line(
@@ -3650,7 +3578,6 @@ class ProductView extends GetView<ProductController> {
     );
   }
 }
-
 
 /// Substitut affiché quand une image produit est absente ou illisible.
 ///
