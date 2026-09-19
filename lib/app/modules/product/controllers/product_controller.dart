@@ -159,11 +159,20 @@ class ProductController extends GetxController {
     );
 
     if (!response.success || response.data == null) return [];
+    return extractProducts(response.data!, excluding: excluding);
+  }
 
-    // L'API répond {success, products, pagination} ; certaines routes
-    // paginent sous `data`. On accepte les deux plutôt que de renvoyer
-    // une liste vide sans bruit.
-    final body = response.data!;
+  /// Extrait la liste de produits d'une réponse de l'API.
+  ///
+  /// Exposée pour être vérifiable : c'est ici que la section échouait en
+  /// silence. Le catalogue répond `{success, products, pagination}` quand
+  /// d'autres routes paginent sous `data` ; lire la mauvaise clé renvoyait
+  /// une liste vide sans la moindre erreur.
+  @visibleForTesting
+  static List<Map<String, dynamic>> extractProducts(
+    Map<String, dynamic> body, {
+    String? excluding,
+  }) {
     final raw = body['products'] ?? body['data'];
     final list = raw is List ? raw : (raw is Map ? raw['data'] as List? : null);
     if (list == null) return [];
