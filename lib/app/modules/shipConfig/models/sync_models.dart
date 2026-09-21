@@ -1,6 +1,25 @@
+import 'dart:convert';
 import 'dart:math';
 
 /// Modèles pour la synchronisation du profil livreur
+
+/// `zone_data` arrive tantôt décodé, tantôt en chaîne JSON selon l'endpoint :
+/// on normalise pour ne jamais casser la synchronisation du livreur.
+Map<String, dynamic>? _decodeJsonMap(dynamic value) {
+  if (value == null) return null;
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  if (value is String) {
+    if (value.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
 
 /// Type de tarification
 enum PricingType {
@@ -236,7 +255,7 @@ class DeliveryZone {
       id: json['id'] as int,
       delivererCompanyId: json['deliverer_company_id'] as int?,
       name: json['name'] as String,
-      zoneData: json['zone_data'] as Map<String, dynamic>?,
+      zoneData: _decodeJsonMap(json['zone_data']),
       centerLatitude: double.parse(json['center_latitude'].toString()),
       centerLongitude: double.parse(json['center_longitude'].toString()),
       isActive: json['is_active'] as bool? ?? true,

@@ -1,3 +1,6 @@
+import 'package:asso/app/modules/boost/bindings/boost_binding.dart';
+import 'package:asso/app/modules/boost/views/boost_view.dart';
+import 'package:asso/app/modules/boost/views/boost_detail_view.dart';
 import 'package:asso/app/modules/invoices/views/invoices_view.dart';
 import 'package:asso/app/modules/diaspoList/bindings/diaspo_list_binding.dart';
 import 'package:asso/app/modules/diaspoList/views/diaspo_list_view.dart';
@@ -321,6 +324,16 @@ class AppPages {
       name: _Paths.SHOP_STATISTICS,
       page: () => const ShopStatisticsView(),
       binding: ShopStatisticsBinding(),
+    ),
+    GetPage(
+      name: _Paths.BOOST,
+      page: () => const BoostView(),
+      binding: BoostBinding(),
+    ),
+    GetPage(
+      name: _Paths.BOOST_DETAIL,
+      page: () => const BoostDetailView(),
+      binding: BoostBinding(),
     ),
     GetPage(
       name: _Paths.POST_DETAIL,

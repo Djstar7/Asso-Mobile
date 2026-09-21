@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:dotted_border/dotted_border.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../controllers/add_product_controller.dart';
+import '../controllers/product_draft_store.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../routes/app_pages.dart';
 import 'variant_editor_page.dart';
@@ -15,17 +17,25 @@ class AddProductView extends GetView<AddProductController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
+    final ds = context.ds;
+    // Quitter en cours de saisie propose de garder le travail commencé.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleExit(context);
+      },
+      child: Scaffold(
+      backgroundColor: ds.canvas,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ds.canvas,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           tooltip: 'Retour',
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Navigator.of(context).canPop()
-              ? Get.back()
-              : Get.offAllNamed(Routes.VENDOR_DASHBOARD),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: ds.textPrimary, size: 20),
+          onPressed: () => _handleExit(context),
         ),
         title: Obx(
           () => Text(
@@ -35,13 +45,13 @@ class AddProductView extends GetView<AddProductController> {
             style: context.h5.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Menu principal',
-            icon: Icon(Icons.home_outlined, color: context.primaryTextColor),
-            onPressed: () => _confirmGoHome(context),
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     tooltip: 'Menu principal',
+        //     icon: Icon(Icons.home_outlined, color: context.primaryTextColor),
+        //     onPressed: () => _confirmGoHome(context),
+        //   ),
+        // ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -100,223 +110,446 @@ class AddProductView extends GetView<AddProductController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section Images
-              _buildImagesSection(context),
-              SizedBox(height: context.elementSpacing),
-              // Bouton d'analyse AI
-              // _buildAIAnalysisButton(context),
-              // SizedBox(height: context.sectionSpacing),
-              // Nom du produit
-              _buildNameSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Catégorie (Bottom sheet)
-              _buildCategorySelector(context),
-              SizedBox(height: context.sectionSpacing),
-              // Sous-catégorie (Bottom sheet)
-              _buildSubcategorySelector(context),
-              SizedBox(height: context.sectionSpacing),
-              // Prix
-              _buildPriceSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Description
-              _buildDescriptionSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Poids du produit
-              _buildWeightSection(context),
-              SizedBox(height: context.sectionSpacing),
-              _buildSizesSection(context),
-              SizedBox(height: context.sectionSpacing),
-              _buildVariantsSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Stock
-              _buildStockSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Espace de stockage
-              _buildStorageSection(context),
-              SizedBox(height: context.sectionSpacing),
-              // Bouton de soumission
-              _buildSubmitButton(context),
-              SizedBox(height: context.elementSpacing),
+              _buildDraftBanner(context),
+              _buildStepBody(context),
             ],
           ),
         );
       }),
+      bottomNavigationBar: _buildStepFooter(context),
+      ),
     );
   }
 
-  /// Section Images avec sélection multiple et choix de l'image primaire
-  Widget _buildImagesSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Images du produit',
-              style: context.h5.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Obligatoire',
-                style: context.caption.copyWith(
-                  color: AppThemeSystem.errorColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+  /// Sortie du formulaire : propose de conserver la saisie en brouillon.
+  Future<void> _handleExit(BuildContext context) async {
+    void leave() {
+      if (Navigator.of(context).canPop()) {
+        Get.back();
+      } else {
+        Get.offAllNamed(Routes.VENDOR_DASHBOARD);
+      }
+    }
+
+    final started = controller.productImages.isNotEmpty ||
+        controller.nameController.text.trim().isNotEmpty;
+
+    if (!controller.supportsDraft || !started) {
+      leave();
+      return;
+    }
+
+    final ds = context.ds;
+    final keep = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: ds.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
         ),
-        SizedBox(height: context.elementSpacing * 0.5),
-        Text(
-          'Ajoutez plusieurs images et sélectionnez l\'image principale',
-          style: context.caption.copyWith(color: context.secondaryTextColor),
+        title: Text(
+          'Garder ce brouillon ?',
+          style: context.subtitle1.copyWith(
+            fontWeight: FontWeight.w700,
+            color: ds.textPrimary,
+          ),
         ),
-        SizedBox(height: context.elementSpacing),
-
-        Obx(() {
-          final existingCount = controller.existingImages.length;
-          final newCount = controller.productImages.length;
-          final total = existingCount + newCount;
-
-          return SizedBox(
-            height: 120,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildAddImageButton(
-                  context,
-                  icon: Icons.add_photo_alternate,
-                  label: 'Upload Images',
-                  onTap: () => _showImageSourceBottomSheet(context),
-                ),
-                SizedBox(width: context.elementSpacing),
-
-                // Liste combinée : images existantes (réseau) + nouvelles (locales)
-                ...List.generate(total, (index) {
-                  return Padding(
-                    padding: EdgeInsets.only(right: context.elementSpacing),
-                    child: _buildImageThumbnail(context, index),
-                  );
-                }),
-              ],
+        content: Text(
+          'Vous pourrez reprendre cette fiche là où vous vous êtes arrêté.',
+          style: context.body2.copyWith(color: ds.textSecondary),
+        ),
+        actionsPadding: EdgeInsets.fromLTRB(
+          AppDesign.space4,
+          0,
+          AppDesign.space4,
+          AppDesign.space4,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            style: TextButton.styleFrom(foregroundColor: AppDesign.danger),
+            child: const Text('Supprimer'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppDesign.accent,
+              foregroundColor: AppDesign.neutral0,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+              ),
             ),
-          );
-        }),
-      ],
+            child: Text(
+              'Garder',
+              style: context.button.copyWith(color: AppDesign.neutral0),
+            ),
+          ),
+        ],
+      ),
     );
+
+    // Fermeture du dialogue sans choix : on ne quitte pas.
+    if (keep == null) return;
+
+    if (keep) {
+      controller.saveDraft();
+    } else {
+      controller.discardDraft();
+    }
+    leave();
   }
 
-  /// Bouton d'analyse AI avec Gemini
-  Widget _buildAIAnalysisButton(BuildContext context) {
+  /// Proposition de reprise d'une fiche laissée en cours.
+  Widget _buildDraftBanner(BuildContext context) {
     return Obx(() {
-      final hasImages = controller.productImages.isNotEmpty;
-      final isAnalyzing = controller.isAnalyzing.value;
+      final draft = controller.pendingDraft.value;
+      if (draft == null) return const SizedBox.shrink();
 
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        child: ElevatedButton.icon(
-          onPressed: hasImages && !isAnalyzing
-              ? controller.analyzeProductImage
-              : null,
-          icon: isAnalyzing
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      hasImages ? Colors.white : Colors.grey,
+      final ds = context.ds;
+      return Container(
+        margin: EdgeInsets.only(bottom: AppDesign.space6),
+        padding: EdgeInsets.all(AppDesign.space4),
+        decoration: BoxDecoration(
+          color: ds.surface,
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+          border: Border.all(color: AppDesign.accent),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history_rounded,
+                    size: 18, color: AppDesign.accentText),
+                SizedBox(width: AppDesign.space2),
+                Expanded(
+                  child: Text(
+                    'Reprendre votre brouillon ?',
+                    style: context.subtitle2.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ds.textPrimary,
                     ),
                   ),
-                )
-              : Icon(
-                  Icons.auto_awesome,
-                  size: 20,
-                  color: hasImages ? Colors.white : Colors.grey,
                 ),
-          label: Text(
-            isAnalyzing
-                ? 'Analyse en cours...'
-                : hasImages
-                ? 'Analyser avec l\'IA'
-                : 'Ajoutez une image pour analyser',
-            style: context.body1.copyWith(
-              color: hasImages ? Colors.white : Colors.grey,
-              fontWeight: FontWeight.w600,
+              ],
             ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: hasImages
-                ? AppThemeSystem.primaryColor
-                : AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(
-              horizontal: context.horizontalPadding,
-              vertical: context.verticalPadding,
+            SizedBox(height: AppDesign.space2),
+            Text(
+              '« ${draft.label} » · ${_draftAge(draft)}',
+              style: context.body2.copyWith(color: ds.textSecondary),
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
+            SizedBox(height: AppDesign.space4),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: controller.rejectPendingDraft,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ds.textSecondary,
+                        side: BorderSide(color: ds.borderStrong),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppDesign.radiusMd),
+                        ),
+                      ),
+                      child: Text(
+                        'Recommencer',
+                        style: context.body2.copyWith(
+                          color: ds.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: controller.acceptPendingDraft,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppDesign.accent,
+                        foregroundColor: AppDesign.neutral0,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppDesign.radiusMd),
+                        ),
+                      ),
+                      child: Text(
+                        'Reprendre',
+                        style: context.body2.copyWith(
+                          color: AppDesign.neutral0,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            elevation: hasImages ? 2 : 0,
-          ),
+          ],
         ),
       );
     });
   }
 
-  Widget _buildAddImageButton(
+  String _draftAge(ProductDraft draft) {
+    final elapsed = DateTime.now().difference(draft.savedAt);
+    if (elapsed.inMinutes < 1) return "à l'instant";
+    if (elapsed.inMinutes < 60) return 'il y a ${elapsed.inMinutes} min';
+    if (elapsed.inHours < 24) return 'il y a ${elapsed.inHours} h';
+    return 'il y a ${elapsed.inDays} j';
+  }
+
+  // ==========================================================================
+  // PARCOURS EN ÉTAPES
+  // ==========================================================================
+
+  /// Contenu de l'étape courante.
+  ///
+  /// Les sections restent celles du formulaire d'origine : seul leur
+  /// regroupement change. Une fiche complète demandait auparavant de parcourir
+  /// treize blocs d'affilée avant de découvrir, tout en bas, qu'un forfait de
+  /// stockage manquait.
+  Widget _buildStepBody(BuildContext context) {
+    return Obx(() {
+      switch (controller.currentStep.value) {
+        case 0:
+          return _buildPhotoStep(context);
+        case 1:
+          return _buildIdentityStep(context);
+        case 2:
+          return _buildPricingStep(context);
+        case 3:
+          return _buildVariantsStep(context);
+        default:
+          return _buildReviewStep(context);
+      }
+    });
+  }
+
+  Widget _buildStepIntro(
     BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
+    required String title,
+    required String subtitle,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 120,
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: AppThemeSystem.primaryColor,
-            width: 2,
-            style: BorderStyle.none,
+    final ds = context.ds;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: context.h5.copyWith(
+            fontWeight: FontWeight.w700,
+            color: ds.textPrimary,
           ),
         ),
-        child: DottedBorder(
-          color: AppThemeSystem.primaryColor,
-          strokeWidth: 2,
-          dashPattern: const [8, 4],
-          borderType: BorderType.RRect,
-          radius: const Radius.circular(12),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        SizedBox(height: AppDesign.space1),
+        Text(
+          subtitle,
+          style: context.body2.copyWith(color: ds.textSecondary),
+        ),
+        SizedBox(height: AppDesign.space6),
+      ],
+    );
+  }
+
+  Widget _buildPhotoStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepIntro(
+          context,
+          title: 'Photos du produit',
+          subtitle:
+              'La première image est celle que verront vos clients dans la liste.',
+        ),
+        _buildImagesSection(context),
+      ],
+    );
+  }
+
+  Widget _buildIdentityStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepIntro(
+          context,
+          title: 'Description',
+          subtitle: 'Nommez et classez votre produit pour qu\'on le trouve.',
+        ),
+        _buildNameSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildCategorySelector(context),
+        SizedBox(height: AppDesign.space6),
+        _buildSubcategorySelector(context),
+        SizedBox(height: AppDesign.space6),
+        _buildDescriptionSection(context),
+      ],
+    );
+  }
+
+  Widget _buildPricingStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepIntro(
+          context,
+          title: 'Prix & stock',
+          subtitle:
+              'Le poids sert au calcul des frais de livraison.',
+        ),
+        _buildPriceSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildStockSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildWeightSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildStorageSection(context),
+      ],
+    );
+  }
+
+  Widget _buildVariantsStep(BuildContext context) {
+    return Obx(() {
+      final isVariable = controller.isVariableProduct.value;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepIntro(
+            context,
+            title: 'Type de produit',
+            subtitle: 'Votre produit se décline-t-il en plusieurs versions ?',
+          ),
+
+          _buildKindCard(
+            context,
+            selected: !isVariable,
+            icon: Icons.inventory_2_outlined,
+            title: 'Produit simple',
+            subtitle: 'Un seul prix, un seul stock.',
+            example: 'Un sac de riz, un livre, un accessoire unique',
+            onTap: () => controller.setProductKind(variable: false),
+          ),
+          SizedBox(height: AppDesign.space3),
+          _buildKindCard(
+            context,
+            selected: isVariable,
+            icon: Icons.style_outlined,
+            title: 'Produit variable',
+            subtitle: 'Plusieurs couleurs, tailles ou options.',
+            example: 'Un t-shirt en S/M/L, une chaussure en plusieurs pointures',
+            onTap: () => controller.setProductKind(variable: true),
+          ),
+
+          // L'éditeur n'apparaît que pour un produit réellement décliné.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: isVariable
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: AppDesign.space8),
+                      Text(
+                        'Vos déclinaisons',
+                        style: context.subtitle1.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: context.ds.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: AppDesign.space1),
+                      Text(
+                        'Chaque combinaison a son propre stock et son propre prix.',
+                        style: context.body2
+                            .copyWith(color: context.ds.textSecondary),
+                      ),
+                      SizedBox(height: AppDesign.space4),
+                      _buildVariantsSection(context),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// Carte de choix du type de produit.
+  Widget _buildKindCard(
+    BuildContext context, {
+    required bool selected,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String example,
+    required VoidCallback onTap,
+  }) {
+    final ds = context.ds;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: EdgeInsets.all(AppDesign.space4),
+            decoration: BoxDecoration(
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              border: Border.all(
+                color: selected ? AppDesign.accent : ds.border,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.arrow_upward,
-                    color: AppThemeSystem.primaryColor,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: context.caption.copyWith(
-                    color: AppThemeSystem.primaryColor,
-                    fontWeight: FontWeight.w600,
+                _SelectionDot(isSelected: selected),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(icon, size: 18, color: ds.textSecondary),
+                          SizedBox(width: AppDesign.space2),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: context.subtitle1.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: ds.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: AppDesign.space1),
+                      Text(
+                        subtitle,
+                        style:
+                            context.body2.copyWith(color: ds.textSecondary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        example,
+                        style:
+                            context.caption.copyWith(color: ds.textTertiary),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -325,6 +558,510 @@ class AddProductView extends GetView<AddProductController> {
         ),
       ),
     );
+  }
+
+  // ───────────── Vérification ─────────────
+
+  Widget _buildReviewStep(BuildContext context) {
+    final ds = context.ds;
+
+    return Obx(() {
+      final hasVariants = controller.isVariableProduct.value &&
+          controller.variantEditor.hasVariants;
+      final combos = controller.variantEditor.combinations;
+      final price = double.tryParse(
+            controller.priceController.text.trim().replaceAll(',', '.'),
+          ) ??
+          0;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepIntro(
+            context,
+            title: 'Vérification',
+            subtitle: 'Relisez votre fiche avant de la publier.',
+          ),
+
+          Container(
+            decoration: BoxDecoration(
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              border: Border.all(color: ds.border),
+            ),
+            child: Column(
+              children: [
+                if (controller.productImages.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.all(AppDesign.space4),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(AppDesign.radiusMd),
+                          child: MediaHelper.buildImagePreview(
+                            controller.productImages[
+                                controller.primaryImageIndex.value.clamp(
+                              0,
+                              controller.productImages.length - 1,
+                            )],
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        SizedBox(width: AppDesign.space3),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                controller.nameController.text.trim().isEmpty
+                                    ? 'Sans nom'
+                                    : controller.nameController.text.trim(),
+                                style: context.subtitle1.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: ds.textPrimary,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${controller.productImages.length} photo'
+                                '${controller.productImages.length > 1 ? 's' : ''}',
+                                style: context.caption
+                                    .copyWith(color: ds.textTertiary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Divider(height: 1, color: ds.border),
+                _buildReviewRow(
+                  context,
+                  'Catégorie',
+                  controller.selectedSubcategory.value ?? 'Non renseignée',
+                  onEdit: () => controller.goToStep(1),
+                ),
+                _buildReviewRow(
+                  context,
+                  hasVariants ? 'Prix de base' : 'Prix',
+                  price > 0
+                      ? controller.formatPrice(price)
+                      : 'Non renseigné',
+                  onEdit: () => controller.goToStep(2),
+                ),
+                _buildReviewRow(
+                  context,
+                  'Stock total',
+                  controller.stockController.text.trim().isEmpty
+                      ? '0'
+                      : controller.stockController.text.trim(),
+                  onEdit: () => controller.goToStep(2),
+                ),
+                _buildReviewRow(
+                  context,
+                  'Type',
+                  controller.isVariableProduct.value
+                      ? 'Variable · ${combos.length} déclinaison'
+                          '${combos.length > 1 ? 's' : ''}'
+                      : 'Produit simple',
+                  onEdit: () => controller.goToStep(3),
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+
+          if (hasVariants) ...[
+            SizedBox(height: AppDesign.space4),
+            Container(
+              padding: EdgeInsets.all(AppDesign.space3),
+              decoration: BoxDecoration(
+                color: AppDesign.accentSubtle,
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded,
+                      size: 16, color: AppDesign.accentText),
+                  SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: Text(
+                      'Le stock total est la somme de vos déclinaisons.',
+                      style: context.body2
+                          .copyWith(color: AppDesign.accentText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
+  Widget _buildReviewRow(
+    BuildContext context,
+    String label,
+    String value, {
+    required VoidCallback onEdit,
+    bool isLast = false,
+  }) {
+    final ds = context.ds;
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onEdit,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDesign.space4,
+                vertical: AppDesign.space4,
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 116,
+                    child: Text(
+                      label,
+                      style:
+                          context.body2.copyWith(color: ds.textSecondary),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      value,
+                      textAlign: TextAlign.right,
+                      style: context.body2.copyWith(
+                        color: ds.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: AppDesign.space2),
+                  Icon(Icons.edit_outlined, size: 16, color: ds.textTertiary),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!isLast) Divider(height: 1, color: ds.border),
+      ],
+    );
+  }
+
+  // ───────────── Barre de progression et navigation ─────────────
+
+  Widget _buildStepFooter(BuildContext context) {
+    final ds = context.ds;
+
+    return Obx(() {
+      final step = controller.currentStep.value;
+      final isLast = step == AddProductController.stepCount - 1;
+      final blocked = controller.blockingReason(step);
+      final isBusy = controller.isLoading.value;
+
+      return Container(
+        padding: EdgeInsets.fromLTRB(
+          ds.gutter,
+          AppDesign.space3,
+          ds.gutter,
+          MediaQuery.of(context).viewPadding.bottom + AppDesign.space3,
+        ),
+        decoration: BoxDecoration(
+          color: ds.surface,
+          border: Border(top: BorderSide(color: ds.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStepIndicator(context, step),
+            SizedBox(height: AppDesign.space3),
+
+            // Ce qui manque est dit ici, pas découvert au moment d'envoyer.
+            if (blocked != null) ...[
+              Row(
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      size: 14, color: ds.textTertiary),
+                  SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: Text(
+                      blocked,
+                      style: context.caption
+                          .copyWith(color: ds.textTertiary),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppDesign.space3),
+            ],
+
+            Row(
+              children: [
+                if (step > 0) ...[
+                  Expanded(
+                    child: SizedBox(
+                      height: context.buttonHeight,
+                      child: OutlinedButton(
+                        onPressed:
+                            isBusy ? null : controller.previousStep,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ds.textPrimary,
+                          side: BorderSide(color: ds.borderStrong),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppDesign.radiusMd),
+                          ),
+                        ),
+                        child: Text(
+                          'Retour',
+                          style: context.button.copyWith(
+                            color: ds.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: AppDesign.space3),
+                ],
+                Expanded(
+                  flex: step > 0 ? 2 : 1,
+                  child: SizedBox(
+                    height: context.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: isBusy
+                          ? null
+                          : isLast
+                              ? controller.submitProduct
+                              : (controller.canGoNext
+                                  ? controller.nextStep
+                                  : null),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppDesign.accent,
+                        foregroundColor: AppDesign.neutral0,
+                        disabledBackgroundColor: ds.surfaceMuted,
+                        disabledForegroundColor: ds.textTertiary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppDesign.radiusMd),
+                        ),
+                      ),
+                      child: isBusy
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppDesign.neutral0,
+                              ),
+                            )
+                          : Text(
+                              isLast
+                                  ? (controller.isEditMode.value
+                                      ? 'Enregistrer'
+                                      : 'Publier le produit')
+                                  : 'Continuer',
+                              style: context.button.copyWith(
+                                color: controller.canGoNext || isLast
+                                    ? AppDesign.neutral0
+                                    : ds.textTertiary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Fil d'étapes : segments cliquables vers les étapes déjà franchies.
+  Widget _buildStepIndicator(BuildContext context, int step) {
+    final ds = context.ds;
+
+    return Row(
+      children: List.generate(AddProductController.stepCount, (index) {
+        final isDone = index < step;
+        final isCurrent = index == step;
+        final isReachable = index <= controller.furthestStep.value;
+
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: index == AddProductController.stepCount - 1
+                  ? 0
+                  : AppDesign.space1,
+            ),
+            child: Semantics(
+              label: AddProductController.stepTitles[index],
+              selected: isCurrent,
+              child: GestureDetector(
+                onTap: isReachable ? () => controller.goToStep(index) : null,
+                behavior: HitTestBehavior.opaque,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: isDone || isCurrent
+                            ? AppDesign.accent
+                            : ds.surfaceMuted,
+                        borderRadius:
+                            BorderRadius.circular(AppDesign.radiusPill),
+                      ),
+                    ),
+                    SizedBox(height: AppDesign.space1),
+                    Text(
+                      AddProductController.stepTitles[index],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.caption.copyWith(
+                        fontSize: 10,
+                        color: isCurrent
+                            ? AppDesign.accentText
+                            : ds.textTertiary,
+                        fontWeight:
+                            isCurrent ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  /// Sélection des photos : zone de dépôt puis grille des images choisies.
+  ///
+  /// L'ancienne bande horizontale de 120 px laissait l'écran quasi vide et
+  /// obligeait à faire défiler latéralement pour voir ses propres photos.
+  Widget _buildImagesSection(BuildContext context) {
+    final ds = context.ds;
+
+    return Obx(() {
+      final existingCount = controller.existingImages.length;
+      final newCount = controller.productImages.length;
+      final total = existingCount + newCount;
+      final isEmpty = total == 0;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Zone de dépôt : pleine largeur et généreuse tant qu'aucune photo
+          // n'est choisie, réduite en bandeau une fois la galerie remplie.
+          GestureDetector(
+            onTap: () => _showImageSourceBottomSheet(context),
+            child: DottedBorder(
+              color: AppDesign.accent,
+              strokeWidth: 1.5,
+              dashPattern: const [7, 5],
+              borderType: BorderType.RRect,
+              radius: Radius.circular(AppDesign.radiusLg),
+              child: Container(
+                width: double.infinity,
+                height: isEmpty ? 220 : 96,
+                decoration: BoxDecoration(
+                  color: AppDesign.accentSubtle,
+                  borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(isEmpty ? 16 : 10),
+                      decoration: const BoxDecoration(
+                        color: AppDesign.neutral0,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: isEmpty ? 30 : 20,
+                        color: AppDesign.accent,
+                      ),
+                    ),
+                    SizedBox(height: AppDesign.space3),
+                    Text(
+                      isEmpty ? 'Ajouter des photos' : 'Ajouter une autre photo',
+                      style: context.subtitle2.copyWith(
+                        color: AppDesign.accentText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (isEmpty) ...[
+                      SizedBox(height: AppDesign.space1),
+                      Text(
+                        'Au moins une image est requise',
+                        style: context.body2.copyWith(color: ds.textSecondary),
+                      ),
+                      SizedBox(height: AppDesign.space1),
+                      Text(
+                        'Appareil photo ou galerie',
+                        style: context.caption.copyWith(color: ds.textTertiary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          if (!isEmpty) ...[
+            SizedBox(height: AppDesign.space5),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$total photo${total > 1 ? 's' : ''}',
+                    style: context.subtitle2.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ds.textPrimary,
+                    ),
+                  ),
+                ),
+                Text(
+                  'Touchez pour choisir la principale',
+                  style: context.caption.copyWith(color: ds.textTertiary),
+                ),
+              ],
+            ),
+            SizedBox(height: AppDesign.space3),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: total,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: AppDesign.space3,
+                mainAxisSpacing: AppDesign.space3,
+              ),
+              itemBuilder: (context, index) =>
+                  _buildImageThumbnail(context, index),
+            ),
+          ],
+        ],
+      );
+    });
   }
 
   Widget _buildImageThumbnail(BuildContext context, int index) {
@@ -374,71 +1111,72 @@ class AddProductView extends GetView<AddProductController> {
           GestureDetector(
             onTap: () => controller.setPrimaryImage(index),
             child: Container(
-              width: 100,
+              // La largeur est imposée par la grille : la fixer à 100 px
+              // débordait de la colonne.
               decoration: BoxDecoration(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                borderRadius: BorderRadius.circular(AppDesign.radiusMd),
                 border: Border.all(
-                  color: isPrimary
-                      ? AppThemeSystem.successColor
-                      : context.borderColor,
-                  width: isPrimary ? 3 : 1,
+                  color: isPrimary ? AppDesign.accent : context.ds.border,
+                  width: isPrimary ? 2 : 1,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                child: imageWidget,
+                borderRadius: BorderRadius.circular(AppDesign.radiusMd - 1),
+                child: SizedBox.expand(child: imageWidget),
               ),
             ),
           ),
 
           if (isPrimary)
             Positioned(
-              top: 4,
-              left: 4,
+              top: 2,
+              left: 2,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: AppThemeSystem.successColor,
-                  borderRadius: BorderRadius.circular(4),
+                  color: AppDesign.accent,
+                  borderRadius: BorderRadius.circular(AppDesign.radiusXs),
                 ),
                 child: Text(
                   'Principale',
                   style: context.caption.copyWith(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+                    color: AppDesign.neutral0,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ),
 
           Positioned(
-            top: 4,
-            right: 4,
+            top: 2,
+            right: 2,
             child: GestureDetector(
               onTap: () => controller.removeImage(index),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: AppThemeSystem.errorColor,
+                  color: AppDesign.neutral900.withValues(alpha: 0.55),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                child: const Icon(Icons.close,
+                    color: AppDesign.neutral0, size: 13),
               ),
             ),
           ),
           Positioned(
-            bottom: 4,
-            right: 4,
+            bottom: 2,
+            right: 2,
             child: GestureDetector(
               onTap: () => _showSelectedImage(context, index),
               child: Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.65),
+                  color: AppDesign.neutral900.withValues(alpha: 0.55),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.zoom_in, color: Colors.white, size: 18),
+                child: const Icon(Icons.zoom_in,
+                    color: AppDesign.neutral0, size: 13),
               ),
             ),
           ),
@@ -925,35 +1663,41 @@ class AddProductView extends GetView<AddProductController> {
                       final isSelected =
                           controller.selectedCategory.value == category;
 
-                      return ListTile(
-                        leading: Icon(
-                          Icons.folder,
-                          color: isSelected
-                              ? AppThemeSystem.primaryColor
-                              : context.secondaryTextColor,
-                        ),
-                        title: Text(
-                          category,
-                          style: context.body1.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      // Le ListTile peint son encre sur le Material le plus
+                      // proche : sans cette enveloppe, le fond décoré de la
+                      // feuille masquait le retour au toucher.
+                      return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.folder,
                             color: isSelected
                                 ? AppThemeSystem.primaryColor
-                                : context.primaryTextColor,
+                                : context.secondaryTextColor,
                           ),
+                          title: Text(
+                            category,
+                            style: context.body1.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppThemeSystem.primaryColor
+                                  : context.primaryTextColor,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppThemeSystem.successColor,
+                                )
+                              : null,
+                          onTap: () {
+                            controller.selectedCategory.value = category;
+                            controller.selectedSizes.clear();
+                            Navigator.pop(context);
+                          },
                         ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppThemeSystem.successColor,
-                              )
-                            : null,
-                        onTap: () {
-                          controller.selectedCategory.value = category;
-                          controller.selectedSizes.clear();
-                          Navigator.pop(context);
-                        },
                       );
                     },
                   );
@@ -1116,37 +1860,43 @@ class AddProductView extends GetView<AddProductController> {
                           controller.selectedSubcategoryId.value ==
                           subcategory['id'];
 
-                      return ListTile(
-                        leading: Icon(
-                          Icons.category,
-                          color: isSelected
-                              ? AppThemeSystem.primaryColor
-                              : context.secondaryTextColor,
-                        ),
-                        title: Text(
-                          subcategory['name']!,
-                          style: context.body1.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      // Le ListTile peint son encre sur le Material le plus
+                      // proche : sans cette enveloppe, le fond décoré de la
+                      // feuille masquait le retour au toucher.
+                      return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.category,
                             color: isSelected
                                 ? AppThemeSystem.primaryColor
-                                : context.primaryTextColor,
+                                : context.secondaryTextColor,
                           ),
+                          title: Text(
+                            subcategory['name']!,
+                            style: context.body1.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppThemeSystem.primaryColor
+                                  : context.primaryTextColor,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppThemeSystem.successColor,
+                                )
+                              : null,
+                          onTap: () {
+                            controller.selectedSubcategory.value =
+                                subcategory['name'];
+                            controller.selectedSubcategoryId.value =
+                                subcategory['id'];
+                            Navigator.pop(context);
+                          },
                         ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppThemeSystem.successColor,
-                              )
-                            : null,
-                        onTap: () {
-                          controller.selectedSubcategory.value =
-                              subcategory['name'];
-                          controller.selectedSubcategoryId.value =
-                              subcategory['id'];
-                          Navigator.pop(context);
-                        },
                       );
                     },
                   );
@@ -1164,10 +1914,12 @@ class AddProductView extends GetView<AddProductController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Prix *',
-          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-        ),
+        // Avec des déclinaisons, ce prix sert de base : chacune lui applique
+        // son propre supplément.
+        Obx(() => Text(
+              controller.isVariableProduct.value ? 'Prix de base *' : 'Prix *',
+              style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+            )),
         SizedBox(height: context.elementSpacing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1429,51 +2181,57 @@ class AddProductView extends GetView<AddProductController> {
                       final isSelected =
                           controller.selectedCurrency.value == currency.code;
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: isSelected
-                              ? AppThemeSystem.primaryColor.withValues(
-                                  alpha: 0.1,
-                                )
-                              : context.surfaceColor,
-                          child: Text(
-                            currency.symbol,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? AppThemeSystem.primaryColor
-                                  : context.secondaryTextColor,
+                      // Le ListTile peint son encre sur le Material le plus
+                      // proche : sans cette enveloppe, le fond décoré de la
+                      // feuille masquait le retour au toucher.
+                      return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: isSelected
+                                ? AppThemeSystem.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  )
+                                : context.surfaceColor,
+                            child: Text(
+                              currency.symbol,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? AppThemeSystem.primaryColor
+                                    : context.secondaryTextColor,
+                              ),
                             ),
                           ),
-                        ),
-                        title: Text(
-                          currency.code,
-                          style: context.body1.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? AppThemeSystem.primaryColor
-                                : context.primaryTextColor,
+                          title: Text(
+                            currency.code,
+                            style: context.body1.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppThemeSystem.primaryColor
+                                  : context.primaryTextColor,
+                            ),
                           ),
-                        ),
-                        subtitle: Text(
-                          currency.name,
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
+                          subtitle: Text(
+                            currency.name,
+                            style: context.caption.copyWith(
+                              color: context.secondaryTextColor,
+                            ),
                           ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppThemeSystem.successColor,
+                                )
+                              : null,
+                          onTap: () {
+                            controller.selectedCurrency.value = currency.code;
+                            Navigator.pop(context);
+                          },
                         ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppThemeSystem.successColor,
-                              )
-                            : null,
-                        onTap: () {
-                          controller.selectedCurrency.value = currency.code;
-                          Navigator.pop(context);
-                        },
                       );
                     },
                   );
@@ -1577,183 +2335,9 @@ class AddProductView extends GetView<AddProductController> {
     });
   }
 
-  Widget _buildSizesSection(BuildContext context) {
-    return Obx(() {
-      final groups = controller.sizeGroupsForCategory;
-      if (groups.isEmpty) return const SizedBox.shrink();
-      final selected = controller.selectedSizes;
-      final label = selected.isEmpty
-          ? 'Aucune taille sélectionnée'
-          : selected.join(', ');
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tailles disponibles',
-            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Optionnel : sélectionnez une ou plusieurs tailles.',
-            style: context.caption.copyWith(color: context.secondaryTextColor),
-          ),
-          SizedBox(height: context.elementSpacing),
-          InkWell(
-            onTap: () => _showSizesBottomSheet(context),
-            borderRadius: context.borderRadius(BorderRadiusType.medium),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(context.horizontalPadding),
-              decoration: BoxDecoration(
-                color: selected.isNotEmpty
-                    ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
-                    : context.surfaceColor,
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                border: Border.all(
-                  color: selected.isNotEmpty
-                      ? AppThemeSystem.primaryColor
-                      : context.borderColor,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.straighten,
-                    color: selected.isNotEmpty
-                        ? AppThemeSystem.primaryColor
-                        : context.secondaryTextColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.body1.copyWith(
-                        color: selected.isNotEmpty
-                            ? AppThemeSystem.primaryColor
-                            : context.secondaryTextColor,
-                      ),
-                    ),
-                  ),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
-  void _showSizesBottomSheet(BuildContext context) {
-    final draft = controller.selectedSizes.toSet();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) => Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          decoration: BoxDecoration(
-            color: context.backgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text('Tailles disponibles', style: context.h5),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        controller.selectedSizes.assignAll(
-                          controller.sizeGroupsForCategory.values
-                              .expand((sizes) => sizes)
-                              .where(draft.contains)
-                              .toList(),
-                        );
-                        Navigator.pop(sheetContext);
-                      },
-                      child: const Text('Valider'),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  children: controller.sizeGroupsForCategory.entries.map((
-                    group,
-                  ) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10, bottom: 6),
-                          child: Text(group.key, style: context.subtitle2),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: group.value.map((size) {
-                            final isSelected = draft.contains(size);
-                            return FilterChip(
-                              label: Text(size),
-                              selected: isSelected,
-                              onSelected: (value) => setSheetState(() {
-                                value ? draft.add(size) : draft.remove(size);
-                              }),
-                              selectedColor: AppThemeSystem.primaryColor
-                                  .withValues(alpha: 0.2),
-                              checkmarkColor: AppThemeSystem.primaryColor,
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmGoHome(BuildContext context) async {
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Retour au menu principal'),
-        content: const Text(
-          'Les modifications non enregistrées de ce produit seront perdues.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Rester'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppThemeSystem.primaryColor,
-            ),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Quitter'),
-          ),
-        ],
-      ),
-    );
-    if (leave == true) Get.offAllNamed(Routes.VENDOR_DASHBOARD);
-  }
-
+  
+  
+  
   Future<void> _openVariantEditor(BuildContext context) async {
     FocusScope.of(context).unfocus();
     await Navigator.of(context).push(
@@ -1966,7 +2550,7 @@ class AddProductView extends GetView<AddProductController> {
           children: [
             Expanded(
               child: Text(
-                'Espace de stockage *',
+                'Espace de stockage',
                 style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -2020,93 +2604,97 @@ class AddProductView extends GetView<AddProductController> {
           final used = total - available;
           final percentageUsed = total > 0 ? (used / total * 100) : 0.0;
 
+          final ds = context.ds;
+          // La jauge ne vire au vif que lorsqu'elle alerte réellement, et
+          // l'unité suit le reste de l'application (Go, pas GB).
+          final gaugeColor = percentageUsed > 90
+              ? AppDesign.danger
+              : percentageUsed > 75
+                  ? AppDesign.warning
+                  : AppDesign.accent;
+
           return Container(
-            padding: EdgeInsets.all(context.horizontalPadding),
+            padding: EdgeInsets.all(AppDesign.space4),
             decoration: BoxDecoration(
-              color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              border: Border.all(color: AppThemeSystem.primaryColor, width: 2),
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              border: Border.all(color: AppDesign.accent),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.storage, color: AppThemeSystem.primaryColor),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         storage['name'],
                         style: context.body1.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppThemeSystem.primaryColor,
+                          fontWeight: FontWeight.w700,
+                          color: ds.textPrimary,
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.check_circle,
-                      color: AppThemeSystem.successColor,
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDesign.space2,
+                        vertical: AppDesign.space1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppDesign.successSubtle,
+                        borderRadius:
+                            BorderRadius.circular(AppDesign.radiusPill),
+                      ),
+                      child: Text(
+                        'Actif',
+                        style: context.caption.copyWith(
+                          color: AppDesign.successText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: AppDesign.space4),
 
-                // Barre de progression
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: percentageUsed / 100,
-                    backgroundColor: context.borderColor,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      percentageUsed > 80
-                          ? AppThemeSystem.errorColor
-                          : percentageUsed > 50
-                          ? AppThemeSystem.warningColor
-                          : AppThemeSystem.successColor,
-                    ),
-                    minHeight: 14,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Storage stats
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
+                    Expanded(
+                      child: Text(
+                        'Espace utilisé',
+                        style: context.body2.copyWith(color: ds.textSecondary),
+                      ),
+                    ),
                     Text(
-                      '${used.toStringAsFixed(1)} GB utilisés',
+                      '${used.toStringAsFixed(1)} Go',
                       style: context.body2.copyWith(
+                        color: ds.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      '${total.toStringAsFixed(0)} GB',
-                      style: context.body2.copyWith(
-                        color: context.secondaryTextColor,
-                      ),
+                      ' / ${total.toStringAsFixed(0)} Go',
+                      style: context.body2.copyWith(color: ds.textTertiary),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 8,
-                      color: percentageUsed > 80
-                          ? AppThemeSystem.errorColor
-                          : percentageUsed > 50
-                          ? AppThemeSystem.warningColor
-                          : AppThemeSystem.successColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${percentageUsed.toStringAsFixed(1)}% utilisé • ${available.toStringAsFixed(1)} GB disponible',
-                      style: context.caption.copyWith(
-                        color: context.secondaryTextColor,
-                      ),
-                    ),
-                  ],
+                SizedBox(height: AppDesign.space2),
+
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                  child: LinearProgressIndicator(
+                    value: (percentageUsed / 100).clamp(0.0, 1.0),
+                    backgroundColor: ds.surfaceMuted,
+                    valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                    minHeight: 6,
+                  ),
+                ),
+                SizedBox(height: AppDesign.space2),
+                Text(
+                  '${percentageUsed.toStringAsFixed(0)} % utilisé · '
+                  '${available.toStringAsFixed(1)} Go disponibles',
+                  style: context.caption.copyWith(color: ds.textTertiary),
                 ),
               ],
             ),
@@ -2117,44 +2705,33 @@ class AddProductView extends GetView<AddProductController> {
   }
 
   /// Bouton de soumission
-  Widget _buildSubmitButton(BuildContext context) {
-    return Obx(() {
-      final isLoading = controller.isLoading.value;
+  }
 
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: isLoading ? null : controller.submitProduct,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppThemeSystem.primaryColor,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: context.verticalPadding),
-            shape: RoundedRectangleBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-            ),
-          ),
-          child: isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Obx(
-                  () => Text(
-                    controller.isEditMode.value
-                        ? 'Modifier le produit'
-                        : 'Ajouter le produit',
-                    style: context.button.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+/// Indicateur de sélection : cercle neutre au repos, plein en accent une fois
+/// choisi.
+class _SelectionDot extends StatelessWidget {
+  const _SelectionDot({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isSelected ? AppDesign.accent : Colors.transparent,
+        border: Border.all(
+          color: isSelected ? AppDesign.accent : ds.borderStrong,
+          width: isSelected ? 0 : 1.5,
         ),
-      );
-    });
+      ),
+      child: isSelected
+          ? const Icon(Icons.check_rounded, size: 14, color: AppDesign.neutral0)
+          : null,
+    );
   }
 }

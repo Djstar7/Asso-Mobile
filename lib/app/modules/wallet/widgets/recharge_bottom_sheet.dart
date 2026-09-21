@@ -301,7 +301,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         _buildMethodOption(
           context: context,
           logoPath: 'assets/images/kpay.png',
-          title: 'KPay',
+          title: 'Mobile Money',
           subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
           color: const Color(0xFFFF7900),
           onTap: () => _selectMethod('kpay'),

@@ -99,6 +99,10 @@ class CustomerOrder {
   /// Bloc `delivery` (P4) : partenaire, détail du prix, suivi daté.
   final DeliveryInfo? delivery;
 
+  /// Note laissée par l'acheteur, une fois la commande notée.
+  final int? ratingValue;
+  final String? ratingComment;
+
   bool get isCarrier => delivery?.isCarrier == true;
 
   CustomerOrder({
@@ -120,6 +124,8 @@ class CustomerOrder {
     this.deliveryPersonPhone,
     this.deliveryCompanyName,
     this.delivery,
+    this.ratingValue,
+    this.ratingComment,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
@@ -144,6 +150,12 @@ class CustomerOrder {
       deliveryCompanyName: map['delivery_company']?['name'] ??
           map['delivery']?['company_name'],
       delivery: DeliveryInfo.fromMap(map['delivery']),
+      ratingValue: map['rating'] is Map
+          ? int.tryParse('${(map['rating'] as Map)['rating']}')
+          : null,
+      ratingComment: map['rating'] is Map
+          ? (map['rating'] as Map)['comment']?.toString()
+          : null,
     );
   }
 

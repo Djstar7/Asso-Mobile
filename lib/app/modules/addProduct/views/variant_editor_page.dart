@@ -235,7 +235,11 @@ class VariantEditorPage extends StatelessWidget {
         ],
       ),
     );
-    controller.dispose();
+    // Le dialogue s'anime encore à la fermeture : libérer le contrôleur tout
+    // de suite faisait que le TextField tentait de s'abonner à un
+    // ChangeNotifier déjà détruit (« _dependents.isEmpty : is not true »).
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
+
     if (name != null && name.trim().isNotEmpty) state.addGroup(name);
   }
 }
@@ -733,16 +737,21 @@ class _ComboTileState extends State<_ComboTile> {
                   ),
                 ],
               ),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: row.isActive,
-                activeThumbColor: AppThemeSystem.primaryColor,
-                title: const Text('Proposer ce choix aux clients'),
-                onChanged: (v) {
-                  row.isActive = v;
-                  widget.state.touch();
-                },
+              // Le tuile peint son encre sur le Material le plus proche : la
+              // carte décorée qui l'entoure masquait sinon le retour au toucher.
+              Material(
+                color: Colors.transparent,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  value: row.isActive,
+                  activeThumbColor: AppThemeSystem.primaryColor,
+                  title: const Text('Proposer ce choix aux clients'),
+                  onChanged: (v) {
+                    row.isActive = v;
+                    widget.state.touch();
+                  },
+                ),
               ),
             ],
           ],

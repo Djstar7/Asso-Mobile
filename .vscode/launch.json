@@ -2,12 +2,30 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Asso (serveur de prod)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=API_BASE_URL=https://asso-dashboard.sbs/api"
+      ]
+    },
+    {
       "name": "Asso (Chrome)",
       "request": "launch",
       "type": "dart",
       "deviceId": "chrome",
       "args": [
         "--web-browser-flag=--remote-allow-origins=*"
+      ]
+    },
+    {
+      "name": "Asso (Chrome - serveur de prod)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "args": [
+        "--web-browser-flag=--remote-allow-origins=*",
+        "--dart-define=API_BASE_URL=https://asso-dashboard.sbs/api"
       ]
     },
     {

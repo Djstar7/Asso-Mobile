@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
+
+import '../../../core/widgets/currency_switcher.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -16,16 +19,56 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: ds.canvas,
       appBar: AppBar(
-        title: const Text('Statistiques de ma boutique'),
+        backgroundColor: ds.canvas,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: ds.textPrimary, size: 20),
+          onPressed: Get.back,
+        ),
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Text(
+          'Statistiques',
+          style: context.h5.copyWith(
+            fontWeight: FontWeight.w700,
+            color: ds.textPrimary,
+          ),
+        ),
         actions: [
+          // Le choix de devise pilote tout l'écran : les montants sont
+          // convertis à l'affichage, aucun rechargement n'est nécessaire.
+          const CurrencySwitcher(compact: true),
+          SizedBox(width: AppDesign.space1),
+          Obx(() => IconButton(
+                icon: controller.isExporting.value
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppDesign.accent,
+                        ),
+                      )
+                    : Icon(Icons.ios_share_rounded,
+                        color: ds.textSecondary, size: 20),
+                tooltip: 'Exporter le rapport',
+                onPressed: controller.isExporting.value
+                    ? null
+                    : () => _openExportSheet(context),
+              )),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh_rounded, color: ds.textSecondary, size: 20),
             tooltip: 'Actualiser',
             onPressed: controller.load,
           ),
+          SizedBox(width: AppDesign.space1),
         ],
       ),
       body: RefreshIndicator(
@@ -67,6 +110,80 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Choix du format d'export, puis partage du fichier téléchargé.
+  void _openExportSheet(BuildContext context) {
+    final ds = context.ds;
+
+    Get.bottomSheet<void>(
+      SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: AppDesign.space3),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ds.borderStrong,
+                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppDesign.space5,
+                AppDesign.space5,
+                AppDesign.space5,
+                AppDesign.space2,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Exporter le rapport',
+                    style: context.h6.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ds.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: AppDesign.space1),
+                  Obx(() => Text(
+                        'Période : ${ShopStatisticsController.periods[controller.period.value] ?? ''}',
+                        style: context.body2.copyWith(color: ds.textSecondary),
+                      )),
+                ],
+              ),
+            ),
+            _ExportOption(
+              icon: Icons.picture_as_pdf_outlined,
+              title: 'Document PDF',
+              subtitle: 'Présentable : à imprimer ou à transmettre',
+              onTap: () {
+                Get.back();
+                controller.exportReport('pdf');
+              },
+            ),
+            Divider(height: 1, color: ds.border, indent: AppDesign.space5),
+            _ExportOption(
+              icon: Icons.table_chart_outlined,
+              title: 'Tableur CSV',
+              subtitle: 'Exploitable dans Excel ou Google Sheets',
+              onTap: () {
+                Get.back();
+                controller.exportReport('csv');
+              },
+            ),
+            SizedBox(height: AppDesign.space4),
+          ],
+        ),
+      ),
+      backgroundColor: ds.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppDesign.radiusXl)),
       ),
     );
   }
@@ -290,7 +407,7 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 160,
+              height: 200,
               child: values.every((v) => v == 0)
                   ? Center(
                       child: Text(
@@ -298,75 +415,218 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
                         style: context.body2.copyWith(color: context.secondaryTextColor),
                       ),
                     )
-                  : _BarChart(
-                      values: values,
+                  : _EvolutionChart(
+                      points: points.toList(),
+                      values: metric == StatsMetric.revenue
+                          ? values
+                              .map(controller.toDisplayCurrency)
+                              .toList()
+                          : values,
+                      isCurve: metric == StatsMetric.revenue,
+                      monthly: monthly,
                       formatter: (v) => metric == StatsMetric.revenue
-                          ? controller.formatPrice(v)
+                          ? '${v.toStringAsFixed(0)} ${controller.currencyCode}'
                           : v.toStringAsFixed(0),
                     ),
             ),
-            if (points.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(_label(points.first['date'], monthly), style: context.caption),
-                  Text(_label(points.last['date'], monthly), style: context.caption),
-                ],
-              ),
-            ],
           ],
         );
       }),
     );
   }
 
-  String _label(dynamic raw, bool monthly) {
-    final parts = raw.toString().split('-');
-    if (monthly && parts.length >= 2) return '${parts[1]}/${parts[0]}';
-    if (parts.length == 3) return '${parts[2]}/${parts[1]}';
-    return raw.toString();
-  }
 }
 
-/// Histogramme léger sans dépendance ; un appui long affiche la valeur.
-class _BarChart extends StatelessWidget {
-  final List<double> values;
-  final String Function(double) formatter;
+/// Graphique d'évolution de la période.
+///
+/// Courbe pour le chiffre d'affaires (on y lit une tendance), barres pour les
+/// volumes (visites, vues, commandes — des quantités qui se comparent d'un
+/// point à l'autre). Le libellé de l'axe horizontal est échantillonné : au-delà
+/// d'une trentaine de points, tout afficher rendrait l'axe illisible.
+class _EvolutionChart extends StatelessWidget {
+  const _EvolutionChart({
+    required this.points,
+    required this.values,
+    required this.isCurve,
+    required this.monthly,
+    required this.formatter,
+  });
 
-  const _BarChart({required this.values, required this.formatter});
+  final List<Map<String, dynamic>> points;
+  final List<double> values;
+  final bool isCurve;
+  final bool monthly;
+  final String Function(double) formatter;
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
     final maxValue = values.fold<double>(0, math.max);
-    return LayoutBuilder(builder: (context, constraints) {
-      final gap = values.length > 60 ? 1.0 : 3.0;
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: values.map((v) {
-          final ratio = maxValue > 0 ? v / maxValue : 0.0;
-          return Expanded(
-            child: Tooltip(
-              message: formatter(v),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: gap / 2),
-                child: Container(
-                  height: math.max(2, constraints.maxHeight * ratio),
-                  decoration: BoxDecoration(
-                    // Les barres reprennent l'accent de marque ; les valeurs
-                    // nulles restent visibles en trace discrète.
-                    color: v > 0
-                        ? AppDesign.accent
-                        : AppDesign.accent.withValues(alpha: 0.15),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                  ),
+    // Marge haute pour que le sommet ne colle pas au bord du cadre.
+    final maxY = maxValue <= 0 ? 1.0 : maxValue * 1.18;
+    final step = (values.length / 5).ceil().clamp(1, values.length);
+
+    final gridData = FlGridData(
+      show: true,
+      drawVerticalLine: false,
+      horizontalInterval: maxY / 4,
+      getDrawingHorizontalLine: (_) => FlLine(color: ds.border, strokeWidth: 1),
+    );
+
+    final titlesData = FlTitlesData(
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 44,
+          interval: maxY / 4,
+          getTitlesWidget: (value, meta) {
+            if (value < 0 || value > maxY) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Text(
+                _compact(value),
+                textAlign: TextAlign.right,
+                style: context.caption.copyWith(
+                  fontSize: 9,
+                  color: ds.textTertiary,
                 ),
               ),
+            );
+          },
+        ),
+      ),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 24,
+          interval: 1,
+          getTitlesWidget: (value, meta) {
+            final index = value.toInt();
+            if (index < 0 || index >= points.length) return const SizedBox.shrink();
+            if (index % step != 0 && index != points.length - 1) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                _axisLabel(points[index]['date'], monthly),
+                style: context.caption.copyWith(
+                  fontSize: 9,
+                  color: ds.textTertiary,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    if (isCurve) {
+      return LineChart(
+        LineChartData(
+          minY: 0,
+          maxY: maxY,
+          gridData: gridData,
+          titlesData: titlesData,
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) => AppDesign.neutral900,
+              getTooltipItems: (spots) => spots
+                  .map((spot) => LineTooltipItem(
+                        '${_axisLabel(points[spot.x.toInt()]['date'], monthly)}\n'
+                        '${formatter(spot.y)}',
+                        const TextStyle(
+                          color: AppDesign.neutral0,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ))
+                  .toList(),
             ),
-          );
-        }).toList(),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: [
+                for (var i = 0; i < values.length; i++)
+                  FlSpot(i.toDouble(), values[i]),
+              ],
+              isCurved: true,
+              curveSmoothness: 0.25,
+              color: AppDesign.accent,
+              barWidth: 2.5,
+              dotData: FlDotData(show: values.length <= 14),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppDesign.accent.withValues(alpha: 0.12),
+              ),
+            ),
+          ],
+        ),
       );
-    });
+    }
+
+    return BarChart(
+      BarChartData(
+        minY: 0,
+        maxY: maxY,
+        gridData: gridData,
+        titlesData: titlesData,
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => AppDesign.neutral900,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
+              '${_axisLabel(points[group.x]['date'], monthly)}\n'
+              '${formatter(rod.toY)}',
+              const TextStyle(
+                color: AppDesign.neutral0,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        barGroups: [
+          for (var i = 0; i < values.length; i++)
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: values[i],
+                  color: values[i] > 0
+                      ? AppDesign.accent
+                      : AppDesign.accent.withValues(alpha: 0.15),
+                  width: values.length > 40 ? 3 : (values.length > 16 ? 6 : 12),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(3),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Abrège les grands nombres sur l'axe vertical (12 500 -> « 12,5k »).
+  static String _compact(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1).replaceAll('.0', '')}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1).replaceAll('.0', '')}k';
+    }
+    return value.toStringAsFixed(0);
+  }
+
+  static String _axisLabel(dynamic raw, bool monthly) {
+    final parts = raw.toString().split('-');
+    if (monthly && parts.length >= 2) return '${parts[1]}/${parts[0].substring(2)}';
+    if (parts.length == 3) return '${parts[2]}/${parts[1]}';
+    return raw.toString();
   }
 }
 
@@ -511,6 +771,59 @@ class _ErrorState extends GetView<ShopStatisticsController> {
             label: const Text('Réessayer'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Ligne de choix dans la feuille d'export.
+class _ExportOption extends StatelessWidget {
+  const _ExportOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppDesign.space5,
+          vertical: AppDesign.space1,
+        ),
+        leading: Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: ds.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+          ),
+          child: Icon(icon, size: 20, color: ds.textSecondary),
+        ),
+        title: Text(
+          title,
+          style: context.body1.copyWith(
+            fontWeight: FontWeight.w600,
+            color: ds.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: context.caption.copyWith(color: ds.textTertiary),
+        ),
+        trailing:
+            Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+        onTap: onTap,
       ),
     );
   }

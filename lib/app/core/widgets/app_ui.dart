@@ -64,11 +64,7 @@ class AppCard extends StatelessWidget {
         clipBehavior: clipContent ? Clip.antiAlias : Clip.none,
         child: onTap == null
             ? content
-            : InkWell(
-                onTap: onTap,
-                borderRadius: radius,
-                child: content,
-              ),
+            : InkWell(onTap: onTap, borderRadius: radius, child: content),
       ),
     );
   }
@@ -213,9 +209,11 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon,
-                    size: size == AppButtonSize.small ? 16 : 18,
-                    color: effectiveForeground),
+                Icon(
+                  icon,
+                  size: size == AppButtonSize.small ? 16 : 18,
+                  color: effectiveForeground,
+                ),
                 SizedBox(width: AppDesign.space2),
               ],
               Flexible(
@@ -231,30 +229,32 @@ class AppButton extends StatelessWidget {
           );
 
     return SizedBox(
-        height: _height,
-        width: expand ? double.infinity : null,
-        child: Material(
-          color: effectiveBackground,
+      height: _height,
+      width: expand ? double.infinity : null,
+      child: Material(
+        color: effectiveBackground,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: disabled ? null : onPressed,
           borderRadius: radius,
-          child: InkWell(
-            onTap: disabled ? null : onPressed,
-            borderRadius: radius,
-            child: Ink(
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                border: borderColor != null ? Border.all(color: borderColor) : null,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: borderColor != null
+                  ? Border.all(color: borderColor)
+                  : null,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: size == AppButtonSize.small
+                    ? AppDesign.space3
+                    : AppDesign.space5,
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: size == AppButtonSize.small
-                      ? AppDesign.space3
-                      : AppDesign.space5,
-                ),
-                child: Center(child: child),
-              ),
+              child: Center(child: child),
             ),
           ),
         ),
+      ),
     );
   }
 }
@@ -366,12 +366,16 @@ class AppSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: padding ??
+      // Juste de quoi détacher le titre de la section précédente : il doit
+      // rester visuellement attaché à la liste qu'il annonce, et les
+      // rubriques s'enchaîner plutôt que flotter chacune sur son écran.
+      padding:
+          padding ??
           EdgeInsets.fromLTRB(
             context.ds.gutter,
-            AppDesign.space6,
-            context.ds.gutter,
             AppDesign.space3,
+            context.ds.gutter,
+            AppDesign.space2,
           ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,8 +635,13 @@ class AppTextField extends StatelessWidget {
               vertical: AppDesign.space3 + 2,
             ),
             border: outline(context.ds.borderStrong),
-            enabledBorder: outline(hasError ? AppDesign.danger : context.ds.borderStrong),
-            focusedBorder: outline(hasError ? AppDesign.danger : AppDesign.accent, width: 1.5),
+            enabledBorder: outline(
+              hasError ? AppDesign.danger : context.ds.borderStrong,
+            ),
+            focusedBorder: outline(
+              hasError ? AppDesign.danger : AppDesign.accent,
+              width: 1.5,
+            ),
             errorBorder: outline(AppDesign.danger),
             focusedErrorBorder: outline(AppDesign.danger, width: 1.5),
             disabledBorder: outline(context.ds.border),
@@ -646,8 +655,11 @@ class AppTextField extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.error_outline_rounded,
-                  size: 14, color: AppDesign.danger),
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 14,
+                color: AppDesign.danger,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -739,7 +751,10 @@ class AppIconButton extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     constraints: const BoxConstraints(minWidth: 16),
                     decoration: BoxDecoration(
                       color: AppDesign.danger,

@@ -358,7 +358,7 @@ class WalletHistoryView extends GetView<WalletController> {
                                 const SizedBox(width: 4),
                                 Text(
                                   transaction.paymentProvider == 'kpay'
-                                      ? 'KPay'
+                                      ? 'Mobile Money'
                                       : 'PayPal',
                                   style: const TextStyle(
                                     fontSize: 11,

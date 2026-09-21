@@ -29,6 +29,7 @@ class ProductCard extends StatelessWidget {
     this.badgeLabel,
     this.badgeTone = AppBadgeTone.accent,
     this.originalPrice,
+    this.isSponsored = false,
   });
 
   final String name;
@@ -51,6 +52,14 @@ class ProductCard extends StatelessWidget {
   final bool isCertified;
   final String? badgeLabel;
   final AppBadgeTone badgeTone;
+
+  /// Asso Ads : emplacement acheté par un vendeur.
+  ///
+  /// L'annonce se distingue du contenu éditorial — chip « Asso Ads » sur le
+  /// visuel et mention en pied de carte — parce qu'un acheteur a le droit de
+  /// savoir ce qu'il regarde. Une publicité déguisée en résultat ordinaire
+  /// trompe l'acheteur et dévalue le placement pour le vendeur.
+  final bool isSponsored;
 
   /// Ratio largeur/hauteur du visuel.
   ///
@@ -169,7 +178,13 @@ class ProductCard extends StatelessWidget {
                               size: 28,
                             ),
                       ),
-                      if (badgeLabel != null)
+                      if (isSponsored)
+                        Positioned(
+                          top: AppDesign.space2,
+                          left: AppDesign.space2,
+                          child: const _AssoAdsChip(),
+                        )
+                      else if (badgeLabel != null)
                         Positioned(
                           top: AppDesign.space2,
                           left: AppDesign.space2,
@@ -258,7 +273,49 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: AppDesign.space1),
-                      if (location != null && location!.isNotEmpty)
+                      if (isSponsored)
+                        // Une annonce annonce ce qu'elle est, même hors du
+                        // visuel : le chip peut être masqué par une image
+                        // sombre, cette ligne reste lisible.
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.campaign_outlined,
+                              size: 11,
+                              color: AppDesign.info,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Sponsorisé',
+                              style: context.textStyle(
+                                FontSizeType.overline,
+                                color: AppDesign.info,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (location != null && location!.isNotEmpty) ...[
+                              Text(
+                                '  ·  ',
+                                style: context.textStyle(
+                                  FontSizeType.overline,
+                                  color: context.ds.textTertiary,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  location!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textStyle(
+                                    FontSizeType.overline,
+                                    color: context.ds.textTertiary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        )
+                      else if (location != null && location!.isNotEmpty)
                         Row(
                           children: [
                             Icon(
@@ -287,6 +344,48 @@ class ProductCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Asso Ads — marque d'un emplacement acheté, posée sur le visuel.
+///
+/// Fond plein plutôt que translucide : sur une photo claire, un chip
+/// semi-transparent devient illisible, et une mention publicitaire qu'on ne
+/// peut pas lire ne remplit pas son office.
+class _AssoAdsChip extends StatelessWidget {
+  const _AssoAdsChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppDesign.info,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.campaign, size: 11, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            'Asso Ads',
+            style: context.textStyle(
+              FontSizeType.overline,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

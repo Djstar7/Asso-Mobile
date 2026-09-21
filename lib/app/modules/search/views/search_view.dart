@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/passcolis_card.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../controllers/search_controller.dart' as search_ctrl;
 
-/// Vue de recherche moderne et responsive
+/// Vue de recherche, ouverte comme un écran à part entière.
 class SearchView extends StatelessWidget {
   const SearchView({super.key});
 
@@ -21,28 +23,51 @@ class SearchView extends StatelessWidget {
   }
 }
 
+/// Même recherche, montée dans l'onglet de la navigation basse.
+///
+/// Elle réutilise le contenu de [SearchView] au lieu d'en maintenir une
+/// copie : seule l'enveloppe change — pas de Scaffold ni de flèche de
+/// retour, puisqu'on est sur une destination principale et non sur un écran
+/// empilé.
+class SearchTabView extends StatelessWidget {
+  const SearchTabView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<search_ctrl.SearchController>()) {
+      Get.put(search_ctrl.SearchController());
+    }
+
+    return const _SearchViewContent(embedded: true);
+  }
+}
+
 class _SearchViewContent extends GetView<search_ctrl.SearchController> {
-  const _SearchViewContent();
+  const _SearchViewContent({this.embedded = false});
+
+  /// Monté dans un onglet : l'écran hôte fournit déjà le fond, la zone sûre
+  /// et le moyen de naviguer ailleurs.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
 
+    final body = Column(
+      children: [
+        // Barre de recherche fixe
+        _buildSearchHeader(context, isDark),
+
+        // Contenu scrollable
+        Expanded(child: Obx(() => _buildContent(context, isDark))),
+      ],
+    );
+
+    if (embedded) return body;
+
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Barre de recherche fixe
-            _buildSearchHeader(context, isDark),
-
-            // Contenu scrollable
-            Expanded(
-              child: Obx(() => _buildContent(context, isDark)),
-            ),
-          ],
-        ),
-      ),
+      body: SafeArea(child: body),
     );
   }
 
@@ -62,17 +87,23 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       ),
       child: Column(
         children: [
+          // Bascule Produits / Passcolis, au-dessus du champ : on choisit
+          // d'abord ce que l'on cherche, on le formule ensuite.
+          _buildScopeTabs(context, isDark),
+          const SizedBox(height: 12),
+
           // Champ de recherche
           Row(
             children: [
-              // Bouton retour
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_back_rounded,
-                  color: AppThemeSystem.getPrimaryTextColor(context),
+              // Bouton retour — inutile sur un onglet, qui n'empile rien.
+              if (!embedded)
+                IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppThemeSystem.getPrimaryTextColor(context),
+                  ),
+                  onPressed: () => Get.back(),
                 ),
-                onPressed: () => Get.back(),
-              ),
 
               // Champ de recherche
               Expanded(
@@ -81,52 +112,60 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppThemeSystem.grey300,
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppThemeSystem.grey300, width: 1),
                   ),
-                  child: TextField(
-                    controller: controller.searchTextController,
-                    focusNode: controller.searchFocusNode,
-                    textInputAction: TextInputAction.search,
-                    onChanged: (value) {
-                      controller.searchQuery.value = value;
-                    },
-                    onSubmitted: (value) {
-                      if (value.isNotEmpty) {
-                        controller.performSearch(value);
-                      }
-                    },
-                    style: TextStyle(
-                      color: AppThemeSystem.blackColor,
-                      fontSize: 15,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher des produits...',
-                      hintStyle: TextStyle(
-                        color: AppThemeSystem.grey500,
+                  // Obx : seul le libellé du champ dépend de l'onglet. Le
+                  // TextEditingController et le FocusNode appartenant au
+                  // controller, la saisie et le focus survivent au rebuild.
+                  child: Obx(
+                    () => TextField(
+                      controller: controller.searchTextController,
+                      focusNode: controller.searchFocusNode,
+                      textInputAction: TextInputAction.search,
+                      onChanged: (value) {
+                        controller.searchQuery.value = value;
+                      },
+                      onSubmitted: (value) {
+                        if (value.isNotEmpty) {
+                          controller.performSearch(value);
+                        }
+                      },
+                      style: TextStyle(
+                        color: AppThemeSystem.blackColor,
                         fontSize: 15,
                       ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: AppThemeSystem.primaryColor,
-                      ),
-                      suffixIcon: Obx(() =>
-                        controller.searchQuery.value.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  color: AppThemeSystem.grey500,
-                                ),
-                                onPressed: controller.clearSearch,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      decoration: InputDecoration(
+                        // Le libellé suit l'onglet : on ne cherche pas une ville
+                        // de la même façon qu'un article.
+                        hintText:
+                            controller.scope.value ==
+                                search_ctrl.SearchScope.passcolis
+                            ? 'Rechercher une ville, un pays...'
+                            : 'Rechercher des produits...',
+                        hintStyle: TextStyle(
+                          color: AppThemeSystem.grey500,
+                          fontSize: 15,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                        suffixIcon: Obx(
+                          () => controller.searchQuery.value.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: AppThemeSystem.grey500,
+                                  ),
+                                  onPressed: controller.clearSearch,
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -135,12 +174,104 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ],
           ),
 
-          // Filtres rapides (catégories)
-          const SizedBox(height: 12),
-          _buildQuickFilters(context, isDark),
+          // Filtres rapides (catégories) — propres aux produits : un trajet
+          // n'appartient à aucune catégorie du catalogue.
+          Obx(() {
+            if (controller.scope.value != search_ctrl.SearchScope.products) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: _buildQuickFilters(context, isDark),
+            );
+          }),
         ],
       ),
     );
+  }
+
+  /// Bascule entre les deux familles de résultats.
+  ///
+  /// Un segmenté plutôt qu'un `TabBar` : les deux listes ne se font pas
+  /// défiler horizontalement l'une vers l'autre, et l'état sélectionné reste
+  /// lisible sans dépendre d'un indicateur fin.
+  Widget _buildScopeTabs(BuildContext context, bool isDark) {
+    return Obx(() {
+      final current = controller.scope.value;
+
+      Widget tab(String label, IconData icon, search_ctrl.SearchScope value) {
+        final isSelected = current == value;
+
+        return Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => controller.changeScope(value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppThemeSystem.primaryColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 17,
+                    color: isSelected
+                        ? Colors.white
+                        : AppThemeSystem.getSecondaryTextColor(context),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        ),
+        child: Row(
+          children: [
+            tab(
+              'Produits',
+              Icons.grid_view_rounded,
+              search_ctrl.SearchScope.products,
+            ),
+            tab(
+              'Passcolis',
+              Icons.flight_takeoff_rounded,
+              search_ctrl.SearchScope.passcolis,
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   /// Filtres rapides (catégories)
@@ -159,7 +290,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             // Chaque chip doit observer selectedCategory individuellement
             return Obx(() {
               final isSelected = index == 0
-                  ? controller.selectedCategory.value.isEmpty || controller.selectedCategory.value == 'Tous'
+                  ? controller.selectedCategory.value.isEmpty ||
+                        controller.selectedCategory.value == 'Tous'
                   : controller.selectedCategory.value == category;
 
               return _buildFilterChip(
@@ -208,8 +340,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             color: isSelected
                 ? null
                 : isDark
-                    ? AppThemeSystem.grey800
-                    : AppThemeSystem.grey200,
+                ? AppThemeSystem.grey800
+                : AppThemeSystem.grey200,
             borderRadius: BorderRadius.circular(20),
             border: isSelected
                 ? null
@@ -249,8 +381,29 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     );
   }
 
-  /// Contenu principal
+  /// Contenu principal : la famille de résultats correspondant à l'onglet.
+  ///
+  /// Le fondu croisé évite que la liste change brutalement sous le doigt
+  /// quand on bascule d'un onglet à l'autre.
   Widget _buildContent(BuildContext context, bool isDark) {
+    final isPasscolis =
+        controller.scope.value == search_ctrl.SearchScope.passcolis;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: KeyedSubtree(
+        key: ValueKey(controller.scope.value),
+        child: isPasscolis
+            ? _buildPasscolisContent(context, isDark)
+            : _buildProductsContent(context, isDark),
+      ),
+    );
+  }
+
+  /// Onglet « Produits »
+  Widget _buildProductsContent(BuildContext context, bool isDark) {
     // État de chargement initial
     if (controller.isLoading.value && controller.displayedProducts.isEmpty) {
       return _buildLoadingState(context);
@@ -265,12 +418,82 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     }
 
     // État vide (recherche sans résultats)
-    if (controller.searchQuery.value.isNotEmpty && controller.searchResults.isEmpty) {
+    if (controller.searchQuery.value.isNotEmpty &&
+        controller.searchResults.isEmpty) {
       return _buildEmptyState(context, isDark);
     }
 
     // Affichage des produits (recherche ou tous les produits)
     return _buildResults(context, isDark);
+  }
+
+  /// Onglet « Passcolis » : les trajets proposés par la diaspora.
+  Widget _buildPasscolisContent(BuildContext context, bool isDark) {
+    if (controller.isLoadingPasscolis.value &&
+        controller.passcolisOffers.isEmpty) {
+      return ListView.separated(
+        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+        itemCount: 4,
+        separatorBuilder: (_, __) => SizedBox(height: AppDesign.space3),
+        itemBuilder: (context, index) => const PasscolisCardShimmer(),
+      );
+    }
+
+    if (controller.passcolisLoadFailed.value &&
+        controller.passcolisOffers.isEmpty) {
+      return AppEmptyState(
+        icon: Icons.wifi_off_rounded,
+        title: 'Trajets indisponibles',
+        message:
+            "Les trajets n'ont pas pu être chargés. Vérifiez votre connexion puis réessayez.",
+        actionLabel: 'Réessayer',
+        onAction: () => controller.loadPasscolisOffers(isRefresh: true),
+      );
+    }
+
+    final offers = controller.filteredPasscolis;
+
+    if (offers.isEmpty) {
+      final hasQuery = controller.searchQuery.value.isNotEmpty;
+      return AppEmptyState(
+        icon: Icons.flight_takeoff_rounded,
+        title: hasQuery ? 'Aucun trajet trouvé' : 'Aucun trajet disponible',
+        message: hasQuery
+            ? 'Aucun voyageur ne dessert « ${controller.searchQuery.value} » pour le moment. Essayez une autre ville ou un pays.'
+            : 'Aucun voyageur ne propose de kilos pour le moment. Revenez bientôt.',
+        actionLabel: hasQuery ? 'Effacer la recherche' : 'Actualiser',
+        onAction: hasQuery
+            ? controller.clearSearch
+            : () => controller.loadPasscolisOffers(isRefresh: true),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => controller.loadPasscolisOffers(isRefresh: true),
+      color: AppThemeSystem.primaryColor,
+      child: ListView.separated(
+        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+        // +1 : l'en-tête reprend le décompte affiché côté produits.
+        itemCount: offers.length + 1,
+        separatorBuilder: (_, __) => SizedBox(height: AppDesign.space3),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: AppDesign.space1),
+              child: Text(
+                '${offers.length} trajet${offers.length > 1 ? 's' : ''}',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          }
+
+          return PasscolisCard(offer: offers[index - 1]);
+        },
+      ),
+    );
   }
 
   /// État de chargement
@@ -279,7 +502,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
       gridDelegate: ProductCard.gridDelegate(context),
       itemCount: 6,
-      itemBuilder: (context, index) => ShimmerWidgets.productCardShimmer(context),
+      itemBuilder: (context, index) =>
+          ShimmerWidgets.productCardShimmer(context),
     );
   }
 
@@ -318,16 +542,15 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               ],
             ),
             const SizedBox(height: 12),
-            ...controller.searchHistory.map((query) => InkWell(
+            ...controller.searchHistory.map(
+              (query) => InkWell(
                 onTap: () => controller.performSearch(query),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppThemeSystem.darkCardColor
-                        : Colors.white,
+                    color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark
@@ -357,7 +580,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                     ],
                   ),
                 ),
-              )),
+              ),
+            ),
           ],
         ),
       );
@@ -412,41 +636,42 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
-              children: [
-                'Vêtements',
-                'Électronique',
-                'Chaussures',
-                'Accessoires',
-              ].map((tag) {
-                return InkWell(
-                  onTap: () {
-                    controller.searchTextController.text = tag;
-                    controller.searchQuery.value = tag;
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppThemeSystem.grey800
-                          : AppThemeSystem.grey100,
+              children:
+                  [
+                    'Vêtements',
+                    'Électronique',
+                    'Chaussures',
+                    'Accessoires',
+                  ].map((tag) {
+                    return InkWell(
+                      onTap: () {
+                        controller.searchTextController.text = tag;
+                        controller.searchQuery.value = tag;
+                      },
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isDark
-                            ? AppThemeSystem.grey700
-                            : AppThemeSystem.grey300,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppThemeSystem.grey800
+                              : AppThemeSystem.grey100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark
+                                ? AppThemeSystem.grey700
+                                : AppThemeSystem.grey300,
+                          ),
+                        ),
+                        child: Text(
+                          tag,
+                          style: context.textStyle(FontSizeType.body2),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      tag,
-                      style: context.textStyle(FontSizeType.body2),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
             ),
           ],
         ),
@@ -465,9 +690,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppThemeSystem.grey800
-                    : AppThemeSystem.grey100,
+                color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -517,7 +740,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
   Widget _buildResults(BuildContext context, bool isDark) {
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
-        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+        if (scrollInfo.metrics.pixels >=
+            scrollInfo.metrics.maxScrollExtent - 200) {
           controller.loadMore();
         }
         return true;
@@ -527,17 +751,21 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           // En-tête des résultats
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+              padding: EdgeInsets.all(
+                AppThemeSystem.getHorizontalPadding(context),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Obx(() => Text(
-                        '${controller.displayedProducts.length} produit${controller.displayedProducts.length > 1 ? 's' : ''}',
-                        style: context.textStyle(
-                          FontSizeType.body1,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )),
+                  Obx(
+                    () => Text(
+                      '${controller.displayedProducts.length} produit${controller.displayedProducts.length > 1 ? 's' : ''}',
+                      style: context.textStyle(
+                        FontSizeType.body1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   // Bouton filtres avec badge
                   Obx(() {
                     final filterCount = controller.activeFiltersCount;
@@ -549,7 +777,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                             Icons.tune_rounded,
                             color: AppThemeSystem.primaryColor,
                           ),
-                          onPressed: () => _showFiltersBottomSheet(context, isDark),
+                          onPressed: () =>
+                              _showFiltersBottomSheet(context, isDark),
                         ),
                         if (filterCount > 0)
                           Positioned(
@@ -591,19 +820,17 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ),
             sliver: SliverGrid(
               gridDelegate: ProductCard.gridDelegate(context),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = controller.displayedProducts[index];
-                  return _buildProductCard(context, isDark, product);
-                },
-                childCount: controller.displayedProducts.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final product = controller.displayedProducts[index];
+                return _buildProductCard(context, isDark, product);
+              }, childCount: controller.displayedProducts.length),
             ),
           ),
 
           // Loading more indicator
           Obx(() {
-            if (controller.isLoading.value && controller.displayedProducts.isNotEmpty) {
+            if (controller.isLoading.value &&
+                controller.displayedProducts.isNotEmpty) {
               return SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -636,24 +863,28 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     Map<String, dynamic> product,
   ) {
     final primaryImage = product['primary_image']?.toString();
-    final price = double.tryParse(
-            (product['price_xaf'] ?? product['price'])?.toString() ?? '0') ??
+    final price =
+        double.tryParse(
+          (product['price_xaf'] ?? product['price'])?.toString() ?? '0',
+        ) ??
         0.0;
+
+    // Asso Ads : emplacement acheté par le vendeur, signalé comme tel.
+    final isSponsored = product['is_sponsored'] == true;
 
     return ProductCard(
       name: product['name']?.toString() ?? 'Produit',
+      isSponsored: isSponsored,
       price: controller.formatPrice(price),
       location: product['location']?.toString() ?? '',
       isCertified: ProductCard.isShopCertified(product),
-      imageBuilder: (context) =>
-          primaryImage != null && primaryImage.isNotEmpty
-              ? Image.network(
-                  primaryImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildPlaceholder(),
-                )
-              : _buildPlaceholder(),
+      imageBuilder: (context) => primaryImage != null && primaryImage.isNotEmpty
+          ? Image.network(
+              primaryImage,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+            )
+          : _buildPlaceholder(),
       onTap: () => controller.onProductTap(product),
     );
   }
@@ -728,15 +959,17 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               Row(
                 children: [
                   Expanded(
-                    child: Obx(() => _buildPriceInputField(
-                      context,
-                      isDark,
-                      label: 'Min',
-                      textController: controller.minPriceController,
-                      onChanged: (value) {
-                        controller.minPrice.value = value;
-                      },
-                    )),
+                    child: Obx(
+                      () => _buildPriceInputField(
+                        context,
+                        isDark,
+                        label: 'Min',
+                        textController: controller.minPriceController,
+                        onChanged: (value) {
+                          controller.minPrice.value = value;
+                        },
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -749,15 +982,17 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                     ),
                   ),
                   Expanded(
-                    child: Obx(() => _buildPriceInputField(
-                      context,
-                      isDark,
-                      label: 'Max',
-                      textController: controller.maxPriceController,
-                      onChanged: (value) {
-                        controller.maxPrice.value = value;
-                      },
-                    )),
+                    child: Obx(
+                      () => _buildPriceInputField(
+                        context,
+                        isDark,
+                        label: 'Max',
+                        textController: controller.maxPriceController,
+                        onChanged: (value) {
+                          controller.maxPrice.value = value;
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -765,17 +1000,43 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               const SizedBox(height: 16),
 
               // Prix suggérés
-              Obx(() => Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildPriceChip(context, isDark, 'Moins de 5.000', 0, 5000),
-                  _buildPriceChip(context, isDark, '5.000 - 20.000', 5000, 20000),
-                  _buildPriceChip(context, isDark, '20.000 - 50.000', 20000, 50000),
-                  _buildPriceChip(context, isDark, '50.000 - 100.000', 50000, 100000),
-                  _buildPriceChip(context, isDark, 'Plus de 100.000', 100000, 1000000),
-                ],
-              )),
+              Obx(
+                () => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildPriceChip(context, isDark, 'Moins de 5.000', 0, 5000),
+                    _buildPriceChip(
+                      context,
+                      isDark,
+                      '5.000 - 20.000',
+                      5000,
+                      20000,
+                    ),
+                    _buildPriceChip(
+                      context,
+                      isDark,
+                      '20.000 - 50.000',
+                      20000,
+                      50000,
+                    ),
+                    _buildPriceChip(
+                      context,
+                      isDark,
+                      '50.000 - 100.000',
+                      50000,
+                      100000,
+                    ),
+                    _buildPriceChip(
+                      context,
+                      isDark,
+                      'Plus de 100.000',
+                      100000,
+                      1000000,
+                    ),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 32),
 
@@ -788,71 +1049,78 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 ),
               ),
               const SizedBox(height: 12),
-              Obx(() => Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: search_ctrl.SortOption.values.map((option) {
-                  final isSelected = controller.selectedSortOption.value == option;
-                  return InkWell(
-                    onTap: () {
-                      controller.selectSortOption(option);
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: isSelected
-                            ? LinearGradient(
-                                colors: [
-                                  AppThemeSystem.primaryColor,
-                                  AppThemeSystem.tertiaryColor,
-                                ],
-                              )
-                            : null,
-                        color: isSelected
-                            ? null
-                            : isDark
-                                ? AppThemeSystem.grey800
-                                : AppThemeSystem.grey200,
-                        borderRadius: BorderRadius.circular(20),
-                        border: isSelected
-                            ? null
-                            : Border.all(
-                                color: isDark
-                                    ? AppThemeSystem.grey700
-                                    : AppThemeSystem.grey300,
-                              ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            option.icon,
-                            size: 16,
-                            color: isSelected
-                                ? Colors.white
-                                : AppThemeSystem.getPrimaryTextColor(context),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            option.label,
-                            style: context.textStyle(
-                              FontSizeType.body2,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              Obx(
+                () => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: search_ctrl.SortOption.values.map((option) {
+                    final isSelected =
+                        controller.selectedSortOption.value == option;
+                    return InkWell(
+                      onTap: () {
+                        controller.selectSortOption(option);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: isSelected
+                              ? LinearGradient(
+                                  colors: [
+                                    AppThemeSystem.primaryColor,
+                                    AppThemeSystem.tertiaryColor,
+                                  ],
+                                )
+                              : null,
+                          color: isSelected
+                              ? null
+                              : isDark
+                              ? AppThemeSystem.grey800
+                              : AppThemeSystem.grey200,
+                          borderRadius: BorderRadius.circular(20),
+                          border: isSelected
+                              ? null
+                              : Border.all(
+                                  color: isDark
+                                      ? AppThemeSystem.grey700
+                                      : AppThemeSystem.grey300,
+                                ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              option.icon,
+                              size: 16,
                               color: isSelected
                                   ? Colors.white
                                   : AppThemeSystem.getPrimaryTextColor(context),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              option.label,
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppThemeSystem.getPrimaryTextColor(
+                                        context,
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              )),
+                    );
+                  }).toList(),
+                ),
+              ),
 
               const SizedBox(height: 32),
 
@@ -911,7 +1179,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     required TextEditingController textController,
     required Function(double) onChanged,
   }) {
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -945,7 +1212,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               border: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero,
-              suffixText: Get.find<search_ctrl.SearchController>().currencySymbol,
+              suffixText:
+                  Get.find<search_ctrl.SearchController>().currencySymbol,
               suffixStyle: context.textStyle(
                 FontSizeType.caption,
                 color: AppThemeSystem.grey500,
@@ -969,8 +1237,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     double min,
     double max,
   ) {
-    final isSelected = controller.minPrice.value == min &&
-        controller.maxPrice.value == max;
+    final isSelected =
+        controller.minPrice.value == min && controller.maxPrice.value == max;
 
     return InkWell(
       onTap: () {
@@ -984,15 +1252,15 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           color: isSelected
               ? AppThemeSystem.primaryColor.withValues(alpha: 0.1)
               : isDark
-                  ? AppThemeSystem.grey800
-                  : AppThemeSystem.grey100,
+              ? AppThemeSystem.grey800
+              : AppThemeSystem.grey100,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? AppThemeSystem.primaryColor
                 : isDark
-                    ? AppThemeSystem.grey700
-                    : AppThemeSystem.grey300,
+                ? AppThemeSystem.grey700
+                : AppThemeSystem.grey300,
             width: isSelected ? 1.5 : 1,
           ),
         ),

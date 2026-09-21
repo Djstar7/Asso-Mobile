@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 
 import 'app/routes/app_pages.dart';
 import 'app/core/utils/app_theme_system.dart';
+import 'app/core/widgets/app_update_gate.dart';
 import 'app/core/controllers/app_config_controller.dart';
 import 'app/data/services/websocket_service.dart';
 import 'app/data/services/firebase_messaging_service.dart';
@@ -88,6 +89,10 @@ void main() async {
       themeMode: AppThemeSystem.enableDynamicTheming ? ThemeMode.system : ThemeMode.light,
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
+      // Enveloppe les routes plutôt que l'application : la fenêtre de mise à
+      // jour a ainsi un Navigator au-dessus d'elle, et ne s'ouvre pas par
+      // dessus l'écran de démarrage.
+      builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
       // Support de la localisation française
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

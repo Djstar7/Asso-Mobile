@@ -36,9 +36,11 @@ class PackageService {
 
   /// Subscribe to a package with wallet type selection
   /// walletType: 'kpay' or 'paypal'
+  /// [productId] : produit à sponsoriser, requis pour un forfait Asso Ads.
   static Future<ApiResponse> subscribeToPackage(
     int packageId, {
     required String walletType,
+    int? productId,
   }) async {
     print('');
     print('========================================');
@@ -55,6 +57,7 @@ class PackageService {
         body: {
           'package_id': packageId,
           'wallet_type': walletType,
+          if (productId != null) 'product_id': productId,
         },
       );
 
@@ -93,12 +96,15 @@ class PackageService {
   ///
   /// Réponse 201 : { success, message, payment_mode, subscription_id,
   ///                 status:"pending|paid", payment_reference, sales_code, ... }
+  ///
+  /// [productId] : produit à sponsoriser, requis pour un forfait Asso Ads.
   static Future<ApiResponse> subscribePackageDirect(
     int packageId, {
     required String paymentMode,
     String? provider,
     String? phoneNumber,
     String? salesCode,
+    int? productId,
   }) async {
     print('');
     print('========================================');
@@ -112,6 +118,9 @@ class PackageService {
         'package_id': packageId,
         'payment_mode': paymentMode,
       };
+      if (productId != null) {
+        body['product_id'] = productId;
+      }
       if (paymentMode == 'kpay_direct') {
         body['provider'] = provider;
         body['phone_number'] = phoneNumber;
@@ -203,7 +212,7 @@ class PackageService {
     try {
       print('🌐 Calling API: GET /v1/vendor/package/current');
 
-      final response = await ApiProvider.get('/v1/vendor/package/current');
+      final response = await ApiProvider.get(AppConstants.currentPackageUrl);
 
       print('✅ PACKAGE SERVICE: API call completed');
       print('  └─ Success: ${response.success}');

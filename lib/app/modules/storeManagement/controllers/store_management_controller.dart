@@ -654,14 +654,8 @@ class StoreManagementController extends GetxController {
     await loadData();
   }
 
-  /// Booster les produits
-  void boostProducts() {
-    Get.snackbar(
-      'Boost',
-      'Fonctionnalité de boost en cours de développement',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
+  /// Ouvre Asso Ads pour sponsoriser un article.
+  void boostProducts() => Get.toNamed(Routes.BOOST);
 
   /// Demander la certification
   void requestCertification() async {

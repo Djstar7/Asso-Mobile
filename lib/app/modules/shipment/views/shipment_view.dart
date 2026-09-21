@@ -351,6 +351,23 @@ class ShipmentView extends GetView<MyOrderController> {
                 ),
               ),
             ),
+
+          // Commande déjà notée : l'acheteur revoit la note qu'il a laissée.
+          if (!order.canRate && order.ratingValue != null)
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Votre note ', style: TextStyle(fontSize: 13)),
+                  for (var i = 1; i <= 5; i++)
+                    Icon(
+                      i <= order.ratingValue! ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 18,
+                      color: AppDesign.warning,
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );

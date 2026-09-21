@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/asso_ads_banner.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/values/constants.dart';
@@ -16,7 +17,7 @@ import '../../chat/controllers/chat_controller.dart';
 import '../../tracking/views/tracking_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../import/views/import_view.dart';
-import '../../myVoice/views/my_voice_view.dart';
+import '../../search/views/search_view.dart';
 import '../../notification/controllers/notification_controller.dart';
 import '../controllers/home_controller.dart';
 
@@ -53,8 +54,8 @@ class HomeView extends GetView<HomeController> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: const [
                   HomeItemView(),
+                  SearchTabView(),
                   ImportView(),
-                  MyVoiceView(),
                   TrackingView(),
                   ProfileView(),
                 ],
@@ -71,6 +72,12 @@ class HomeView extends GetView<HomeController> {
   /// L'ordre suit le parcours : on découvre (Accueil, Import), on s'exprime
   /// (Ma voix), on suit ses achats (Suivi), on gère son compte.
   /// La messagerie a rejoint la barre du haut.
+  /// Destinations de la barre basse, dans l'ordre des onglets.
+  ///
+  /// « Ma voix » a quitté cette barre pour le menu latéral : c'est une
+  /// rubrique qu'on visite, pas un des cinq gestes quotidiens. La recherche
+  /// prend sa place, là où l'on s'attend à la trouver dans une place de
+  /// marché.
   static const List<_NavDestination> _destinations = [
     _NavDestination(
       label: 'Accueil',
@@ -78,14 +85,14 @@ class HomeView extends GetView<HomeController> {
       activeIcon: Icons.storefront_rounded,
     ),
     _NavDestination(
-      label: 'Import',
-      icon: Icons.travel_explore_outlined,
-      activeIcon: Icons.travel_explore_rounded,
+      label: 'Recherche',
+      icon: Icons.search_outlined,
+      activeIcon: Icons.search_rounded,
     ),
     _NavDestination(
-      label: 'Ma voix',
-      icon: Icons.forum_outlined,
-      activeIcon: Icons.forum_rounded,
+      label: 'Grossiste',
+      icon: Icons.inventory_2_outlined,
+      activeIcon: Icons.inventory_2_rounded,
     ),
     _NavDestination(
       label: 'Suivi',
@@ -112,7 +119,9 @@ class HomeView extends GetView<HomeController> {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 62,
+            // Assez haut pour l'icône, la pastille et le libellé sans les
+            // tasser quand la police est agrandie.
+            height: 64,
             child: Row(
               children: List.generate(_destinations.length, (index) {
                 final destination = _destinations[index];
@@ -149,10 +158,10 @@ class HomeView extends GetView<HomeController> {
   Widget _buildTopBar(BuildContext context) {
     return Obx(() {
       final tab = controller.currentTabIndex.value;
-      // Recherche affichée sur les deux vitrines (Accueil, Import), où elle
-      // porte sur un catalogue. Ailleurs — fil de discussion, suivi de
-      // commandes, compte — elle ne correspondait à rien de cherchable.
-      final showSearch = tab == 0 || tab == 1;
+      // Raccourci de recherche gardé sur l'accueil seulement. L'onglet
+      // Recherche porte déjà son propre champ, et le catalogue grossiste a
+      // le sien, filtré par pays.
+      final showSearch = tab == 0;
 
       return Container(
         decoration: BoxDecoration(
@@ -214,6 +223,7 @@ class HomeView extends GetView<HomeController> {
                   AppIconButton(
                     icon: Icons.favorite_border_rounded,
                     tooltip: 'Favoris',
+                    badgeCount: controller.favoritesCount.value,
                     onPressed: () => AuthGuard.navigateIfAuthenticated(
                       context,
                       '/favorites',
@@ -295,7 +305,9 @@ class HomeView extends GetView<HomeController> {
       color: context.ds.surfaceMuted,
       borderRadius: BorderRadius.circular(AppDesign.radiusSm),
       child: InkWell(
-        onTap: () => Get.toNamed('/search'),
+        // Bascule sur l'onglet Recherche plutôt que d'empiler un écran :
+        // la destination existe désormais dans la barre du bas.
+        onTap: controller.goToSearchTab,
         borderRadius: BorderRadius.circular(AppDesign.radiusSm),
         child: Container(
           height: AppDesign.minTapTarget,
@@ -433,6 +445,22 @@ class HomeView extends GetView<HomeController> {
               children: [
                 // SECTION: MON COMPTE
                 _buildSectionHeader(context, 'Mon Compte'),
+                // « Ma voix » a quitté la barre du bas : le fil communautaire
+                // se consulte ponctuellement, il ne fait pas partie des cinq
+                // gestes quotidiens.
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.forum_rounded,
+                  title: 'Ma voix',
+                  onTap: () {
+                    Get.back();
+                    AuthGuard.navigateIfAuthenticated(
+                      context,
+                      Routes.MY_VOICE,
+                      featureName: 'la rubrique Ma voix',
+                    );
+                  },
+                ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.favorite_rounded,
@@ -498,128 +526,30 @@ class HomeView extends GetView<HomeController> {
                     );
                   },
                 ),
+                // Mode Vendeur : même ligne que les autres, avec un état actif
+                // quand le compte est déjà vendeur.
                 Builder(
                   builder: (context) {
                     final user = StorageService.getUser();
                     final isVendor = user?.isVendor ?? false;
 
-                    return Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal:
-                            AppThemeSystem.getHorizontalPadding(context) * 0.5,
-                        vertical: 2,
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Get.back();
-                          // Vérifier l'authentification avant d'accéder au mode vendeur
-                          if (AuthGuard.isGuest) {
-                            AppDialogs.showLoginRequiredDialog(
-                              context,
-                              featureName: 'le mode vendeur',
-                            );
-                          } else {
-                            controller.handleVendorModeNavigation();
-                          }
-                        },
-                        borderRadius: context.borderRadius(
-                          BorderRadiusType.small,
-                        ),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                AppThemeSystem.getHorizontalPadding(context) *
-                                0.5,
-                            vertical:
-                                AppThemeSystem.getVerticalPadding(context) *
-                                0.5,
-                          ),
-                          child: Row(
-                            children: [
-                              // Icône
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppThemeSystem.primaryColor.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: context.borderRadius(
-                                    BorderRadiusType.small,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.store_rounded,
-                                  color: AppThemeSystem.primaryColor,
-                                  size: 20,
-                                ),
-                              ),
-
-                              SizedBox(width: 12),
-
-                              // Titre
-                              Expanded(
-                                child: Text(
-                                  'Mode Vendeur',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-
-                              // Badge vendeur actif
-                              if (isVendor) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppThemeSystem.successColor
-                                        .withValues(alpha: 0.15),
-                                    borderRadius: context.borderRadius(
-                                      BorderRadiusType.small,
-                                    ),
-                                    border: Border.all(
-                                      color: AppThemeSystem.successColor
-                                          .withValues(alpha: 0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.verified_rounded,
-                                        size: 14,
-                                        color: AppThemeSystem.successColor,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Actif',
-                                        style: context.textStyle(
-                                          FontSizeType.overline,
-                                          color: AppThemeSystem.successColor,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                              ],
-
-                              // Chevron
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: context.secondaryTextColor,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _buildDrawerItem(
+                      context: context,
+                      icon: Icons.storefront_rounded,
+                      title: 'Mode Vendeur',
+                      isActive: isVendor,
+                      badge: isVendor ? null : 'Devenir',
+                      onTap: () {
+                        Get.back();
+                        if (AuthGuard.isGuest) {
+                          AppDialogs.showLoginRequiredDialog(
+                            context,
+                            featureName: 'le mode vendeur',
+                          );
+                          return;
+                        }
+                        Get.toNamed(isVendor ? '/vendor-dashboard' : '/vendor-config');
+                      },
                     );
                   },
                 ),
@@ -872,82 +802,82 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
+  /// Ligne du menu latéral.
+  ///
+  /// L'icône reste neutre : une pastille orange sur chaque ligne remettait de
+  /// l'accent sur toute la colonne, ce que l'en-tête cherchait justement à
+  /// éviter. L'orange est réservé à ce qui est actif ou nouveau.
   Widget _buildDrawerItem({
     required BuildContext context,
     required IconData icon,
     required String title,
     required VoidCallback onTap,
     String? badge,
+    bool isActive = false,
   }) {
+    final ds = context.ds;
+    final tint = isActive ? AppDesign.accent : ds.icon;
+
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
-        vertical: 2,
+        horizontal: AppDesign.space2,
+        vertical: 1,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: context.borderRadius(BorderRadiusType.small),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppThemeSystem.getHorizontalPadding(context) * 0.5,
-            vertical: AppThemeSystem.getVerticalPadding(context) * 0.5,
-          ),
-          child: Row(
-            children: [
-              // Icône
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                ),
-                child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
-              ),
-
-              SizedBox(width: 12),
-
-              // Titre
-              Expanded(
-                child: Text(
-                  title,
-                  style: context.textStyle(
-                    FontSizeType.body2,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-
-              // Badge (optionnel)
-              if (badge != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppDesign.accent,
-                    borderRadius: context.borderRadius(BorderRadiusType.small),
-                  ),
+      child: Material(
+        color: isActive ? AppDesign.accentSubtle : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+          child: Container(
+            // Hauteur minimale confortable au pouce.
+            constraints: const BoxConstraints(minHeight: AppDesign.minTapTarget),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesign.space3,
+              vertical: AppDesign.space2,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: tint, size: 22),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
                   child: Text(
-                    badge,
+                    title,
                     style: context.textStyle(
-                      FontSizeType.overline,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                      FontSizeType.body2,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      color: isActive ? AppDesign.accentText : ds.textPrimary,
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
+                if (badge != null) ...[
+                  SizedBox(width: AppDesign.space2),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesign.space2,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppDesign.accent,
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    ),
+                    child: Text(
+                      badge,
+                      style: context.textStyle(
+                        FontSizeType.overline,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ] else
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: ds.textTertiary,
+                    size: 18,
+                  ),
               ],
-
-              // Chevron
-              Icon(
-                Icons.chevron_right_rounded,
-                color: context.secondaryTextColor,
-                size: 20,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -980,7 +910,17 @@ class HomeItemView extends GetView<HomeController> {
             // Catégories horizontales
             SliverToBoxAdapter(child: _buildCategories(context)),
 
+            // Passcolis : un bandeau fin plutôt qu'une rubrique en fin de
+            // page, où presque personne ne descendait.
+            SliverToBoxAdapter(child: _buildPasscolisBanner(context)),
+
             // Afficher les sections "Proche de vous" et "Récemment postés" seulement si "Tous" est sélectionné
+            // Asso Ads — annonces en tête d'accueil, juste sous le carrousel.
+            // Les vendeurs paient pour être vus : un emplacement en bas de
+            // page ne vaut pas son prix.
+            if (controller.sponsoredProducts.isNotEmpty)
+              SliverToBoxAdapter(child: _buildSponsoredSection(context)),
+
             if (controller.selectedCategory.value == 'Tous') ...[
               // Vérifier si on est en train de charger ou s'il y a des produits
               if (controller.isLoadingNearby.value ||
@@ -1025,6 +965,9 @@ class HomeItemView extends GetView<HomeController> {
                       context,
                       'Récemment postés',
                       Icons.schedule_rounded,
+                      onSeeAll: controller.recentProducts.isNotEmpty
+                          ? controller.onSeeAllRecent
+                          : null,
                     ),
                   ),
 
@@ -1066,13 +1009,11 @@ class HomeItemView extends GetView<HomeController> {
                           ),
                         ),
 
-                  // Bouton "Voir plus" stylé
+                  // Sortie de l'accueil : les six derniers produits vus, on
+                  // passe la main au catalogue complet.
                   if (controller.recentProducts.isNotEmpty)
                     SliverToBoxAdapter(
-                      child: _buildSeeMoreButton(
-                        context,
-                        controller.onSeeAllRecent,
-                      ),
+                      child: _buildDiscoverMoreButton(context),
                     ),
                 ],
               ] else ...[
@@ -1123,23 +1064,7 @@ class HomeItemView extends GetView<HomeController> {
                         ),
                       ),
                     )
-                  : SliverPadding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppThemeSystem.getHorizontalPadding(
-                          context,
-                        ),
-                      ),
-                      sliver: SliverGrid(
-                        gridDelegate: ProductCard.gridDelegate(context),
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final product = controller.products[index];
-                          return _FadeInProduct(
-                            delay: Duration(milliseconds: index * 50),
-                            child: _buildProductCard(context, product),
-                          );
-                        }, childCount: controller.products.length),
-                      ),
-                    ),
+                  : _buildProductSlivers(context),
 
               // Indicateur de chargement pour la pagination
               if (controller.isLoadingMore.value)
@@ -1455,6 +1380,9 @@ class HomeItemView extends GetView<HomeController> {
         label: 'Diaspo',
         icon: Icons.flight_takeoff_rounded,
         isNew: true,
+        // Trajets encore réservables : le chiffre dit qu'il y a de la place
+        // à acheter maintenant, pas combien d'annonces existent en tout.
+        count: controller.openPasscolisCount,
         onTap: () => AuthGuard.navigateIfAuthenticated(
           context,
           Routes.DIASPO,
@@ -1463,10 +1391,10 @@ class HomeItemView extends GetView<HomeController> {
         ),
       ),
       _QuickLink(
-        label: 'Import',
-        icon: Icons.travel_explore_rounded,
+        label: 'Grossiste',
+        icon: Icons.inventory_2_rounded,
         onTap: () {
-          controller.handleTabTap(1);
+          controller.handleTabTap(2);
           controller.tabController.animateTo(controller.currentTabIndex.value);
         },
       ),
@@ -1483,6 +1411,7 @@ class HomeItemView extends GetView<HomeController> {
       _QuickLink(
         label: 'Favoris',
         icon: Icons.favorite_rounded,
+        count: controller.favoritesCount.value,
         onTap: () => AuthGuard.navigateIfAuthenticated(
           context,
           Routes.FAVORITES,
@@ -1565,7 +1494,7 @@ class HomeItemView extends GetView<HomeController> {
                       // La bannière entière est cliquable, pas seulement le
                       // bouton : c'est la cible la plus large de l'écran, et
                       // le « Découvrir » n'était qu'un décor sans action.
-                      onTap: () => Get.toNamed(Routes.SEARCH),
+                      onTap: controller.goToSearchTab,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -1853,10 +1782,212 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
+  /// « Découvrir plus » : bascule sur l'onglet Recherche.
+  ///
+  /// L'accueil ne montre qu'une sélection ; c'est la recherche qui porte le
+  /// catalogue entier, ses filtres et sa pagination.
+  Widget _buildDiscoverMoreButton(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space4,
+        context.ds.gutter,
+        AppDesign.space2,
+      ),
+      child: AppButton(
+        label: 'Découvrir plus',
+        icon: Icons.search_rounded,
+        variant: AppButtonVariant.secondary,
+        onPressed: controller.goToSearchTab,
+      ),
+    );
+  }
+
+  /// Bandeau Passcolis : envoyer un colis par un voyageur.
+  ///
+  /// Remplace la rubrique qui occupait le bas de page. Placé juste sous les
+  /// catégories, il est vu sans qu'on ait à faire défiler tout le catalogue,
+  /// et sa hauteur réduite ne repousse pas les produits.
+  Widget _buildPasscolisBanner(BuildContext context) {
+    // Rien à annoncer tant qu'aucun trajet n'est ouvert : un bandeau qui
+    // promet des kilos sans en avoir déçoit au premier tap.
+    if (controller.isLoadingPasscolis.value ||
+        controller.openPasscolisCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return _PasscolisBanner(
+      openCount: controller.openPasscolisCount,
+      onTap: controller.onSeeAllPasscolis,
+    );
+  }
+
+  /// Asso Ads — bloc d'annonces en tête d'accueil.
+  ///
+  /// La première annonce prend le format bandeau (16/9, pleine largeur) : c'est
+  /// l'emplacement qui se remarque. Les suivantes défilent horizontalement en
+  /// cartes, pour ne pas repousser le contenu éditorial trop bas.
+  Widget _buildSponsoredSection(BuildContext context) {
+    final ads = controller.sponsoredProducts;
+    final first = ads.first;
+    final rest = ads.length > 1
+        ? ads.sublist(1)
+        : const <Map<String, dynamic>>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.ds.gutter,
+            AppDesign.space4,
+            context.ds.gutter,
+            0,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.campaign, size: 16, color: AppDesign.info),
+              const SizedBox(width: 6),
+              Text(
+                'Asso Ads',
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesign.info,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Annonces de nos vendeurs',
+                  style: context.textStyle(
+                    FontSizeType.overline,
+                    color: context.ds.textTertiary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildAdsBanner(context, first),
+        if (rest.isNotEmpty) ...[
+          SizedBox(
+            height: ProductCard.totalHeight(
+              context,
+              ProductCard.widthInGrid(context),
+            ),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+              itemCount: rest.length,
+              separatorBuilder: (context, index) =>
+                  SizedBox(width: AppDesign.space3),
+              itemBuilder: (context, index) => SizedBox(
+                width: ProductCard.widthInGrid(context),
+                child: _buildProductCard(context, rest[index]),
+              ),
+            ),
+          ),
+          SizedBox(height: AppDesign.space3),
+        ],
+      ],
+    );
+  }
+
+  /// Grille principale, coupée par les bandeaux Asso Ads.
+  ///
+  /// Un `SliverGrid` ne peut pas héberger une cellule pleine largeur : on
+  /// découpe donc la liste en tronçons de grille séparés par des bandeaux.
+  /// Les produits sponsorisés déjà servis en carte dans la grille ne sont pas
+  /// repris en bandeau — deux formats pour la même annonce sur un seul écran
+  /// donneraient l'impression d'un fil saturé de publicité.
+  Widget _buildProductSlivers(BuildContext context) {
+    final products = controller.products;
+    final padding = EdgeInsets.symmetric(
+      horizontal: AppThemeSystem.getHorizontalPadding(context),
+    );
+
+    // Bandeau après cette rangée de la grille (index de produit).
+    const bannerAfter = 8;
+
+    // Les annonces de la première page sont déjà servies en tête d'écran
+    // (section Asso Ads) et retirées de `products` : seules celles des pages
+    // suivantes, chargées à la pagination, s'intercalent ici.
+    final sponsored = products.firstWhereOrNull(
+      (p) => p['is_sponsored'] == true,
+    );
+
+    // Pas assez de produits pour couper le flux, ou aucune annonce à passer :
+    // une seule grille continue.
+    if (sponsored == null || products.length <= bannerAfter + 2) {
+      return SliverPadding(
+        padding: padding,
+        sliver: SliverGrid(
+          gridDelegate: ProductCard.gridDelegate(context),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _FadeInProduct(
+              delay: Duration(milliseconds: index * 50),
+              child: _buildProductCard(context, products[index]),
+            ),
+            childCount: products.length,
+          ),
+        ),
+      );
+    }
+
+    final head = products.sublist(0, bannerAfter);
+    final tail = products.sublist(bannerAfter);
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverPadding(
+          padding: padding,
+          sliver: SliverGrid(
+            gridDelegate: ProductCard.gridDelegate(context),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _FadeInProduct(
+                delay: Duration(milliseconds: index * 50),
+                child: _buildProductCard(context, head[index]),
+              ),
+              childCount: head.length,
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(child: _buildAdsBanner(context, sponsored)),
+        SliverPadding(
+          padding: padding,
+          sliver: SliverGrid(
+            gridDelegate: ProductCard.gridDelegate(context),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildProductCard(context, tail[index]),
+              childCount: tail.length,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Bandeau Asso Ads pleine largeur, intercalé dans le défilement.
+  Widget _buildAdsBanner(BuildContext context, Map<String, dynamic> product) {
+    return AssoAdsBanner(
+      name: product['name']?.toString() ?? 'Produit',
+      price: _formatPrice(product),
+      shopName: product['shop']?['name']?.toString(),
+      location: _getLocation(product),
+      imageBuilder: (context) => _buildProductImage(product),
+      onTap: () =>
+          Get.toNamed('/product', arguments: {...product, 'from_ad': true}),
+    );
+  }
+
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
     final productId = product['id'] is int
         ? product['id'] as int
         : int.tryParse('${product['id']}') ?? 0;
+
+    // Asso Ads : emplacement acheté par le vendeur, signalé comme tel.
+    final isSponsored = product['is_sponsored'] == true;
 
     return ProductCard(
       name: product['name']?.toString() ?? 'Produit',
@@ -1864,28 +1995,16 @@ class HomeItemView extends GetView<HomeController> {
       location: _getLocation(product),
       isFavorite: product['is_favorite'] == true,
       isCertified: ProductCard.isShopCertified(product),
+      isSponsored: isSponsored,
       imageBuilder: (context) => _buildProductImage(product),
-      onTap: () => Get.toNamed('/product', arguments: product),
+      // `from_ad` permet au serveur de mesurer l'efficacité de la campagne.
+      onTap: () => Get.toNamed(
+        '/product',
+        arguments: isSponsored ? {...product, 'from_ad': true} : product,
+      ),
       onFavoriteTap: productId > 0
           ? () => controller.toggleFavorite(productId)
           : null,
-    );
-  }
-
-  /// Bouton "Voir plus" stylé
-  Widget _buildSeeMoreButton(BuildContext context, VoidCallback onTap) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.ds.gutter,
-        AppDesign.space5,
-        context.ds.gutter,
-        AppDesign.space2,
-      ),
-      child: AppButton(
-        label: 'Voir plus de produits',
-        onPressed: onTap,
-        variant: AppButtonVariant.secondary,
-      ),
     );
   }
 
@@ -1899,6 +2018,196 @@ class HomeItemView extends GetView<HomeController> {
       onAction: controller.refreshProducts,
     );
   }
+}
+
+/// Bandeau Passcolis : fin, animé, une seule promesse.
+///
+/// L'animation reste discrète — un avion qui glisse lentement en fond et une
+/// lueur qui balaie le bandeau. Assez pour attirer l'œil dans un flux de
+/// cartes statiques, pas au point de gêner la lecture du reste de la page.
+class _PasscolisBanner extends StatefulWidget {
+  const _PasscolisBanner({required this.openCount, required this.onTap});
+
+  /// Trajets encore réservables, annoncés dans le sous-titre.
+  final int openCount;
+  final VoidCallback onTap;
+
+  @override
+  State<_PasscolisBanner> createState() => _PasscolisBannerState();
+}
+
+class _PasscolisBannerState extends State<_PasscolisBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cycle lent : le bandeau doit vivre, pas clignoter.
+    _controller = AnimationController(
+      duration: const Duration(seconds: 6),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plural = widget.openCount > 1 ? 's' : '';
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space1,
+        context.ds.gutter,
+        AppDesign.space2,
+      ),
+      child: Material(
+        color: AppDesign.accentSubtle,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          // La hauteur suit les deux lignes de texte au lieu d'être fixée :
+          // un bandeau plus haut que son contenu laissait une bande vide
+          // sous le sous-titre.
+          child: IntrinsicHeight(
+            child: Stack(
+              children: [
+                // Décor animé, derrière le texte.
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, _) => CustomPaint(
+                      painter: _PasscolisBannerPainter(_controller.value),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDesign.space3,
+                    vertical: AppDesign.space2,
+                  ),
+                  child: Row(
+                    children: [
+                      // L'avion avance et recule doucement : c'est le seul
+                      // élément mobile que l'œil suit vraiment.
+                      AnimatedBuilder(
+                        animation: _controller,
+                        builder: (context, child) {
+                          final t = _controller.value;
+                          final drift = (t < 0.5 ? t : 1 - t) * 8;
+                          return Transform.translate(
+                            offset: Offset(drift, -drift * 0.4),
+                            child: child,
+                          );
+                        },
+                        child: const Icon(
+                          Icons.flight_takeoff_rounded,
+                          size: 26,
+                          color: AppDesign.accentText,
+                        ),
+                      ),
+                      SizedBox(width: AppDesign.space3),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Envoyez vos colis par un voyageur',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                fontWeight: FontWeight.w700,
+                                color: AppDesign.accentText,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              '${widget.openCount} trajet$plural ouvert$plural · achetez des kilos de bagage',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textStyle(
+                                FontSizeType.overline,
+                                color: AppDesign.accentText.withValues(
+                                  alpha: 0.75,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: AppDesign.space2),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: AppDesign.accentText,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Décor du bandeau : une traînée en pointillés et une lueur qui le balaie.
+class _PasscolisBannerPainter extends CustomPainter {
+  _PasscolisBannerPainter(this.progress);
+
+  /// Avancement du cycle, de 0 à 1.
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Traînée de l'avion : des tirets qui filent vers la droite, décalés au
+    // fil du cycle pour donner le sens du déplacement.
+    // Trait décoratif, très dilué : l'accent plein suffit, accentText est
+    // réservé au texte posé sur accentSubtle.
+    final dash = Paint()
+      ..color = AppDesign.accent.withValues(alpha: 0.22)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    const dashWidth = 9.0;
+    const gap = 7.0;
+    final shift = progress * (dashWidth + gap);
+    final y = size.height * 0.34;
+
+    for (var x = -dashWidth + shift; x < size.width; x += dashWidth + gap) {
+      canvas.drawLine(Offset(x, y), Offset(x + dashWidth, y), dash);
+    }
+
+    // Lueur diagonale qui traverse le bandeau une fois par cycle.
+    final sweepX = size.width * (progress * 1.6 - 0.3);
+    final glow = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0),
+          Colors.white.withValues(alpha: 0.35),
+          Colors.white.withValues(alpha: 0),
+        ],
+      ).createShader(Rect.fromLTWH(sweepX - 40, 0, 80, size.height));
+
+    canvas.drawRect(Rect.fromLTWH(sweepX - 40, 0, 80, size.height), glow);
+  }
+
+  @override
+  bool shouldRepaint(_PasscolisBannerPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _FadeInProduct extends StatefulWidget {
@@ -1978,12 +2287,17 @@ class _QuickLink {
     required this.icon,
     required this.onTap,
     this.isNew = false,
+    this.count = 0,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
   final bool isNew;
+
+  /// Porté en pastille sur l'icône. Zéro n'affiche rien : une pastille « 0 »
+  /// occupe la place d'une information sans en être une.
+  final int count;
 }
 
 class _QuickLinkTile extends StatelessWidget {
@@ -2012,7 +2326,39 @@ class _QuickLinkTile extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Icon(link.icon, size: 22, color: AppDesign.accent),
-                  if (link.isNew)
+                  // Le compte prime sur la pastille « nouveau » : un chiffre
+                  // dit déjà qu'il se passe quelque chose, et les deux
+                  // superposés deviendraient illisibles.
+                  if (link.count > 0)
+                    Positioned(
+                      right: -10,
+                      top: -6,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppDesign.accent,
+                          borderRadius: BorderRadius.circular(
+                            AppDesign.radiusPill,
+                          ),
+                          border: Border.all(color: context.ds.surface),
+                        ),
+                        child: Text(
+                          link.count > 99 ? '99+' : '${link.count}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (link.isNew)
                     Positioned(
                       right: -5,
                       top: -3,
@@ -2093,21 +2439,22 @@ class _NavItem extends StatelessWidget {
             ),
             child: Icon(
               isActive ? destination.activeIcon : destination.icon,
-              size: 21,
+              size: 22,
               color: color,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: AppDesign.space1 - 1),
+          // Le libellé passe par l'échelle typographique : en `TextStyle` brut
+          // il ignorait les réglages d'accessibilité de l'appareil.
           Text(
             destination.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'SF-Pro',
-              fontSize: 10,
-              height: 1.15,
+            style: context.textStyle(
+              FontSizeType.overline,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               color: color,
+              height: 1.15,
             ),
           ),
         ],

@@ -1,447 +1,280 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 
+/// Squelette de chargement du tableau de bord.
+///
+/// Il reproduit la structure réelle de [VendorDashboardView] — une carte
+/// d'en-tête, une statistique principale, deux rangées de cartes, le forfait
+/// puis la liste de gestion — pour que le contenu ne se réorganise pas à la
+/// fin du chargement.
 class VendorDashboardShimmer extends StatelessWidget {
   const VendorDashboardShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
+
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.only(
-        left: context.horizontalPadding,
-        right: context.horizontalPadding,
-        top: context.horizontalPadding,
-        bottom: MediaQuery.of(context).viewPadding.bottom > 0
-            ? MediaQuery.of(context).viewPadding.bottom + context.horizontalPadding
-            : context.horizontalPadding * 1.5,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: ds.maxContentWidth),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              ds.gutter,
+              AppDesign.space2,
+              ds.gutter,
+              MediaQuery.of(context).viewPadding.bottom + AppDesign.space8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _headerShimmer(context),
+                SizedBox(height: AppDesign.space6),
+                _sectionTitleShimmer(context),
+                SizedBox(height: AppDesign.space3),
+                _primaryStatShimmer(context),
+                SizedBox(height: AppDesign.space3),
+                _statRowShimmer(context),
+                SizedBox(height: AppDesign.space3),
+                _statRowShimmer(context),
+                SizedBox(height: AppDesign.space8),
+                _sectionTitleShimmer(context),
+                SizedBox(height: AppDesign.space3),
+                _packageShimmer(context),
+                SizedBox(height: AppDesign.space8),
+                _sectionTitleShimmer(context),
+                SizedBox(height: AppDesign.space3),
+                _actionsShimmer(context),
+              ],
+            ),
+          ),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  /// Enveloppe commune : une seule définition des teintes de shimmer.
+  Widget _shimmer(BuildContext context, Widget child) {
+    final isDark = context.isDarkMode;
+    return Shimmer.fromColors(
+      baseColor: isDark ? AppDesign.neutralDark600 : AppDesign.neutral100,
+      highlightColor: isDark ? AppDesign.neutralDark700 : AppDesign.neutral25,
+      child: child,
+    );
+  }
+
+  /// Bloc plein servant de substitut à un texte ou une image.
+  Widget _block(BuildContext context, {double? width, required double height, double radius = AppDesign.radiusXs}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: context.ds.surfaceMuted,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
+  /// Carte vide aux mêmes bordures que les cartes réelles.
+  Widget _card(BuildContext context, {required Widget child, EdgeInsets? padding}) {
+    final ds = context.ds;
+    return Container(
+      padding: padding ?? EdgeInsets.all(AppDesign.space5),
+      decoration: BoxDecoration(
+        color: ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        border: Border.all(color: ds.border),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _sectionTitleShimmer(BuildContext context) =>
+      _shimmer(context, _block(context, width: 110, height: 16));
+
+  Widget _headerShimmer(BuildContext context) {
+    final logoSize = context.deviceType == DeviceType.mobile ? 56.0 : 72.0;
+
+    return _shimmer(
+      context,
+      _card(
+        context,
+        padding: EdgeInsets.all(AppDesign.space4),
+        child: Row(
+          children: [
+            _block(context,
+                width: logoSize, height: logoSize, radius: AppDesign.radiusMd),
+            SizedBox(width: AppDesign.space4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _block(context, width: 150, height: 16),
+                  SizedBox(height: AppDesign.space2),
+                  _block(context, width: 100, height: 12),
+                  SizedBox(height: AppDesign.space2),
+                  _block(context,
+                      width: 130, height: 18, radius: AppDesign.radiusPill),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryStatShimmer(BuildContext context) {
+    return _shimmer(
+      context,
+      _card(
+        context,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _block(context, width: 120, height: 12),
+            SizedBox(height: AppDesign.space2),
+            _block(context, width: 180, height: 32),
+            SizedBox(height: AppDesign.space1),
+            _block(context, width: 110, height: 11),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statRowShimmer(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Shop Header Shimmer
-          _buildShopHeaderShimmer(context),
-
-          SizedBox(height: context.sectionSpacing),
-
-          // Statistics Section Shimmer
-          _buildStatsSectionShimmer(context),
-
-          SizedBox(height: context.sectionSpacing),
-
-          // Package Section Shimmer
-          _buildPackageSectionShimmer(context),
-
-          SizedBox(height: context.sectionSpacing),
-
-          // Quick Actions Shimmer
-          _buildQuickActionsShimmer(context),
+          Expanded(child: _statCardShimmer(context)),
+          SizedBox(width: AppDesign.space3),
+          Expanded(child: _statCardShimmer(context)),
         ],
       ),
     );
   }
 
-  /// Shop Header Shimmer
-  Widget _buildShopHeaderShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-      child: Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
-        child: Row(
+  Widget _statCardShimmer(BuildContext context) {
+    return _shimmer(
+      context,
+      _card(
+        context,
+        padding: EdgeInsets.all(AppDesign.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Logo placeholder
-            Container(
-              width: context.deviceType == DeviceType.mobile ? 70 : 90,
-              height: context.deviceType == DeviceType.mobile ? 70 : 90,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-              ),
-            ),
-            SizedBox(width: 16),
-            // Text placeholders
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    width: 100,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _block(context, width: 18, height: 18),
+            SizedBox(height: AppDesign.space3),
+            _block(context, width: 70, height: 24),
+            SizedBox(height: AppDesign.space1),
+            _block(context, width: 90, height: 11),
           ],
         ),
       ),
     );
   }
 
-  /// Statistics Section Shimmer
-  Widget _buildStatsSectionShimmer(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title
-        Shimmer.fromColors(
-          baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-          highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(
-            width: 150,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-        SizedBox(height: context.elementSpacing),
-
-        // Stats cards row 1
-        Row(
-          children: [
-            Expanded(child: _buildStatCardShimmer(context)),
-            SizedBox(width: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-            Expanded(child: _buildStatCardShimmer(context)),
-          ],
-        ),
-        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-
-        // Stats cards row 2
-        Row(
-          children: [
-            Expanded(child: _buildStatCardShimmer(context)),
-            SizedBox(width: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-            Expanded(child: _buildStatCardShimmer(context)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Single Stat Card Shimmer
-  Widget _buildStatCardShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-      child: Container(
-        padding: EdgeInsets.all(context.horizontalPadding * 0.75),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
+  Widget _packageShimmer(BuildContext context) {
+    return _shimmer(
+      context,
+      _card(
+        context,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon placeholder
-            Container(
-              width: context.deviceType == DeviceType.mobile ? 24 : 32,
-              height: context.deviceType == DeviceType.mobile ? 24 : 32,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _block(context, width: 140, height: 16),
+                      SizedBox(height: AppDesign.space1),
+                      _block(context, width: 90, height: 12),
+                    ],
+                  ),
+                ),
+                _block(context, width: 48, height: 20, radius: AppDesign.radiusPill),
+              ],
             ),
-            SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-
-            // Value placeholder
-            Container(
-              width: 80,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
+            SizedBox(height: AppDesign.space5),
+            Row(
+              children: [
+                Expanded(child: _block(context, height: 12)),
+                SizedBox(width: AppDesign.space4),
+                _block(context, width: 90, height: 12),
+              ],
             ),
-            SizedBox(height: 4),
-
-            // Title placeholder
-            Container(
-              width: 60,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
+            SizedBox(height: AppDesign.space2),
+            _block(context,
+                width: double.infinity, height: 6, radius: AppDesign.radiusPill),
+            SizedBox(height: AppDesign.space2),
+            _block(context, width: 190, height: 11),
+            SizedBox(height: AppDesign.space4),
+            _block(context, width: double.infinity, height: 1, radius: 0),
+            SizedBox(height: AppDesign.space4),
+            _block(context, width: 210, height: 12),
           ],
         ),
       ),
     );
   }
 
-  /// Package Section Shimmer
-  Widget _buildPackageSectionShimmer(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title
-        Shimmer.fromColors(
-          baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-          highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(
-            width: 120,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
+  Widget _actionsShimmer(BuildContext context) {
+    final ds = context.ds;
+
+    return _shimmer(
+      context,
+      Container(
+        decoration: BoxDecoration(
+          color: ds.surface,
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+          border: Border.all(color: ds.border),
         ),
-        SizedBox(height: context.elementSpacing),
-
-        // Package card
-        Shimmer.fromColors(
-          baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-          highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(
-            padding: EdgeInsets.all(context.horizontalPadding),
-            decoration: BoxDecoration(
-              color: context.surfaceColor,
-              borderRadius: context.borderRadius(BorderRadiusType.large),
-              border: Border.all(
-                color: context.borderColor,
-                width: 2,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          children: List.generate(5, (index) {
+            return Column(
               children: [
-                // Header row
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                if (index > 0)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: AppDesign.space4 + 20 + AppDesign.space3,
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Container(
-                            width: 80,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 60,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: context.elementSpacing),
-
-                // Divider
-                Container(
-                  height: 1,
-                  color: Colors.white,
-                ),
-                SizedBox(height: context.elementSpacing),
-
-                // Progress bar section
-                Container(
-                  width: 150,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    child: Divider(height: 1, color: ds.border),
                   ),
-                ),
-                SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDesign.space4,
+                    vertical: AppDesign.space4,
                   ),
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    children: [
+                      _block(context, width: 20, height: 20),
+                      SizedBox(width: AppDesign.space3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _block(context, width: 130, height: 14),
+                            SizedBox(height: AppDesign.space1),
+                            _block(context, width: 180, height: 11),
+                          ],
+                        ),
                       ),
-                    ),
-                    Container(
-                      width: 60,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: context.elementSpacing),
-
-                // Button placeholder
-                Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: context.borderRadius(BorderRadiusType.medium),
+                      _block(context, width: 18, height: 18),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Quick Actions Shimmer
-  Widget _buildQuickActionsShimmer(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title
-        Shimmer.fromColors(
-          baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-          highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(
-            width: 150,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-        SizedBox(height: context.elementSpacing),
-
-        // Action buttons
-        _buildActionButtonShimmer(context),
-        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-        _buildActionButtonShimmer(context),
-        SizedBox(height: AppThemeSystem.getAdaptiveSpacing(context, baseSpacing: 12)),
-        _buildActionButtonShimmer(context),
-      ],
-    );
-  }
-
-  /// Single Action Button Shimmer
-  Widget _buildActionButtonShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: context.isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
-      child: Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Icon placeholder
-            Container(
-              width: context.deviceType == DeviceType.mobile ? 48 : 64,
-              height: context.deviceType == DeviceType.mobile ? 48 : 64,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: context.borderRadius(BorderRadiusType.small),
-              ),
-            ),
-            SizedBox(width: context.elementSpacing),
-
-            // Text placeholders
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Container(
-                    width: 150,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Chevron placeholder
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ],
+            );
+          }),
         ),
       ),
     );

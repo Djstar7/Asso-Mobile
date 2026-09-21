@@ -189,23 +189,12 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                   Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          AppThemeSystem.primaryColor,
-                          AppThemeSystem.tertiaryColor,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                    // Aplat uni, sans ombre colorée : c'est le même avatar que
+                    // dans l'écran de conversation, et l'ombre teintée
+                    // contrevenait à la règle « jamais d'ombre colorée ».
+                    decoration: const BoxDecoration(
+                      color: AppDesign.accent,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppThemeSystem.primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: Center(
                       child: Text(
@@ -301,16 +290,9 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppThemeSystem.primaryColor,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppThemeSystem.primaryColor
-                                      .withOpacity(0.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              color: AppDesign.accent,
+                              borderRadius:
+                                  BorderRadius.circular(AppDesign.radiusPill),
                             ),
                             child: Center(
                               child: Text(

@@ -16,6 +16,10 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   late Map<String, dynamic> conversation;
   final RxList<Map<String, dynamic>> messages = <Map<String, dynamic>>[].obs;
   final RxBool isTyping = false.obs;
+
+  /// Vrai quand le champ contient autre chose que des espaces.
+  /// Pilote l'état actif du bouton d'envoi.
+  final RxBool canSend = false.obs;
   final RxBool otherUserTyping = false.obs;
   final RxString typingUserName = ''.obs;
   final RxBool isLoading = false.obs;
@@ -134,9 +138,13 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   }
 
   void _onTextChanged() {
-    if (_conversationId == null) return;
-
     final isCurrentlyTyping = messageController.text.trim().isNotEmpty;
+
+    // Mis à jour même hors conversation ouverte : le bouton doit refléter le
+    // champ dès la première frappe.
+    canSend.value = isCurrentlyTyping;
+
+    if (_conversationId == null) return;
 
     // Envoyer "is typing" seulement si le statut change
     if (isCurrentlyTyping != isTyping.value) {

@@ -17,7 +17,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        // `darkCardColor` est un bleu-gris froid, hors de l'échelle neutre
+        // chaude du design system : en sombre, l'en-tête du chat n'avait pas
+        // la même teinte que le reste de l'application.
+        backgroundColor: AppDesign.surface(context),
         elevation: 0,
         leading: IconButton(
           icon: Icon(
@@ -59,7 +62,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                         color: AppDesign.success,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+                          color: AppDesign.surface(context),
                           width: 2,
                         ),
                       ),
@@ -468,7 +471,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        color: AppDesign.surface(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -629,20 +632,30 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   ),
                 ),
                 SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 22,
+                // Le bouton reflète l'état du champ : actif seulement quand il
+                // y a quelque chose à envoyer.
+                Obx(() {
+                  final enabled = controller.canSend.value;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: enabled
+                          ? AppDesign.accent
+                          : AppDesign.surfaceMuted(context),
+                      shape: BoxShape.circle,
                     ),
-                    onPressed: controller.sendMessage,
-                  ),
-                ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.send_rounded,
+                        color: enabled
+                            ? Colors.white
+                            : AppDesign.textTertiary(context),
+                        size: 22,
+                      ),
+                      onPressed: enabled ? controller.sendMessage : null,
+                    ),
+                  );
+                }),
               ],
             ),
           ],
@@ -1144,7 +1157,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return Container(
       margin: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        color: AppDesign.surface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),

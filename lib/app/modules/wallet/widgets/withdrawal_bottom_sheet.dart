@@ -101,7 +101,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   bool get isKpay => widget.provider == 'kpay';
 
   String get title => 'Retrait Mobile Money';
-  String get providerLabel => 'KPay';
+  String get providerLabel => 'Mobile Money';
 
   double get minAmount => appConfig.minWithdrawalAmount;
 

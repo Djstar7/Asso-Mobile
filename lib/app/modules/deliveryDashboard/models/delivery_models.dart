@@ -37,6 +37,69 @@ extension DeliveryStatusExtension on DeliveryStatus {
 }
 
 /// Demande de livraison
+/// Un bout de la course : la boutique où retirer, ou le client à livrer.
+/// Le coursier doit pouvoir s'y rendre et appeler sur place.
+class DeliveryStop {
+  const DeliveryStop({
+    this.name,
+    this.phone,
+    this.address,
+    this.addressDetails,
+    this.city,
+    this.latitude,
+    this.longitude,
+  });
+
+  final String? name;
+  final String? phone;
+  final String? address;
+  final String? addressDetails;
+  final String? city;
+  final double? latitude;
+  final double? longitude;
+
+  bool get isEmpty =>
+      (name == null || name!.trim().isEmpty) &&
+      (address == null || address!.trim().isEmpty);
+
+  /// Adresse complète, complément inclus.
+  String get fullAddress => [
+    address,
+    addressDetails,
+    city,
+  ].where((e) => e != null && e.trim().isNotEmpty).toSet().join(' — ');
+
+  static DeliveryStop? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final map = Map<String, dynamic>.from(raw);
+    double? toDouble(dynamic v) =>
+        v == null ? null : double.tryParse(v.toString());
+
+    return DeliveryStop(
+      name: map['name']?.toString(),
+      phone: map['phone']?.toString(),
+      address: map['address']?.toString(),
+      addressDetails: map['address_details']?.toString(),
+      city: map['city']?.toString(),
+      latitude: toDouble(map['latitude']),
+      longitude: toDouble(map['longitude']),
+    );
+  }
+}
+
+/// Article d'une commande à livrer, tel que montré au livreur.
+class DeliveryItem {
+  const DeliveryItem({required this.name, required this.quantity});
+
+  final String name;
+  final int quantity;
+
+  factory DeliveryItem.fromMap(Map<String, dynamic> map) => DeliveryItem(
+    name: (map['product_name'] ?? map['name'] ?? 'Article').toString(),
+    quantity: int.tryParse('${map['quantity'] ?? 1}') ?? 1,
+  );
+}
+
 class DeliveryRequest {
   final String id;
   final String orderId;
@@ -54,6 +117,17 @@ class DeliveryRequest {
   final DateTime? deliveredDate;
   final String? notes;
 
+  /// Détails que le livreur doit connaître AVANT d'accepter la course.
+  final String? orderNumber;
+  final double orderTotal;
+  final List<DeliveryItem> items;
+  final String? leadTime;
+  final String? addressDetails;
+
+  /// Les deux extrémités de la course : boutique puis client.
+  final DeliveryStop? pickup;
+  final DeliveryStop? dropoff;
+
   DeliveryRequest({
     required this.id,
     required this.orderId,
@@ -70,6 +144,13 @@ class DeliveryRequest {
     this.acceptedDate,
     this.deliveredDate,
     this.notes,
+    this.orderNumber,
+    this.orderTotal = 0,
+    this.items = const [],
+    this.leadTime,
+    this.addressDetails,
+    this.pickup,
+    this.dropoff,
   });
 
   factory DeliveryRequest.fromJson(Map<String, dynamic> json) {
@@ -134,6 +215,9 @@ class DeliveryStats {
   final int inProgressDeliveries;
   final int completedDeliveries;
   final int cancelledDeliveries;
+
+  /// Nombre de courses transportables en même temps, fixé par le serveur.
+  final int maxActiveRuns;
   final double totalCommissions;
   final double todayCommissions;
   final double averageRating;
@@ -144,6 +228,7 @@ class DeliveryStats {
     required this.inProgressDeliveries,
     required this.completedDeliveries,
     required this.cancelledDeliveries,
+    this.maxActiveRuns = 3,
     required this.totalCommissions,
     required this.todayCommissions,
     required this.averageRating,
@@ -156,6 +241,7 @@ class DeliveryStats {
       inProgressDeliveries: json['inProgressDeliveries'] as int,
       completedDeliveries: json['completedDeliveries'] as int,
       cancelledDeliveries: json['cancelledDeliveries'] as int,
+      maxActiveRuns: (json['maxActiveRuns'] as num?)?.toInt() ?? 3,
       totalCommissions: (json['totalCommissions'] as num).toDouble(),
       todayCommissions: (json['todayCommissions'] as num).toDouble(),
       averageRating: (json['averageRating'] as num).toDouble(),
@@ -169,6 +255,7 @@ class DeliveryStats {
       'inProgressDeliveries': inProgressDeliveries,
       'completedDeliveries': completedDeliveries,
       'cancelledDeliveries': cancelledDeliveries,
+      'maxActiveRuns': maxActiveRuns,
       'totalCommissions': totalCommissions,
       'todayCommissions': todayCommissions,
       'averageRating': averageRating,

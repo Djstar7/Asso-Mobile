@@ -1,4 +1,11 @@
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+import '../../core/values/constants.dart';
 import 'api_provider.dart';
+import 'storage_service.dart';
 
 /// Statistiques boutiques (P8).
 ///
@@ -47,5 +54,32 @@ class StatisticsService {
   /// [period] : 7d | 30d | 90d | 365d | all
   static Future<ApiResponse> getVendorStatistics({String period = '30d'}) {
     return ApiProvider.get(vendorStatisticsUrl, queryParams: {'period': period});
+  }
+
+  /// Télécharge le rapport de la période et renvoie le fichier local.
+  ///
+  /// [format] : `csv` (tableur) ou `pdf` (document présentable). Le rapport
+  /// reprend les chiffres de l'écran, pour que le vendeur retrouve ce qu'il
+  /// vient de consulter.
+  static Future<File?> downloadReport({
+    required String period,
+    required String format,
+  }) async {
+    final token = StorageService.getToken();
+    final uri = Uri.parse('${AppConstants.baseUrl}$vendorStatisticsUrl/export')
+        .replace(queryParameters: {'period': period, 'format': format});
+
+    final response = await http.get(uri, headers: {
+      'Accept': format == 'pdf' ? 'application/pdf' : 'text/csv',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode != 200 || response.bodyBytes.isEmpty) return null;
+
+    final stamp = DateTime.now().toIso8601String().substring(0, 10);
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/statistiques-$stamp.$format');
+    await file.writeAsBytes(response.bodyBytes, flush: true);
+    return file;
   }
 }

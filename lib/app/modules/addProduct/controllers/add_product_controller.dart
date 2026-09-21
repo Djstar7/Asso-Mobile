@@ -9,6 +9,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/currency_model.dart';
+import 'product_draft_store.dart';
 import 'variant_editor_state.dart';
 import '../../../core/utils/app_design.dart';
 
@@ -188,6 +189,207 @@ class AddProductController extends GetxController {
   // Edit mode
   final isEditMode = false.obs;
   final editProductId = Rx<int?>(null);
+
+  // ───────────── Parcours en étapes ─────────────
+
+  /// Étapes du formulaire, dans l'ordre où un vendeur pense sa fiche.
+  static const stepTitles = <String>[
+    'Photos',
+    'Description',
+    'Prix & stock',
+    'Déclinaisons',
+    'Vérification',
+  ];
+
+  static const stepCount = 5;
+
+  /// Nature du produit, déclarée par le vendeur.
+  ///
+  /// Le type était jusqu'ici déduit de la présence de déclinaisons : un vendeur
+  /// ouvrait l'éditeur sans savoir qu'il changeait la nature de sa fiche, et
+  /// l'étape s'affichait même pour un article qui n'aura jamais de variante.
+  /// Le choix est désormais explicite, comme « produit simple / variable »
+  /// dans les boutiques en ligne classiques.
+  final isVariableProduct = false.obs;
+
+  void setProductKind({required bool variable}) {
+    if (isVariableProduct.value == variable) return;
+    isVariableProduct.value = variable;
+    if (!variable) {
+      // Repasser en produit simple retire les déclinaisons : le stock
+      // redevient celui saisi à l'étape précédente.
+      variantEditor.clear();
+    }
+    saveDraft();
+  }
+
+  final currentStep = 0.obs;
+
+  /// Sentinelle réactive des champs texte qui conditionnent les étapes.
+  ///
+  /// Les `TextEditingController` ne sont pas observables : sans ce compteur,
+  /// la barre du bas gardait « Donnez un nom à votre produit » alors que le
+  /// nom venait d'être saisi.
+  final formRevision = 0.obs;
+
+  void _watchStepFields() {
+    for (final controller in [
+      nameController,
+      descriptionController,
+      priceController,
+    ]) {
+      controller.addListener(() => formRevision.value++);
+    }
+  }
+
+  /// Étape la plus avancée déjà atteinte : permet de revenir en arrière puis
+  /// de ressauter directement à la fin sans refranchir chaque écran.
+  final furthestStep = 0.obs;
+
+  /// Une fiche existante n'est jamais un brouillon : elle est déjà publiée.
+  bool get supportsDraft => !isEditMode.value;
+
+  /// Chaque étape ne laisse passer que si ses champs obligatoires sont remplis.
+  bool isStepValid(int step) {
+    // Lecture volontaire : abonne les Obx aux saisies clavier.
+    formRevision.value;
+    switch (step) {
+      case 0:
+        // En modification, les photos déjà en ligne comptent : ne regarder que
+        // les nouvelles bloquait l'étape sur une fiche pourtant illustrée.
+        return totalImagesCount > 0;
+      case 1:
+        return nameController.text.trim().isNotEmpty &&
+            selectedSubcategoryId.value != null &&
+            selectedSubcategoryId.value!.isNotEmpty &&
+            descriptionController.text.trim().isNotEmpty;
+      case 2:
+        final price = double.tryParse(
+          priceController.text.trim().replaceAll(',', '.'),
+        );
+        return price != null && price > 0;
+      case 3:
+        // Les déclinaisons sont facultatives.
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  /// Message affiché lorsque l'étape n'est pas franchissable.
+  String? blockingReason(int step) {
+    if (isStepValid(step)) return null;
+    switch (step) {
+      case 0:
+        return 'Ajoutez au moins une photo du produit.';
+      case 1:
+        if (nameController.text.trim().isEmpty) {
+          return 'Donnez un nom à votre produit.';
+        }
+        if (selectedSubcategoryId.value == null ||
+            selectedSubcategoryId.value!.isEmpty) {
+          return 'Choisissez une catégorie et une sous-catégorie.';
+        }
+        return 'Décrivez votre produit.';
+      case 2:
+        return 'Indiquez un prix supérieur à zéro.';
+      default:
+        return null;
+    }
+  }
+
+  bool get canGoNext => isStepValid(currentStep.value);
+
+  void goToStep(int step) {
+    if (step < 0 || step >= stepCount) return;
+    // On n'autorise le saut en avant que vers une étape déjà atteinte.
+    if (step > furthestStep.value) return;
+    currentStep.value = step;
+    saveDraft();
+  }
+
+  void nextStep() {
+    if (!canGoNext) return;
+    if (currentStep.value >= stepCount - 1) return;
+    currentStep.value++;
+    if (currentStep.value > furthestStep.value) {
+      furthestStep.value = currentStep.value;
+    }
+    saveDraft();
+  }
+
+  void previousStep() {
+    if (currentStep.value == 0) return;
+    currentStep.value--;
+  }
+
+  // ───────────── Brouillon ─────────────
+
+  /// Enregistre l'état courant pour pouvoir quitter puis reprendre.
+  void saveDraft() {
+    if (!supportsDraft) return;
+    if (totalImagesCount == 0 && nameController.text.trim().isEmpty) return;
+
+    ProductDraftStore.save(
+      ProductDraft(
+        savedAt: DateTime.now(),
+        step: currentStep.value,
+        fields: {
+          'name': nameController.text,
+          'description': descriptionController.text,
+          'price': priceController.text,
+          'stock': stockController.text,
+          'weight': weightKgController.text,
+          'category': selectedCategory.value ?? '',
+          'subcategoryId': selectedSubcategoryId.value ?? '',
+          'subcategory': selectedSubcategory.value ?? '',
+          'isVariable': isVariableProduct.value ? '1' : '0',
+        },
+        imagePaths: productImages.map((image) => image.path).toList(),
+        primaryImageIndex: primaryImageIndex.value,
+        variants: variantEditor.toDraftJson(),
+      ),
+    );
+  }
+
+  /// Restaure un brouillon choisi par le vendeur.
+  void restoreDraft(ProductDraft draft) {
+    nameController.text = draft.fields['name'] ?? '';
+    descriptionController.text = draft.fields['description'] ?? '';
+    priceController.text = draft.fields['price'] ?? '';
+    stockController.text = draft.fields['stock'] ?? '';
+    weightKgController.text = draft.fields['weight'] ?? '';
+
+    final category = draft.fields['category'] ?? '';
+    if (category.isNotEmpty) selectedCategory.value = category;
+
+    final subcategoryId = draft.fields['subcategoryId'] ?? '';
+    if (subcategoryId.isNotEmpty) {
+      selectedSubcategoryId.value = subcategoryId;
+      selectedSubcategory.value = draft.fields['subcategory'];
+    }
+
+    productImages.assignAll(
+      draft.existingImagePaths.map((path) => XFile(path)),
+    );
+    primaryImageIndex.value =
+        draft.primaryImageIndex < productImages.length
+            ? draft.primaryImageIndex
+            : 0;
+
+    variantEditor.loadFromDraftJson(draft.variants);
+    isVariableProduct.value =
+        draft.fields['isVariable'] == '1' || variantEditor.hasVariants;
+
+    // Une photo disparue de la galerie peut invalider la première étape.
+    final target = draft.step.clamp(0, stepCount - 1);
+    furthestStep.value = target;
+    currentStep.value = isStepValid(0) ? target : 0;
+  }
+
+  void discardDraft() {
+    ProductDraftStore.clear();
+  }
   final Map<String, dynamic>? editProductData = Get.arguments?['product'];
 
   final ImagePicker _picker = ImagePicker();
@@ -276,6 +478,8 @@ class AddProductController extends GetxController {
   void onInit() {
     super.onInit();
 
+    _watchStepFields();
+
     // Ajouter un listener au weightKgController pour suivre les changements
     weightKgController.addListener(() {
       customWeightValue.value = weightKgController.text.trim();
@@ -308,6 +512,27 @@ class AddProductController extends GetxController {
     _initializeData();
     // Charger les devises disponibles pour le sélecteur de prix
     _loadCurrencies();
+
+    // Une saisie laissée en plan est proposée à la reprise, une fois l'écran
+    // affiché (un dialogue ne peut pas s'ouvrir pendant le build initial).
+    if (supportsDraft) {
+      pendingDraft.value = ProductDraftStore.read();
+    }
+  }
+
+  /// Brouillon trouvé au démarrage, en attente du choix du vendeur.
+  final pendingDraft = Rx<ProductDraft?>(null);
+
+  void acceptPendingDraft() {
+    final draft = pendingDraft.value;
+    if (draft == null) return;
+    restoreDraft(draft);
+    pendingDraft.value = null;
+  }
+
+  void rejectPendingDraft() {
+    pendingDraft.value = null;
+    discardDraft();
   }
 
   /// Charge les devises actives et fixe la devise par défaut du formulaire.
@@ -637,6 +862,8 @@ class AddProductController extends GetxController {
         product['variants'],
         product['variant_options'],
       );
+      // Une fiche déjà déclinée s'ouvre en « produit variable ».
+      isVariableProduct.value = variantEditor.hasVariants;
 
       // ===== IMAGES : plus de téléchargement, juste référencer id + url =====
       final images = product['images'] as List?;
@@ -903,50 +1130,64 @@ class AddProductController extends GetxController {
   }
 
   /// Valider et soumettre le produit
+  /// Signale un champ obligatoire manquant.
+  ///
+  /// Les messages de validation partageaient le style par défaut de GetX
+  /// (fond neutre) alors que le reste de l'application signale les erreurs
+  /// avec la couleur sémantique du design system : l'avertissement passait
+  /// inaperçu au bas de l'écran.
+  void _warnMissingField(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppDesign.danger,
+      colorText: AppDesign.neutral0,
+      margin: const EdgeInsets.all(AppDesign.space4),
+      borderRadius: AppDesign.radiusMd,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   Future<void> submitProduct() async {
     // Validation
     if (nameController.text.trim().isEmpty) {
-      Get.snackbar(
+      _warnMissingField(
         'Champ requis',
         'Veuillez entrer le nom du produit',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     if (productImages.isEmpty) {
-      Get.snackbar(
+      _warnMissingField(
         'Image requise',
         'Veuillez ajouter au moins une image du produit',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     if (selectedSubcategoryId.value == null ||
         selectedSubcategoryId.value!.isEmpty) {
-      Get.snackbar(
+      _warnMissingField(
         'Catégorie requise',
         'Veuillez sélectionner une catégorie',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     if (priceController.text.trim().isEmpty) {
-      Get.snackbar(
+      _warnMissingField(
         'Prix requis',
         'Veuillez entrer le prix du produit',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     if (descriptionController.text.trim().isEmpty) {
-      Get.snackbar(
+      _warnMissingField(
         'Description requise',
         'Veuillez entrer une description du produit',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
@@ -954,10 +1195,9 @@ class AddProductController extends GetxController {
     // Poids réel obligatoire pour un article physique : il sert à chiffrer la livraison.
     final weightProblem = weightError;
     if (weightProblem != null) {
-      Get.snackbar(
+      _warnMissingField(
         'Poids requis',
         '$weightProblem (poids réel du colis en kg).',
-        snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
@@ -1122,8 +1362,9 @@ class AddProductController extends GetxController {
         fieldsMap['weight'] = weightText.replaceAll(',', '.');
       }
 
-      // Note: storage_id n'est pas encore supporté par l'API
-      // Il sera ajouté dans une future version du backend
+      // Pas de storage_id à envoyer : le serveur débite l'espace du forfait
+      // actif du vendeur, qui est unique. Le bloc « Espace de stockage » du
+      // formulaire est purement informatif.
 
       if (primaryImageIndex.value > 0 &&
           primaryImageIndex.value < productImages.length) {
@@ -1212,6 +1453,9 @@ class AddProductController extends GetxController {
         );
 
         // On passe un argument pour indiquer qu'il faut rafraîchir les produits
+        // La fiche est publiée : son brouillon n'a plus lieu d'être proposé.
+        discardDraft();
+
         Get.offNamed('/product-management', arguments: {'refresh': true});
       } else {
         // Gérer les erreurs spécifiques

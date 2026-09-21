@@ -81,7 +81,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
       case 'wallet':
         return 'Wallet ASSO';
       case 'kpay':
-        return 'KPay';
+        return 'Mobile Money';
       case 'paypal':
         return 'PayPal';
       case 'stripe':

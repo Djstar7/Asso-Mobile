@@ -288,7 +288,12 @@ class OtpController extends GetxController {
           // Envoyer le token FCM au backend ET s'abonner au topic des annonces
           developer.log('📱 Registering device and subscribing to topics...', name: 'OtpController');
           try {
-            final results = await FirebaseMessagingService.to.registerDeviceAndSubscribe();
+            final results = await FirebaseMessagingService.to
+                .registerDeviceAndSubscribe()
+                // Une borne de temps, et non le seul `catch` : privé de
+                // services Google Play, l'abonnement ne rend jamais la main
+                // et ne lève rien — la validation restait suspendue sans fin.
+                .timeout(const Duration(seconds: 10));
             developer.log(
               'FCM registration result',
               name: 'OtpController',

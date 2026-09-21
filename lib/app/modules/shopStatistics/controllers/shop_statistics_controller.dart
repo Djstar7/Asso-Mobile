@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../../core/utils/app_design.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/statistics_service.dart';
 
@@ -43,12 +47,68 @@ class ShopStatisticsController extends GetxController {
   final topProducts = <Map<String, dynamic>>[].obs;
   final granularity = 'day'.obs;
 
+  /// Export en cours : évite deux téléchargements simultanés.
+  final isExporting = false.obs;
+
+  /// Sentinelle réactive suivant la devise choisie dans le tableau de bord.
+  ///
+  /// Les montants sont convertis à l'affichage : changer de devise doit
+  /// redessiner l'écran sans rappeler l'API, les chiffres serveur restant en
+  /// XOF.
+  final currencyRevision = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
     final initial = Get.arguments is Map ? Get.arguments['period'] : null;
     if (initial is String && periods.containsKey(initial)) period.value = initial;
+
+    if (Get.isRegistered<CurrencyService>()) {
+      ever(CurrencyService.to.userCurrencyRx, (_) => currencyRevision.value++);
+    }
+
     load();
+  }
+
+  /// Télécharge le rapport de la période puis ouvre le partage système.
+  Future<void> exportReport(String format) async {
+    if (isExporting.value) return;
+    isExporting.value = true;
+    try {
+      final file = await StatisticsService.downloadReport(
+        period: period.value,
+        format: format,
+      );
+
+      if (file == null) {
+        _notify('Export impossible', 'Le rapport n\'a pas pu être généré.',
+            isError: true);
+        return;
+      }
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Statistiques ${periods[period.value] ?? ''}',
+      );
+    } catch (_) {
+      _notify('Export impossible', 'Vérifiez votre connexion et réessayez.',
+          isError: true);
+    } finally {
+      isExporting.value = false;
+    }
+  }
+
+  void _notify(String title, String message, {bool isError = false}) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError ? AppDesign.danger : AppDesign.success,
+      colorText: AppDesign.neutral0,
+      margin: const EdgeInsets.all(AppDesign.space4),
+      borderRadius: AppDesign.radiusMd,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   Future<void> changePeriod(String value) async {
@@ -101,9 +161,21 @@ class ShopStatisticsController extends GetxController {
   bool get hasTrends => trends.value != null;
 
   String formatPrice(double amountXaf) {
+    // Lecture volontaire : abonne les Obx au changement de devise.
+    currencyRevision.value;
     if (!Get.isRegistered<CurrencyService>()) {
       return '${amountXaf.toStringAsFixed(0)} FCFA';
     }
     return CurrencyService.to.formatPrice(amountXaf);
   }
+
+  /// Montant converti dans la devise d'affichage, pour les axes du graphique.
+  double toDisplayCurrency(double amountXaf) {
+    currencyRevision.value;
+    if (!Get.isRegistered<CurrencyService>()) return amountXaf;
+    return CurrencyService.to.convertFromXOF(amountXaf);
+  }
+
+  String get currencyCode =>
+      Get.isRegistered<CurrencyService>() ? CurrencyService.to.currencyCode : 'XOF';
 }

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/models/diaspo_offer.dart';
+import '../../../data/providers/diaspo_service.dart';
+import '../../search/controllers/search_controller.dart' as search_ctrl;
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/auth_service.dart';
@@ -10,7 +13,8 @@ import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/base/safe_controller_mixin.dart';
 
-class HomeController extends GetxController with GetSingleTickerProviderStateMixin, SafeControllerMixin {
+class HomeController extends GetxController
+    with GetSingleTickerProviderStateMixin, SafeControllerMixin {
   // Supprimé scaffoldKey pour éviter les problèmes de GlobalKey duplicate
   // On utilisera Scaffold.of(context) dans la vue à la place
 
@@ -26,13 +30,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   /// Destinations de la navigation basse.
   ///
-  /// La messagerie n'y figure plus : elle est accessible depuis la barre du
-  /// haut, ce qui laisse cinq onglets — au-delà, les libellés deviennent
-  /// illisibles sur un téléphone étroit.
+  /// La messagerie et « Ma voix » n'y figurent plus : la première se consulte
+  /// depuis la barre du haut, la seconde depuis le menu latéral. Cela laisse
+  /// cinq onglets — au-delà, les libellés deviennent illisibles sur un
+  /// téléphone étroit.
   final List<String> tabNames = [
     'Accueil',
-    'Import',
-    'Ma voix',
+    'Recherche',
+    'Grossiste',
     'Suivi',
     'Compte',
   ];
@@ -43,7 +48,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxList<Map<String, dynamic>> banners = <Map<String, dynamic>>[].obs;
 
   // Categories
-  final RxList<Map<String, dynamic>> apiCategories = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> apiCategories =
+      <Map<String, dynamic>>[].obs;
   final RxString selectedCategory = 'Tous'.obs;
   final RxInt selectedCategoryId = 0.obs;
   final List<String> categories = ['Tous'];
@@ -52,14 +58,36 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   // Products
   final RxList<Map<String, dynamic>> products = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> nearbyProducts = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> recentProducts = <Map<String, dynamic>>[].obs;
+
+  /// Asso Ads — annonces à mettre en avant en haut de l'accueil.
+  ///
+  /// Extraites du feed plutôt que chargées à part : le serveur décide déjà
+  /// quelles campagnes servir et décompte leur quota à ce moment-là. Un appel
+  /// séparé facturerait une seconde impression pour un seul affichage.
+  final RxList<Map<String, dynamic>> sponsoredProducts =
+      <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> nearbyProducts =
+      <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> recentProducts =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoadingProducts = false.obs;
   final RxBool isLoadingNearby = false.obs;
   final RxBool isLoadingRecent = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMoreProducts = true.obs;
   int _currentPage = 1;
+
+  // Passcolis (offres Diaspo) : la bannière annonce le nombre de trajets
+  // encore ouverts, et le raccourci Diaspo le porte en pastille.
+  final RxList<DiaspoOffer> passcolisOffers = <DiaspoOffer>[].obs;
+  final RxBool isLoadingPasscolis = false.obs;
+
+  /// Nombre de favoris, affiché en pastille sur le raccourci et l'icône.
+  final RxInt favoritesCount = 0.obs;
+
+  /// Trajets encore réservables : c'est ce que compte la pastille « Diaspo ».
+  int get openPasscolisCount =>
+      passcolisOffers.where((o) => o.remainingKg > 0).length;
 
   // Global initial loading flag
   final RxBool isInitialLoading = true.obs;
@@ -88,7 +116,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     // Check for initialTab argument
     final arguments = Get.arguments;
     int initialTab = 0;
-    if (arguments != null && arguments is Map && arguments.containsKey('initialTab')) {
+    if (arguments != null &&
+        arguments is Map &&
+        arguments.containsKey('initialTab')) {
       final tabIndex = arguments['initialTab'];
       if (tabIndex is int && tabIndex >= 0 && tabIndex < tabNames.length) {
         initialTab = tabIndex;
@@ -109,7 +139,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     // Load user info
     final user = ApiProvider.cachedUser;
     if (user != null) {
-      userName.value = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
+      userName.value = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'
+          .trim();
       userAvatar.value = user['avatar'] ?? '';
       print('  └─ User loaded: ${userName.value}');
     } else {
@@ -244,6 +275,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       await Future.wait([
         _loadNearbyProducts(),
         _loadRecentProducts(),
+        _loadPasscolisOffers(),
+        _loadFavoritesCount(),
         _loadBanners(),
       ]);
 
@@ -268,7 +301,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     try {
       final response = await AuthService.getPreferences();
       if (response.success && response.data != null) {
-        final preferences = response.data!['preferences'] as Map<String, dynamic>?;
+        final preferences =
+            response.data!['preferences'] as Map<String, dynamic>?;
         if (preferences != null && preferences['categories'] != null) {
           final categoriesList = preferences['categories'] as List;
           userPreferredCategorySlugs.value = categoriesList
@@ -301,7 +335,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       final response = await ProductService.getCategories();
       if (response.success && response.data != null) {
         final cats = response.data!['categories'] as List? ?? [];
-        apiCategories.value = cats.map((c) => Map<String, dynamic>.from(c)).toList();
+        apiCategories.value = cats
+            .map((c) => Map<String, dynamic>.from(c))
+            .toList();
 
         // Build slug to ID mapping
         categorySlugToIdMap.clear();
@@ -309,7 +345,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           final slug = cat['slug']?.toString();
           final id = cat['id'];
           if (slug != null && id != null) {
-            categorySlugToIdMap[slug] = id is int ? id : int.tryParse(id.toString()) ?? 0;
+            categorySlugToIdMap[slug] = id is int
+                ? id
+                : int.tryParse(id.toString()) ?? 0;
           }
         }
 
@@ -355,7 +393,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       for (var cat in apiCategories) {
         final catSlug = cat['slug']?.toString() ?? '';
-        if (catSlug.isNotEmpty && userPreferredCategorySlugs.contains(catSlug)) {
+        if (catSlug.isNotEmpty &&
+            userPreferredCategorySlugs.contains(catSlug)) {
           preferredCats.add(cat);
         } else {
           otherCats.add(cat);
@@ -364,8 +403,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       // Sort preferred categories by user's preference order
       preferredCats.sort((a, b) {
-        final aIndex = userPreferredCategorySlugs.indexOf(a['slug']?.toString() ?? '');
-        final bIndex = userPreferredCategorySlugs.indexOf(b['slug']?.toString() ?? '');
+        final aIndex = userPreferredCategorySlugs.indexOf(
+          a['slug']?.toString() ?? '',
+        );
+        final bIndex = userPreferredCategorySlugs.indexOf(
+          b['slug']?.toString() ?? '',
+        );
         return aIndex.compareTo(bIndex);
       });
 
@@ -397,17 +440,31 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     try {
       final response = await ProductService.getProducts(
         page: _currentPage,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
       );
 
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
 
         if (refresh || _currentPage == 1) {
-          products.value = productsList.map((p) => Map<String, dynamic>.from(p)).toList();
+          final all = productsList
+              .map((p) => Map<String, dynamic>.from(p))
+              .toList();
+
+          // Les annonces remontent dans leur propre section, en tête d'écran ;
+          // elles sont retirées de la grille pour ne pas s'y répéter.
+          sponsoredProducts.value = all
+              .where((p) => p['is_sponsored'] == true)
+              .toList();
+          products.value = all.where((p) => p['is_sponsored'] != true).toList();
         } else {
-          products.addAll(productsList.map((p) => Map<String, dynamic>.from(p)));
+          products.addAll(
+            productsList.map((p) => Map<String, dynamic>.from(p)),
+          );
         }
 
         hasMoreProducts.value = pagination['has_more'] ?? false;
@@ -439,12 +496,15 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     try {
       final response = await ProductService.getProducts(
         page: _currentPage,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
       );
 
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
 
         products.addAll(productsList.map((p) => Map<String, dynamic>.from(p)));
         hasMoreProducts.value = pagination['has_more'] ?? false;
@@ -468,13 +528,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       final response = await ProductService.getNearbyProducts(limit: 6);
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
-        nearbyProducts.value = productsList.map((p) => Map<String, dynamic>.from(p)).toList();
+        nearbyProducts.value = productsList
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
 
         developer.log(
           'Nearby products loaded: ${nearbyProducts.length} items',
           name: 'HomeController',
         );
-
       }
     } catch (e) {
       developer.log(
@@ -496,13 +557,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       final response = await ProductService.getRecentProducts(limit: 6);
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
-        recentProducts.value = productsList.map((p) => Map<String, dynamic>.from(p)).toList();
+        recentProducts.value = productsList
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
 
         developer.log(
           'Recent products loaded: ${recentProducts.length} items',
           name: 'HomeController',
         );
-
       }
     } catch (e) {
       developer.log(
@@ -517,12 +579,81 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
+  /// Charge les offres Passcolis qui alimentent la bannière de l'accueil.
+  ///
+  /// Les trajets dont il ne reste plus de kilos sont écartés : ils ne sont pas
+  /// réservables, les compter gonflerait la promesse de la bannière. Un échec
+  /// laisse simplement la liste vide — c'est une vitrine, pas un contenu dont
+  /// l'absence casse la page.
+  Future<void> _loadPasscolisOffers() async {
+    if (!Get.isRegistered<DiaspoService>()) return;
+
+    isLoadingPasscolis.value = true;
+
+    try {
+      final response = await Get.find<DiaspoService>().getOffers(perPage: 10);
+
+      if (response['success'] == true) {
+        final list = response['data']?['data'] as List? ?? [];
+        passcolisOffers.value = list
+            .map((json) => DiaspoOffer.fromJson(json))
+            .where((offer) => offer.remainingKg > 0)
+            .toList();
+
+        developer.log(
+          'Passcolis offers loaded: ${passcolisOffers.length} items',
+          name: 'HomeController',
+        );
+      }
+    } catch (e) {
+      passcolisOffers.clear();
+      developer.log(
+        'Failed to load passcolis offers',
+        name: 'HomeController',
+        error: e.toString(),
+      );
+    } finally {
+      isLoadingPasscolis.value = false;
+    }
+  }
+
+  /// Nombre de favoris, pour la pastille du raccourci et de l'icône.
+  ///
+  /// Une seule ligne est demandée : seul le total de la pagination nous
+  /// intéresse, pas les produits eux-mêmes. Un visiteur sans compte n'a pas
+  /// de favoris, l'appel est donc inutile.
+  Future<void> _loadFavoritesCount() async {
+    if (!StorageService.isAuthenticated) {
+      favoritesCount.value = 0;
+      return;
+    }
+
+    try {
+      final response = await ProductService.getFavorites(page: 1, perPage: 1);
+      if (response.success && response.data != null) {
+        final total = response.data!['pagination']?['total'];
+        favoritesCount.value = total is int
+            ? total
+            : int.tryParse('$total') ??
+                  (response.data!['products'] as List? ?? []).length;
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to load favorites count',
+        name: 'HomeController',
+        error: e.toString(),
+      );
+    }
+  }
+
   Future<void> _loadBanners() async {
     try {
       final response = await ProductService.getBanners();
       if (response.success && response.data != null) {
         final bannerList = response.data!['banners'] as List? ?? [];
-        banners.value = bannerList.map((b) => Map<String, dynamic>.from(b)).toList();
+        banners.value = bannerList
+            .map((b) => Map<String, dynamic>.from(b))
+            .toList();
       }
     } catch (e) {
       // Use fallback banners
@@ -532,14 +663,11 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   void handleTabTap(int index) {
     if (_isDisposed) return;
 
-    // Accueil (0) et Import (1) restent consultables sans compte : ce sont
-    // les vitrines. Les trois autres supposent une identité.
-    const protectedTabs = [2, 3, 4];
-    const tabFeatureNames = {
-      2: 'la rubrique Ma voix',
-      3: 'le suivi de commandes',
-      4: 'votre compte',
-    };
+    // Accueil (0), Recherche (1) et Grossiste (2) restent consultables sans
+    // compte : ce sont les vitrines. Le suivi et le compte supposent une
+    // identité.
+    const protectedTabs = [3, 4];
+    const tabFeatureNames = {3: 'le suivi de commandes', 4: 'votre compte'};
 
     if (protectedTabs.contains(index) && AuthGuard.isGuest) {
       // L'utilisateur n'est pas connecté et essaie d'accéder à un tab protégé
@@ -572,7 +700,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     safeDelayed(const Duration(seconds: 3), () {
       if (_isDisposed) return;
 
-      final totalBanners = banners.isNotEmpty ? banners.length : fallbackBanners.length;
+      final totalBanners = banners.isNotEmpty
+          ? banners.length
+          : fallbackBanners.length;
       if (totalBanners > 0 && bannerController.hasClients) {
         int nextPage = (currentBannerIndex.value + 1) % totalBanners;
         safeAnimateToPage(
@@ -623,18 +753,48 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     await Future.wait([
       _loadNearbyProducts(),
       _loadRecentProducts(),
+      _loadPasscolisOffers(),
+      _loadFavoritesCount(),
     ]);
   }
 
-  void onSeeAllNearby() {
-    // Navigate to search with nearby filter
-    Get.toNamed('/search', arguments: {'filter': 'nearby'});
+  /// Bascule sur l'onglet Recherche.
+  ///
+  /// Une bascule d'onglet, pas un `toNamed` : la recherche est une
+  /// destination principale de la barre du bas. L'empiler en écran aurait
+  /// masqué cette barre et fait apparaître une flèche de retour.
+  void goToSearchTab() {
+    if (_isDisposed) return;
+    handleTabTap(1);
+    try {
+      if (tabController.index != currentTabIndex.value) {
+        tabController.animateTo(currentTabIndex.value);
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to animate to search tab',
+        name: 'HomeController',
+        error: e.toString(),
+      );
+    }
   }
 
-  void onSeeAllRecent() {
-    // Navigate to search with recent filter
-    Get.toNamed('/search', arguments: {'filter': 'recent'});
+  /// La bannière Passcolis ouvre la recherche sur l'onglet des trajets.
+  void onSeeAllPasscolis() {
+    // Le controller de recherche vit déjà (l'onglet est monté avec la page) :
+    // on lui demande de changer de famille plutôt que de lui passer un
+    // argument de route, qu'il ne relirait qu'à sa création.
+    if (Get.isRegistered<search_ctrl.SearchController>()) {
+      Get.find<search_ctrl.SearchController>().changeScope(
+        search_ctrl.SearchScope.passcolis,
+      );
+    }
+    goToSearchTab();
   }
+
+  void onSeeAllNearby() => goToSearchTab();
+
+  void onSeeAllRecent() => goToSearchTab();
 
   /// Toggle favorite for a product
   Future<void> toggleFavorite(int productId) async {
@@ -654,10 +814,17 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       if (response.success) {
         final isFavorite = response.data?['is_favorite'] ?? false;
-        final message = response.data?['message'] ?? (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+        final message =
+            response.data?['message'] ??
+            (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
 
         // Update the is_favorite status in all product lists
         updateProductFavoriteStatus(productId, isFavorite);
+
+        // La pastille suit immédiatement : rappeler l'API pour ±1 ferait
+        // clignoter le compteur le temps de l'aller-retour.
+        favoritesCount.value = (favoritesCount.value + (isFavorite ? 1 : -1))
+            .clamp(0, 9999);
 
         Get.snackbar(
           'Succès',

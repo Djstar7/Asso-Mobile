@@ -1023,7 +1023,7 @@ Widget _buildBackButton(BuildContext context) {
                 context: context,
                 iconData: Icons.phone_android_rounded,
                 emoji: '📱',
-                title: 'KPay',
+                title: 'Mobile Money',
                 subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
                 balance: balance,
                 color: AppThemeSystem.kpayColor,
@@ -1375,7 +1375,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
       final options = <PaymentMethodOption>[
         PaymentMethodOption(
           code: 'kpay',
-          label: 'KPay',
+          label: 'Mobile Money',
           subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
           flow: 'phone',
           enabled: kpayConfigured,

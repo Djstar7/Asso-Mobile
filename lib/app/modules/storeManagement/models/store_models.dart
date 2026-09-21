@@ -14,9 +14,21 @@ class StorageStats {
     required this.totalImages,
   });
 
-  double get usagePercentage => (usedSpaceGB / totalSpaceGB) * 100;
+  /// Taux d'occupation, borné à [0, 100].
+  ///
+  /// Sans forfait actif, [totalSpaceGB] vaut 0 : la division brute donnait
+  /// alors `NaN`, affiché tel quel et jauge pleine. Un quota nul se lit
+  /// comme « rien d'alloué », donc 0 %.
+  double get usagePercentage {
+    if (totalSpaceGB <= 0) return 0;
+    return ((usedSpaceGB / totalSpaceGB) * 100).clamp(0, 100);
+  }
+
+  /// Vrai seulement si un quota existe réellement.
+  bool get hasQuota => totalSpaceGB > 0;
+
   double get availableSpaceGB => totalSpaceGB - usedSpaceGB;
-  bool get isAlmostFull => usagePercentage > 80;
+  bool get isAlmostFull => hasQuota && usagePercentage > 80;
 
   factory StorageStats.fromJson(Map<String, dynamic> json) {
     return StorageStats(
@@ -302,16 +314,22 @@ enum BannerType {
 }
 
 extension BannerTypeExtension on BannerType {
-  String get colorCode {
+  /// Pictogramme du type de bannière.
+  ///
+  /// Les bannières ne portent plus une couleur par type : quatre teintes
+  /// saturées côte à côte transformaient l'écran en nuancier. Le type se lit
+  /// désormais à l'icône et au libellé, et la mise en avant passe par
+  /// l'accent unique du design system.
+  IconData get icon {
     switch (this) {
       case BannerType.storage:
-        return '#FF9800'; // Orange
+        return Icons.cloud_outlined;
       case BannerType.boost:
-        return '#2196F3'; // Bleu
+        return Icons.rocket_launch_outlined;
       case BannerType.certification:
-        return '#4CAF50'; // Vert
+        return Icons.verified_outlined;
       case BannerType.premium:
-        return '#9C27B0'; // Violet
+        return Icons.workspace_premium_outlined;
     }
   }
 }

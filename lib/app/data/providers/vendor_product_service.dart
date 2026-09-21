@@ -5,6 +5,8 @@ class VendorProductService {
   static Future<ApiResponse> getVendorProducts({
     int page = 1,
     int perPage = 20,
+    String? search,
+    String? status,
   }) async {
     print('');
     print('========================================');
@@ -14,7 +16,15 @@ class VendorProductService {
     print('  └─ Per Page: $perPage');
 
     try {
-      final queryParams = {'page': page, 'per_page': perPage};
+      // Les filtres vides ne sont pas envoyés : le backend renverrait
+      // alors zéro résultat au lieu du catalogue complet.
+      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
 
       print('🌐 Calling API: GET /v1/vendor/products');
 

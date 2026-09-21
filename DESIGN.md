@@ -122,14 +122,14 @@ adb shell wm size reset     && adb shell wm density reset
 ## Environnement de développement
 
 L'API est configurée dans `lib/app/core/values/constants.dart` et se résout
-seule : `10.0.2.2:8000` sur émulateur Android, `localhost:8000` ailleurs.
+seule : `192.168.1.155:8000` sur émulateur Android, `localhost:8000` ailleurs.
 
 ```bash
 # Backend (Laravel) — voir Asso-Backend/setup-local.sh
 php artisan serve --host=0.0.0.0 --port=8000
 
 # Application
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://192.168.1.155:8000/api
 ```
 
 Comptes de démonstration (mot de passe `password`) :

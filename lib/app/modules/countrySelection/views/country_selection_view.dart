@@ -415,10 +415,14 @@ class _AlphabetIndex extends GetView<CountrySelectionController> {
           color: context.ds.canvas.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(AppDesign.radiusPill),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        // Le clavier ouvert réduit la hauteur disponible : l'index se met à
+        // l'échelle au lieu de déborder.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
           for (final letter in letters)
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -438,7 +442,8 @@ class _AlphabetIndex extends GetView<CountrySelectionController> {
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

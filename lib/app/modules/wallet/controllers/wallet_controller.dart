@@ -1004,7 +1004,7 @@ class WalletController extends GetxController {
       if (kpayProvider == null || phoneNumber == null) {
         return {
           'success': false,
-          'message': 'Opérateur et numéro de téléphone requis pour KPay',
+          'message': 'Opérateur et numéro de téléphone requis pour Mobile Money',
         };
       }
       return await initiateKpayWithdrawal(

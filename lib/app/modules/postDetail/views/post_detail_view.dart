@@ -141,15 +141,15 @@ class PostDetailView extends GetView<PostDetailController> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: (post.isAnonymous && !post.isMyPost)
+                  backgroundColor: post.isAnonymous
                       ? Colors.grey[400]
                       : AppThemeSystem.primaryColor,
-                  backgroundImage: post.user?.avatar != null && !(post.isAnonymous && !post.isMyPost)
+                  backgroundImage: post.user?.avatar != null && !post.isAnonymous
                       ? NetworkImage(_buildAvatarUrl(post.user!.avatar!))
                       : null,
-                  child: post.user?.avatar == null || (post.isAnonymous && !post.isMyPost)
+                  child: post.user?.avatar == null || post.isAnonymous
                       ? Text(
-                          (post.isAnonymous && !post.isMyPost)
+                          post.isAnonymous
                               ? '?'
                               : (post.user?.firstName[0].toUpperCase() ?? '?'),
                           style: const TextStyle(
@@ -169,7 +169,7 @@ class PostDetailView extends GetView<PostDetailController> {
                         children: [
                           Flexible(
                             child: Text(
-                              (post.isAnonymous && !post.isMyPost)
+                              post.isAnonymous
                                   ? 'ANONYME'
                                   : (post.user?.fullName ?? 'Anonyme'),
                               maxLines: 1,
@@ -312,15 +312,15 @@ class PostDetailView extends GetView<PostDetailController> {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: (comment.isAnonymous && !comment.isMyComment)
+                  backgroundColor: comment.isAnonymous
                       ? Colors.grey[400]
                       : AppThemeSystem.primaryColor,
-                  backgroundImage: comment.user?.avatar != null && !(comment.isAnonymous && !comment.isMyComment)
+                  backgroundImage: comment.user?.avatar != null && !comment.isAnonymous
                       ? NetworkImage(_buildAvatarUrl(comment.user!.avatar!))
                       : null,
-                  child: comment.user?.avatar == null || (comment.isAnonymous && !comment.isMyComment)
+                  child: comment.user?.avatar == null || comment.isAnonymous
                       ? Text(
-                          (comment.isAnonymous && !comment.isMyComment)
+                          comment.isAnonymous
                               ? '?'
                               : (comment.user?.firstName[0].toUpperCase() ?? '?'),
                           style: const TextStyle(
@@ -340,7 +340,7 @@ class PostDetailView extends GetView<PostDetailController> {
                         children: [
                           Flexible(
                             child: Text(
-                              (comment.isAnonymous && !comment.isMyComment)
+                              comment.isAnonymous
                                   ? 'ANONYME'
                                   : (comment.user?.fullName ?? 'Anonyme'),
                               maxLines: 1,
@@ -464,7 +464,7 @@ class PostDetailView extends GetView<PostDetailController> {
                           Row(
                             children: [
                               Text(
-                                (reply.isAnonymous && !reply.isMyComment)
+                                reply.isAnonymous
                                     ? 'ANONYME'
                                     : (reply.user?.fullName ?? 'Anonyme'),
                                 style: const TextStyle(
@@ -542,7 +542,7 @@ class PostDetailView extends GetView<PostDetailController> {
                       child: Text(
                       replyTo == null
                           ? 'Ajouter un commentaire'
-                          : 'Répondre à ${(replyTo.isAnonymous && !replyTo.isMyComment) ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
+                          : 'Répondre à ${replyTo.isAnonymous ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

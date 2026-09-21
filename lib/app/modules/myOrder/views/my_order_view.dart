@@ -510,8 +510,43 @@ class MyOrderView extends GetView<MyOrderController> {
             ),
           ],
 
+          // Commande livrée et déjà notée : on rappelle la note laissée.
+          if (order.status == CustomerOrderStatus.delivered &&
+              !order.canRate &&
+              order.ratingValue != null)
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Votre note ', style: TextStyle(fontSize: 13)),
+                  for (var i = 1; i <= 5; i++)
+                    Icon(
+                      i <= order.ratingValue!
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 18,
+                      color: AppDesign.warning,
+                    ),
+                ],
+              ),
+            ),
+
+          // Commande livrée pas encore notée : on propose de noter.
+          if (order.status == CustomerOrderStatus.delivered && order.canRate)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => controller.showRatingDialog(order),
+                icon: const Icon(Icons.star_rounded, size: 18, color: Colors.white),
+                label: const Text('Noter', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppDesign.warning,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+
           // Bouton Confirmer la livraison (débloque l'argent)
-          if (order.status == CustomerOrderStatus.delivered)
+          if (order.status == CustomerOrderStatus.shipped && !order.isCarrier)
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () => controller.confirmDelivery(order.id),

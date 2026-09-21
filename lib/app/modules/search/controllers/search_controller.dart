@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import '../../../data/models/diaspo_offer.dart';
+import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/currency_service.dart';
+
+/// Les deux familles de résultats de la recherche.
+///
+/// L'application vend deux choses très différentes — des articles et du
+/// transport de bagage — et les mélanger dans une même liste obligerait
+/// l'utilisateur à trier lui-même.
+enum SearchScope { products, passcolis }
 
 class SearchController extends GetxController {
   // ================================
@@ -18,7 +27,19 @@ class SearchController extends GetxController {
   // DONNÉES DES PRODUITS
   // ================================
   final RxList<Map<String, dynamic>> allProducts = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> searchResults = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> searchResults =
+      <Map<String, dynamic>>[].obs;
+
+  // ================================
+  // DONNÉES PASSCOLIS (offres Diaspo)
+  // ================================
+  final RxList<DiaspoOffer> passcolisOffers = <DiaspoOffer>[].obs;
+  final RxBool isLoadingPasscolis = false.obs;
+  final RxBool passcolisLoadFailed = false.obs;
+  bool _passcolisLoaded = false;
+
+  /// Onglet actif : produits ou passcolis.
+  final Rx<SearchScope> scope = SearchScope.products.obs;
 
   // ================================
   // ÉTAT DE LA RECHERCHE
@@ -52,7 +73,8 @@ class SearchController extends GetxController {
   // ================================
   // CATÉGORIES DISPONIBLES
   // ================================
-  final RxList<Map<String, dynamic>> apiCategories = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> apiCategories =
+      <Map<String, dynamic>>[].obs;
   final RxList<String> categories = <String>['Tous'].obs;
 
   // ================================
@@ -83,7 +105,8 @@ class SearchController extends GetxController {
   // ================================
   int get activeFiltersCount {
     int count = 0;
-    if (selectedCategory.value.isNotEmpty && selectedCategory.value != 'Tous') count++;
+    if (selectedCategory.value.isNotEmpty && selectedCategory.value != 'Tous')
+      count++;
     if (currentMinPrice.value > 0 || currentMaxPrice.value < 1000000) count++;
     if (selectedLocation.value != 'Toutes les villes') count++;
     return count;
@@ -100,11 +123,79 @@ class SearchController extends GetxController {
   /// Returns searchResults (for backward compatibility)
   RxList<Map<String, dynamic>> get filteredProducts => searchResults;
 
+  // ================================
+  // PASSCOLIS
+  // ================================
+
+  /// Offres correspondant au texte saisi.
+  ///
+  /// Le filtrage est local : le catalogue de trajets est court, et l'API ne
+  /// sait filtrer que par ville ou pays pris séparément, alors que
+  /// l'utilisateur tape indifféremment « Douala » ou « Cameroun ».
+  List<DiaspoOffer> get filteredPasscolis {
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) return passcolisOffers;
+
+    return passcolisOffers.where((offer) {
+      return offer.departureCity.toLowerCase().contains(query) ||
+          offer.departureCountry.toLowerCase().contains(query) ||
+          offer.arrivalCity.toLowerCase().contains(query) ||
+          offer.arrivalCountry.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  /// Bascule d'onglet. Les passcolis ne sont chargés qu'à la première
+  /// ouverture de leur onglet : inutile d'appeler l'API pour quelqu'un qui
+  /// ne cherche que des produits.
+  void changeScope(SearchScope value) {
+    if (scope.value == value) return;
+    scope.value = value;
+
+    if (value == SearchScope.passcolis && !_passcolisLoaded) {
+      loadPasscolisOffers();
+    }
+  }
+
+  Future<void> loadPasscolisOffers({bool isRefresh = false}) async {
+    if (isLoadingPasscolis.value) return;
+    if (isRefresh) _passcolisLoaded = false;
+
+    isLoadingPasscolis.value = true;
+    passcolisLoadFailed.value = false;
+
+    try {
+      if (!Get.isRegistered<DiaspoService>()) {
+        Get.put(DiaspoService());
+      }
+
+      final response = await Get.find<DiaspoService>().getOffers(perPage: 50);
+
+      if (response['success'] == true) {
+        final list = response['data']?['data'] as List? ?? [];
+        passcolisOffers.value = list
+            .map((json) => DiaspoOffer.fromJson(json))
+            .toList();
+        _passcolisLoaded = true;
+      } else {
+        passcolisLoadFailed.value = true;
+      }
+    } catch (e) {
+      passcolisLoadFailed.value = true;
+      debugPrint('Erreur chargement passcolis: $e');
+    } finally {
+      isLoadingPasscolis.value = false;
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
-    minPriceController.text = minPrice.value > 0 ? minPrice.value.toInt().toString() : '';
-    maxPriceController.text = maxPrice.value > 0 ? maxPrice.value.toInt().toString() : '';
+    minPriceController.text = minPrice.value > 0
+        ? minPrice.value.toInt().toString()
+        : '';
+    maxPriceController.text = maxPrice.value > 0
+        ? maxPrice.value.toInt().toString()
+        : '';
     _loadSearchHistory();
     _loadCategories();
     _setupSearchListener();
@@ -113,6 +204,12 @@ class SearchController extends GetxController {
     // Check if category filter was passed in arguments
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null) {
+      // Ouverture directe sur l'onglet Passcolis (« Voir tout » de l'accueil).
+      if (args['tab'] == 'passcolis') {
+        scope.value = SearchScope.passcolis;
+        loadPasscolisOffers();
+      }
+
       final categoryId = args['categoryId'] as int?;
       final categoryName = args['categoryName'] as String?;
 
@@ -156,19 +253,26 @@ class SearchController extends GetxController {
       final response = await ProductService.getProducts(
         page: _currentPage,
         perPage: 20,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
         minPrice: currentMinPrice.value > 0 ? currentMinPrice.value : null,
-        maxPrice: currentMaxPrice.value < 1000000 ? currentMaxPrice.value : null,
+        maxPrice: currentMaxPrice.value < 1000000
+            ? currentMaxPrice.value
+            : null,
         sortBy: sortBy.value,
         sortOrder: sortOrder.value,
       );
 
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
 
         if (isRefresh) {
-          allProducts.value = products.map((p) => Map<String, dynamic>.from(p)).toList();
+          allProducts.value = products
+              .map((p) => Map<String, dynamic>.from(p))
+              .toList();
         } else {
           allProducts.addAll(products.map((p) => Map<String, dynamic>.from(p)));
         }
@@ -176,7 +280,9 @@ class SearchController extends GetxController {
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de charger les produits',
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger les produits',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -192,7 +298,9 @@ class SearchController extends GetxController {
       final response = await ProductService.getCategories();
       if (response.success && response.data != null) {
         final cats = response.data!['categories'] as List? ?? [];
-        apiCategories.value = cats.map((c) => Map<String, dynamic>.from(c)).toList();
+        apiCategories.value = cats
+            .map((c) => Map<String, dynamic>.from(c))
+            .toList();
 
         // Build category names list
         categories.clear();
@@ -269,7 +377,9 @@ class SearchController extends GetxController {
       final response = await ProductService.getProducts(
         page: _currentPage,
         search: searchQuery.value,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
         minPrice: minPrice.value > 0 ? minPrice.value : null,
         maxPrice: maxPrice.value < 1000000 ? maxPrice.value : null,
         sortBy: sortBy.value,
@@ -278,12 +388,17 @@ class SearchController extends GetxController {
 
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
-        searchResults.value = productsList.map((p) => Map<String, dynamic>.from(p)).toList();
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        searchResults.value = productsList
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de rechercher',
+      Get.snackbar(
+        'Erreur',
+        'Impossible de rechercher',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -307,7 +422,9 @@ class SearchController extends GetxController {
       final response = await ProductService.getProducts(
         page: _currentPage,
         search: searchQuery.value,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
         minPrice: minPrice.value > 0 ? minPrice.value : null,
         maxPrice: maxPrice.value < 1000000 ? maxPrice.value : null,
         sortBy: sortBy.value,
@@ -316,12 +433,17 @@ class SearchController extends GetxController {
 
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
-        searchResults.value = products.map((p) => Map<String, dynamic>.from(p)).toList();
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        searchResults.value = products
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de rechercher',
+      Get.snackbar(
+        'Erreur',
+        'Impossible de rechercher',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -353,20 +475,27 @@ class SearchController extends GetxController {
       final response = await ProductService.getProducts(
         page: _currentPage,
         search: searchQuery.value.isNotEmpty ? searchQuery.value : null,
-        categoryId: selectedCategoryId.value > 0 ? selectedCategoryId.value : null,
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
         minPrice: currentMinPrice.value > 0 ? currentMinPrice.value : null,
-        maxPrice: currentMaxPrice.value < 1000000 ? currentMaxPrice.value : null,
+        maxPrice: currentMaxPrice.value < 1000000
+            ? currentMaxPrice.value
+            : null,
         sortBy: sortBy.value,
         sortOrder: sortOrder.value,
       );
 
       if (response.success && response.data != null) {
         final products = response.data!['products'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
 
         // Ajouter aux bons résultats selon le contexte
         if (searchQuery.value.isNotEmpty) {
-          searchResults.addAll(products.map((p) => Map<String, dynamic>.from(p)));
+          searchResults.addAll(
+            products.map((p) => Map<String, dynamic>.from(p)),
+          );
         } else {
           allProducts.addAll(products.map((p) => Map<String, dynamic>.from(p)));
         }
@@ -534,13 +663,28 @@ class SearchController extends GetxController {
   // ACTIONS SUR LES PRODUITS
   // ================================
 
-  /// Navigue vers les détails du produit
+  /// Navigue vers les détails du produit.
+  ///
+  /// Asso Ads : une ouverture venue d'une carte sponsorisée porte `from_ad`,
+  /// sans quoi le clic ne serait jamais compté et le vendeur verrait un
+  /// retour sous-évalué sur une campagne qu'il a payée.
   void onProductTap(Map<String, dynamic> product) {
-    Get.toNamed('/product', arguments: product);
+    Get.toNamed(
+      '/product',
+      arguments: product['is_sponsored'] == true
+          ? {...product, 'from_ad': true}
+          : product,
+    );
   }
 
   /// Applique les filtres et relance la recherche
-  void applyFilters({int? categoryId, double? min, double? max, String? sort, String? order}) {
+  void applyFilters({
+    int? categoryId,
+    double? min,
+    double? max,
+    String? sort,
+    String? order,
+  }) {
     if (categoryId != null) selectedCategoryId.value = categoryId;
     if (min != null) minPrice.value = min;
     if (max != null) maxPrice.value = max;
@@ -574,13 +718,7 @@ class SearchController extends GetxController {
 // ENUMS
 // ================================
 
-enum SortOption {
-  relevance,
-  priceAsc,
-  priceDesc,
-  dateDesc,
-  dateAsc,
-}
+enum SortOption { relevance, priceAsc, priceDesc, dateDesc, dateAsc }
 
 extension SortOptionExtension on SortOption {
   String get label {

@@ -68,7 +68,9 @@ class PackageSubscriptionController extends GetxController {
         print('❌ Failed to load packages: ${response.message}');
         Get.snackbar(
           'Erreur',
-          response.message ?? 'Impossible de charger les packages',
+          response.message.isNotEmpty
+              ? response.message
+              : 'Impossible de charger les forfaits',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white,

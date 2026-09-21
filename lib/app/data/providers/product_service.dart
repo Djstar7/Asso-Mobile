@@ -35,8 +35,14 @@ class ProductService {
   }
 
   /// Get single product details
-  static Future<ApiResponse> getProduct(int id) async {
-    return await ApiProvider.get('${AppConstants.productsUrl}/$id');
+  /// [fromAd] : la fiche est ouverte depuis une carte sponsorisée (Asso Ads).
+  /// Le serveur en tire la mesure d'efficacité de la campagne ; cela ne
+  /// consomme aucune vue du quota acheté, seul l'affichage est facturé.
+  static Future<ApiResponse> getProduct(int id, {bool fromAd = false}) async {
+    return await ApiProvider.get(
+      '${AppConstants.productsUrl}/$id',
+      queryParams: fromAd ? {'from_ad': '1'} : null,
+    );
   }
 
   /// Liste des pays d'origine des produits importés (Chine/Turquie/Dubaï…),

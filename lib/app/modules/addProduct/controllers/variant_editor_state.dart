@@ -22,16 +22,60 @@ class VariantDraftGroup {
 }
 
 class VariantDraftRow {
+  /// Identifiant serveur de la déclinaison, conservé entre deux éditions.
+  ///
+  /// Sans lui, `replace_variants=1` faisait supprimer puis recréer toutes les
+  /// déclinaisons à chaque enregistrement : les `variant_id` déjà référencés
+  /// par des commandes passées pointaient alors dans le vide.
+  int? id;
+
   int stock;
   double priceAdjustment;
   String sku;
   bool isActive;
+
+  /// Poids propre à la déclinaison, en kg.
+  ///
+  /// Une pointure 46 ou un modèle XXL ne pèsent pas le même colis qu'un XS :
+  /// laisser le poids uniquement au niveau du produit faussait le calcul de
+  /// livraison. `null` signifie « utiliser le poids du produit ».
+  double? weightKg;
+
+  /// Image propre à la déclinaison (chemin local tant qu'elle n'est pas envoyée).
+  ///
+  /// Permet d'afficher la photo du coloris choisi plutôt que l'image générique.
+  String? imagePath;
+
   VariantDraftRow({
+    this.id,
     this.stock = 0,
     this.priceAdjustment = 0,
     this.sku = '',
     this.isActive = true,
+    this.weightKg,
+    this.imagePath,
   });
+
+  Map<String, dynamic> toJson() => {
+        if (id != null) 'id': id,
+        'stock': stock,
+        'priceAdjustment': priceAdjustment,
+        'sku': sku,
+        'isActive': isActive,
+        if (weightKg != null) 'weightKg': weightKg,
+        if (imagePath != null) 'imagePath': imagePath,
+      };
+
+  factory VariantDraftRow.fromJson(Map<String, dynamic> json) =>
+      VariantDraftRow(
+        id: (json['id'] as num?)?.toInt(),
+        stock: (json['stock'] as num?)?.toInt() ?? 0,
+        priceAdjustment: (json['priceAdjustment'] as num?)?.toDouble() ?? 0,
+        sku: json['sku']?.toString() ?? '',
+        isActive: json['isActive'] as bool? ?? true,
+        weightKg: (json['weightKg'] as num?)?.toDouble(),
+        imagePath: json['imagePath']?.toString(),
+      );
 }
 
 /// État de l'éditeur de variantes vendeur : groupes d'options + quantité par combinaison.
@@ -266,11 +310,70 @@ class VariantEditorState {
     for (final raw in list.whereType<Map>()) {
       final variant = Map<String, dynamic>.from(raw);
       rows[signature(VariantCatalog.attributesOf(variant))] = VariantDraftRow(
+        id: (variant['id'] as num?)?.toInt(),
         stock: VariantCatalog.stockOf(variant),
         priceAdjustment: (variant['price_adjustment'] as num?)?.toDouble() ?? 0,
         sku: variant['sku']?.toString() ?? '',
         isActive: variant['is_active'] != false,
+        weightKg: (variant['weight'] as num?)?.toDouble(),
       );
+    }
+    touch();
+  }
+
+  // ───────────── Brouillon local ─────────────
+
+  /// Sérialise l'éditeur pour le brouillon (format interne, pas celui de l'API).
+  Map<String, dynamic> toDraftJson() => {
+        'groups': groups
+            .map(
+              (g) => {
+                'name': g.name,
+                'isColor': g.isColor,
+                'values': g.values
+                    .map((v) => {'value': v.value, 'hex': v.hex})
+                    .toList(),
+              },
+            )
+            .toList(),
+        'rows': rows.map((key, row) => MapEntry(key, row.toJson())),
+      };
+
+  void loadFromDraftJson(Map<String, dynamic> json) {
+    clear();
+    final rawGroups = json['groups'];
+    if (rawGroups is List) {
+      for (final rawGroup in rawGroups.whereType<Map>()) {
+        final rawValues = rawGroup['values'];
+        groups.add(
+          VariantDraftGroup(
+            rawGroup['name']?.toString() ?? '',
+            isColor: rawGroup['isColor'] == true,
+            values: rawValues is List
+                ? rawValues
+                    .whereType<Map>()
+                    .map(
+                      (v) => VariantDraftValue(
+                        v['value']?.toString() ?? '',
+                        v['hex']?.toString(),
+                      ),
+                    )
+                    .where((v) => v.value.isNotEmpty)
+                    .toList()
+                : <VariantDraftValue>[],
+          ),
+        );
+      }
+    }
+
+    final rawRows = json['rows'];
+    if (rawRows is Map) {
+      rawRows.forEach((key, value) {
+        if (value is Map) {
+          rows['$key'] =
+              VariantDraftRow.fromJson(Map<String, dynamic>.from(value));
+        }
+      });
     }
     touch();
   }
@@ -301,10 +404,25 @@ class VariantEditorState {
       combos[i].forEach((name, value) {
         fields['variants[$i][attributes][$name]'] = value;
       });
+      // L'identifiant permet au serveur de mettre à jour la déclinaison
+      // existante au lieu d'en créer une nouvelle.
+      if (row.id != null) {
+        fields['variants[$i][id]'] = '${row.id}';
+      }
       fields['variants[$i][stock]'] = '${row.stock}';
-      fields['variants[$i][price_adjustment]'] = '${row.priceAdjustment}';
-      fields['variants[$i][sku]'] = row.sku;
+      fields['variants[$i][price_adjustment]'] =
+          row.priceAdjustment.toStringAsFixed(2);
+      // Une référence vide ne doit pas être transmise : plusieurs chaînes
+      // vides entreraient en collision sur une contrainte d'unicité.
+      if (row.sku.trim().isNotEmpty) {
+        fields['variants[$i][sku]'] = row.sku.trim();
+      }
       fields['variants[$i][is_active]'] = row.isActive ? '1' : '0';
+      // Poids par déclinaison : ignoré par les versions d'API qui ne le
+      // connaissent pas encore, exploité dès qu'elles le supportent.
+      if (row.weightKg != null) {
+        fields['variants[$i][weight]'] = '${row.weightKg}';
+      }
     }
     return fields;
   }

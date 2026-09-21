@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/sales_code_service.dart';
@@ -109,8 +110,8 @@ class SalesCodeInput {
           ? '${errorMessage.value} Corrigez-le ou videz le champ pour continuer.'
           : 'Vérifiez le code commercial ou videz le champ pour continuer.',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppThemeSystem.errorColor,
-      colorText: Colors.white,
+      backgroundColor: AppDesign.danger,
+      colorText: AppDesign.neutral0,
       duration: const Duration(seconds: 5),
     );
   }
@@ -126,37 +127,34 @@ class SalesCodeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppDesign.space5),
       decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
+        color: ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        border: Border.all(color: ds.border),
       ),
       child: Obx(() {
         final status = input.status.value;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.badge_outlined, size: 20, color: AppThemeSystem.primaryColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Code commercial / Code de parrainage',
-                    style: context.subtitle2.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
+            Text(
+              'Code commercial',
+              style: context.subtitle2.copyWith(
+                fontWeight: FontWeight.w600,
+                color: ds.textPrimary,
+              ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: AppDesign.space1),
             Text(
               "Facultatif. Si un commercial ASSO vous a accompagné, saisissez son code.",
-              style: context.caption.copyWith(color: context.secondaryTextColor),
+              style: context.body2.copyWith(color: ds.textSecondary),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppDesign.space3),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: TextField(
@@ -176,7 +174,7 @@ class SalesCodeField extends StatelessWidget {
                       counterText: '',
                       isDense: true,
                       filled: true,
-                      fillColor: context.inputFieldColor,
+                      fillColor: ds.surfaceMuted,
                       errorText: status == SalesCodeStatus.invalid ||
                               (status == SalesCodeStatus.unverified && input.errorMessage.isNotEmpty)
                           ? input.errorMessage.value
@@ -194,21 +192,27 @@ class SalesCodeField extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  height: 44,
+                  height: 46,
+                  width: 104,
                   child: ElevatedButton(
                     onPressed: status == SalesCodeStatus.unverified || status == SalesCodeStatus.invalid
                         ? input.verify
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: AppDesign.accent,
+                      foregroundColor: AppDesign.neutral0,
+                      disabledBackgroundColor: ds.surfaceMuted,
+                      disabledForegroundColor: ds.textTertiary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+                      ),
                     ),
                     child: status == SalesCodeStatus.checking
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppDesign.neutral0),
                           )
                         : const Text('Vérifier'),
                   ),
@@ -219,14 +223,15 @@ class SalesCodeField extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.check_circle, size: 18, color: AppThemeSystem.successColor),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.check_circle_outline_rounded,
+                      size: 16, color: AppDesign.successText),
+                  SizedBox(width: AppDesign.space2),
                   Expanded(
                     child: Text(
                       input.agentName.value.isNotEmpty
                           ? 'Code valide — commercial : ${input.agentName.value}'
                           : 'Code valide',
-                      style: context.body2.copyWith(color: AppThemeSystem.successColor),
+                      style: context.body2.copyWith(color: AppDesign.successText),
                     ),
                   ),
                 ],

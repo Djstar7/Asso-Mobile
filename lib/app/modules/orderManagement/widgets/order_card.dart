@@ -77,7 +77,10 @@ class OrderCard extends StatelessWidget {
               ),
             ],
 
-            if (!order.isPaid || order.deliveryAssigned) ...[
+            // Une commande annulée est remboursée : l'avertissement « paiement en
+            // attente » n'a plus lieu d'être.
+            if (order.status != OrderStatus.cancelled &&
+                (!order.isPaid || order.deliveryAssigned)) ...[
               const SizedBox(height: 8),
               _buildHint(
                 context,

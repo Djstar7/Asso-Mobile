@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
+import '../../../data/providers/boost_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -54,9 +55,19 @@ class VendorDashboardController extends GetxController {
   final certificationExpiresAt = Rx<String?>(null);
   final certificationDaysRemaining = Rx<int?>(null);
 
+  // Asso Ads — campagnes de sponsoring en cours.
+  final runningBoosts = 0.obs;
+  final boostImpressionsServed = 0.obs;
+  final boostImpressionsQuota = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
+
+    if (Get.isRegistered<CurrencyService>()) {
+      ever(CurrencyService.to.userCurrencyRx, (_) => currencyRevision.value++);
+    }
+
     _loadVendorData();
   }
 
@@ -64,7 +75,42 @@ class VendorDashboardController extends GetxController {
   void _loadVendorData() {
     _fetchVendorStats();
     // _fetchPendingOrdersCount() est maintenant inclus dans _fetchVendorStats via l'API dashboard
+    _fetchBoosts();
   }
+
+  /// Asso Ads — portée délivrée des campagnes en cours, pour que le vendeur
+  /// voie depuis le tableau de bord où en est ce qu'il a payé.
+  ///
+  /// Silencieux en cas d'échec : le sponsoring est une option, son absence ne
+  /// doit pas dégrader le reste du tableau de bord.
+  Future<void> _fetchBoosts() async {
+    if (_isDisposed) return;
+
+    try {
+      final response = await BoostService.getCampaigns(limit: 50);
+      if (_isDisposed || !response.success) return;
+
+      final running = ((response.data?['boosts'] as List?) ?? const [])
+          .whereType<Map>()
+          .where((boost) => boost['is_running'] == true)
+          .toList();
+
+      runningBoosts.value = running.length;
+      boostImpressionsServed.value = running.fold<int>(
+        0,
+        (total, boost) => total + _asInt(boost['impressions_served']),
+      );
+      boostImpressionsQuota.value = running.fold<int>(
+        0,
+        (total, boost) => total + _asInt(boost['impressions_quota']),
+      );
+    } catch (_) {
+      // Sans incidence pour le vendeur.
+    }
+  }
+
+  int _asInt(dynamic value) =>
+      value is int ? value : int.tryParse('${value ?? ''}') ?? 0;
 
   /// Récupère les statistiques du vendeur depuis l'API
   Future<void> _fetchVendorStats() async {
@@ -272,7 +318,7 @@ class VendorDashboardController extends GetxController {
   Future<void> refreshData() async {
     // checkVerificationStatus appelle déjà _fetchVendorStats qui récupère
     // toutes les données incluant pending_orders
-    await checkVerificationStatus();
+    await Future.wait([checkVerificationStatus(), _fetchBoosts()]);
   }
 
   /// Navigate to add product with package check
@@ -333,7 +379,13 @@ class VendorDashboardController extends GetxController {
   // ================================
 
   /// Format price with user's currency
+  /// Sentinelle réactive de la devise d'affichage : les montants sont
+  /// convertis au rendu, changer de devise doit redessiner sans rappeler l'API.
+  final currencyRevision = 0.obs;
+
   String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+    // Lecture volontaire : abonne les Obx au changement de devise.
+    currencyRevision.value;
     if (!Get.isRegistered<CurrencyService>()) {
       return '${priceInXOF.toStringAsFixed(0)} FCFA';
     }

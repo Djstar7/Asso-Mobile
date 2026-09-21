@@ -3335,10 +3335,18 @@ class ProductView extends GetView<ProductController> {
           SizedBox(height: 12),
 
           // Products list
+          //
+          // Même gabarit que l'accueil et la recherche : la largeur et la
+          // hauteur viennent de `ProductCard`, qui calcule la place réelle de
+          // son bloc texte. L'ancienne carte imposait 240 px pour un contenu
+          // plus court, d'où le vide sous le prix.
           Obx(() {
+            final cardWidth = ProductCard.widthInGrid(context);
+            final cardHeight = ProductCard.totalHeight(context, cardWidth);
+
             if (controller.isLoadingSimilarProducts.value) {
               return SizedBox(
-                height: 200,
+                height: cardHeight,
                 child: Center(
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
@@ -3350,13 +3358,19 @@ class ProductView extends GetView<ProductController> {
             }
 
             return SizedBox(
-              height: 240,
-              child: ListView.builder(
+              height: cardHeight,
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: controller.similarProducts.length,
+                separatorBuilder: (_, _) => SizedBox(width: AppDesign.space3),
                 itemBuilder: (context, index) {
-                  final similarProduct = controller.similarProducts[index];
-                  return _buildSimilarProductCard(context, similarProduct);
+                  return SizedBox(
+                    width: cardWidth,
+                    child: _buildSimilarProductCard(
+                      context,
+                      controller.similarProducts[index],
+                    ),
+                  );
                 },
               ),
             );
@@ -3366,167 +3380,68 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  /// Build similar product card
+  /// Vignette d'un produit similaire.
+  ///
+  /// Reprend `ProductCard`, le gabarit partagé par l'accueil et la recherche,
+  /// plutôt qu'une carte maison : l'utilisateur retrouve le même objet
+  /// visuel d'un écran à l'autre, et la hauteur suit le contenu au lieu
+  /// d'être fixée à 240 px.
   Widget _buildSimilarProductCard(
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    final productName = product['name']?.toString() ?? 'Produit';
-    final productPrice = product['price_xaf'] ?? product['price'] ?? 0;
     final productStock = product['stock'] ?? 0;
+    final isOutOfStock = (productStock is num ? productStock : 0) <= 0;
+    final productImage = _similarProductImageUrl(product);
 
-    // Get product image
-    String? productImage;
-    if (product['primary_image'] != null &&
-        product['primary_image'].toString().isNotEmpty) {
-      productImage = product['primary_image'].toString();
-    } else if (product['images'] != null &&
-        product['images'] is List &&
-        (product['images'] as List).isNotEmpty) {
-      final images = product['images'] as List;
-      if (images.isNotEmpty) {
-        // Check if it's a map with 'url' key or direct string
-        final firstImage = images[0];
-        if (firstImage is Map && firstImage['url'] != null) {
-          productImage = firstImage['url'].toString();
-        } else {
-          productImage = firstImage.toString();
-        }
-      }
-    }
+    final rawPrice = product['price_xaf'] ?? product['price'] ?? 0;
+    final price = controller.formatPrice(
+      double.tryParse(rawPrice.toString()) ?? 0,
+    );
 
-    return GestureDetector(
-      onTap: () {
-        // Navigate to new product with preventDuplicates: false to force route recreation
-        Get.offNamed('/product', arguments: product, preventDuplicates: false);
-      },
-      child: Container(
-        width: 160,
-        margin: EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(
-            AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+    return ProductCard(
+      name: product['name']?.toString() ?? 'Produit',
+      price: price,
+      location:
+          product['location']?.toString() ??
+          product['shop']?['address']?.toString(),
+      isCertified: ProductCard.isShopCertified(product),
+      badgeLabel: isOutOfStock ? 'Épuisé' : null,
+      badgeTone: AppBadgeTone.danger,
+      imageBuilder: (context) => productImage == null
+          ? const _ImagePlaceholder(icon: Icons.image_outlined)
+          : Image.network(
+              productImage,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  const _ImagePlaceholder(icon: Icons.image_outlined),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image
-            ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(
-                  AppThemeSystem.getBorderRadius(
-                    context,
-                    BorderRadiusType.medium,
-                  ),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    height: 140,
-                    width: double.infinity,
-                    child: productImage != null && productImage.isNotEmpty
-                        ? Image.network(
-                            productImage,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppThemeSystem.primaryColor,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (_, __, ___) => Container(
-                              color: AppThemeSystem.grey200,
-                              child: Icon(
-                                Icons.image_outlined,
-                                size: 40,
-                                color: AppThemeSystem.grey400,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: AppThemeSystem.grey200,
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 40,
-                              color: AppThemeSystem.grey400,
-                            ),
-                          ),
-                  ),
-                  // Stock badge
-                  if (productStock <= 0)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.errorColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Épuisé',
-                          style: context.textStyle(
-                            FontSizeType.overline,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Product Info
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    productName,
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    controller.formatPrice(
-                      double.tryParse(productPrice.toString()) ?? 0,
-                    ),
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      // `offNamed` : on remplace la fiche courante au lieu d'empiler des
+      // écrans produit à l'infini au fil des rebonds.
+      onTap: () => Get.offNamed(
+        '/product',
+        arguments: product,
+        preventDuplicates: false,
       ),
     );
+  }
+
+  /// Première image exploitable d'un produit similaire.
+  ///
+  /// L'API renvoie soit `primary_image`, soit une liste d'images faite
+  /// d'URL nues ou d'objets `{url: …}`.
+  String? _similarProductImageUrl(Map<String, dynamic> product) {
+    final primary = product['primary_image']?.toString();
+    if (primary != null && primary.isNotEmpty) return primary;
+
+    final images = product['images'];
+    if (images is List && images.isNotEmpty) {
+      final first = images.first;
+      final url = first is Map ? first['url']?.toString() : first.toString();
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    return null;
   }
 }
 

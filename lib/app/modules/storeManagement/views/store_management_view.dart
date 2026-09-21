@@ -8,84 +8,91 @@ import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
 import 'edit_store_view.dart';
 
+/// Écran « Ma boutique ».
+///
+/// Parti pris visuel, aligné sur [AppDesign] : l'accent orange ne sert qu'aux
+/// actions, jamais à décorer une surface. Les couleurs vives restantes sont
+/// strictement sémantiques (seuil de stockage, entrée/sortie d'inventaire,
+/// champ manquant). La hiérarchie est portée par la typographie et les titres
+/// de section, pas par des cartes teintées.
 class StoreManagementView extends GetView<StoreManagementController> {
   const StoreManagementView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
+
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: ds.canvas,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ds.canvas,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: ds.textPrimary, size: 20),
           onPressed: () => Get.back(),
         ),
+        centerTitle: false,
         title: Text(
-          'Ma Boutique',
+          'Ma boutique',
           style: context.h5.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            color: ds.textPrimary,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: context.primaryTextColor,
-            ),
+            icon: Icon(Icons.refresh_rounded, color: ds.textSecondary, size: 20),
+            tooltip: 'Actualiser',
             onPressed: controller.loadData,
           ),
         ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.storeInfo.value == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              valueColor: AlwaysStoppedAnimation<Color>(AppDesign.accent),
+            ),
+          );
         }
 
         return RefreshIndicator(
           onRefresh: controller.loadData,
+          color: AppDesign.accent,
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(context.horizontalPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Carousel de bannières
-                _BannerCarousel(),
-
-                SizedBox(height: context.sectionSpacing),
-
-                // Location request notification
-                _LocationRequestNotification(),
-
-                // Carte de stockage
-                _StorageCard(),
-
-                SizedBox(height: context.elementSpacing),
-
-                // Certification
-                _CertificationCard(),
-
-                SizedBox(height: context.elementSpacing),
-
-                // Statistiques d'audience
-                _AudienceStatsCard(),
-
-                SizedBox(height: context.elementSpacing),
-
-                // Inventaire
-                _InventoryCard(),
-
-                SizedBox(height: context.elementSpacing),
-
-                // Édition de la boutique
-                _StoreEditorCard(),
-
-                SizedBox(height: context.sectionSpacing),
-              ],
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: ds.maxContentWidth),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    ds.gutter,
+                    AppDesign.space2,
+                    ds.gutter,
+                    MediaQuery.of(context).viewPadding.bottom + AppDesign.space8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _LocationRequestNotification(),
+                      _BannerCarousel(),
+                      _StoreEditorCard(),
+                      SizedBox(height: AppDesign.space8),
+                      _StorageCard(),
+                      SizedBox(height: AppDesign.space8),
+                      _CertificationCard(),
+                      SizedBox(height: AppDesign.space8),
+                      _AudienceStatsCard(),
+                      SizedBox(height: AppDesign.space8),
+                      _InventoryCard(),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         );
@@ -94,315 +101,469 @@ class StoreManagementView extends GetView<StoreManagementController> {
   }
 }
 
-/// Carousel de bannières promotionnelles
+// ============================================================================
+// COMMUN
+// ============================================================================
+
+/// Titre de section. Volontairement discret : le titre de l'écran reste le
+/// seul élément typographique dominant.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title, {this.action, this.onAction});
+
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppDesign.space3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: context.subtitle1.copyWith(
+                fontWeight: FontWeight.w700,
+                color: ds.textPrimary,
+              ),
+            ),
+          ),
+          if (action != null && onAction != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: AppDesign.accent,
+                padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                action!,
+                style: context.body2.copyWith(
+                  color: AppDesign.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Carte neutre : la surface de base de tout l'écran.
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppDesign.space5),
+      decoration: BoxDecoration(
+        color: ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        border: Border.all(color: ds.border),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Bouton d'action principal, pleine largeur.
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = ElevatedButton.styleFrom(
+      backgroundColor: AppDesign.accent,
+      foregroundColor: AppDesign.neutral0,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+      ),
+    );
+    // La couleur est forcée dans le TextStyle : le thème global écrase
+    // autrement le foregroundColor et le libellé passe en noir sur l'orange.
+    final text = Text(
+      label,
+      style: context.button.copyWith(
+        color: AppDesign.neutral0,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      height: context.buttonHeight,
+      child: ElevatedButton(onPressed: onPressed, style: style, child: text),
+    );
+  }
+}
+
+/// Bouton secondaire, en contour neutre.
+class _SecondaryButton extends StatelessWidget {
+  const _SecondaryButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    final style = OutlinedButton.styleFrom(
+      foregroundColor: ds.textPrimary,
+      side: BorderSide(color: ds.borderStrong),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+      ),
+    );
+    final text = Text(
+      label,
+      style: context.button.copyWith(
+        color: ds.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      height: context.buttonHeight,
+      child: OutlinedButton(onPressed: onPressed, style: style, child: text),
+    );
+  }
+}
+
+/// Bandeau d'information sémantique (alerte, attente, erreur).
+class _Notice extends StatelessWidget {
+  const _Notice({
+    required this.icon,
+    required this.message,
+    required this.background,
+    required this.foreground,
+    this.title,
+  });
+
+  final IconData icon;
+  final String message;
+  final String? title;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppDesign.space3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 16, color: foreground),
+          ),
+          SizedBox(width: AppDesign.space2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: context.body2.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                Text(
+                  message,
+                  style: context.body2.copyWith(color: foreground),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// BANNIÈRES
+// ============================================================================
+
+/// Carrousel de bannières promotionnelles.
+///
+/// Les cartes sont neutres et se distinguent par leur pictogramme : quatre
+/// aplats saturés (orange, bleu, vert, violet) faisaient de l'en-tête un
+/// nuancier et écrasaient le reste de l'écran.
 class _BannerCarousel extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.banners.isEmpty) return const SizedBox.shrink();
 
-      return Column(
-        children: [
-          SizedBox(
-            height: 140,
-            child: PageView.builder(
-              itemCount: controller.banners.length,
-              onPageChanged: (index) {
-                controller.currentBannerIndex.value = index;
-              },
-              itemBuilder: (context, index) {
-                final banner = controller.banners[index];
-                return _BannerItem(banner: banner);
-              },
+      return Padding(
+        padding: EdgeInsets.only(bottom: AppDesign.space8),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 128,
+              child: PageView.builder(
+                itemCount: controller.banners.length,
+                controller: PageController(viewportFraction: 0.94),
+                onPageChanged: (index) =>
+                    controller.currentBannerIndex.value = index,
+                itemBuilder: (context, index) =>
+                    _BannerItem(banner: controller.banners[index]),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Indicateurs de page
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              controller.banners.length,
-              (index) => Obx(() => Container(
-                width: controller.currentBannerIndex.value == index ? 24 : 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: controller.currentBannerIndex.value == index
-                      ? AppThemeSystem.primaryColor
-                      : AppThemeSystem.grey300,
-                  borderRadius: BorderRadius.circular(4),
+            if (controller.banners.length > 1) ...[
+              SizedBox(height: AppDesign.space3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  controller.banners.length,
+                  (index) => Obx(() {
+                    final isActive =
+                        controller.currentBannerIndex.value == index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: isActive ? 18 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppDesign.accent
+                            : context.ds.borderStrong,
+                        borderRadius:
+                            BorderRadius.circular(AppDesign.radiusPill),
+                      ),
+                    );
+                  }),
                 ),
-              )),
-            ),
-          ),
-        ],
+              ),
+            ],
+          ],
+        ),
       );
     });
   }
 }
 
-/// Item de bannière
 class _BannerItem extends StatelessWidget {
-  final PromotionalBanner banner;
-
   const _BannerItem({required this.banner});
 
-  Color _getColorFromType(BannerType type) {
-    final colorCode = type.colorCode;
-    return Color(int.parse(colorCode.replaceFirst('#', '0xFF')));
-  }
+  final PromotionalBanner banner;
 
   @override
   Widget build(BuildContext context) {
-    final color = _getColorFromType(banner.type);
+    final ds = context.ds;
 
-    return GestureDetector(
-      onTap: banner.onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppDesign.space1),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: banner.onTap,
+          borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+          child: Container(
+            padding: EdgeInsets.all(AppDesign.space4),
+            decoration: BoxDecoration(
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              border: Border.all(color: ds.border),
             ),
-          ],
-        ),
-        padding: EdgeInsets.all(context.horizontalPadding),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    banner.title,
-                    style: context.h5.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: ds.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                   ),
-                  const SizedBox(height: 4),
-                  Flexible(
-                    child: Text(
-                      banner.description,
-                      style: context.body2.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                  child: Icon(banner.type.icon, size: 20, color: ds.textSecondary),
+                ),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        banner.title,
+                        style: context.body1.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ds.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: context.borderRadius(BorderRadiusType.small),
-                    ),
-                    child: Text(
-                      banner.actionLabel,
-                      style: context.caption.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Flexible(
+                        child: Text(
+                          banner.description,
+                          style: context.caption.copyWith(color: ds.textSecondary),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
+                      SizedBox(height: AppDesign.space2),
+                      Text(
+                        banner.actionLabel,
+                        style: context.caption.copyWith(
+                          color: AppDesign.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+              ],
             ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 28,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Carte de gestion du stockage
+// ============================================================================
+// STOCKAGE
+// ============================================================================
+
 class _StorageCard extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final ds = context.ds;
       final storage = controller.storageStats.value;
       if (storage == null) return const SizedBox.shrink();
 
-      return Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      final percent = storage.usagePercentage;
+      // La jauge n'est vive que lorsqu'elle alerte réellement.
+      final gaugeColor = percent > 90
+          ? AppDesign.danger
+          : percent > 75
+              ? AppDesign.warning
+              : AppDesign.accent;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader('Stockage'),
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.storage,
-                  color: AppThemeSystem.primaryColor,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Espace de stockage',
-                  style: context.h6.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            SizedBox(height: context.elementSpacing),
-            // Barre de progression
-            ClipRRect(
-              borderRadius: context.borderRadius(BorderRadiusType.small),
-              child: LinearProgressIndicator(
-                value: storage.usagePercentage / 100,
-                minHeight: 12,
-                backgroundColor: AppThemeSystem.grey200,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  storage.isAlmostFull
-                      ? AppThemeSystem.errorColor
-                      : AppThemeSystem.primaryColor,
-                ),
-              ),
-            ),
-            SizedBox(height: context.elementSpacing),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${storage.usedSpaceGB.toStringAsFixed(1)} GB / ${storage.totalSpaceGB.toStringAsFixed(1)} GB',
-                  style: context.body2.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '${storage.usagePercentage.toStringAsFixed(1)}%',
-                  style: context.body2.copyWith(
-                    color: storage.isAlmostFull
-                        ? AppThemeSystem.errorColor
-                        : AppThemeSystem.successColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: context.elementSpacing),
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoChip(
-                    icon: Icons.inventory_2_outlined,
-                    label: '${storage.totalProducts} produits',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _InfoChip(
-                    icon: Icons.image_outlined,
-                    label: '${storage.totalImages} images',
-                  ),
-                ),
-              ],
-            ),
-            if (storage.isAlmostFull) ...[
-              SizedBox(height: context.elementSpacing),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.warningColor.withValues(alpha: 0.1),
-                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                  border: Border.all(color: AppThemeSystem.warningColor),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppThemeSystem.warningColor,
-                      size: 20,
+                // Sans forfait actif il n'y a aucun quota : afficher une jauge
+                // à 0 sur 0 n'aurait aucun sens, on explique l'état.
+                if (!storage.hasQuota) ...[
+                  Text(
+                    'Aucun espace alloué',
+                    style: context.subtitle1.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ds.textPrimary,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Votre espace de stockage est presque plein',
-                        style: context.caption.copyWith(
-                          color: AppThemeSystem.warningColor,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Souscrivez à un forfait pour publier les photos et vidéos '
+                    'de vos produits.',
+                    style: context.body2.copyWith(color: ds.textSecondary),
+                  ),
+                ] else ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Espace utilisé',
+                          style: context.body2.copyWith(color: ds.textSecondary),
                         ),
                       ),
+                      Text(
+                        '${storage.usedSpaceGB.toStringAsFixed(1)} Go',
+                        style: context.body2.copyWith(
+                          color: ds.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        ' / ${storage.totalSpaceGB.toStringAsFixed(1)} Go',
+                        style: context.body2.copyWith(color: ds.textTertiary),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppDesign.space2),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    child: LinearProgressIndicator(
+                      value: (percent / 100).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: ds.surfaceMuted,
+                      valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
                     ),
-                  ],
+                  ),
+                  SizedBox(height: AppDesign.space2),
+                  Text(
+                    '${percent.toStringAsFixed(0)} % utilisé · '
+                    '${storage.totalProducts} produits · ${storage.totalImages} images',
+                    style: context.caption.copyWith(color: ds.textTertiary),
+                  ),
+                ],
+
+                if (storage.isAlmostFull) ...[
+                  SizedBox(height: AppDesign.space4),
+                  _Notice(
+                    icon: Icons.warning_amber_rounded,
+                    message: 'Votre espace de stockage est presque plein.',
+                    background: AppDesign.warningSubtle,
+                    foreground: AppDesign.warningText,
+                  ),
+                ],
+
+                SizedBox(height: AppDesign.space4),
+                _PrimaryButton(
+                  label: storage.hasQuota
+                      ? "Augmenter l'espace"
+                      : 'Voir les forfaits',
+                  onPressed: controller.upgradeStorage,
                 ),
-              ),
-            ],
-            SizedBox(height: context.elementSpacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.upgradeStorage,
-                icon: const Icon(Icons.upgrade),
-                label: const Text('Augmenter l\'espace'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
 }
 
-/// Puce d'information
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
+// ============================================================================
+// CERTIFICATION
+// ============================================================================
 
-  const _InfoChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppThemeSystem.grey100,
-        borderRadius: context.borderRadius(BorderRadiusType.small),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: context.secondaryTextColor),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              style: context.caption,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Carte de certification
 class _CertificationCard extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
@@ -410,286 +571,162 @@ class _CertificationCard extends GetView<StoreManagementController> {
       final cert = controller.certification.value;
       if (cert == null) return const SizedBox.shrink();
 
-      // Si certifié : afficher un badge élégant avec délai d'expiration
-      if (cert.isCertified) {
-        final daysRemaining = cert.daysUntilExpiry ?? 0;
-        final isExpiringSoon = cert.isExpiringSoon;
-        final isExpired = cert.isExpired;
+      return cert.isCertified
+          ? _buildCertified(context, cert)
+          : _buildOffer(context);
+    });
+  }
 
-        // Couleur basée sur le statut d'expiration
-        final certColor = isExpired
-            ? AppThemeSystem.errorColor
-            : isExpiringSoon
-                ? AppThemeSystem.warningColor
-                : AppDesign.info;
+  /// Boutique certifiée : l'état se lit à une pastille, pas à une carte teintée
+  /// bordée et ombrée en couleur.
+  Widget _buildCertified(BuildContext context, dynamic cert) {
+    final ds = context.ds;
+    final daysRemaining = cert.daysUntilExpiry ?? 0;
+    final isExpiringSoon = cert.isExpiringSoon;
+    final isExpired = cert.isExpired;
 
-        return Container(
-          padding: EdgeInsets.all(context.horizontalPadding),
-          decoration: BoxDecoration(
-            color: certColor.withValues(alpha: 0.10),
-            borderRadius: context.borderRadius(BorderRadiusType.medium),
-            border: Border.all(
-              color: certColor.withValues(alpha: 0.4),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: certColor.withValues(alpha: 0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+    final Color badgeBackground;
+    final Color badgeForeground;
+    final String badgeLabel;
+    if (isExpired) {
+      badgeBackground = AppDesign.dangerSubtle;
+      badgeForeground = AppDesign.dangerText;
+      badgeLabel = 'Expirée';
+    } else if (isExpiringSoon) {
+      badgeBackground = AppDesign.warningSubtle;
+      badgeForeground = AppDesign.warningText;
+      badgeLabel = 'Expire bientôt';
+    } else {
+      badgeBackground = AppDesign.successSubtle;
+      badgeForeground = AppDesign.successText;
+      badgeLabel = 'Active';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Certification'),
+        _Card(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badge avec animation shimmer subtile
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: certColor,
-                      borderRadius: context.borderRadius(BorderRadiusType.small),
-                      boxShadow: [
-                        BoxShadow(
-                          color: certColor.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.verified,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
+                  Icon(Icons.verified_outlined, size: 20, color: AppDesign.info),
+                  SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Boutique Certifiée',
-                              style: context.h6.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: certColor,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.stars,
-                              color: certColor,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
                         Text(
-                          isExpired
-                              ? 'Certification expirée'
-                              : isExpiringSoon
-                                  ? 'Expire bientôt - Renouvelez!'
-                                  : 'Badge de confiance actif',
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
-                            fontWeight: FontWeight.w500,
+                          'Boutique certifiée',
+                          style: context.subtitle1.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: ds.textPrimary,
                           ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Badge de confiance affiché sur votre vitrine',
+                          style: context.caption.copyWith(color: ds.textSecondary),
                         ),
                       ],
                     ),
                   ),
+                  SizedBox(width: AppDesign.space2),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesign.space2,
+                      vertical: AppDesign.space1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeBackground,
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    ),
+                    child: Text(
+                      badgeLabel,
+                      style: context.caption.copyWith(
+                        color: badgeForeground,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Délai d'expiration
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.backgroundColor,
-                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                  border: Border.all(
-                    color: certColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isExpired
-                          ? Icons.error_outline
-                          : isExpiringSoon
-                              ? Icons.warning_amber
-                              : Icons.schedule,
-                      color: certColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isExpired
-                                ? 'Expirée'
-                                : daysRemaining == 1
-                                    ? 'Expire demain'
-                                    : 'Expire dans',
-                            style: context.caption.copyWith(
-                              color: context.secondaryTextColor,
-                            ),
-                          ),
-                          if (!isExpired) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              '$daysRemaining jour${daysRemaining > 1 ? 's' : ''}',
-                              style: context.body1.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: certColor,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (isExpiringSoon || isExpired)
-                      TextButton(
-                        onPressed: controller.requestCertification,
-                        style: TextButton.styleFrom(
-                          foregroundColor: certColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                        ),
-                        child: Text(
-                          'Renouveler',
-                          style: context.caption.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }
 
-      // Si non certifié : afficher comme une pub attractive
-      return Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: AppDesign.accentSubtle,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                    borderRadius: context.borderRadius(BorderRadiusType.small),
+              SizedBox(height: AppDesign.space4),
+              Divider(height: 1, color: ds.border),
+              SizedBox(height: AppDesign.space4),
+
+              Row(
+                children: [
+                  Icon(Icons.event_outlined, size: 16, color: ds.textTertiary),
+                  SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: Text(
+                      isExpired
+                          ? 'Certification expirée'
+                          : daysRemaining == 1
+                              ? 'Expire demain'
+                              : 'Expire dans $daysRemaining jours',
+                      style: context.body2.copyWith(color: ds.textSecondary),
+                    ),
                   ),
-                  child: Icon(
-                    Icons.verified_outlined,
-                    color: AppThemeSystem.primaryColor,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Devenez une boutique certifiée',
-                        style: context.h6.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Gagnez la confiance de vos clients',
-                        style: context.caption.copyWith(
-                          color: context.secondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                ],
+              ),
+
+              if (isExpiringSoon || isExpired) ...[
+                SizedBox(height: AppDesign.space4),
+                _PrimaryButton(
+                  label: 'Renouveler la certification',
+                  onPressed: controller.requestCertification,
                 ),
               ],
-            ),
-            SizedBox(height: context.elementSpacing),
-            // Avantages
-            _CertificationBenefit(
-              icon: Icons.trending_up,
-              text: '+300% de visibilité sur vos produits',
-            ),
-            const SizedBox(height: 8),
-            _CertificationBenefit(
-              icon: Icons.star,
-              text: 'Badge bleu de confiance affiché',
-            ),
-            const SizedBox(height: 8),
-            _CertificationBenefit(
-              icon: Icons.security,
-              text: 'Priorité dans les résultats de recherche',
-            ),
-            SizedBox(height: context.elementSpacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.requestCertification,
-                icon: const Icon(Icons.verified),
-                label: const Text('Demander la certification'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Boutique non certifiée : proposition sobre, l'accent reste sur le bouton.
+  Widget _buildOffer(BuildContext context) {
+    final ds = context.ds;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Certification'),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Devenez une boutique certifiée',
+                style: context.subtitle1.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: ds.textPrimary,
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-}
-
-/// Bénéfice de certification
-class _CertificationBenefit extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _CertificationBenefit({
-    required this.icon,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppThemeSystem.primaryColor,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: context.caption.copyWith(
-              color: context.primaryTextColor,
-            ),
+              const SizedBox(height: 2),
+              Text(
+                'Gagnez la confiance de vos clients.',
+                style: context.body2.copyWith(color: ds.textSecondary),
+              ),
+              SizedBox(height: AppDesign.space4),
+              const _CertificationBenefit(text: 'Visibilité accrue sur vos produits'),
+              SizedBox(height: AppDesign.space3),
+              const _CertificationBenefit(text: 'Badge de confiance sur votre vitrine'),
+              SizedBox(height: AppDesign.space3),
+              const _CertificationBenefit(
+                  text: 'Priorité dans les résultats de recherche'),
+              SizedBox(height: AppDesign.space5),
+              _PrimaryButton(
+                label: 'Demander la certification',
+                onPressed: controller.requestCertification,
+              ),
+            ],
           ),
         ),
       ],
@@ -697,7 +734,38 @@ class _CertificationBenefit extends StatelessWidget {
   }
 }
 
-/// Carte des statistiques d'audience
+class _CertificationBenefit extends StatelessWidget {
+  const _CertificationBenefit({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(Icons.check_rounded, size: 16, color: ds.textTertiary),
+        ),
+        SizedBox(width: AppDesign.space2),
+        Expanded(
+          child: Text(
+            text,
+            style: context.body2.copyWith(color: ds.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// AUDIENCE
+// ============================================================================
+
 class _AudienceStatsCard extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
@@ -705,294 +773,247 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
       final stats = controller.audienceStats.value;
       if (stats == null) return const SizedBox.shrink();
 
-      return Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            'Audience',
+            action: 'Voir le détail',
+            onAction: controller.openStatistics,
+          ),
+          _Card(
+            child: Column(
               children: [
-                Icon(
-                  Icons.trending_up,
-                  color: AppThemeSystem.primaryColor,
-                  size: 24,
+                // Une seule teinte pour les quatre chiffres : l'ancienne version
+                // attribuait bleu, orange, vert et jaune à des mesures de même
+                // nature, ce qui suggérait une hiérarchie qui n'existe pas.
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _StatBox(
+                          label: 'Visites',
+                          value: NumberFormat('#,###').format(stats.totalViews),
+                        ),
+                      ),
+                      _StatDivider(),
+                      Expanded(
+                        child: _StatBox(
+                          label: 'Produits vus',
+                          value: NumberFormat('#,###').format(stats.totalClicks),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Mes audiences',
-                  style: context.h6.copyWith(fontWeight: FontWeight.bold),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppDesign.space4),
+                  child: Divider(height: 1, color: context.ds.border),
+                ),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _StatBox(
+                          label: 'Commandes',
+                          value: stats.totalOrders.toString(),
+                        ),
+                      ),
+                      _StatDivider(),
+                      Expanded(
+                        child: _StatBox(
+                          label: 'Conversion',
+                          value: '${stats.conversionRate.toStringAsFixed(1)} %',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: AppDesign.space5),
+                _SecondaryButton(
+                  label: 'Booster mes produits',
+                  onPressed: controller.boostProducts,
                 ),
               ],
             ),
-            SizedBox(height: context.elementSpacing),
-            // Statistiques générales
-            Row(
-              children: [
-                Expanded(
-                  child: _StatBox(
-                    icon: Icons.storefront_outlined,
-                    label: 'Visites',
-                    value: NumberFormat('#,###').format(stats.totalViews),
-                    color: AppThemeSystem.infoColor,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _StatBox(
-                    icon: Icons.visibility_outlined,
-                    label: 'Produits consultés',
-                    value: NumberFormat('#,###').format(stats.totalClicks),
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatBox(
-                    icon: Icons.shopping_cart_outlined,
-                    label: 'Commandes',
-                    value: stats.totalOrders.toString(),
-                    color: AppThemeSystem.successColor,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _StatBox(
-                    icon: Icons.percent,
-                    label: 'Conversion',
-                    value: '${stats.conversionRate.toStringAsFixed(1)}%',
-                    color: AppThemeSystem.warningColor,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: context.elementSpacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.openStatistics,
-                icon: const Icon(Icons.insights_outlined),
-                label: const Text('Voir mes statistiques détaillées'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: controller.boostProducts,
-                icon: const Icon(Icons.rocket_launch),
-                label: const Text('Booster mes produits'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemeSystem.primaryColor,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
 }
 
-/// Boîte de statistique
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
+        child: VerticalDivider(width: 1, color: context.ds.border),
+      );
+}
+
 class _StatBox extends StatelessWidget {
-  final IconData icon;
+  const _StatBox({required this.label, required this.value});
+
   final String label;
   final String value;
-  final Color color;
-
-  const _StatBox({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: context.borderRadius(BorderRadiusType.small),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
+    final ds = context.ds;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
             value,
-            style: context.h5.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
+            style: context.h4.copyWith(
+              color: ds.textPrimary,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: context.caption.copyWith(
-              color: context.secondaryTextColor,
-            ),
-          ),
-        ],
-      ),
+        ),
+        SizedBox(height: AppDesign.space1),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.caption.copyWith(color: ds.textSecondary),
+        ),
+      ],
     );
   }
 }
 
-/// Carte d'inventaire
+// ============================================================================
+// INVENTAIRE
+// ============================================================================
+
 class _InventoryCard extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(context.horizontalPadding),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Obx(() {
+          final entries = controller.filteredInventory;
+          return _SectionHeader(
+            'Inventaire',
+            action: entries.length > 3 ? 'Voir tout (${entries.length})' : null,
+            onAction: entries.length > 3 ? controller.viewAllInventory : null,
+          );
+        }),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.inventory,
-                color: AppThemeSystem.primaryColor,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Inventaire',
-                  style: context.h6.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.elementSpacing),
-          // Filtres
-          Obx(() => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterChip(
-                label: 'Tous',
-                isSelected: controller.selectedInventoryFilter.value == null,
-                onTap: () => controller.selectedInventoryFilter.value = null,
-              ),
-              _FilterChip(
-                label: 'Entrées',
-                isSelected: controller.selectedInventoryFilter.value ==
-                    InventoryType.entry,
-                onTap: () => controller.selectedInventoryFilter.value =
-                    InventoryType.entry,
-              ),
-              _FilterChip(
-                label: 'Sorties',
-                isSelected: controller.selectedInventoryFilter.value ==
-                    InventoryType.exit,
-                onTap: () => controller.selectedInventoryFilter.value =
-                    InventoryType.exit,
-              ),
-            ],
-          )),
-          SizedBox(height: context.elementSpacing),
-          // Liste des entrées (3 les plus récentes)
-          Obx(() {
-            final entries = controller.filteredInventory;
-            if (entries.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Aucune entrée d\'inventaire',
-                    style: context.body2.copyWith(
-                      color: context.secondaryTextColor,
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return Column(
-              children: [
-                ...entries.take(3).map((entry) {
-                  return _InventoryItem(entry: entry);
-                }).toList(),
-                if (entries.length > 3) ...[
-                  SizedBox(height: context.elementSpacing),
-                  OutlinedButton.icon(
-                    onPressed: controller.viewAllInventory,
-                    icon: Icon(Icons.visibility_outlined, size: 18),
-                    label: Text('Voir tout (${entries.length})'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppThemeSystem.primaryColor,
-                      side: BorderSide(color: AppThemeSystem.primaryColor),
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              Obx(() => Wrap(
+                    spacing: AppDesign.space2,
+                    runSpacing: AppDesign.space2,
+                    children: [
+                      _FilterChip(
+                        label: 'Tous',
+                        isSelected:
+                            controller.selectedInventoryFilter.value == null,
+                        onTap: () =>
+                            controller.selectedInventoryFilter.value = null,
+                      ),
+                      _FilterChip(
+                        label: 'Entrées',
+                        isSelected: controller.selectedInventoryFilter.value ==
+                            InventoryType.entry,
+                        onTap: () => controller.selectedInventoryFilter.value =
+                            InventoryType.entry,
+                      ),
+                      _FilterChip(
+                        label: 'Sorties',
+                        isSelected: controller.selectedInventoryFilter.value ==
+                            InventoryType.exit,
+                        onTap: () => controller.selectedInventoryFilter.value =
+                            InventoryType.exit,
+                      ),
+                    ],
+                  )),
+              SizedBox(height: AppDesign.space4),
+              Obx(() {
+                final entries = controller.filteredInventory;
+                if (entries.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
+                    child: Center(
+                      child: Text(
+                        "Aucun mouvement d'inventaire.",
+                        style: context.body2
+                            .copyWith(color: context.ds.textSecondary),
                       ),
                     ),
-                  ),
-                ],
-              ],
-            );
-          }),
-        ],
-      ),
+                  );
+                }
+
+                final visible = entries.take(3).toList();
+                return Column(
+                  children: [
+                    for (var i = 0; i < visible.length; i++) ...[
+                      if (i > 0)
+                        Divider(height: 1, color: context.ds.border),
+                      _InventoryItem(entry: visible[i]),
+                    ],
+                  ],
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// Filtre chip
 class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
   const _FilterChip({
     required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppThemeSystem.primaryColor
-              : AppThemeSystem.grey100,
-          borderRadius: context.borderRadius(BorderRadiusType.small),
-          border: Border.all(
-            color: isSelected
-                ? AppThemeSystem.primaryColor
-                : AppThemeSystem.grey300,
+    final ds = context.ds;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDesign.space3,
+            vertical: AppDesign.space2,
           ),
-        ),
-        child: Text(
-          label,
-          style: context.caption.copyWith(
-            color: isSelected ? Colors.white : context.secondaryTextColor,
-            fontWeight: FontWeight.w600,
+          decoration: BoxDecoration(
+            color: isSelected ? AppDesign.accentSubtle : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            border: Border.all(
+              color: isSelected ? AppDesign.accent : ds.borderStrong,
+            ),
+          ),
+          child: Text(
+            label,
+            style: context.caption.copyWith(
+              color: isSelected ? AppDesign.accentText : ds.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -1000,346 +1021,262 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-/// Item d'inventaire
 class _InventoryItem extends GetView<StoreManagementController> {
-  final InventoryEntry entry;
-
   const _InventoryItem({required this.entry});
 
+  final InventoryEntry entry;
+
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
     final isEntry = entry.type == InventoryType.entry;
+    // Le sens du mouvement est une information, pas une décoration : il tient
+    // dans le signe et une teinte sourde sur la quantité.
+    final color = isEntry ? AppDesign.successText : AppDesign.dangerText;
 
-    return InkWell(
-      onTap: () => controller.viewInventoryDetails(entry),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: context.backgroundColor,
-          borderRadius: context.borderRadius(BorderRadiusType.small),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isEntry
-                    ? AppThemeSystem.successColor.withValues(alpha: 0.1)
-                    : AppThemeSystem.errorColor.withValues(alpha: 0.1),
-                borderRadius: context.borderRadius(BorderRadiusType.small),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => controller.viewInventoryDetails(entry),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
+          child: Row(
+            children: [
+              Icon(
+                isEntry
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
+                size: 16,
+                color: ds.textTertiary,
               ),
-              child: Icon(
-                isEntry ? Icons.add : Icons.remove,
-                color: isEntry
-                    ? AppThemeSystem.successColor
-                    : AppThemeSystem.errorColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.productName,
-                    style: context.body2.copyWith(
-                      fontWeight: FontWeight.w600,
+              SizedBox(width: AppDesign.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.productName,
+                      style: context.body2.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ds.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    DateFormat('dd/MM/yyyy').format(entry.date),
-                    style: context.caption.copyWith(
-                      color: context.secondaryTextColor,
+                    const SizedBox(height: 2),
+                    Text(
+                      DateFormat('d MMM yyyy', 'fr_FR').format(entry.date),
+                      style: context.caption.copyWith(color: ds.textTertiary),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Text(
-              '${isEntry ? '+' : '-'}${entry.quantity}',
-              style: context.body1.copyWith(
-                color: isEntry
-                    ? AppThemeSystem.successColor
-                    : AppThemeSystem.errorColor,
-                fontWeight: FontWeight.bold,
+              SizedBox(width: AppDesign.space2),
+              Text(
+                '${isEntry ? '+' : '−'}${entry.quantity}',
+                style: context.body1.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Carte d'édition de la boutique
+// ============================================================================
+// INFORMATIONS DE LA BOUTIQUE
+// ============================================================================
+
 class _StoreEditorCard extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final ds = context.ds;
       final store = controller.storeInfo.value;
       if (store == null) return const SizedBox.shrink();
 
-      return Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            'Informations',
+            action: 'Modifier',
+            onAction: () => Get.to(() => const EditStoreView()),
+          ),
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: context.borderRadius(BorderRadiusType.small),
-                  ),
-                  child: Icon(
-                    Icons.storefront,
-                    color: AppThemeSystem.primaryColor,
-                    size: 20,
-                  ),
+                Row(
+                  children: [
+                    _StoreLogo(store: store),
+                    SizedBox(width: AppDesign.space4),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            store.name.isNotEmpty ? store.name : 'Sans nom',
+                            style: context.subtitle1.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: ds.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Touchez le logo pour le remplacer',
+                            style: context.caption.copyWith(color: ds.textTertiary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Informations de la boutique',
-                        style: context.h6.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Gérez les détails de votre boutique',
-                        style: context.caption.copyWith(
-                          color: context.secondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
+
+                SizedBox(height: AppDesign.space4),
+                Divider(height: 1, color: ds.border),
+                SizedBox(height: AppDesign.space2),
+
+                _InfoRow(
+                  label: 'Localisation',
+                  value: store.city,
+                  placeholder: 'Non renseignée',
+                ),
+                _InfoRow(
+                  label: 'Adresse',
+                  value: store.address,
+                  placeholder: 'Non renseignée',
+                ),
+                _InfoRow(
+                  label: 'Téléphone',
+                  value: store.phone,
+                  placeholder: 'Non renseigné',
                 ),
               ],
             ),
-            SizedBox(height: context.sectionSpacing),
-            // Logo avec carte
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.backgroundColor,
-                borderRadius: context.borderRadius(BorderRadiusType.small),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: controller.pickLogo,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.grey200,
-                            borderRadius:
-                                context.borderRadius(BorderRadiusType.small),
-                            border: Border.all(
-                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                              width: 2,
-                            ),
-                          ),
-                          child: controller.selectedLogo.value != null
-                              ? ClipRRect(
-                                  borderRadius:
-                                      context.borderRadius(BorderRadiusType.small),
-                                  child: MediaHelper.buildImagePreview(
-                                    controller.selectedLogo.value!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              : store.logoUrl != null && store.logoUrl!.isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius:
-                                          context.borderRadius(BorderRadiusType.small),
-                                      child: Image.network(
-                                        store.logoUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.store,
-                                            size: 40,
-                                            color: AppThemeSystem.primaryColor,
-                                          );
-                                        },
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.store,
-                                      size: 40,
-                                      color: AppThemeSystem.primaryColor,
-                                    ),
-                        ),
-                        Positioned(
-                          bottom: -4,
-                          right: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppThemeSystem.primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: context.backgroundColor,
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Logo de la boutique',
-                          style: context.body2.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tapez pour modifier',
-                          style: context.caption.copyWith(
-                            color: AppThemeSystem.primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: context.elementSpacing),
-            // Informations avec valeurs par défaut si vide
-            _InfoRow(
-              icon: Icons.store,
-              label: 'Nom',
-              value: store.name.isNotEmpty ? store.name : 'Non renseigné',
-              isEmpty: store.name.isEmpty,
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.location_city,
-              label: 'Localisation',
-              value: store.city.isNotEmpty ? store.city : 'Non renseignée',
-              isEmpty: store.city.isEmpty,
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.home,
-              label: 'Adresse',
-              value: store.address.isNotEmpty ? store.address : 'Non renseignée',
-              isEmpty: store.address.isEmpty,
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.phone,
-              label: 'Téléphone',
-              value: store.phone.isNotEmpty ? store.phone : 'Non renseigné',
-              isEmpty: store.phone.isEmpty,
-            ),
-            SizedBox(height: context.sectionSpacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Get.to(() => const EditStoreView());
-                },
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Modifier les informations'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
 }
 
-/// Ligne d'information
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool isEmpty;
+class _StoreLogo extends GetView<StoreManagementController> {
+  const _StoreLogo({required this.store});
 
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.isEmpty = false,
-  });
+  final dynamic store;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.backgroundColor,
-        borderRadius: context.borderRadius(BorderRadiusType.small),
-        border: Border.all(
-          color: isEmpty
-              ? AppThemeSystem.warningColor.withValues(alpha: 0.3)
-              : context.borderColor,
-        ),
-      ),
-      child: Row(
+    final ds = context.ds;
+    final radius = BorderRadius.circular(AppDesign.radiusMd);
+
+    return GestureDetector(
+      onTap: controller.pickLogo,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: isEmpty
-                ? AppThemeSystem.warningColor
-                : context.secondaryTextColor,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: ds.surfaceMuted,
+              borderRadius: radius,
+              border: Border.all(color: ds.border),
+            ),
+            child: Obx(() {
+              if (controller.selectedLogo.value != null) {
+                return ClipRRect(
+                  borderRadius: radius,
+                  child: MediaHelper.buildImagePreview(
+                    controller.selectedLogo.value!,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              }
+              if (store.logoUrl != null && store.logoUrl!.isNotEmpty) {
+                return ClipRRect(
+                  borderRadius: radius,
+                  child: Image.network(
+                    store.logoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.storefront_outlined,
+                      size: 26,
+                      color: ds.textTertiary,
+                    ),
+                  ),
+                );
+              }
+              return Icon(Icons.storefront_outlined,
+                  size: 26, color: ds.textTertiary);
+            }),
           ),
-          const SizedBox(width: 12),
-          Text(
-            '$label:',
-            style: context.body2.copyWith(
-              color: context.secondaryTextColor,
-              fontWeight: FontWeight.w500,
+          Positioned(
+            bottom: -4,
+            right: -4,
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: AppDesign.accent,
+                shape: BoxShape.circle,
+                border: Border.all(color: ds.surface, width: 2),
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  color: AppDesign.neutral0, size: 11),
             ),
           ),
-          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ligne d'information. Un champ vide est signalé par son libellé en italique,
+/// sans encadrer toute la ligne d'une bordure d'alerte.
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.placeholder,
+  });
+
+  final String label;
+  final String value;
+  final String placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    final isEmpty = value.isEmpty;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 104,
+            child: Text(
+              label,
+              style: context.body2.copyWith(color: ds.textSecondary),
+            ),
+          ),
+          SizedBox(width: AppDesign.space2),
           Expanded(
             child: Text(
-              value,
+              isEmpty ? placeholder : value,
+              textAlign: TextAlign.right,
               style: context.body2.copyWith(
+                color: isEmpty ? ds.textTertiary : ds.textPrimary,
                 fontWeight: isEmpty ? FontWeight.normal : FontWeight.w600,
                 fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
-                color: isEmpty
-                    ? AppThemeSystem.warningColor
-                    : context.primaryTextColor,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1351,7 +1288,10 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-/// Location Request Notification Card
+// ============================================================================
+// DEMANDE DE LOCALISATION
+// ============================================================================
+
 class _LocationRequestNotification extends GetView<StoreManagementController> {
   @override
   Widget build(BuildContext context) {
@@ -1360,97 +1300,15 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
         return const SizedBox.shrink();
       }
 
-
-      return Container(
-        margin: EdgeInsets.only(bottom: context.elementSpacing),
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.warningColor.withValues(alpha: 0.1),
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: AppThemeSystem.warningColor.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.warningColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.pending_actions,
-                    color: AppThemeSystem.warningColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Demande de changement de localisation',
-                        style: context.body1.copyWith(
-                          color: AppThemeSystem.warningColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'En attente de validation',
-                        style: context.caption.copyWith(
-                          color: AppThemeSystem.warningColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: context.secondaryTextColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Nouvelle position demandée',
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
+      return Padding(
+        padding: EdgeInsets.only(bottom: AppDesign.space6),
+        child: _Notice(
+          icon: Icons.schedule_outlined,
+          title: 'Changement de localisation en attente',
+          message:
               'Votre demande sera examinée par un administrateur. Vous serez notifié de la décision.',
-              style: context.caption.copyWith(
-                color: AppThemeSystem.warningColor,
-              ),
-            ),
-          ],
+          background: AppDesign.warningSubtle,
+          foreground: AppDesign.warningText,
         ),
       );
     });

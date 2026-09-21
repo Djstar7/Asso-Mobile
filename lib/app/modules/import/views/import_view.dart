@@ -8,12 +8,15 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import 'wholesale_order_sheet.dart';
 import '../../../core/utils/app_design.dart';
-import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/masonry_grid.dart';
 import '../../../core/widgets/app_ui.dart';
 
-/// Section « Produits importés » : pays d'origine gérés côté backend
-/// (Chine 🇨🇳, Turquie 🇹🇷, Dubaï 🇦🇪, Inde 🇮🇳…).
-/// Filtre les produits par pays d'origine (origin_country).
+/// Catalogue de gros, présenté comme un mur d'images.
+///
+/// L'écran s'ouvre sur les produits de tous les pays d'origine mélangés :
+/// c'est le catalogue qui accueille, pas un formulaire. La recherche et le
+/// filtre par pays restent accessibles en haut, dans une barre qui s'efface
+/// dès qu'on descend dans la grille.
 class ImportView extends StatefulWidget {
   const ImportView({super.key});
 
@@ -28,6 +31,41 @@ class _ImportCountry {
   const _ImportCountry(this.code, this.name, this.flag);
 }
 
+/// Nom de pays tenant dans une pastille étroite.
+///
+/// Le backend préfixe certains libellés de la marque (« ASSO Turquie ») :
+/// utile dans un back-office, encombrant dans une rangée où chaque pastille
+/// n'a qu'un quart de l'écran.
+@visibleForTesting
+String shortImportCountryName(String name) {
+  final trimmed = name.trim();
+  const prefix = 'ASSO ';
+  return trimmed.toUpperCase().startsWith(prefix) &&
+          trimmed.length > prefix.length
+      ? trimmed.substring(prefix.length).trim()
+      : trimmed;
+}
+
+/// Un produit et le pays dont il provient.
+///
+/// La grille mêlant plusieurs origines, chaque tuile doit savoir d'où elle
+/// vient : pour afficher son drapeau, et surtout pour ouvrir la commande avec
+/// les bonnes options d'expédition — elles diffèrent d'un pays à l'autre.
+class _CatalogEntry {
+  const _CatalogEntry({
+    required this.product,
+    required this.country,
+    required this.shipping,
+  });
+
+  final WholesaleProduct product;
+  final _ImportCountry country;
+  final List<ShippingOption> shipping;
+}
+
+/// Filtre pays en vigueur. `null` = tous les pays.
+const String _allCountries = '';
+
 class _ImportViewState extends State<ImportView> {
   static List<_ImportCountry> _mapCountries(List<Map<String, String>> raw) {
     return [
@@ -41,25 +79,67 @@ class _ImportViewState extends State<ImportView> {
   }
 
   // Initialisé avec le fallback pour que le 1er rendu fonctionne, puis rechargé depuis l'API.
-  List<_ImportCountry> _countries = _mapCountries(ProductService.importCountriesFallback);
+  List<_ImportCountry> _countries = _mapCountries(
+    ProductService.importCountriesFallback,
+  );
 
-  String _selected = 'CN';
+  /// Code pays filtré, ou [_allCountries] pour le mur complet.
+  String _selected = _allCountries;
   bool _loading = true;
-  List<WholesaleProduct> _products = [];
-  List<ShippingOption> _shipping = [];
 
-  // Recherche dans les produits importés : pays sélectionné + nombre de résultats par pays.
+  /// Produits de tous les pays, dans l'ordre d'affichage.
+  List<_CatalogEntry> _entries = [];
+
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   Timer? _searchDebounce;
   String _query = '';
   Map<String, int> _counts = {};
   int _loadRequest = 0;
 
+  /// La barre de recherche se replie quand on descend dans la grille.
+  bool _chromeVisible = true;
+  double _lastOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    _init();
+  }
+
   @override
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
+  }
+
+  /// Masque le chrome vers le bas, le rappelle vers le haut.
+  ///
+  /// Le seuil évite qu'un micro-mouvement du doigt ne fasse clignoter la
+  /// barre ; près du sommet elle reste toujours visible.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final delta = offset - _lastOffset;
+
+    if (offset <= 8) {
+      if (!_chromeVisible) setState(() => _chromeVisible = true);
+      _lastOffset = offset;
+      return;
+    }
+
+    if (delta > 12 && _chromeVisible) {
+      setState(() => _chromeVisible = false);
+      _lastOffset = offset;
+    } else if (delta < -12 && !_chromeVisible) {
+      setState(() => _chromeVisible = true);
+      _lastOffset = offset;
+    }
   }
 
   void _onSearchChanged(String value) {
@@ -89,195 +169,158 @@ class _ImportViewState extends State<ImportView> {
     _load();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _selected = _countries.isNotEmpty ? _countries.first.code : 'CN';
-    _init();
-  }
-
-  /// Charge la liste des pays depuis le backend, puis les produits du pays sélectionné.
+  /// Charge la liste des pays depuis le backend, puis les produits.
   Future<void> _init() async {
     final loaded = await ProductService.getImportCountries();
     if (mounted && loaded.isNotEmpty) {
-      setState(() {
-        _countries = _mapCountries(loaded);
-        if (!_countries.any((c) => c.code == _selected)) {
-          _selected = _countries.first.code;
-        }
-      });
+      setState(() => _countries = _mapCountries(loaded));
     }
     await _load();
   }
 
+  /// Charge le catalogue.
+  ///
+  /// Sans filtre pays, les catalogues sont demandés en parallèle puis
+  /// entrelacés — un pays après l'autre — pour que le mur ne commence pas par
+  /// vingt articles chinois avant le premier turc.
   Future<void> _load() async {
     final request = ++_loadRequest;
     setState(() => _loading = true);
-    List<WholesaleProduct> products = [];
-    List<ShippingOption> shipping = [];
+
+    final targets = _selected == _allCountries
+        ? _countries
+        : _countries.where((c) => c.code == _selected).toList();
+
+    List<_CatalogEntry> entries = [];
     Map<String, int> counts = {};
+
     try {
-      // Catalogue GROS du pays : produits à paliers (cota) + options d'expédition,
-      // filtré par la recherche ; en parallèle, le nombre de résultats de chaque pays.
-      final results = await Future.wait([
-        ImportService.getCatalog(_selected, query: _query),
-        if (_query.isNotEmpty) ImportService.searchCounts(_query),
+      final catalogs = await Future.wait([
+        for (final country in targets)
+          ImportService.getCatalog(country.code, query: _query),
       ]);
-      final catalog = results[0] as WholesaleCatalog?;
-      products = catalog?.products ?? [];
-      shipping = catalog?.shippingOptions ?? [];
-      if (results.length > 1) counts = results[1] as Map<String, int>;
+
+      // Une liste par pays, puis tour de table jusqu'à épuisement.
+      final perCountry = <List<_CatalogEntry>>[];
+      for (var i = 0; i < targets.length; i++) {
+        final catalog = catalogs[i];
+        if (catalog == null) continue;
+        final country = targets[i];
+        perCountry.add([
+          for (final product in catalog.products)
+            _CatalogEntry(
+              product: product,
+              country: country,
+              shipping: catalog.shippingOptions,
+            ),
+        ]);
+      }
+
+      final longest = perCountry.fold<int>(
+        0,
+        (max, list) => list.length > max ? list.length : max,
+      );
+      for (var row = 0; row < longest; row++) {
+        for (final list in perCountry) {
+          if (row < list.length) entries.add(list[row]);
+        }
+      }
+
+      if (_query.isNotEmpty) {
+        counts = await ImportService.searchCounts(_query);
+      }
     } catch (_) {}
+
     if (!mounted || request != _loadRequest) return;
     setState(() {
-      _products = products;
-      _shipping = shipping;
+      _entries = entries;
       _counts = counts;
       _loading = false;
     });
   }
 
-  _ImportCountry get _current =>
-      _countries.firstWhere((c) => c.code == _selected, orElse: () => _countries.first);
-
   @override
   Widget build(BuildContext context) {
-    final country = _current;
     return Container(
       color: context.ds.canvas,
       child: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: AppDesign.accent,
-          onRefresh: _load,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildHeader(country)),
-              SliverToBoxAdapter(child: _buildSearchField(country)),
-              SliverToBoxAdapter(child: _buildCountrySelector()),
-              SliverToBoxAdapter(child: _buildSectionLabel(country)),
-              if (_loading)
-                _buildSkeletonGrid()
-              else if (_products.isEmpty)
-                SliverFillRemaining(hasScrollBody: false, child: _buildEmpty(country))
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  sliver: SliverGrid(
-                    gridDelegate: ProductCard.gridDelegate(context),
-                    delegate: SliverChildBuilderDelegate(
-                      (_, i) => _buildProductCard(_products[i], country),
-                      childCount: _products.length,
-                    ),
-                  ),
+        child: Column(
+          children: [
+            _buildChrome(),
+            Expanded(
+              child: RefreshIndicator(
+                color: AppDesign.accent,
+                onRefresh: _load,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    if (_loading)
+                      _buildSkeletonGrid()
+                    else if (_entries.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmpty(),
+                      )
+                    else
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppDesign.space3,
+                          AppDesign.space3,
+                          AppDesign.space3,
+                          AppDesign.space6,
+                        ),
+                        sliver: SliverMasonryGrid(
+                          itemCount: _entries.length,
+                          crossAxisSpacing: AppDesign.space2,
+                          mainAxisSpacing: AppDesign.space2,
+                          itemBuilder: (_, i) => _buildTile(_entries[i]),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ─────────────────────────── Hero header ───────────────────────────
-  Widget _buildHeader(_ImportCountry c) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.ds.surface,
-        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
-        border: Border.all(color: context.ds.border),
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Motif décoratif discret
+  // ─────────────────────────── Chrome repliable ───────────────────────────
 
-          Row(
-            children: [
-              Container(
-                width: 62,
-                height: 62,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.ds.surfaceMuted,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(c.flag, style: const TextStyle(fontSize: 32)),
+  /// Recherche et filtres pays, repliés dès qu'on descend dans la grille.
+  Widget _buildChrome() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: _chromeVisible
+          ? Container(
+              color: context.ds.canvas,
+              padding: EdgeInsets.fromLTRB(
+                AppDesign.space3,
+                AppDesign.space2,
+                AppDesign.space3,
+                AppDesign.space2,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.flight_takeoff_rounded,
-                            color: context.ds.textTertiary, size: 14),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text('PRODUITS IMPORTÉS',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context
-                                  .textStyle(FontSizeType.overline,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.ds.textTertiary)
-                                  .copyWith(letterSpacing: 1.1)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Made in ${c.name}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textStyle(FontSizeType.h5,
-                            fontWeight: FontWeight.w700,
-                            color: context.ds.textPrimary)),
-                    const SizedBox(height: 8),
-                    _headerCountChip(),
-                  ],
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSearchField(),
+                  SizedBox(height: AppDesign.space2),
+                  _buildCountryFilters(),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
+            )
+          : const SizedBox(width: double.infinity),
     );
   }
 
-  Widget _headerCountChip() {
-    final label = _loading
-        ? 'Chargement…'
-        : '${_products.length} produit${_products.length > 1 ? 's' : ''} disponible${_products.length > 1 ? 's' : ''}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: context.ds.surfaceMuted,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inventory_2_outlined,
-              color: context.ds.textSecondary, size: 13),
-          const SizedBox(width: 6),
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textStyle(FontSizeType.overline,
-                  fontWeight: FontWeight.w600,
-                  color: context.ds.textSecondary)),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────── Recherche ───────────────────────────
-  Widget _buildSearchField(_ImportCountry c) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+  Widget _buildSearchField() {
+    return SizedBox(
+      height: 42,
       child: TextField(
         controller: _searchController,
         onChanged: _onSearchChanged,
@@ -287,353 +330,467 @@ class _ImportViewState extends State<ImportView> {
           _load();
         },
         textInputAction: TextInputAction.search,
+        style: context.textStyle(
+          FontSizeType.body2,
+          color: context.ds.textPrimary,
+        ),
         decoration: InputDecoration(
-          hintText: 'Rechercher en Chine, Turquie, Dubaï…',
-          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8A97A3)),
-          suffixIcon: _searchController.text.isEmpty
+          hintText: 'Rechercher dans le catalogue',
+          hintStyle: context.textStyle(
+            FontSizeType.body2,
+            color: context.ds.textTertiary,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: context.ds.textTertiary,
+          ),
+          suffixIcon: _query.isEmpty
               ? null
-              : IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: _clearSearch),
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  color: context.ds.textTertiary,
+                  onPressed: _clearSearch,
+                ),
           filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          fillColor: context.ds.surface,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          // Pilule pleine : la barre se lit comme un champ de recherche et non
+          // comme un formulaire à remplir.
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE6E9EE)),
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: BorderSide(color: context.ds.border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE6E9EE)),
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: BorderSide(color: context.ds.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppDesign.accent, width: 1.5),
+            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+            borderSide: const BorderSide(color: AppDesign.accent, width: 1.4),
           ),
         ),
       ),
     );
   }
 
-  // ─────────────────────────── Sélecteur de pays ───────────────────────────
-  Widget _buildCountrySelector() {
+  /// Pastilles de filtrage : « Tous » d'abord, puis chaque pays.
+  /// Filtres pays occupant toute la largeur, comme un segmenté.
+  ///
+  /// Les origines sont peu nombreuses et ne changent pas : les étaler plutôt
+  /// que les faire défiler montre d'emblée tout le choix, et chaque cible
+  /// devient plus large donc plus facile à viser.
+  Widget _buildCountryFilters() {
     return SizedBox(
-      height: 50,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-        itemCount: _countries.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
-          final c = _countries[i];
-          final selected = c.code == _selected;
-          return GestureDetector(
-            onTap: () => _selectCountry(c.code),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: selected ? AppDesign.accentSubtle : context.ds.surface,
-                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-                border: Border.all(
-                  color: selected ? AppDesign.accentBorder : context.ds.border,
+      height: 34,
+      child: Row(
+        children: [
+          Expanded(
+            child: _filterChip(
+              label: 'Tous',
+              selected: _selected == _allCountries,
+              onTap: () => _selectCountry(_allCountries),
+            ),
+          ),
+          for (final c in _countries) ...[
+            SizedBox(width: AppDesign.space2),
+            Expanded(
+              child: _filterChip(
+                label: shortImportCountryName(c.name),
+                flag: c.flag,
+                // En recherche, le nombre de résultats par pays aide à choisir.
+                count: _query.isEmpty ? null : (_counts[c.code] ?? 0),
+                selected: c.code == _selected,
+                onTap: () => _selectCountry(c.code),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    String? flag,
+    int? count,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? AppDesign.accentSubtle : context.ds.surface,
+          borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+          border: Border.all(
+            color: selected ? AppDesign.accentBorder : context.ds.border,
+          ),
+        ),
+        // La pastille occupe une part fixe de la rangée : le libellé doit
+        // pouvoir se rétracter plutôt que déborder sur un téléphone étroit.
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (flag != null) ...[
+              Text(flag, style: const TextStyle(fontSize: 13)),
+              const SizedBox(width: 5),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? AppDesign.accentText
+                      : context.ds.textSecondary,
                 ),
               ),
-              child: Row(
-                children: [
-                  Text(c.flag, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 8),
-                  Text(c.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textStyle(
-                        FontSizeType.caption,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
-                        color: selected
-                            ? AppDesign.accentText
-                            : context.ds.textSecondary,
-                      )),
-                  // Recherche en cours : nombre de résultats dans ce pays.
-                  if (_query.isNotEmpty) ...[
-                    SizedBox(width: AppDesign.space2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppDesign.accentText.withValues(alpha: 0.18)
-                            : context.ds.textTertiary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text('${_counts[c.code] ?? 0}',
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            fontWeight: FontWeight.w600,
-                            color: selected
-                                ? AppDesign.accentText
-                                : context.ds.textSecondary,
-                          )),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 5),
+              Text(
+                '$count',
+                style: context.textStyle(
+                  FontSizeType.overline,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? AppDesign.accentText
+                      : context.ds.textTertiary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────── Tuile ───────────────────────────
+
+  /// Tuile du mur : l'image d'abord, le texte réduit à l'essentiel.
+  ///
+  /// La hauteur suit les proportions réelles de la photo — c'est ce décalage
+  /// entre colonnes qui donne son rythme à la page, là où une grille carrée
+  /// uniformise tout.
+  Widget _buildTile(_CatalogEntry entry) {
+    final p = entry.product;
+    final tier = p.entryTier;
+
+    void open() => WholesaleOrderSheet.show(
+      product: p,
+      shippingOptions: entry.shipping,
+      countryFlag: entry.country.flag,
+    );
+
+    // Format propre à l'article, stable d'une ouverture à l'autre.
+    final aspectRatio = masonryAspectRatioFor(p.id);
+
+    return Material(
+      color: context.ds.surface,
+      borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: open,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: aspectRatio,
+                  child: SizedBox(
+                    width: double.infinity,
+                    // `cover` : la photo remplit le format imposé, quitte à
+                    // être rognée — mieux vaut cela que des bandes vides.
+                    child: _buildProductImage(p.image, fit: BoxFit.cover),
+                  ),
+                ),
+                // Drapeau d'origine : dans un mur qui mêle les pays, c'est
+                // l'information qui situe l'article d'un coup d'œil.
+                Positioned(
+                  left: AppDesign.space2,
+                  top: AppDesign.space2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: AppDesign.neutral900.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    ),
+                    child: Text(
+                      entry.country.flag,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppDesign.space2,
+                AppDesign.space2,
+                AppDesign.space2,
+                AppDesign.space3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    p.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textPrimary,
+                      height: 1.3,
+                    ),
+                  ),
+                  SizedBox(height: AppDesign.space1),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          tier == null
+                              ? '—'
+                              : CurrencyService.formatAmountInCurrency(
+                                  tier.unitPrice,
+                                  tier.currency,
+                                ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            fontWeight: FontWeight.w700,
+                            color: context.ds.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (tier != null)
+                        Text(
+                          '×${tier.minQuantity}',
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            fontWeight: FontWeight.w600,
+                            color: context.ds.textTertiary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionLabel(_ImportCountry c) {
-    if (_loading || _products.isEmpty) return const SizedBox(height: 4);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
-      child: Row(
-        children: [
-          Text(_query.isEmpty ? 'Sélection ${c.name}' : 'Résultats en ${c.name}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppDesign.neutral900)),
-          const Spacer(),
-          Text('${_products.length} article${_products.length > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 12.5, color: AppDesign.neutral500, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
+  // ─────────────────────────── Chargement ───────────────────────────
 
-  // ─────────────────────────── Skeleton de chargement ───────────────────────────
   Widget _buildSkeletonGrid() {
+    // Les mêmes formats que la grille réelle, pris sur des identifiants
+    // fictifs : le squelette annonce exactement le décalage qui va le
+    // remplacer, sinon la page « saute » au chargement.
+    final ratios = [for (var i = 0; i < 8; i++) masonryAspectRatioFor(i)];
+
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.66,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (_, __) => _skeletonCard(),
-          childCount: 6,
-        ),
+      padding: EdgeInsets.fromLTRB(
+        AppDesign.space3,
+        AppDesign.space3,
+        AppDesign.space3,
+        AppDesign.space6,
+      ),
+      sliver: SliverMasonryGrid(
+        itemCount: ratios.length,
+        crossAxisSpacing: AppDesign.space2,
+        mainAxisSpacing: AppDesign.space2,
+        itemBuilder: (_, i) => _skeletonTile(ratios[i]),
       ),
     );
   }
 
-  Widget _skeletonCard() {
+  Widget _skeletonTile(double imageAspectRatio) {
+    Widget bar(double width, double height) => Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: context.ds.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppDesign.space1),
+      ),
+    );
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppDesign.neutral200),
+        color: context.ds.surface,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        // Le squelette vit dans une colonne de hauteur libre : sa taille vient
+        // de son contenu, il ne peut pas s'étirer dans une case imposée.
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: AppDesign.neutral100,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-            ),
+          AspectRatio(
+            aspectRatio: imageAspectRatio,
+            child: ColoredBox(color: context.ds.surfaceMuted),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(AppDesign.space2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(height: 12, width: double.infinity, color: AppDesign.neutral100),
-                const SizedBox(height: 8),
-                Container(height: 12, width: 90, color: AppDesign.neutral100),
-                const SizedBox(height: 12),
-                Container(height: 14, width: 70, color: AppDesign.neutral100),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────── État vide ───────────────────────────
-  Widget _buildEmpty(_ImportCountry c) {
-    if (_query.isNotEmpty) return _buildNoResult(c);
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Le drapeau tient lieu d'illustration, sur une pastille neutre :
-          // la teinte du pays ne colore plus tout l'écran.
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: context.ds.surfaceMuted,
-              shape: BoxShape.circle,
-            ),
-            child: Text(c.flag, style: const TextStyle(fontSize: 34)),
-          ),
-          SizedBox(height: AppDesign.space4),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
-            child: Column(
-              children: [
-                Text(
-                  'Aucun produit ${c.name} pour le moment',
-                  textAlign: TextAlign.center,
-                  style: context.textStyle(
-                    FontSizeType.subtitle1,
-                    fontWeight: FontWeight.w600,
-                    color: context.ds.textPrimary,
-                  ),
-                ),
+                bar(double.infinity, 10),
                 SizedBox(height: AppDesign.space2),
-                Text(
-                  'De nouveaux articles importés de ${c.name} arrivent régulièrement.',
-                  textAlign: TextAlign.center,
-                  style: context.textStyle(
-                    FontSizeType.body2,
-                    color: context.ds.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
+                bar(70, 10),
+                SizedBox(height: AppDesign.space2),
+                bar(50, 12),
               ],
             ),
-          ),
-          SizedBox(height: AppDesign.space5),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppButton(
-                label: 'Actualiser',
-                icon: Icons.refresh_rounded,
-                variant: AppButtonVariant.secondary,
-                expand: false,
-                onPressed: _load,
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  /// Aucun résultat dans ce pays : proposer les pays qui en ont.
-  Widget _buildNoResult(_ImportCountry c) {
-    final others = _countries.where((o) => o.code != c.code && (_counts[o.code] ?? 0) > 0).toList();
+  // ─────────────────────────── États vides ───────────────────────────
+
+  Widget _buildEmpty() {
+    if (_query.isNotEmpty) return _buildNoResult();
+
+    final scope = _selected == _allCountries
+        ? 'le catalogue'
+        : _countries
+              .firstWhere(
+                (c) => c.code == _selected,
+                orElse: () => _countries.first,
+              )
+              .name;
+
+    return AppEmptyState(
+      icon: Icons.inventory_2_outlined,
+      title: 'Catalogue vide',
+      message:
+          'Aucun article dans $scope pour le moment. De nouveaux produits importés arrivent régulièrement.',
+      actionLabel: 'Actualiser',
+      onAction: _load,
+    );
+  }
+
+  /// Aucun résultat : proposer les pays qui en ont.
+  Widget _buildNoResult() {
+    final others = _countries
+        .where((o) => o.code != _selected && (_counts[o.code] ?? 0) > 0)
+        .toList();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.ds.gutter,
+        vertical: AppDesign.space6,
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 56, color: AppDesign.neutral400),
-          const SizedBox(height: 14),
-          Text('Aucun résultat pour « $_query » en ${c.name}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppDesign.neutral900)),
-          const SizedBox(height: 6),
+          Icon(
+            Icons.search_off_rounded,
+            size: 48,
+            color: context.ds.textTertiary,
+          ),
+          SizedBox(height: AppDesign.space3),
           Text(
-            others.isEmpty ? 'Essayez un autre mot, ou un nom plus court.' : 'Disponible ailleurs :',
+            'Aucun résultat pour « $_query »',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13.5, color: AppDesign.neutral500, height: 1.4),
+            style: context.textStyle(
+              FontSizeType.subtitle1,
+              fontWeight: FontWeight.w700,
+              color: context.ds.textPrimary,
+            ),
+          ),
+          SizedBox(height: AppDesign.space2),
+          Text(
+            others.isEmpty
+                ? 'Essayez un autre mot, ou un nom plus court.'
+                : 'Disponible ailleurs :',
+            textAlign: TextAlign.center,
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textSecondary,
+              height: 1.4,
+            ),
           ),
           if (others.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: AppDesign.space3),
             Wrap(
               alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppDesign.space2,
+              runSpacing: AppDesign.space2,
               children: [
                 for (final o in others)
-                  ActionChip(
-                    avatar: Text(o.flag),
-                    label: Text('${o.name} · ${_counts[o.code]}'),
-                    onPressed: () => _selectCountry(o.code),
+                  // Hors de la rangée, la pastille n'hérite d'aucune hauteur :
+                  // on la lui donne pour qu'elle garde la même allure.
+                  SizedBox(
+                    height: 34,
+                    child: _filterChip(
+                      label:
+                          '${shortImportCountryName(o.name)} · ${_counts[o.code]}',
+                      flag: o.flag,
+                      selected: false,
+                      onTap: () => _selectCountry(o.code),
+                    ),
                   ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          TextButton(onPressed: _clearSearch, child: const Text('Effacer la recherche')),
         ],
       ),
     );
   }
 
-  // ─────────────────────────── Carte produit ───────────────────────────
-  Widget _buildProductCard(WholesaleProduct p, _ImportCountry c) {
-    final entry = p.entryTier;
-    final image = p.image;
+  // ─────────────────────────── Images ───────────────────────────
 
-    // Même carte que sur l'accueil et la recherche : un produit doit avoir
-    // partout la même apparence. Les deux spécificités du gros — quantité
-    // minimale et ajout direct au panier — s'y greffent.
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ProductCard(
-          name: p.name,
-          price: entry == null
-              ? '—'
-              : 'Dès ${CurrencyService.formatAmountInCurrency(entry.unitPrice, entry.currency)}',
-          location: entry == null ? null : 'Minimum ${entry.minQuantity} pièces',
-          badgeLabel: 'GROS',
-          badgeTone: AppBadgeTone.accent,
-          imageBuilder: image == null || image.isEmpty
-              ? null
-              : (context) => _buildProductImage(image),
-          onTap: () => WholesaleOrderSheet.show(
-            product: p,
-            shippingOptions: _shipping,
-            countryFlag: c.flag,
-          ),
-        ),
-        // Ajout direct, posé sur l'angle du visuel.
-        Positioned(
-          right: AppDesign.space1,
-          top: AppDesign.space1,
-          child: Material(
-            color: AppDesign.accent,
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            elevation: 1,
-            child: InkWell(
-              onTap: () => WholesaleOrderSheet.show(
-                product: p,
-                shippingOptions: _shipping,
-                countryFlag: c.flag,
-              ),
-              child: const SizedBox(
-                width: 32,
-                height: 32,
-                child: Icon(Icons.add_rounded, color: Colors.white, size: 19),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-  Widget _imgPlaceholder() => Container(
-        color: AppDesign.neutral100,
-        child: Icon(Icons.image_outlined, color: Colors.grey.shade400, size: 40),
-      );
+  Widget _imgPlaceholder() => ColoredBox(
+    color: context.ds.surfaceMuted,
+    child: Center(
+      child: Icon(
+        Icons.image_outlined,
+        color: context.ds.textTertiary,
+        size: 32,
+      ),
+    ),
+  );
 
-  Widget _buildProductImage(String? path) {
+  Widget _buildProductImage(String? path, {BoxFit fit = BoxFit.contain}) {
     if (path == null || path.trim().isEmpty) return _imgPlaceholder();
     final value = path.trim();
     if (value.startsWith('assets/')) {
-      return Image.asset(value, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _imgPlaceholder());
+      return Image.asset(
+        value,
+        fit: fit,
+        errorBuilder: (_, _, _) => _imgPlaceholder(),
+      );
     }
 
     return Image.network(
       _imageUrlForDevice(value),
-      fit: BoxFit.contain,
+      fit: fit,
       loadingBuilder: (_, child, progress) =>
-          progress == null ? child : Container(color: AppDesign.neutral100),
-      errorBuilder: (_, __, ___) => _imgPlaceholder(),
+          progress == null ? child : ColoredBox(color: context.ds.surfaceMuted),
+      errorBuilder: (_, _, _) => _imgPlaceholder(),
     );
   }
 
@@ -641,7 +798,10 @@ class _ImportViewState extends State<ImportView> {
     final apiUri = Uri.parse(AppConstants.baseUrl);
     final imageUri = Uri.tryParse(value);
     if (imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty) {
-      final normalizedPath = imageUri.path.replaceFirst('/storage/storage/', '/storage/');
+      final normalizedPath = imageUri.path.replaceFirst(
+        '/storage/storage/',
+        '/storage/',
+      );
       if (imageUri.host == 'localhost' || imageUri.host == '127.0.0.1') {
         return imageUri
             .replace(host: apiUri.host, port: apiUri.port, path: normalizedPath)
@@ -650,8 +810,10 @@ class _ImportViewState extends State<ImportView> {
       return imageUri.replace(path: normalizedPath).toString();
     }
 
-    final path = (value.startsWith('/') ? value : '/$value')
-        .replaceFirst('/storage/storage/', '/storage/');
+    final path = (value.startsWith('/') ? value : '/$value').replaceFirst(
+      '/storage/storage/',
+      '/storage/',
+    );
     return Uri(
       scheme: apiUri.scheme,
       host: apiUri.host,

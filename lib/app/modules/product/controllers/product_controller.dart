@@ -85,6 +85,16 @@ class ProductController extends GetxController {
     final id = product['id']?.toString();
     if (id == null || id.isEmpty || !_trackedProductIds.add(id)) return;
     StatisticsService.trackProductView(id);
+
+    // Asso Ads : la fiche a été ouverte depuis une carte sponsorisée. On le
+    // signale au serveur pour mesurer l'efficacité de la campagne ; le quota
+    // acheté n'est pas entamé, seul l'affichage de l'annonce est facturé.
+    if (product['from_ad'] == true) {
+      final numericId = int.tryParse(id);
+      if (numericId != null) {
+        ProductService.getProduct(numericId, fromAd: true);
+      }
+    }
     // Même point d'entrée, dédoublonné : la fiche est reconstruite à chaque
     // changement d'état et relancerait sinon la requête en boucle.
     loadSimilarProducts(product);

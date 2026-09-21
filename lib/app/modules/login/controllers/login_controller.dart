@@ -106,7 +106,11 @@ class LoginController extends GetxController {
         );
         try {
           final results = await FirebaseMessagingService.to
-              .registerDeviceAndSubscribe();
+              .registerDeviceAndSubscribe()
+              // Une borne de temps, et non le seul `catch` : privé de services
+              // Google Play, l'abonnement ne rend jamais la main et ne lève
+              // rien — la connexion restait alors suspendue sans fin.
+              .timeout(const Duration(seconds: 10));
           developer.log(
             'FCM registration result',
             name: 'LoginController',

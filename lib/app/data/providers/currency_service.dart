@@ -16,6 +16,10 @@ class CurrencyService extends GetxService {
 
   // Getters
   CurrencyModel? get userCurrency => _userCurrency.value;
+
+  /// Devise observable : permet à un écran de se redessiner quand le vendeur
+  /// change de devise d'affichage, sans rappeler l'API.
+  Rx<CurrencyModel?> get userCurrencyRx => _userCurrency;
   double get exchangeRateToXOF => _exchangeRateToXOF.value;
   bool get isLoading => _isLoading.value;
   String get detectedCountry => _detectedCountry.value;

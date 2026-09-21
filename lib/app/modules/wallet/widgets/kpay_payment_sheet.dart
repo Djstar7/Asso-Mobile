@@ -53,18 +53,37 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
     super.dispose();
   }
 
-  void _keepPaymentButtonVisible() {
+  /// Amène le bouton de paiement dans le champ visible une fois la saisie
+  /// valide, sans secouer la feuille.
+  ///
+  /// L'ancienne version se déclenchait à chaque frappe et forçait le bouton en
+  /// bas du viewport (`alignment: 1`) : le contenu remontait brutalement à
+  /// chaque caractère et l'en-tête (titre, montant, pays) sortait de l'écran.
+  /// On ne défile donc plus que lorsque le numéro devient valide, et seulement
+  /// si le bouton est réellement hors champ.
+  void _revealPaymentButton() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final buttonContext = _payButtonKey.currentContext;
-      if (!mounted ||
-          buttonContext == null ||
-          MediaQuery.viewInsetsOf(context).bottom == 0)
-        return;
-      Scrollable.ensureVisible(
-        buttonContext,
+      if (buttonContext == null) return;
+
+      final box = buttonContext.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return;
+
+      // Bas du bouton dans le repère de l'écran, comparé à la zone libre
+      // au-dessus du clavier.
+      final bottomOfButton =
+          box.localToGlobal(Offset(0, box.size.height)).dy;
+      final visibleBottom = MediaQuery.sizeOf(context).height -
+          MediaQuery.viewInsetsOf(context).bottom;
+
+      if (bottomOfButton <= visibleBottom) return;
+
+      _scrollController.animateTo(
+        (_scrollController.offset + (bottomOfButton - visibleBottom) + 16)
+            .clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        alignment: 1,
       );
     });
   }
@@ -73,12 +92,13 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
   /// Purement pour l'affichage : la conversion débitée est refaite côté serveur.
   Future<void> _convertFor(String currency) async {
     if (currency == 'XAF' || currency.isEmpty) {
-      if (mounted)
+      if (mounted) {
         setState(() {
-          _currency = 'XAF';
-          _converted = null;
-          _converting = false;
+            _currency = 'XAF';
+            _converted = null;
+            _converting = false;
         });
+      }
       return;
     }
     setState(() {
@@ -100,11 +120,12 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
         });
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
-          _converted = null;
-          _converting = false;
+            _converted = null;
+            _converting = false;
         });
+      }
     }
   }
 
@@ -136,7 +157,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
               ),
             ),
             const Text(
-              'Paiement KPay',
+              'Paiement Mobile Money',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -229,12 +250,13 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                     required String currency,
                     required bool isValid,
                   }) {
+                    final becameValid = isValid && !_valid;
                     setState(() {
                       _provider = providerCode;
                       _phone = phoneNumber;
                       _valid = isValid;
                     });
-                    _keepPaymentButtonVisible();
+                    if (becameValid) _revealPaymentButton();
                     // Convertir l'affichage dès que la devise de l'opérateur change
                     if (currency != _currency) {
                       _convertFor(currency);

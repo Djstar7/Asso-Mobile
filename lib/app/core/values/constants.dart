@@ -13,7 +13,7 @@ class AppConstants {
   // devoir modifier le code à chaque changement d'IP réseau.
   //
   //  • Web (Chrome) / desktop        -> http://localhost:8000/api
-  //  • Émulateur Android             -> http://10.0.2.2:8000/api (alias hôte)
+  //  • Émulateur Android             -> http://192.168.1.155:8000/api (alias hôte)
   //  • iOS simulateur                -> http://localhost:8000/api
   //
   // TÉLÉPHONE PHYSIQUE ou serveur distant : surcharger sans toucher au code :
@@ -28,7 +28,7 @@ class AppConstants {
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   /// Port du serveur backend en local.
-  static const String _localPort = '8000';
+  static const String _localPort = '8001';
 
   static String get baseUrl {
     // 1) Surcharge explicite au build (téléphone physique / prod)
@@ -37,9 +37,9 @@ class AppConstants {
     // 2) Web (Chrome) & desktop : le serveur tourne sur la même machine
     if (kIsWeb) return 'http://localhost:$_localPort/api';
 
-    // 3) Émulateur Android : 10.0.2.2 redirige vers le localhost de l'hôte
+    // 3) Émulateur Android : 192.168.1.155 redirige vers le localhost de l'hôte
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:$_localPort/api';
+      return 'http://192.168.1.155:$_localPort/api';
     }
 
     // 4) iOS simulateur & autres : localhost

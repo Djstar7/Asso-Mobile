@@ -8,6 +8,7 @@ import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
 
 class DiaspoListController extends GetxController {
@@ -82,8 +83,9 @@ class DiaspoListController extends GetxController {
             response['data']['verification_status'] ?? 'unverified';
         canCreateOffers.value = response['data']['can_create_offers'] ?? false;
         final deadline = response['data']['next_deadline'];
-        nextVerificationDeadline.value =
-            deadline != null ? DateTime.tryParse(deadline)?.toLocal() : null;
+        nextVerificationDeadline.value = deadline != null
+            ? DateTime.tryParse(deadline)?.toLocal()
+            : null;
       }
     } catch (e) {
       print('Error loading verification status: $e');
@@ -244,14 +246,8 @@ class DiaspoListController extends GetxController {
         confirmationCode: code,
       );
       Get.back();
-      Get.snackbar(
-        'Réception confirmée',
-        'Merci ! Le voyageur a été crédité.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.successColor,
-        colorText: Colors.white,
-      );
       await loadMyBookingsAsBuyer();
+      _showReceiptConfirmedDialog();
     } catch (e) {
       Get.snackbar(
         'Erreur',
@@ -263,6 +259,52 @@ class DiaspoListController extends GetxController {
     } finally {
       isValidatingCode.value = false;
     }
+  }
+
+  /// Confirmation de réception : on annonce le déblocage des fonds et on
+  /// propose d'aller voir le portefeuille, plutôt qu'un simple message fugace.
+  void _showReceiptConfirmedDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.successColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                color: AppThemeSystem.successColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Réception confirmée')),
+          ],
+        ),
+        content: const Text(
+          'Merci ! Les fonds ont été débloqués et versés au voyageur. '
+          'Vous retrouvez le détail de l\'opération dans votre portefeuille.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Fermer')),
+          ElevatedButton.icon(
+            onPressed: () {
+              Get.back();
+              Get.toNamed(Routes.WALLET);
+            },
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            label: const Text('Voir mon portefeuille'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Change tab and load data
@@ -309,7 +351,6 @@ class DiaspoListController extends GetxController {
     if (!hasMore || isLoadingMore.value) return;
     loadOffers();
   }
-
 
   /// Check if an offer belongs to the current user
   bool isMyOffer(DiaspoOffer offer) {
