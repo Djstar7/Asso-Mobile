@@ -9,6 +9,7 @@ import '../../../data/models/currency_model.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/values/country_catalog.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 class SettingsController extends GetxController {
   // États
@@ -108,198 +109,202 @@ class SettingsController extends GetxController {
                 maxWidth: context.isTabletOrLarger ? 500 : double.infinity,
               ),
               padding: EdgeInsets.all(context.horizontalPadding),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Icône et titre
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(context.elementSpacing),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                          borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        ),
-                        child: Icon(
-                          Icons.phone_outlined,
-                          color: AppThemeSystem.primaryColor,
-                          size: context.deviceType == DeviceType.mobile ? 24 : 28,
-                        ),
-                      ),
-                      SizedBox(width: context.elementSpacing),
-                      Expanded(
-                        child: Text(
-                          'Changer le numéro de téléphone',
-                          style: context.textStyle(
-                            FontSizeType.h5,
-                            fontWeight: FontWeight.bold,
+              // Clavier ouvert, la boîte ne tient plus sur un petit écran : elle
+              // défile plutôt que de déborder sur ses boutons.
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icône et titre
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(context.elementSpacing),
+                          decoration: BoxDecoration(
+                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                            borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          ),
+                          child: Icon(
+                            Icons.phone_outlined,
+                            color: AppThemeSystem.primaryColor,
+                            size: context.deviceType == DeviceType.mobile ? 24 : 28,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: context.sectionSpacing),
-
-                  // Numéro actuel
-                  Container(
-                    padding: EdgeInsets.all(context.elementSpacing),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.grey100,
-                      borderRadius: context.borderRadius(BorderRadiusType.medium),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: AppThemeSystem.grey600,
-                        ),
-                        SizedBox(width: context.elementSpacing * 0.5),
+                        SizedBox(width: context.elementSpacing),
                         Expanded(
                           child: Text(
-                            'Votre numéro actuel: ${userPhone.value}',
+                            'Changer le numéro de téléphone',
                             style: context.textStyle(
-                              FontSizeType.caption,
-                              color: AppThemeSystem.grey600,
+                              FontSizeType.h5,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
 
-                  SizedBox(height: context.elementSpacing * 1.5),
+                    SizedBox(height: context.sectionSpacing),
 
-                  // Champ de saisie
-                  Text(
-                    'Nouveau numéro de téléphone',
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: FontWeight.w600,
+                    // Numéro actuel
+                    Container(
+                      padding: EdgeInsets.all(context.elementSpacing),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.grey100,
+                        borderRadius: context.borderRadius(BorderRadiusType.medium),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: AppThemeSystem.grey600,
+                          ),
+                          SizedBox(width: context.elementSpacing * 0.5),
+                          Expanded(
+                            child: Text(
+                              'Votre numéro actuel: ${userPhone.value}',
+                              style: context.textStyle(
+                                FontSizeType.caption,
+                                color: AppThemeSystem.grey600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: context.elementSpacing * 0.5),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: context.textStyle(FontSizeType.body1),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: context.inputFieldColor,
-                      border: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: const BorderSide(
-                          color: AppThemeSystem.primaryColor,
-                          width: 2,
-                        ),
-                      ),
-                      prefixText: '$countryCode ',
-                      prefixStyle: context.textStyle(
-                        FontSizeType.body1,
+
+                    SizedBox(height: context.elementSpacing * 1.5),
+
+                    // Champ de saisie
+                    Text(
+                      'Nouveau numéro de téléphone',
+                      style: context.textStyle(
+                        FontSizeType.body2,
                         fontWeight: FontWeight.w600,
                       ),
-                      hintText: 'Ex: 658895572',
-                      hintStyle: context.textStyle(
-                        FontSizeType.body1,
-                        color: AppThemeSystem.grey400,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: context.horizontalPadding,
-                        vertical: context.elementSpacing,
+                    ),
+                    SizedBox(height: context.elementSpacing * 0.5),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: context.textStyle(FontSizeType.body1),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: context.inputFieldColor,
+                        border: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: const BorderSide(
+                            color: AppThemeSystem.primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        prefixText: '$countryCode ',
+                        prefixStyle: context.textStyle(
+                          FontSizeType.body1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        hintText: 'Ex: 658895572',
+                        hintStyle: context.textStyle(
+                          FontSizeType.body1,
+                          color: AppThemeSystem.grey400,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: context.horizontalPadding,
+                          vertical: context.elementSpacing,
+                        ),
                       ),
                     ),
-                  ),
 
-                  SizedBox(height: context.elementSpacing),
+                    SizedBox(height: context.elementSpacing),
 
-                  // Info OTP
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.security_rounded,
-                        size: 14,
-                        color: AppThemeSystem.infoColor,
-                      ),
-                      SizedBox(width: context.elementSpacing * 0.5),
-                      Expanded(
-                        child: Text(
-                          'Un code OTP sera envoyé à ce numéro',
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            color: AppThemeSystem.infoColor,
-                            fontWeight: FontWeight.w500,
-                          ),
+                    // Info OTP
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.security_rounded,
+                          size: 14,
+                          color: AppThemeSystem.infoColor,
                         ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: context.sectionSpacing),
-
-                  // Boutons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: context.buttonHeight,
-                          child: OutlinedButton(
-                            onPressed: () => Get.back(result: false),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: context.borderColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                              ),
-                            ),
-                            child: Text(
-                              'Annuler',
-                              style: context.textStyle(
-                                FontSizeType.button,
-                                fontWeight: FontWeight.w600,
-                                color: context.primaryTextColor,
-                              ),
+                        SizedBox(width: context.elementSpacing * 0.5),
+                        Expanded(
+                          child: Text(
+                            'Un code OTP sera envoyé à ce numéro',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.infoColor,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: context.elementSpacing),
-                      Expanded(
-                        child: SizedBox(
-                          height: context.buttonHeight,
-                          child: ElevatedButton(
-                            onPressed: () => Get.back(result: true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppThemeSystem.primaryColor,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              shadowColor: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                      ],
+                    ),
+
+                    SizedBox(height: context.sectionSpacing),
+
+                    // Boutons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: context.buttonHeight,
+                            child: OutlinedButton(
+                              onPressed: () => Get.back(result: false),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: context.borderColor),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              'Continuer',
-                              style: context.textStyle(
-                                FontSizeType.button,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              child: Text(
+                                'Annuler',
+                                style: context.textStyle(
+                                  FontSizeType.button,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        SizedBox(width: context.elementSpacing),
+                        Expanded(
+                          child: SizedBox(
+                            height: context.buttonHeight,
+                            child: ElevatedButton(
+                              onPressed: () => Get.back(result: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppThemeSystem.primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shadowColor: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                                ),
+                              ),
+                              child: Text(
+                                'Continuer',
+                                style: context.textStyle(
+                                  FontSizeType.button,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -728,187 +733,190 @@ class SettingsController extends GetxController {
                 maxWidth: context.isTabletOrLarger ? 450 : double.infinity,
               ),
               padding: EdgeInsets.all(context.horizontalPadding),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Icône et titre
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(context.elementSpacing),
+              // Même raison : le clavier réduit la place sous le champ.
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icône et titre
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(context.elementSpacing),
+                          decoration: BoxDecoration(
+                            color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
+                            borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          ),
+                          child: Icon(
+                            Icons.lock_rounded,
+                            color: AppThemeSystem.errorColor,
+                            size: context.deviceType == DeviceType.mobile ? 24 : 28,
+                          ),
+                        ),
+                        SizedBox(width: context.elementSpacing),
+                        Expanded(
+                          child: Text(
+                            'Confirmation finale',
+                            style: context.textStyle(
+                              FontSizeType.h5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: context.sectionSpacing),
+
+                    // Instructions
+                    Text(
+                      'Pour confirmer la suppression de votre compte, tapez exactement le mot ci-dessous :',
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        height: 1.5,
+                      ),
+                    ),
+
+                    SizedBox(height: context.elementSpacing),
+
+                    // Mot à taper en évidence
+                    Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.horizontalPadding,
+                          vertical: context.elementSpacing * 0.75,
+                        ),
                         decoration: BoxDecoration(
                           color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
                           borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          border: Border.all(
+                            color: AppThemeSystem.errorColor.withValues(alpha: 0.3),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.lock_rounded,
-                          color: AppThemeSystem.errorColor,
-                          size: context.deviceType == DeviceType.mobile ? 24 : 28,
-                        ),
-                      ),
-                      SizedBox(width: context.elementSpacing),
-                      Expanded(
                         child: Text(
-                          'Confirmation finale',
+                          'SUPPRIMER',
                           style: context.textStyle(
-                            FontSizeType.h5,
+                            FontSizeType.h6,
                             fontWeight: FontWeight.bold,
+                            color: AppThemeSystem.errorColor,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-
-                  SizedBox(height: context.sectionSpacing),
-
-                  // Instructions
-                  Text(
-                    'Pour confirmer la suppression de votre compte, tapez exactement le mot ci-dessous :',
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      height: 1.5,
                     ),
-                  ),
 
-                  SizedBox(height: context.elementSpacing),
+                    SizedBox(height: context.elementSpacing * 1.5),
 
-                  // Mot à taper en évidence
-                  Center(
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: context.horizontalPadding,
-                        vertical: context.elementSpacing * 0.75,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.errorColor.withValues(alpha: 0.1),
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        border: Border.all(
-                          color: AppThemeSystem.errorColor.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        'SUPPRIMER',
-                        style: context.textStyle(
-                          FontSizeType.h6,
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.errorColor,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: context.elementSpacing * 1.5),
-
-                  // Champ de saisie
-                  TextField(
-                    controller: textController,
-                    textCapitalization: TextCapitalization.characters,
-                    style: context.textStyle(
-                      FontSizeType.body1,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: context.inputFieldColor,
-                      border: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: BorderSide(color: context.borderColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        borderSide: const BorderSide(
-                          color: AppThemeSystem.errorColor,
-                          width: 2,
-                        ),
-                      ),
-                      hintText: 'Tapez ici...',
-                      hintStyle: context.textStyle(
+                    // Champ de saisie
+                    TextField(
+                      controller: textController,
+                      textCapitalization: TextCapitalization.characters,
+                      style: context.textStyle(
                         FontSizeType.body1,
-                        color: AppThemeSystem.grey400,
+                        fontWeight: FontWeight.bold,
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: context.horizontalPadding,
-                        vertical: context.elementSpacing,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: context.inputFieldColor,
+                        border: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: context.borderRadius(BorderRadiusType.medium),
+                          borderSide: const BorderSide(
+                            color: AppThemeSystem.errorColor,
+                            width: 2,
+                          ),
+                        ),
+                        hintText: 'Tapez ici...',
+                        hintStyle: context.textStyle(
+                          FontSizeType.body1,
+                          color: AppThemeSystem.grey400,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: context.horizontalPadding,
+                          vertical: context.elementSpacing,
+                        ),
                       ),
                     ),
-                  ),
 
-                  SizedBox(height: context.sectionSpacing),
+                    SizedBox(height: context.sectionSpacing),
 
-                  // Boutons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: context.buttonHeight,
-                          child: OutlinedButton(
-                            onPressed: () => Get.back(result: false),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: context.borderColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                    // Boutons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: context.buttonHeight,
+                            child: OutlinedButton(
+                              onPressed: () => Get.back(result: false),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: context.borderColor),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              'Annuler',
-                              style: context.textStyle(
-                                FontSizeType.button,
-                                fontWeight: FontWeight.w600,
-                                color: context.primaryTextColor,
+                              child: Text(
+                                'Annuler',
+                                style: context.textStyle(
+                                  FontSizeType.button,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: context.elementSpacing),
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: context.buttonHeight,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (textController.text.toUpperCase() == 'SUPPRIMER') {
-                                Get.back(result: true);
-                              } else {
-                                Get.snackbar(
-                                  'Erreur',
-                                  'Veuillez taper exactement "SUPPRIMER"',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: AppThemeSystem.warningColor,
-                                  colorText: Colors.white,
-                                  icon: const Icon(Icons.error_outline, color: Colors.white),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppThemeSystem.errorColor,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              shadowColor: AppThemeSystem.errorColor.withValues(alpha: 0.3),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: context.borderRadius(BorderRadiusType.medium),
+                        SizedBox(width: context.elementSpacing),
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                            height: context.buttonHeight,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (textController.text.toUpperCase() == 'SUPPRIMER') {
+                                  Get.back(result: true);
+                                } else {
+                                  Get.snackbar(
+                                    'Erreur',
+                                    'Veuillez taper exactement "SUPPRIMER"',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: AppThemeSystem.warningColor,
+                                    colorText: Colors.white,
+                                    icon: const Icon(Icons.error_outline, color: Colors.white),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppThemeSystem.errorColor,
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shadowColor: AppThemeSystem.errorColor.withValues(alpha: 0.3),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              'Supprimer définitivement',
-                              style: context.textStyle(
-                                FontSizeType.button,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              child: Text(
+                                'Supprimer définitivement',
+                                style: context.textStyle(
+                                  FontSizeType.button,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1099,284 +1107,218 @@ class SettingsController extends GetxController {
 
   /// Ouvrir le bottom sheet des préférences
   void goToPreferences() {
-    Get.bottomSheet(
-      Builder(
-        builder: (context) => Container(
-          decoration: BoxDecoration(
-            color: AppThemeSystem.getSurfaceColor(context),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(
-                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
+    // Feuille standard : titre et croix pour la refermer, hauteur arrêtée
+    // sous la barre d'état. L'ancienne, sans croix, pouvait monter jusqu'en
+    // haut de l'écran sur un petit téléphone.
+    AppSheet.show(
+      AppSheet(
+        title: 'Préférences',
+        // Les sections gèrent elles-mêmes leurs marges latérales.
+        bodyPadding: const EdgeInsets.only(bottom: AppDesign.space2),
+        child: Builder(
+          builder: (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section Pays et Devise
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                child: Text(
+                  'Pays et Devise',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.bold,
+                    color: AppThemeSystem.grey600,
+                  ),
+                ),
               ),
-              topRight: Radius.circular(
-                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(bottom: context.bottomSheetPadding),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header avec poignée
-                  Center(
+
+              SizedBox(height: context.elementSpacing * 0.75),
+
+              // Country and currency selection
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: openCountrySelection,
+                    borderRadius: context.borderRadius(BorderRadiusType.medium),
                     child: Container(
-                      margin: EdgeInsets.only(
-                        top: context.elementSpacing,
-                        bottom: context.elementSpacing * 0.5,
-                      ),
-                      width: 40,
-                      height: 4,
+                      padding: EdgeInsets.all(context.elementSpacing),
                       decoration: BoxDecoration(
-                        color: AppThemeSystem.grey300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-
-                  // Titre
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.horizontalPadding,
-                      vertical: context.elementSpacing,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(context.elementSpacing * 0.75),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                            borderRadius: context.borderRadius(BorderRadiusType.medium),
-                          ),
-                          child: Icon(
-                            Icons.tune_rounded,
-                            color: AppThemeSystem.primaryColor,
-                            size: context.deviceType == DeviceType.mobile ? 24 : 28,
-                          ),
-                        ),
-                        SizedBox(width: context.elementSpacing),
-                        Text(
-                          'Préférences',
-                          style: context.textStyle(
-                            FontSizeType.h5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Divider(color: context.borderColor, height: 1),
-
-                  SizedBox(height: context.elementSpacing),
-
-                  // Section Pays et Devise
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-                    child: Text(
-                      'Pays et Devise',
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: context.elementSpacing * 0.75),
-
-                  // Country and currency selection
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: openCountrySelection,
+                        color: context.surfaceColor,
                         borderRadius: context.borderRadius(BorderRadiusType.medium),
-                        child: Container(
-                          padding: EdgeInsets.all(context.elementSpacing),
-                          decoration: BoxDecoration(
-                            color: context.surfaceColor,
-                            borderRadius: context.borderRadius(BorderRadiusType.medium),
-                            border: Border.all(color: context.borderColor),
+                        border: Border.all(color: context.borderColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(context.elementSpacing * 0.6),
+                            decoration: BoxDecoration(
+                              color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: context.borderRadius(BorderRadiusType.small),
+                            ),
+                            child: Icon(
+                              Icons.public,
+                              color: AppThemeSystem.primaryColor,
+                              size: 20,
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(context.elementSpacing * 0.6),
-                                decoration: BoxDecoration(
-                                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                                ),
-                                child: Icon(
-                                  Icons.public,
-                                  color: AppThemeSystem.primaryColor,
-                                  size: 20,
-                                ),
-                              ),
-                              SizedBox(width: context.elementSpacing),
-                              Expanded(
-                                child: Obx(() => Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          selectedCountry.value.isEmpty
-                                              ? 'Sélectionner un pays'
-                                              : selectedCountry.value,
-                                          style: context.textStyle(
-                                            FontSizeType.body1,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        SizedBox(height: context.elementSpacing * 0.25),
-                                        Text(
-                                          selectedCurrency.value.isEmpty
-                                              ? 'Aucune devise sélectionnée'
-                                              : selectedCurrency.value,
-                                          style: context.textStyle(
-                                            FontSizeType.caption,
-                                            color: AppThemeSystem.grey600,
-                                          ),
-                                        ),
-                                      ],
-                                    )),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: AppThemeSystem.grey400,
-                              ),
-                            ],
+                          SizedBox(width: context.elementSpacing),
+                          Expanded(
+                            child: Obx(() => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      selectedCountry.value.isEmpty
+                                          ? 'Sélectionner un pays'
+                                          : selectedCountry.value,
+                                      style: context.textStyle(
+                                        FontSizeType.body1,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    SizedBox(height: context.elementSpacing * 0.25),
+                                    Text(
+                                      selectedCurrency.value.isEmpty
+                                          ? 'Aucune devise sélectionnée'
+                                          : selectedCurrency.value,
+                                      style: context.textStyle(
+                                        FontSizeType.caption,
+                                        color: AppThemeSystem.grey600,
+                                      ),
+                                    ),
+                                  ],
+                                )),
                           ),
-                        ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: AppThemeSystem.grey400,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-
-                  SizedBox(height: context.sectionSpacing),
-
-                  // Section Langue
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-                    child: Text(
-                      'Langue',
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: context.elementSpacing * 0.75),
-
-                  // Options de langue
-                  Obx(() => Column(
-                    children: [
-                      _buildLanguageOption(
-                        context,
-                        'Français',
-                        '🇫🇷',
-                        isSelected: selectedLanguage.value == 'Français',
-                        isAvailable: true,
-                      ),
-                      _buildLanguageOption(
-                        context,
-                        'English',
-                        '🇬🇧',
-                        isSelected: selectedLanguage.value == 'English',
-                        isAvailable: false,
-                      ),
-                    ],
-                  )),
-
-                  SizedBox(height: context.sectionSpacing),
-
-                  // Section Notifications
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-                    child: Text(
-                      'Notifications',
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.grey600,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: context.elementSpacing * 0.75),
-
-                  // Toggle notifications
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-                    padding: EdgeInsets.all(context.elementSpacing),
-                    decoration: BoxDecoration(
-                      color: context.surfaceColor,
-                      borderRadius: context.borderRadius(BorderRadiusType.medium),
-                      border: Border.all(color: context.borderColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(context.elementSpacing * 0.6),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.infoColor.withValues(alpha: 0.1),
-                            borderRadius: context.borderRadius(BorderRadiusType.small),
-                          ),
-                          child: Icon(
-                            Icons.notifications_outlined,
-                            color: AppThemeSystem.infoColor,
-                            size: 20,
-                          ),
-                        ),
-                        SizedBox(width: context.elementSpacing),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Activer les notifications',
-                                style: context.textStyle(
-                                  FontSizeType.body1,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: context.elementSpacing * 0.25),
-                              Text(
-                                'Recevoir des notifications push',
-                                style: context.textStyle(
-                                  FontSizeType.caption,
-                                  color: AppThemeSystem.grey600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Obx(() => Switch(
-                              value: notificationsEnabled.value,
-                              onChanged: (value) {
-                                notificationsEnabled.value = value;
-                                _saveNotificationPreference(value);
-                              },
-                              activeTrackColor: AppThemeSystem.primaryColor,
-                              thumbColor: WidgetStateProperty.all(Colors.white),
-                            )),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: context.sectionSpacing),
-                ],
+                ),
               ),
-            ),
+
+              SizedBox(height: context.sectionSpacing),
+
+              // Section Langue
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                child: Text(
+                  'Langue',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.bold,
+                    color: AppThemeSystem.grey600,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: context.elementSpacing * 0.75),
+
+              // Options de langue
+              Obx(() => Column(
+                children: [
+                  _buildLanguageOption(
+                    context,
+                    'Français',
+                    '🇫🇷',
+                    isSelected: selectedLanguage.value == 'Français',
+                    isAvailable: true,
+                  ),
+                  _buildLanguageOption(
+                    context,
+                    'English',
+                    '🇬🇧',
+                    isSelected: selectedLanguage.value == 'English',
+                    isAvailable: false,
+                  ),
+                ],
+              )),
+
+              SizedBox(height: context.sectionSpacing),
+
+              // Section Notifications
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                child: Text(
+                  'Notifications',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.bold,
+                    color: AppThemeSystem.grey600,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: context.elementSpacing * 0.75),
+
+              // Toggle notifications
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+                padding: EdgeInsets.all(context.elementSpacing),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  borderRadius: context.borderRadius(BorderRadiusType.medium),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(context.elementSpacing * 0.6),
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.infoColor.withValues(alpha: 0.1),
+                        borderRadius: context.borderRadius(BorderRadiusType.small),
+                      ),
+                      child: Icon(
+                        Icons.notifications_outlined,
+                        color: AppThemeSystem.infoColor,
+                        size: 20,
+                      ),
+                    ),
+                    SizedBox(width: context.elementSpacing),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Activer les notifications',
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: context.elementSpacing * 0.25),
+                          Text(
+                            'Recevoir des notifications push',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.grey600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Obx(() => Switch(
+                          value: notificationsEnabled.value,
+                          onChanged: (value) {
+                            notificationsEnabled.value = value;
+                            _saveNotificationPreference(value);
+                          },
+                          activeTrackColor: AppThemeSystem.primaryColor,
+                          thumbColor: WidgetStateProperty.all(Colors.white),
+                        )),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
     );
   }
 
@@ -1562,74 +1504,17 @@ class SettingsController extends GetxController {
     // Fetch countries first
     fetchAllCountriesWithCurrencies();
 
-    Get.bottomSheet(
-      Builder(
-        builder: (context) => Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            color: AppThemeSystem.getSurfaceColor(context),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(
-                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-              ),
-              topRight: Radius.circular(
-                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-              ),
-            ),
-          ),
-          child: Column(
+    // Feuille standard, la liste gérant son propre défilement. L'ancienne
+    // avait une hauteur fixe : clavier ouvert, elle montait sous la barre
+    // d'état.
+    AppSheet.show(
+      AppSheet(
+        title: 'Sélectionnez votre pays',
+        scrollable: false,
+        bodyPadding: EdgeInsets.zero,
+        child: Builder(
+          builder: (context) => Column(
             children: [
-              // Header avec poignée
-              Center(
-                child: Container(
-                  margin: EdgeInsets.only(
-                    top: context.elementSpacing,
-                    bottom: context.elementSpacing * 0.5,
-                  ),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.grey300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              // Titre
-              Padding(
-                padding: EdgeInsets.all(context.horizontalPadding),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(context.elementSpacing * 0.75),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: context.borderRadius(BorderRadiusType.medium),
-                      ),
-                      child: Icon(
-                        Icons.public,
-                        color: AppThemeSystem.primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                    SizedBox(width: context.elementSpacing),
-                    Expanded(
-                      child: Text(
-                        'Sélectionnez votre pays',
-                        style: context.textStyle(
-                          FontSizeType.h5,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Get.back(),
-                    ),
-                  ],
-                ),
-              ),
-
               // Search bar
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
@@ -1682,6 +1567,10 @@ class SettingsController extends GetxController {
                   }
 
                   return ListView.builder(
+                    // Parcourir la liste referme le clavier de la recherche,
+                    // qui en masquait la moitié.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     itemCount: filteredCountries.length,
                     padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
                     itemBuilder: (context, index) {
@@ -1689,9 +1578,11 @@ class SettingsController extends GetxController {
                       final String country = item['country'];
                       final CurrencyModel currency = item['currency'];
 
-                      // Drapeau du pays ; repli sur le symbole monétaire
-                      // pour un pays absent du catalogue.
-                      final flag = CountryCatalog.flagFor(country);
+                      // Drapeau fourni par le backend ; repli sur le symbole
+                      // monétaire pour un pays absent du catalogue.
+                      final flag = (item['flag'] as String?)?.isNotEmpty == true
+                          ? item['flag'] as String
+                          : CountryCatalog.flagFor(country);
 
                       return ListTile(
                         leading: flag.isNotEmpty
@@ -1745,8 +1636,6 @@ class SettingsController extends GetxController {
           ),
         ),
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
     );
   }
 
@@ -1772,12 +1661,27 @@ class SettingsController extends GetxController {
           final currencyModel = CurrencyModel.fromJson(currency);
           print('   Processing: ${currencyModel.code} with ${currencyModel.countries.length} countries');
 
-          // Add each country from this currency
-          for (var country in currencyModel.countries) {
-            countries.add({
-              'country': country,
-              'currency': currencyModel,
-            });
+          // `countries_detailed` porte le drapeau calculé côté serveur. Le
+          // backend renvoyant des noms anglais, le catalogue local (indexé en
+          // français) ne saurait pas les retrouver.
+          if (currencyModel.countriesDetailed.isNotEmpty) {
+            for (final info in currencyModel.countriesDetailed) {
+              countries.add({
+                'country': info.name,
+                'currency': currencyModel,
+                'flag': info.flag.isNotEmpty
+                    ? info.flag
+                    : CountryCatalog.flagForIsoCode(info.isoCode),
+              });
+            }
+          } else {
+            for (var country in currencyModel.countries) {
+              countries.add({
+                'country': country,
+                'currency': currencyModel,
+                'flag': CountryCatalog.flagFor(country),
+              });
+            }
           }
         }
 

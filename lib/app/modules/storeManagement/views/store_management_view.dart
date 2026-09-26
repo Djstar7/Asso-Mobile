@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
-import '../../../core/utils/media_helper.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
 import 'edit_store_view.dart';
@@ -29,11 +29,7 @@ class StoreManagementView extends GetView<StoreManagementController> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: ds.textPrimary, size: 20),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         centerTitle: false,
         title: Text(
           'Ma boutique',
@@ -1178,7 +1174,7 @@ class _StoreLogo extends GetView<StoreManagementController> {
     final radius = BorderRadius.circular(AppDesign.radiusMd);
 
     return GestureDetector(
-      onTap: controller.pickLogo,
+      onTap: controller.changeLogo,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1191,12 +1187,17 @@ class _StoreLogo extends GetView<StoreManagementController> {
               border: Border.all(color: ds.border),
             ),
             child: Obx(() {
-              if (controller.selectedLogo.value != null) {
-                return ClipRRect(
-                  borderRadius: radius,
-                  child: MediaHelper.buildImagePreview(
-                    controller.selectedLogo.value!,
-                    fit: BoxFit.cover,
+              if (controller.isUploadingLogo.value) {
+                return const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppDesign.accent,
+                      ),
+                    ),
                   ),
                 );
               }

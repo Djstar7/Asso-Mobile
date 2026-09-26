@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/package_subscription_controller.dart';
 import '../widgets/sales_code_field.dart';
 
@@ -18,14 +19,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: ds.textPrimary,
-            size: 20,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         centerTitle: false,
         title: Text(
           'Forfaits de stockage',
@@ -52,6 +46,9 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
             color: AppDesign.accent,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
+              // Le code vendeur se saisit au milieu de la page : un geste de
+              // défilement referme le clavier pour revoir les forfaits.
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: ds.maxContentWidth),
@@ -347,7 +344,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SelectionDot(isSelected: isSelected),
+                    AppSelectionDot(isSelected: isSelected),
                     SizedBox(width: AppDesign.space3),
                     Expanded(
                       child: Text(
@@ -507,35 +504,5 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
         ),
       );
     });
-  }
-}
-
-/// Indicateur de sélection : cercle neutre au repos, plein en accent une fois
-/// choisi. Dessiné ici plutôt qu'avec un `Radio` pour rester aligné sur les
-/// rayons et couleurs du design system.
-class _SelectionDot extends StatelessWidget {
-  const _SelectionDot({required this.isSelected});
-
-  final bool isSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isSelected ? AppDesign.accent : Colors.transparent,
-        border: Border.all(
-          color: isSelected ? AppDesign.accent : ds.borderStrong,
-          width: isSelected ? 0 : 1.5,
-        ),
-      ),
-      child: isSelected
-          ? const Icon(Icons.check_rounded, size: 14, color: AppDesign.neutral0)
-          : null,
-    );
   }
 }

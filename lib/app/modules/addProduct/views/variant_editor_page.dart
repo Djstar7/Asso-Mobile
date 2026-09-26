@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../controllers/variant_editor_state.dart';
 import '../../../core/utils/app_design.dart';
@@ -30,10 +31,7 @@ class VariantEditorPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: context.backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close_rounded, color: context.primaryTextColor),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(close: true),
         title: Text(
           'Couleurs, tailles & options',
           style: context.h6.copyWith(fontWeight: FontWeight.w600),
@@ -43,6 +41,9 @@ class VariantEditorPage extends StatelessWidget {
         state.revision.value; // abonnement aux changements
         final combos = state.combinations;
         return ListView(
+          // Les quantités se saisissent tout au long de la liste : faire
+          // défiler referme le clavier qui masquait les combinaisons suivantes.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
           children: [
             _intro(context),

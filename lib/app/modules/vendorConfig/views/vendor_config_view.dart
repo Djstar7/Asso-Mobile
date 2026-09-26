@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/vendor_config_controller.dart';
 
 class VendorConfigView extends GetView<VendorConfigController> {
@@ -14,13 +15,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Devenir Vendeur',
           style: context.h5.copyWith(
@@ -113,6 +108,9 @@ class VendorConfigView extends GetView<VendorConfigController> {
   Widget _buildStep1(BuildContext context) {
     return SingleChildScrollView(
       controller: controller.step1ScrollController,
+      // Les boutons d'étape sont sous le formulaire : faire défiler referme
+      // le clavier qui les recouvrait.
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.symmetric(
         horizontal: context.horizontalPadding,
       ),
@@ -481,6 +479,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
   Widget _buildStep2(BuildContext context) {
     return SingleChildScrollView(
       controller: controller.step2ScrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.symmetric(
         horizontal: context.horizontalPadding,
       ),

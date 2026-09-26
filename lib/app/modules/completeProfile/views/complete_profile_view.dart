@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/complete_profile_controller.dart';
 
 class CompleteProfileView extends GetView<CompleteProfileController> {
@@ -25,11 +26,9 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           ),
         ),
         centerTitle: true,
-        leading: IconButton(
-          tooltip: 'Retour',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: controller.navigateBack,
-        ),
+        // Retour propre à l'écran : sans écran précédent, il ramène à la
+        // destination prévue plutôt qu'à l'accueil.
+        leading: AppBackButton(onPressed: controller.navigateBack),
         actions: [
           IconButton(
             tooltip: 'Menu principal',
@@ -39,6 +38,9 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
         ],
       ),
       body: SingleChildScrollView(
+        // Glisser le formulaire range le clavier et découvre le bouton
+        // d'enregistrement.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

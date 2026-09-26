@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_booking_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class DiaspoBookingView extends GetView<DiaspoBookingController> {
   const DiaspoBookingView({super.key});
@@ -15,6 +16,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     return Scaffold(
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Réserver des kilos'),
         centerTitle: true,
         elevation: 0,
@@ -30,6 +32,10 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                // Le champ des kilos est au milieu de l'écran : un glissement
+                // referme le clavier pour relire le récapitulatif.
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

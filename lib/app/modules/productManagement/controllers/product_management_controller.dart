@@ -359,7 +359,11 @@ class ProductManagementController extends GetxController {
     // Navigate to AddProduct in edit mode
     Get.toNamed(
       '/add-product',
-      arguments: {'product': product, 'isEdit': true},
+      arguments: {
+        'product': product,
+        'isEdit': true,
+        'fromProductManagement': true,
+      },
     )?.then((_) {
       // Refresh products after edit
       refreshProducts();
@@ -380,7 +384,10 @@ class ProductManagementController extends GetxController {
 
   /// Navigate to add product
   void navigateToAddProduct() {
-    Get.toNamed('/add-product')?.then((_) {
+    Get.toNamed(
+      '/add-product',
+      arguments: {'fromProductManagement': true},
+    )?.then((_) {
       // Refresh products after adding
       refreshProducts();
     });

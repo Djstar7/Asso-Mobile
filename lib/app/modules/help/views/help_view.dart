@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/help_controller.dart';
 
 class HelpView extends GetView<HelpController> {
@@ -14,16 +16,15 @@ class HelpView extends GetView<HelpController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Aide et Support',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       body: SingleChildScrollView(
+        // Faire défiler les résultats referme le clavier de la recherche.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -630,53 +631,19 @@ class HelpView extends GetView<HelpController> {
     String category,
     List<FaqItem> faqs,
   ) {
-    Get.bottomSheet(
-      Container(
-        height: Get.height * 0.8,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: context.backgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+    // Feuille standard : elle s'ajuste au nombre de questions au lieu
+    // d'occuper d'office 80 % de l'écran, et s'arrête sous la barre d'état.
+    AppSheet.show(
+      AppSheet(
+        title: category,
+        color: context.backgroundColor,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
-                  _getCategoryIcon(category),
-                  color: AppThemeSystem.primaryColor,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    category,
-                    style: context.h6.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.primaryColor,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Get.back(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: faqs.length,
-                itemBuilder: (context, index) {
-                  return _buildFaqCard(context, faqs[index], false);
-                },
-              ),
-            ),
+            for (final faq in faqs) _buildFaqCard(context, faq, false),
           ],
         ),
       ),
-      isScrollControlled: true,
     );
   }
 }

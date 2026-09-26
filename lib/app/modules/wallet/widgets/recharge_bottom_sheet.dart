@@ -9,7 +9,7 @@ import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'kpay_phone_selector.dart';
-import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 /// Bottom sheet pour recharger le wallet en 2 étapes
 /// Step 1: Choix de la méthode de paiement
@@ -18,14 +18,9 @@ class RechargeBottomSheet extends StatefulWidget {
   const RechargeBottomSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
-      builder: (context) => const RechargeBottomSheet(),
-    );
+    // `AppSheet.show` place la feuille au-dessus du clavier et l'arrête sous
+    // la barre d'état ; elle ne recouvre plus tout l'écran.
+    return AppSheet.show<void>(const RechargeBottomSheet());
   }
 
   @override
@@ -81,103 +76,56 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     }
   }
 
+  void _backToMethodChoice() => setState(() {
+        _currentStep = 1;
+        _selectedMethod = null;
+      });
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getBackgroundColor(context),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.grey300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+    // Clavier ouvert, la barre d'étapes cède sa place au champ en cours de
+    // saisie : sur un petit téléphone, elle repoussait le montant sous le
+    // clavier. Le titre et la flèche disent déjà où l'on en est.
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-              // Header avec bouton retour et fermer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      if (_currentStep == 2)
-                        IconButton(
-                          onPressed: () => setState(() {
-                            _currentStep = 1;
-                            _selectedMethod = null;
-                          }),
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                          padding: EdgeInsets.zero,
-                          // Cible tactile minimale conservée (recommandation Material/WCAG).
-                      constraints: const BoxConstraints(
-                        minWidth: AppDesign.minTapTarget,
-                        minHeight: AppDesign.minTapTarget,
-                      ),
-                          color: AppThemeSystem.getPrimaryTextColor(context),
-                        ),
-                      if (_currentStep == 2) const SizedBox(width: 12),
-                      Text(
-                        _currentStep == 1
-                            ? 'Recharger mon wallet'
-                            : 'Montant à recharger',
-                        style: TextStyle(
-                          fontSize: AppThemeSystem.getFontSize(
-                            context,
-                            FontSizeType.h4,
-                          ),
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.getPrimaryTextColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    padding: EdgeInsets.zero,
-                    // Cible tactile minimale conservée (recommandation Material/WCAG).
-                      constraints: const BoxConstraints(
-                        minWidth: AppDesign.minTapTarget,
-                        minHeight: AppDesign.minTapTarget,
-                      ),
-                    color: AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                ],
-              ),
+    // Le retour système suit la flèche : à l'étape 2, il ramène au choix de
+    // la méthode au lieu de refermer la feuille et de perdre la saisie.
+    return PopScope(
+      canPop: _currentStep == 1,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _backToMethodChoice();
+      },
+      child: _buildSheet(context, keyboardOpen),
+    );
+  }
 
-              SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+  Widget _buildSheet(BuildContext context, bool keyboardOpen) {
+    return AppSheet(
+      title: _currentStep == 1 ? 'Recharger mon wallet' : 'Montant à recharger',
+      // La flèche ramène au choix de la méthode, la croix referme la feuille.
+      onBack: _currentStep == 2 ? _backToMethodChoice : null,
+      // `pop` et non `maybePop` : la garde ci-dessus renverrait la croix à
+      // l'étape 1 au lieu de refermer.
+      onClose: () => Navigator.of(context).pop(),
+      color: AppThemeSystem.getBackgroundColor(context),
+      // Bouton épinglé au-dessus du clavier : au bout du formulaire, il
+      // passait dessous pendant la saisie du montant ou du numéro.
+      footer: _currentStep == 2 ? _buildConfirmButton() : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!keyboardOpen) ...[
+            // Barre de progression par étapes
+            _buildStepProgressBar(context),
 
-              // Barre de progression par étapes
-              _buildStepProgressBar(context),
+            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
+          ],
 
-              SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-              // Contenu selon l'étape
-              if (_currentStep == 1) _buildStep1MethodSelection(context),
-              if (_currentStep == 2) _buildStep2PaymentForm(context),
-            ],
-          ),
-        ),
+          // Contenu selon l'étape
+          if (_currentStep == 1) _buildStep1MethodSelection(context),
+          if (_currentStep == 2) _buildStep2PaymentForm(context),
+        ],
       ),
     );
   }
@@ -538,40 +486,41 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
           // Pour la carte bancaire, aucun champ supplémentaire : la Payment Sheet
           // Stripe native recueille les informations de carte.
-          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-          // Bouton de confirmation
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : _handleRecharge,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeSystem.primaryColor,
-                foregroundColor: AppThemeSystem.whiteColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+  /// Bouton de confirmation, épinglé en pied de feuille.
+  Widget _buildConfirmButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: _isProcessing ? null : _handleRecharge,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppThemeSystem.primaryColor,
+          foregroundColor: AppThemeSystem.whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isProcessing
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: AppThemeSystem.whiteColor,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                _getPaymentButtonText(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              child: _isProcessing
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: AppThemeSystem.whiteColor,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      _getPaymentButtonText(),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ],
       ),
     );
   }

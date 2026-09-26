@@ -19,10 +19,7 @@ class ShipmentView extends GetView<MyOrderController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Mes commandes',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
@@ -198,7 +195,7 @@ class ShipmentView extends GetView<MyOrderController> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text('${item.productName} x${item.quantity}',
+                      child: Text('${item.displayName} x${item.quantity}',
                         style: context.body2, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                     Text(controller.formatPrice(item.totalPrice),

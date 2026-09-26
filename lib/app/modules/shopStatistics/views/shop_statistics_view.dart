@@ -27,11 +27,7 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: ds.textPrimary, size: 20),
-          onPressed: Get.back,
-        ),
+        leading: const AppBackButton(),
         centerTitle: false,
         titleSpacing: 0,
         title: Text(

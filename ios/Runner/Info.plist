@@ -63,6 +63,14 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Vidéos produits en développement local (http://localhost, *.local) :
+		     le lecteur vidéo iOS est soumis à ATS, contrairement aux images.
+		     Sans effet en production, servie en https. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

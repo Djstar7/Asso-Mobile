@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../utils/app_design.dart';
+import '../utils/app_navigation.dart';
 import '../utils/app_theme_system.dart';
 
 /// Composants d'interface partagés.
@@ -335,6 +336,39 @@ class AppBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ================================
+// INDICATEUR DE SÉLECTION
+// ================================
+
+/// Indicateur de sélection d'une carte (forfait, formule) : cercle neutre au
+/// repos, plein en accent une fois choisi. Dessiné plutôt qu'un `Radio` pour
+/// rester aligné sur les rayons et couleurs du design system.
+class AppSelectionDot extends StatelessWidget {
+  const AppSelectionDot({super.key, required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isSelected ? AppDesign.accent : Colors.transparent,
+        border: Border.all(
+          color: isSelected ? AppDesign.accent : context.ds.borderStrong,
+          width: isSelected ? 0 : 1.5,
+        ),
+      ),
+      child: isSelected
+          ? const Icon(Icons.check_rounded, size: 14, color: AppDesign.neutral0)
+          : null,
     );
   }
 }
@@ -780,5 +814,86 @@ class AppIconButton extends StatelessWidget {
     );
 
     return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
+  }
+}
+
+// ================================
+// NAVIGATION
+// ================================
+
+/// Sortie d'un écran empilé : flèche de retour, ou croix pour un écran modal.
+///
+/// Chaque écran poussé porte la sienne. L'iPhone n'a pas de bouton retour
+/// système, et sur Android le geste reste peu découvrable : sans ce bouton,
+/// l'utilisateur ne savait pas comment revenir en arrière.
+///
+/// Sans [onPressed], le bouton emprunte le chemin du retour système
+/// ([AppNavigation.back]) : une garde de sortie posée par l'écran s'applique
+/// donc aussi, et un écran ouvert sans rien derrière ramène à l'accueil.
+class AppBackButton extends StatelessWidget {
+  const AppBackButton({
+    super.key,
+    this.onPressed,
+    this.color,
+    this.close = false,
+    this.tooltip,
+  });
+
+  /// Action personnalisée (confirmation avant de quitter, retour à une
+  /// destination précise). Absente, retour standard.
+  final VoidCallback? onPressed;
+
+  /// Couleur de l'icône, pour un bouton posé sur une image ou un fond sombre.
+  final Color? color;
+
+  /// Croix plutôt que flèche : pour un écran que l'on referme (paiement,
+  /// éditeur plein écran) plutôt que quitter.
+  final bool close;
+
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    // Centré : dans une AppBar, la case réservée à `leading` est plus large
+    // que la cible, qui s'étirerait sinon en une ellipse d'effet d'encre.
+    return Center(
+      child: AppIconButton(
+        icon: close ? Icons.close_rounded : Icons.arrow_back_ios_new_rounded,
+        size: close ? 22 : 20,
+        // Suit la couleur d'icône de l'AppBar qui l'accueille : sur une barre
+        // colorée, la flèche restait sombre alors que le titre était blanc.
+        color: color ?? IconTheme.of(context).color,
+        tooltip: tooltip ?? (close ? 'Fermer' : 'Retour'),
+        onPressed: onPressed ?? () => AppNavigation.back(context),
+      ),
+    );
+  }
+}
+
+// ================================
+// CLAVIER
+// ================================
+
+/// Referme le clavier quand on touche en dehors d'un champ.
+///
+/// Posé une fois autour du navigateur : sans lui, le clavier ne se fermait
+/// qu'avec le bouton système, et le pavé numérique de l'iPhone n'a même pas
+/// de touche pour le faire. Il masquait alors le bouton de validation.
+///
+/// Un bouton, un lien ou un autre champ gardent la priorité sur le toucher :
+/// seul un appui « dans le vide » ferme le clavier, si bien qu'envoyer un
+/// message ne le referme pas entre deux saisies.
+class AppKeyboardDismisser extends StatelessWidget {
+  const AppKeyboardDismisser({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: AppNavigation.dismissKeyboard,
+      child: child,
+    );
   }
 }

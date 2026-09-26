@@ -80,6 +80,8 @@ class DeliveryCheckController extends GetxController {
         print('🎯 DELIVERY CHECK: Redirection vers dashboard');
         print('========================================');
 
+        // Quitté entre-temps avec le bouton retour : ne pas y ramener de force.
+        if (isClosed) return;
         // Rediriger vers le dashboard
         Get.offAllNamed('/delivery-dashboard');
       } else {
@@ -92,6 +94,8 @@ class DeliveryCheckController extends GetxController {
         print('🎯 DELIVERY CHECK: Redirection vers configuration');
         print('========================================');
 
+        // Quitté entre-temps avec le bouton retour : ne pas y ramener de force.
+        if (isClosed) return;
         // Rediriger vers la configuration
         Get.offAllNamed('/ship-config');
       }
@@ -104,6 +108,7 @@ class DeliveryCheckController extends GetxController {
       // En cas d'erreur, rediriger vers la config par sécurité
       statusMessage.value = 'Erreur, redirection...';
       await Future.delayed(const Duration(milliseconds: 500));
+      if (isClosed) return;
       Get.offAllNamed('/ship-config');
     }
   }

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/utils/app_navigation.dart';
+
 /// WebView générique pour les paiements (KPay et PayPal)
 class PaymentWebView extends StatefulWidget {
   final String paymentUrl;
@@ -207,7 +210,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     if (widget.onPaymentComplete != null) {
       widget.onPaymentComplete!(true, message);
     } else {
-      Get.back(result: {'success': true, 'message': message});
+      _close({'success': true, 'message': message});
       Get.snackbar(
         'Succès',
         message,
@@ -222,7 +225,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     if (widget.onPaymentComplete != null) {
       widget.onPaymentComplete!(false, message);
     } else {
-      Get.back(result: {'success': false, 'message': message});
+      _close({'success': false, 'message': message});
       Get.snackbar(
         'Échec',
         message,
@@ -247,11 +250,10 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         centerTitle: true,
         backgroundColor: AppThemeSystem.primaryColor,
         foregroundColor: AppThemeSystem.whiteColor,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
-            _showCancelDialog();
-          },
+        leading: AppBackButton(
+          close: true,
+          color: AppThemeSystem.whiteColor,
+          onPressed: _showCancelDialog,
         ),
       ),
       body: Stack(
@@ -298,28 +300,40 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     );
   }
 
-  void _showCancelDialog() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Annuler le paiement ?'),
-        content: const Text('Êtes-vous sûr de vouloir annuler ce paiement ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Non'),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.back(); // Close dialog
-              Get.back(result: {'success': false, 'message': 'Paiement annulé par l\'utilisateur'});
-            },
-            child: Text(
-              'Oui, annuler',
-              style: TextStyle(color: AppThemeSystem.errorColor),
+  /// Referme la page de paiement avec son résultat.
+  ///
+  /// Navigator et non Get.back() : avec GetX 4.7.3, Get.back() ne ferme que
+  /// la bannière éventuellement affichée, et la page restait ouverte.
+  void _close(Map<String, dynamic> result) {
+    // Ferme aussi la confirmation d'annulation si elle est ouverte, et ne
+    // ferme rien si la page est déjà en train de partir.
+    if (mounted) AppNavigation.closeRoute(context, result);
+  }
+
+  Future<void> _showCancelDialog() async {
+    final cancel = await Get.dialog<bool>(
+      Builder(
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Annuler le paiement ?'),
+          content: const Text('Êtes-vous sûr de vouloir annuler ce paiement ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Non'),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                'Oui, annuler',
+                style: TextStyle(color: AppThemeSystem.errorColor),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+    if (cancel == true) {
+      _close({'success': false, 'message': 'Paiement annulé par l\'utilisateur'});
+    }
   }
 }

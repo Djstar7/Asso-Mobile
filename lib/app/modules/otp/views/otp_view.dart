@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/otp_controller.dart';
 
 class OtpView extends GetView<OtpController> {
@@ -14,17 +15,13 @@ class OtpView extends GetView<OtpController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-            size: AppThemeSystem.getFontSize(context, FontSizeType.h5),
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          // Le pavé numérique n'a pas de touche pour se fermer : glisser le
+          // contenu le range et découvre le bouton de vérification.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.symmetric(
             horizontal: context.horizontalPadding,
             vertical: context.verticalPadding,

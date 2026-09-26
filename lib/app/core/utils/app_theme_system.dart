@@ -516,6 +516,11 @@ class AppThemeSystem {
 
   /// Padding du bottom sheet en tenant compte de la barre de navigation native
   /// Utilise viewPadding.bottom pour les barres système + viewInsets.bottom pour le clavier
+  ///
+  /// Réservé aux feuilles ouvertes avec `showModalBottomSheet`, qui laisse le
+  /// clavier recouvrir la feuille. `Get.bottomSheet` (et donc `AppSheet.show`)
+  /// remonte déjà la feuille au-dessus du clavier : y ajouter ce padding
+  /// compte le clavier deux fois, laisse un grand vide et écrase le contenu.
   static double getBottomSheetPadding(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
 
@@ -858,6 +863,16 @@ class AppThemeSystem {
 
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(foregroundColor: textPrimary),
+      ),
+
+      // Une seule flèche de retour, sur Android comme sur iPhone. Les écrans
+      // mélangeaient quatre pictogrammes différents ; celui-ci est aussi celui
+      // d'`AppBackButton`, si bien qu'un retour implicite d'AppBar et un
+      // retour explicite ne se distinguent plus.
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (context) =>
+            const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        closeButtonIconBuilder: (context) => const Icon(Icons.close_rounded),
       ),
 
       inputDecorationTheme: InputDecorationTheme(

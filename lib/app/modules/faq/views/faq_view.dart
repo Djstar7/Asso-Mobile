@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/faq_controller.dart';
 
 class FaqView extends GetView<FaqController> {
@@ -13,10 +14,7 @@ class FaqView extends GetView<FaqController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Questions Fréquentes',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
@@ -37,6 +35,10 @@ class FaqView extends GetView<FaqController> {
               }
 
               return ListView.separated(
+                // La recherche est au-dessus : faire défiler les réponses
+                // referme le clavier qui en cachait la moitié.
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.all(context.horizontalPadding),
                 itemCount: controller.filteredCategories.length,
                 separatorBuilder: (context, index) => SizedBox(height: context.sectionSpacing),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../controllers/favorites_controller.dart';
@@ -20,13 +23,7 @@ class FavoritesView extends GetView<FavoritesController> {
         backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: AppThemeSystem.getPrimaryTextColor(context),
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Mes Favoris',
           style: context.textStyle(
@@ -155,7 +152,8 @@ class FavoritesView extends GetView<FavoritesController> {
             SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 2),
 
             ElevatedButton.icon(
-              onPressed: () => Get.back(),
+              // Sans écran derrière, ramène à l'accueil plutôt que de ne rien faire.
+              onPressed: () => AppNavigation.back(context),
               icon: Icon(Icons.explore_rounded, color: Colors.white),
               label: Text(
                 'Explorer les produits',
@@ -195,14 +193,17 @@ class FavoritesView extends GetView<FavoritesController> {
       location: _getLocation(product),
       isFavorite: true,
       isCertified: shop?['is_certified'] == true,
-      imageBuilder: (context) => _buildProductImage(product),
+      imageBuilder: (context) => _buildProductImage(context, product),
       onTap: () => Get.toNamed('/product', arguments: product),
       onFavoriteTap:
           productId > 0 ? () => controller.toggleFavorite(productId) : null,
     );
   }
 
-  Widget _buildProductImage(Map<String, dynamic> product) {
+  Widget _buildProductImage(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     final primaryImage = product['primary_image'];
     final images = product['images'] as List?;
 
@@ -214,22 +215,14 @@ class FavoritesView extends GetView<FavoritesController> {
     }
 
     if (imageUrl != null && imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-        loadingBuilder: (_, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-              color: AppThemeSystem.primaryColor,
-            ),
-          );
-        },
+      // Décodée à la taille de la carte, pas en pleine résolution.
+      final cardWidth = ProductCard.widthInGrid(context);
+      return AppNetworkImage(
+        url: imageUrl,
+        decodeSize: Size(cardWidth, cardWidth / ProductCard.imageAspectRatio),
+        placeholder: (_) => const SizedBox.expand(),
+        showProgress: true,
+        errorBuilder: (_) => _buildPlaceholderImage(),
       );
     }
 

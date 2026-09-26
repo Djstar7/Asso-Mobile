@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../core/utils/device_location.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../routes/app_pages.dart';
 import '../../../data/providers/vendor_service.dart';
@@ -16,6 +16,7 @@ import '../../../data/models/deliverer_model.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../views/map_location_picker_view.dart';
 import '../../profile/controllers/profile_controller.dart';
+import '../../../core/utils/app_navigation.dart';
 
 class VendorConfigController extends GetxController {
   // State management
@@ -44,7 +45,6 @@ class VendorConfigController extends GetxController {
   final profileImage = Rx<XFile?>(null);
   final isPickingProfileImage = false.obs;
   final locationPermissionGranted = false.obs;
-  final userLocation = ''.obs;
 
   // Step 2: Configuration boutique
   final TextEditingController shopNameController = TextEditingController();
@@ -253,59 +253,37 @@ class VendorConfigController extends GetxController {
     print('========================================');
   }
 
-  /// Demande la permission de localisation
+  /// Demande la permission de localisation, pour ouvrir ensuite la carte sur
+  /// la position du vendeur.
+  ///
+  /// Passe par Geolocator comme les cartes : `permission_handler` n'est pas
+  /// activé pour la localisation dans le Podfile et répondait donc toujours
+  /// « refusé » sur iOS, sans même afficher la demande.
   Future<void> _requestLocationPermission() async {
     try {
-      // Vérifier d'abord le statut de la permission
-      PermissionStatus status = await Permission.location.status;
-
-      if (status.isDenied) {
-        // Demander la permission
-        status = await Permission.location.request();
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
       }
+      locationPermissionGranted.value = _isGranted(permission);
 
-      if (status.isGranted) {
-        locationPermissionGranted.value = true;
-        // Obtenir la position actuelle
-        await _getCurrentLocation();
-      } else if (status.isPermanentlyDenied) {
+      if (permission == LocationPermission.deniedForever) {
         // Permission refusée de façon permanente
-        locationPermissionGranted.value = false;
         Get.snackbar(
           'Permission requise',
           'Veuillez autoriser l\'accès à la localisation dans les paramètres',
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
-      } else {
-        locationPermissionGranted.value = false;
-        userLocation.value = '';
       }
     } catch (e) {
       locationPermissionGranted.value = false;
-      userLocation.value = '';
     }
   }
 
-  /// Obtenir la position actuelle
-  Future<void> _getCurrentLocation() async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        userLocation.value = 'Localisation désactivée';
-        return;
-      }
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
-      userLocation.value =
-          'Position: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
-    } catch (e) {
-      userLocation.value = 'Localisation non disponible';
-    }
-  }
+  static bool _isGranted(LocationPermission permission) =>
+      permission == LocationPermission.whileInUse ||
+      permission == LocationPermission.always;
 
   /// Sélectionne une photo de profil (picker de marque, compatible web + mobile)
   Future<void> pickProfileImage() async {
@@ -678,24 +656,25 @@ class VendorConfigController extends GetxController {
       if (shopLatitude.value != 0.0 && shopLongitude.value != 0.0) {
         initialPosition = LatLng(shopLatitude.value, shopLongitude.value);
       } else {
-        // Sinon, essayer d'obtenir la position actuelle de l'utilisateur
+        // Sinon, partir de la position actuelle du vendeur, si elle est déjà
+        // autorisée (pas de demande sous le chargement). La lecture est
+        // bornée dans le temps : sans GPS, le chargement restait bloqué.
         try {
-          if (locationPermissionGranted.value) {
-            Position position = await Geolocator.getCurrentPosition(
-              locationSettings: const LocationSettings(
-                accuracy: LocationAccuracy.high,
-              ),
-            );
-            initialPosition = LatLng(position.latitude, position.longitude);
+          if (_isGranted(await Geolocator.checkPermission())) {
+            final position = (await DeviceLocation.current()).position;
+            if (position != null) {
+              initialPosition = LatLng(position.latitude, position.longitude);
+            }
           }
-        } catch (e) {
-          // Si la position actuelle n'est pas disponible, utiliser Douala par défaut
-          initialPosition = const LatLng(4.0511, 9.7679);
+        } catch (_) {
+          // Sans position, la carte s'ouvre sur Douala.
         }
       }
 
-      // Fermer le loader
-      Get.back();
+      // Fermer le loader. `AppNavigation.pop` et non `Get.back()` : un
+      // snackbar affiché entre-temps aurait été fermé à sa place, et ce
+      // chargement, impossible à fermer soi-même, figeait l'écran.
+      AppNavigation.pop();
 
       // Petit délai pour une transition fluide
       await Future.delayed(const Duration(milliseconds: 100));
@@ -768,8 +747,8 @@ class VendorConfigController extends GetxController {
         // Vérifier si la livraison est disponible
         await checkDeliveryAvailability(latitude, longitude);
 
-        // Fermer le loader
-        Get.back();
+        // Fermer le loader (voir plus haut : pas `Get.back()`).
+        AppNavigation.pop();
 
         print('');
         print('📋 AFTER DELIVERY CHECK:');
@@ -809,9 +788,10 @@ class VendorConfigController extends GetxController {
         }
       }
     } catch (e) {
-      // Fermer le loader si ouvert
+      // Fermer le loader si ouvert (pas `Get.back()`, qui fermerait un
+      // snackbar à sa place).
       if (Get.isDialogOpen == true) {
-        Get.back();
+        AppNavigation.pop();
       }
 
       Get.snackbar(

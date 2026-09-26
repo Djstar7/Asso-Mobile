@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/delivery_dashboard_controller.dart';
 
 /// Carte en plein écran : l'itinéraire d'une course occupe tout l'espace.
@@ -110,10 +112,10 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
             Positioned(
               top: MediaQuery.of(context).padding.top + 12,
               left: 16,
-              child: _roundButton(
-                icon: Icons.arrow_back,
-                onTap: Get.back<void>,
-                tooltip: 'Retour',
+              // Même flèche de retour que le reste de l'application.
+              child: DecoratedBox(
+                decoration: _roundDecoration,
+                child: const AppBackButton(color: AppDesign.neutral900),
               ),
             ),
 
@@ -270,23 +272,26 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
     );
   }
 
+  /// Pastille blanche des boutons posés sur la carte.
+  static final _roundDecoration = BoxDecoration(
+    color: Colors.white,
+    shape: BoxShape.circle,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.15),
+        blurRadius: 6,
+        offset: const Offset(0, 2),
+      ),
+    ],
+  );
+
   Widget _roundButton({
     required IconData icon,
     required VoidCallback onTap,
     required String tooltip,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _roundDecoration,
       child: IconButton(
         icon: Icon(icon, size: 20),
         onPressed: onTap,

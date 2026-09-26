@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
@@ -17,10 +18,7 @@ class MyOrderView extends GetView<MyOrderController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Mes commandes',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
@@ -291,7 +289,7 @@ class MyOrderView extends GetView<MyOrderController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.productName,
+                  item.displayName,
                   style: context.body2.copyWith(fontWeight: FontWeight.w500),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

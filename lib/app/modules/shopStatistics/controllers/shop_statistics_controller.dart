@@ -56,6 +56,7 @@ class ShopStatisticsController extends GetxController {
   /// redessiner l'écran sans rappeler l'API, les chiffres serveur restant en
   /// XOF.
   final currencyRevision = 0.obs;
+  Worker? _currencyWorker;
 
   @override
   void onInit() {
@@ -64,10 +65,21 @@ class ShopStatisticsController extends GetxController {
     if (initial is String && periods.containsKey(initial)) period.value = initial;
 
     if (Get.isRegistered<CurrencyService>()) {
-      ever(CurrencyService.to.userCurrencyRx, (_) => currencyRevision.value++);
+      // Écoute d'un service permanent : sans `dispose`, l'écouteur gardait
+      // ce contrôleur en mémoire bien après la fermeture de l'écran.
+      _currencyWorker = ever(
+        CurrencyService.to.userCurrencyRx,
+        (_) => currencyRevision.value++,
+      );
     }
 
     load();
+  }
+
+  @override
+  void onClose() {
+    _currencyWorker?.dispose();
+    super.onClose();
   }
 
   /// Télécharge le rapport de la période puis ouvre le partage système.

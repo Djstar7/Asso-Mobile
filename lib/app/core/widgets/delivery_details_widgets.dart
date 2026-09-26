@@ -466,9 +466,15 @@ class OrderDeliveryDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final importLeg = delivery.importLeg;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Commande en gros : l'import jusqu'à Douala, puis la livraison locale.
+        if (importLeg != null) ...[
+          DeliveryInfoLine(importLeg.label, formatPrice(importLeg.price)),
+          const SizedBox(height: 6),
+        ],
         DeliveryServiceLines(
           companyName: delivery.companyName,
           serviceTypeLabel: delivery.serviceTypeLabel,

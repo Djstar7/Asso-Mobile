@@ -25,6 +25,9 @@ class CountrySelectionView extends GetView<CountrySelectionController> {
     return Scaffold(
       backgroundColor: context.ds.canvas,
       appBar: AppBar(
+        // Premier écran après l'installation, il n'a rien derrière lui : pas
+        // de retour. Ouvert par-dessus un autre écran, il en propose un.
+        leading: Navigator.canPop(context) ? const AppBackButton() : null,
         title: const Text('Choisissez votre pays'),
         centerTitle: false,
       ),
@@ -165,6 +168,9 @@ class _CountryListState extends State<_CountryList> {
 
           return CustomScrollView(
             controller: scrollController,
+            // Parcourir la liste referme le clavier de la recherche, qui
+            // en masquait la moitié.
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               if (browsing && suggestions.isNotEmpty) ...[
                 _SectionHeaderSliver(

@@ -5,11 +5,13 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
+import '../widgets/logout_loading_dialog.dart';
 
 class ProfileController extends GetxController {
   final RxMap<String, dynamic> profile = <String, dynamic>{}.obs;
   final RxBool isLoading = false.obs;
   final RxBool isGuest = true.obs;
+  bool _isLoggingOut = false;
 
   @override
   void onInit() {
@@ -248,12 +250,22 @@ class ProfileController extends GetxController {
   }
 
   Future<void> logout() async {
+    // Deux taps rapprochés passeraient avant que la barrière du loader
+    // n'intercepte les touches, et lanceraient deux déconnexions.
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+
+    LogoutLoadingDialog.show();
     try {
       await AuthService.logout();
     } catch (e) {
       // Even if API fails, clear local data
       ApiProvider.clearAuth();
+    } finally {
+      _isLoggingOut = false;
     }
+    // Remplace toute la pile, loader compris : pas de retour visible sur le
+    // profil entre la fermeture du dialogue et l'écran de connexion.
     Get.offAllNamed(Routes.LOGIN);
   }
 }

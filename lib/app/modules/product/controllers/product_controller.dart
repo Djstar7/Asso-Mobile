@@ -6,8 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/values/constants.dart';
+import '../../../core/utils/device_location.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/product_variant_selector.dart';
+import '../../../core/widgets/variant_quantity_list.dart';
 import '../../../data/models/delivery_info.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/delivery_service.dart';
@@ -18,6 +20,27 @@ import '../../../data/providers/storage_service.dart';
 import '../../../core/utils/app_design.dart';
 
 /// Pourquoi la position automatique n'a pas pu être obtenue.
+/// Une ligne de la commande : une variante (ou le produit sans options) et
+/// sa quantité.
+class OrderLine {
+  const OrderLine({
+    required this.variant,
+    required this.quantity,
+    required this.unitPriceXaf,
+  });
+
+  final Map<String, dynamic>? variant;
+  final int quantity;
+
+  /// Prix unitaire en XAF, supplément de la variante compris.
+  final double unitPriceXaf;
+
+  double get totalXaf => unitPriceXaf * quantity;
+
+  /// « Rouge · 42 », vide pour un produit sans options.
+  String get label => VariantCatalog.labelOf(variant);
+}
+
 enum LocationIssue {
   none,
   serviceDisabled,
@@ -43,6 +66,11 @@ class ProductController extends GetxController {
   final deliveryPrice = 0.0.obs;
   final currentImageIndex = 0.obs;
   final selectedVariant = Rx<Map<String, dynamic>?>(null);
+
+  /// Quantité commandée par variante (identifiant → quantité), pour un
+  /// produit à options : plusieurs couleurs dans une même commande, chacune
+  /// sur sa propre ligne.
+  final variantQuantities = <int, int>{}.obs;
 
   /// Incrémenté quand la variante change hors de la fiche (feuille de commande) :
   /// le sélecteur de la fiche est alors reconstruit sur le nouveau choix.
@@ -250,7 +278,8 @@ class ProductController extends GetxController {
     );
     // Le prix de livraison dépend du poids total (poids × quantité).
     debounce<int>(orderQuantity, (quantity) {
-      if (currentProductId.value != 0 &&
+      if (quantity > 0 &&
+          currentProductId.value != 0 &&
           hasValidLocation &&
           quantity != _quotedQuantity) {
         loadDeliveryPartners(currentProductId.value);
@@ -290,8 +319,36 @@ class ProductController extends GetxController {
       ).isEmpty;
 
   /// Prix unitaire en XAF, supplément de la variante choisie compris.
-  double unitPriceXaf(Map<String, dynamic> product) {
+  double unitPriceXaf(Map<String, dynamic> product) =>
+      _priceFor(product, selectedVariantOf(product));
+
+  /// Variante choisie sur la fiche, seulement si elle appartient à [product].
+  ///
+  /// Le contrôleur est partagé entre fiches empilées (produit similaire,
+  /// boutique…) : sans ce contrôle, la variante d'un autre produit imposait
+  /// son prix — et, avant la commande par lignes, son identifiant.
+  Map<String, dynamic>? selectedVariantOf(Map<String, dynamic> product) {
     final variant = selectedVariant.value;
+    final id = variant == null ? null : VariantQuantityList.idOf(variant);
+    if (id == null) return null;
+    final variants = product['variants'];
+    if (variants is! List) return null;
+    final belongs = variants.any(
+      (v) => v is Map && v['id']?.toString() == id.toString(),
+    );
+    return belongs ? variant : null;
+  }
+
+  /// Prix unitaire en XAF d'une variante donnée (liste des options).
+  double variantPriceXaf(
+    Map<String, dynamic> product,
+    Map<String, dynamic> variant,
+  ) => _priceFor(product, variant);
+
+  double _priceFor(
+    Map<String, dynamic> product,
+    Map<String, dynamic>? variant,
+  ) {
     final variantPrice = variant?['price_xaf'];
     if (variantPrice is num) return variantPrice.toDouble();
     final base =
@@ -312,28 +369,79 @@ class ProductController extends GetxController {
   /// Quantité maximale commandable : stock de la variante choisie, sinon du produit.
   /// `null` quand le stock n'est pas connu (aucune limite côté app).
   int? maxQuantity(Map<String, dynamic> product) {
-    final variant = selectedVariant.value;
+    final variant = selectedVariantOf(product);
     if (variant != null) return VariantCatalog.stockOf(variant);
     final raw = product['stock'];
     if (raw == null) return null;
     return raw is num ? raw.toInt() : int.tryParse(raw.toString());
   }
 
-  void incrementQuantity(Map<String, dynamic> product) {
-    final max = maxQuantity(product);
-    if (max != null && orderQuantity.value >= max) {
-      Get.snackbar(
-        'Stock limité',
-        'Il ne reste que $max article${max > 1 ? 's' : ''} disponible${max > 1 ? 's' : ''}.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    orderQuantity.value++;
+  /// Explique pourquoi la quantité ne monte plus.
+  void notifyStockLimit(int max) {
+    Get.snackbar(
+      'Stock limité',
+      max <= 0
+          ? 'Cette option est épuisée.'
+          : 'Il ne reste que $max article${max > 1 ? 's' : ''} disponible${max > 1 ? 's' : ''}.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
-  void decrementQuantity() {
-    if (orderQuantity.value > 1) orderQuantity.value--;
+  /// Quantité d'un produit sans options, plafonnée au stock.
+  void setOrderQuantity(Map<String, dynamic> product, int quantity) {
+    final max = maxQuantity(product);
+    orderQuantity.value = (max != null && quantity > max) ? max : quantity;
+  }
+
+  /// Quantités par variante ; la quantité totale suit, pour que le devis de
+  /// livraison (poids × quantité) se recalcule.
+  void setVariantQuantities(Map<int, int> quantities) {
+    variantQuantities.assignAll(quantities);
+    orderQuantity.value = VariantQuantityList.totalOf(quantities);
+  }
+
+  /// Remet la commande à zéro à l'ouverture de la feuille. La variante
+  /// regardée sur la fiche, si elle est en stock, est proposée d'office.
+  void resetOrderQuantities(Map<String, dynamic> product) {
+    variantQuantities.clear();
+    if (!productHasVariants(product)) {
+      orderQuantity.value = 1;
+      return;
+    }
+    final variant = selectedVariantOf(product);
+    final id = variant == null ? null : VariantQuantityList.idOf(variant);
+    if (id != null && VariantCatalog.stockOf(variant!) > 0) {
+      setVariantQuantities({id: 1});
+    } else {
+      setVariantQuantities(const {});
+    }
+  }
+
+  /// Lignes de la commande : une par variante choisie, ou une seule pour un
+  /// produit sans options.
+  List<OrderLine> orderLines(Map<String, dynamic> product) {
+    final catalog = VariantCatalog.fromApi(
+      product['variants'],
+      product['variant_options'],
+    );
+    if (catalog.isEmpty) {
+      return [
+        OrderLine(
+          variant: null,
+          quantity: orderQuantity.value,
+          unitPriceXaf: _priceFor(product, null),
+        ),
+      ];
+    }
+    return [
+      for (final variant in catalog.variants)
+        if ((variantQuantities[VariantQuantityList.idOf(variant)] ?? 0) > 0)
+          OrderLine(
+            variant: variant,
+            quantity: variantQuantities[VariantQuantityList.idOf(variant)]!,
+            unitPriceXaf: _priceFor(product, variant),
+          ),
+    ];
   }
 
   /// Ramène la quantité dans le stock de la nouvelle variante.
@@ -362,8 +470,10 @@ class ProductController extends GetxController {
 
   /// Étapes restantes avant de pouvoir payer (vide = commande prête).
   List<String> missingOrderSteps(Map<String, dynamic> product) => [
-    if (productHasVariants(product) && selectedVariant.value == null)
-      'Choisir les options du produit',
+    if (productHasVariants(product) && variantQuantities.isEmpty)
+      'Indiquer la quantité d’au moins une option'
+    else if (orderQuantity.value < 1)
+      'Indiquer une quantité',
     if (!hasValidLocation) 'Indiquer l’adresse de livraison',
     if (!hasValidPhone) 'Renseigner un numéro à contacter valide',
     if (deliveryBlockedMessage.value != null)
@@ -376,42 +486,20 @@ class ProductController extends GetxController {
     isLoadingLocation.value = true;
     locationIssue.value = LocationIssue.none;
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        locationIssue.value = LocationIssue.serviceDisabled;
+      // Fix précis, puis position réseau, puis dernière position connue :
+      // la lecture est bornée dans le temps (voir DeviceLocation).
+      final result = await DeviceLocation.current();
+      final position = result.position;
+      if (position == null) {
+        locationIssue.value = switch (result.failure) {
+          LocationFailure.serviceDisabled => LocationIssue.serviceDisabled,
+          LocationFailure.permissionDenied => LocationIssue.permissionDenied,
+          LocationFailure.deniedForever => LocationIssue.deniedForever,
+          _ => LocationIssue.failed,
+        };
         return;
       }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.deniedForever) {
-        locationIssue.value = LocationIssue.deniedForever;
-        return;
-      }
-      if (permission == LocationPermission.denied) {
-        locationIssue.value = LocationIssue.permissionDenied;
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
-      );
       await setDeliveryPosition(position.latitude, position.longitude);
-    } catch (_) {
-      // Pas de fix GPS à temps : la dernière position connue suffit pour livrer.
-      final last = await Geolocator.getLastKnownPosition().catchError(
-        (_) => null,
-      );
-      if (last != null) {
-        await setDeliveryPosition(last.latitude, last.longitude);
-      } else {
-        locationIssue.value = LocationIssue.failed;
-      }
     } finally {
       isLoadingLocation.value = false;
     }
@@ -429,7 +517,12 @@ class ProductController extends GetxController {
 
     String? label;
     try {
-      final placemarks = await placemarkFromCoordinates(latitude, longitude);
+      // Borné : sans réponse du géocodeur du téléphone, « Ma position » et
+      // « Modifier » restaient grisés pendant le chargement.
+      final placemarks = await placemarkFromCoordinates(
+        latitude,
+        longitude,
+      ).timeout(const Duration(seconds: 8));
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
         final city = [
@@ -473,7 +566,9 @@ class ProductController extends GetxController {
   Future<void> loadDeliveryPartners(int productId) async {
     currentProductId.value = productId;
     final request = ++_partnersRequest;
-    final quantity = orderQuantity.value;
+    // Aucune option encore choisie : on chiffre un article, pour montrer
+    // les partenaires et un ordre de prix dès l'ouverture.
+    final quantity = orderQuantity.value < 1 ? 1 : orderQuantity.value;
     final previousKey = selectedPartner.value == null
         ? null
         : DeliveryPartnerQuote(selectedPartner.value!).key;
@@ -562,10 +657,12 @@ class ProductController extends GetxController {
     withDelivery.value = true;
   }
 
-  double subtotal(double productPrice) => productPrice * orderQuantity.value;
+  /// Sous-total des articles, ligne par ligne : chaque option garde son prix.
+  double orderSubtotal(Map<String, dynamic> product) =>
+      orderLines(product).fold(0.0, (sum, line) => sum + line.totalXaf);
 
-  double calculateTotal(double productPrice) {
-    final total = subtotal(productPrice);
+  double orderTotal(Map<String, dynamic> product) {
+    final total = orderSubtotal(product);
     if (withDelivery.value) {
       return total + deliveryPrice.value;
     }
@@ -617,22 +714,28 @@ class ProductController extends GetxController {
     }
 
     final details = addressDetailsController.text.trim();
-    final variant = selectedVariant.value;
-    final variantLabel = variant == null
-        ? ''
-        : VariantCatalog.attributesOf(
-            variant,
-          ).entries.map((e) => '${e.key}: ${e.value}').join(', ');
+    final lines = orderLines(product);
+    // Rappel lisible pour le vendeur : « Couleur: Rouge × 3 ; Couleur: Noir × 2 ».
+    final variantNote = lines
+        .where((line) => line.variant != null)
+        .map(
+          (line) =>
+              '${VariantCatalog.attributesOf(line.variant!).entries.map((e) => '${e.key}: ${e.value}').join(', ')} × ${line.quantity}',
+        )
+        .join(' ; ');
 
     isCreatingOrder.value = true;
     try {
       final response = await OrderService.createOrder(
+        // Une ligne par option choisie : le serveur vérifie et décompte le
+        // stock de chacune.
         items: [
-          {
-            'product_id': productId,
-            'quantity': orderQuantity.value,
-            if (variant?['id'] != null) 'variant_id': variant!['id'],
-          },
+          for (final line in lines)
+            {
+              'product_id': productId,
+              'quantity': line.quantity,
+              if (line.variant?['id'] != null) 'variant_id': line.variant!['id'],
+            },
         ],
         deliveryCompanyId: deliveryCompanyId,
         deliveryZoneId: deliveryZoneId,
@@ -655,7 +758,7 @@ class ProductController extends GetxController {
         customerPhone: customerPhone.value,
         deliveryLatitude: clientLatitude.value,
         deliveryLongitude: clientLongitude.value,
-        notes: variantLabel.isEmpty ? null : 'Variante: $variantLabel',
+        notes: variantNote.isEmpty ? null : 'Variantes : $variantNote',
       );
 
       if (!response.success) {

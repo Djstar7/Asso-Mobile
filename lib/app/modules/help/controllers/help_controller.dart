@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class HelpController extends GetxController {
   // État de chargement
@@ -351,56 +353,26 @@ class HelpController extends GetxController {
 
   /// Ouvrir un sujet d'aide
   void openTopic(SupportTopic topic) {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    // Feuille standard : un sujet aux nombreuses questions débordait de
+    // l'écran, sans croix pour la refermer ; le contact reste épinglé en bas.
+    AppSheet.show(
+      AppSheet(
+        title: topic.title,
+        subtitle: topic.description,
+        footer: AppButton(
+          label: 'Contacter le support',
+          onPressed: () {
+            Get.back();
+            contactByEmail();
+          },
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    topic.icon,
-                    color: AppThemeSystem.primaryColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        topic.title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        topic.description,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
             ...topic.items.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: AppDesign.space3),
                 child: Row(
                   children: [
                     Icon(
@@ -408,7 +380,7 @@ class HelpController extends GetxController {
                       color: AppThemeSystem.primaryColor,
                       size: 20,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppDesign.space3),
                     Expanded(
                       child: Text(item, style: const TextStyle(fontSize: 15)),
                     ),
@@ -416,25 +388,9 @@ class HelpController extends GetxController {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Get.back();
-                  contactByEmail();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Contacter le support'),
-              ),
-            ),
           ],
         ),
       ),
-      isScrollControlled: true,
     );
   }
 }

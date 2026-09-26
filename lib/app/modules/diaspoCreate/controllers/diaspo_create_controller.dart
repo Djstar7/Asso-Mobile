@@ -6,6 +6,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 class DiaspoCreateController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
 
@@ -108,89 +109,74 @@ class DiaspoCreateController extends GetxController {
 
     final search = ''.obs;
 
-    await Get.bottomSheet(
-      Container(
-        height: Get.height * 0.75,
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(Get.context!),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Column(
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.grey300,
-                borderRadius: BorderRadius.circular(2),
+    await AppSheet.show(
+      AppSheet(
+        title: isDeparture ? 'Pays de départ' : 'Pays d\'arrivée',
+        // La liste défile seule : le champ de recherche reste en haut.
+        scrollable: false,
+        // Hauteur fixe tant que le clavier est fermé ; la feuille la réduit
+        // quand il s'ouvre, pour garder le champ et la liste visibles.
+        child: SizedBox(
+          height: Get.height * 0.75,
+          child: Column(
+            children: [
+              TextField(
+                autofocus: false,
+                onChanged: (v) => search.value = v.toLowerCase(),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher un pays ou une devise',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  isDense: true,
+                ),
               ),
-            ),
-            Text(
-              isDeparture ? 'Pays de départ' : 'Pays d\'arrivée',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.getPrimaryTextColor(Get.context!),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              autofocus: false,
-              onChanged: (v) => search.value = v.toLowerCase(),
-              decoration: InputDecoration(
-                hintText: 'Rechercher un pays ou une devise',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Obx(() {
-                final q = search.value;
-                final items = q.isEmpty
-                    ? countriesWithCurrency
-                    : countriesWithCurrency.where((e) =>
-                        (e['country'] as String).toLowerCase().contains(q) ||
-                        (e['code'] as String).toLowerCase().contains(q)).toList();
-                if (isLoadingCountries.value && items.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return ListView.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final e = items[i];
-                    return ListTile(
-                      title: Text(e['country'] as String),
-                      trailing: Text(
-                        '${e['code']} · ${e['symbol']}',
-                        style: TextStyle(
-                          color: AppThemeSystem.getSecondaryTextColor(context),
-                          fontWeight: FontWeight.w600,
+              const SizedBox(height: 8),
+              Expanded(
+                child: Obx(() {
+                  final q = search.value;
+                  final items = q.isEmpty
+                      ? countriesWithCurrency
+                      : countriesWithCurrency.where((e) =>
+                          (e['country'] as String).toLowerCase().contains(q) ||
+                          (e['code'] as String).toLowerCase().contains(q)).toList();
+                  if (isLoadingCountries.value && items.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView.separated(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final e = items[i];
+                      return ListTile(
+                        title: Text(e['country'] as String),
+                        trailing: Text(
+                          '${e['code']} · ${e['symbol']}',
+                          style: TextStyle(
+                            color: AppThemeSystem.getSecondaryTextColor(context),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      onTap: () {
-                        if (isDeparture) {
-                          departureCountryController.text = e['country'] as String;
-                          selectedCurrencyCode.value = e['code'] as String;
-                          selectedCurrencySymbol.value = e['symbol'] as String;
-                        } else {
-                          arrivalCountryController.text = e['country'] as String;
-                        }
-                        Get.back();
-                      },
-                    );
-                  },
-                );
-              }),
-            ),
-          ],
+                        onTap: () {
+                          if (isDeparture) {
+                            departureCountryController.text = e['country'] as String;
+                            selectedCurrencyCode.value = e['code'] as String;
+                            selectedCurrencySymbol.value = e['symbol'] as String;
+                          } else {
+                            arrivalCountryController.text = e['country'] as String;
+                          }
+                          Get.back();
+                        },
+                      );
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
-      isScrollControlled: true,
     );
   }
 

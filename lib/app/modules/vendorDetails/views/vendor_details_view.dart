@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/vendor_details_controller.dart';
+import '../../../core/widgets/scoped_controller_page.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/app_network_image.dart';
+
+/// Page ouverte par la route : chaque boutique empilée a son propre
+/// [VendorDetailsController] (voir [ScopedControllerPage]).
+class VendorDetailsPage extends StatelessWidget {
+  const VendorDetailsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedControllerPage<VendorDetailsController>(
+      create: VendorDetailsController.new,
+      builder: (controller) => VendorDetailsView(pageController: controller),
+    );
+  }
+}
 
 class VendorDetailsView extends GetView<VendorDetailsController> {
-  const VendorDetailsView({super.key});
+  const VendorDetailsView({super.key, this.pageController});
+
+  /// Contrôleur propre à la page ; sans lui, celui enregistré dans GetX.
+  final VendorDetailsController? pageController;
+
+  @override
+  VendorDetailsController get controller => pageController ?? super.controller;
 
   @override
   Widget build(BuildContext context) {
@@ -15,15 +38,33 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return _buildLoadingState(context);
+          return _withBackButton(_buildLoadingState(context));
         }
 
         if (controller.hasError.value) {
-          return _buildErrorState(context);
+          return _withBackButton(_buildErrorState(context));
         }
 
         return _buildContent(context);
       }),
+    );
+  }
+
+  /// Pas de bandeau tant que la boutique n'est pas chargée : sans cette
+  /// flèche, un chargement lent ou une erreur ne laissait que le bouton
+  /// système pour repartir.
+  Widget _withBackButton(Widget child) {
+    return SafeArea(
+      child: Stack(
+        children: [
+          Positioned.fill(child: child),
+          const Positioned(
+            top: AppDesign.space1,
+            left: AppDesign.space1,
+            child: AppBackButton(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -81,8 +122,8 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             ),
             SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => Get.back(),
-              icon: Icon(Icons.arrow_back_rounded),
+              onPressed: () => AppNavigation.back(context),
+              icon: Icon(Icons.arrow_back_ios_new_rounded),
               label: Text('Retour'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeSystem.primaryColor,
@@ -104,6 +145,8 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
       onRefresh: controller.refreshShopDetails,
       color: AppDesign.accent,
       child: CustomScrollView(
+        // Parcourir la grille referme le clavier de la recherche épinglée.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         // Sans cela, une boutique au catalogue court ne se laisse pas tirer
         // pour se rafraîchir : la liste ne déborde pas, donc ne défile pas.
         physics: const AlwaysScrollableScrollPhysics(),
@@ -164,10 +207,12 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
       foregroundColor: Colors.white,
       leading: Padding(
         padding: EdgeInsets.only(left: AppDesign.space2),
+        // Même retour que [AppBackButton] (accueil si la boutique a été
+        // ouverte depuis un lien), sur une pastille lisible sur la photo.
         child: _GlassIconButton(
-          icon: Icons.arrow_back_rounded,
+          icon: Icons.arrow_back_ios_new_rounded,
           tooltip: 'Retour',
-          onPressed: Get.back<void>,
+          onPressed: () => AppNavigation.back(context),
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
@@ -387,11 +432,19 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
       badgeTone: AppBadgeTone.neutral,
       imageBuilder: image == null || image.isEmpty
           ? null
-          : (context) => Image.network(
-                image!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-              ),
+          : (context) {
+              // Décodée à la taille de la carte, pas en pleine résolution.
+              final cardWidth = ProductCard.widthInGrid(context);
+              return AppNetworkImage(
+                url: image!,
+                decodeSize: Size(
+                  cardWidth,
+                  cardWidth / ProductCard.imageAspectRatio,
+                ),
+                placeholder: (_) => const SizedBox.expand(),
+                errorBuilder: (_) => _buildImagePlaceholder(),
+              );
+            },
       onTap: () => controller.onProductTap(product),
     );
   }

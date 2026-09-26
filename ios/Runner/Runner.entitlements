@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Notifications push : sans cette autorisation, iOS refuse
+	     l'enregistrement auprès d'APNs, aucun token APNs n'est remis à
+	     Firebase, et getToken() comme subscribeToTopic() échouent
+	     (apns-token-not-set). « development » est remplacé par « production »
+	     à la signature pour TestFlight et l'App Store. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<!-- Liens partagés : iOS ne remet le lien à l'application que si ce
 	     domaine sert apple-app-site-association sous /.well-known/. -->
 	<key>com.apple.developer.associated-domains</key>

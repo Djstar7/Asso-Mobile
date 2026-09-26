@@ -51,11 +51,14 @@ class _MarkdownBottomSheetContentState
   Future<void> _loadMarkdown() async {
     try {
       final content = await rootBundle.loadString(widget.assetPath);
+      // Feuille refermée pendant le chargement.
+      if (!mounted) return;
       setState(() {
         _markdownContent = content;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Erreur lors du chargement du document: $e';
         _isLoading = false;

@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/delivery_dashboard_controller.dart';
 import 'delivery_map_fullscreen_view.dart';
 import '../models/delivery_models.dart';
@@ -377,10 +378,13 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   ),
                 ],
               ),
-              child: IconButton(
-                icon: const Icon(Icons.home, size: 20),
-                onPressed: () => Get.offAllNamed('/home'),
+              // Même flèche que partout ailleurs : l'icône maison ne se lisait
+              // pas comme une sortie. Le tableau de bord est ouvert sans rien
+              // derrière lui, on retourne donc explicitement à l'accueil.
+              child: AppBackButton(
+                color: AppDesign.neutral900,
                 tooltip: 'Retour à l\'accueil',
+                onPressed: () => Get.offAllNamed('/home'),
               ),
             ),
           ),

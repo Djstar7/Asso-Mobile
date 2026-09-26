@@ -56,6 +56,29 @@ void main() {
       expect(egypte.initial, 'E');
     });
 
+    test('préfère le drapeau fourni par le backend', () {
+      // Le backend renvoie les pays en anglais : le catalogue local, indexé
+      // en français, ne saurait pas les traduire. Le drapeau doit donc venir
+      // de `countries_detailed`.
+      final cameroon = CountryOption(
+        country: 'Cameroon',
+        currency: _currency('XAF', ['Cameroon']),
+        flag: '🇨🇲',
+        isoCode: 'CM',
+      );
+      expect(cameroon.flag, '🇨🇲');
+      expect(CountryCatalog.flagFor('Cameroon'), '');
+    });
+
+    test('retombe sur le catalogue local sans drapeau du backend', () {
+      final option = CountryOption(
+        country: 'Cameroun',
+        currency: _currency('XAF', ['Cameroun']),
+        flag: '',
+      );
+      expect(option.flag, '🇨🇲');
+    });
+
     test('la recherche ignore accents et casse', () {
       final senegal = CountryOption(
         country: 'Sénégal',

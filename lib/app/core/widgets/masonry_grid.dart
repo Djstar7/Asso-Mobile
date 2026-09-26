@@ -72,3 +72,11 @@ double masonryAspectRatioFor(int id) {
   final index = (scrambled ^ (scrambled >> 13)) % _masonryAspectRatios.length;
   return _masonryAspectRatios[index];
 }
+
+/// Format de la tuile d'une vidéo : ses proportions réelles, bornées.
+///
+/// Une vidéo filmée au téléphone est verticale ; la recadrer dans un format
+/// de mosaïque couperait le sujet. La borne empêche seulement une vidéo très
+/// étirée de manger toute une colonne.
+double masonryVideoAspectRatio(double videoAspectRatio) =>
+    videoAspectRatio.clamp(9 / 16, 1.25).toDouble();

@@ -5,10 +5,33 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/chatdetail_controller.dart';
+import '../../../core/widgets/scoped_controller_page.dart';
+
+/// Page ouverte par la route : chaque conversation empilée a son propre
+/// [ChatdetailController] (voir [ScopedControllerPage]).
+class ChatdetailPage extends StatelessWidget {
+  const ChatdetailPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedControllerPage<ChatdetailController>(
+      create: ChatdetailController.new,
+      builder: (controller) => ChatdetailView(pageController: controller),
+    );
+  }
+}
 
 class ChatdetailView extends GetView<ChatdetailController> {
-  const ChatdetailView({super.key});
+  const ChatdetailView({super.key, this.pageController});
+
+  /// Contrôleur propre à la page ; sans lui, celui enregistré dans GetX.
+  final ChatdetailController? pageController;
+
+  @override
+  ChatdetailController get controller => pageController ?? super.controller;
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +45,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
         // la même teinte que le reste de l'application.
         backgroundColor: AppDesign.surface(context),
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: AppThemeSystem.getPrimaryTextColor(context),
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Row(
           children: [
             Stack(
@@ -121,6 +138,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
               return ListView.builder(
                 controller: controller.scrollController,
+                // Remonter le fil range le clavier, comme dans toute
+                // messagerie : il cachait la moitié des messages.
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.all(16),
                 itemCount: controller.messages.length,
                 itemBuilder: (context, index) {
@@ -372,6 +393,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
             : CachedNetworkImage(
                 imageUrl: imagePath,
                 fit: BoxFit.cover,
+                // Bulle de 250 px au plus : une conversation riche en photos
+                // ne les garde plus toutes en pleine résolution.
+                memCacheWidth:
+                    (250 * MediaQuery.devicePixelRatioOf(context)).ceil(),
                 placeholder: (context, url) => Container(
                   height: 150,
                   color: AppThemeSystem.grey200,
@@ -617,6 +642,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     ),
                     child: TextField(
                       controller: controller.messageController,
+                      // Le clavier réduit le fil par le bas : sans ce
+                      // recalage, il recouvrait les derniers messages, ceux
+                      // auxquels on s'apprête à répondre.
+                      onTap: _scrollToLatestOnceKeyboardIsUp,
                       decoration: InputDecoration(
                         hintText: 'Tapez votre message...',
                         hintStyle: context.textStyle(
@@ -662,6 +691,19 @@ class ChatdetailView extends GetView<ChatdetailController> {
         ),
       ),
     );
+  }
+
+  /// Ramène le fil au dernier message une fois le clavier monté.
+  void _scrollToLatestOnceKeyboardIsUp() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final scroll = controller.scrollController;
+      if (!scroll.hasClients) return;
+      scroll.animateTo(
+        scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   /// Dialog pour sélectionner la source de l'image
@@ -1117,8 +1159,12 @@ class ChatdetailView extends GetView<ChatdetailController> {
                      product['image'];
 
     if (imageUrl != null && imageUrl.toString().startsWith('http')) {
-      return Image.network(
-        imageUrl.toString(),
+      return Image(
+        image: AppNetworkImage.provider(
+          Get.context!,
+          imageUrl.toString(),
+          const Size.square(40),
+        ),
         width: 40,
         height: 40,
         fit: BoxFit.cover,
@@ -1258,8 +1304,12 @@ class ChatdetailView extends GetView<ChatdetailController> {
                      product['image'];
 
     if (imageUrl != null && imageUrl.toString().startsWith('http')) {
-      return Image.network(
-        imageUrl.toString(),
+      return Image(
+        image: AppNetworkImage.provider(
+          Get.context!,
+          imageUrl.toString(),
+          const Size.square(80),
+        ),
         width: 80,
         height: 80,
         fit: BoxFit.cover,

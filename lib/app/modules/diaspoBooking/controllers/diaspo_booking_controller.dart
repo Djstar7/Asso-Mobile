@@ -10,6 +10,9 @@ import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../../data/services/stripe_native_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
+import '../../../routes/app_pages.dart';
+import '../../diaspoList/controllers/diaspo_list_controller.dart';
 
 class DiaspoBookingController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -64,7 +67,9 @@ class DiaspoBookingController extends GetxController {
       offer.value = args['offer'] as DiaspoOffer;
     } else {
       Get.snackbar('Erreur', 'Offre introuvable');
-      Get.back();
+      // Pas `Get.back()` : il refermerait seulement ce snackbar. Après
+      // l'image en cours : on est ici pendant la construction de la page.
+      WidgetsBinding.instance.addPostFrameCallback((_) => AppNavigation.pop());
     }
   }
 
@@ -275,6 +280,30 @@ class DiaspoBookingController extends GetxController {
         duration: const Duration(seconds: 5));
   }
 
+  /// Referme la confirmation et revient à la liste des offres.
+  ///
+  /// La confirmation arrive par un suivi de plusieurs minutes : l'utilisateur
+  /// a pu quitter la réservation entre-temps. Trois `Get.back()` fermaient
+  /// alors des pages sans rapport ; ici on redescend jusqu'à la liste si
+  /// elle est dans la pile (sans jamais vider celle-ci), sinon on l'ouvre.
+  void _returnToOffers() {
+    final navigator = Get.key.currentState;
+    if (navigator == null) return;
+    var reachedList = false;
+    navigator.popUntil((route) {
+      if (route.settings.name == Routes.DIASPO) {
+        reachedList = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+    if (!reachedList) {
+      Get.toNamed(Routes.DIASPO);
+    } else if (Get.isRegistered<DiaspoListController>()) {
+      Get.find<DiaspoListController>().refresh();
+    }
+  }
+
   void _showSuccessDialog(DiaspoBooking booking) {
     Get.dialog(
       Dialog(
@@ -344,13 +373,7 @@ class DiaspoBookingController extends GetxController {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Get.back(); // Close dialog
-                    Get.back(); // Close booking screen
-                    Get.back(); // Close detail screen
-                    // Go back to list and refresh
-                    Get.toNamed('/diaspo');
-                  },
+                  onPressed: _returnToOffers,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

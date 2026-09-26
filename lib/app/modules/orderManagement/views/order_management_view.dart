@@ -17,13 +17,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: context.primaryTextColor,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Gestion des commandes',
           style: context.h5.copyWith(
@@ -49,6 +43,9 @@ class OrderManagementView extends GetView<OrderManagementController> {
         return RefreshIndicator(
           onRefresh: controller.loadOrders,
           child: CustomScrollView(
+            // La recherche est dans la liste : faire défiler les résultats
+            // referme le clavier qui les masquait.
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               // Statistiques rapides
               SliverToBoxAdapter(

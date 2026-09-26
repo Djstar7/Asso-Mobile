@@ -17,7 +17,11 @@ class DiaspoListView extends GetView<DiaspoListController> {
       backgroundColor: isDark
           ? AppThemeSystem.darkBackgroundColor
           : Colors.grey[100],
-      appBar: AppBar(title: const Text('DIASPO EXCHANGE'), centerTitle: true),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('DIASPO EXCHANGE'),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           //  Zone de recherche
@@ -289,6 +293,9 @@ class DiaspoListView extends GetView<DiaspoListController> {
             return false;
           },
           child: ListView.builder(
+            // Parcourir les résultats referme le clavier de la recherche, qui
+            // masquait la moitié de la liste.
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.all(16),
             itemCount:
                 displayedOffers.length +
@@ -1070,6 +1077,9 @@ class DiaspoListView extends GetView<DiaspoListController> {
     final codeController = TextEditingController();
     Get.dialog(
       AlertDialog(
+        // Sur un petit écran, le clavier ne laisse que peu de hauteur : le
+        // contenu défile plutôt que de repousser le bouton Valider hors champ.
+        scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [

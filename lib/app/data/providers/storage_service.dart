@@ -228,6 +228,7 @@ class StorageService {
     clearCurrency(); // Clear currency selection
     clearCountry(); // Clear country selection
     disableGuestMode(); // Also disable guest mode on logout
+    clearFcmRegistration();
 
     // Clear all cache data
     try {
@@ -379,4 +380,29 @@ class StorageService {
     developer.log('Guest mode: $isGuest', name: 'StorageService');
     return isGuest;
   }
+
+  // ==================== Push Notifications ====================
+
+  /// Token FCM déjà confirmé par le backend, sous la forme `userId:token`.
+  ///
+  /// Permet à l'accueil de ne renvoyer le token que s'il n'a jamais été
+  /// enregistré pour ce compte, ou s'il a changé depuis.
+  static String? get fcmRegistration => _storage.read('fcm_registration');
+
+  static void setFcmRegistration(String value) =>
+      _storage.write('fcm_registration', value);
+
+  /// Le backend supprime les tokens du compte à la déconnexion : la marque
+  /// doit tomber avec eux, sinon la reconnexion croirait le token connu.
+  static void clearFcmRegistration() => _storage.remove('fcm_registration');
+
+  /// Token FCM déjà abonné au topic des annonces (`all_users`).
+  ///
+  /// Gardé à la déconnexion : l'abonnement suit l'appareil, pas le compte,
+  /// et un invité doit continuer à recevoir les annonces.
+  static String? get announcementsTopicToken =>
+      _storage.read('fcm_topic_token');
+
+  static void setAnnouncementsTopicToken(String token) =>
+      _storage.write('fcm_topic_token', token);
 }

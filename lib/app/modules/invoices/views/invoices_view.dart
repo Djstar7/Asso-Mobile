@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../data/models/invoice_model.dart';
 import '../controllers/invoices_controller.dart';
 import '../../../core/utils/app_design.dart';
@@ -16,10 +17,7 @@ class InvoicesView extends GetView<InvoicesController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Mes Factures',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),

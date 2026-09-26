@@ -40,9 +40,15 @@ class CertificationPackagesController extends GetxController {
         final packagesData = response.data!['packages'] as List?;
         if (packagesData != null) {
           packages.value = packagesData.map((e) => e as Map<String, dynamic>).toList();
+          // Formule recommandée (sinon la première) présélectionnée : son bouton
+          // « Obtenir la certification » est visible dès l'arrivée.
+          final keep = packages.firstWhereOrNull((p) => p['id'] == selectedPackage.value?['id']);
+          selectedPackage.value = keep ??
+              packages.firstWhereOrNull((p) => p['is_popular'] == true) ??
+              packages.firstOrNull;
         }
       } else {
-        Get.snackbar('Erreur', response.message ?? 'Impossible de charger les packages',
+        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de charger les packages',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
       }

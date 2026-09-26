@@ -19,10 +19,20 @@ class PaymentLoadingDialog extends StatefulWidget {
     );
   }
 
+  /// Dialogue affiché en ce moment, s'il y en a un.
+  static _PaymentLoadingDialogState? _current;
+
   static void hide() {
-    if (Get.isDialogOpen ?? false) {
-      Get.back();
-    }
+    final state = _current;
+    if (state == null || !state.mounted) return;
+    final route = ModalRoute.of(state.context);
+    if (route == null || !route.isActive) return;
+    // Retire exactement ce dialogue, où qu'il soit dans la pile. Pas
+    // Get.back() : avec GetX 4.7.3 il ne ferme que la bannière éventuellement
+    // affichée. Pas un simple pop non plus : si une page s'était ouverte
+    // par-dessus, c'est elle qui se fermait, et un second appel (bloc
+    // `finally`) fermait la page en dessous.
+    Navigator.of(state.context).removeRoute(route);
   }
 
   @override
@@ -37,6 +47,7 @@ class _PaymentLoadingDialogState extends State<PaymentLoadingDialog>
   @override
   void initState() {
     super.initState();
+    PaymentLoadingDialog._current = this;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -52,6 +63,9 @@ class _PaymentLoadingDialogState extends State<PaymentLoadingDialog>
 
   @override
   void dispose() {
+    if (identical(PaymentLoadingDialog._current, this)) {
+      PaymentLoadingDialog._current = null;
+    }
     _controller.dispose();
     super.dispose();
   }

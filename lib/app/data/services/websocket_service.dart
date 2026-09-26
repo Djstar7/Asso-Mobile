@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
@@ -7,13 +9,45 @@ import '../models/message_model.dart';
 import '../providers/storage_service.dart';
 import '../../core/values/constants.dart';
 
-class WebSocketService extends GetxService {
+class WebSocketService extends GetxService with WidgetsBindingObserver {
   static WebSocketService get to => Get.find<WebSocketService>();
 
   WebSocketChannel? _channel;
   final _isConnected = false.obs;
   bool get isConnected => _isConnected.value;
   String? _socketId;
+
+  /// Incrémenté à chaque connexion établie. Un écran qui écoute le temps réel
+  /// s'y abonne pour recharger ce qu'il a pu manquer pendant la coupure
+  /// (application en arrière-plan, réseau perdu).
+  final connectionEpoch = 0.obs;
+
+  /// Numéro de la connexion courante : les événements d'un ancien canal,
+  /// arrivés après une reconnexion, sont ignorés.
+  int _generation = 0;
+
+  /// Vrai quand l'application est au premier plan. En arrière-plan, le
+  /// système coupe le réseau de l'application : inutile de s'y acharner.
+  bool _inForeground = true;
+
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+
+  /// Le serveur a refusé la connexion pour de bon (codes Pusher 4000-4099 :
+  /// clé d'application inconnue, protocole refusé…). Réessayer avec les
+  /// mêmes paramètres échouerait à l'identique : on attend le prochain
+  /// retour au premier plan ou la prochaine connexion au compte.
+  bool _refusedByServer = false;
+
+  /// Silence au-delà duquel on sonde le serveur (`activity_timeout` annoncé
+  /// à la connexion, 30 s chez Reverb).
+  Duration _activityTimeout = const Duration(seconds: 30);
+
+  /// Délai de réponse au sondage avant de tenir la connexion pour morte.
+  static const Duration _pongTimeout = Duration(seconds: 30);
+
+  Timer? _activityTimer;
+  Timer? _pongTimer;
 
   // Streams pour broadcaster les événements
   final _messageStream = StreamController<MessageModel>.broadcast();
@@ -26,26 +60,88 @@ class WebSocketService extends GetxService {
   Stream<Map<String, dynamic>> get onlineStatusStream =>
       _onlineStatusStream.stream;
 
+  // ==========================================================================
   // Configuration Reverb (Laravel)
-  static const String appKey = '9r0idxmfd6d9lc9e055h';
-
-  // Serveur de diffusion (Reverb). Surchargeable au build, comme l'API :
-  //   flutter build apk --dart-define=WS_HOST=asso-dashboard.sbs --dart-define=WS_PORT=8080
+  // --------------------------------------------------------------------------
   // Le défaut vise la production : un APK distribué ne doit jamais pointer vers
   // une IP de réseau local, injoignable pour le testeur.
+  //
+  // Les trois paramètres sont surchargeables au build, comme l'API :
+  //   flutter build apk --dart-define=WS_HOST=asso-dashboard.sbs \
+  //                     --dart-define=WS_PORT=443 \
+  //                     --dart-define=WS_TLS=true \
+  //                     --dart-define=REVERB_APP_KEY=<clé du serveur>
+  //
+  // WS_TLS indique si le port Reverb est servi en TLS (wss) ou en clair (ws).
+  // En production, Reverb est servi derrière le domaine, en TLS sur le 443 :
+  // wss://asso-dashboard.sbs/app/<clé>. L'ancien port 8080 répondait
+  // « Application does not exist » (4001) et le 8085 n'est pas exposé : le
+  // temps réel ne se connectait jamais.
+  // ==========================================================================
+
+  /// Clé applicative Reverb, elle doit correspondre à REVERB_APP_KEY du serveur.
+  static const String appKey = String.fromEnvironment(
+    'REVERB_APP_KEY',
+    defaultValue: '9r0idxmfd6d9lc9e055h',
+  );
+
   static const String host = String.fromEnvironment(
     'WS_HOST',
-    defaultValue: 'asso-dashboard.sbs',
+    defaultValue: AppConstants.productionDomain,
   );
-  static const int wsPort = int.fromEnvironment('WS_PORT', defaultValue: 8080);
+  static const int wsPort = int.fromEnvironment('WS_PORT', defaultValue: 443);
 
-  // Channels actifs
+  /// true -> wss://, false -> ws://
+  static const bool useTls = bool.fromEnvironment('WS_TLS', defaultValue: true);
+
+  static String get wsScheme => useTls ? 'wss' : 'ws';
+
+  /// Canaux voulus par les écrans ouverts. Ils survivent aux coupures : à
+  /// chaque connexion établie, on s'y réabonne.
+  final Set<String> _wantedChannels = {};
+
+  /// Canaux effectivement demandés sur la connexion courante.
   final Set<String> _subscribedChannels = {};
   StreamSubscription? _subscription;
 
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeWebSocket();
+  }
+
+  /// Suit le cycle de vie de l'application.
+  ///
+  /// En arrière-plan, iOS et Android suspendent l'application et la
+  /// connexion meurt sans prévenir : le chat restait ensuite muet jusqu'au
+  /// redémarrage. On ferme donc proprement à la mise en pause, et on
+  /// rouvre au retour au premier plan.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _inForeground = true;
+        _reconnectAttempts = 0;
+        _refusedByServer = false;
+        ensureConnected();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _inForeground = false;
+        _closeChannel();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  /// Ouvre la connexion si elle ne l'est pas déjà (retour au premier plan,
+  /// réseau retrouvé). Sans effet sans session.
+  void ensureConnected() {
+    if (_channel != null || StorageService.getToken() == null) return;
+    _reconnectTimer?.cancel();
     _initializeWebSocket();
   }
 
@@ -56,28 +152,39 @@ class WebSocketService extends GetxService {
         print('⚠️  No auth token, skipping WebSocket initialization');
         return;
       }
+      if (_channel != null) return;
+      final generation = ++_generation;
 
-      // Connexion WebSocket Pusher/Reverb
-      // Local: ws://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0
-      // Production: wss://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0
+      // Connexion WebSocket Pusher/Reverb. Le schéma suit WS_TLS : le port
+      // Reverb n'est pas forcément servi derrière le certificat du domaine.
       final uri = Uri.parse(
-        'wss://$host:$wsPort/app/$appKey?protocol=7&client=dart&version=1.0.0',
+        '$wsScheme://$host:$wsPort/app/$appKey'
+        '?protocol=7&client=dart&version=1.0.0',
       );
 
       print('🔌 [WebSocket] Attempting to connect to: $uri');
-      _channel = WebSocketChannel.connect(uri);
+      final channel = WebSocketChannel.connect(uri);
+      _channel = channel;
+      // L'échec de connexion arrive aussi par `onError` ci-dessous ; sans
+      // cela, `ready` le remonterait en erreur non interceptée.
+      channel.ready.catchError((_) {});
 
       // Écouter les messages entrants
-      _subscription = _channel!.stream.listen(
-        _handleIncomingMessage,
+      _subscription = channel.stream.listen(
+        (message) {
+          if (generation != _generation) return;
+          _onActivity(generation);
+          _handleIncomingMessage(message);
+        },
         onError: (error) {
           print('❌ [WebSocket] Error: $error');
-          _isConnected.value = false;
+          _onConnectionLost(generation);
         },
         onDone: () {
           print('🔌 [WebSocket] Connection closed');
-          _isConnected.value = false;
+          _onConnectionLost(generation);
         },
+        cancelOnError: true,
       );
 
       print(
@@ -85,6 +192,86 @@ class WebSocketService extends GetxService {
       );
     } catch (e) {
       print('❌ [WebSocket] Error initializing: $e');
+      _channel = null;
+      _scheduleReconnect();
+    }
+  }
+
+  /// Le serveur vient de parler : la connexion est vivante.
+  ///
+  /// Après [_activityTimeout] de silence, on envoie `pusher:ping` ; sans
+  /// réponse sous [_pongTimeout], la connexion est morte sans que le système
+  /// l'ait signalé (passage du Wi-Fi à la 4G, réseau perdu dans un
+  /// ascenseur…) : on la relance plutôt que de laisser le chat muet.
+  void _onActivity(int generation) {
+    _pongTimer?.cancel();
+    _pongTimer = null;
+    _activityTimer?.cancel();
+    _activityTimer = Timer(_activityTimeout, () {
+      if (generation != _generation) return;
+      _send({'event': 'pusher:ping', 'data': {}});
+      _pongTimer = Timer(_pongTimeout, () {
+        if (generation != _generation) return;
+        print('⚠️  [WebSocket] Pas de réponse au ping : reconnexion');
+        _closeChannel();
+        _scheduleReconnect();
+      });
+    });
+  }
+
+  void _stopActivityTimers() {
+    _activityTimer?.cancel();
+    _activityTimer = null;
+    _pongTimer?.cancel();
+    _pongTimer = null;
+  }
+
+  /// La connexion [generation] s'est fermée ou a échoué.
+  void _onConnectionLost(int generation) {
+    // Fermeture volontaire, ou connexion déjà remplacée.
+    if (generation != _generation) return;
+    _stopActivityTimers();
+    _subscription?.cancel();
+    _subscription = null;
+    _channel = null;
+    _socketId = null;
+    _isConnected.value = false;
+    _subscribedChannels.clear();
+    _scheduleReconnect();
+  }
+
+  /// Reprogramme une connexion, avec un délai croissant (2 s, 4 s… 1 min)
+  /// pour ne pas marteler un serveur injoignable.
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    if (!_inForeground ||
+        _refusedByServer ||
+        StorageService.getToken() == null) {
+      return;
+    }
+
+    final seconds = math.min(60, 2 << math.min(_reconnectAttempts, 5));
+    _reconnectAttempts++;
+    print('🔁 [WebSocket] Reconnexion dans ${seconds}s');
+    _reconnectTimer = Timer(Duration(seconds: seconds), ensureConnected);
+  }
+
+  /// Ferme la connexion courante sans oublier les canaux voulus.
+  void _closeChannel() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _stopActivityTimers();
+    // Invalide les rappels de l'ancien canal (onDone arrive après close).
+    _generation++;
+    final channel = _channel;
+    _channel = null;
+    _subscription?.cancel();
+    _subscription = null;
+    _socketId = null;
+    _isConnected.value = false;
+    _subscribedChannels.clear();
+    if (channel != null) {
+      channel.sink.close().catchError((_) {});
     }
   }
 
@@ -105,6 +292,17 @@ class WebSocketService extends GetxService {
       switch (event) {
         case 'pusher:connection_established':
           _handleConnectionEstablished(data);
+          break;
+        case 'pusher:pong':
+          // Réponse à notre sondage : `_onActivity` a déjà tout réarmé.
+          break;
+        case 'pusher:ping':
+          // Sans réponse, le serveur ferme la connexion au bout de quelques
+          // minutes d'inactivité : le chat cessait alors de se mettre à jour.
+          _send({'event': 'pusher:pong', 'data': {}});
+          break;
+        case 'pusher:error':
+          _handleServerError(data);
           break;
         case 'pusher_internal:subscription_succeeded':
           _handleSubscriptionSucceeded(data);
@@ -127,6 +325,20 @@ class WebSocketService extends GetxService {
     }
   }
 
+  /// Erreur signalée par le serveur Pusher/Reverb.
+  void _handleServerError(Map<String, dynamic> data) {
+    print('⚠️  [WebSocket] Erreur serveur : ${data['data']}');
+    try {
+      final payload = data['data'] is String
+          ? jsonDecode(data['data'])
+          : data['data'];
+      final code = payload is Map ? int.tryParse('${payload['code']}') : null;
+      if (code != null && code >= 4000 && code < 4100) {
+        _refusedByServer = true;
+      }
+    } catch (_) {}
+  }
+
   /// Connexion établie
   void _handleConnectionEstablished(Map<String, dynamic> data) {
     try {
@@ -135,11 +347,74 @@ class WebSocketService extends GetxService {
           : data['data'] as Map<String, dynamic>? ?? {};
 
       _socketId = dataContent['socket_id'] as String?;
+      final timeout = int.tryParse('${dataContent['activity_timeout'] ?? ''}');
+      if (timeout != null && timeout > 0) {
+        _activityTimeout = Duration(seconds: timeout.clamp(10, 120));
+      }
       print('✅ Pusher connection established - Socket ID: $_socketId');
-      _isConnected.value = true;
     } catch (e) {
       print('❌ Error parsing connection data: $e');
-      _isConnected.value = true;
+    }
+    _isConnected.value = true;
+    _reconnectAttempts = 0;
+    connectionEpoch.value++;
+    _resubscribeAll();
+  }
+
+  /// Rétablit, sur la nouvelle connexion, les abonnements des écrans ouverts.
+  void _resubscribeAll() {
+    for (final channelName in _wantedChannels.toList()) {
+      _subscribe(channelName);
+    }
+  }
+
+  /// Envoie un message sur la connexion courante, sans lever si elle vient
+  /// de se fermer.
+  void _send(Map<String, dynamic> payload) {
+    final channel = _channel;
+    if (channel == null) return;
+    try {
+      channel.sink.add(jsonEncode(payload));
+    } catch (e) {
+      print('❌ [WebSocket] Envoi impossible : $e');
+    }
+  }
+
+  /// Attend la connexion (5 s au plus). Faux si elle n'est pas établie.
+  Future<bool> _waitForConnection() async {
+    ensureConnected();
+    int attempts = 0;
+    while (!_isConnected.value && attempts < 50) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+    return _channel != null && _isConnected.value;
+  }
+
+  /// Demande l'abonnement à [channelName] sur la connexion courante.
+  Future<void> _subscribe(String channelName) async {
+    if (_subscribedChannels.contains(channelName)) return;
+    final generation = _generation;
+
+    try {
+      final authToken = StorageService.getToken();
+      final auth = await _getChannelAuth(channelName, authToken);
+
+      // Connexion remplacée ou canal abandonné pendant l'authentification.
+      if (generation != _generation ||
+          !_wantedChannels.contains(channelName) ||
+          _subscribedChannels.contains(channelName)) {
+        return;
+      }
+
+      _send({
+        'event': 'pusher:subscribe',
+        'data': {'channel': channelName, 'auth': auth},
+      });
+      _subscribedChannels.add(channelName);
+      print('📡 Subscribing to $channelName');
+    } catch (e) {
+      print('❌ Error subscribing to $channelName: $e');
     }
   }
 
@@ -151,110 +426,39 @@ class WebSocketService extends GetxService {
     }
   }
 
-  /// S'abonner à une conversation
-  Future<void> subscribeToConversation(int conversationId) async {
-    // Attendre que la connexion soit établie (max 5 secondes)
-    int attempts = 0;
-    while (!_isConnected.value && attempts < 50) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
-    }
-
-    if (_channel == null || !_isConnected.value) {
-      print('⚠️  WebSocket not connected after waiting');
-      return;
-    }
-
-    final channelName = 'private-conversation.$conversationId';
-
-    if (_subscribedChannels.contains(channelName)) {
-      print('⚠️  Already subscribed to $channelName');
-      return;
-    }
-
-    try {
-      final authToken = StorageService.getToken();
-
-      // Générer la signature d'authentification (simplifié pour Reverb)
-      // En production, tu devrais appeler ton endpoint /broadcasting/auth
-      final auth = await _getChannelAuth(channelName, authToken);
-
-      // Envoyer la demande d'abonnement
-      final subscribeMessage = jsonEncode({
-        'event': 'pusher:subscribe',
-        'data': {'channel': channelName, 'auth': auth},
-      });
-
-      _channel!.sink.add(subscribeMessage);
-      _subscribedChannels.add(channelName);
-
-      print('📡 Subscribing to $channelName');
-    } catch (e) {
-      print('❌ Error subscribing to conversation: $e');
-    }
-  }
+  /// S'abonner à une conversation.
+  ///
+  /// L'abonnement est retenu : il est rétabli de lui-même après une coupure,
+  /// jusqu'à [unsubscribeFromConversation].
+  Future<void> subscribeToConversation(int conversationId) =>
+      _want('private-conversation.$conversationId');
 
   /// Se désabonner d'une conversation
   Future<void> unsubscribeFromConversation(int conversationId) async {
-    if (_channel == null) return;
-
     final channelName = 'private-conversation.$conversationId';
+    _wantedChannels.remove(channelName);
+    if (!_subscribedChannels.remove(channelName)) return;
 
-    if (!_subscribedChannels.contains(channelName)) {
-      return;
-    }
-
-    try {
-      final unsubscribeMessage = jsonEncode({
-        'event': 'pusher:unsubscribe',
-        'data': {'channel': channelName},
-      });
-
-      _channel!.sink.add(unsubscribeMessage);
-      _subscribedChannels.remove(channelName);
-
-      print('🔕 Unsubscribed from $channelName');
-    } catch (e) {
-      print('❌ Error unsubscribing: $e');
-    }
+    _send({
+      'event': 'pusher:unsubscribe',
+      'data': {'channel': channelName},
+    });
+    print('🔕 Unsubscribed from $channelName');
   }
 
   /// S'abonner au statut en ligne d'un utilisateur
-  Future<void> subscribeToUserStatus(int userId) async {
-    // Attendre que la connexion soit établie (max 5 secondes)
-    int attempts = 0;
-    while (!_isConnected.value && attempts < 50) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
-    }
+  Future<void> subscribeToUserStatus(int userId) =>
+      _want('private-user.status.$userId');
 
-    if (_channel == null || !_isConnected.value) {
-      print('⚠️  WebSocket not connected after waiting');
+  /// Retient [channelName] et s'y abonne dès que la connexion est prête.
+  Future<void> _want(String channelName) async {
+    _wantedChannels.add(channelName);
+    if (!await _waitForConnection()) {
+      // La connexion établie plus tard rejouera l'abonnement.
+      print('⚠️  WebSocket not connected yet, $channelName en attente');
       return;
     }
-
-    final channelName = 'private-user.status.$userId';
-
-    if (_subscribedChannels.contains(channelName)) {
-      return;
-    }
-
-    try {
-      final authToken = StorageService.getToken();
-      final auth = await _getChannelAuth(channelName, authToken);
-
-      final subscribeMessage = jsonEncode({
-        'event': 'pusher:subscribe',
-        'data': {'channel': channelName, 'auth': auth},
-      });
-
-      _channel!.sink.add(subscribeMessage);
-      _subscribedChannels.add(channelName);
-
-      print('🟢 Subscribed to user status: $userId');
-    } catch (e) {
-      print('❌ Error subscribing to user status: $e');
-    }
+    await _subscribe(channelName);
   }
 
   /// Obtenir l'authentification du channel (appel à l'API Laravel)
@@ -370,24 +574,21 @@ class WebSocketService extends GetxService {
   /// commande) reste muet jusqu'au prochain démarrage.
   Future<void> reconnect() async {
     await disconnect();
+    _reconnectAttempts = 0;
+    _refusedByServer = false;
     await _initializeWebSocket();
   }
 
-  /// Se déconnecter
+  /// Se déconnecter (déconnexion du compte) : les abonnements sont oubliés.
   Future<void> disconnect() async {
-    try {
-      _subscription?.cancel();
-      await _channel?.sink.close();
-      _isConnected.value = false;
-      _subscribedChannels.clear();
-      print('🔌 Disconnected from WebSocket');
-    } catch (e) {
-      print('❌ Error disconnecting: $e');
-    }
+    _wantedChannels.clear();
+    _closeChannel();
+    print('🔌 Disconnected from WebSocket');
   }
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     disconnect();
     _messageStream.close();
     _typingStream.close();

@@ -8,7 +8,7 @@ import '../../../routes/app_pages.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import 'kpay_phone_selector.dart';
-import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 /// Bottom sheet pour initier un retrait Mobile Money (KPay)
 class WithdrawalBottomSheet extends StatefulWidget {
@@ -26,15 +26,11 @@ class WithdrawalBottomSheet extends StatefulWidget {
     required String provider,
     required double availableBalance,
   }) {
-    return Get.bottomSheet<bool>(
+    return AppSheet.show<bool>(
       WithdrawalBottomSheet(
         provider: provider,
         availableBalance: availableBalance,
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
     );
   }
 
@@ -107,291 +103,249 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getBackgroundColor(context),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.getPrimaryTextColor(context),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Get.back(),
-                      icon: const Icon(Icons.close),
-                      padding: EdgeInsets.zero,
-                      // Cible tactile minimale conservée (recommandation Material/WCAG).
-                      constraints: const BoxConstraints(
-                        minWidth: AppDesign.minTapTarget,
-                        minHeight: AppDesign.minTapTarget,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Solde disponible
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppThemeSystem.primaryColor.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isKpay ? 'Solde $_kpayCurrency' : 'Solde $providerLabel',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppThemeSystem.getSecondaryTextColor(context),
-                        ),
-                      ),
-                      Text(
-                        '${_availableBalance.toStringAsFixed(0)} ${isKpay ? _kpayCurrency : "FCFA"}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Montant
-                TextFormField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: TextStyle(
-                    color: AppThemeSystem.getPrimaryTextColor(context),
-                  ),
-                  decoration: InputDecoration(
-                    labelText: isKpay
-                        ? 'Montant à retirer (${_currencyLabel(_kpayCurrency)})'
-                        : 'Montant à retirer (FCFA)',
-                    hintText: 'Ex: ${minAmount.toStringAsFixed(0)}',
-                    prefixIcon: const Icon(Icons.attach_money),
-                    filled: true,
-                    fillColor: AppThemeSystem.getSurfaceColor(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppThemeSystem.getBorderColor(context),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppThemeSystem.getBorderColor(context),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppThemeSystem.primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un montant';
-                    }
-                    final amount = double.tryParse(value);
-                    if (amount == null || amount < minAmount) {
-                      return 'Le montant minimum est de ${minAmount.toStringAsFixed(0)} FCFA';
-                    }
-                    if (amount > _availableBalance) {
-                      return 'Solde insuffisant';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // Champs spécifiques à KPay
-                if (isKpay) ...[
-                  // Pré-rempli avec le compte de retrait enregistré (s'il existe).
-                  KpayPhoneSelector(
-                    initialProviderCode: _savedAccount?['provider']?.toString(),
-                    initialPhone: _savedAccount?['phone_number']?.toString(),
-                    onChanged: ({
-                      required String? providerCode,
-                      required String? phoneNumber,
-                      required String currency,
-                      required bool isValid,
-                    }) {
-                      final wasDifferent = _differsFromSaved;
-                      _kpayProvider = providerCode;
-                      _kpayPhone = phoneNumber;
-                      _kpayValid = isValid;
-                      if (wasDifferent != _differsFromSaved && mounted) setState(() {});
-                      // Rafraîchir le solde + convertir le montant saisi si la devise change
-                      if (currency != _kpayCurrency) {
-                        final old = _kpayCurrency;
-                        _kpayCurrency = currency;
-                        if (mounted) setState(() {});
-                        _convertFieldToCurrency(old, currency);
-                      }
-                    },
-                  ),
-                  if (_kpayValid && _differsFromSaved)
-                    CheckboxListTile(
-                      value: _rememberAccount,
-                      onChanged: (v) => setState(() => _rememberAccount = v ?? false),
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      dense: true,
-                      title: Text(
-                        _savedAccount == null
-                            ? 'Mémoriser ce numéro pour mes prochains retraits'
-                            : 'Remplacer mon compte de retrait enregistré',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppThemeSystem.getPrimaryTextColor(context),
-                        ),
-                      ),
-                    ),
-                ],
-
-                const SizedBox(height: 16),
-
-                // Notes (optionnel)
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  style: TextStyle(
-                    color: AppThemeSystem.getPrimaryTextColor(context),
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Notes (optionnel)',
-                    hintText: 'Ajouter une note pour ce retrait...',
-                    prefixIcon: const Icon(Icons.note_outlined),
-                    filled: true,
-                    fillColor: AppThemeSystem.getSurfaceColor(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppThemeSystem.getBorderColor(context),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppThemeSystem.getBorderColor(context),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppThemeSystem.primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Bouton de confirmation
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _handleWithdrawal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                      foregroundColor: AppThemeSystem.whiteColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isProcessing
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: AppThemeSystem.whiteColor,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Confirmer le retrait',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Info
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppThemeSystem.infoColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppThemeSystem.infoColor.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline,
-                        color: AppThemeSystem.infoColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Le retrait sera traité dans les 24-48h ouvrables.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppThemeSystem.getSecondaryTextColor(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return AppSheet(
+      title: title,
+      color: AppThemeSystem.getBackgroundColor(context),
+      // Bouton épinglé au-dessus du clavier : sous les champs, il passait
+      // dessous dès qu'on saisissait le montant.
+      footer: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: _isProcessing ? null : _handleWithdrawal,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppThemeSystem.primaryColor,
+            foregroundColor: AppThemeSystem.whiteColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
+          child: _isProcessing
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: AppThemeSystem.whiteColor,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text(
+                  'Confirmer le retrait',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Solde disponible
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppThemeSystem.primaryColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isKpay ? 'Solde $_kpayCurrency' : 'Solde $providerLabel',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppThemeSystem.getSecondaryTextColor(context),
+                    ),
+                  ),
+                  Text(
+                    '${_availableBalance.toStringAsFixed(0)} ${isKpay ? _kpayCurrency : "FCFA"}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppThemeSystem.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Montant
+            TextFormField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: TextStyle(
+                color: AppThemeSystem.getPrimaryTextColor(context),
+              ),
+              decoration: InputDecoration(
+                labelText: isKpay
+                    ? 'Montant à retirer (${_currencyLabel(_kpayCurrency)})'
+                    : 'Montant à retirer (FCFA)',
+                hintText: 'Ex: ${minAmount.toStringAsFixed(0)}',
+                prefixIcon: const Icon(Icons.attach_money),
+                filled: true,
+                fillColor: AppThemeSystem.getSurfaceColor(context),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppThemeSystem.getBorderColor(context),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppThemeSystem.getBorderColor(context),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppThemeSystem.primaryColor,
+                    width: 2,
+                  ),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Veuillez entrer un montant';
+                }
+                final amount = double.tryParse(value);
+                if (amount == null || amount < minAmount) {
+                  return 'Le montant minimum est de ${minAmount.toStringAsFixed(0)} FCFA';
+                }
+                if (amount > _availableBalance) {
+                  return 'Solde insuffisant';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Champs spécifiques à KPay
+            if (isKpay) ...[
+              // Pré-rempli avec le compte de retrait enregistré (s'il existe).
+              KpayPhoneSelector(
+                initialProviderCode: _savedAccount?['provider']?.toString(),
+                initialPhone: _savedAccount?['phone_number']?.toString(),
+                onChanged: ({
+                  required String? providerCode,
+                  required String? phoneNumber,
+                  required String currency,
+                  required bool isValid,
+                }) {
+                  final wasDifferent = _differsFromSaved;
+                  _kpayProvider = providerCode;
+                  _kpayPhone = phoneNumber;
+                  _kpayValid = isValid;
+                  if (wasDifferent != _differsFromSaved && mounted) setState(() {});
+                  // Rafraîchir le solde + convertir le montant saisi si la devise change
+                  if (currency != _kpayCurrency) {
+                    final old = _kpayCurrency;
+                    _kpayCurrency = currency;
+                    if (mounted) setState(() {});
+                    _convertFieldToCurrency(old, currency);
+                  }
+                },
+              ),
+              if (_kpayValid && _differsFromSaved)
+                CheckboxListTile(
+                  value: _rememberAccount,
+                  onChanged: (v) => setState(() => _rememberAccount = v ?? false),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  dense: true,
+                  title: Text(
+                    _savedAccount == null
+                        ? 'Mémoriser ce numéro pour mes prochains retraits'
+                        : 'Remplacer mon compte de retrait enregistré',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppThemeSystem.getPrimaryTextColor(context),
+                    ),
+                  ),
+                ),
+            ],
+
+            const SizedBox(height: 16),
+
+            // Notes (optionnel)
+            TextFormField(
+              controller: _notesController,
+              maxLines: 2,
+              style: TextStyle(
+                color: AppThemeSystem.getPrimaryTextColor(context),
+              ),
+              decoration: InputDecoration(
+                labelText: 'Notes (optionnel)',
+                hintText: 'Ajouter une note pour ce retrait...',
+                prefixIcon: const Icon(Icons.note_outlined),
+                filled: true,
+                fillColor: AppThemeSystem.getSurfaceColor(context),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppThemeSystem.getBorderColor(context),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppThemeSystem.getBorderColor(context),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppThemeSystem.primaryColor,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppThemeSystem.infoColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppThemeSystem.infoColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppThemeSystem.infoColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Le retrait sera traité dans les 24-48h ouvrables.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppThemeSystem.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

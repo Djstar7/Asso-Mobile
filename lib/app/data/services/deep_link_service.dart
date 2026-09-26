@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
+import '../../core/utils/app_navigation.dart';
 import '../../core/values/constants.dart';
 import '../../routes/app_pages.dart';
 import '../providers/product_service.dart';
@@ -159,10 +160,8 @@ class DeepLinkService extends GetxService {
     if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
       await SchedulerBinding.instance.endOfFrame;
     }
-    for (var i = 0; i < 20 && Get.key.currentState == null; i++) {
-      await SchedulerBinding.instance.endOfFrame;
-    }
-    if (Get.key.currentState == null) {
+    // Le splash se termine par `offAllNamed`, qui emporterait la fiche.
+    if (!await AppNavigation.whenAppReady()) {
       debugPrint('[DeepLink] pas de navigateur, $route abandonné');
       return;
     }

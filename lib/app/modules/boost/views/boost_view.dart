@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/boost_controller.dart';
 import '../widgets/boost_campaign_card.dart';
@@ -19,6 +20,7 @@ class BoostView extends GetView<BoostController> {
       appBar: AppBar(
         backgroundColor: AppDesign.surface(context),
         elevation: 0,
+        leading: const AppBackButton(),
         title: Text(
           'Asso Ads',
           style: TextStyle(

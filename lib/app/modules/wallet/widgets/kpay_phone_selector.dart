@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/values/kpay_catalog.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 /// Sélecteur KPay : pays (drapeau + indicatif) → opérateur → numéro.
 ///
@@ -93,46 +94,32 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
   }
 
   Future<void> _pickCountry() async {
-    final selected = await showModalBottomSheet<KPayCountry>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Sélectionnez votre pays',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    // Feuille standard : elle s'arrête sous la barre d'état et porte une
+    // croix. Ouverte par-dessus la feuille de paiement, elle montait jusqu'en
+    // haut de l'écran sans autre sortie que le bouton système.
+    final selected = await AppSheet.show<KPayCountry>(
+      AppSheet(
+        title: 'Sélectionnez votre pays',
+        scrollable: false,
+        bodyPadding: EdgeInsets.zero,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: KPayCatalog.countries.length,
+          itemBuilder: (itemContext, i) {
+            final c = KPayCatalog.countries[i];
+            return ListTile(
+              leading: Text(c.flag, style: const TextStyle(fontSize: 26)),
+              title: Text(c.name),
+              trailing: Text(
+                '+${c.dialCode}',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: KPayCatalog.countries.length,
-                itemBuilder: (_, i) {
-                  final c = KPayCatalog.countries[i];
-                  return ListTile(
-                    leading: Text(c.flag, style: const TextStyle(fontSize: 26)),
-                    title: Text(c.name),
-                    trailing: Text(
-                      '+${c.dialCode}',
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    onTap: () => Navigator.pop(ctx, c),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
+              onTap: () => Navigator.pop(itemContext, c),
+            );
+          },
         ),
       ),
     );

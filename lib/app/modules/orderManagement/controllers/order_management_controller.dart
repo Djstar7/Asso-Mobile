@@ -8,6 +8,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 
@@ -311,22 +312,26 @@ class OrderManagementController extends GetxController {
       final confirm = await Get.dialog<bool>(
         AlertDialog(
           title: const Text('Refuser la commande'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLe client sera intégralement remboursé.',
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'Raison du refus (optionnel)',
-                  border: OutlineInputBorder(),
+          // Défilant : clavier ouvert, le message et le champ de trois lignes
+          // débordaient de la boîte sur les petits écrans.
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLe client sera intégralement remboursé.',
                 ),
-                maxLines: 3,
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    labelText: 'Raison du refus (optionnel)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -754,7 +759,7 @@ class OrderManagementController extends GetxController {
                     isExpanded: true,
                     decoration: _fieldDecoration('Étape *', icon: Icons.timeline_rounded)
                         .copyWith(errorText: error.value),
-                    items: DeliveryInfo.vendorTrackingSteps.entries
+                    items: DeliveryInfo.trackingStepsFor(order.delivery).entries
                         .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                         .toList(),
                     onChanged: (value) {
@@ -810,7 +815,7 @@ class OrderManagementController extends GetxController {
       ),
       successTitle: 'Suivi mis à jour',
       successMessage:
-          '« ${DeliveryInfo.vendorTrackingSteps[step.value]} » ajouté. Le client est informé.',
+          '« ${DeliveryInfo.trackingStepsFor(order.delivery)[step.value]} » ajouté. Le client est informé.',
     );
   }
 
@@ -901,197 +906,183 @@ class OrderManagementController extends GetxController {
       Get.snackbar('Copié', '$what copié', snackPosition: SnackPosition.BOTTOM);
     }
 
-    Get.bottomSheet(
-      Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    // Fiche longue : la feuille standard s'arrête sous la barre d'état et
+    // garde une croix, là où l'ancienne ne se refermait qu'en glissant.
+    AppSheet.show(
+      AppSheet(
+        title: 'Commande ${order.displayNumber}',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Commande ${order.displayNumber}',
-                        style: context.h5.copyWith(fontWeight: FontWeight.bold),
-                      ),
+                Expanded(
+                  child: Text(
+                    order.isPaid
+                        ? 'Paiement reçu'
+                        : 'Paiement du client en attente',
+                    style: context.caption.copyWith(
+                      color: order.isPaid
+                          ? AppThemeSystem.successColor
+                          : AppThemeSystem.warningColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Chip(label: Text(order.status.label)),
-                  ],
-                ),
-                Text(
-                  order.isPaid
-                      ? 'Paiement reçu'
-                      : 'Paiement du client en attente',
-                  style: context.caption.copyWith(
-                    color: order.isPaid
-                        ? AppThemeSystem.successColor
-                        : AppThemeSystem.warningColor,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
-
-                section('À préparer', [
-                  for (final item in order.items)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: context.backgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: item.productImage.isNotEmpty
-                                  ? Image.network(
-                                      item.productImage,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) =>
-                                          const Icon(Icons.image_outlined),
-                                    )
-                                  : const Icon(Icons.inventory_2_outlined),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.productName,
-                                  style: context.body1.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (item.variantLabel != null)
-                                  Text(
-                                    item.variantLabel!,
-                                    style: context.body2.copyWith(
-                                      color: AppThemeSystem.primaryColor,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                if (item.tierLabel != null)
-                                  Text(item.tierLabel!, style: context.caption),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '×${item.quantity}',
-                            style: context.h6.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ]),
-
-                section('Client et livraison', [
-                  line(Icons.person_outline, order.clientName),
-                  if (phone.isNotEmpty)
-                    line(
-                      Icons.phone_outlined,
-                      phone,
-                      onCopy: () => copy(phone, 'Numéro'),
-                    ),
-                  if (order.address.isNotEmpty)
-                    line(
-                      Icons.place_outlined,
-                      order.address,
-                      onCopy: () => copy(order.address, 'Adresse'),
-                    ),
-                  if (order.addressDetails?.isNotEmpty == true)
-                    line(Icons.info_outline, order.addressDetails!),
-                  if (order.deliveryCompanyName != null)
-                    line(
-                      Icons.local_shipping_outlined,
-                      'Livraison : ${order.deliveryCompanyName}',
-                    ),
-                  if (order.deliveryPersonName != null)
-                    line(
-                      Icons.delivery_dining_outlined,
-                      'Livreur : ${order.deliveryPersonName}',
-                    ),
-                ]),
-
-                if (order.delivery != null)
-                  section('Livraison et suivi', [
-                    OrderDeliveryDetails(
-                      delivery: order.delivery!,
-                      formatPrice: (v) => formatPrice(v),
-                    ),
-                    if (order.canHandToCarrier || order.canAddTrackingStep)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Get.back();
-                              order.canHandToCarrier
-                                  ? handToCarrier(order)
-                                  : addTrackingStep(order);
-                            },
-                            icon: Icon(
-                              order.canHandToCarrier
-                                  ? Icons.local_shipping_rounded
-                                  : Icons.add_location_alt_outlined,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              order.canHandToCarrier
-                                  ? 'Remettre au transporteur'
-                                  : 'Ajouter une étape',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppThemeSystem.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ]),
-
-                if (order.notes?.isNotEmpty == true)
-                  section('Note du client', [
-                    line(Icons.sticky_note_2_outlined, order.notes!),
-                  ]),
-
-                if (order.cancelReason?.isNotEmpty == true)
-                  section('Motif d’annulation', [
-                    line(Icons.cancel_outlined, order.cancelReason!),
-                  ]),
-
-                section('Montants', [
-                  line(
-                    Icons.payments_outlined,
-                    'Pour vous : ${formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount)}',
-                  ),
-                  line(
-                    Icons.receipt_long_outlined,
-                    'Total payé par le client : ${formatPrice(order.totalAmount)}',
-                  ),
-                ]),
+                Chip(label: Text(order.status.label)),
               ],
             ),
-          ),
+
+            section('À préparer', [
+              for (final item in order.items)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: item.productImage.isNotEmpty
+                              ? Image.network(
+                                  item.productImage,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const Icon(Icons.image_outlined),
+                                )
+                              : const Icon(Icons.inventory_2_outlined),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.productName,
+                              style: context.body1.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (item.variantLabel != null)
+                              Text(
+                                item.variantLabel!,
+                                style: context.body2.copyWith(
+                                  color: AppThemeSystem.primaryColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            if (item.tierLabel != null)
+                              Text(item.tierLabel!, style: context.caption),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '×${item.quantity}',
+                        style: context.h6.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ]),
+
+            section('Client et livraison', [
+              line(Icons.person_outline, order.clientName),
+              if (phone.isNotEmpty)
+                line(
+                  Icons.phone_outlined,
+                  phone,
+                  onCopy: () => copy(phone, 'Numéro'),
+                ),
+              if (order.address.isNotEmpty)
+                line(
+                  Icons.place_outlined,
+                  order.address,
+                  onCopy: () => copy(order.address, 'Adresse'),
+                ),
+              if (order.addressDetails?.isNotEmpty == true)
+                line(Icons.info_outline, order.addressDetails!),
+              if (order.deliveryCompanyName != null)
+                line(
+                  Icons.local_shipping_outlined,
+                  'Livraison : ${order.deliveryCompanyName}',
+                ),
+              if (order.deliveryPersonName != null)
+                line(
+                  Icons.delivery_dining_outlined,
+                  'Livreur : ${order.deliveryPersonName}',
+                ),
+            ]),
+
+            if (order.delivery != null)
+              section('Livraison et suivi', [
+                OrderDeliveryDetails(
+                  delivery: order.delivery!,
+                  formatPrice: (v) => formatPrice(v),
+                ),
+                if (order.canHandToCarrier || order.canAddTrackingStep)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Get.back();
+                          order.canHandToCarrier
+                              ? handToCarrier(order)
+                              : addTrackingStep(order);
+                        },
+                        icon: Icon(
+                          order.canHandToCarrier
+                              ? Icons.local_shipping_rounded
+                              : Icons.add_location_alt_outlined,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          order.canHandToCarrier
+                              ? 'Remettre au transporteur'
+                              : 'Ajouter une étape',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeSystem.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+              ]),
+
+            if (order.notes?.isNotEmpty == true)
+              section('Note du client', [
+                line(Icons.sticky_note_2_outlined, order.notes!),
+              ]),
+
+            if (order.cancelReason?.isNotEmpty == true)
+              section('Motif d’annulation', [
+                line(Icons.cancel_outlined, order.cancelReason!),
+              ]),
+
+            section('Montants', [
+              line(
+                Icons.payments_outlined,
+                'Pour vous : ${formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount)}',
+              ),
+              line(
+                Icons.receipt_long_outlined,
+                'Total payé par le client : ${formatPrice(order.totalAmount)}',
+              ),
+            ]),
+          ],
         ),
       ),
-      isScrollControlled: true,
     );
   }
 

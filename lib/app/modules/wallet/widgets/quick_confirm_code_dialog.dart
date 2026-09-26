@@ -196,181 +196,189 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppDesign.info,
-                      AppDesign.info,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.lock_open,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Title
-              Text(
-                'Débloquer les fonds',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppThemeSystem.getPrimaryTextColor(context),
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 12),
-
-              // Instructions
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppDesign.warning,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppDesign.warning,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppDesign.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Entrez le code à 6 caractères fourni par le client',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppDesign.warning,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Code input field
-              TextField(
-                controller: _codeController,
-                focusNode: _codeFocusNode,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 12,
-                ),
-                keyboardType: TextInputType.text,
-                textCapitalization: TextCapitalization.characters,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    return newValue.copyWith(
-                      text: newValue.text.toUpperCase(),
-                    );
-                  }),
-                ],
-                decoration: InputDecoration(
-                  hintText: '••••••',
-                  hintStyle: TextStyle(
-                    fontSize: 32,
-                    color: AppThemeSystem.getSecondaryTextColor(context).withValues(alpha: 0.3),
-                    letterSpacing: 12,
-                  ),
-                  filled: true,
-                  fillColor: AppThemeSystem.getSurfaceColor(context),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: AppThemeSystem.getBorderColor(context),
-                      width: 2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: AppThemeSystem.primaryColor,
-                      width: 2,
-                    ),
-                  ),
-                  counterText: '',
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 20,
-                    horizontal: 16,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Buttons
-              Row(
+      // Seul le contenu défile : les boutons restent au pied du dialogue,
+      // au-dessus du clavier, au lieu de disparaître en bas du défilement.
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Get.back(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppThemeSystem.getSecondaryTextColor(context),
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                  // Header Icon
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppDesign.info,
+                          AppDesign.info,
+                        ],
                       ),
-                      child: const Text('Annuler'),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock_open,
+                      color: Colors.white,
+                      size: 40,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: Obx(() => ElevatedButton(
-                          onPressed: isSubmitting.value ? null : _submitCode,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppThemeSystem.primaryColor,
-                            foregroundColor: AppThemeSystem.whiteColor,
-                            minimumSize: const Size(double.infinity, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+
+                  const SizedBox(height: 24),
+
+                  // Title
+                  Text(
+                    'Débloquer les fonds',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppThemeSystem.getPrimaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Instructions
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppDesign.warning,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppDesign.warning,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppDesign.warning,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Entrez le code à 6 caractères fourni par le client',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppDesign.warning,
                             ),
                           ),
-                          child: isSubmitting.value
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text('Confirmer'),
-                        )),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Code input field
+                  TextField(
+                    controller: _codeController,
+                    focusNode: _codeFocusNode,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 12,
+                    ),
+                    keyboardType: TextInputType.text,
+                    textCapitalization: TextCapitalization.characters,
+                    maxLength: 6,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        return newValue.copyWith(
+                          text: newValue.text.toUpperCase(),
+                        );
+                      }),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '••••••',
+                      hintStyle: TextStyle(
+                        fontSize: 32,
+                        color: AppThemeSystem.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                        letterSpacing: 12,
+                      ),
+                      filled: true,
+                      fillColor: AppThemeSystem.getSurfaceColor(context),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: AppThemeSystem.getBorderColor(context),
+                          width: 2,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: AppThemeSystem.primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                      counterText: '',
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 16,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+
+          // Buttons
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Get.back(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppThemeSystem.getSecondaryTextColor(context),
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Obx(() => ElevatedButton(
+                        onPressed: isSubmitting.value ? null : _submitCode,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemeSystem.primaryColor,
+                          foregroundColor: AppThemeSystem.whiteColor,
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isSubmitting.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Confirmer'),
+                      )),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

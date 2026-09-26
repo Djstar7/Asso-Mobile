@@ -18,7 +18,6 @@ import '../modules/about/bindings/about_binding.dart';
 import '../modules/about/views/about_view.dart';
 import '../modules/chat/bindings/chat_binding.dart';
 import '../modules/chat/views/chat_view.dart';
-import '../modules/chatdetail/bindings/chatdetail_binding.dart';
 import '../modules/chatdetail/views/chatdetail_view.dart';
 import '../modules/completeProfile/bindings/complete_profile_binding.dart';
 import '../modules/completeProfile/views/complete_profile_view.dart';
@@ -50,11 +49,9 @@ import '../modules/post/bindings/post_binding.dart';
 import '../modules/post/views/post_view.dart';
 import '../modules/preferences/bindings/preferences_binding.dart';
 import '../modules/preferences/views/preferences_view.dart';
-import '../modules/product/bindings/product_binding.dart';
 import '../modules/product/views/product_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
 import '../modules/profile/views/profile_view.dart';
-import '../modules/search/bindings/search_binding.dart';
 import '../modules/search/views/search_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
 import '../modules/settings/views/settings_view.dart';
@@ -91,7 +88,6 @@ import '../modules/productManagement/views/product_management_view.dart';
 import '../modules/inventoryList/bindings/inventory_list_binding.dart';
 import '../modules/inventoryList/views/inventory_list_view.dart';
 import '../modules/invoices/bindings/invoices_binding.dart';
-import '../modules/vendorDetails/bindings/vendor_details_binding.dart';
 import '../modules/vendorDetails/views/vendor_details_view.dart';
 import '../modules/myVoice/bindings/my_voice_binding.dart';
 import '../modules/myVoice/views/my_voice_view.dart';
@@ -102,12 +98,21 @@ import '../modules/shopStatistics/views/shop_statistics_view.dart';
 import '../modules/countrySelection/bindings/country_selection_binding.dart';
 import '../modules/countrySelection/views/country_selection_view.dart';
 
+import '../core/widgets/unknown_route_view.dart';
+
 part 'app_routes.dart';
 
 class AppPages {
   AppPages._();
 
   static const INITIAL = Routes.SPLASH;
+
+  /// Route de repli : une route inconnue ouvre un écran « introuvable » au
+  /// lieu de lever une erreur dans le navigateur.
+  static final unknownRoute = GetPage(
+    name: '/introuvable',
+    page: () => const UnknownRouteView(),
+  );
 
   static final routes = [
     GetPage(
@@ -138,7 +143,6 @@ class AppPages {
     GetPage(
       name: _Paths.SEARCH,
       page: () => const SearchView(),
-      binding: SearchBinding(),
     ),
     GetPage(
       name: _Paths.CHAT,
@@ -147,8 +151,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.CHATDETAIL,
-      page: () => const ChatdetailView(),
-      binding: ChatdetailBinding(),
+      page: () => const ChatdetailPage(),
     ),
     GetPage(
       name: _Paths.NOTIFICATION,
@@ -167,8 +170,8 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.PRODUCT,
-      page: () => const ProductView(),
-      binding: ProductBinding(),
+      // Contrôleur créé par la fiche elle-même, un par fiche empilée.
+      page: () => const ProductPage(),
     ),
     GetPage(
       name: _Paths.FAVORITES,
@@ -312,8 +315,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.VENDOR_DETAILS,
-      page: () => const VendorDetailsView(),
-      binding: VendorDetailsBinding(),
+      page: () => const VendorDetailsPage(),
     ),
     GetPage(
       name: _Paths.MY_VOICE,
@@ -357,7 +359,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.DIASPO_DETAIL,
-      page: () => const DiaspoDetailView(),
+      page: () => const DiaspoDetailPage(),
       binding: DiaspoDetailBinding(),
     ),
     GetPage(

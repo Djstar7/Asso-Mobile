@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -7,9 +10,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 import 'app/routes/app_pages.dart';
+import 'app/core/utils/app_binding.dart';
 import 'app/core/utils/app_theme_system.dart';
+import 'app/core/utils/route_stack_guard.dart';
+import 'app/core/widgets/app_ui.dart';
 import 'app/core/widgets/app_update_gate.dart';
 import 'app/core/controllers/app_config_controller.dart';
+import 'app/data/services/app_lifecycle_service.dart';
 import 'app/data/services/websocket_service.dart';
 import 'app/data/services/firebase_messaging_service.dart';
 import 'app/data/providers/diaspo_service.dart';
@@ -18,17 +25,36 @@ import 'app/data/services/deep_link_service.dart';
 import 'app/modules/notification/controllers/notification_controller.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-void main() async {
+void main() {
+  // En production, les `print` de débogage sont coupés : plus de 1 500
+  // appels, dont certains à chaque trame WebSocket ou à chaque réponse
+  // d'API, qui coûtaient du temps à l'interface et écrivaient jetons et
+  // numéros de téléphone dans les journaux du téléphone. En débogage, rien
+  // ne change.
+  runZoned(
+    _bootstrap,
+    zoneSpecification: kReleaseMode
+        ? ZoneSpecification(print: (self, parent, zone, line) {})
+        : null,
+  );
+}
+
+Future<void> _bootstrap() async {
   print('');
   print('========================================');
   print('🚀 APP STARTING');
   print('========================================');
 
-  WidgetsFlutterBinding.ensureInitialized();
+  // Binding de Flutter avec un plafond de décodage des images (mémoire).
+  AppBinding.ensureInitialized();
   print('✅ Flutter binding initialized');
 
   await GetStorage.init();
   print('✅ GetStorage initialized');
+
+  // Plafonne le cache d'images et libère la mémoire quand le système le
+  // demande : avant tout écran, pour que le plafond s'applique dès le départ.
+  Get.put(AppLifecycleService(), permanent: true);
 
   // Initialiser Firebase
   await Firebase.initializeApp(
@@ -89,10 +115,18 @@ void main() async {
       themeMode: AppThemeSystem.enableDynamicTheming ? ThemeMode.system : ThemeMode.light,
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
-      // Enveloppe les routes plutôt que l'application : la fenêtre de mise à
-      // jour a ainsi un Navigator au-dessus d'elle, et ne s'ouvre pas par
-      // dessus l'écran de démarrage.
-      builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
+      unknownRoute: AppPages.unknownRoute,
+      // Borne la pile : produit → boutique → produit… ne s'empile plus
+      // indéfiniment en mémoire.
+      navigatorObservers: [RouteStackGuard()],
+      // Enveloppe le navigateur : la fenêtre de mise à jour s'y ouvre via
+      // `Get.key`, et se tait tant que l'écran de démarrage est affiché.
+      //
+      // Le toucher hors d'un champ referme le clavier partout, feuilles et
+      // dialogues compris : ils vivent sous ce navigateur.
+      builder: (context, child) => AppKeyboardDismisser(
+        child: AppUpdateGate(child: child ?? const SizedBox.shrink()),
+      ),
       // Support de la localisation française
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/certification_packages_controller.dart';
 import '../../packageSubscription/widgets/sales_code_field.dart';
 import '../../payment/widgets/payment_method_selector.dart';
@@ -17,100 +18,85 @@ class CertificationPackagesView
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: ds.canvas,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ds.canvas,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_rounded,
-            color: context.primaryTextColor,
-            size: 20,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        scrolledUnderElevation: 0,
+        leading: const AppBackButton(),
         centerTitle: false,
-        title: Row(
-          children: [
-            Icon(Icons.verified, color: AppDesign.info, size: 28),
-            const SizedBox(width: 12),
-            Text(
-              'Certification',
-              style: context.h4.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
+        title: Text(
+          'Certification',
+          style: context.h5.copyWith(
+            fontWeight: FontWeight.w700,
+            color: ds.textPrimary,
+          ),
         ),
       ),
       body: SafeArea(
         bottom: true,
         child: Obx(() {
           if (controller.isLoading.value && controller.packages.isEmpty) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppThemeSystem.primaryColor,
-                ),
-                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(AppDesign.accent),
+                strokeWidth: 2.5,
               ),
             );
           }
 
           return RefreshIndicator(
             onRefresh: controller.refreshPackages,
-            color: AppThemeSystem.primaryColor,
+            color: AppDesign.accent,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: context.horizontalPadding,
-                  right: context.horizontalPadding,
-                  top: context.horizontalPadding,
-                  bottom:
-                      MediaQuery.of(context).padding.bottom +
-                      context.horizontalPadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section
-                    _buildHeaderSection(context),
-                    SizedBox(height: context.sectionSpacing),
+              // Le code vendeur se saisit au milieu de la page : un geste de
+              // défilement referme le clavier pour revoir les formules.
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: AppContentWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    ds.gutter,
+                    AppDesign.space2,
+                    ds.gutter,
+                    MediaQuery.of(context).padding.bottom + AppDesign.space8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildIntro(context),
+                      SizedBox(height: AppDesign.space4),
+                      _buildBenefits(context),
+                      SizedBox(height: AppDesign.space8),
 
-                    // Benefits Section
-                    _buildBenefitsSection(context),
-                    SizedBox(height: context.sectionSpacing),
-
-                    // Code commercial (P6)
-                    SalesCodeField(input: controller.salesCode),
-                    SizedBox(height: context.sectionSpacing),
-
-                    // Packages List
-                    if (controller.packages.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(48.0),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.verified_outlined,
-                                size: 64,
-                                color: context.secondaryTextColor,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Aucun package disponible',
-                                style: context.body1.copyWith(
-                                  color: context.secondaryTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
+                      Text(
+                        'Choisissez votre formule',
+                        style: context.subtitle1.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ds.textPrimary,
                         ),
-                      )
-                    else
-                      _buildPackagesList(context),
-                  ],
+                      ),
+                      SizedBox(height: AppDesign.space1),
+                      Text(
+                        'Le badge reste affiché pendant toute la durée de la formule.',
+                        style: context.body2.copyWith(color: ds.textSecondary),
+                      ),
+                      SizedBox(height: AppDesign.space4),
+                      if (controller.packages.isEmpty)
+                        _buildEmptyState(context)
+                      else
+                        _buildPackagesList(context),
+
+                      SizedBox(height: AppDesign.space8),
+
+                      // Code commercial (P6) : secondaire, donc après le
+                      // choix de la formule, comme sur les forfaits.
+                      SalesCodeField(input: controller.salesCode),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -120,46 +106,51 @@ class CertificationPackagesView
     );
   }
 
-  /// Bandeau d'en-tête de la page certification.
-  Widget _buildHeaderSection(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(context.horizontalPadding * 1.5),
-      decoration: BoxDecoration(
-        color: AppDesign.info,
-        borderRadius: context.borderRadius(BorderRadiusType.large),
-        boxShadow: [
-          BoxShadow(
-            color: AppDesign.info.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
+  /// Présentation : le badge bleu est la seule couleur de l'écran hors
+  /// accent, car c'est précisément ce que le vendeur obtient (couleur
+  /// « info » réservée au badge de certification, voir DESIGN.md).
+  Widget _buildIntro(BuildContext context) {
+    final ds = context.ds;
+    return AppCard(
+      padding: EdgeInsets.all(AppDesign.space5),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: AppDesign.infoSubtle,
+              borderRadius: BorderRadius.circular(AppDesign.radiusSm),
             ),
-            child: const Icon(Icons.verified, color: Colors.white, size: 32),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Devenez un Vendeur Certifié',
-            style: context.h5.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+            child: const Icon(
+              Icons.verified_rounded,
+              color: AppDesign.info,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Gagnez la confiance de vos clients et boostez vos ventes avec notre badge de certification officiel',
-            style: context.body2.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
-              height: 1.5,
+          SizedBox(width: AppDesign.space4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Devenez vendeur certifié',
+                  style: context.h6.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: ds.textPrimary,
+                    height: 1.25,
+                  ),
+                ),
+                SizedBox(height: AppDesign.space1),
+                Text(
+                  'Le badge de certification rassure vos clients et met vos produits en avant.',
+                  style: context.body2.copyWith(
+                    color: ds.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -167,85 +158,72 @@ class CertificationPackagesView
     );
   }
 
-  /// Build benefits section
-  Widget _buildBenefitsSection(BuildContext context) {
-    final benefits = [
-      {
-        'icon': Icons.trending_up,
-        'title': 'Visibilité accrue',
-        'description': '+300% de visibilité sur vos produits',
-        'color': AppThemeSystem.successColor,
-      },
-      {
-        'icon': Icons.verified_user,
-        'title': 'Badge de confiance',
-        'description': 'Badge bleu affiché sur votre profil',
-        'color': AppDesign.info,
-      },
-      {
-        'icon': Icons.star,
-        'title': 'Priorité recherche',
-        'description': 'Apparaissez en premier dans les résultats',
-        'color': AppThemeSystem.warningColor,
-      },
-      {
-        'icon': Icons.support_agent,
-        'title': 'Support prioritaire',
-        'description': 'Assistance dédiée 7j/7',
-        'color': AppThemeSystem.primaryColor,
-      },
+  /// Avantages : une seule carte, icônes neutres. La hiérarchie vient de la
+  /// typographie, pas d'une couleur par ligne.
+  Widget _buildBenefits(BuildContext context) {
+    final ds = context.ds;
+    const benefits = [
+      (
+        Icons.trending_up_rounded,
+        'Visibilité accrue',
+        'Jusqu’à 3 fois plus de vues sur vos produits',
+      ),
+      (
+        Icons.verified_user_outlined,
+        'Badge de confiance',
+        'Affiché sur votre boutique et vos produits',
+      ),
+      (
+        Icons.search_rounded,
+        'Priorité dans la recherche',
+        'Vos produits remontent dans les résultats',
+      ),
+      (
+        Icons.support_agent_rounded,
+        'Support prioritaire',
+        'Une assistance dédiée 7 j/7',
+      ),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Pourquoi se certifier ?',
-          style: context.h6.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        ...benefits.map(
-          (benefit) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (benefit['color'] as Color).withValues(alpha: 0.05),
-                borderRadius: context.borderRadius(BorderRadiusType.medium),
-                border: Border.all(
-                  color: (benefit['color'] as Color).withValues(alpha: 0.2),
-                ),
-              ),
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesign.space4,
+        vertical: AppDesign.space2,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < benefits.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: ds.border),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: benefit['color'] as Color,
-                      borderRadius: BorderRadius.circular(12),
+                      color: ds.surfaceMuted,
+                      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                     ),
-                    child: Icon(
-                      benefit['icon'] as IconData,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    child: Icon(benefits[i].$1, size: 20, color: ds.icon),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          benefit['title'] as String,
-                          style: context.subtitle1.copyWith(
+                          benefits[i].$2,
+                          style: context.body1.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: ds.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 2),
                         Text(
-                          benefit['description'] as String,
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
+                          benefits[i].$3,
+                          style: context.body2.copyWith(
+                            color: ds.textSecondary,
                           ),
                         ),
                       ],
@@ -254,278 +232,179 @@ class CertificationPackagesView
                 ],
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        ],
+      ),
     );
   }
 
-  /// Build packages list
+  Widget _buildEmptyState(BuildContext context) {
+    return AppEmptyState(
+      icon: Icons.verified_outlined,
+      title: 'Aucune formule disponible',
+      message: 'Les formules de certification seront bientôt proposées.',
+      actionLabel: 'Actualiser',
+      onAction: controller.refreshPackages,
+    );
+  }
+
   Widget _buildPackagesList(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Choisissez votre plan',
-          style: context.h6.copyWith(fontWeight: FontWeight.bold),
+      children: List.generate(
+        controller.packages.length,
+        (index) => Padding(
+          padding: EdgeInsets.only(
+            bottom: index < controller.packages.length - 1
+                ? AppDesign.space3
+                : 0,
+          ),
+          child: _buildPackageCard(context, controller.packages[index]),
         ),
-        const SizedBox(height: 16),
-        ...List.generate(controller.packages.length, (index) {
-          final package = controller.packages[index];
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: index < controller.packages.length - 1 ? 16 : 0,
-            ),
-            child: _buildPremiumPackageCard(context, package),
-          );
-        }),
-      ],
+      ),
     );
   }
 
-  /// Build premium package card with exclusive design
-  Widget _buildPremiumPackageCard(
-    BuildContext context,
-    Map<String, dynamic> package,
-  ) {
-    final isPopular = package['is_popular'] ?? false;
-    final benefits = package['benefits'] as List?;
-    final name = package['name'] ?? '';
+  /// Carte d'une formule, sur le modèle des forfaits de stockage : neutre,
+  /// l'accent orange ne marque que la sélection, et l'action n'apparaît que
+  /// sur la formule choisie.
+  Widget _buildPackageCard(BuildContext context, Map<String, dynamic> package) {
+    final ds = context.ds;
+    final isPopular = package['is_popular'] == true;
+    final benefits = (package['benefits'] as List?) ?? const [];
+    final name = package['name']?.toString() ?? '';
     final priceXaf = (package['price'] ?? 0).toDouble();
-    final duration = package['formatted_duration'] ?? '';
-
-    // Determine card color based on package tier
-    Color primaryColor;
-    Color accentColor;
-    IconData badgeIcon;
-
-    if (name.contains('Gold') || name.contains('Or')) {
-      primaryColor = const Color(0xFFFFD700);
-      accentColor = const Color(0xFFFFD700);
-      badgeIcon = Icons.workspace_premium;
-    } else if (name.contains('Silver') || name.contains('Argent')) {
-      primaryColor = const Color(0xFFC0C0C0);
-      accentColor = const Color(0xFF9E9E9E);
-      badgeIcon = Icons.stars;
-    } else {
-      primaryColor = const Color(0xFFCD7F32);
-      accentColor = const Color(0xFFD2691E);
-      badgeIcon = Icons.verified;
-    }
+    final duration = package['formatted_duration']?.toString() ?? '';
 
     return Obx(() {
       final isSelected =
           controller.selectedPackage.value?['id'] == package['id'];
 
-      return GestureDetector(
-        onTap: () => controller.selectPackage(package),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.all(context.horizontalPadding),
-          decoration: BoxDecoration(
-            // Une formule mise en avant se signale par sa bordure et son
-            // badge, pas par un dégradé qui la rend moins lisible que les
-            // autres.
-            color: isPopular || isSelected
-                ? AppDesign.accentSubtle
-                : context.surfaceColor,
-            borderRadius: context.borderRadius(BorderRadiusType.large),
-            border: Border.all(
-              color: isPopular || isSelected
-                  ? primaryColor
-                  : context.borderColor,
-              width: isPopular || isSelected ? 2.5 : 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isPopular || isSelected
-                    ? primaryColor.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: isPopular || isSelected ? 20 : 10,
-                offset: const Offset(0, 4),
+      return Semantics(
+        button: true,
+        selected: isSelected,
+        label: '$name, ${controller.formatCurrency(priceXaf)} $duration',
+        child: GestureDetector(
+          onTap: () => controller.selectPackage(package),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.all(AppDesign.space5),
+            decoration: BoxDecoration(
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+              border: Border.all(
+                color: isSelected ? AppDesign.accent : ds.border,
+                width: isSelected ? 2 : 1,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with badge
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+              boxShadow: isSelected ? ds.shadowMd : ds.shadowSm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppSelectionDot(isSelected: isSelected),
+                    SizedBox(width: AppDesign.space3),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: context.h6.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ds.textPrimary,
+                          height: 1.2,
                         ),
-                      ],
-                    ),
-                    child: Icon(badgeIcon, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: context.h6.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Certification Officielle',
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isPopular)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.warningColor,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppThemeSystem.warningColor.withValues(
-                              alpha: 0.3,
+                    ),
+                    if (isPopular) ...[
+                      SizedBox(width: AppDesign.space2),
+                      const AppBadge(
+                        label: 'Recommandé',
+                        tone: AppBadgeTone.accent,
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(height: AppDesign.space4),
+
+                // Prix : l'information la plus lourde de la carte, dans la
+                // devise de l'utilisateur.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        controller.formatCurrency(priceXaf),
+                        style: context.h3.copyWith(
+                          color: ds.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: AppDesign.space2),
+                    Text(
+                      duration,
+                      style: context.body2.copyWith(color: ds.textSecondary),
+                    ),
+                  ],
+                ),
+
+                if (benefits.isNotEmpty) ...[
+                  SizedBox(height: AppDesign.space4),
+                  Divider(height: 1, color: ds.border),
+                  SizedBox(height: AppDesign.space4),
+                  for (var i = 0; i < benefits.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: i == benefits.length - 1 ? 0 : AppDesign.space3,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: ds.textTertiary,
                             ),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                          ),
+                          SizedBox(width: AppDesign.space2),
+                          Expanded(
+                            child: Text(
+                              benefits[i].toString(),
+                              style: context.body2.copyWith(
+                                color: ds.textSecondary,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: Text(
-                        'POPULAIRE',
-                        style: context.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
                     ),
                 ],
-              ),
 
-              SizedBox(height: context.elementSpacing),
-
-              // Price
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Prix converti dans la devise de l'utilisateur (suit ses changements).
-                  Flexible(
-                    child: Obx(
-                      () => Text(
-                        controller.formatCurrency(priceXaf),
-                        style: context.h3.copyWith(
-                          color: primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      duration,
-                      style: context.body2.copyWith(
-                        color: context.secondaryTextColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Benefits
-              if (benefits != null && benefits.isNotEmpty) ...[
-                SizedBox(height: context.elementSpacing),
-                ...List.generate(
-                  benefits.length,
-                  (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  alignment: Alignment.topCenter,
+                  child: isSelected
+                      ? Padding(
+                          padding: EdgeInsets.only(top: AppDesign.space5),
+                          child: AppButton(
+                            label: 'Obtenir la certification',
+                            icon: Icons.verified_outlined,
+                            size: AppButtonSize.large,
+                            isLoading: controller.isCreatingOrder.value,
+                            onPressed: () =>
+                                _choosePaymentAndOrder(context, package),
                           ),
-                          child: Icon(
-                            Icons.check_circle,
-                            size: 18,
-                            color: primaryColor,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            benefits[index].toString(),
-                            style: context.body2.copyWith(
-                              color: context.primaryTextColor,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        )
+                      : const SizedBox(width: double.infinity),
                 ),
               ],
-
-              // Subscribe button
-              SizedBox(height: context.elementSpacing),
-              SizedBox(
-                width: double.infinity,
-                height: context.buttonHeight,
-                child: ElevatedButton(
-                  onPressed: () => _choosePaymentAndOrder(context, package),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isPopular || isSelected
-                        ? primaryColor
-                        : context.surfaceColor,
-                    foregroundColor: isPopular || isSelected
-                        ? Colors.white
-                        : primaryColor,
-                    elevation: isPopular || isSelected ? 4 : 0,
-                    shadowColor: primaryColor.withValues(alpha: 0.3),
-                    side: BorderSide(
-                      color: primaryColor,
-                      width: isPopular || isSelected ? 0 : 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: context.borderRadius(
-                        BorderRadiusType.medium,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    'Obtenir la certification',
-                    style: context.button.copyWith(
-                      color: isPopular || isSelected
-                          ? Colors.white
-                          : primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       );
@@ -539,7 +418,8 @@ class CertificationPackagesView
     Map<String, dynamic> package,
   ) async {
     final packageId = package['id'] as int;
-    final price = (package['price'] ?? 0).toDouble(); // XAF (devise des forfaits)
+    final price = (package['price'] ?? 0)
+        .toDouble(); // XAF (devise des forfaits)
 
     // Code commercial saisi : il doit être valide avant de payer (P6).
     if (!await controller.salesCode.ensureReady()) return;
@@ -619,7 +499,9 @@ class CertificationPackagesView
     );
     if (!confirmed) return;
 
-    final message = await controller.payWithWallet(packageId: package['id'] as int);
+    final message = await controller.payWithWallet(
+      packageId: package['id'] as int,
+    );
     if (message == null) return; // erreur déjà affichée
 
     Get.snackbar(

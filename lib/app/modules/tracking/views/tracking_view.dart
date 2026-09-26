@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 import '../controllers/tracking_controller.dart';
@@ -15,6 +19,18 @@ class TrackingView extends GetView<TrackingController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      // Onglet de l'accueil, la barre du haut et la navigation basse suffisent.
+      // Ouvert depuis une commande, l'écran a besoin de son titre et de sa
+      // sortie : sans barre, rien ne ramenait à la commande.
+      appBar: AppNavigation.isHomeTab(context)
+          ? null
+          : AppBar(
+              leading: const AppBackButton(),
+              title: Text(
+                'Suivi',
+                style: context.h5.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
       body: Column(
         children: [
           _buildHeader(context),
@@ -38,6 +54,10 @@ class TrackingView extends GetView<TrackingController> {
               return RefreshIndicator(
                 onRefresh: () => controller.loadOrders(),
                 child: ListView.builder(
+                  // Faire défiler les commandes referme le clavier de la
+                  // recherche, qui en masquait la moitié.
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(16),
                   itemCount: shipments.length,
                   itemBuilder: (context, index) {
@@ -398,8 +418,18 @@ class TrackingView extends GetView<TrackingController> {
     if (imageUrl != null && imageUrl.startsWith('http')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.network(imageUrl, width: size, height: size, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildPlaceholderImage(size)),
+        // Décodée à la taille de la vignette, pas en pleine résolution.
+        child: Image(
+          image: AppNetworkImage.provider(
+            Get.context!,
+            imageUrl,
+            Size.square(size),
+          ),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholderImage(size),
+        ),
       );
     }
     return _buildPlaceholderImage(size);
@@ -441,165 +471,138 @@ class TrackingView extends GetView<TrackingController> {
 
   void _showTrackingDetails(BuildContext context, Map<String, dynamic> shipment) {
     final delivery = shipment['delivery'] is DeliveryInfo ? shipment['delivery'] as DeliveryInfo : null;
-    Get.bottomSheet(
-      Container(
-        height: Get.height * 0.85,
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getBackgroundColor(context),
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-        ),
+    // Feuille standard : elle prend la hauteur de son contenu (bornée sous la
+    // barre d'état) au lieu d'occuper d'office 85 % de l'écran.
+    AppSheet.show(
+      AppSheet(
+        title: 'Suivi de commande',
+        color: AppThemeSystem.getBackgroundColor(context),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: AppThemeSystem.grey300, borderRadius: BorderRadius.circular(2)),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Text('Suivi de commande', style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Get.back()),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+            _buildOrderInfo(context, shipment),
+
+            // Code confirmation dans les détails
+            if (shipment['rawStatus'] == 'shipped' && shipment['confirmationCode'] != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppDesign.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppDesign.warning.withValues(alpha: 0.3)),
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildOrderInfo(context, shipment),
-
-                    // Code confirmation dans les détails
-                    if (shipment['rawStatus'] == 'shipped' && shipment['confirmationCode'] != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppDesign.warning.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppDesign.warning.withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
-                                const SizedBox(width: 8),
-                                Text('Code de confirmation', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppDesign.warning)),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(shipment['confirmationCode'],
-                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: AppDesign.warning)),
-                            const SizedBox(height: 8),
-                            Text('Communiquez ce code au livreur',
-                              style: context.textStyle(FontSizeType.caption, color: AppDesign.warning)),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    // Livreur info
-                    if (shipment['deliveryPersonName'] != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
-                              child: Icon(Icons.person, color: AppThemeSystem.primaryColor),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Votre livreur', style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
-                                  Text(shipment['deliveryPersonName'], style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            ),
-                            if (shipment['deliveryPersonPhone'] != null)
-                              IconButton(
-                                icon: const Icon(Icons.phone, color: AppDesign.success),
-                                onPressed: () {},
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    if (delivery != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppThemeSystem.getSurfaceColor(context),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            OrderDeliveryDetails(
-                              delivery: delivery,
-                              deliveryFee: shipment['deliveryFee'] as double?,
-                              formatPrice: (v) => controller.formatPrice(v),
-                              showTimeline: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    if (delivery?.canConfirmReception == true) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final done = await controller.confirmReception(shipment);
-                            if (done) Get.back();
-                          },
-                          icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                          label: const Text('J’ai reçu mon colis'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-                    Text('Suivi de livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    if (delivery != null && delivery.timeline.isNotEmpty)
-                      DeliveryTimelineView(steps: delivery.timeline)
-                    else
-                      _buildTrackingTimeline(context, shipment['trackingSteps']),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Code de confirmation', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppDesign.warning)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(shipment['confirmationCode'],
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: AppDesign.warning)),
+                    const SizedBox(height: 8),
+                    Text('Communiquez ce code au livreur',
+                      style: context.textStyle(FontSizeType.caption, color: AppDesign.warning)),
                   ],
                 ),
               ),
-            ),
+            ],
+
+            // Livreur info
+            if (shipment['deliveryPersonName'] != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.2),
+                      child: Icon(Icons.person, color: AppThemeSystem.primaryColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Votre livreur', style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                          Text(shipment['deliveryPersonName'], style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                    if (shipment['deliveryPersonPhone'] != null)
+                      IconButton(
+                        icon: const Icon(Icons.phone, color: AppDesign.success),
+                        onPressed: () {},
+                      ),
+                  ],
+                ),
+              ),
+            ],
+
+            if (delivery != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.getSurfaceColor(context),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    OrderDeliveryDetails(
+                      delivery: delivery,
+                      deliveryFee: shipment['deliveryFee'] as double?,
+                      formatPrice: (v) => controller.formatPrice(v),
+                      showTimeline: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            if (delivery?.canConfirmReception == true) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final done = await controller.confirmReception(shipment);
+                    if (done) Get.back();
+                  },
+                  icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                  label: const Text('J’ai reçu mon colis'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+            Text('Suivi de livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            if (delivery != null && delivery.timeline.isNotEmpty)
+              DeliveryTimelineView(steps: delivery.timeline)
+            else
+              _buildTrackingTimeline(context, shipment['trackingSteps']),
           ],
         ),
       ),
-      isScrollControlled: true,
     );
   }
 

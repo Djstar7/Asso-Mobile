@@ -127,12 +127,14 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
         ],
       ),
       actions: [
+        // Navigator et non Get.back() : avec GetX 4.7.3, Get.back() ne ferme
+        // que la bannière éventuellement affichée, pas le dialogue.
         TextButton(
-          onPressed: () => Get.back(result: false),
+          onPressed: () => Navigator.of(context).pop(false),
           child: const Text('Annuler'),
         ),
         ElevatedButton(
-          onPressed: () => Get.back(result: true),
+          onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppThemeSystem.successColor,
             foregroundColor: Colors.white,

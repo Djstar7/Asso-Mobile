@@ -45,7 +45,7 @@ class AppConfigController extends GetxController {
 
       // System settings
       if (settings.containsKey('system')) {
-        final systemSettings = settings['system'] as Map<String, dynamic>;
+        final systemSettings = AppConfigService.asObject(settings['system']);
 
         if (systemSettings.containsKey('min_deposit_amount')) {
           _minDepositAmount.value = _parseDouble(systemSettings['min_deposit_amount']);
@@ -74,7 +74,7 @@ class AppConfigController extends GetxController {
 
       // General settings
       if (settings.containsKey('general')) {
-        final generalSettings = settings['general'] as Map<String, dynamic>;
+        final generalSettings = AppConfigService.asObject(settings['general']);
 
         if (generalSettings.containsKey('app_name')) {
           _appName.value = generalSettings['app_name'].toString();

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/asso_ads_banner.dart';
 import '../../../core/widgets/product_card.dart';
@@ -34,7 +37,7 @@ class HomeView extends GetView<HomeController> {
       );
     }
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: context.ds.canvas,
       drawer: _buildDrawer(context),
       // La navigation principale passe en bas de l'écran : c'est la zone
@@ -63,6 +66,23 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
+      ),
+    );
+
+    // Depuis un autre onglet, le retour système ramène à l'Accueil au lieu de
+    // fermer l'application d'un coup : c'est ce qu'on attend d'une barre de
+    // navigation basse. Seul l'Accueil laisse sortir.
+    return Obx(
+      () => PopScope(
+        canPop: controller.currentTabIndex.value == 0,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          controller.handleTabTap(0);
+          if (controller.tabController.index != 0) {
+            controller.tabController.animateTo(0);
+          }
+        },
+        child: scaffold,
       ),
     );
   }
@@ -1498,7 +1518,7 @@ class HomeItemView extends GetView<HomeController> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          _buildBannerImage(index),
+                          _buildBannerImage(context, index),
 
                           // Voile sombre, plus haut et plus dense que le
                           // précédent : le sous-titre se perdait sur les
@@ -1624,13 +1644,15 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildBannerImage(int index) {
+  Widget _buildBannerImage(BuildContext context, int index) {
     if (controller.banners.isNotEmpty &&
         controller.banners[index]['image'] != null) {
-      return Image.network(
-        controller.banners[index]['image'],
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Image.asset(
+      // Bannière pleine largeur : décodée à la largeur de l'écran.
+      final width = MediaQuery.sizeOf(context).width;
+      return AppNetworkImage(
+        url: controller.banners[index]['image'].toString(),
+        decodeSize: Size(width, width * 9 / 16),
+        errorBuilder: (_) => Image.asset(
           controller.fallbackBanners[index % controller.fallbackBanners.length],
           fit: BoxFit.cover,
         ),
@@ -1643,9 +1665,14 @@ class HomeItemView extends GetView<HomeController> {
   }
 
   /// Build product image widget (network or asset fallback)
+  ///
+  /// [decodeSize] : taille logique de la case, pour décoder la photo à la
+  /// taille affichée (par défaut, une carte de la grille produits).
   Widget _buildProductImage(
+    BuildContext context,
     Map<String, dynamic> product, {
     BoxFit fit = BoxFit.cover,
+    Size? decodeSize,
   }) {
     final primaryImage = product['primary_image'];
     final images = product['images'] as List?;
@@ -1658,23 +1685,16 @@ class HomeItemView extends GetView<HomeController> {
     }
 
     if (imageUrl != null && imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
+      final cardWidth = ProductCard.widthInGrid(context);
+      return AppNetworkImage(
+        url: imageUrl,
         fit: fit,
-        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-        loadingBuilder: (_, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-              color: AppThemeSystem.primaryColor,
-            ),
-          );
-        },
+        decodeSize:
+            decodeSize ??
+            Size(cardWidth, cardWidth / ProductCard.imageAspectRatio),
+        placeholder: (_) => const SizedBox.expand(),
+        showProgress: true,
+        errorBuilder: (_) => _buildPlaceholderImage(),
       );
     }
 
@@ -1975,7 +1995,15 @@ class HomeItemView extends GetView<HomeController> {
       price: _formatPrice(product),
       shopName: product['shop']?['name']?.toString(),
       location: _getLocation(product),
-      imageBuilder: (context) => _buildProductImage(product),
+      imageBuilder: (context) {
+        // Visuel 16/9 sur toute la largeur utile.
+        final width = MediaQuery.sizeOf(context).width;
+        return _buildProductImage(
+          context,
+          product,
+          decodeSize: Size(width, width * 9 / 16),
+        );
+      },
       onTap: () =>
           Get.toNamed('/product', arguments: {...product, 'from_ad': true}),
     );
@@ -1996,7 +2024,7 @@ class HomeItemView extends GetView<HomeController> {
       isFavorite: product['is_favorite'] == true,
       isCertified: ProductCard.isShopCertified(product),
       isSponsored: isSponsored,
-      imageBuilder: (context) => _buildProductImage(product),
+      imageBuilder: (context) => _buildProductImage(context, product),
       // `from_ad` permet au serveur de mesurer l'efficacité de la campagne.
       onTap: () => Get.toNamed(
         '/product',
@@ -2216,6 +2244,14 @@ class _FadeInProduct extends StatefulWidget {
 
   const _FadeInProduct({required this.child, this.delay = Duration.zero});
 
+  /// Décalage maximal de l'apparition en cascade.
+  ///
+  /// Les appelants décalent de 50 ms par position : sans plafond, la tuile
+  /// n° 400 restait invisible 20 s, et comme la grille recrée ses tuiles au
+  /// défilement, une longue session finissait sur un mur vide (noir en mode
+  /// sombre). La cascade n'a de sens que pour le premier écran.
+  static const Duration maxDelay = Duration(milliseconds: 300);
+
   @override
   State<_FadeInProduct> createState() => _FadeInProductState();
 }
@@ -2244,16 +2280,25 @@ class _FadeInProductState extends State<_FadeInProduct>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    // Start animation after delay
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    final delay = widget.delay > _FadeInProduct.maxDelay
+        ? _FadeInProduct.maxDelay
+        : widget.delay;
+    if (delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      // Minuteur annulé à la destruction : une tuile sortie de l'écran ne
+      // reste pas en mémoire le temps de son délai.
+      _delayTimer = Timer(delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
   }
+
+  Timer? _delayTimer;
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

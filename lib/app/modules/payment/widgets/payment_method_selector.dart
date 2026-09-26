@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../../data/providers/payment_service.dart';
 import '../../../data/providers/currency_service.dart';
@@ -57,7 +59,7 @@ class PaymentMethodSelector extends StatefulWidget {
     Set<String>? allowedCodes,
     bool includeWallet = false,
   }) {
-    return Get.bottomSheet<PaymentMethodOption>(
+    return AppSheet.show<PaymentMethodOption>(
       PaymentMethodSelector(
         amount: amount,
         currency: currency,
@@ -67,8 +69,6 @@ class PaymentMethodSelector extends StatefulWidget {
         allowedCodes: allowedCodes,
         includeWallet: includeWallet,
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
     );
   }
 
@@ -170,7 +170,11 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         mainButton: TextButton(
           onPressed: () {
             Get.closeCurrentSnackbar();
-            Get.back(); // ferme le sélecteur
+            // Ferme le sélecteur par son Navigator : Get.back() ne fermait que
+            // la bannière encore en train de se refermer, et le Wallet
+            // s'ouvrait par-dessus le sélecteur resté ouvert. S'il est déjà
+            // fermé, on ne ferme rien d'autre à sa place.
+            if (mounted) Navigator.of(context).pop();
             Get.toNamed(Routes.WALLET, arguments: {'openRecharge': true});
           },
           child: const Text('Recharger'),
@@ -196,96 +200,49 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      decoration: BoxDecoration(
-        color: AppThemeSystem.getBackgroundColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.payment, color: AppThemeSystem.primaryColor, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.title,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppThemeSystem.getPrimaryTextColor(context),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${widget.amountLabel}: ${_fmt(widget.amount, widget.currency)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppThemeSystem.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Get.back(),
-                      icon: const Icon(Icons.close),
-                      color: AppThemeSystem.getSecondaryTextColor(context),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                Obx(() {
-                  if (_loading.value) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  if (_error.value.isNotEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Text(
-                        _error.value,
-                        style: TextStyle(color: AppThemeSystem.errorColor),
-                      ),
-                    );
-                  }
-                  return Column(
-                    children: [
-                      for (final m in _methods) ...[
-                        _buildOption(context, m),
-                        const SizedBox(height: 12),
-                      ],
-                    ],
-                  );
-                }),
-              ],
+    // Pas de marge pour le clavier ici : la route de la feuille s'en charge
+    // déjà, et la compter deux fois laissait un grand vide sous la liste.
+    return AppSheet(
+      title: widget.title,
+      color: AppThemeSystem.getBackgroundColor(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${widget.amountLabel} : ${_fmt(widget.amount, widget.currency)}',
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w600,
+              color: AppThemeSystem.primaryColor,
             ),
           ),
-        ),
+          const SizedBox(height: AppDesign.space4),
+          Obx(() {
+            if (_loading.value) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (_error.value.isNotEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  _error.value,
+                  style: TextStyle(color: AppThemeSystem.errorColor),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (final m in _methods) ...[
+                  _buildOption(context, m),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            );
+          }),
+        ],
       ),
     );
   }
@@ -318,7 +275,13 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       opacity: canPay ? 1.0 : 0.5,
       child: InkWell(
         // Indisponible : on ne bloque pas le tap en silence, on NOTIFIE la raison.
-        onTap: canPay ? () => Get.back(result: m) : () => _notifyUnavailable(m, hint),
+        //
+        // Navigator et non Get.back() : avec GetX 4.7.3, Get.back() ne ferme
+        // que la bannière « Solde insuffisant » / « Indisponible » si elle
+        // est affichée, et le choix du moyen de paiement semblait ignoré.
+        onTap: canPay
+            ? () => Navigator.of(context).pop(m)
+            : () => _notifyUnavailable(m, hint),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),

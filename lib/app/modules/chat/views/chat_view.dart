@@ -48,6 +48,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
         backgroundColor: AppThemeSystem.getBackgroundColor(context),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: const AppBackButton(),
         titleSpacing: AppThemeSystem.getHorizontalPadding(context),
         title: Text(
           'Messages',
@@ -116,6 +117,8 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
           color: AppDesign.accent,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
+            // Parcourir les conversations referme le clavier de la recherche.
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               _buildStickySearchBar(context),
               if (conversations.isEmpty)
@@ -326,6 +329,10 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                     imageUrl: conversation['productImage'],
                     width: 48,
                     height: 48,
+                    // Vignette de 48 px : décodée à sa taille, pas en
+                    // pleine résolution.
+                    memCacheWidth:
+                        (48 * MediaQuery.devicePixelRatioOf(context)).ceil(),
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       width: 48,

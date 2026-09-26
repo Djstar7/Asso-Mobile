@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/vendor_dashboard_controller.dart';
 import '../../orderManagement/views/order_management_view.dart';
 import '../../orderManagement/bindings/order_management_binding.dart';
@@ -38,17 +39,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: ds.textPrimary, size: 20),
-            onPressed: () {
-              if (Navigator.of(context).canPop()) {
-                Get.back();
-              } else {
-                Get.offAllNamed('/home');
-              }
-            },
-          ),
+          // Sans écran derrière, le retour ramène à l'accueil.
+          leading: const AppBackButton(),
           centerTitle: false,
           title: Text(
             'Tableau de bord',
@@ -882,10 +874,15 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.storefront_outlined,
                 title: 'Ma boutique',
                 subtitle: 'Personnalisez votre vitrine',
-                onTap: () => Get.to(
-                  () => const StoreManagementView(),
-                  binding: StoreManagementBinding(),
-                ),
+                onTap: () async {
+                  await Get.to(
+                    () => const StoreManagementView(),
+                    binding: StoreManagementBinding(),
+                  );
+                  // Le nom de la boutique affiché ici vient de ce tableau de
+                  // bord : sans relecture, une modification semblait perdue.
+                  await controller.refreshData();
+                },
               ),
               _buildRowDivider(context),
               _buildActionRow(

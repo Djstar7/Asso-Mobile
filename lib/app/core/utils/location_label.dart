@@ -1,6 +1,4 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+import 'address_search.dart';
 
 /// Localisation lisible « Ville, Pays » (ex. « Douala, Cameroun »).
 class LocationLabel {
@@ -51,31 +49,14 @@ class LocationLabel {
     );
   }
 
-  /// Géocodage inverse (Nominatim, en français). Null si le service ne répond pas.
+  /// Géocodage inverse ([AddressSearch.reverse]). Null si aucun service ne répond.
   static Future<LocationLabel?> reverseGeocode(
     double latitude,
     double longitude,
   ) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse(
-              'https://nominatim.openstreetmap.org/reverse?format=json'
-              '&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1'
-              '&accept-language=fr',
-            ),
-            headers: {'User-Agent': 'AssoApp/1.0'},
-          )
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) return null;
-      return fromNominatim(
-        Map<String, dynamic>.from(json.decode(response.body) as Map),
-        latitude: latitude,
-        longitude: longitude,
-      );
-    } catch (_) {
-      return null;
-    }
+    final data = await AddressSearch.reverse(latitude, longitude);
+    if (data == null) return null;
+    return fromNominatim(data, latitude: latitude, longitude: longitude);
   }
 
   /// Libellé à afficher pour une boutique ou un produit renvoyé par l'API.

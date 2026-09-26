@@ -254,6 +254,10 @@ class MyOrderController extends GetxController {
 
     Get.dialog(
       AlertDialog(
+        // Clavier ouvert sur le commentaire, les étoiles et le champ ne
+        // tiennent plus sur un petit écran : le contenu défile au lieu de
+        // déborder.
+        scrollable: true,
         title: const Text('Noter votre expérience'),
         content: Column(
           mainAxisSize: MainAxisSize.min,

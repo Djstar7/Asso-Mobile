@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../storeManagement/models/store_models.dart';
 import '../controllers/inventory_list_controller.dart';
 
@@ -15,13 +16,7 @@ class InventoryListView extends GetView<InventoryListController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: context.primaryTextColor,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Historique d\'inventaire',
           style: context.h5.copyWith(

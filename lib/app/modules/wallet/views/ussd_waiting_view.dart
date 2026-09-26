@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/wallet_controller.dart';
+import '../../../core/utils/app_navigation.dart';
 
 /// Page d'attente pendant la validation du paiement USSD
 /// Affiche les instructions et attend la réponse du backend en arrière-plan
@@ -224,9 +226,10 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
 
     // Retour après 2 secondes
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Get.back(result: {'success': true});
-      }
+      // Referme d'abord « Annuler la recharge ? » s'il est resté ouvert :
+      // `Get.back(result: {...})` lui renvoyait ce résultat à lui, qui
+      // attend un booléen — erreur de type en pleine navigation.
+      if (mounted) AppNavigation.closeRoute(context, {'success': true});
     });
   }
 
@@ -290,13 +293,20 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
       },
       child: Scaffold(
         backgroundColor: AppThemeSystem.getBackgroundColor(context),
+        appBar: AppBar(
+          backgroundColor: AppThemeSystem.getBackgroundColor(context),
+          // Passe par le `PopScope` ci-dessus, comme le retour système : pendant
+          // le paiement, quitter demande toujours confirmation.
+          leading: const AppBackButton(),
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
+                // La barre du haut occupe déjà l'essentiel de cet espace.
+                const SizedBox(height: 8),
 
                 // Icône animée
                 AnimatedBuilder(

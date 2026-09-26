@@ -4,12 +4,16 @@ import '../../../data/providers/product_service.dart';
 import '../../../data/providers/import_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/wholesale_models.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
-import '../../../core/values/constants.dart';
-import 'wholesale_order_sheet.dart';
+import 'wholesale_product_view.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/masonry_grid.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/autoplay_video.dart';
+import '../../../core/widgets/product_video_player.dart';
 
 /// Catalogue de gros, présenté comme un mur d'images.
 ///
@@ -44,6 +48,18 @@ String shortImportCountryName(String name) {
           trimmed.length > prefix.length
       ? trimmed.substring(prefix.length).trim()
       : trimmed;
+}
+
+/// Format de la tuile d'un produit du mur grossiste.
+///
+/// Avec une vidéo, la tuile prend son format réel (le plus souvent vertical,
+/// filmé au téléphone), borné pour qu'une vidéo très étirée ne mange pas
+/// toute une colonne. Sans vidéo, format de mosaïque stable dérivé de l'id.
+@visibleForTesting
+double wholesaleTileAspectRatio(WholesaleProduct product) {
+  final video = product.video;
+  if (video == null) return masonryAspectRatioFor(product.id);
+  return video.aspectRatio.clamp(9 / 16, 1.25).toDouble();
 }
 
 /// Un produit et le pays dont il provient.
@@ -90,6 +106,19 @@ class _ImportViewState extends State<ImportView> {
   /// Produits de tous les pays, dans l'ordre d'affichage.
   List<_CatalogEntry> _entries = [];
 
+  /// Page suivante à demander pour chaque pays affiché ; null quand il n'en
+  /// reste plus. Le catalogue arrive page par page au fil du défilement.
+  Map<String, int?> _nextPage = {};
+  bool _loadingMore = false;
+
+  /// Articles par pays et par page : moins par pays quand tous sont mêlés,
+  /// pour que chaque page garde à peu près la même taille.
+  int get _perPage => _selected == _allCountries
+      ? (ImportService.perPage / (_countries.isEmpty ? 1 : _countries.length))
+            .ceil()
+            .clamp(6, ImportService.perPage)
+      : ImportService.perPage;
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   Timer? _searchDebounce;
@@ -124,6 +153,8 @@ class _ImportViewState extends State<ImportView> {
   /// barre ; près du sommet elle reste toujours visible.
   void _onScroll() {
     if (!_scrollController.hasClients) return;
+    // Le bas du mur approche : page suivante.
+    if (_scrollController.position.extentAfter < 800) _loadMore();
     final offset = _scrollController.offset;
     final delta = offset - _lastOffset;
 
@@ -178,54 +209,26 @@ class _ImportViewState extends State<ImportView> {
     await _load();
   }
 
-  /// Charge le catalogue.
-  ///
-  /// Sans filtre pays, les catalogues sont demandés en parallèle puis
-  /// entrelacés — un pays après l'autre — pour que le mur ne commence pas par
-  /// vingt articles chinois avant le premier turc.
+  /// Charge la première page du catalogue (nouveau filtre, recherche ou
+  /// rafraîchissement).
   Future<void> _load() async {
     final request = ++_loadRequest;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadingMore = false;
+    });
 
     final targets = _selected == _allCountries
         ? _countries
         : _countries.where((c) => c.code == _selected).toList();
 
-    List<_CatalogEntry> entries = [];
-    Map<String, int> counts = {};
-
+    var entries = <_CatalogEntry>[];
+    var nextPage = <String, int?>{};
+    var counts = <String, int>{};
     try {
-      final catalogs = await Future.wait([
-        for (final country in targets)
-          ImportService.getCatalog(country.code, query: _query),
-      ]);
-
-      // Une liste par pays, puis tour de table jusqu'à épuisement.
-      final perCountry = <List<_CatalogEntry>>[];
-      for (var i = 0; i < targets.length; i++) {
-        final catalog = catalogs[i];
-        if (catalog == null) continue;
-        final country = targets[i];
-        perCountry.add([
-          for (final product in catalog.products)
-            _CatalogEntry(
-              product: product,
-              country: country,
-              shipping: catalog.shippingOptions,
-            ),
-        ]);
-      }
-
-      final longest = perCountry.fold<int>(
-        0,
-        (max, list) => list.length > max ? list.length : max,
-      );
-      for (var row = 0; row < longest; row++) {
-        for (final list in perCountry) {
-          if (row < list.length) entries.add(list[row]);
-        }
-      }
-
+      (entries, nextPage) = await _fetchPages({
+        for (final country in targets) country.code: 1,
+      });
       if (_query.isNotEmpty) {
         counts = await ImportService.searchCounts(_query);
       }
@@ -234,9 +237,98 @@ class _ImportViewState extends State<ImportView> {
     if (!mounted || request != _loadRequest) return;
     setState(() {
       _entries = entries;
+      _nextPage = nextPage;
       _counts = counts;
       _loading = false;
     });
+    _maybeLoadMore();
+  }
+
+  /// Page suivante de chaque pays qui en a encore, ajoutée au bas du mur.
+  Future<void> _loadMore() async {
+    if (_loading || _loadingMore || !_nextPage.values.any((p) => p != null)) {
+      return;
+    }
+    final request = _loadRequest;
+    setState(() => _loadingMore = true);
+
+    var entries = <_CatalogEntry>[];
+    var nextPage = <String, int?>{};
+    try {
+      (entries, nextPage) = await _fetchPages(_nextPage);
+    } catch (_) {}
+
+    if (!mounted || request != _loadRequest) return;
+    setState(() {
+      _entries = [..._entries, ...entries];
+      _nextPage = nextPage;
+      _loadingMore = false;
+    });
+    _maybeLoadMore();
+  }
+
+  /// Charge la suite quand le bas du mur approche, ou quand la page reçue
+  /// ne remplit pas l'écran (rien à faire défiler pour la réclamer).
+  void _maybeLoadMore() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (_scrollController.position.extentAfter < 800) _loadMore();
+    });
+  }
+
+  /// Demande la page [pages] de chaque pays, en parallèle, puis entrelace
+  /// les résultats — un pays après l'autre — pour que le mur ne commence
+  /// pas par vingt articles chinois avant le premier turc.
+  ///
+  /// Renvoie les articles et la page suivante de chaque pays (null : fini ;
+  /// un pays qui ne répond pas est laissé de côté jusqu'au prochain
+  /// rafraîchissement).
+  Future<(List<_CatalogEntry>, Map<String, int?>)> _fetchPages(
+    Map<String, int?> pages,
+  ) async {
+    final targets = _countries.where((c) => pages[c.code] != null).toList();
+    final perPage = _perPage;
+    final catalogs = await Future.wait([
+      for (final country in targets)
+        ImportService.getCatalog(
+          country.code,
+          query: _query,
+          page: pages[country.code]!,
+          perPage: perPage,
+        ),
+    ]);
+
+    final next = Map<String, int?>.of(pages);
+    final perCountry = <List<_CatalogEntry>>[];
+    for (var i = 0; i < targets.length; i++) {
+      final catalog = catalogs[i];
+      final country = targets[i];
+      next[country.code] = catalog != null && catalog.hasMore
+          ? catalog.page + 1
+          : null;
+      if (catalog == null) continue;
+      perCountry.add([
+        for (final product in catalog.products)
+          _CatalogEntry(
+            product: product,
+            country: country,
+            shipping: catalog.shippingOptions,
+          ),
+      ]);
+    }
+
+    final longest = perCountry.fold<int>(
+      0,
+      (max, list) => list.length > max ? list.length : max,
+    );
+    return (
+      [
+        for (var row = 0; row < longest; row++)
+          for (final list in perCountry)
+            if (row < list.length) list[row],
+      ],
+      next,
+    );
   }
 
   @override
@@ -255,6 +347,10 @@ class _ImportViewState extends State<ImportView> {
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
+                  // Parcourir la grille referme le clavier de la recherche,
+                  // qui en masquait la moitié.
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   slivers: [
                     if (_loading)
                       _buildSkeletonGrid()
@@ -276,6 +372,22 @@ class _ImportViewState extends State<ImportView> {
                           crossAxisSpacing: AppDesign.space2,
                           mainAxisSpacing: AppDesign.space2,
                           itemBuilder: (_, i) => _buildTile(_entries[i]),
+                        ),
+                      ),
+                    if (_loadingMore)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: AppDesign.space6),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: AppDesign.accent,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -308,7 +420,17 @@ class _ImportViewState extends State<ImportView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildSearchField(),
+                  // Onglet de l'accueil, l'écran n'a pas de retour : la barre
+                  // du bas en tient lieu. Ouvert comme page, il lui en faut un.
+                  if (AppNavigation.isHomeTab(context))
+                    _buildSearchField()
+                  else
+                    Row(
+                      children: [
+                        const AppBackButton(),
+                        Expanded(child: _buildSearchField()),
+                      ],
+                    ),
                   SizedBox(height: AppDesign.space2),
                   _buildCountryFilters(),
                 ],
@@ -486,14 +608,15 @@ class _ImportViewState extends State<ImportView> {
     final p = entry.product;
     final tier = p.entryTier;
 
-    void open() => WholesaleOrderSheet.show(
+    void open() => WholesaleProductView.open(
       product: p,
       shippingOptions: entry.shipping,
       countryFlag: entry.country.flag,
     );
 
     // Format propre à l'article, stable d'une ouverture à l'autre.
-    final aspectRatio = masonryAspectRatioFor(p.id);
+    final aspectRatio = wholesaleTileAspectRatio(p);
+    final video = p.video;
 
     return Material(
       color: context.ds.surface,
@@ -513,9 +636,30 @@ class _ImportViewState extends State<ImportView> {
                     width: double.infinity,
                     // `cover` : la photo remplit le format imposé, quitte à
                     // être rognée — mieux vaut cela que des bandes vides.
-                    child: _buildProductImage(p.image, fit: BoxFit.cover),
+                    child: video == null
+                        ? _buildProductImage(
+                            p.image,
+                            fit: BoxFit.cover,
+                            aspectRatio: aspectRatio,
+                          )
+                        // Boucle muette et légère, lue quand la tuile est à
+                        // l'écran ; l'affiche (ou la photo) la précède.
+                        : AutoplayVideo(
+                            url: resolveMediaUrl(video.previewUrl),
+                            poster: _buildProductImage(
+                              video.posterUrl ?? p.image,
+                              fit: BoxFit.cover,
+                              aspectRatio: aspectRatio,
+                            ),
+                          ),
                   ),
                 ),
+                if (video != null)
+                  Positioned(
+                    right: AppDesign.space2,
+                    top: AppDesign.space2,
+                    child: VideoDurationPill(label: video.durationLabel),
+                  ),
                 // Drapeau d'origine : dans un mur qui mêle les pays, c'est
                 // l'information qui situe l'article d'un coup d'œil.
                 Positioned(
@@ -774,7 +918,13 @@ class _ImportViewState extends State<ImportView> {
     ),
   );
 
-  Widget _buildProductImage(String? path, {BoxFit fit = BoxFit.contain}) {
+  /// [aspectRatio] : format de la tuile du mur, pour décoder la photo à la
+  /// taille d'une colonne plutôt qu'en pleine résolution.
+  Widget _buildProductImage(
+    String? path, {
+    BoxFit fit = BoxFit.contain,
+    double? aspectRatio,
+  }) {
     if (path == null || path.trim().isEmpty) return _imgPlaceholder();
     final value = path.trim();
     if (value.startsWith('assets/')) {
@@ -782,6 +932,18 @@ class _ImportViewState extends State<ImportView> {
         value,
         fit: fit,
         errorBuilder: (_, _, _) => _imgPlaceholder(),
+      );
+    }
+
+    if (aspectRatio != null && aspectRatio > 0) {
+      final columnWidth =
+          MediaQuery.sizeOf(context).width / AppDesign.productColumns(context);
+      return AppNetworkImage(
+        url: _imageUrlForDevice(value),
+        fit: fit,
+        decodeSize: Size(columnWidth, columnWidth / aspectRatio),
+        placeholder: (context) => ColoredBox(color: context.ds.surfaceMuted),
+        errorBuilder: (_) => _imgPlaceholder(),
       );
     }
 
@@ -794,31 +956,5 @@ class _ImportViewState extends State<ImportView> {
     );
   }
 
-  String _imageUrlForDevice(String value) {
-    final apiUri = Uri.parse(AppConstants.baseUrl);
-    final imageUri = Uri.tryParse(value);
-    if (imageUri != null && imageUri.hasScheme && imageUri.host.isNotEmpty) {
-      final normalizedPath = imageUri.path.replaceFirst(
-        '/storage/storage/',
-        '/storage/',
-      );
-      if (imageUri.host == 'localhost' || imageUri.host == '127.0.0.1') {
-        return imageUri
-            .replace(host: apiUri.host, port: apiUri.port, path: normalizedPath)
-            .toString();
-      }
-      return imageUri.replace(path: normalizedPath).toString();
-    }
-
-    final path = (value.startsWith('/') ? value : '/$value').replaceFirst(
-      '/storage/storage/',
-      '/storage/',
-    );
-    return Uri(
-      scheme: apiUri.scheme,
-      host: apiUri.host,
-      port: apiUri.port,
-      path: path.startsWith('/storage/') ? path : '/storage$path',
-    ).toString();
-  }
+  String _imageUrlForDevice(String value) => resolveMediaUrl(value);
 }

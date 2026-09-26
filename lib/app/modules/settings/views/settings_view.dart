@@ -15,10 +15,7 @@ class SettingsView extends GetView<SettingsController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Paramètres',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),

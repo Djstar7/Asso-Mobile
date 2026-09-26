@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../data/providers/api_provider.dart';
 
 class InvoiceWebView extends StatefulWidget {
@@ -212,13 +213,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.close,
-            color: context.primaryTextColor,
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(close: true),
         title: Text(
           'Facture',
           style: context.h4.copyWith(

@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
+import '../services/websocket_service.dart';
 import 'storage_service.dart';
 
 class ApiProvider {
@@ -327,6 +328,10 @@ class ApiProvider {
 
     developer.log('Clearing session and redirecting to login', name: 'ApiProvider');
     StorageService.clearAuth();
+    // Le temps réel tournait encore sur le jeton expiré.
+    if (Get.isRegistered<WebSocketService>()) {
+      WebSocketService.to.disconnect();
+    }
     // Navigate to login
     Get.offAllNamed('/login');
   }

@@ -50,6 +50,15 @@ class WelcomerController extends GetxController {
     );
   }
 
+  /// La création de compte n'est proposée qu'une fois le formulaire valide
+  /// ET la politique de confidentialité acceptée : le bouton reste inactif
+  /// tant que la case n'est pas cochée.
+  bool get canSubmit => isFormValid.value && termsAccepted.value;
+
+  void toggleTermsAccepted() {
+    termsAccepted.value = !termsAccepted.value;
+  }
+
   void togglePasswordVisibility() {
     obscurePassword.value = !obscurePassword.value;
   }

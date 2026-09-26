@@ -12,6 +12,7 @@ import '../../../data/models/currency_model.dart';
 import 'product_draft_store.dart';
 import 'variant_editor_state.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -188,6 +189,10 @@ class AddProductController extends GetxController {
 
   // Edit mode
   final isEditMode = false.obs;
+
+  /// Ouvert depuis la gestion des produits (qui attend notre fermeture pour
+  /// se rafraîchir), plutôt que depuis le tableau de bord.
+  bool _openedFromProductManagement = false;
   final editProductId = Rx<int?>(null);
 
   // ───────────── Parcours en étapes ─────────────
@@ -491,6 +496,7 @@ class AddProductController extends GetxController {
 
     // Check if we're in edit mode
     final args = Get.arguments as Map<String, dynamic>?;
+    _openedFromProductManagement = args?['fromProductManagement'] == true;
     if (args != null && args['isEdit'] == true && args['product'] != null) {
       isEditMode.value = true;
       final product = args['product'] as Map<String, dynamic>;
@@ -916,10 +922,22 @@ class AddProductController extends GetxController {
     }
   }
 
+  /// Plus grand côté d'une photo produit envoyée, en pixels.
+  ///
+  /// Les photos partaient telles que prises (12 Mpx et plus) : chaque
+  /// acheteur les téléchargeait, puis les décodait à ~48 Mo pièce, ce qui
+  /// finissait par faire fermer l'application. 2048 px reste bien au-delà de
+  /// ce qu'un écran de téléphone affiche, zoom compris.
+  static const double productPhotoMaxSide = 2048;
+
   /// Ajouter des images (galerie, sélection multiple)
   Future<void> pickImages() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
+      final List<XFile> images = await _picker.pickMultiImage(
+        maxWidth: productPhotoMaxSide,
+        maxHeight: productPhotoMaxSide,
+        imageQuality: 85,
+      );
 
       if (images.isNotEmpty) {
         productImages.addAll(images);
@@ -942,6 +960,8 @@ class AddProductController extends GetxController {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
+        maxWidth: productPhotoMaxSide,
+        maxHeight: productPhotoMaxSide,
         imageQuality: 85,
       );
 
@@ -1456,7 +1476,15 @@ class AddProductController extends GetxController {
         // La fiche est publiée : son brouillon n'a plus lieu d'être proposé.
         discardDraft();
 
-        Get.offNamed('/product-management', arguments: {'refresh': true});
+        if (_openedFromProductManagement) {
+          // La liste est juste en dessous : y revenir, elle se rafraîchit au
+          // retour. `offNamed` en empilait une seconde à chaque ajout, et il
+          // fallait autant de retours pour en sortir. `AppNavigation.pop` et
+          // non `Get.back()`, qui ne fermerait que le snackbar ci-dessus.
+          AppNavigation.pop(true);
+        } else {
+          Get.offNamed('/product-management', arguments: {'refresh': true});
+        }
       } else {
         // Gérer les erreurs spécifiques
         if (response.data?['error_code'] == 'NO_ACTIVE_PACKAGE') {

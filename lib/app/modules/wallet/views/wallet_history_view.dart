@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../data/models/wallet_model.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class WalletHistoryView extends GetView<WalletController> {
   const WalletHistoryView({super.key});
@@ -18,6 +19,7 @@ class WalletHistoryView extends GetView<WalletController> {
         elevation: 0,
         backgroundColor: AppThemeSystem.primaryColor,
         foregroundColor: AppThemeSystem.whiteColor,
+        leading: const AppBackButton(color: AppThemeSystem.whiteColor),
         actions: [
           _buildTypeFilter(context),
           const SizedBox(width: 8),

@@ -1,9 +1,46 @@
+/// Un pays tel que le backend le décrit : nom, code ISO et drapeau.
+///
+/// L'API expose `countries_detailed` en plus de `countries`. Le drapeau y est
+/// déjà calculé côté serveur, ce qui évite de dépendre d'une table de noms
+/// locale : les noms renvoyés sont en anglais et ne correspondent pas aux
+/// clés françaises de `CountryCatalog`.
+class CountryInfo {
+  const CountryInfo({
+    required this.name,
+    required this.isoCode,
+    required this.flag,
+  });
+
+  final String name;
+  final String isoCode;
+  final String flag;
+
+  factory CountryInfo.fromJson(Map<String, dynamic> json) {
+    return CountryInfo(
+      name: (json['name'] ?? '').toString(),
+      isoCode: (json['code'] ?? '').toString(),
+      flag: (json['flag'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'code': isoCode,
+        'flag': flag,
+      };
+}
+
 class CurrencyModel {
   final int id;
   final String code;
   final String name;
   final String symbol;
   final List<String> countries;
+
+  /// Pays avec code ISO et drapeau, quand le backend les fournit.
+  /// Vide sur les réponses anciennes : l'appelant retombe alors sur
+  /// [countries] et le catalogue local.
+  final List<CountryInfo> countriesDetailed;
   final bool isActive;
 
   CurrencyModel({
@@ -12,6 +49,7 @@ class CurrencyModel {
     required this.name,
     required this.symbol,
     required this.countries,
+    this.countriesDetailed = const [],
     this.isActive = true,
   });
 
@@ -24,6 +62,13 @@ class CurrencyModel {
       countries: json['countries'] != null
           ? List<String>.from(json['countries'])
           : [],
+      countriesDetailed: json['countries_detailed'] is List
+          ? (json['countries_detailed'] as List)
+              .whereType<Map>()
+              .map((e) => CountryInfo.fromJson(Map<String, dynamic>.from(e)))
+              .where((c) => c.name.isNotEmpty)
+              .toList()
+          : const [],
       isActive: json['is_active'] ?? true,
     );
   }
@@ -35,6 +80,9 @@ class CurrencyModel {
       'name': name,
       'symbol': symbol,
       'countries': countries,
+      'countries_detailed': [
+        for (final c in countriesDetailed) c.toJson(),
+      ],
       'is_active': isActive,
     };
   }
@@ -45,6 +93,7 @@ class CurrencyModel {
     String? name,
     String? symbol,
     List<String>? countries,
+    List<CountryInfo>? countriesDetailed,
     bool? isActive,
   }) {
     return CurrencyModel(
@@ -53,6 +102,7 @@ class CurrencyModel {
       name: name ?? this.name,
       symbol: symbol ?? this.symbol,
       countries: countries ?? this.countries,
+      countriesDetailed: countriesDetailed ?? this.countriesDetailed,
       isActive: isActive ?? this.isActive,
     );
   }

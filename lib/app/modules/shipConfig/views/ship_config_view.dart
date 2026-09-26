@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/ship_config_controller.dart';
 
 class ShipConfigView extends GetView<ShipConfigController> {
@@ -13,27 +14,17 @@ class ShipConfigView extends GetView<ShipConfigController> {
       appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios,
-              color: context.primaryTextColor,
-            ),
-            onPressed: () {
-              // Vérifier si on peut retourner en arrière
-              if (Navigator.of(context).canPop()) {
-                Get.back();
-              } else {
-                // Si pas de page précédente, retourner à Home
-                Get.offAllNamed('/home');
-              }
-            },
-          ),
+          // Sans page précédente, le bouton ramène à l'accueil.
+          leading: const AppBackButton(),
         title: Text(
           'Devenir Livreur',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       body: SingleChildScrollView(
+        // Le champ du code est en bas de l'écran : un glissement referme le
+        // clavier pour relire les explications au-dessus.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.all(context.horizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,

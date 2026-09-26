@@ -6,6 +6,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../controllers/post_detail_controller.dart';
 import '../../../data/models/post_comment.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class PostDetailView extends GetView<PostDetailController> {
   const PostDetailView({super.key});
@@ -25,13 +27,9 @@ class PostDetailView extends GetView<PostDetailController> {
         appBar: AppBar(
           title: const Text('Discussion'),
           backgroundColor: isDark ? AppThemeSystem.darkCardColor : AppThemeSystem.primaryColor,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // Return the updated post when pressing back button
-              Get.back(result: controller.post.value);
-            },
-          ),
+          // Passe par le même `WillPopScope` que le retour système, qui
+          // renvoie le message à jour à l'écran précédent.
+          leading: const AppBackButton(),
         ),
         body: Obx(() {
         if (controller.isLoading.value && controller.post.value == null) {
@@ -519,152 +517,114 @@ class PostDetailView extends GetView<PostDetailController> {
     final RxBool isAnonymous = false.obs;
     final isDark = AppThemeSystem.isDarkMode(context);
 
-    Get.bottomSheet(
-      Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                      replyTo == null
-                          ? 'Ajouter un commentaire'
-                          : 'Répondre à ${replyTo.isAnonymous ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: isDark ? Colors.white70 : Colors.black54,
-                      ),
-                      onPressed: () => Get.back(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: contentController,
-                  maxLines: 4,
-                  maxLength: 2000,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  decoration: InputDecoration(
-                    hintText: 'Écrivez votre commentaire...',
-                    hintStyle: TextStyle(
-                      color: isDark ? Colors.white54 : Colors.black54,
-                    ),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: isDark ? AppThemeSystem.grey700 : Colors.grey,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: isDark ? AppThemeSystem.grey700 : Colors.grey,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: AppThemeSystem.primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                    counterText: '',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Obx(
-                  () => CheckboxListTile(
-                    title: Text(
-                      'Commenter en mode anonyme',
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Votre nom ne sera pas visible',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                    value: isAnonymous.value,
-                    onChanged: (value) => isAnonymous.value = value ?? false,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: Obx(() => ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: controller.isSubmitting.value
-                        ? null
-                        : () async {
-                            final content = contentController.text.trim();
-                            if (content.isEmpty) {
-                              Get.snackbar(
-                                'Commentaire vide',
-                                'Écrivez quelques mots avant de publier.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                              return;
-                            }
-                            final ok = await controller.createComment(
-                              content: content,
-                              isAnonymous: isAnonymous.value,
-                              parentId: replyTo?.id,
-                            );
-                            if (ok && (Get.isBottomSheetOpen ?? false)) {
-                              Get.back();
-                            }
-                          },
-                    child: controller.isSubmitting.value
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text(
-                            'Publier',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                  )),
-                ),
-                const SizedBox(height: 8),
-              ],
+    // Le bouton Publier reste épinglé au-dessus du clavier, la feuille
+    // s'arrête sous la barre d'état.
+    AppSheet.show(
+      AppSheet(
+        title: replyTo == null
+            ? 'Ajouter un commentaire'
+            : 'Répondre à ${replyTo.isAnonymous ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
+        footer: SizedBox(
+          width: double.infinity,
+          child: Obx(() => ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          ),
+            onPressed: controller.isSubmitting.value
+                ? null
+                : () async {
+                    final content = contentController.text.trim();
+                    if (content.isEmpty) {
+                      Get.snackbar(
+                        'Commentaire vide',
+                        'Écrivez quelques mots avant de publier.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      return;
+                    }
+                    final ok = await controller.createComment(
+                      content: content,
+                      isAnonymous: isAnonymous.value,
+                      parentId: replyTo?.id,
+                    );
+                    if (ok && (Get.isBottomSheetOpen ?? false)) {
+                      Get.back();
+                    }
+                  },
+            child: controller.isSubmitting.value
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text(
+                    'Publier',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+          )),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: contentController,
+              maxLines: 4,
+              maxLength: 2000,
+              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              decoration: InputDecoration(
+                hintText: 'Écrivez votre commentaire...',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: isDark ? AppThemeSystem.grey700 : Colors.grey,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: isDark ? AppThemeSystem.grey700 : Colors.grey,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: AppThemeSystem.primaryColor,
+                    width: 2,
+                  ),
+                ),
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Obx(
+              () => CheckboxListTile(
+                title: Text(
+                  'Commenter en mode anonyme',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                subtitle: Text(
+                  'Votre nom ne sera pas visible',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                value: isAnonymous.value,
+                onChanged: (value) => isAnonymous.value = value ?? false,
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ),
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
     );
   }
 }

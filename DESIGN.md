@@ -28,7 +28,9 @@ le vocabulaire chromatique et affaiblissent les vrais signaux.
 | Fichier | Contenu |
 |---|---|
 | `lib/app/core/utils/app_design.dart` | tokens : couleurs, espacements, rayons, ombres, gabarits responsives |
-| `lib/app/core/widgets/app_ui.dart` | composants : `AppCard`, `AppButton`, `AppBadge`, `AppSectionHeader`, `AppEmptyState`, `AppTextField`, `AppIconButton`, `AppDivider`, `AppContentWidth` |
+| `lib/app/core/widgets/app_ui.dart` | composants : `AppCard`, `AppButton`, `AppBadge`, `AppSectionHeader`, `AppEmptyState`, `AppTextField`, `AppIconButton`, `AppBackButton`, `AppDivider`, `AppContentWidth`, `AppKeyboardDismisser` |
+| `lib/app/core/widgets/app_sheet.dart` | `AppSheet` : feuille modale standard (en-tête, croix, action épinglée au-dessus du clavier) |
+| `lib/app/core/utils/app_navigation.dart` | retour commun (`AppNavigation.back`), fermeture du clavier |
 | `lib/app/core/widgets/product_card.dart` | `ProductCard` et son gabarit de grille partagé |
 | `lib/app/core/utils/app_theme_system.dart` | thèmes Material + typographie responsive (délègue aux tokens) |
 
@@ -101,6 +103,39 @@ Ajouter un onglet suppose de modifier **deux** endroits cohérents :
 `tabNames` et `protectedTabs` dans `HomeController`, `_destinations` et le
 `TabBarView` dans `HomeView`. Les index doivent correspondre.
 
+## Retour et clavier
+
+**Chaque écran empilé porte sa sortie** — `leading: const AppBackButton()`
+dans l'AppBar, ou en tête de l'en-tête maison. L'iPhone n'a pas de bouton
+retour système : sans ce bouton, l'utilisateur reste bloqué. Le bouton passe
+par `maybePop`, comme le retour système : une garde `PopScope` (brouillon non
+enregistré) s'applique donc aux deux. Sans écran derrière (lien partagé,
+notification), il ramène à l'accueil. Pour une action particulière, passer
+`onPressed` ; pour un écran que l'on referme plutôt que quitter (paiement,
+éditeur plein écran), `close: true`.
+
+Pas de retour sur les écrans racines (accueil, démarrage, présentation) ni
+sur un onglet de l'accueil : `AppNavigation.isHomeTab(context)` distingue un
+écran affiché en onglet du même écran poussé seul. Sur l'accueil, le retour
+système ramène d'abord à l'onglet Accueil avant de quitter l'application.
+
+**Le clavier se ferme au toucher hors d'un champ**, partout :
+`AppKeyboardDismisser` enveloppe le navigateur dans `main.dart`. Inutile de
+le refaire écran par écran. Le défilement d'un formulaire utilise
+`keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`, et un
+écran avec des champs ne désactive jamais `resizeToAvoidBottomInset`.
+
+**Feuilles modales** — `AppSheet`, ouverte avec `AppSheet.show`. Elle s'arrête
+sous la barre d'état, porte une croix, et son `footer` reste épinglé
+au-dessus du clavier : c'est là que va l'action principale. Pour un parcours
+en plusieurs feuilles, `onBack` affiche une flèche vers l'étape précédente.
+
+Piège à connaître : `Get.bottomSheet` remonte déjà la feuille au-dessus du
+clavier. Y ajouter `viewInsets.bottom` (ou `context.bottomSheetPadding`)
+compte le clavier deux fois — grand vide, formulaire écrasé. À l'inverse,
+`showModalBottomSheet` ne le fait pas : le contenu doit alors ajouter
+lui-même la hauteur du clavier.
+
 ## Vérifier un écran
 
 ```bash
@@ -122,14 +157,14 @@ adb shell wm size reset     && adb shell wm density reset
 ## Environnement de développement
 
 L'API est configurée dans `lib/app/core/values/constants.dart` et se résout
-seule : `192.168.1.155:8000` sur émulateur Android, `localhost:8000` ailleurs.
+seule : `192.168.34.157:8000` sur émulateur Android, `localhost:8000` ailleurs.
 
 ```bash
 # Backend (Laravel) — voir Asso-Backend/setup-local.sh
 php artisan serve --host=0.0.0.0 --port=8000
 
 # Application
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://192.168.1.155:8000/api
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://192.168.34.157:8000/api
 ```
 
 Comptes de démonstration (mot de passe `password`) :

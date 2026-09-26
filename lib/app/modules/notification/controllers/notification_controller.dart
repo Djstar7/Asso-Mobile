@@ -124,7 +124,11 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  /// Gère les actions selon le type de notification
+  /// Rafraîchit les données touchées par une notification.
+  ///
+  /// La navigation au tap est l'affaire de `FirebaseMessagingService`, qui
+  /// écoute les mêmes flux : naviguer aussi d'ici ouvrait chaque écran deux
+  /// fois, et visait des routes inexistantes (`/orders/…`, `/chat/…`).
   void _handleNotificationAction(Map<String, dynamic> data, {bool fromClick = false}) {
     final type = data['type'] as String?;
     print('🎬 [FCM] Action pour type: $type (fromClick: $fromClick)');
@@ -133,65 +137,10 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       case 'wallet_credit':
       case 'wallet_deposit_success':
       case 'wallet_deposit_failed':
-        // Rafraîchir le wallet
-        _refreshWallet();
-
-        // Si cliqué, naviguer vers l'historique
-        if (fromClick) {
-          Get.toNamed('/wallet/history');
-        }
-        break;
-
       case 'wallet_withdrawal_success':
       case 'wallet_withdrawal_failed':
-        // Rafraîchir le wallet
         _refreshWallet();
-
-        // Si cliqué, naviguer vers l'historique
-        if (fromClick) {
-          Get.toNamed('/wallet/history');
-        }
         break;
-
-      case 'order_update':
-        // Naviguer vers les commandes
-        if (fromClick) {
-          final orderId = data['order_id'];
-          if (orderId != null) {
-            Get.toNamed('/orders/$orderId');
-          } else {
-            Get.toNamed('/orders');
-          }
-        }
-        break;
-
-      case 'new_message':
-        // Naviguer vers le chat
-        if (fromClick) {
-          final conversationId = data['conversation_id'];
-          if (conversationId != null) {
-            Get.toNamed('/chat/$conversationId');
-          } else {
-            Get.toNamed('/chat');
-          }
-        }
-        break;
-
-      case 'new_order_vendor':
-      case 'order_cancelled_vendor':
-      case 'order_shipped_vendor':
-      case 'order_delivered_vendor':
-      case 'order_rated':
-        if (fromClick) Get.toNamed(Routes.ORDER_MANAGEMENT);
-        break;
-
-      case 'package_expiring':
-      case 'package_purchase':
-        if (fromClick) Get.toNamed(Routes.PACKAGE_SUBSCRIPTION);
-        break;
-
-      default:
-        print('⚠️  [FCM] Type de notification non géré: $type');
     }
   }
 

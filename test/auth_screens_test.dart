@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:asso/app/core/widgets/app_ui.dart';
 import 'package:asso/app/core/widgets/auth_scaffold.dart';
 import 'package:asso/app/modules/login/controllers/login_controller.dart';
 import 'package:asso/app/modules/login/views/login_view.dart';
@@ -115,6 +116,49 @@ void main() {
       await settle(tester);
 
       expect(tester.takeException(), isNull);
+    });
+
+    AppButton submitButton(WidgetTester tester) => tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Créer mon compte'),
+    );
+
+    testWidgets(
+      'bloque la création tant que la politique n\'est pas acceptée',
+      (tester) async {
+        await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+        await settle(tester);
+
+        // Formulaire valide, case décochée : le bouton doit rester inactif.
+        final controller = Get.find<WelcomerController>();
+        controller.email.value = 'test@asso.cm';
+        controller.password.value = 'secret123';
+        controller.confirmPassword.value = 'secret123';
+        await settle(tester);
+
+        expect(controller.isFormValid.value, isTrue);
+        expect(submitButton(tester).onPressed, isNull);
+
+        await tester.tap(find.byType(Checkbox));
+        await settle(tester);
+
+        expect(controller.termsAccepted.value, isTrue);
+        expect(submitButton(tester).onPressed, isNotNull);
+      },
+    );
+
+    testWidgets('coche la politique en touchant le libellé', (tester) async {
+      await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+      await settle(tester);
+
+      final controller = Get.find<WelcomerController>();
+      // Au début du libellé : son centre tombe sur le lien, qui ouvre la
+      // politique au lieu de cocher la case.
+      final label = find.textContaining("J'accepte la", findRichText: true);
+      await tester.ensureVisible(label);
+      await tester.tapAt(tester.getTopLeft(label) + const Offset(6, 8));
+      await settle(tester);
+
+      expect(controller.termsAccepted.value, isTrue);
     });
   });
 

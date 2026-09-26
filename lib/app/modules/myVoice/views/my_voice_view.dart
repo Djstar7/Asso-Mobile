@@ -5,6 +5,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../controllers/my_voice_controller.dart';
 import '../../../data/models/post.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 
 /// Limite acceptée par l'API (PostController::MAX_CONTENT_LENGTH).
@@ -24,6 +25,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: Border(bottom: BorderSide(color: context.ds.border)),
+        leading: const AppBackButton(),
         title: Text(
           'Ma voix',
           style: context.textStyle(
@@ -354,189 +356,132 @@ class MyVoiceView extends GetView<MyVoiceController> {
     final charCount = (editing?.content.length ?? 0).obs;
     final isEditing = editing != null;
 
-    Get.bottomSheet(
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.ds.surface,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppDesign.radiusLg),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  context.ds.gutter,
-                  AppDesign.space2,
-                  context.ds.gutter,
-                  AppDesign.space4,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Poignée : signale une feuille que l'on peut faire glisser.
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: EdgeInsets.only(bottom: AppDesign.space4),
-                        decoration: BoxDecoration(
-                          color: context.ds.border,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
+    // Le bouton Publier reste épinglé au-dessus du clavier : au bout du
+    // formulaire, il passait dessous pendant la saisie.
+    AppSheet.show(
+      AppSheet(
+        title: isEditing ? 'Modifier le message' : 'Nouveau message',
+        footer: Obx(() {
+          final length = charCount.value;
+          final valid = length >= 2 && length <= _maxPostLength;
+          return AppButton(
+            label: isEditing ? 'Enregistrer' : 'Publier',
+            isLoading: controller.isSubmitting.value,
+            // Bouton inerte tant que le message est invalide :
+            // plus clair qu'un refus après coup.
+            onPressed: valid
+                ? () async {
+                    final content = contentController.text.trim();
+                    final ok = isEditing
+                        ? await controller.updatePost(
+                            editing,
+                            content,
+                          )
+                        : await controller.createPost(
+                            content: content,
+                            isAnonymous: isAnonymous.value,
+                          );
+                    if (ok && (Get.isBottomSheetOpen ?? false)) {
+                      Get.back();
+                    }
+                  }
+                : null,
+          );
+        }),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Identité de publication : ce que les autres verront.
+            Obx(
+              () => Row(
+                children: [
+                  _Avatar(
+                    name: isAnonymous.value
+                        ? '?'
+                        : controller.currentUserInitials,
+                    size: 36,
+                  ),
+                  SizedBox(width: AppDesign.space3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          isEditing ? 'Modifier le message' : 'Nouveau message',
+                          isAnonymous.value
+                              ? 'Membre anonyme'
+                              : controller.currentUserInitials,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: context.textStyle(
-                            FontSizeType.h6,
-                            fontWeight: FontWeight.w700,
+                            FontSizeType.body2,
+                            fontWeight: FontWeight.w600,
                             color: context.ds.textPrimary,
                           ),
                         ),
-                        const Spacer(),
-                        AppIconButton(
-                          icon: Icons.close_rounded,
-                          onPressed: Get.back,
-                          tooltip: 'Fermer',
+                        Text(
+                          isAnonymous.value
+                              ? 'Votre nom restera masqué'
+                              : 'Publié sous votre nom',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.overline,
+                            color: context.ds.textTertiary,
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(height: AppDesign.space4),
-
-                    // Identité de publication : ce que les autres verront.
-                    Obx(
-                      () => Row(
-                        children: [
-                          _Avatar(
-                            name: isAnonymous.value
-                                ? '?'
-                                : controller.currentUserInitials,
-                            size: 36,
-                          ),
-                          SizedBox(width: AppDesign.space3),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  isAnonymous.value
-                                      ? 'Membre anonyme'
-                                      : controller.currentUserInitials,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.ds.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  isAnonymous.value
-                                      ? 'Votre nom restera masqué'
-                                      : 'Publié sous votre nom',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.textStyle(
-                                    FontSizeType.overline,
-                                    color: context.ds.textTertiary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isAnonymous.value)
-                            const AppBadge(
-                              label: 'ANONYME',
-                              tone: AppBadgeTone.neutral,
-                            ),
-                        ],
-                      ),
+                  ),
+                  if (isAnonymous.value)
+                    const AppBadge(
+                      label: 'ANONYME',
+                      tone: AppBadgeTone.neutral,
                     ),
-                    SizedBox(height: AppDesign.space4),
-
-                    AppTextField(
-                      controller: contentController,
-                      hint: 'Partagez votre avis sur ASSO…',
-                      maxLines: 6,
-                      onChanged: (value) => charCount.value = value.length,
-                    ),
-                    SizedBox(height: AppDesign.space2),
-
-                    // Le compteur n'apparaît qu'à l'approche de la limite :
-                    // affiché en permanence, il pousse à écrire court.
-                    Obx(() {
-                      final remaining = _maxPostLength - charCount.value;
-                      if (remaining > 500) return const SizedBox.shrink();
-                      return Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '$remaining',
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            fontWeight: FontWeight.w600,
-                            color: remaining < 0
-                                ? AppDesign.danger
-                                : context.ds.textTertiary,
-                          ),
-                        ),
-                      );
-                    }),
-
-                    if (!isEditing) ...[
-                      SizedBox(height: AppDesign.space2),
-                      Obx(
-                        () => _AnonymousToggle(
-                          value: isAnonymous.value,
-                          onChanged: (v) => isAnonymous.value = v,
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: AppDesign.space4),
-
-                    Obx(() {
-                      final length = charCount.value;
-                      final valid = length >= 2 && length <= _maxPostLength;
-                      return AppButton(
-                        label: isEditing ? 'Enregistrer' : 'Publier',
-                        isLoading: controller.isSubmitting.value,
-                        // Bouton inerte tant que le message est invalide :
-                        // plus clair qu'un refus après coup.
-                        onPressed: valid
-                            ? () async {
-                                final content = contentController.text.trim();
-                                final ok = isEditing
-                                    ? await controller.updatePost(
-                                        editing,
-                                        content,
-                                      )
-                                    : await controller.createPost(
-                                        content: content,
-                                        isAnonymous: isAnonymous.value,
-                                      );
-                                if (ok && (Get.isBottomSheetOpen ?? false)) {
-                                  Get.back();
-                                }
-                              }
-                            : null,
-                      );
-                    }),
-                  ],
-                ),
+                ],
               ),
             ),
-          ),
+            SizedBox(height: AppDesign.space4),
+
+            AppTextField(
+              controller: contentController,
+              hint: 'Partagez votre avis sur ASSO…',
+              maxLines: 6,
+              onChanged: (value) => charCount.value = value.length,
+            ),
+            SizedBox(height: AppDesign.space2),
+
+            // Le compteur n'apparaît qu'à l'approche de la limite :
+            // affiché en permanence, il pousse à écrire court.
+            Obx(() {
+              final remaining = _maxPostLength - charCount.value;
+              if (remaining > 500) return const SizedBox.shrink();
+              return Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '$remaining',
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    fontWeight: FontWeight.w600,
+                    color: remaining < 0
+                        ? AppDesign.danger
+                        : context.ds.textTertiary,
+                  ),
+                ),
+              );
+            }),
+
+            if (!isEditing) ...[
+              SizedBox(height: AppDesign.space2),
+              Obx(
+                () => _AnonymousToggle(
+                  value: isAnonymous.value,
+                  onChanged: (v) => isAnonymous.value = v,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

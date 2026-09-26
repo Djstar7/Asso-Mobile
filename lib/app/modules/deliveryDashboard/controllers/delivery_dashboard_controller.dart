@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/delivery_models.dart';
@@ -16,6 +15,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../../data/services/fcm_service.dart';
 import '../../shipConfig/models/sync_models.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/device_location.dart';
 
 class DeliveryDashboardController extends GetxController {
   // Contrôleur de la carte
@@ -596,6 +596,9 @@ class DeliveryDashboardController extends GetxController {
 
     final confirm = await Get.dialog<bool>(
       AlertDialog(
+        // Clavier ouvert sur un petit écran : le contenu défile, le bouton
+        // Confirmer reste visible au-dessus du clavier.
+        scrollable: true,
         title: const Text('Confirmer la livraison'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -715,38 +718,17 @@ class DeliveryDashboardController extends GetxController {
     isLocating.value = true;
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
+      final result = await DeviceLocation.current();
+      final position = result.position;
+      if (position == null) {
         if (zoom) {
-          Get.snackbar(
-            'Localisation',
-            'Activez la localisation pour vous voir sur la carte',
-            snackPosition: SnackPosition.BOTTOM,
+          DeviceLocation.showFailure(
+            result,
+            hint: 'Vous n’apparaissez pas sur la carte pour le moment.',
           );
         }
         return;
       }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        if (zoom) {
-          Get.snackbar(
-            'Localisation',
-            'Autorisez la localisation pour vous voir sur la carte',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        }
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      ).timeout(const Duration(seconds: 12));
 
       final point = LatLng(position.latitude, position.longitude);
       myPosition.value = point;
@@ -758,14 +740,6 @@ class DeliveryDashboardController extends GetxController {
         } catch (_) {
           // Carte pas encore montée : sans conséquence.
         }
-      }
-    } catch (_) {
-      if (zoom) {
-        Get.snackbar(
-          'Localisation',
-          'Position indisponible pour le moment',
-          snackPosition: SnackPosition.BOTTOM,
-        );
       }
     } finally {
       isLocating.value = false;

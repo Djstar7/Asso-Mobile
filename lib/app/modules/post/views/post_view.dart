@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/post_controller.dart';
 
 class PostView extends GetView<PostController> {
@@ -10,6 +11,7 @@ class PostView extends GetView<PostController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('PostView'),
         centerTitle: true,
       ),

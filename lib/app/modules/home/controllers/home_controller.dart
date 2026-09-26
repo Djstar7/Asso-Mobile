@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -10,6 +11,7 @@ import '../../../data/providers/product_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
+import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/base/safe_controller_mixin.dart';
 
@@ -171,6 +173,13 @@ class HomeController extends GetxController
     print('  └─ Current tab: ${currentTabIndex.value}');
     print('========================================');
     print('');
+
+    // Annonces (nouveaux produits, sponsoring) : rattrape l'enregistrement du
+    // token et l'abonnement au topic s'ils ont échoué à la connexion. Sans
+    // effet quand tout est déjà en place ; jamais attendu par l'écran.
+    if (Get.isRegistered<FirebaseMessagingService>()) {
+      unawaited(FirebaseMessagingService.to.ensureRegisteredAndSubscribed());
+    }
   }
 
   /// Listener pour les changements de tab

@@ -49,6 +49,28 @@ class DeliveryService {
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }
 
+  /// Offres de livraison pour plusieurs lignes (commande en gros : l'offre part
+  /// de l'entrepôt ASSO de Douala). [items] : [{product_id, quantity,
+  /// price_tier_id}, …] — le palier donne le poids d'une unité commandée.
+  static Future<ApiResponse> getDeliveryQuotesForItems({
+    required List<Map<String, int>> items,
+    double? latitude,
+    double? longitude,
+    String? city,
+    String? address,
+  }) async {
+    final params = <String, dynamic>{
+      for (final (i, line) in items.indexed)
+        for (final field in line.entries) 'items[$i][${field.key}]': field.value,
+    };
+    if (latitude != null) params['latitude'] = latitude;
+    if (longitude != null) params['longitude'] = longitude;
+    if (city != null && city.isNotEmpty) params['city'] = city;
+    if (address != null && address.isNotEmpty) params['address'] = address;
+
+    return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
+  }
+
   /// Couverture de livraison autour d'un point : quartiers et zones desservis,
   /// partenaires qui livrent à domicile ici, agences de la ville (interurbain).
   static Future<ApiResponse> getCoverage({

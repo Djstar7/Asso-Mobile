@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
+import 'app_ui.dart';
 
 /// Ossature commune aux écrans Connexion et Inscription.
 ///
@@ -72,6 +73,11 @@ class AuthScaffold extends StatelessWidget {
         ? _collapsedBannerHeight
         : (screenHeight * bannerRatio).clamp(120.0, 300.0);
 
+    // Ouvert par-dessus un écran (action réservée aux membres depuis une
+    // fiche produit…), l'écran propose d'y revenir. « Passer » ramène à
+    // l'accueil et faisait perdre ce que l'on était en train de faire.
+    final canGoBack = ModalRoute.of(context)?.canPop ?? false;
+
     return Scaffold(
       backgroundColor: AppDesign.accentSubtle,
       body: Column(
@@ -84,6 +90,7 @@ class AuthScaffold extends StatelessWidget {
             height: bannerHeight,
             topInset: topInset,
             animationAsset: animationAsset,
+            back: canGoBack ? const AppBackButton() : null,
             skip: onSkip == null
                 ? null
                 : _SkipButton(label: skipLabel, onPressed: onSkip!),
@@ -155,6 +162,7 @@ class _Banner extends StatelessWidget {
     required this.height,
     required this.topInset,
     required this.animationAsset,
+    this.back,
     this.skip,
   });
 
@@ -164,6 +172,9 @@ class _Banner extends StatelessWidget {
   final double topInset;
 
   final String animationAsset;
+
+  /// Retour à l'écran précédent, en haut à gauche. Absent, rien n'est affiché.
+  final Widget? back;
 
   /// Sortie sans compte, posée en haut à droite. Absente, rien n'est affiché.
   final Widget? skip;
@@ -202,6 +213,10 @@ class _Banner extends StatelessWidget {
                   ),
                 ),
               ),
+            // Aligné sur « Passer » : les deux sorties restent à portée
+            // quand le bandeau se replie pendant la saisie.
+            if (back != null)
+              Positioned(top: 0, left: AppDesign.space1, child: back!),
             if (skip != null)
               Positioned(
                 top: AppDesign.space2,

@@ -8,6 +8,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../diaspoList/controllers/diaspo_list_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
 
 class DiaspoDetailController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -25,12 +26,18 @@ class DiaspoDetailController extends GetxController {
 
   void _loadOffer() {
     final args = Get.arguments;
-    if (args != null && args['offer'] != null) {
-      offer.value = args['offer'] as DiaspoOffer;
+    if (args is! Map) return;
+    final passed = args['offer'];
+    if (passed is DiaspoOffer) {
+      offer.value = passed;
       _checkIfMyOffer(); // Vérifier si c'est mon offre
-    } else if (args != null && args['offerId'] != null) {
-      _fetchOffer(args['offerId'] as int);
+      return;
     }
+    // Une notification transporte l'identifiant en texte (les données FCM
+    // sont toujours des chaînes) : `as int` levait dans `onInit` et laissait
+    // un écran d'erreur à la place de l'offre.
+    final id = int.tryParse('${args['offerId'] ?? ''}');
+    if (id != null) _fetchOffer(id);
   }
 
   /// Vérifier si l'offre appartient à l'utilisateur actuel
@@ -51,7 +58,10 @@ class DiaspoDetailController extends GetxController {
       _checkIfMyOffer(); // Vérifier si c'est mon offre après le fetch
     } catch (e) {
       Get.snackbar('Erreur', 'Impossible de charger l\'offre');
-      Get.back();
+      // Pas `Get.back()` : avec le snackbar tout juste ouvert, il se
+      // contentait de le refermer et laissait l'utilisateur sur une page vide.
+      // Page déjà quittée : rien à fermer.
+      if (!isClosed) AppNavigation.pop();
     } finally {
       isLoading.value = false;
     }

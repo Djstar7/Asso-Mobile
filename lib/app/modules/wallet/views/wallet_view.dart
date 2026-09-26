@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
   import '../controllers/wallet_controller.dart';
   import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
   import '../../../data/providers/storage_service.dart';
   import '../widgets/withdrawal_bottom_sheet.dart';
   import '../widgets/recharge_bottom_sheet.dart';
@@ -23,6 +24,13 @@ import '../../../core/utils/app_theme_system.dart';
    Widget build(BuildContext context) {
   return Scaffold(
     backgroundColor: AppThemeSystem.getBackgroundColor(context),
+    // En-tête fixe plutôt que dans le contenu : pendant le chargement ou
+    // après une erreur, l'écran n'avait aucune sortie visible.
+    appBar: AppBar(
+      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      leading: const AppBackButton(),
+      title: const Text('Mon Portefeuille'),
+    ),
     body: SafeArea(
       child: Stack(
         children: [
@@ -75,13 +83,7 @@ import '../../../core/utils/app_theme_system.dart';
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // On réserve l'espace pour laisser le bouton flotter au-dessus
-                    const SizedBox(height: 12),
-
-                    // Ligne titre + bouton retour, cohérente avec le design
-                    _buildHeaderBar(context),
-
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     // Carte bancaire style VISA/ASSO
                     _buildAssoCard(context),
@@ -123,61 +125,6 @@ import '../../../core/utils/app_theme_system.dart';
             }),
           ),
         ],
-      ),
-    ),
-  );
-}
-Widget _buildHeaderBar(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-    child: Row(
-      children: [
-        _buildBackButton(context),
-        const SizedBox(width: 12),
-        Text(
-          'Mon Portefeuille',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppThemeSystem.getPrimaryTextColor(context),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildBackButton(BuildContext context) {
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: () {
-        if (Navigator.of(context).canPop()) {
-          Get.back();
-        } else {
-          Get.offAllNamed('/home');
-        }
-      },
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getSurfaceColor(context), // fond carte/surface
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 18,
-          color: AppThemeSystem.getPrimaryTextColor(context),
-        ),
       ),
     ),
   );
@@ -1475,6 +1422,9 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
 
       Get.dialog(
         AlertDialog(
+          // Montant, conversion et frais s'empilent : clavier ouvert, le
+          // contenu défile et le bouton de validation reste visible.
+          scrollable: true,
           backgroundColor: AppThemeSystem.getSurfaceColor(context),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(

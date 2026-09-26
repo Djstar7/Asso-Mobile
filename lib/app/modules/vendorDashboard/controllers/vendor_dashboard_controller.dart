@@ -65,7 +65,12 @@ class VendorDashboardController extends GetxController {
     super.onInit();
 
     if (Get.isRegistered<CurrencyService>()) {
-      ever(CurrencyService.to.userCurrencyRx, (_) => currencyRevision.value++);
+      // Écoute d'un service permanent : sans `dispose`, l'écouteur gardait
+      // ce contrôleur en mémoire bien après la fermeture de l'écran.
+      _currencyWorker = ever(
+        CurrencyService.to.userCurrencyRx,
+        (_) => currencyRevision.value++,
+      );
     }
 
     _loadVendorData();
@@ -382,6 +387,7 @@ class VendorDashboardController extends GetxController {
   /// Sentinelle réactive de la devise d'affichage : les montants sont
   /// convertis au rendu, changer de devise doit redessiner sans rappeler l'API.
   final currencyRevision = 0.obs;
+  Worker? _currencyWorker;
 
   String formatPrice(double priceInXOF, {bool showSymbol = true}) {
     // Lecture volontaire : abonne les Obx au changement de devise.
@@ -408,6 +414,7 @@ class VendorDashboardController extends GetxController {
     print('========================================');
 
     _isDisposed = true;
+    _currencyWorker?.dispose();
     super.onClose();
 
     print('  └─ Controller disposed safely');

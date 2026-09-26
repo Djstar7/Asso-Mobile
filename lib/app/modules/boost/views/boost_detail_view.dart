@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../data/models/boost_models.dart';
 import '../controllers/boost_controller.dart';
 
@@ -55,6 +56,9 @@ class _BoostDetailViewState extends State<BoostDetailView> {
       appBar: AppBar(
         backgroundColor: AppDesign.surface(context),
         elevation: 0,
+        // Explicite : ouverte depuis une notification, la page n'a rien
+        // derrière elle et la flèche implicite disparaissait.
+        leading: const AppBackButton(),
         title: Text(
           'Suivi de la campagne',
           style: TextStyle(

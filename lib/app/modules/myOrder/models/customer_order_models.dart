@@ -55,6 +55,11 @@ class CustomerOrderItem {
   final double unitPrice;
   final double totalPrice;
 
+  /// Option commandée (« Rouge · 42 »), vide pour un produit sans options.
+  /// Une commande multi-couleurs a une ligne par couleur : sans ce libellé,
+  /// le client voyait deux fois le même produit sans savoir lequel est quoi.
+  final String variantLabel;
+
   CustomerOrderItem({
     required this.productId,
     required this.productName,
@@ -62,16 +67,26 @@ class CustomerOrderItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.variantLabel = '',
   });
 
+  /// Nom affiché : le produit, suivi de l'option s'il y en a une.
+  String get displayName =>
+      variantLabel.isEmpty ? productName : '$productName ($variantLabel)';
+
   factory CustomerOrderItem.fromMap(Map<String, dynamic> map) {
+    final attributes = map['variant_attributes'];
     return CustomerOrderItem(
       productId: (map['product_id'] ?? map['id'] ?? '').toString(),
-      productName: map['product']?['name'] ?? 'Produit',
-      productImage: map['product']?['main_image'],
+      productName:
+          map['product']?['name'] ?? map['product_name']?.toString() ?? 'Produit',
+      productImage: map['product']?['main_image'] ?? map['product_image'],
       quantity: map['quantity'] ?? 1,
       unitPrice: double.tryParse(map['unit_price']?.toString() ?? '0') ?? 0,
       totalPrice: double.tryParse(map['total_price']?.toString() ?? '0') ?? 0,
+      variantLabel: attributes is Map
+          ? attributes.values.map((v) => v.toString()).join(' · ')
+          : '',
     );
   }
 }

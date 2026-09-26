@@ -20,73 +20,70 @@ import '../../../data/models/payment_method_option.dart';
 import '../../../data/services/stripe_native_service.dart';
 import 'map_selection_view.dart';
 import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/scoped_controller_page.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/quantity_stepper.dart';
+import '../../../core/widgets/variant_quantity_list.dart';
+import '../../../core/utils/app_navigation.dart';
+
+/// Fiche produit telle que la route l'ouvre : chaque fiche empilée
+/// (produit similaire, boutique, lien partagé…) possède son propre
+/// [ProductController] (voir [ScopedControllerPage]).
+class ProductPage extends StatelessWidget {
+  const ProductPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedControllerPage<ProductController>(
+      create: ProductController.new,
+      builder: (controller) => ProductView(pageController: controller),
+    );
+  }
+}
 
 class ProductView extends GetView<ProductController> {
-  const ProductView({super.key});
+  const ProductView({super.key, this.pageController});
+
+  /// Contrôleur propre à la fiche (voir [ProductPage]). Tenu directement
+  /// plutôt que recherché à chaque accès : un rappel qui se termine après la
+  /// fermeture de la fiche ne lève pas « controller not found ». Sans lui, la
+  /// vue retombe sur le contrôleur partagé, comme dans les tests.
+  final ProductController? pageController;
+
+  @override
+  ProductController get controller => pageController ?? super.controller;
 
   @override
   Widget build(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
 
-    // Récupérer les données du produit depuis les arguments
+    // Les arguments de CETTE page, et non `Get.arguments` : ce dernier suit la
+    // route au sommet de la pile. Dès qu'une visionneuse d'image, une feuille
+    // ou un dialogue s'ouvrait par-dessus, une reconstruction de la fiche
+    // (clavier, retour de la visionneuse…) lisait leurs arguments, vides, et
+    // affichait le produit de démonstration à la place du vrai.
+    //
+    // Sans arguments, on n'invente plus de produit : l'ancien produit de
+    // démonstration (un t-shirt) s'affichait à la place du vrai et semblait
+    // être « la mauvaise photo ».
     final product =
-        Get.arguments as Map<String, dynamic>? ??
-        {
-          'name': 'Produit',
-          'price': '0',
-          'location': 'Non spécifiée',
-          'description': 'Aucune description disponible',
-          'image': 'assets/images/p1.jpeg',
-          'images': [
-            'assets/images/p1.jpeg',
-            'assets/images/p2.jpeg',
-            'assets/images/p3.jpeg',
-          ],
-          'seller': {'name': 'Vendeur', 'rating': 4.5, 'reviews': 120},
-        };
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (product == null) {
+      return Scaffold(
+        backgroundColor: AppThemeSystem.getBackgroundColor(context),
+        appBar: AppBar(leading: const AppBackButton()),
+        body: const AppEmptyState(
+          icon: Icons.inventory_2_outlined,
+          title: 'Produit introuvable',
+          message: 'Ce produit n’est plus disponible ou le lien est incomplet.',
+        ),
+      );
+    }
 
     // Statistiques vendeur : consultation de la fiche (dédoublonnée).
     controller.trackProductView(product);
-
-    // 🔍 DEBUG: Afficher tous les détails du produit
-    print('');
-    print('═══════════════════════════════════════════════════════════════');
-    print('🔍 PRODUCT VIEW - DÉTAILS DU PRODUIT');
-    print('═══════════════════════════════════════════════════════════════');
-    print('📦 Nom: ${product['name']}');
-    print('💰 Prix: ${product['price']}');
-    print('📍 Location: ${product['location']}');
-    print('');
-    print('🗺️ COORDONNÉES GPS DIRECTES:');
-    print(
-      '   latitude: ${product['latitude']} (type: ${product['latitude']?.runtimeType})',
-    );
-    print(
-      '   longitude: ${product['longitude']} (type: ${product['longitude']?.runtimeType})',
-    );
-    print('');
-    print('🏪 SHOP DATA:');
-    if (product['shop'] != null) {
-      final shop = product['shop'] as Map<String, dynamic>;
-      print('   shop.name: ${shop['name']}');
-      print('   shop.address: ${shop['address']}');
-      print(
-        '   shop.latitude: ${shop['latitude']} (type: ${shop['latitude']?.runtimeType})',
-      );
-      print(
-        '   shop.longitude: ${shop['longitude']} (type: ${shop['longitude']?.runtimeType})',
-      );
-      print('   shop.is_certified: ${shop['is_certified']}');
-      print('   Toutes les clés shop: ${shop.keys.toList()}');
-    } else {
-      print('   ❌ Pas de données shop');
-    }
-    print('');
-    print('📋 TOUTES LES CLÉS DU PRODUIT:');
-    print('   ${product.keys.toList()}');
-    print('═══════════════════════════════════════════════════════════════');
-    print('');
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -116,15 +113,15 @@ class ProductView extends GetView<ProductController> {
                   ),
                 ),
                 child: Icon(
-                  Icons.arrow_back_rounded,
+                  Icons.arrow_back_ios_new_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
               ),
-              // Ouverte depuis une notification, la fiche n'a pas de page précédente.
-              onPressed: () => Navigator.of(context).canPop()
-                  ? Get.back()
-                  : Get.offAllNamed(Routes.HOME),
+              tooltip: 'Retour',
+              // Ouverte depuis une notification, la fiche n'a pas de page
+              // précédente : le retour ramène alors à l'accueil.
+              onPressed: () => AppNavigation.back(context),
             ),
             actions: [
               // Partage masqué en attendant la mise en ligne : les liens
@@ -246,6 +243,9 @@ class ProductView extends GetView<ProductController> {
     Map<String, dynamic> product,
   ) {
     final images = _getProductImages(product);
+    if (images.isEmpty) {
+      return const _ImagePlaceholder(icon: Icons.image_outlined);
+    }
 
     return Stack(
       children: [
@@ -375,7 +375,11 @@ class ProductView extends GetView<ProductController> {
           images: images,
           currentIndex: controller.currentImageIndex.value,
           onSelected: controller.goToImage,
-          imageBuilder: (image, fit) => _buildImageWidget(image, fit: fit),
+          imageBuilder: (image, fit) => _buildImageWidget(
+            image,
+            fit: fit,
+            decodeSize: const Size.square(60),
+          ),
         ),
       ),
     );
@@ -860,8 +864,12 @@ class ProductView extends GetView<ProductController> {
                       ),
                       child: ClipOval(
                         child: ownerImage != null && ownerImage.isNotEmpty
-                            ? Image.network(
-                                ownerImage,
+                            ? Image(
+                                image: AppNetworkImage.provider(
+                                  context,
+                                  ownerImage,
+                                  const Size.square(50),
+                                ),
                                 fit: BoxFit.cover,
                                 loadingBuilder:
                                     (context, child, loadingProgress) {
@@ -937,8 +945,12 @@ class ProductView extends GetView<ProductController> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(9),
                     child: shopImage != null && shopImage.isNotEmpty
-                        ? Image.network(
-                            shopImage,
+                        ? Image(
+                            image: AppNetworkImage.provider(
+                              context,
+                              shopImage,
+                              const Size.square(56),
+                            ),
                             fit: BoxFit.cover,
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
@@ -1572,8 +1584,10 @@ class ProductView extends GetView<ProductController> {
     controller.deliveryPartners.clear();
     controller.deliveryQuote.value = null;
     controller.deliveryBlockedMessage.value = null;
-    controller.orderQuantity.value =
-        1; // réinitialiser la quantité à chaque ouverture
+    // Quantités remises à zéro à chaque ouverture ; la variante regardée sur
+    // la fiche est proposée d'office.
+    controller.resetOrderQuantities(product);
+    final hasVariants = controller.productHasVariants(product);
 
     // Position GPS seulement si aucune adresse n'a déjà été choisie : une
     // adresse modifiée par l'acheteur ne doit pas être écrasée.
@@ -1586,444 +1600,293 @@ class ProductView extends GetView<ProductController> {
       }
     });
 
-    Get.bottomSheet(
-      Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getBackgroundColor(context),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
+    AppSheet.show(
+      AppSheet(
+        title: 'Passer commande',
+        // Le contenu est fait de cartes : elles se détachent mieux sur le fond
+        // d'écran que sur une surface blanche.
+        color: context.ds.canvas,
+        // Le bouton reste épinglé au-dessus du clavier : au bout du contenu,
+        // il passait dessous dès qu'on saisissait le numéro à contacter.
+        footer: Obx(() {
+          final missing = controller.missingOrderSteps(product);
+          final ready =
+              missing.isEmpty &&
+              !controller.isLoadingPartners.value &&
+              !controller.isCreatingOrder.value;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // L'étape qui bloque, juste au-dessus du bouton qu'elle
+              // débloque. La liste complète, en bas du contenu, sortait du
+              // champ : le bouton restait grisé sans explication visible.
+              if (missing.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppDesign.space2),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: AppDesign.warning,
+                      ),
+                      const SizedBox(width: AppDesign.space2),
+                      Expanded(
+                        child: Text(
+                          'Pour continuer : ${missing.first}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            color: AppDesign.warningText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ElevatedButton.icon(
+                onPressed: ready
+                    ? () => _showOrderSummary(context, product)
+                    : null,
+                icon: controller.isCreatingOrder.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.fact_check_rounded,
+                        color: Colors.white,
+                      ),
+                label: Text(
+                  'Vérifier ma commande',
+                  style: context.textStyle(
+                    FontSizeType.body1,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppThemeSystem.primaryColor,
+                  disabledBackgroundColor: AppThemeSystem.grey400,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          );
+        }),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle bar
-            Container(
-              margin: EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppThemeSystem.grey300,
-                borderRadius: BorderRadius.circular(2),
+            // Avec options, chaque option affiche son propre prix plus bas.
+            Text(
+              hasVariants
+                  ? '${product['name']}'
+                  : '${product['name']} — ${controller.formatPrice(controller.unitPriceXaf(product))}',
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: AppThemeSystem.grey600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            SizedBox(height: 16),
+
+
+            _buildOrderVariantSection(context, product),
+
+            // Adresse de livraison
+            _buildDeliveryAddressCard(context, productId),
+
+            SizedBox(height: 12),
+
+            TextField(
+              controller: controller.addressDetailsController,
+              maxLines: 2,
+              maxLength: 500,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: 'Complément d’adresse (facultatif)',
+                hintText:
+                    'Quartier, rue, portail, étage, point de repère…',
+                prefixIcon: Icon(Icons.signpost_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
 
-            // Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            SizedBox(height: 8),
+
+            TextField(
+              controller: controller.customerPhoneController,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              maxLength: 30,
+              decoration: InputDecoration(
+                labelText: 'Numéro à contacter *',
+                hintText: 'Ex. 6XXXXXXXX',
+                helperText: 'Le livreur appellera ce numéro',
+                prefixIcon: Icon(Icons.phone_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // Section partenaires de livraison
+            Text(
+              'Choisir un partenaire de livraison',
+              style: context.textStyle(
+                FontSizeType.body1,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+
+            _buildDeliveryPartnersSection(context),
+
+            SizedBox(height: 20),
+
+            // Récapitulatif des prix
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.ds.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppThemeSystem.primaryColor.withValues(
+                    alpha: 0.2,
+                  ),
+                ),
+              ),
+              child: Obx(
+                () => Column(
                   children: [
-                    // Header
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor.withValues(
-                              alpha: 0.10,
+                    // Produit sans options : quantité aux boutons ou au
+                    // clavier. Avec options, elle se règle option par option
+                    // plus haut.
+                    if (!hasVariants) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Quantité',
+                            style: context.textStyle(
+                              FontSizeType.body2,
+                              color: AppThemeSystem.grey600,
                             ),
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            Icons.shopping_cart_rounded,
-                            color: AppThemeSystem.primaryColor,
-                            size: 28,
+                          QuantityStepper(
+                            compact: true,
+                            min: 1,
+                            value: controller.orderQuantity.value,
+                            max: controller.maxQuantity(product),
+                            onChanged: (quantity) =>
+                                controller.setOrderQuantity(product, quantity),
+                            onMaxReached: () => controller.notifyStockLimit(
+                              controller.maxQuantity(product) ?? 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Articles (${controller.orderQuantity.value})',
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            color: AppThemeSystem.grey600,
                           ),
                         ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Passer commande',
-                                style: context.textStyle(
-                                  FontSizeType.h5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Obx(() {
-                                final variantLabel = VariantCatalog.labelOf(
-                                  controller.selectedVariant.value,
-                                );
-                                return Text(
-                                  '${product['name']}${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''} — ${controller.formatPrice(controller.unitPriceXaf(product))}',
-                                  style: context.textStyle(
-                                    FontSizeType.caption,
-                                    color: AppThemeSystem.grey600,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                );
-                              }),
-                            ],
+                        Text(
+                          controller.formatPrice(
+                            controller.orderSubtotal(product),
+                          ),
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
-
-                    SizedBox(height: 20),
-
-                    _buildOrderVariantSection(context, product),
-
-                    // Adresse de livraison
-                    _buildDeliveryAddressCard(context, productId),
-
-                    SizedBox(height: 12),
-
-                    TextField(
-                      controller: controller.addressDetailsController,
-                      maxLines: 2,
-                      maxLength: 500,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'Complément d’adresse (facultatif)',
-                        hintText:
-                            'Quartier, rue, portail, étage, point de repère…',
-                        prefixIcon: Icon(Icons.signpost_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    TextField(
-                      controller: controller.customerPhoneController,
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.done,
-                      maxLength: 30,
-                      decoration: InputDecoration(
-                        labelText: 'Numéro à contacter *',
-                        hintText: 'Ex. 6XXXXXXXX',
-                        helperText: 'Le livreur appellera ce numéro',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 20),
-
-                    // Section partenaires de livraison
-                    Text(
-                      'Choisir un partenaire de livraison',
-                      style: context.textStyle(
-                        FontSizeType.body1,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-
-                    _buildDeliveryPartnersSection(context),
-
-                    SizedBox(height: 20),
-
-                    // Récapitulatif des prix
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.ds.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppThemeSystem.primaryColor.withValues(
-                            alpha: 0.2,
-                          ),
-                        ),
-                      ),
-                      child: Obx(
-                        () => Column(
-                          children: [
-                            // Sélecteur de quantité (produit normal)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Quantité',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: AppThemeSystem.grey600,
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    InkWell(
-                                      onTap: controller.decrementQuantity,
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        // 40 px : les boutons +/- sont
-                                        // manipulés au pouce, 34 px était
-                                        // sous le seuil confortable.
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: context.ds.surfaceMuted,
-                                          borderRadius: BorderRadius.circular(
-                                            AppDesign.radiusSm,
-                                          ),
-                                          border: Border.all(
-                                            color: context.ds.borderStrong,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.remove_rounded,
-                                          size: 18,
-                                          color: context.ds.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                      child: Text(
-                                        '${controller.orderQuantity.value}',
-                                        style: context.textStyle(
-                                          FontSizeType.body1,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    InkWell(
-                                      onTap: () =>
-                                          controller.incrementQuantity(product),
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        // 40 px : les boutons +/- sont
-                                        // manipulés au pouce, 34 px était
-                                        // sous le seuil confortable.
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: context.ds.surfaceMuted,
-                                          border: Border.all(
-                                            color: context.ds.borderStrong,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          size: 18,
-                                          color: context.ds.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Prix du produit${controller.orderQuantity.value > 1 ? ' (×${controller.orderQuantity.value})' : ''}',
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    color: AppThemeSystem.grey600,
-                                  ),
-                                ),
-                                Text(
-                                  controller.formatPrice(
-                                    controller.subtotal(
-                                      controller.unitPriceXaf(product),
-                                    ),
-                                  ),
-                                  style: context.textStyle(
-                                    FontSizeType.body2,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (controller.withDelivery.value &&
-                                controller.selectedPartner.value != null) ...[
-                              SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Livraison (${controller.selectedPartner.value!['company_name']})',
-                                      style: context.textStyle(
-                                        FontSizeType.body2,
-                                        color: AppThemeSystem.grey600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Text(
-                                    controller.formatPrice(
-                                      controller.deliveryPrice.value,
-                                    ),
-                                    style: context.textStyle(
-                                      FontSizeType.body2,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppThemeSystem.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (controller.deliveryWeightKg != null)
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Poids total : ${formatKg(controller.deliveryWeightKg)}',
-                                    style: context.caption,
-                                  ),
-                                ),
-                            ],
-                            Divider(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Total',
-                                  style: context.textStyle(
-                                    FontSizeType.h5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  controller.formatPrice(
-                                    controller.calculateTotal(
-                                      controller.unitPriceXaf(product),
-                                    ),
-                                  ),
-                                  style: context.textStyle(
-                                    FontSizeType.h5,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppThemeSystem.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 20),
-
-                    // Étapes manquantes puis résumé avant paiement
-                    Obx(() {
-                      final missing = controller.missingOrderSteps(product);
-                      final ready =
-                          missing.isEmpty &&
-                          !controller.isLoadingPartners.value &&
-                          !controller.isCreatingOrder.value;
-
-                      return Column(
+                    if (controller.withDelivery.value &&
+                        controller.selectedPartner.value != null) ...[
+                      SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
-                          if (missing.isNotEmpty)
-                            Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppThemeSystem.warningColor.withValues(
-                                  alpha: 0.08,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppThemeSystem.warningColor.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                ),
+                          Expanded(
+                            child: Text(
+                              'Livraison (${controller.selectedPartner.value!['company_name']})',
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                color: AppThemeSystem.grey600,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pour continuer :',
-                                    style: context.textStyle(
-                                      FontSizeType.body2,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ...missing.map(
-                                    (step) => Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.radio_button_unchecked,
-                                            size: 14,
-                                            color: AppThemeSystem.warningColor,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              step,
-                                              style: context.textStyle(
-                                                FontSizeType.caption,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: ready
-                                  ? () => _showOrderSummary(context, product)
-                                  : null,
-                              icon: controller.isCreatingOrder.value
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons.fact_check_rounded,
-                                      color: Colors.white,
-                                    ),
-                              label: Text(
-                                'Vérifier ma commande',
-                                style: context.textStyle(
-                                  FontSizeType.body1,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppThemeSystem.primaryColor,
-                                disabledBackgroundColor: AppThemeSystem.grey400,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: ready ? 4 : 0,
-                              ),
+                          ),
+                          Text(
+                            controller.formatPrice(
+                              controller.deliveryPrice.value,
+                            ),
+                            style: context.textStyle(
+                              FontSizeType.body2,
+                              fontWeight: FontWeight.w600,
+                              color: AppThemeSystem.primaryColor,
                             ),
                           ),
                         ],
-                      );
-                    }),
+                      ),
+                      if (controller.deliveryWeightKg != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Poids total : ${formatKg(controller.deliveryWeightKg)}',
+                            style: context.caption,
+                          ),
+                        ),
+                    ],
+                    Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total',
+                          style: context.textStyle(
+                            FontSizeType.h5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          controller.formatPrice(
+                            controller.orderTotal(product),
+                          ),
+                          style: context.textStyle(
+                            FontSizeType.h5,
+                            fontWeight: FontWeight.bold,
+                            color: AppThemeSystem.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2031,12 +1894,7 @@ class ProductView extends GetView<ProductController> {
           ],
         ),
       ),
-      isScrollControlled: true,
-      enableDrag: true,
-    ).then((_) {
-      // La variante a pu changer dans la feuille : resynchroniser la fiche.
-      controller.variantSelectorEpoch.value++;
-    });
+    );
   }
 
   /// Partenaires de livraison chiffrés au poids réel (poids × quantité), avec
@@ -2271,8 +2129,12 @@ class ProductView extends GetView<ProductController> {
                     ),
                     child: ClipOval(
                       child: logo != null
-                          ? Image.network(
-                              logo,
+                          ? Image(
+                              image: AppNetworkImage.provider(
+                                context,
+                                logo,
+                                const Size.square(44),
+                              ),
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => Icon(
                                 Icons.local_shipping_rounded,
@@ -2457,7 +2319,7 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Vos options',
+                'Vos options et quantités',
                 style: context.textStyle(
                   FontSizeType.body1,
                   fontWeight: FontWeight.bold,
@@ -2465,13 +2327,24 @@ class ProductView extends GetView<ProductController> {
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Plusieurs couleurs ou tailles ? Indiquez une quantité pour chacune.',
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
+            ),
+          ),
           const SizedBox(height: 12),
-          ProductVariantSelector(
-            catalog: catalog,
-            selectedVariantId: controller.selectedVariant.value?['id'] as int?,
-            onChanged: (variant) =>
-                controller.onVariantChanged(product, variant),
-            formatAdjustment: controller.formatPrice,
+          Obx(
+            () => VariantQuantityList(
+              catalog: catalog,
+              quantities: Map<int, int>.from(controller.variantQuantities),
+              onChanged: controller.setVariantQuantities,
+              priceOf: (variant) =>
+                  controller.formatPrice(controller.variantPriceXaf(product, variant)),
+              onStockLimit: (_, stock) => controller.notifyStockLimit(stock),
+            ),
           ),
         ],
       ),
@@ -2644,13 +2517,11 @@ class ProductView extends GetView<ProductController> {
     BuildContext context,
     Map<String, dynamic> product,
   ) async {
-    final unitPrice = controller.unitPriceXaf(product);
-    final quantity = controller.orderQuantity.value;
+    final orderLines = controller.orderLines(product);
     final partner = controller.selectedPartner.value;
     final quote = partner == null ? null : DeliveryPartnerQuote(partner);
-    final variant = controller.selectedVariant.value;
     final details = controller.addressDetailsController.text.trim();
-    final total = controller.calculateTotal(unitPrice);
+    final total = controller.orderTotal(product);
     final images = _getProductImages(product);
 
     Widget line(String label, String value, {bool strong = false}) => Padding(
@@ -2715,182 +2586,147 @@ class ProductView extends GetView<ProductController> {
           ),
         );
 
-    final confirmed = await Get.bottomSheet<bool>(
-      Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.getBackgroundColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      tooltip: 'Modifier la commande',
-                      onPressed: () => Get.back(result: false),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Résumé de la commande',
-                        style: context.textStyle(
-                          FontSizeType.h5,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+    final confirmed = await AppSheet.show<bool>(
+      AppSheet(
+        title: 'Résumé de la commande',
+        color: context.ds.canvas,
+        // La flèche ramène à la feuille de commande, restée ouverte dessous :
+        // c'est une étape du parcours, pas une sortie. Une croix en plus
+        // ferait la même chose sous un autre signe.
+        onBack: () => AppNavigation.pop(false),
+        showClose: false,
+        footer: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => AppNavigation.pop(false),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                  child: Column(
-                    children: [
-                      section(Icons.shopping_bag_rounded, 'Article', [
-                        Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: SizedBox(
-                                width: 64,
-                                height: 64,
-                                child: _buildImageWidget(images.first),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                product['name']?.toString() ?? 'Produit',
-                                style: context.textStyle(
-                                  FontSizeType.body1,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        if (variant != null)
-                          ...VariantCatalog.attributesOf(
-                            variant,
-                          ).entries.map((e) => line(e.key, e.value)),
-                        line(
-                          'Prix unitaire',
-                          controller.formatPrice(unitPrice),
-                        ),
-                        line('Quantité', '$quantity'),
-                      ]),
-                      section(Icons.local_shipping_rounded, 'Livraison', [
-                        line('Adresse', controller.currentLocation.value),
-                        if (details.isNotEmpty) line('Complément', details),
-                        line(
-                          'Numéro à contacter',
-                          controller.customerPhone.value,
-                        ),
-                        if (quote != null) ...[
-                          line(
-                            'Livreur',
-                            quote.vehicleLabel != null
-                                ? '${quote.companyName} · ${quote.vehicleLabel}'
-                                : quote.companyName,
-                          ),
-                          line('Mode', quote.deliveryOptionLabel),
-                          if (quote.leadTime != null)
-                            line('Délai', quote.leadTime!),
-                          if (quote.pickupNotice != null) ...[
-                            const SizedBox(height: 6),
-                            DeliveryNotice(
-                              quote.pickupNotice!,
-                              icon: Icons.store_mall_directory_outlined,
-                            ),
-                          ],
-                        ],
-                      ]),
-                      section(Icons.receipt_long_rounded, 'Montant', [
-                        line(
-                          'Sous-total',
-                          controller.formatPrice(
-                            controller.subtotal(unitPrice),
-                          ),
-                        ),
-                        line(
-                          'Livraison',
-                          controller.formatPrice(
-                            controller.deliveryPrice.value,
-                          ),
-                        ),
-                        const Divider(height: 16),
-                        line(
-                          'Total à payer',
-                          controller.formatPrice(total),
-                          strong: true,
-                        ),
-                      ]),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Get.back(result: false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Modifier'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: () => Get.back(result: true),
-                        icon: const Icon(
-                          Icons.lock_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        label: Text(
-                          'Confirmer et payer',
-                          style: context.textStyle(
-                            FontSizeType.body1,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppThemeSystem.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              child: const Text('Modifier'),
+            ),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton.icon(
+              onPressed: () => AppNavigation.pop(true),
+              icon: const Icon(
+                Icons.lock_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              label: Text(
+                'Confirmer et payer',
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+        ),
+        child: Column(
+          children: [
+            section(Icons.shopping_bag_rounded, 'Article', [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: images.isEmpty
+                          ? const _ImagePlaceholder(icon: Icons.image_outlined)
+                          : _buildImageWidget(
+                              images.first,
+                              decodeSize: const Size.square(64),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      product['name']?.toString() ?? 'Produit',
+                      style: context.textStyle(
+                        FontSizeType.body1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Une ligne par option commandée : « Rouge · 42 — 3 × 12 000 ».
+              for (final orderLine in orderLines)
+                line(
+                  orderLine.label.isEmpty ? 'Quantité' : orderLine.label,
+                  '${orderLine.quantity} × ${controller.formatPrice(orderLine.unitPriceXaf)}',
+                ),
+            ]),
+            section(Icons.local_shipping_rounded, 'Livraison', [
+              line('Adresse', controller.currentLocation.value),
+              if (details.isNotEmpty) line('Complément', details),
+              line(
+                'Numéro à contacter',
+                controller.customerPhone.value,
+              ),
+              if (quote != null) ...[
+                line(
+                  'Livreur',
+                  quote.vehicleLabel != null
+                      ? '${quote.companyName} · ${quote.vehicleLabel}'
+                      : quote.companyName,
+                ),
+                line('Mode', quote.deliveryOptionLabel),
+                if (quote.leadTime != null)
+                  line('Délai', quote.leadTime!),
+                if (quote.pickupNotice != null) ...[
+                  const SizedBox(height: 6),
+                  DeliveryNotice(
+                    quote.pickupNotice!,
+                    icon: Icons.store_mall_directory_outlined,
+                  ),
+                ],
+              ],
+            ]),
+            section(Icons.receipt_long_rounded, 'Montant', [
+              line(
+                'Sous-total',
+                controller.formatPrice(
+                  controller.orderSubtotal(product),
+                ),
+              ),
+              line(
+                'Livraison',
+                controller.formatPrice(
+                  controller.deliveryPrice.value,
+                ),
+              ),
+              const Divider(height: 16),
+              line(
+                'Total à payer',
+                controller.formatPrice(total),
+                strong: true,
+              ),
+            ]),
+          ],
         ),
       ),
-      isScrollControlled: true,
     );
 
     if (confirmed == true && context.mounted) {
@@ -3053,13 +2889,16 @@ class ProductView extends GetView<ProductController> {
   /// Confirmation de commande : ferme la feuille puis propose le suivi ou le
   /// retour à l'accueil (le retour depuis le suivi ramène aussi à l'accueil).
   void _showOrderConfirmation(Map<String, dynamic> data, String message) {
-    Get.back(); // fermer la feuille de commande
+    // `AppNavigation.pop` et non `Get.back()` : un snackbar encore affiché
+    // (paiement, adresse) aurait été fermé à la place de la feuille, et la
+    // confirmation se serait ouverte par-dessus une commande déjà passée.
+    AppNavigation.pop(); // fermer la feuille de commande
     final order = data['order'] as Map?;
     final orderNumber = order?['order_number']?.toString();
     final total = (order?['total'] as num?)?.toDouble();
 
     void leaveTo(String? route) {
-      Get.back(); // fermer la confirmation
+      AppNavigation.pop(); // fermer la confirmation
       Get.until((r) => r.settings.name == Routes.HOME || r.isFirst);
       if (Get.currentRoute != Routes.HOME && route == null) {
         Get.offAllNamed(Routes.HOME);
@@ -3071,10 +2910,24 @@ class ProductView extends GetView<ProductController> {
     Get.dialog(
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: const Icon(
-          Icons.check_circle_rounded,
-          color: AppDesign.success,
-          size: 56,
+        // Une croix pour rester sur la fiche : les deux boutons quittaient la
+        // page, et la fenêtre ne se fermait pas autrement.
+        icon: Row(
+          children: [
+            const SizedBox(width: AppDesign.minTapTarget),
+            const Expanded(
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: AppDesign.success,
+                size: 56,
+              ),
+            ),
+            AppIconButton(
+              icon: Icons.close_rounded,
+              tooltip: 'Fermer',
+              onPressed: () => AppNavigation.pop(),
+            ),
+          ],
         ),
         title: const Text('Commande enregistrée', textAlign: TextAlign.center),
         content: Column(
@@ -3158,54 +3011,44 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  /// Get product images from various possible fields
+  /// Photos du produit, dans l'ordre des cartes du catalogue : la photo
+  /// principale d'abord, puis la galerie, puis l'ancien champ `image`, sans
+  /// doublon. La fiche et le récapitulatif ouvraient sinon sur une autre
+  /// photo que celle de la carte touchée. Vide si le produit n'a pas de
+  /// photo : l'appelant affiche alors un pictogramme neutre.
   List<String> _getProductImages(Map<String, dynamic> product) {
     final images = <String>[];
-
-    // Try images array
-    if (product['images'] != null) {
-      if (product['images'] is List) {
-        for (final item in product['images'] as List) {
-          if (item is String && item.isNotEmpty) {
-            images.add(item);
-          } else if (item is Map && item['url'] != null) {
-            images.add(item['url'].toString());
-          }
-        }
+    void add(Object? value) {
+      final url = value is Map ? value['url']?.toString() : value?.toString();
+      if (url != null && url.trim().isNotEmpty && !images.contains(url)) {
+        images.add(url);
       }
     }
 
-    // Try primary_image field
-    if (product['primary_image'] != null &&
-        product['primary_image'].toString().isNotEmpty) {
-      final primaryImage = product['primary_image'].toString();
-      if (!images.contains(primaryImage)) {
-        images.insert(0, primaryImage);
-      }
-    }
-
-    // Try single image field
-    if (images.isEmpty &&
-        product['image'] != null &&
-        product['image'].toString().isNotEmpty) {
-      images.add(product['image'].toString());
-    }
-
-    // Fallback to placeholder
-    if (images.isEmpty) {
-      images.add('assets/images/p1.jpeg');
-    }
+    add(product['primary_image']);
+    final gallery = product['images'];
+    if (gallery is List) gallery.forEach(add);
+    add(product['image']);
 
     return images;
   }
 
   /// Build image widget (network or asset)
-  Widget _buildImageWidget(String imageUrl, {BoxFit fit = BoxFit.cover}) {
+  ///
+  /// [decodeSize] : taille logique de la case, pour les vignettes. Sans elle,
+  /// la photo est décodée au plafond global (carrousel, visionneuse).
+  Widget _buildImageWidget(
+    String imageUrl, {
+    BoxFit fit = BoxFit.cover,
+    Size? decodeSize,
+  }) {
     final resolvedUrl = _resolveImageUrl(imageUrl);
     if (resolvedUrl.startsWith('http://') ||
         resolvedUrl.startsWith('https://')) {
-      return Image.network(
-        resolvedUrl,
+      return Image(
+        image: decodeSize == null
+            ? NetworkImage(resolvedUrl)
+            : AppNetworkImage.provider(Get.context!, resolvedUrl, decodeSize),
         fit: fit,
         width: double.infinity,
         height: double.infinity,
@@ -3408,14 +3251,19 @@ class ProductView extends GetView<ProductController> {
       isCertified: ProductCard.isShopCertified(product),
       badgeLabel: isOutOfStock ? 'Épuisé' : null,
       badgeTone: AppBadgeTone.danger,
-      imageBuilder: (context) => productImage == null
-          ? const _ImagePlaceholder(icon: Icons.image_outlined)
-          : Image.network(
-              productImage,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const _ImagePlaceholder(icon: Icons.image_outlined),
-            ),
+      imageBuilder: (context) {
+        if (productImage == null) {
+          return const _ImagePlaceholder(icon: Icons.image_outlined);
+        }
+        final cardWidth = ProductCard.widthInGrid(context);
+        return AppNetworkImage(
+          url: productImage,
+          decodeSize: Size(cardWidth, cardWidth / ProductCard.imageAspectRatio),
+          placeholder: (_) => const SizedBox.expand(),
+          errorBuilder: (_) =>
+              const _ImagePlaceholder(icon: Icons.image_outlined),
+        );
+      },
       // `offNamed` : on remplace la fiche courante au lieu d'empiler des
       // écrans produit à l'infini au fil des rebonds.
       onTap: () => Get.offNamed(

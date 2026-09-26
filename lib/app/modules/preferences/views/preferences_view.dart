@@ -50,9 +50,15 @@ class _Header extends GetView<PreferencesController> {
 
   @override
   Widget build(BuildContext context) {
+    // Au premier lancement l'écran est la racine : « Passer » est la seule
+    // sortie. Ouvert depuis le profil, il lui faut un retour.
+    final canGoBack = Navigator.canPop(context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        context.ds.gutter,
+        // La flèche porte sa propre marge de toucher : collée au bord comme
+        // dans une barre d'application.
+        canGoBack ? AppDesign.space1 : context.ds.gutter,
         AppDesign.space4,
         context.ds.gutter,
         AppDesign.space4,
@@ -61,8 +67,11 @@ class _Header extends GetView<PreferencesController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: canGoBack
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
+              if (canGoBack) const AppBackButton(),
               Expanded(
                 child: Text(
                   'Vos centres d\'intérêt',
@@ -94,13 +103,19 @@ class _Header extends GetView<PreferencesController> {
             ],
           ),
           SizedBox(height: AppDesign.space1),
-          Text(
-            'Nous mettrons en avant ces produits sur votre accueil. '
-            'Vous pourrez changer d\'avis à tout moment.',
-            style: context.textStyle(
-              FontSizeType.caption,
-              color: context.ds.textSecondary,
-              height: 1.5,
+          Padding(
+            // Le texte reste sur la marge de page, sous la flèche.
+            padding: EdgeInsets.only(
+              left: canGoBack ? context.ds.gutter - AppDesign.space1 : 0,
+            ),
+            child: Text(
+              'Nous mettrons en avant ces produits sur votre accueil. '
+              'Vous pourrez changer d\'avis à tout moment.',
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: context.ds.textSecondary,
+                height: 1.5,
+              ),
             ),
           ),
         ],

@@ -11,14 +11,26 @@ import '../../../routes/app_pages.dart';
 /// Remplace la `Map<String, dynamic>` d'origine : la liste est parcourue à
 /// chaque frappe dans la recherche, et un type concret évite autant de casts.
 class CountryOption {
-  CountryOption({required this.country, required this.currency})
-      : flag = CountryCatalog.flagFor(country),
+  /// [flag] et [isoCode] proviennent du backend quand il les fournit
+  /// (`countries_detailed`). À défaut, le drapeau est déduit du catalogue
+  /// local, qui indexe des noms français.
+  CountryOption({
+    required this.country,
+    required this.currency,
+    String? flag,
+    this.isoCode = '',
+  })  : flag = (flag != null && flag.isNotEmpty)
+            ? flag
+            : CountryCatalog.flagFor(country),
         _searchKey = _normalize(
           '$country ${currency.code} ${currency.name}',
         );
 
   final String country;
   final CurrencyModel currency;
+
+  /// Code ISO 3166-1 alpha-2 renvoyé par le backend, vide s'il est inconnu.
+  final String isoCode;
 
   /// Drapeau en emoji, vide si le pays n'est pas dans le catalogue.
   final String flag;
@@ -66,6 +78,20 @@ class CountrySection {
 class CountrySelectionController extends GetxController {
   /// Pays mis en avant au-dessus de la liste : ils couvrent l'essentiel des
   /// utilisateurs et évitent de faire défiler 199 entrées au premier lancement.
+  ///
+  /// Repérés par code ISO et non par nom : le backend renvoie les pays en
+  /// anglais (« Cameroon »), une comparaison sur le libellé français ne
+  /// trouverait donc plus rien.
+  static const List<String> suggestedCountryCodes = [
+    'CM', // Cameroun
+    'CI', // Côte d'Ivoire
+    'SN', // Sénégal
+    'FR', // France
+    'BJ', // Bénin
+    'GA', // Gabon
+  ];
+
+  /// Noms français correspondants, pour les réponses sans `countries_detailed`.
   static const List<String> suggestedCountries = [
     'Cameroun',
     "Côte d'Ivoire",
@@ -115,10 +141,29 @@ class CountrySelectionController extends GetxController {
         final currencyModel = CurrencyModel.fromJson(
           currency as Map<String, dynamic>,
         );
-        for (final country in currencyModel.countries) {
-          options.add(
-            CountryOption(country: country, currency: currencyModel),
-          );
+
+        // `countries_detailed` porte le drapeau calculé côté serveur : c'est
+        // la seule source fiable, le backend renvoyant des noms anglais que
+        // le catalogue local (indexé en français) ne sait pas traduire.
+        if (currencyModel.countriesDetailed.isNotEmpty) {
+          for (final info in currencyModel.countriesDetailed) {
+            options.add(
+              CountryOption(
+                country: info.name,
+                currency: currencyModel,
+                flag: info.flag.isNotEmpty
+                    ? info.flag
+                    : CountryCatalog.flagForIsoCode(info.isoCode),
+                isoCode: info.isoCode,
+              ),
+            );
+          }
+        } else {
+          for (final country in currencyModel.countries) {
+            options.add(
+              CountryOption(country: country, currency: currencyModel),
+            );
+          }
         }
       }
 
@@ -174,8 +219,16 @@ class CountrySelectionController extends GetxController {
   /// backend ne renvoie pas.
   List<CountryOption> _buildSuggestions() {
     final result = <CountryOption>[];
-    for (final name in suggestedCountries) {
-      final match = allCountries.firstWhereOrNull((c) => c.country == name);
+    for (var i = 0; i < suggestedCountryCodes.length; i++) {
+      final code = suggestedCountryCodes[i];
+      final name = suggestedCountries[i];
+
+      // Le code ISO d'abord (réponses modernes), le nom français ensuite.
+      final match = allCountries.firstWhereOrNull(
+            (c) => c.isoCode.isNotEmpty &&
+                c.isoCode.toUpperCase() == code,
+          ) ??
+          allCountries.firstWhereOrNull((c) => c.country == name);
       if (match != null) result.add(match);
     }
     return result;

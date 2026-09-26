@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/notification_controller.dart';
+import '../../../data/services/firebase_messaging_service.dart';
 import '../../../core/utils/app_design.dart';
 
 class NotificationView extends GetView<NotificationController> {
@@ -27,10 +29,7 @@ class NotificationView extends GetView<NotificationController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppThemeSystem.blackColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(color: AppThemeSystem.blackColor),
         actions: [
           Obx(() {
             final hasNotifications = controller.notifications.isNotEmpty;
@@ -284,35 +283,12 @@ class NotificationView extends GetView<NotificationController> {
   }
 
   void _handleNotificationTap(notification) {
-    final type = notification.type;
-    final data = notification.data ?? {};
-
-    switch (type) {
-      case 'wallet_credit':
-      case 'wallet_deposit_success':
-      case 'wallet_deposit_failed':
-      case 'wallet_withdrawal_success':
-      case 'wallet_withdrawal_failed':
-        Get.toNamed('/wallet/history');
-        break;
-      case 'order_update':
-        final orderId = data['order_id'];
-        if (orderId != null) {
-          Get.toNamed('/orders/$orderId');
-        } else {
-          Get.toNamed('/orders');
-        }
-        break;
-      case 'new_message':
-        final conversationId = data['conversation_id'];
-        if (conversationId != null) {
-          Get.toNamed('/chat/$conversationId');
-        } else {
-          Get.toNamed('/chat');
-        }
-        break;
-      default:
-        break;
+    final data = Map<String, dynamic>.from(notification.data ?? {});
+    data['type'] ??= notification.type;
+    // Même aiguillage qu'un tap sur la notification push. Celui d'ici visait
+    // des routes inexistantes (`/orders/…`, `/chat/…`) : rien ne s'ouvrait.
+    if (Get.isRegistered<FirebaseMessagingService>()) {
+      FirebaseMessagingService.to.openFromNotificationData(data);
     }
   }
 

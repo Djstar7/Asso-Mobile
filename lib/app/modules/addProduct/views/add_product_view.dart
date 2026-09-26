@@ -5,6 +5,7 @@ import 'package:dotted_border/dotted_border.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/add_product_controller.dart';
 import '../controllers/product_draft_store.dart';
 import '../../../core/widgets/product_variant_selector.dart';
@@ -31,12 +32,7 @@ class AddProductView extends GetView<AddProductController> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          tooltip: 'Retour',
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: ds.textPrimary, size: 20),
-          onPressed: () => _handleExit(context),
-        ),
+        leading: AppBackButton(onPressed: () => _handleExit(context)),
         title: Obx(
           () => Text(
             controller.isEditMode.value
@@ -99,6 +95,9 @@ class AddProductView extends GetView<AddProductController> {
         }
 
         return SingleChildScrollView(
+          // Formulaire long : faire défiler pour relire referme le clavier,
+          // qui masquait sinon les champs suivants et le pied d'étape.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(
             left: context.horizontalPadding,
             right: context.horizontalPadding,
@@ -1649,6 +1648,10 @@ class AddProductView extends GetView<AddProductController> {
               Expanded(
                 child: Obx(() {
                   return ListView.separated(
+                    // Parcourir la liste referme le clavier de la recherche,
+                    // qui en recouvrait la moitié basse.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.only(
                       left: context.horizontalPadding,
                       right: context.horizontalPadding,
@@ -1845,6 +1848,10 @@ class AddProductView extends GetView<AddProductController> {
                   }
 
                   return ListView.separated(
+                    // Parcourir la liste referme le clavier de la recherche,
+                    // qui en recouvrait la moitié basse.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.only(
                       left: context.horizontalPadding,
                       right: context.horizontalPadding,
@@ -2167,6 +2174,10 @@ class AddProductView extends GetView<AddProductController> {
                   }
 
                   return ListView.separated(
+                    // Parcourir la liste referme le clavier de la recherche,
+                    // qui en recouvrait la moitié basse.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.only(
                       left: context.horizontalPadding,
                       right: context.horizontalPadding,

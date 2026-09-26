@@ -36,6 +36,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
   // WebSocket
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
+  Worker? _reconnectWorker;
   Timer? _typingTimer;
   int get _currentUserId => StorageService.getUser()?.id ?? 0;
 
@@ -72,6 +73,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
     markAsDisposed();
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
+    _reconnectWorker?.dispose();
     _typingTimer?.cancel();
     messageController.removeListener(_onTextChanged);
     messageController.dispose();
@@ -90,6 +92,17 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
     // S'abonner à la conversation
     WebSocketService.to.subscribeToConversation(_conversationId!);
+
+    // Après une coupure (application en arrière-plan, réseau perdu), les
+    // messages arrivés entre-temps ne passent pas par le temps réel : on
+    // recharge la conversation à chaque reconnexion. La toute première
+    // connexion, elle, suit le chargement initial.
+    var hadConnection = WebSocketService.to.isConnected;
+    _reconnectWorker = ever<int>(WebSocketService.to.connectionEpoch, (_) {
+      if (isDisposed) return;
+      if (hadConnection) _loadMessages(refresh: true);
+      hadConnection = true;
+    });
 
     // Écouter les nouveaux messages en temps réel
     _messageSubscription = WebSocketService.to.messageStream.listen((message) {

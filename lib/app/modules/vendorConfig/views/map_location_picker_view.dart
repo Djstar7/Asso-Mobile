@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../../../core/utils/address_search.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/device_location.dart';
 import '../../../core/utils/location_label.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/map_search_results.dart';
 import '../../../data/models/deliverer_model.dart';
 
 class MapLocationPickerView extends StatefulWidget {
@@ -38,8 +41,21 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
 
   // Recherche
   final TextEditingController searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   List<Map<String, dynamic>> searchResults = [];
   bool isSearching = false;
+  bool _searchFailed = false;
+  bool _showSearchResults = false;
+  Timer? _searchDebounce;
+  int _searchRequest = 0;
+
+  /// Incrémenté à chaque déplacement du repère : l'adresse d'un point
+  /// précédent, arrivée en retard, n'écrase plus celle du point choisi.
+  int _selection = 0;
+
+  /// Saisie en cours ou résultats affichés : la carte laisse toute la place
+  /// à la recherche (légende et panneau du bas masqués).
+  bool get _isSearchMode => _searchFocusNode.hasFocus || _showSearchResults;
 
   // Selected deliverer for info display
   DelivererModel? selectedDeliverer;
@@ -118,6 +134,17 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     super.initState();
     mapController = MapController();
 
+    // Reconstruit à chaque prise/perte de focus : c'est elle qui fait entrer
+    // la carte en mode recherche ou l'en fait sortir.
+    _searchFocusNode.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        if (!_searchFocusNode.hasFocus && searchController.text.isEmpty) {
+          _showSearchResults = false;
+        }
+      });
+    });
+
     print('');
     print('========================================');
     print('🗺️ MAP LOCATION PICKER: INIT');
@@ -155,13 +182,23 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchFocusNode.dispose();
     searchController.dispose();
     mapController.dispose();
     super.dispose();
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng position) {
+    // Pendant une recherche, toucher la carte la referme sans déplacer le
+    // repère.
+    if (_isSearchMode) {
+      _closeSearch();
+      return;
+    }
+
     setState(() {
+      _selection++;
       selectedPosition = position;
       selectedAddress = 'Chargement de l\'adresse...';
       searchResults = []; // Fermer les résultats de recherche
@@ -173,148 +210,132 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
 
   /// Géocodage inverse : obtenir l'adresse depuis les coordonnées
   Future<void> _reverseGeocode(LatLng position) async {
+    final selection = _selection;
     if (mounted) {
       setState(() {
         isGeocodingInProgress = true;
       });
     }
 
-    try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?'
-        'format=json&'
-        'lat=${position.latitude}&'
-        'lon=${position.longitude}&'
-        'zoom=18&'
-        'addressdetails=1&'
-        'accept-language=fr',
-      );
-
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'AssoApp/1.0'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            selectedAddress = _readableAddress(
-              Map<String, dynamic>.from(data),
-              position,
-            );
-            isGeocodingInProgress = false;
-          });
-        }
+    final data = await AddressSearch.reverse(
+      position.latitude,
+      position.longitude,
+    );
+    if (!mounted || selection != _selection) return;
+    setState(() {
+      if (data != null) {
+        selectedAddress = _readableAddress(data, position);
       } else {
-        if (mounted) {
-          setState(() {
-            selectedCity = null;
-            selectedCountry = null;
-            selectedAddress =
-                'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-            isGeocodingInProgress = false;
-          });
-        }
+        selectedCity = null;
+        selectedCountry = null;
+        selectedAddress =
+            'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          selectedCity = null;
-          selectedCountry = null;
-          selectedAddress =
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-          isGeocodingInProgress = false;
-        });
-      }
-    }
+      isGeocodingInProgress = false;
+    });
   }
 
   /// Rechercher une adresse
+  /// Lance la recherche une fois la frappe posée.
+  ///
+  /// Sans délai, chaque lettre partait vers le service de recherche et une
+  /// réponse ancienne pouvait écraser la plus récente.
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    if (value.trim().length <= 2) {
+      _searchRequest++;
+      setState(() {
+        searchResults = [];
+        isSearching = false;
+        _searchFailed = false;
+        _showSearchResults = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isSearching = true;
+      _searchFailed = false;
+      _showSearchResults = true;
+    });
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => _searchLocation(value),
+    );
+  }
+
+  /// Referme la recherche sans toucher à la position choisie.
+  void _closeSearch() {
+    _searchDebounce?.cancel();
+    _searchRequest++;
+    _searchFocusNode.unfocus();
+    setState(() {
+      isSearching = false;
+      _showSearchResults = false;
+    });
+  }
+
   Future<void> _searchLocation(String query) async {
-    if (query.isEmpty) {
+    if (query.trim().isEmpty) {
       if (mounted) {
         setState(() {
           searchResults = [];
+          _showSearchResults = false;
         });
       }
       return;
     }
 
+    final request = ++_searchRequest;
     if (mounted) {
       setState(() {
         isSearching = true;
+        _searchFailed = false;
+        _showSearchResults = true;
       });
     }
 
+    // Les lieux proches de la zone affichée passent devant.
+    var near = selectedPosition;
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?'
-        'format=json&'
-        'q=$query&'
-        'limit=5&'
-        'addressdetails=1&'
-        'accept-language=fr',
-      );
+      near = mapController.camera.center;
+    } catch (_) {}
 
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'AssoApp/1.0'},
+    var results = <Map<String, dynamic>>[];
+    var failed = false;
+    try {
+      results = await AddressSearch.search(
+        query,
+        nearLatitude: near.latitude,
+        nearLongitude: near.longitude,
       );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            searchResults = data
-                .map(
-                  (item) => {
-                    'display_name': item['display_name'],
-                    'raw': Map<String, dynamic>.from(item as Map),
-                    'lat': double.parse(item['lat']),
-                    'lon': double.parse(item['lon']),
-                  },
-                )
-                .toList();
-            isSearching = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            searchResults = [];
-            isSearching = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          searchResults = [];
-          isSearching = false;
-        });
-      }
-
-      Get.snackbar(
-        'Erreur',
-        'Impossible de rechercher l\'adresse',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
+    } on AddressSearchException {
+      failed = true;
     }
+    // Une frappe plus récente a relancé la recherche : cette réponse
+    // n'est plus celle attendue.
+    if (!mounted || request != _searchRequest) return;
+    setState(() {
+      searchResults = results;
+      _searchFailed = failed;
+      isSearching = false;
+    });
   }
 
   /// Sélectionner un résultat de recherche
   void _selectSearchResult(Map<String, dynamic> result) {
     final position = LatLng(result['lat'], result['lon']);
+    _searchDebounce?.cancel();
+    _searchRequest++;
+    _searchFocusNode.unfocus();
 
     setState(() {
+      _selection++;
       selectedPosition = position;
-      selectedAddress = result['raw'] is Map<String, dynamic>
-          ? _readableAddress(result['raw'] as Map<String, dynamic>, position)
-          : result['display_name'];
+      selectedAddress = _readableAddress(result, position);
+      isGeocodingInProgress = false;
       searchResults = [];
+      _showSearchResults = false;
       searchController.clear();
     });
 
@@ -336,99 +357,65 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     );
   }
 
-  void _getCurrentLocation() async {
+  Future<void> _getCurrentLocation() async {
+    if (isLoading) return;
+    final selection = _selection;
     setState(() {
       isLoading = true;
     });
 
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw const LocationServiceDisabledException();
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw const PermissionDeniedException(
-          'Permission de localisation refusée',
-        );
-      }
-      // Obtenir la position actuelle
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+    final result = await DeviceLocation.current();
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+    });
+    if (selection != _selection) return;
 
-      // Mettre à jour la position sélectionnée
-      final newPosition = LatLng(position.latitude, position.longitude);
-      setState(() {
-        selectedPosition = newPosition;
-        selectedAddress = 'Chargement de l\'adresse...';
-        isLoading = false;
-        searchResults = [];
-      });
-
-      // Animer vers la position
-      mapController.move(selectedPosition, 16.0);
-
-      // Obtenir l'adresse
-      _reverseGeocode(newPosition);
-
-      Get.snackbar(
-        'Position trouvée',
-        'Votre position actuelle a été détectée',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppThemeSystem.successColor.withValues(alpha: 0.9),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
+    final position = result.position;
+    if (position == null) {
+      DeviceLocation.showFailure(
+        result,
+        hint: 'Touchez la carte ou recherchez l’adresse de votre boutique.',
       );
-    } on LocationServiceDisabledException {
-      if (mounted) setState(() => isLoading = false);
-      Get.snackbar(
-        'Localisation désactivée',
-        'Activez la localisation de votre téléphone puis réessayez.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
-    } on PermissionDeniedException {
-      if (mounted) setState(() => isLoading = false);
-      Get.snackbar(
-        'Permission requise',
-        'Autorisez ASSO à accéder à votre position dans les paramètres.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-
-      Get.snackbar(
-        'Erreur',
-        'Impossible de récupérer votre position actuelle',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-      );
+      return;
     }
+
+    // Mettre à jour la position sélectionnée
+    final newPosition = LatLng(position.latitude, position.longitude);
+    setState(() {
+      _selection++;
+      selectedPosition = newPosition;
+      selectedAddress = 'Chargement de l\'adresse...';
+      searchResults = [];
+    });
+
+    // Animer vers la position
+    mapController.move(selectedPosition, 16.0);
+
+    // Obtenir l'adresse
+    _reverseGeocode(newPosition);
+
+    Get.snackbar(
+      'Position trouvée',
+      'Votre position actuelle a été détectée',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: AppThemeSystem.successColor.withValues(alpha: 0.9),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Le clavier passe par-dessus la carte au lieu de la comprimer : sinon
+      // le panneau du bas remontait avec lui et couvrait les résultats.
+      resizeToAvoidBottomInset: false,
       backgroundColor: context.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.primaryTextColor),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Sélectionner la position',
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
@@ -620,6 +607,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                   // Champ de recherche
                   TextField(
                     controller: searchController,
+                    focusNode: _searchFocusNode,
+                    textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       hintText: 'Rechercher une adresse...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
@@ -632,9 +621,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 searchController.clear();
-                                setState(() {
-                                  searchResults = [];
-                                });
+                                _onSearchChanged('');
                               },
                             )
                           : null,
@@ -644,58 +631,12 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         vertical: 14,
                       ),
                     ),
-                    onChanged: (value) {
-                      _searchLocation(value);
-                    },
+                    onChanged: _onSearchChanged,
                     onSubmitted: (value) {
+                      _searchDebounce?.cancel();
                       _searchLocation(value);
                     },
                   ),
-
-                  // Résultats de recherche
-                  if (isSearching)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppThemeSystem.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else if (searchResults.isNotEmpty)
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: searchResults.length,
-                        separatorBuilder: (context, index) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final result = searchResults[index];
-                          return ListTile(
-                            leading: Icon(
-                              Icons.location_on,
-                              color: AppThemeSystem.primaryColor,
-                            ),
-                            title: Text(
-                              result['display_name'],
-                              style: const TextStyle(fontSize: 13),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () => _selectSearchResult(result),
-                            dense: true,
-                          );
-                        },
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -715,7 +656,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
             ),
 
           // Légende des marqueurs (en bas à gauche)
-          if (widget.deliveryPartners != null &&
+          if (!_isSearchMode &&
+              widget.deliveryPartners != null &&
               widget.deliveryPartners!.isNotEmpty &&
               showDeliveryPartners)
             Positioned(
@@ -961,7 +903,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
               ),
             ),
 
-          // Panneau d'information en bas
+          // Panneau d'information en bas, masqué pendant la recherche où il
+          // prendrait la place des résultats.
+          if (!_isSearchMode)
           Positioned(
             bottom: 0,
             left: 0,
@@ -1146,6 +1090,18 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
               ),
             ),
           ),
+
+          // Résultats en dernier : rien ne doit les recouvrir.
+          if (_isSearchMode && _showSearchResults)
+            MapSearchResults(
+              top: 68,
+              left: 10,
+              right: 10,
+              isSearching: isSearching,
+              failed: _searchFailed,
+              results: searchResults,
+              onSelected: _selectSearchResult,
+            ),
         ],
       ),
     );

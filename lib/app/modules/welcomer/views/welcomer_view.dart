@@ -122,50 +122,56 @@ class WelcomerView extends GetView<WelcomerController> {
   }
 
   Widget _buildTermsRow(BuildContext context) {
-    return Obx(
-      () => Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Checkbox(
-              value: controller.termsAccepted.value,
-              onChanged: (value) =>
-                  controller.termsAccepted.value = value ?? false,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-          SizedBox(width: AppDesign.space3),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: context.textStyle(
-                  FontSizeType.caption,
-                  color: context.ds.textSecondary,
-                  height: 1.45,
-                ),
-                children: [
-                  const TextSpan(text: "J'accepte la "),
-                  TextSpan(
-                    text: 'politique de confidentialité',
-                    style: TextStyle(
-                      color: AppDesign.accent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => MarkdownBottomSheet.show(
-                        context: context,
-                        title: 'Politique de confidentialité',
-                        assetPath: 'Politique de confidentialité.md',
-                      ),
-                  ),
-                  const TextSpan(text: '.'),
-                ],
+    // Toute la ligne coche la case : la seule case de 24 px était difficile
+    // à atteindre. Le lien garde son propre geste et ouvre la politique.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: controller.toggleTermsAccepted,
+      child: Obx(
+        () => Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: controller.termsAccepted.value,
+                onChanged: (value) =>
+                    controller.termsAccepted.value = value ?? false,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
-          ),
-        ],
+            SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: context.textStyle(
+                    FontSizeType.caption,
+                    color: context.ds.textSecondary,
+                    height: 1.45,
+                  ),
+                  children: [
+                    const TextSpan(text: "J'accepte la "),
+                    TextSpan(
+                      text: 'politique de confidentialité',
+                      style: TextStyle(
+                        color: AppDesign.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => MarkdownBottomSheet.show(
+                          context: context,
+                          title: 'Politique de confidentialité',
+                          assetPath: 'Politique de confidentialité.md',
+                        ),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,7 +182,7 @@ class WelcomerView extends GetView<WelcomerController> {
         label: 'Créer mon compte',
         size: AppButtonSize.large,
         isLoading: controller.isLoading.value,
-        onPressed: controller.isFormValid.value
+        onPressed: controller.canSubmit
             ? controller.createAccountWithEmail
             : null,
       ),

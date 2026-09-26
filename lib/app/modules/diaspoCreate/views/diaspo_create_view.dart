@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_create_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 class DiaspoCreateView extends GetView<DiaspoCreateController> {
   const DiaspoCreateView({super.key});
@@ -15,6 +16,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
     return Scaffold(
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Créer une offre'),
         centerTitle: true,
       ),
@@ -90,6 +92,9 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
     final borderRadius = AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium);
 
     return SingleChildScrollView(
+      // Le clavier cache la moitié de l'étape : un glissement pour relire
+      // les champs le referme.
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.all(horizontalPadding),
       child: Form(
         key: controller.formKey1,
@@ -282,6 +287,9 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
     final borderRadius = AppThemeSystem.getBorderRadius(context, BorderRadiusType.medium);
 
     return SingleChildScrollView(
+      // Le clavier cache la moitié de l'étape : un glissement pour relire
+      // les champs le referme.
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.all(horizontalPadding),
       child: Form(
         key: controller.formKey2,

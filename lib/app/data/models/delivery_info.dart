@@ -146,6 +146,9 @@ class DeliveryInfo {
   final bool canConfirmReception;
   final List<DeliveryTimelineStep> timeline;
 
+  /// Commande en gros : trajet pays d'origine → Douala, avant la livraison locale.
+  final DeliveryPriceGridRow? importLeg;
+
   const DeliveryInfo({
     this.mode = 'local',
     this.isCarrier = false,
@@ -164,6 +167,7 @@ class DeliveryInfo {
     this.trackingStatusLabel,
     this.canConfirmReception = false,
     this.timeline = const [],
+    this.importLeg,
   });
 
   static DeliveryInfo? fromMap(dynamic raw) {
@@ -187,6 +191,7 @@ class DeliveryInfo {
       trackingStatusLabel: _toText(raw['tracking_status_label']),
       canConfirmReception: raw['can_confirm_reception'] == true,
       timeline: DeliveryTimelineStep.listFrom(raw['timeline']),
+      importLeg: DeliveryPriceGridRow.listFrom([raw['import_leg']]).firstOrNull,
     );
   }
 
@@ -197,6 +202,21 @@ class DeliveryInfo {
     'arrived': 'Arrivé dans la ville de destination',
     'ready_for_pickup': 'Disponible au retrait en agence',
   };
+
+  /// Import en gros : l'arrivée à l'entrepôt de Douala lance la livraison locale.
+  static const importHubStep = 'arrived_hub';
+
+  /// Étapes proposées pour cette commande (l'arrivée à Douala pour un import).
+  static Map<String, String> trackingStepsFor(DeliveryInfo? delivery) =>
+      delivery?.importLeg == null
+      ? vendorTrackingSteps
+      : {
+          'in_transit': 'En transit',
+          'customs': 'En dédouanement',
+          importHubStep: stepLabel(importHubStep),
+          'arrived': 'Arrivé dans la ville de destination',
+          'ready_for_pickup': 'Disponible au retrait en agence',
+        };
 
   static String stepLabel(String step) {
     switch (step) {
@@ -214,6 +234,8 @@ class DeliveryInfo {
         return 'En transit';
       case 'customs':
         return 'En dédouanement';
+      case 'arrived_hub':
+        return 'Arrivé à l’entrepôt ASSO de Douala';
       case 'arrived':
         return 'Arrivé dans la ville de destination';
       case 'ready_for_pickup':

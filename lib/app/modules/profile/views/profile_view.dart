@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/profile_controller.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -15,6 +16,17 @@ class ProfileView extends GetView<ProfileController> {
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      // Onglet de l'accueil, la barre du haut porte déjà le titre. Ouvert
+      // comme page à part, l'écran a besoin de sa propre sortie.
+      appBar: AppNavigation.isHomeTab(context)
+          ? null
+          : AppBar(
+              leading: const AppBackButton(),
+              title: Text(
+                'Compte',
+                style: context.h5.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
       body: Obx(() {
         if (controller.userProfile.isEmpty) {
           return Center(child: CircularProgressIndicator());

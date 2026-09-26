@@ -2,10 +2,32 @@ import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_detail_controller.dart';
+import '../../../core/widgets/scoped_controller_page.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
+
+/// Page ouverte par la route : chaque offre empilée a son propre
+/// [DiaspoDetailController] (voir [ScopedControllerPage]).
+class DiaspoDetailPage extends StatelessWidget {
+  const DiaspoDetailPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedControllerPage<DiaspoDetailController>(
+      create: DiaspoDetailController.new,
+      builder: (controller) => DiaspoDetailView(pageController: controller),
+    );
+  }
+}
 
 class DiaspoDetailView extends GetView<DiaspoDetailController> {
-  const DiaspoDetailView({super.key});
+  const DiaspoDetailView({super.key, this.pageController});
+
+  /// Contrôleur propre à la page ; sans lui, celui enregistré dans GetX.
+  final DiaspoDetailController? pageController;
+
+  @override
+  DiaspoDetailController get controller => pageController ?? super.controller;
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +36,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
     return Scaffold(
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Détails de l\'offre'),
         centerTitle: true,
         elevation: 0,

@@ -10,6 +10,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_sheet.dart';
 
 class DiaspoListController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -505,257 +506,225 @@ class DiaspoListController extends GetxController {
     documentFrontImage.value = null;
     documentBackImage.value = null;
 
-    Get.bottomSheet(
-      Container(
-        decoration: BoxDecoration(
-          color: AppThemeSystem.isDarkMode(Get.context!)
-              ? AppThemeSystem.darkCardColor
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              Row(
-                children: [
-                  const Icon(Icons.verified_user, color: AppDesign.info),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Vérification d\'identité',
+    // Feuille haute (deux photos) : sans plafond, elle passait sous la barre
+    // d'état. Le bouton d'envoi reste épinglé en bas, toujours visible.
+    AppSheet.show(
+      AppSheet(
+        title: 'Vérification d\'identité',
+        footer: Obx(
+          () => SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed:
+                  (selectedDocumentType.value != null &&
+                      documentFrontImage.value != null &&
+                      documentBackImage.value != null &&
+                      !isUploadingDocument.value)
+                  ? _submitVerification
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: isUploadingDocument.value
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
+                      ),
+                    )
+                  : const Text(
+                      'Soumettre pour vérification',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sélectionnez votre type de document et téléchargez les photos recto/verso',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+
+            // Document type selection
+            const Text(
+              'Type de document',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Obx(
+              () => Row(
+                children: [
+                  // CNI option
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => selectedDocumentType.value = 'cni',
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: selectedDocumentType.value == 'cni'
+                              ? AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.1,
+                                )
+                              : Colors.grey[100],
+                          border: Border.all(
+                            color: selectedDocumentType.value == 'cni'
+                                ? AppThemeSystem.primaryColor
+                                : Colors.grey[300]!,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.credit_card,
+                              size: 36,
+                              color: selectedDocumentType.value == 'cni'
+                                  ? AppThemeSystem.primaryColor
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'CNI',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: selectedDocumentType.value == 'cni'
+                                    ? AppThemeSystem.primaryColor
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Carte Nationale',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  IconButton(
-                    onPressed: () => Get.back(),
-                    icon: const Icon(Icons.close),
+                  const SizedBox(width: 12),
+
+                  // Passport option
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => selectedDocumentType.value = 'passport',
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: selectedDocumentType.value == 'passport'
+                              ? AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.1,
+                                )
+                              : Colors.grey[100],
+                          border: Border.all(
+                            color: selectedDocumentType.value == 'passport'
+                                ? AppThemeSystem.primaryColor
+                                : Colors.grey[300]!,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.card_travel,
+                              size: 36,
+                              color: selectedDocumentType.value == 'passport'
+                                  ? AppThemeSystem.primaryColor
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Passeport',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    selectedDocumentType.value == 'passport'
+                                    ? AppThemeSystem.primaryColor
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Passport',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Sélectionnez votre type de document et téléchargez les photos recto/verso',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // Document type selection
-              const Text(
-                'Type de document',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Obx(
-                () => Row(
-                  children: [
-                    // CNI option
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => selectedDocumentType.value = 'cni',
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: selectedDocumentType.value == 'cni'
-                                ? AppThemeSystem.primaryColor.withValues(
-                                    alpha: 0.1,
-                                  )
-                                : Colors.grey[100],
-                            border: Border.all(
-                              color: selectedDocumentType.value == 'cni'
-                                  ? AppThemeSystem.primaryColor
-                                  : Colors.grey[300]!,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.credit_card,
-                                size: 36,
-                                color: selectedDocumentType.value == 'cni'
-                                    ? AppThemeSystem.primaryColor
-                                    : Colors.grey[600],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'CNI',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: selectedDocumentType.value == 'cni'
-                                      ? AppThemeSystem.primaryColor
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Carte Nationale',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
+            // Photos section (only show if document type is selected)
+            Obx(
+              () => selectedDocumentType.value != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Photos du document',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                        const SizedBox(height: 12),
 
-                    // Passport option
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => selectedDocumentType.value = 'passport',
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: selectedDocumentType.value == 'passport'
-                                ? AppThemeSystem.primaryColor.withValues(
-                                    alpha: 0.1,
-                                  )
-                                : Colors.grey[100],
-                            border: Border.all(
-                              color: selectedDocumentType.value == 'passport'
-                                  ? AppThemeSystem.primaryColor
-                                  : Colors.grey[300]!,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.card_travel,
-                                size: 36,
-                                color: selectedDocumentType.value == 'passport'
-                                    ? AppThemeSystem.primaryColor
-                                    : Colors.grey[600],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Passeport',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      selectedDocumentType.value == 'passport'
-                                      ? AppThemeSystem.primaryColor
-                                      : Colors.grey[700],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Passport',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
+                        // Recto
+                        _buildDocumentUploadCard(
+                          title: 'Recto',
+                          icon: Icons.badge,
+                          image: documentFrontImage.value,
+                          onUpload: () => _pickDocumentImage(isBack: false),
+                          onRemove: () => documentFrontImage.value = null,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-              // Photos section (only show if document type is selected)
-              Obx(
-                () => selectedDocumentType.value != null
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Photos du document',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Recto
-                          _buildDocumentUploadCard(
-                            title: 'Recto',
-                            icon: Icons.badge,
-                            image: documentFrontImage.value,
-                            onUpload: () => _pickDocumentImage(isBack: false),
-                            onRemove: () => documentFrontImage.value = null,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Verso
-                          _buildDocumentUploadCard(
-                            title: 'Verso',
-                            icon: Icons.badge_outlined,
-                            image: documentBackImage.value,
-                            onUpload: () => _pickDocumentImage(isBack: true),
-                            onRemove: () => documentBackImage.value = null,
-                          ),
-                        ],
-                      )
-                    : const SizedBox(),
-              ),
-              const SizedBox(height: 24),
-
-              // Submit button
-              Obx(
-                () => SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed:
-                        (selectedDocumentType.value != null &&
-                            documentFrontImage.value != null &&
-                            documentBackImage.value != null &&
-                            !isUploadingDocument.value)
-                        ? _submitVerification
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: isUploadingDocument.value
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : const Text(
-                            'Soumettre pour vérification',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
+                        // Verso
+                        _buildDocumentUploadCard(
+                          title: 'Verso',
+                          icon: Icons.badge_outlined,
+                          image: documentBackImage.value,
+                          onUpload: () => _pickDocumentImage(isBack: true),
+                          onRemove: () => documentBackImage.value = null,
+                        ),
+                      ],
+                    )
+                  : const SizedBox(),
+            ),
+          ],
         ),
       ),
-      isScrollControlled: true,
       enableDrag: false,
     );
   }

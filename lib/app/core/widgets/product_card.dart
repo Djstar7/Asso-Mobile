@@ -182,7 +182,7 @@ class ProductCard extends StatelessWidget {
                         Positioned(
                           top: AppDesign.space2,
                           left: AppDesign.space2,
-                          child: const _AssoAdsChip(),
+                          child: const AssoAdsChip(),
                         )
                       else if (badgeLabel != null)
                         Positioned(
@@ -194,7 +194,7 @@ class ProductCard extends StatelessWidget {
                         Positioned(
                           top: AppDesign.space2,
                           left: AppDesign.space2,
-                          child: _CertifiedMark(),
+                          child: const CertifiedMark(),
                         ),
                       if (onFavoriteTap != null)
                         Positioned(
@@ -354,8 +354,8 @@ class ProductCard extends StatelessWidget {
 /// Fond plein plutôt que translucide : sur une photo claire, un chip
 /// semi-transparent devient illisible, et une mention publicitaire qu'on ne
 /// peut pas lire ne remplit pas son office.
-class _AssoAdsChip extends StatelessWidget {
-  const _AssoAdsChip();
+class AssoAdsChip extends StatelessWidget {
+  const AssoAdsChip({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +392,9 @@ class _AssoAdsChip extends StatelessWidget {
 }
 
 /// Pastille « boutique certifiée ».
-class _CertifiedMark extends StatelessWidget {
+class CertifiedMark extends StatelessWidget {
+  const CertifiedMark({super.key});
+
   @override
   Widget build(BuildContext context) {
     // Pastille lisible sur n'importe quelle photo : fond plein, libellé

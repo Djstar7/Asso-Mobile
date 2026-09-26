@@ -73,6 +73,10 @@ class ShopService {
       for (int i = 0; i < categories.length; i++) {
         fields['categories[$i]'] = categories[i];
       }
+    } else if (categories != null) {
+      // Un tableau vide ne s'écrit pas en multipart : le champ vide dit au
+      // serveur de retirer toutes les catégories (null = ne pas y toucher).
+      fields['categories'] = '';
     }
 
     print('  └─ Total fields: ${fields.length}');
@@ -172,6 +176,29 @@ class ShopService {
       print('========================================');
       rethrow;
     }
+  }
+
+  /// Demande de changement d'emplacement : la boutique ne bouge qu'une fois la
+  /// demande validée par ASSO. Renvoyer une demande remplace celle en attente.
+  static Future<ApiResponse> createLocationRequest({
+    required double latitude,
+    required double longitude,
+    required String address,
+    String? city,
+    String? country,
+    String? reason,
+  }) {
+    return ApiProvider.post(
+      '${AppConstants.vendorShopUrl}/location-requests',
+      body: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+        if (city != null && city.isNotEmpty) 'city': city,
+        if (country != null && country.isNotEmpty) 'country': country,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
   }
 
   /// Get location change requests for the authenticated vendor's shop

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/stripe_connect_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 
 /// Écran vendeur : saisir son IBAN pour être payé par virement, et suivre le
 /// statut de validation par ASSO.
@@ -13,6 +14,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Compte de virement'),
       ),
       body: Obx(() {
@@ -22,6 +24,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
         return RefreshIndicator(
           onRefresh: controller.loadStatus,
           child: ListView(
+            // Formulaire IBAN : faire défiler referme le clavier qui cachait
+            // le bouton d'enregistrement.
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.all(16),
             children: [
               _intro(context),

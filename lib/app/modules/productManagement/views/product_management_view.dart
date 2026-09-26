@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/product_management_controller.dart';
 import '../../../routes/app_pages.dart';
 
@@ -24,8 +25,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.primaryTextColor),
+        // Sans écran derrière (ouverture après un `offAllNamed`), on revient
+        // au tableau de bord vendeur plutôt qu'à l'accueil.
+        leading: AppBackButton(
           onPressed: () {
             if (Get.isOverlaysOpen) {
               Get.back();
@@ -232,6 +234,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
           return false;
         },
         child: ListView.separated(
+          // La recherche est au-dessus de la liste : parcourir les résultats
+          // referme le clavier qui en cachait la moitié.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           // Marge basse élargie : sans elle, le bouton flottant « Ajouter »
           // recouvrait les actions de la dernière fiche produit.
           padding: EdgeInsets.fromLTRB(
@@ -377,6 +382,8 @@ class ProductManagementView extends GetView<ProductManagementController> {
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.cover,
+      // Colonne de 110 px : décodée à sa largeur, pas en pleine résolution.
+      memCacheWidth: (110 * MediaQuery.devicePixelRatioOf(context)).ceil(),
       placeholder: (context, url) =>
           Container(color: context.ds.surfaceMuted),
       errorWidget: (context, url, error) => Container(

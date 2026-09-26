@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Application constants
 class AppConstants {
   // App Info
@@ -9,41 +7,30 @@ class AppConstants {
   // ==========================================================================
   // API Configuration
   // --------------------------------------------------------------------------
-  // L'URL est déterminée AUTOMATIQUEMENT selon la plateforme pour éviter de
-  // devoir modifier le code à chaque changement d'IP réseau.
+  // Par défaut l'application vise la PRODUCTION : un build distribué ne doit
+  // jamais pointer vers une machine de développement, injoignable pour
+  // l'utilisateur final.
   //
-  //  • Web (Chrome) / desktop        -> http://localhost:8000/api
-  //  • Émulateur Android             -> http://192.168.1.155:8000/api (alias hôte)
-  //  • iOS simulateur                -> http://localhost:8000/api
+  // Pour travailler en local, surcharger au build sans toucher au code :
+  //   flutter run --dart-define=API_BASE_URL=http://localhost:8001/api
+  //   flutter run --dart-define=API_BASE_URL=http://192.168.34.157:8001/api
   //
-  // TÉLÉPHONE PHYSIQUE ou serveur distant : surcharger sans toucher au code :
-  //   flutter run --dart-define=API_BASE_URL=http://192.168.1.50:8000/api
-  //   flutter run --dart-define=API_BASE_URL=https://asso-dashboard.sbs/api
-  //
-  // Assurez-vous que le serveur écoute sur toutes les interfaces :
-  //   php artisan serve --host=0.0.0.0 --port=8000
+  // Assurez-vous que le serveur local écoute sur toutes les interfaces :
+  //   php artisan serve --host=0.0.0.0 --port=8001
   // ==========================================================================
 
   /// Surcharge optionnelle passée au build (prioritaire sur tout le reste).
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-  /// Port du serveur backend en local.
-  static const String _localPort = '8001';
+  /// Domaine de production, partagé par l'API, le partage de liens et Reverb.
+  static const String productionDomain = 'asso-dashboard.sbs';
 
   static String get baseUrl {
-    // 1) Surcharge explicite au build (téléphone physique / prod)
+    // Surcharge explicite au build (développement local / préproduction)
     if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
 
-    // 2) Web (Chrome) & desktop : le serveur tourne sur la même machine
-    if (kIsWeb) return 'http://localhost:$_localPort/api';
-
-    // 3) Émulateur Android : 192.168.1.155 redirige vers le localhost de l'hôte
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://192.168.1.155:$_localPort/api';
-    }
-
-    // 4) iOS simulateur & autres : localhost
-    return 'http://localhost:$_localPort/api';
+    // Défaut : production
+    return 'https://$productionDomain/api';
   }
 
   static const Duration apiTimeout = Duration(seconds: 30);
@@ -63,7 +50,7 @@ class AppConstants {
   static const String _envShareDomain = String.fromEnvironment('SHARE_DOMAIN');
 
   static String get shareDomain =>
-      _envShareDomain.isNotEmpty ? _envShareDomain : 'asso-dashboard.sbs';
+      _envShareDomain.isNotEmpty ? _envShareDomain : productionDomain;
 
   /// Lien public d'un produit, celui que l'on partage.
   static String productUrl(Object id) => 'https://$shareDomain/produit/$id';

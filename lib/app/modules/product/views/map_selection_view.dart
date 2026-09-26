@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart' as http;
+import '../../../core/utils/address_search.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/device_location.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/map_search_results.dart';
 import '../../../data/providers/delivery_service.dart';
 
 class MapSelectionView extends StatefulWidget {
@@ -35,9 +36,30 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   LatLng _selectedPosition = LatLng(4.0511, 9.7679); // Douala par défaut
   String _selectedAddress = 'Douala, Cameroun';
   bool _isLoadingAddress = false;
+  bool _isLocating = false;
   bool _isSearching = false;
+  bool _searchFailed = false;
   List<Map<String, dynamic>> _searchResults = [];
   bool _showSearchResults = false;
+  Timer? _searchDebounce;
+  int _searchRequest = 0;
+
+  /// Incrémenté à chaque déplacement du repère. Une position GPS ou une
+  /// adresse arrivée après un nouveau choix de l'utilisateur est ignorée :
+  /// avant, le GPS lancé à l'ouverture ramenait le repère sur la position du
+  /// téléphone, et l'adresse d'un ancien point remplaçait celle du nouveau.
+  int _selection = 0;
+
+  void _moveSelection(LatLng position) {
+    _selection++;
+    _selectedPosition = position;
+    _isLocating = false;
+  }
+
+  /// Saisie en cours ou résultats affichés : la carte laisse toute la place
+  /// à la recherche (panneau du bas et boutons masqués).
+  bool get _isSearchMode =>
+      !widget.readOnly && (_searchFocusNode.hasFocus || _showSearchResults);
 
   // Couverture de livraison autour de la position (quartiers, zones, partenaires).
   Map<String, dynamic>? _coverage;
@@ -145,12 +167,15 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     }
 
     if (!widget.readOnly) {
+      // Reconstruit à chaque prise/perte de focus : c'est elle qui fait
+      // entrer la carte en mode recherche ou l'en fait sortir.
       _searchFocusNode.addListener(() {
-        if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
-          setState(() {
+        if (!mounted) return;
+        setState(() {
+          if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
             _showSearchResults = false;
-          });
-        }
+          }
+        });
       });
     }
   }
@@ -158,6 +183,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   @override
   void dispose() {
     _coverageDebounce?.cancel();
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _mapController.dispose();
@@ -165,104 +191,90 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   }
 
   Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoadingAddress = true;
-    });
+    if (_isLocating) return;
+    final selection = _selection;
+    setState(() => _isLocating = true);
 
-    String? problem;
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        problem = 'La localisation de votre téléphone est désactivée.';
-      } else {
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission == LocationPermission.denied ||
-            permission == LocationPermission.deniedForever) {
-          problem = 'Autorisez l’accès à votre position dans les réglages.';
-        } else {
-          Position? position;
-          try {
-            position = await Geolocator.getCurrentPosition(
-              locationSettings: const LocationSettings(
-                accuracy: LocationAccuracy.high,
-                timeLimit: Duration(seconds: 15),
-              ),
-            );
-          } catch (_) {
-            position = await Geolocator.getLastKnownPosition();
-          }
-          if (position == null) {
-            problem = 'Votre position n’a pas pu être détectée.';
-          } else {
-            _selectedPosition = LatLng(position.latitude, position.longitude);
-          }
-        }
-      }
-    } catch (_) {
-      problem = 'Votre position n’a pas pu être détectée.';
-    }
+    final result = await DeviceLocation.current();
+    // L'utilisateur a placé le repère entre-temps : son choix l'emporte.
+    if (!mounted || selection != _selection) return;
 
-    if (!mounted) return;
-    if (problem != null) {
-      setState(() => _isLoadingAddress = false);
-      Get.snackbar(
-        'Position indisponible',
-        '$problem Déplacez le repère sur la carte ou recherchez votre adresse.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 4),
+    final position = result.position;
+    if (position == null) {
+      setState(() => _isLocating = false);
+      DeviceLocation.showFailure(
+        result,
+        hint: 'Déplacez le repère sur la carte ou recherchez votre adresse.',
       );
       return;
     }
 
-    _mapController.move(_selectedPosition, 16.0);
-    await _reverseGeocode(_selectedPosition);
+    final point = LatLng(position.latitude, position.longitude);
+    setState(() => _moveSelection(point));
+    _mapController.move(point, 16.0);
+    await _reverseGeocode(point);
   }
 
   Future<void> _reverseGeocode(LatLng position) async {
     _loadCoverage(position);
+    final selection = _selection;
     setState(() {
       _isLoadingAddress = true;
     });
 
-    try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?'
-        'format=json&'
-        'lat=${position.latitude}&'
-        'lon=${position.longitude}&'
-        'zoom=18&'
-        'addressdetails=1',
-      );
+    final data = await AddressSearch.reverse(
+      position.latitude,
+      position.longitude,
+    );
+    if (!mounted || selection != _selection) return;
+    setState(() {
+      _selectedAddress =
+          data?['display_name']?.toString() ?? _coordinatesLabel(position);
+      _isLoadingAddress = false;
+    });
+  }
 
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'AssoApp/1.0'},
-      );
+  static String _coordinatesLabel(LatLng position) =>
+      'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
 
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _selectedAddress = data['display_name'] ?? 'Adresse inconnue';
-          _isLoadingAddress = false;
-        });
-      } else {
-        setState(() {
-          _selectedAddress =
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-          _isLoadingAddress = false;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
+  /// Lance la recherche une fois la frappe posée.
+  ///
+  /// Sans délai, chaque lettre partait vers le service de recherche et une
+  /// réponse ancienne pouvait écraser la plus récente : la liste changeait
+  /// sous les yeux sans correspondre à la saisie.
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    if (value.trim().length <= 2) {
+      _searchRequest++;
       setState(() {
-        _selectedAddress =
-            'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-        _isLoadingAddress = false;
+        _searchResults = [];
+        _showSearchResults = false;
+        _isSearching = false;
+        _searchFailed = false;
       });
+      return;
     }
+
+    setState(() {
+      _isSearching = true;
+      _searchFailed = false;
+      _showSearchResults = true;
+    });
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => _searchLocation(value),
+    );
+  }
+
+  /// Referme la recherche sans toucher à la position choisie.
+  void _closeSearch() {
+    _searchDebounce?.cancel();
+    _searchRequest++;
+    _searchFocusNode.unfocus();
+    setState(() {
+      _showSearchResults = false;
+      _isSearching = false;
+    });
   }
 
   Future<void> _searchLocation(String query) async {
@@ -274,59 +286,53 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       return;
     }
 
+    final request = ++_searchRequest;
     setState(() {
       _isSearching = true;
+      _searchFailed = false;
       _showSearchResults = true;
     });
 
+    // Les lieux proches de la zone affichée passent devant.
+    final near = _searchCenter();
+    var results = <Map<String, dynamic>>[];
+    var failed = false;
     try {
-      final url = Uri.https('nominatim.openstreetmap.org', '/search', {
-        'q': query,
-        'format': 'json',
-        'addressdetails': '1',
-        'limit': '5',
-        'countrycodes': 'cm', // Limiter au Cameroun
-      });
-
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'AssoApp/1.0'},
+      results = await AddressSearch.search(
+        query,
+        nearLatitude: near.latitude,
+        nearLongitude: near.longitude,
       );
+    } on AddressSearchException {
+      failed = true;
+    }
+    // Une frappe plus récente a relancé la recherche : cette réponse
+    // n'est plus celle attendue.
+    if (!mounted || request != _searchRequest) return;
+    setState(() {
+      _searchResults = results;
+      _searchFailed = failed;
+      _isSearching = false;
+    });
+  }
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        setState(() {
-          _searchResults = data
-              .map(
-                (item) => {
-                  'display_name': item['display_name'],
-                  'lat': double.parse(item['lat']),
-                  'lon': double.parse(item['lon']),
-                },
-              )
-              .toList();
-          _isSearching = false;
-        });
-      } else {
-        setState(() {
-          _searchResults = [];
-          _isSearching = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _searchResults = [];
-        _isSearching = false;
-      });
+  LatLng _searchCenter() {
+    try {
+      return _mapController.camera.center;
+    } catch (_) {
+      return _selectedPosition;
     }
   }
 
   void _selectSearchResult(Map<String, dynamic> result) {
     final position = LatLng(result['lat'], result['lon']);
+    _searchDebounce?.cancel();
+    _searchRequest++;
 
     setState(() {
-      _selectedPosition = position;
+      _moveSelection(position);
       _selectedAddress = result['display_name'];
+      _isLoadingAddress = false;
       _showSearchResults = false;
       _searchController.clear();
     });
@@ -341,16 +347,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
+      // Le clavier passe par-dessus la carte au lieu de la comprimer : sinon
+      // le panneau du bas remontait avec lui et couvrait les résultats.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: AppThemeSystem.getPrimaryTextColor(context),
-          ),
-          onPressed: () => Get.back(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           widget.readOnly ? 'Localisation du produit' : 'Choisir la position',
           style: context.textStyle(
@@ -371,9 +374,13 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               onTap: widget.readOnly
                   ? null
                   : (tapPosition, point) {
-                      setState(() {
-                        _selectedPosition = point;
-                      });
+                      // Pendant une recherche, toucher la carte la referme
+                      // sans déplacer le repère.
+                      if (_isSearchMode) {
+                        _closeSearch();
+                        return;
+                      }
+                      setState(() => _moveSelection(point));
                       _reverseGeocode(point);
                     },
               interactionOptions: InteractionOptions(
@@ -571,7 +578,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             Positioned(
               top: 16,
               left: 16,
-              right: 80,
+              // Pleine largeur en recherche : les boutons de droite sont
+              // masqués et les adresses longues ont besoin de la place.
+              right: _isSearchMode ? 16 : 80,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -605,10 +614,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                             ),
                             onPressed: () {
                               _searchController.clear();
-                              setState(() {
-                                _searchResults = [];
-                                _showSearchResults = false;
-                              });
+                              _onSearchChanged('');
                             },
                           )
                         : null,
@@ -619,15 +625,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                     ),
                   ),
                   style: context.textStyle(FontSizeType.body2),
-                  onChanged: (value) {
-                    if (value.length > 2) {
-                      _searchLocation(value);
-                    } else {
-                      setState(() {
-                        _searchResults = [];
-                        _showSearchResults = false;
-                      });
-                    }
+                  textInputAction: TextInputAction.search,
+                  onChanged: _onSearchChanged,
+                  onSubmitted: (value) {
+                    _searchDebounce?.cancel();
+                    if (value.trim().isNotEmpty) _searchLocation(value);
                   },
                   onTap: () {
                     if (_searchController.text.isNotEmpty) {
@@ -642,7 +644,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
           // Voir toutes les zones de livraison d'un coup.
           if (!widget.readOnly &&
-              !_showSearchResults &&
+              !_isSearchMode &&
               (_coverageList('zone_areas').isNotEmpty ||
                   _coverageList('zones').isNotEmpty))
             Positioned(
@@ -683,359 +685,287 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               ),
             ),
 
-          // Résultats de recherche (seulement si pas en lecture seule)
-          if (!widget.readOnly && _showSearchResults)
+          // Contrôles et panneau du bas : masqués pendant la recherche, où
+          // ils ne servent à rien et prendraient la place des résultats.
+          if (!_isSearchMode) ...[
+            // Bouton de recentrage GPS
             Positioned(
-              top: 76,
-              left: 16,
-              right: 80,
+              right: 16,
+              top: 16,
+              child: FloatingActionButton(
+                heroTag: 'map_gps_button',
+                mini: true,
+                backgroundColor: Colors.white,
+                onPressed: widget.readOnly ? null : _getCurrentLocation,
+                child: _isLocating
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                      )
+                    : Icon(
+                        Icons.my_location_rounded,
+                        color: widget.readOnly
+                            ? AppThemeSystem.grey400
+                            : AppThemeSystem.primaryColor,
+                      ),
+              ),
+            ),
+
+            // Bouton de zoom +
+            Positioned(
+              right: 16,
+              top: 70,
+              child: FloatingActionButton(
+                heroTag: 'map_zoom_in_button',
+                mini: true,
+                backgroundColor: Colors.white,
+                onPressed: () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom + 1,
+                  );
+                },
+                child: Icon(Icons.add, color: AppThemeSystem.grey700),
+              ),
+            ),
+
+            // Bouton de zoom -
+            Positioned(
+              right: 16,
+              top: 120,
+              child: FloatingActionButton(
+                heroTag: 'map_zoom_out_button',
+                mini: true,
+                backgroundColor: Colors.white,
+                onPressed: () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom - 1,
+                  );
+                },
+                child: Icon(Icons.remove, color: AppThemeSystem.grey700),
+              ),
+            ),
+
+            // Bottom sheet avec adresse sélectionnée
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: Container(
-                constraints: BoxConstraints(maxHeight: 300),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppThemeSystem.getBackgroundColor(context),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
-                      offset: Offset(0, 4),
+                      offset: Offset(0, -4),
                     ),
                   ],
                 ),
-                child: _isSearching
-                    ? Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppThemeSystem.primaryColor,
-                                ),
-                              ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Handle bar
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: AppThemeSystem.grey300,
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            SizedBox(width: 12),
-                            Text(
-                              'Recherche en cours...',
-                              style: context.textStyle(
-                                FontSizeType.body2,
-                                color: AppThemeSystem.grey600,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      )
-                    : _searchResults.isEmpty
-                    ? Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Row(
+                        SizedBox(height: 16),
+
+                        // Titre
+                        Row(
                           children: [
-                            Icon(
-                              Icons.search_off_rounded,
-                              color: AppThemeSystem.grey400,
-                              size: 20,
-                            ),
-                            SizedBox(width: 12),
-                            Text(
-                              'Aucun résultat trouvé',
-                              style: context.textStyle(
-                                FontSizeType.body2,
-                                color: AppThemeSystem.grey600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _searchResults.length,
-                        separatorBuilder: (context, index) =>
-                            Divider(height: 1, color: AppThemeSystem.grey200),
-                        itemBuilder: (context, index) {
-                          final result = _searchResults[index];
-                          return ListTile(
-                            leading: Container(
-                              padding: EdgeInsets.all(8),
+                            Container(
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: AppThemeSystem.primaryColor.withValues(
                                   alpha: 0.1,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 Icons.location_on_rounded,
                                 color: AppThemeSystem.primaryColor,
-                                size: 20,
+                                size: 24,
                               ),
                             ),
-                            title: Text(
-                              result['display_name'],
-                              style: context.textStyle(
-                                FontSizeType.body2,
-                                fontWeight: FontWeight.w500,
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.readOnly
+                                        ? 'Localisation'
+                                        : 'Position sélectionnée',
+                                    style: context.textStyle(
+                                      FontSizeType.caption,
+                                      color: AppThemeSystem.grey600,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  _isLoadingAddress || _isLocating
+                                      ? Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(
+                                                      AppThemeSystem
+                                                          .primaryColor,
+                                                    ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              _isLoadingAddress
+                                                  ? 'Récupération de l\'adresse...'
+                                                  : 'Détection de votre position…',
+                                              style: context.textStyle(
+                                                FontSizeType.body2,
+                                                color: AppThemeSystem.grey600,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Text(
+                                          _selectedAddress,
+                                          style: context.textStyle(
+                                            FontSizeType.body1,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                ],
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            onTap: () => _selectSearchResult(result),
-                          );
-                        },
-                      ),
-              ),
-            ),
-
-          // Bouton de recentrage GPS
-          Positioned(
-            right: 16,
-            top: 16,
-            child: FloatingActionButton(
-              heroTag: 'map_gps_button',
-              mini: true,
-              backgroundColor: Colors.white,
-              onPressed: widget.readOnly ? null : _getCurrentLocation,
-              child: Icon(
-                Icons.my_location_rounded,
-                color: widget.readOnly
-                    ? AppThemeSystem.grey400
-                    : AppThemeSystem.primaryColor,
-              ),
-            ),
-          ),
-
-          // Bouton de zoom +
-          Positioned(
-            right: 16,
-            top: 70,
-            child: FloatingActionButton(
-              heroTag: 'map_zoom_in_button',
-              mini: true,
-              backgroundColor: Colors.white,
-              onPressed: () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom + 1,
-                );
-              },
-              child: Icon(Icons.add, color: AppThemeSystem.grey700),
-            ),
-          ),
-
-          // Bouton de zoom -
-          Positioned(
-            right: 16,
-            top: 120,
-            child: FloatingActionButton(
-              heroTag: 'map_zoom_out_button',
-              mini: true,
-              backgroundColor: Colors.white,
-              onPressed: () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom - 1,
-                );
-              },
-              child: Icon(Icons.remove, color: AppThemeSystem.grey700),
-            ),
-          ),
-
-          // Bottom sheet avec adresse sélectionnée
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppThemeSystem.getBackgroundColor(context),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Handle bar
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.grey300,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                          ],
                         ),
-                      ),
-                      SizedBox(height: 16),
 
-                      // Titre
-                      Row(
-                        children: [
+                        if (!widget.readOnly) ...[
+                          const SizedBox(height: 12),
+                          _buildCoverageCard(context),
+                        ],
+
+                        // Afficher les coordonnées en mode lecture seule
+                        if (widget.readOnly) ...[
+                          SizedBox(height: 12),
                           Container(
-                            padding: EdgeInsets.all(10),
+                            padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppThemeSystem.primaryColor.withValues(
-                                alpha: 0.1,
+                                alpha: 0.05,
                               ),
                               borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppThemeSystem.primaryColor.withValues(
+                                  alpha: 0.2,
+                                ),
+                              ),
                             ),
-                            child: Icon(
-                              Icons.location_on_rounded,
-                              color: AppThemeSystem.primaryColor,
-                              size: 24,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                Icon(
+                                  Icons.gps_fixed_rounded,
+                                  size: 16,
+                                  color: AppThemeSystem.primaryColor,
+                                ),
+                                SizedBox(width: 8),
                                 Text(
-                                  widget.readOnly
-                                      ? 'Localisation'
-                                      : 'Position sélectionnée',
+                                  'Lat: ${_selectedPosition.latitude.toStringAsFixed(5)}, Lng: ${_selectedPosition.longitude.toStringAsFixed(5)}',
                                   style: context.textStyle(
                                     FontSizeType.caption,
-                                    color: AppThemeSystem.grey600,
+                                    color: AppThemeSystem.primaryColor,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                SizedBox(height: 4),
-                                _isLoadingAddress
-                                    ? Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    AppThemeSystem.primaryColor,
-                                                  ),
-                                            ),
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Récupération de l\'adresse...',
-                                            style: context.textStyle(
-                                              FontSizeType.body2,
-                                              color: AppThemeSystem.grey600,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : Text(
-                                        _selectedAddress,
-                                        style: context.textStyle(
-                                          FontSizeType.body1,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
                               ],
                             ),
                           ),
                         ],
-                      ),
 
-                      if (!widget.readOnly) ...[
-                        const SizedBox(height: 12),
-                        _buildCoverageCard(context),
-                      ],
+                        SizedBox(height: 20),
 
-                      // Afficher les coordonnées en mode lecture seule
-                      if (widget.readOnly) ...[
-                        SizedBox(height: 12),
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppThemeSystem.primaryColor.withValues(
-                              alpha: 0.05,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppThemeSystem.primaryColor.withValues(
-                                alpha: 0.2,
+                        // Bouton de validation (seulement si pas en lecture seule)
+                        if (!widget.readOnly)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Get.back(
+                                  result: {
+                                    // Adresse encore en chargement : les
+                                    // coordonnées plutôt que celle du point
+                                    // précédent.
+                                    'address': _isLoadingAddress
+                                        ? _coordinatesLabel(_selectedPosition)
+                                        : _selectedAddress,
+                                    'latitude': _selectedPosition.latitude,
+                                    'longitude': _selectedPosition.longitude,
+                                  },
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppThemeSystem.primaryColor,
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
                               ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.gps_fixed_rounded,
-                                size: 16,
-                                color: AppThemeSystem.primaryColor,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Lat: ${_selectedPosition.latitude.toStringAsFixed(5)}, Lng: ${_selectedPosition.longitude.toStringAsFixed(5)}',
+                              child: Text(
+                                'Confirmer cette position',
                                 style: context.textStyle(
-                                  FontSizeType.caption,
-                                  color: AppThemeSystem.primaryColor,
-                                  fontWeight: FontWeight.w600,
+                                  FontSizeType.body1,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
                       ],
-
-                      SizedBox(height: 20),
-
-                      // Bouton de validation (seulement si pas en lecture seule)
-                      if (!widget.readOnly)
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Get.back(
-                                result: {
-                                  'address': _selectedAddress,
-                                  'latitude': _selectedPosition.latitude,
-                                  'longitude': _selectedPosition.longitude,
-                                },
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppThemeSystem.primaryColor,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Text(
-                              'Confirmer cette position',
-                              style: context.textStyle(
-                                FontSizeType.body1,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
+
+          // Résultats en dernier : rien ne doit les recouvrir.
+          if (_isSearchMode && _showSearchResults)
+            MapSearchResults(
+              top: 76,
+              isSearching: _isSearching,
+              failed: _searchFailed,
+              results: _searchResults,
+              onSelected: _selectSearchResult,
+            ),
         ],
       ),
     );

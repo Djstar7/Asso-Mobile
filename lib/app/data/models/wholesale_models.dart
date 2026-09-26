@@ -8,6 +8,9 @@ class PriceTier {
   final String currency;
   final int minQuantity; // « cota »
   final int? packSize;
+
+  /// Poids d'une unité commandée à ce palier (pack, bidon, pièce), en kg.
+  final double? weightKg;
   final String formattedPrice;
 
   const PriceTier({
@@ -18,6 +21,7 @@ class PriceTier {
     required this.currency,
     required this.minQuantity,
     this.packSize,
+    this.weightKg,
     required this.formattedPrice,
   });
 
@@ -32,6 +36,7 @@ class PriceTier {
     currency: j['currency']?.toString() ?? 'XAF',
     minQuantity: (j['min_quantity'] as num?)?.toInt() ?? 1,
     packSize: (j['pack_size'] as num?)?.toInt(),
+    weightKg: (j['weight_kg'] as num?)?.toDouble(),
     formattedPrice: j['formatted_price']?.toString() ?? '',
   );
 }
@@ -47,6 +52,9 @@ class ShippingOption {
   final int? leadTimeDays;
   final String? expeditionNote;
   final List<String> destinations;
+
+  /// Ville d'arrivée de l'import (entrepôt ASSO), d'où part la livraison locale.
+  final String destination;
   final String formattedRate;
 
   const ShippingOption({
@@ -60,6 +68,7 @@ class ShippingOption {
     this.leadTimeDays,
     this.expeditionNote,
     required this.destinations,
+    this.destination = 'Douala',
     required this.formattedRate,
   });
 
@@ -79,8 +88,70 @@ class ShippingOption {
     destinations:
         (j['destinations'] as List?)?.map((e) => e.toString()).toList() ??
         const [],
+    destination: j['destination']?.toString() ?? 'Douala',
     formattedRate: j['formatted_rate']?.toString() ?? '',
   );
+}
+
+/// Vidéo de présentation d'un produit grossiste (facultative).
+///
+/// Deux versions : la boucle courte et muette des cartes ([previewUrl]),
+/// légère pour ne pas épuiser le forfait pendant le défilement, et la version
+/// complète avec le son pour la fiche ([url]).
+class WholesaleVideo {
+  final int id;
+  final String url;
+  final String previewUrl;
+  final String? posterUrl;
+  final int? width;
+  final int? height;
+
+  /// Durée en secondes.
+  final double? duration;
+
+  const WholesaleVideo({
+    required this.id,
+    required this.url,
+    required this.previewUrl,
+    this.posterUrl,
+    this.width,
+    this.height,
+    this.duration,
+  });
+
+  /// Null quand le produit n'a pas de vidéo prête (le serveur envoie `null`).
+  static WholesaleVideo? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final url = json['url']?.toString() ?? '';
+    if (url.isEmpty) return null;
+    final preview = json['preview_url']?.toString() ?? '';
+    final poster = json['poster_url']?.toString() ?? '';
+    return WholesaleVideo(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      url: url,
+      previewUrl: preview.isEmpty ? url : preview,
+      posterUrl: poster.isEmpty ? null : poster,
+      width: (json['width'] as num?)?.toInt(),
+      height: (json['height'] as num?)?.toInt(),
+      duration: (json['duration'] as num?)?.toDouble(),
+    );
+  }
+
+  /// Largeur / hauteur. Format téléphone (9:16) par défaut : c'est ainsi que
+  /// les fournisseurs filment leurs marchandises.
+  double get aspectRatio {
+    final w = width, h = height;
+    if (w == null || h == null || w <= 0 || h <= 0) return 9 / 16;
+    return w / h;
+  }
+
+  /// « 0:27 », affiché sur les cartes comme sur Pinterest.
+  String? get durationLabel {
+    final seconds = duration;
+    if (seconds == null || seconds <= 0) return null;
+    final total = seconds.round();
+    return '${total ~/ 60}:${(total % 60).toString().padLeft(2, '0')}';
+  }
 }
 
 class WholesaleProduct {
@@ -98,6 +169,7 @@ class WholesaleProduct {
   final List<Map<String, dynamic>> variantOptions;
   final String? image;
   final List<String> images;
+  final WholesaleVideo? video;
 
   const WholesaleProduct({
     required this.id,
@@ -114,6 +186,7 @@ class WholesaleProduct {
     this.variantOptions = const [],
     this.image,
     this.images = const [],
+    this.video,
   });
 
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
@@ -148,6 +221,7 @@ class WholesaleProduct {
             .where((e) => e.isNotEmpty)
             .toList() ??
         const [],
+    video: WholesaleVideo.fromJson(j['video']),
   );
 
   /// Prix d'entrée = plus petit prix parmi les paliers (pour l'affichage « à partir de »).
@@ -164,17 +238,28 @@ class WholesaleCatalog {
   final List<WholesaleProduct> products;
   final List<ShippingOption> shippingOptions;
 
+  /// Page reçue (1 sans pagination) et s'il en reste après elle.
+  final int page;
+  final bool hasMore;
+
   const WholesaleCatalog({
     required this.countryCode,
     required this.countryName,
     required this.countryFlag,
     required this.products,
     required this.shippingOptions,
+    this.page = 1,
+    this.hasMore = false,
   });
 
   factory WholesaleCatalog.fromJson(Map<String, dynamic> j) {
     final country = Map<String, dynamic>.from(j['country'] ?? {});
+    final pagination = j['pagination'] is Map
+        ? j['pagination'] as Map
+        : const {};
     return WholesaleCatalog(
+      page: (pagination['current_page'] as num?)?.toInt() ?? 1,
+      hasMore: pagination['has_more'] == true,
       countryCode: country['code']?.toString() ?? '',
       countryName: country['name']?.toString() ?? '',
       countryFlag: country['flag']?.toString() ?? '🏳️',

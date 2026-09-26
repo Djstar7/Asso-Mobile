@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:convert';
 import 'package:asso/app/routes/app_pages.dart';
@@ -8,6 +9,9 @@ import 'package:get/get.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../core/values/constants.dart';
 import '../providers/api_provider.dart';
+import '../providers/storage_service.dart';
+import '../../core/utils/app_navigation.dart';
+import 'deep_link_service.dart';
 
 /// Handler pour les messages en arrière-plan
 /// DOIT être une fonction top-level (en dehors de toute classe)
@@ -22,6 +26,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Service Firebase Cloud Messaging pour gérer les notifications push
 class FirebaseMessagingService extends GetxService {
   static FirebaseMessagingService get to => Get.find();
+
+  /// Topic des annonces envoyées à tous : nouveaux produits, produits
+  /// sponsorisés, offres Diaspo, annonces de l'administration.
+  static const String announcementsTopic = 'all_users';
+
+  /// Vrai pendant [ensureRegisteredAndSubscribed], pour qu'un retour rapide
+  /// sur l'accueil ne lance pas deux rattrapages en parallèle.
+  bool _ensuring = false;
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
@@ -138,29 +150,57 @@ class FirebaseMessagingService extends GetxService {
     print('✅ Notifications locales configurées');
   }
 
+  /// Attend que iOS ait remis le token APNs à Firebase, au plus [timeout].
+  ///
+  /// Sur iOS, FCM ne peut ni fournir de token ni abonner à un topic tant
+  /// qu'Apple n'a pas remis ce token : l'appel échoue aussitôt
+  /// (`apns-token-not-set`). Il arrive quelques instants après le lancement —
+  /// ou jamais sans l'autorisation `aps-environment` (Runner.entitlements) ni
+  /// la capacité Push Notifications de l'App ID. Ailleurs, rien à attendre.
+  Future<bool> _apnsTokenReady({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) return true;
+
+    final deadline = DateTime.now().add(timeout);
+    while (true) {
+      try {
+        if (await _firebaseMessaging.getAPNSToken() != null) return true;
+      } catch (_) {
+        // Pas encore prêt : on réessaie jusqu'à l'échéance.
+      }
+      if (!DateTime.now().isBefore(deadline)) return false;
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
+  /// Token APNs arrivé après l'initialisation : on termine alors ce que le
+  /// démarrage n'a pas pu faire (token au backend, abonnement aux annonces).
+  Future<void> _completeRegistrationWhenApnsReady() async {
+    if (!await _apnsTokenReady(timeout: const Duration(seconds: 60))) {
+      print(
+        '⚠️ Aucun token APNs après 60 s : notifications push indisponibles. '
+        'Vérifier l\'autorisation aps-environment (Runner.entitlements), la '
+        'capacité Push Notifications de l\'App ID et la clé APNs dans la '
+        'console Firebase.',
+      );
+      return;
+    }
+
+    print('✅ Token APNs reçu, enregistrement FCM repris');
+    await _getFCMToken();
+    await subscribeToAnnouncementsTopic();
+  }
+
   /// Obtient le token FCM
   Future<void> _getFCMToken() async {
     try {
-      // Sur iOS, il faut d'abord s'assurer que le token APNS est disponible
-      if (Platform.isIOS) {
-        print('📱 iOS détecté - Attente du token APNS...');
-        try {
-          final apnsToken = await _firebaseMessaging.getAPNSToken();
-          if (apnsToken != null) {
-            print('✅ Token APNS obtenu: ${apnsToken.substring(0, 20)}...');
-          } else {
-            print('⚠️ Token APNS non disponible, attente de 2 secondes...');
-            await Future.delayed(const Duration(seconds: 2));
-            final retryApnsToken = await _firebaseMessaging.getAPNSToken();
-            if (retryApnsToken != null) {
-              print('✅ Token APNS obtenu après retry');
-            } else {
-              print('⚠️ Token APNS toujours non disponible');
-            }
-          }
-        } catch (apnsError) {
-          print('⚠️ Erreur lors de l\'obtention du token APNS: $apnsError');
-        }
+      // Brève attente seulement : l'initialisation retarde le premier écran.
+      // Au-delà, l'enregistrement se poursuit en arrière-plan.
+      if (!await _apnsTokenReady(timeout: const Duration(seconds: 2))) {
+        print('⏳ Token APNs pas encore remis par iOS : token FCM demandé plus tard');
+        unawaited(_completeRegistrationWhenApnsReady());
+        return;
       }
 
       final token = await _firebaseMessaging.getToken();
@@ -203,6 +243,7 @@ class FirebaseMessagingService extends GetxService {
 
       if (response.success) {
         print('✅ Token FCM envoyé au backend avec succès');
+        _markTokenRegistered(token);
       } else {
         print('⚠️ Échec de l\'envoi du token: ${response.message}');
       }
@@ -269,6 +310,8 @@ class FirebaseMessagingService extends GetxService {
       print('🔄 Token FCM rafraîchi: $newToken');
       // Envoyer le nouveau token au backend
       _sendTokenToBackend(newToken);
+      // L'abonnement au topic est porté par le token : on le refait.
+      unawaited(subscribeToAnnouncementsTopic());
     });
   }
 
@@ -280,11 +323,12 @@ class FirebaseMessagingService extends GetxService {
       print('Corps: ${message.notification?.body}');
       print('Data: ${message.data}');
 
-      // Afficher une notification locale quand l'app est en foreground
+      // Afficher une notification locale quand l'app est en foreground.
+      //
+      // Aucune navigation ici : elle n'a lieu qu'au tap sur la notification
+      // (voir _onNotificationTapped). Naviguer à la réception envoyait tout
+      // utilisateur actif sur la fiche de chaque produit publié.
       _showLocalNotification(message);
-
-      // TODO: Gérer les données du message selon votre logique métier
-      _handleMessageData(message.data);
     });
   }
 
@@ -318,8 +362,17 @@ class FirebaseMessagingService extends GetxService {
     }
   }
 
-  /// Gère les données du message
-  void _handleMessageData(Map<String, dynamic> data) {
+  /// Ouvre l'écran d'une notification, depuis la liste des notifications.
+  Future<void> openFromNotificationData(Map<String, dynamic> data) =>
+      _handleMessageData(data);
+
+  /// Ouvre l'écran correspondant à une notification touchée.
+  ///
+  /// Seul point de navigation des notifications (push, notification locale,
+  /// liste des notifications) : `NotificationController` écoute les mêmes
+  /// flux mais se contente de rafraîchir ses données. À deux, chaque tap
+  /// ouvrait deux fois le même écran.
+  Future<void> _handleMessageData(Map<String, dynamic> data) async {
     print('📦 Données du message: $data');
 
     final type = data['type'] as String?;
@@ -331,18 +384,23 @@ class FirebaseMessagingService extends GetxService {
 
     print('🔔 Type de notification: $type');
 
+    // Application lancée par ce tap : on attend la fin du splash, dont le
+    // `offAllNamed` emporterait l'écran ouvert trop tôt.
+    if (!await AppNavigation.whenAppReady()) return;
+
     switch (type) {
       case 'new_message':
         // Navigation vers les détails de la conversation
         final conversationId = data['conversation_id'];
-        final senderName = data['sender_name'];
+        final senderName = data['sender_name']?.toString() ?? '';
 
         if (conversationId != null) {
           print('💬 Navigation vers la conversation $conversationId (de $senderName)');
           Get.toNamed(Routes.CHATDETAIL, arguments: {
             'id': conversationId,
-            'name': senderName ?? 'Utilisateur',
-            'avatar': senderName?[0]?.toUpperCase() ?? 'U',
+            'name': senderName.isEmpty ? 'Utilisateur' : senderName,
+            // Nom vide : `senderName[0]` levait une RangeError.
+            'avatar': senderName.isEmpty ? 'U' : senderName[0].toUpperCase(),
           });
         } else {
           // Si pas d'ID, naviguer vers la liste des conversations
@@ -352,16 +410,8 @@ class FirebaseMessagingService extends GetxService {
         break;
 
       case 'new_product':
-        // Navigation vers les détails du produit
-        final productId = data['product_id'];
-        if (productId != null) {
-          print('🛍️ Navigation vers le produit $productId');
-          Get.toNamed(Routes.PRODUCT, arguments: {'productId': productId});
-        } else {
-          // Si pas d'ID, naviguer vers la liste des produits
-          print('🛍️ Navigation vers la liste des produits');
-          Get.toNamed(Routes.HOME);
-        }
+      case 'sponsored_product':
+        _openProduct(data['product_id']);
         break;
 
       case 'new_diaspo_offer':
@@ -400,10 +450,44 @@ class FirebaseMessagingService extends GetxService {
         Get.toNamed(Routes.PACKAGE_SUBSCRIPTION);
         break;
 
+      case 'wallet_credit':
+      case 'wallet_deposit_success':
+      case 'wallet_deposit_failed':
+      case 'wallet_withdrawal_success':
+      case 'wallet_withdrawal_failed':
+        Get.toNamed(Routes.WALLET_HISTORY);
+        break;
+
+      case 'order_update':
+        Get.toNamed(Routes.MY_ORDER);
+        break;
+
       default:
         print('⚠️ Type de notification non géré: $type');
         break;
     }
+  }
+
+  /// Ouvre la fiche d'un produit annoncé.
+  ///
+  /// La fiche attend le produit complet, pas son identifiant : on passe par
+  /// le même chemin que les liens partagés, qui le charge avant de naviguer
+  /// et attend que le routeur soit prêt au démarrage à froid.
+  void _openProduct(Object? productId) {
+    final id = productId?.toString() ?? '';
+    if (id.isEmpty || !Get.isRegistered<DeepLinkService>()) {
+      // L'application s'ouvre simplement là où elle était. Pas de
+      // `toNamed(HOME)` : l'accueil est déjà en bas de la pile, et un second
+      // accueil partagerait ses contrôleurs permanents (onglets, défilement)
+      // avec le premier.
+      print('🛍️ Produit non identifiable, aucune navigation');
+      return;
+    }
+
+    print('🛍️ Ouverture du produit $id');
+    Get.find<DeepLinkService>().handleExternal(
+      Uri.parse(AppConstants.productUrl(id)),
+    );
   }
 
   /// Gère les taps sur les notifications
@@ -447,6 +531,10 @@ class FirebaseMessagingService extends GetxService {
   /// S'abonne à un topic
   Future<void> subscribeToTopic(String topic) async {
     try {
+      if (!await _apnsTokenReady()) {
+        print('⏳ Abonnement au topic $topic reporté : token APNs indisponible');
+        return;
+      }
       await _firebaseMessaging.subscribeToTopic(topic);
       print('✅ Abonné au topic: $topic');
     } catch (e) {
@@ -490,6 +578,10 @@ class FirebaseMessagingService extends GetxService {
 
       // Si pas de token en mémoire, le récupérer
       if (token == null) {
+        if (!await _apnsTokenReady()) {
+          print('⏳ Token FCM indisponible : iOS n\'a pas encore remis le token APNs');
+          return false;
+        }
         token = await _firebaseMessaging.getToken();
         fcmToken.value = token;
       }
@@ -517,6 +609,7 @@ class FirebaseMessagingService extends GetxService {
 
       if (response.success) {
         print('✅ Token FCM envoyé au backend avec succès');
+        _markTokenRegistered(token);
         return true;
       } else {
         print('⚠️ Échec de l\'envoi du token: ${response.message}');
@@ -532,13 +625,89 @@ class FirebaseMessagingService extends GetxService {
   /// Retourne true si succès, false sinon
   Future<bool> subscribeToAnnouncementsTopic() async {
     try {
-      print('📢 Abonnement au topic "all_users" pour les annonces...');
-      await subscribeToTopic('all_users');
-      print('✅ Abonné au topic "all_users" avec succès');
+      // Sans token APNs, l'appel échouerait aussitôt : on le signale comme un
+      // report, pas comme une erreur — le token arrivé, l'abonnement est
+      // repris (initialisation, rafraîchissement du token, accueil).
+      if (!await _apnsTokenReady()) {
+        print('⏳ Abonnement à "$announcementsTopic" reporté : token APNs indisponible');
+        return false;
+      }
+
+      print('📢 Abonnement au topic "$announcementsTopic" pour les annonces...');
+      // Appel direct plutôt que [subscribeToTopic], qui avale l'erreur : cette
+      // méthode répondait toujours « abonné », même sans APNS sur iOS ou sans
+      // services Google Play, et l'échec n'était jamais retenté.
+      //
+      // Borné dans le temps : sans services Google Play, l'appel ne rend
+      // jamais la main.
+      await _firebaseMessaging
+          .subscribeToTopic(announcementsTopic)
+          .timeout(const Duration(seconds: 10));
+
+      final token = fcmToken.value;
+      if (token != null) StorageService.setAnnouncementsTopicToken(token);
+
+      print('✅ Abonné au topic "$announcementsTopic" avec succès');
       return true;
     } catch (e) {
-      print('❌ Erreur lors de l\'abonnement au topic "all_users": $e');
+      print('❌ Erreur lors de l\'abonnement au topic "$announcementsTopic": $e');
       return false;
+    }
+  }
+
+  /// Retient que le backend connaît ce token pour le compte courant.
+  void _markTokenRegistered(String token) {
+    final userId = StorageService.getUser()?.id;
+    if (userId != null) StorageService.setFcmRegistration('$userId:$token');
+  }
+
+  /// Rattrapage depuis l'accueil : enregistre le token et abonne l'appareil
+  /// aux annonces s'il ne l'a pas encore été.
+  ///
+  /// La connexion, l'inscription et le splash le font déjà, mais peuvent
+  /// échouer sans bruit : token pas encore disponible (APNS en retard sur
+  /// iOS), réseau coupé, services Google Play absents. Sans ce rattrapage,
+  /// l'appareil ne recevait plus aucune annonce jusqu'à la connexion suivante.
+  ///
+  /// Ne fait rien quand tout est déjà en place, pour que l'appeler à chaque
+  /// ouverture de l'accueil ne coûte rien.
+  Future<void> ensureRegisteredAndSubscribed() async {
+    if (_ensuring) return;
+    _ensuring = true;
+
+    try {
+      var token = fcmToken.value;
+      if (token == null) {
+        if (!await _apnsTokenReady(timeout: const Duration(seconds: 10))) {
+          print('⏳ Rattrapage FCM reporté : token APNs pas encore disponible');
+          return;
+        }
+        token = await _firebaseMessaging.getToken().timeout(
+          const Duration(seconds: 10),
+        );
+        fcmToken.value = token;
+      }
+      if (token == null) {
+        print('⚠️ Rattrapage FCM : token toujours indisponible');
+        return;
+      }
+
+      final userId = StorageService.getUser()?.id;
+      if (ApiProvider.isAuthenticated &&
+          userId != null &&
+          StorageService.fcmRegistration != '$userId:$token') {
+        print('📤 Rattrapage FCM : token inconnu du backend, envoi...');
+        await sendTokenToBackend();
+      }
+
+      if (StorageService.announcementsTopicToken != token) {
+        print('📢 Rattrapage FCM : appareil non abonné aux annonces...');
+        await subscribeToAnnouncementsTopic();
+      }
+    } catch (e) {
+      print('❌ Rattrapage FCM impossible: $e');
+    } finally {
+      _ensuring = false;
     }
   }
 

@@ -16,6 +16,9 @@ class StoreManagementController extends GetxController {
   // État de chargement
   final RxBool isLoading = false.obs;
 
+  // Enregistrement du formulaire « Modifier la boutique » en cours
+  final RxBool isSaving = false.obs;
+
   // Informations de la boutique
   final Rx<StoreInfo?> storeInfo = Rx<StoreInfo?>(null);
 
@@ -41,16 +44,31 @@ class StoreManagementController extends GetxController {
   final RxList<PromotionalBanner> banners = <PromotionalBanner>[].obs;
   final RxInt currentBannerIndex = 0.obs;
 
-  // Image picker
-  final Rx<XFile?> selectedLogo = Rx<XFile?>(null);
+  // Logo en cours d'envoi depuis « Ma boutique »
+  final RxBool isUploadingLogo = false.obs;
 
   // Location change requests
   final RxBool hasLocationUpdatePending = false.obs;
+
+  /// Demande de changement d'emplacement en attente de validation par ASSO.
+  final pendingLocationRequest = Rxn<Map<String, dynamic>>();
+
+  /// Dernière demande, quand elle a été refusée (motif affiché au vendeur).
+  final rejectedLocationRequest = Rxn<Map<String, dynamic>>();
+  final isRequestingLocation = false.obs;
+
+  /// Boutique déjà placée : son emplacement ne change plus que par une demande
+  /// validée par ASSO. Le premier placement reste libre.
+  bool get isShopPlaced {
+    final store = storeInfo.value;
+    return store != null && (store.latitude != 0 || store.longitude != 0);
+  }
 
   @override
   void onInit() {
     super.onInit();
     loadData();
+    loadLocationRequests();
     _setupBanners();
   }
 
@@ -78,38 +96,9 @@ class StoreManagementController extends GetxController {
 
         // Parser les informations de la boutique
         if (shop != null) {
-          // Nettoyer l'adresse (gérer les valeurs placeholder)
-          String? address = shop['address']?.toString();
-          if (address != null &&
-              (address.contains('Chargement de l') || address.isEmpty)) {
-            address = '';
-          }
-
-          // « Ville, Pays » calculé par le serveur (ex. « Douala, Cameroun »).
-          final city = LocationLabel.fromApi(Map<String, dynamic>.from(shop)) ?? '';
-
-          // Parser les catégories
-          List<String> categories = [];
-          if (shop['categories'] != null) {
-            if (shop['categories'] is List) {
-              categories = List<String>.from(shop['categories'] as List);
-            }
-          }
-
-          storeInfo.value = StoreInfo(
-            id: shop['id']?.toString() ?? '',
-            name: shop['name'] ?? '',
-            logoUrl: shop['logo'],
-            description: shop['description'] ?? '',
-            latitude: _toDouble(shop['latitude']),
-            longitude: _toDouble(shop['longitude']),
-            address: address ?? '',
-            city: city,
-            phone: shop['phone'] ?? '',
-            categories: categories,
-          );
+          storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
           print('✅ CONTROLLER: Store info loaded: ${storeInfo.value?.name}');
-          print('  └─ Categories: ${categories.join(", ")}');
+          print('  └─ Categories: ${storeInfo.value?.categories.join(", ")}');
         } else {
           print('⚠️ CONTROLLER: No shop data');
           storeInfo.value = null;
@@ -249,7 +238,7 @@ class StoreManagementController extends GetxController {
   }
 
   /// Convert dynamic value to double (handles both String and num)
-  double _toDouble(dynamic value) {
+  static double _toDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
     if (value is int) return value.toDouble();
@@ -311,25 +300,84 @@ class StoreManagementController extends GetxController {
         .toList();
   }
 
-  /// Sélectionne une image pour le logo (picker de marque partagé, web + mobile)
-  Future<void> pickLogo() async {
-    final XFile? image = await MediaHelper.pickBrandedImage(
-      title: 'Logo de la boutique',
-      subtitle: 'Choisissez le logo qui identifiera votre boutique',
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 85,
-    );
+  /// Boutique renvoyée par l'API (`GET` ou `PUT /vendor/shop`).
+  static StoreInfo storeInfoFromApi(Map<String, dynamic> shop) {
+    // Nettoyer l'adresse (gérer les valeurs placeholder)
+    var address = shop['address']?.toString() ?? '';
+    if (address.contains('Chargement de l')) address = '';
 
-    if (image != null) {
-      selectedLogo.value = image;
+    final categories = shop['categories'];
+
+    return StoreInfo(
+      id: shop['id']?.toString() ?? '',
+      name: shop['name']?.toString() ?? '',
+      logoUrl: shop['logo']?.toString(),
+      description: shop['description']?.toString() ?? '',
+      latitude: _toDouble(shop['latitude']),
+      longitude: _toDouble(shop['longitude']),
+      address: address,
+      // « Quartier, Ville, Pays » calculé par le serveur.
+      city: LocationLabel.fromApi(shop) ?? '',
+      phone: shop['phone']?.toString() ?? '',
+      categories: categories is List
+          ? categories.map((category) => category.toString()).toList()
+          : const [],
+    );
+  }
+
+  /// Choisit une image pour le logo (picker de marque partagé, web + mobile).
+  Future<XFile?> pickLogoImage() => MediaHelper.pickBrandedImage(
+    title: 'Logo de la boutique',
+    subtitle: 'Choisissez le logo qui identifiera votre boutique',
+    maxWidth: 1024,
+    maxHeight: 1024,
+    imageQuality: 85,
+  );
+
+  /// Remplace le logo depuis « Ma boutique » : il est envoyé aussitôt.
+  ///
+  /// L'image choisie ici n'était qu'affichée (« N'oubliez pas de
+  /// sauvegarder ») alors que cet écran n'a pas de bouton d'enregistrement :
+  /// elle disparaissait au chargement suivant.
+  Future<void> changeLogo() async {
+    if (isUploadingLogo.value) return;
+    final image = await pickLogoImage();
+    if (image == null) return;
+
+    isUploadingLogo.value = true;
+    try {
+      final response = await ShopService.updateShop(shopLogo: image);
+      final shop = response.data?['shop'];
+      if (response.success && shop is Map) {
+        storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
+        Get.snackbar(
+          'Succès',
+          'Logo de la boutique mis à jour',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppDesign.success,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Erreur',
+          response.message.isNotEmpty
+              ? response.message
+              : 'Impossible de mettre à jour le logo',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppDesign.danger,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
       Get.snackbar(
-        'Succès',
-        'Logo sélectionné. N\'oubliez pas de sauvegarder.',
+        'Erreur',
+        'Impossible de mettre à jour le logo',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.successColor,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
+    } finally {
+      isUploadingLogo.value = false;
     }
   }
 
@@ -338,9 +386,21 @@ class StoreManagementController extends GetxController {
     try {
       final response = await ShopService.getLocationRequests();
 
-      if (response.success && response.data != null) {;
+      if (response.success && response.data != null) {
         final pendingCount = response.data!['pending_count'] as int? ?? 0;
         hasLocationUpdatePending.value = pendingCount > 0;
+
+        // Demandes de la plus récente à la plus ancienne.
+        final requests = (response.data!['requests'] as List? ?? const [])
+            .whereType<Map>()
+            .map((r) => Map<String, dynamic>.from(r))
+            .toList();
+        pendingLocationRequest.value = requests.firstWhereOrNull(
+          (r) => r['status'] == 'pending',
+        );
+        final latest = requests.firstOrNull;
+        rejectedLocationRequest.value =
+            latest != null && latest['status'] == 'rejected' ? latest : null;
 
         print('✅ CONTROLLER: Location requests loaded');
         print('  └─ Pending requests: $pendingCount');
@@ -350,6 +410,72 @@ class StoreManagementController extends GetxController {
     } catch (e) {
       print('⚠️ CONTROLLER: Failed to load location requests: $e');
       hasLocationUpdatePending.value = false;
+    }
+  }
+
+  /// Déménager suppose de n'avoir aucune commande en cours : sinon le livreur
+  /// irait chercher le colis à l'ancienne adresse.
+  Future<bool> canMoveShop() async {
+    final ordersResponse = await VendorService.checkActiveOrders();
+    final count = ordersResponse.data?['active_orders_count'] as int? ?? 0;
+    if (ordersResponse.success && (ordersResponse.data?['has_active_orders'] == true)) {
+      Get.snackbar(
+        'Commandes en cours',
+        'Vous avez $count commande(s) en cours. Terminez-les avant de changer d’emplacement.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /// Envoie la demande de changement d'emplacement à ASSO. L'emplacement doit
+  /// être desservi par un livreur. Renvoie true une fois la demande reçue.
+  Future<bool> requestLocationChange({
+    required double latitude,
+    required double longitude,
+    required String address,
+    String? city,
+    String? country,
+    String? reason,
+  }) async {
+    if (isRequestingLocation.value) return false;
+    isRequestingLocation.value = true;
+    try {
+      await checkDeliveryAvailability(latitude, longitude);
+      if (!isDeliveryAvailable.value) {
+        Get.snackbar(
+          'Hors zone de livraison',
+          'Aucun livreur ne dessert ce point. Choisissez un emplacement dans une zone colorée de la carte.',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
+        return false;
+      }
+
+      final response = await ShopService.createLocationRequest(
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+        city: city,
+        country: country,
+        reason: reason,
+      );
+      if (!response.success) {
+        Get.snackbar(
+          'Demande non envoyée',
+          response.message.isNotEmpty
+              ? response.message
+              : 'Réessayez dans un instant.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+      await loadLocationRequests();
+      return true;
+    } finally {
+      isRequestingLocation.value = false;
     }
   }
 
@@ -415,8 +541,11 @@ class StoreManagementController extends GetxController {
     }
   }
 
-  /// Sauvegarde les informations de la boutique
-  Future<void> saveStoreInfo({
+  /// Sauvegarde les informations de la boutique.
+  ///
+  /// Renvoie `true` une fois la boutique enregistrée : c'est l'écran
+  /// d'édition qui se referme alors, lui seul sait s'il est encore affiché.
+  Future<bool> saveStoreInfo({
     required String name,
     String? description,
     required String address,
@@ -427,9 +556,11 @@ class StoreManagementController extends GetxController {
     double? latitude,
     double? longitude,
     List<String>? categories,
+    XFile? logo,
   }) async {
+    if (isSaving.value) return false;
     try {
-      isLoading.value = true;
+      isSaving.value = true;
 
       print('');
       print('========================================');
@@ -455,61 +586,24 @@ class StoreManagementController extends GetxController {
       print('  ├─ Longitude: ${storeInfo.value?.longitude}');
       print('  └─ Categories: ${storeInfo.value?.categories}');
 
-      // Vérifier si la position a changé
-      final oldLat = storeInfo.value?.latitude ?? 0.0;
-      final oldLng = storeInfo.value?.longitude ?? 0.0;
-      final newLat = latitude ?? oldLat;
-      final newLng = longitude ?? oldLng;
+      // Boutique déjà placée : l'emplacement ne part pas avec le formulaire, il
+      // change par une demande validée par ASSO (requestLocationChange).
+      final placed = isShopPlaced;
 
-      final hasLocationChanged = (newLat - oldLat).abs() > 0.0001 || (newLng - oldLng).abs() > 0.0001;
-
-      print('');
-      print('========================================');
-      print('📍 STORE MANAGEMENT: Checking location change');
-      print('  ├─ Old position: ($oldLat, $oldLng)');
-      print('  ├─ New position: ($newLat, $newLng)');
-      print('  └─ Location changed: $hasLocationChanged');
-      print('========================================');
-
-      if (hasLocationChanged) {
-        // 1. Vérifier qu'il n'y a pas de commandes en cours
-        print('📦 Checking active orders...');
-        final ordersResponse = await VendorService.checkActiveOrders();
-
-        if (ordersResponse.success && ordersResponse.data != null) {
-          final hasActiveOrders = ordersResponse.data!['has_active_orders'] as bool? ?? false;
-          final activeOrdersCount = ordersResponse.data!['active_orders_count'] as int? ?? 0;
-
-          if (hasActiveOrders) {
-            Get.snackbar(
-              'Commandes en cours',
-              'Vous avez $activeOrdersCount commande(s) en cours. Veuillez les terminer avant de modifier votre emplacement.',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: AppThemeSystem.warningColor,
-              colorText: Colors.white,
-              duration: const Duration(seconds: 4),
-            );
-            return;
-          }
-          print('✅ No active orders');
-        }
-
-        // 2. Vérifier que la nouvelle position est dans une zone de livraison
-        print('🚚 Checking delivery availability...');
-        await checkDeliveryAvailability(newLat, newLng);
-
+      // Premier placement : il doit tomber dans une zone de livraison.
+      if (!placed && latitude != null && longitude != null) {
+        await checkDeliveryAvailability(latitude, longitude);
         if (!isDeliveryAvailable.value) {
           Get.snackbar(
             'Hors zone de livraison',
-            'La nouvelle position est en dehors des zones de livraison disponibles. Veuillez choisir un emplacement dans une zone desservie.',
+            'Cet emplacement est en dehors des zones de livraison. Choisissez un emplacement dans une zone desservie.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: Colors.white,
             duration: const Duration(seconds: 4),
           );
-          return;
+          return false;
         }
-        print('✅ Delivery available at new location');
       }
 
       // Appel API pour sauvegarder
@@ -518,13 +612,13 @@ class StoreManagementController extends GetxController {
       final response = await ShopService.updateShop(
         shopName: name,
         shopDescription: description,
-        shopAddress: address,
-        shopCity: locationCity,
-        shopCountry: locationCountry,
+        shopAddress: placed ? null : address,
+        shopCity: placed ? null : locationCity,
+        shopCountry: placed ? null : locationCountry,
         shopPhone: phone,
-        shopLatitude: latitude ?? storeInfo.value?.latitude,
-        shopLongitude: longitude ?? storeInfo.value?.longitude,
-        shopLogo: selectedLogo.value,
+        shopLatitude: placed ? null : latitude,
+        shopLongitude: placed ? null : longitude,
+        shopLogo: logo,
         categories: categories,
       );
 
@@ -540,48 +634,8 @@ class StoreManagementController extends GetxController {
         print('✅ API call successful, processing response data...');
         // Mettre à jour directement avec les données de la réponse
         final shop = response.data!['shop'];
-        if (shop != null) {
-          // Nettoyer l'adresse (gérer les valeurs placeholder)
-          String? updatedAddress = shop['address']?.toString();
-          if (updatedAddress != null &&
-              (updatedAddress.contains('Chargement de l') || updatedAddress.isEmpty)) {
-            updatedAddress = '';
-          }
-
-          final updatedCity =
-              LocationLabel.fromApi(Map<String, dynamic>.from(shop)) ?? '';
-
-          // Parser les catégories
-          List<String> updatedCategories = [];
-          if (shop['categories'] != null) {
-            if (shop['categories'] is List) {
-              updatedCategories = List<String>.from(shop['categories'] as List);
-            }
-          }
-
-          print('');
-          print('🔄 Updating storeInfo from API response...');
-          print('  ├─ ID: ${shop['id']}');
-          print('  ├─ Name: ${shop['name']}');
-          print('  ├─ Description: ${shop['description']}');
-          print('  ├─ Address: $updatedAddress');
-          print('  ├─ Phone: ${shop['phone']}');
-          print('  ├─ Latitude: ${shop['latitude']}');
-          print('  ├─ Longitude: ${shop['longitude']}');
-          print('  └─ Categories: $updatedCategories');
-
-          storeInfo.value = StoreInfo(
-            id: shop['id']?.toString() ?? '',
-            name: shop['name'] ?? '',
-            logoUrl: shop['logo'],
-            description: shop['description'] ?? '',
-            latitude: _toDouble(shop['latitude']),
-            longitude: _toDouble(shop['longitude']),
-            address: updatedAddress ?? '',
-            city: updatedCity,
-            phone: shop['phone'] ?? '',
-            categories: updatedCategories,
-          );
+        if (shop is Map) {
+          storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
 
           print('');
           print('✅ CONTROLLER: Store info updated from API response');
@@ -595,18 +649,7 @@ class StoreManagementController extends GetxController {
           print('  └─ Categories: ${storeInfo.value?.categories}');
         }
 
-        // Réinitialiser le logo sélectionné
-        selectedLogo.value = null;
-
-        // Reload location requests to check for new pending requests
-        print('');
-        print('🔄 Reloading location requests...');
-        await loadLocationRequests();
-
-        Get.back(); // Fermer le formulaire d'édition
-
-        // Determine success message based on whether location request was created
-        final message ='Informations de la boutique mises à jour avec succès';
+        final message = 'Informations de la boutique mises à jour avec succès';
 
         print('');
         print('========================================');
@@ -622,6 +665,7 @@ class StoreManagementController extends GetxController {
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
         );
+        return true;
       } else {
         Get.snackbar(
           'Erreur',
@@ -632,6 +676,7 @@ class StoreManagementController extends GetxController {
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
+        return false;
       }
     } catch (e) {
       Get.snackbar(
@@ -641,8 +686,9 @@ class StoreManagementController extends GetxController {
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
+      return false;
     } finally {
-      isLoading.value = false;
+      isSaving.value = false;
     }
   }
 

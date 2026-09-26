@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../controllers/delivery_check_controller.dart';
 
 /// Écran de vérification pour le mode livreur
@@ -12,6 +13,16 @@ class DeliveryCheckView extends GetView<DeliveryCheckController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
+      // Sortie visible si la vérification traîne (réseau lent) : l'iPhone
+      // n'a pas de bouton système pour quitter cet écran d'attente.
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      // Le logo reste centré sur l'écran entier, comme avant la barre.
+      extendBodyBehindAppBar: true,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
