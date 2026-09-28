@@ -638,7 +638,9 @@ Future<void> showDeliveryQuoteDetails(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
-                      'Choisir ce partenaire — ${formatPrice(quote.price)}',
+                      quote.isFree
+                          ? 'Choisir ce partenaire — livraison offerte'
+                          : 'Choisir ce partenaire — ${formatPrice(quote.price)}',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),

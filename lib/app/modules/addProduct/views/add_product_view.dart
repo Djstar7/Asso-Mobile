@@ -6,6 +6,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../controllers/add_product_controller.dart';
 import '../controllers/product_draft_store.dart';
 import '../../../core/widgets/product_variant_selector.dart';
@@ -407,6 +408,8 @@ class AddProductView extends GetView<AddProductController> {
         _buildStockSection(context),
         SizedBox(height: AppDesign.space6),
         _buildWeightSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildFreeDeliverySection(context),
         SizedBox(height: AppDesign.space6),
         _buildStorageSection(context),
       ],
@@ -2291,6 +2294,32 @@ class AddProductView extends GetView<AddProductController> {
         ),
       ],
     );
+  }
+
+  /// Livraison gratuite du produit : suit la boutique, sauf choix contraire.
+  Widget _buildFreeDeliverySection(BuildContext context) {
+    return Obx(() {
+      // Une prestation n'a pas de colis à livrer.
+      if (controller.articleType.value == 'service') {
+        return const SizedBox.shrink();
+      }
+      final value = controller.freeDeliveryEffective;
+      final shop = controller.shopFreeDelivery.value;
+      final followsShop = controller.freeDeliveryOverride.value == null;
+
+      return FreeDeliveryToggle(
+        title: 'Livraison gratuite',
+        subtitle: [
+          value
+              ? 'Le client ne paie pas la livraison : son prix est retenu sur la vente.'
+              : 'Offrez la livraison de ce produit : son prix sera retenu sur la vente.',
+          if (followsShop && shop) 'Réglage de votre boutique.',
+          if (!followsShop && shop) 'Exclu de la livraison gratuite de la boutique.',
+        ].join(' '),
+        value: value,
+        onChanged: controller.setFreeDelivery,
+      );
+    });
   }
 
   /// Section Poids du produit : poids réel en kg, obligatoire pour un article.

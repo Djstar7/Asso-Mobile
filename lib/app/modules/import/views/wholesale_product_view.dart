@@ -10,6 +10,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_video_player.dart';
@@ -210,7 +211,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
   }
 
-  double get _total => _subtotal + _shippingCost + _delivery.price;
+  double get _total => _subtotal + _shippingCost + _delivery.buyerPrice;
 
   /// Ville d'arrivée de l'import, d'où part la livraison locale.
   String get _hubCity => _shipping?.destination ?? 'Douala';
@@ -646,10 +647,17 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppBadge(
-            label: 'Commande en gros',
-            tone: AppBadgeTone.accent,
-            icon: Icons.inventory_2_outlined,
+          Wrap(
+            spacing: AppDesign.space2,
+            runSpacing: AppDesign.space2,
+            children: [
+              const AppBadge(
+                label: 'Commande en gros',
+                tone: AppBadgeTone.accent,
+                icon: Icons.inventory_2_outlined,
+              ),
+              if (p.freeDelivery) const FreeDeliveryBadge(),
+            ],
           ),
           const SizedBox(height: AppDesign.space3),
           Text(
@@ -1023,6 +1031,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               ? 'Livraison depuis $_hubCity'
               : 'Livraison ${_delivery.selected!.companyName} jusqu’à vous',
           _delivery.selected == null ? '—' : _fmt(_delivery.price),
+          struck: _delivery.isFree,
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
@@ -1033,7 +1042,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
   }
 
-  Widget _sumRow(BuildContext c, String l, String v, {bool bold = false}) =>
+  Widget _sumRow(
+    BuildContext c,
+    String l,
+    String v, {
+    bool bold = false,
+    bool struck = false,
+  }) =>
       Row(
         children: [
           Expanded(
@@ -1049,8 +1064,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             ),
           ),
           const SizedBox(width: AppDesign.space2),
-          Text(
-            v,
+          // Course offerte par le vendeur : prix barré, suivi de « Offerte ».
+          DeliveryPriceText(
+            price: v,
+            isFree: struck,
             style: c.textStyle(
               bold ? FontSizeType.body1 : FontSizeType.body2,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,

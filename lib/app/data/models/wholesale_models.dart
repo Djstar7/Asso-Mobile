@@ -171,6 +171,10 @@ class WholesaleProduct {
   final List<String> images;
   final WholesaleVideo? video;
 
+  /// Livraison gratuite offerte par le vendeur : la course SOLEX depuis
+  /// Douala est offerte, l'expédition jusqu'à Douala reste due.
+  final bool freeDelivery;
+
   const WholesaleProduct({
     required this.id,
     required this.name,
@@ -187,6 +191,7 @@ class WholesaleProduct {
     this.image,
     this.images = const [],
     this.video,
+    this.freeDelivery = false,
   });
 
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
@@ -222,6 +227,7 @@ class WholesaleProduct {
             .toList() ??
         const [],
     video: WholesaleVideo.fromJson(j['video']),
+    freeDelivery: j['free_delivery'] == true,
   );
 
   /// Prix d'entrée = plus petit prix parmi les paliers (pour l'affichage « à partir de »).

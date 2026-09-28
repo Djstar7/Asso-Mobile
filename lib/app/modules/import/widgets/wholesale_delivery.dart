@@ -7,6 +7,7 @@ import '../../../core/utils/device_location.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/storage_service.dart';
@@ -48,7 +49,13 @@ class WholesaleDelivery extends ChangeNotifier {
   DeliveryPartnerQuote? get selected =>
       _selected == null ? null : DeliveryPartnerQuote(_selected!);
 
+  /// Prix affiché de la course choisie (barré si elle est offerte).
   double get price => selected?.price ?? 0;
+
+  /// Ce que l'acheteur paie pour la course : rien si le vendeur l'offre.
+  double get buyerPrice => selected?.buyerPrice ?? 0;
+
+  bool get isFree => selected?.isFree ?? false;
 
   double? get weightKg {
     final raw = quote?['weight_kg'];
@@ -461,8 +468,9 @@ class WholesaleDeliverySection extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      formatPrice(offer.price),
+                    DeliveryPriceText(
+                      price: formatPrice(offer.price),
+                      isFree: offer.isFree,
                       style: context.textStyle(
                         FontSizeType.body2,
                         fontWeight: FontWeight.w800,

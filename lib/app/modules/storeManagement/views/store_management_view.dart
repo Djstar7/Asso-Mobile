@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../controllers/store_management_controller.dart';
 import '../models/store_models.dart';
 import 'edit_store_view.dart';
@@ -77,6 +78,8 @@ class StoreManagementView extends GetView<StoreManagementController> {
                       _LocationRequestNotification(),
                       _BannerCarousel(),
                       _StoreEditorCard(),
+                      SizedBox(height: AppDesign.space8),
+                      _FreeDeliveryCard(),
                       SizedBox(height: AppDesign.space8),
                       _StorageCard(),
                       SizedBox(height: AppDesign.space8),
@@ -447,6 +450,31 @@ class _BannerItem extends StatelessWidget {
 // ============================================================================
 // STOCKAGE
 // ============================================================================
+
+/// Livraison gratuite sur toute la boutique. Chaque produit peut ensuite
+/// s'en écarter depuis sa fiche.
+class _FreeDeliveryCard extends GetView<StoreManagementController> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Livraison'),
+        Obx(
+          () => FreeDeliveryToggle(
+            title: 'Livraison gratuite sur toute la boutique',
+            subtitle: controller.freeDelivery.value
+                ? 'Vos clients ne paient pas la livraison : son prix est retenu sur vos ventes. Si elle coûte plus que la vente, le client la paie.'
+                : 'Offrez la livraison à vos clients. Son prix sera retenu sur vos ventes.',
+            value: controller.freeDelivery.value,
+            busy: controller.isSavingFreeDelivery.value,
+            onChanged: controller.setFreeDelivery,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _StorageCard extends GetView<StoreManagementController> {
   @override

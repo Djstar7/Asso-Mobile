@@ -201,6 +201,14 @@ class ShopService {
     );
   }
 
+  /// Livraison gratuite sur toute la boutique du vendeur.
+  static Future<ApiResponse> updateFreeDelivery(bool freeDelivery) {
+    return ApiProvider.put(
+      '${AppConstants.vendorShopUrl}/free-delivery',
+      body: {'free_delivery': freeDelivery},
+    );
+  }
+
   /// Get location change requests for the authenticated vendor's shop
   static Future<ApiResponse> getLocationRequests() async {
     print('');

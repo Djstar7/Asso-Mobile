@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/providers/shop_service.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/currency_model.dart';
@@ -194,6 +196,32 @@ class AddProductController extends GetxController {
   /// se rafraîchir), plutôt que depuis le tableau de bord.
   bool _openedFromProductManagement = false;
   final editProductId = Rx<int?>(null);
+
+  // Livraison gratuite : réglage de la boutique, et choix propre au produit
+  // (null = suit la boutique).
+  final shopFreeDelivery = false.obs;
+  final freeDeliveryOverride = Rxn<bool>();
+
+  bool get freeDeliveryEffective =>
+      freeDeliveryOverride.value ?? shopFreeDelivery.value;
+
+  /// Le produit ne garde un choix propre que s'il diffère de la boutique :
+  /// revenir au réglage de la boutique le fait de nouveau suivre.
+  void setFreeDelivery(bool value) {
+    freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
+  }
+
+  Future<void> _loadShopFreeDelivery() async {
+    try {
+      final response = await ShopService.getShop();
+      final shop = response.data?['shop'];
+      if (response.success && shop is Map) {
+        shopFreeDelivery.value = readFreeDelivery(shop['free_delivery']);
+      }
+    } catch (_) {
+      // Réglage de la boutique inconnu : l'interrupteur part de « désactivé ».
+    }
+  }
 
   // ───────────── Parcours en étapes ─────────────
 
@@ -571,7 +599,11 @@ class AddProductController extends GetxController {
   Future<void> _initializeData() async {
     isLoading.value = true;
 
-    await Future.wait([_loadCategories(), _loadStorages()]);
+    await Future.wait([
+      _loadCategories(),
+      _loadStorages(),
+      _loadShopFreeDelivery(),
+    ]);
 
     // If in edit mode, populate fields with product data
     if (isEditMode.value && editProductData != null) {
@@ -848,6 +880,12 @@ class AddProductController extends GetxController {
       if (productType == 'article' || productType == 'service') {
         articleType.value = productType!;
       }
+
+      // Livraison gratuite propre au produit (null = suit la boutique).
+      final freeSetting = product['free_delivery_setting'];
+      freeDeliveryOverride.value = freeSetting == null
+          ? null
+          : readFreeDelivery(freeSetting);
 
       // Poids réel en kg (utilisé pour chiffrer la livraison).
       final weightKg = parseWeightKg(product['weight']?.toString());
@@ -1375,6 +1413,12 @@ class AddProductController extends GetxController {
       fieldsMap.addAll(variantEditor.toFields());
       // En modification, on envoie toujours l'état complet (y compris « plus aucune variante »).
       if (isEditMode.value) fieldsMap['replace_variants'] = '1';
+
+      // Livraison gratuite : vide = suit la boutique.
+      final freeOverride = freeDeliveryOverride.value;
+      fieldsMap['free_delivery'] = freeOverride == null
+          ? ''
+          : (freeOverride ? '1' : '0');
 
       // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
       final weightText = weightKgController.text.trim();
