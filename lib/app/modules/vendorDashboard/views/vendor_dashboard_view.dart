@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +15,10 @@ import '../../storeManagement/bindings/store_management_binding.dart';
 import '../../wallet/views/wallet_view.dart';
 import '../../wallet/bindings/wallet_binding.dart';
 import '../../../core/widgets/currency_switcher.dart';
+import '../../../core/widgets/offline_badge.dart';
+import '../../../data/models/pending_product.dart';
+import '../../../data/services/offline_product_sync_service.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../routes/app_pages.dart';
 import 'vendor_dashboard_shimmer.dart';
 
@@ -50,6 +56,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             ),
           ),
           actions: [
+            const OfflineBadge(),
             // Pilote l'affichage de tout l'espace vendeur : ventes,
             // statistiques, prix. Sert aussi de devise par défaut à la
             // création d'un produit.
@@ -83,6 +90,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildShopHeader(context),
+                          _buildOfflineSection(context),
                           SizedBox(height: AppDesign.space6),
                           _buildStatsSection(context),
                           SizedBox(height: AppDesign.space8),
@@ -329,7 +337,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               value: controller.formatPrice(controller.totalSales.value),
               caption: '${controller.totalOrders.value} commande'
                   '${controller.totalOrders.value > 1 ? 's' : ''} au total',
-              onTap: () => Get.to(() => const WalletView(), binding: WalletBinding()),
+              onTap: controller.onlineOnly(
+                () => Get.to(() => const WalletView(), binding: WalletBinding()),
+              ),
             )),
 
         SizedBox(height: AppDesign.space3),
@@ -567,7 +577,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             width: double.infinity,
             height: context.buttonHeight,
             child: ElevatedButton(
-              onPressed: () => Get.toNamed('/package-subscription'),
+              onPressed: controller.onlineOnly(() => Get.toNamed('/package-subscription')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppDesign.accent,
                 foregroundColor: AppDesign.neutral0,
@@ -617,7 +627,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           context,
           'Mon forfait',
           action: 'Changer',
-          onAction: () => Get.toNamed('/package-subscription'),
+          onAction: controller.onlineOnly(() => Get.toNamed('/package-subscription')),
         ),
         SizedBox(height: AppDesign.space3),
         Container(
@@ -806,12 +816,17 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           child: Column(
             children: [
               Obx(() {
-                if (controller.totalProducts.value == 0) {
+                // Hors ligne, la liste des produits est inaccessible : seul
+                // l'ajout reste ouvert.
+                if (controller.totalProducts.value == 0 ||
+                    !controller.isOnline.value) {
                   return _buildActionRow(
                     context,
                     icon: Icons.add_box_outlined,
                     title: 'Ajouter un produit',
-                    subtitle: 'Créez votre premier produit',
+                    subtitle: !controller.isOnline.value
+                        ? 'Gardé sur le téléphone, publié au retour du réseau'
+                        : 'Créez votre premier produit',
                     onTap: controller.navigateToAddProduct,
                     isFirst: true,
                   );
@@ -844,10 +859,10 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                       ? '${_compact(served)} / ${_compact(quota)} personnes touchées'
                       : 'Faites voir votre article à plus de monde',
                   badge: running > 0 ? running : null,
-                  onTap: () async {
+                  onTap: controller.onlineOnly(() async {
                     await Get.toNamed(Routes.BOOST);
                     await controller.refreshData();
-                  },
+                  }),
                 );
               }),
               _buildRowDivider(context),
@@ -860,13 +875,13 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                         : 'Suivez vos commandes',
                     badge: controller.pendingOrders.value,
                     isUrgent: true,
-                    onTap: () async {
+                    onTap: controller.onlineOnly(() async {
                       await Get.to(
                         () => const OrderManagementView(),
                         binding: OrderManagementBinding(),
                       );
                       await controller.refreshData();
-                    },
+                    }),
                   )),
               _buildRowDivider(context),
               _buildActionRow(
@@ -874,7 +889,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.storefront_outlined,
                 title: 'Ma boutique',
                 subtitle: 'Personnalisez votre vitrine',
-                onTap: () async {
+                onTap: controller.onlineOnly(() async {
                   await Get.to(
                     () => const StoreManagementView(),
                     binding: StoreManagementBinding(),
@@ -882,7 +897,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   // Le nom de la boutique affiché ici vient de ce tableau de
                   // bord : sans relecture, une modification semblait perdue.
                   await controller.refreshData();
-                },
+                }),
               ),
               _buildRowDivider(context),
               _buildActionRow(
@@ -890,7 +905,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.account_balance_wallet_outlined,
                 title: 'Portefeuille',
                 subtitle: 'Solde et remboursements',
-                onTap: () => Get.toNamed('/wallet'),
+                onTap: controller.onlineOnly(() => Get.toNamed('/wallet')),
               ),
               _buildRowDivider(context),
               _buildActionRow(
@@ -898,7 +913,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.account_balance_outlined,
                 title: 'Compte de virement',
                 subtitle: 'Enregistrez votre IBAN pour être payé',
-                onTap: () => Get.toNamed('/stripe-connect'),
+                onTap: controller.onlineOnly(() => Get.toNamed('/stripe-connect')),
                 isLast: true,
               ),
             ],
@@ -1012,6 +1027,143 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   }
 
   // ==========================================================================
+  // MODE HORS LIGNE
+  // ==========================================================================
+
+  /// Bandeau hors ligne et produits en attente d'envoi. Rien en ligne quand
+  /// la file est vide.
+  Widget _buildOfflineSection(BuildContext context) {
+    return Obx(() {
+      final offline = !controller.isOnline.value;
+      final sync = controller.offlineSync;
+      final pending = sync?.pending.toList() ?? const <PendingProduct>[];
+
+      if (!offline && pending.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: EdgeInsets.only(top: AppDesign.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (offline) _buildOfflineNotice(context),
+            if (offline && pending.isNotEmpty)
+              SizedBox(height: AppDesign.space3),
+            if (pending.isNotEmpty) _buildPendingCard(context, pending),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildOfflineNotice(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppDesign.space3),
+      decoration: BoxDecoration(
+        color: AppDesign.warningSubtle,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 18, color: AppDesign.warningText),
+          SizedBox(width: AppDesign.space2),
+          Expanded(
+            child: Text(
+              'Vous êtes hors ligne. Les chiffres affichés sont les derniers '
+              'connus. Vos nouveaux produits sont gardés sur le téléphone et '
+              'publiés dès le retour de la connexion.',
+              style: context.caption.copyWith(color: AppDesign.warningText),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingCard(BuildContext context, List<PendingProduct> pending) {
+    final ds = context.ds;
+    final sync = controller.offlineSync!;
+    final failed = pending.where((item) => item.isFailed).length;
+    final waiting = pending.length - failed;
+
+    final String subtitle;
+    if (sync.isSyncing.value) {
+      subtitle = 'Envoi en cours…';
+    } else if (failed > 0) {
+      subtitle = failed == 1
+          ? '1 produit refusé par le serveur, à vérifier'
+          : '$failed produits refusés par le serveur, à vérifier';
+    } else if (!controller.isOnline.value) {
+      subtitle = 'Publication au retour de la connexion';
+    } else {
+      subtitle = 'Publication imminente';
+    }
+
+    return Material(
+      color: ds.surface,
+      borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+        onTap: () => AppSheet.show(const _PendingProductsSheet()),
+        child: Container(
+          padding: EdgeInsets.all(AppDesign.space4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesign.radiusLg),
+            border: Border.all(
+              color: failed > 0 ? AppDesign.danger : ds.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              sync.isSyncing.value
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppDesign.accent,
+                      ),
+                    )
+                  : Icon(
+                      failed > 0
+                          ? Icons.error_outline_rounded
+                          : Icons.cloud_upload_outlined,
+                      size: 20,
+                      color: failed > 0 ? AppDesign.danger : ds.textSecondary,
+                    ),
+              SizedBox(width: AppDesign.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      waiting + failed == 1
+                          ? '1 produit en attente d\'envoi'
+                          : '${waiting + failed} produits en attente d\'envoi',
+                      style: context.body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ds.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: context.caption.copyWith(
+                        color: failed > 0 ? AppDesign.dangerText : ds.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================================
   // COMMUN
   // ==========================================================================
 
@@ -1082,5 +1234,158 @@ class _Tappable extends StatelessWidget {
         child: child,
       ),
     );
+  }
+}
+
+/// Détail des produits enregistrés hors ligne : état de chacun, motif d'un
+/// refus, et de quoi réessayer ou retirer.
+class _PendingProductsSheet extends StatelessWidget {
+  const _PendingProductsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final sync = OfflineProductSyncService.to;
+    final ds = context.ds;
+
+    return AppSheet(
+      title: 'Produits en attente',
+      subtitle: 'Enregistrés sur le téléphone sans connexion',
+      child: Obx(() {
+        final items = sync.pending.toList();
+        if (items.isEmpty) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
+            child: Text(
+              'Tous vos produits ont été publiés.',
+              textAlign: TextAlign.center,
+              style: context.body2.copyWith(color: ds.textSecondary),
+            ),
+          );
+        }
+        return Column(
+          children: [
+            for (final item in items) _buildItem(context, sync, item),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildItem(
+    BuildContext context,
+    OfflineProductSyncService sync,
+    PendingProduct item,
+  ) {
+    final ds = context.ds;
+    final thumbnail = item.imagePaths.isNotEmpty ? item.imagePaths.first : null;
+    final syncing = item.status == PendingProductStatus.syncing;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppDesign.space3),
+      child: Container(
+        padding: EdgeInsets.all(AppDesign.space3),
+        decoration: BoxDecoration(
+          color: ds.surface,
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+          border: Border.all(
+            color: item.isFailed ? AppDesign.danger : ds.border,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: thumbnail != null && File(thumbnail).existsSync()
+                    ? Image.file(
+                        File(thumbnail),
+                        fit: BoxFit.cover,
+                        cacheWidth: 144,
+                      )
+                    : ColoredBox(
+                        color: ds.surfaceMuted,
+                        child: Icon(Icons.image_outlined, color: ds.textTertiary),
+                      ),
+              ),
+            ),
+            SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.body1.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: ds.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    item.isFailed
+                        ? (item.error ?? 'Refusé par le serveur')
+                        : syncing
+                            ? 'Envoi en cours…'
+                            : 'Saisi le ${DateFormat('dd/MM à HH:mm', 'fr_FR').format(item.createdAt)}',
+                    style: context.caption.copyWith(
+                      color: item.isFailed ? AppDesign.dangerText : ds.textTertiary,
+                    ),
+                  ),
+                  if (!syncing)
+                    Row(
+                      children: [
+                        if (item.isFailed)
+                          TextButton(
+                            onPressed: () => sync.retry(item.id),
+                            child: const Text('Réessayer'),
+                          ),
+                        TextButton(
+                          onPressed: () => _confirmRemove(context, sync, item),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppDesign.danger,
+                          ),
+                          child: const Text('Retirer'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRemove(
+    BuildContext context,
+    OfflineProductSyncService sync,
+    PendingProduct item,
+  ) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Retirer ce produit ?'),
+        content: Text(
+          '« ${item.name} » ne sera pas publié et sa saisie sera effacée du téléphone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            style: TextButton.styleFrom(foregroundColor: AppDesign.danger),
+            child: const Text('Retirer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await sync.remove(item.id);
   }
 }

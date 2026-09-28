@@ -7,6 +7,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
+import '../../../core/widgets/offline_badge.dart';
 import '../controllers/add_product_controller.dart';
 import '../controllers/product_draft_store.dart';
 import '../../../core/widgets/product_variant_selector.dart';
@@ -42,6 +43,8 @@ class AddProductView extends GetView<AddProductController> {
             style: context.h5.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
+        // Hors ligne, la fiche est gardée sur le téléphone à la validation.
+        actions: const [OfflineBadge(), SizedBox(width: AppDesign.space2)],
         // actions: [
         //   IconButton(
         //     tooltip: 'Menu principal',

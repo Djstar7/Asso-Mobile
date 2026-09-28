@@ -58,6 +58,10 @@ dependencies:
   upgrader: ^13.7.0
   video_player: ^2.14.0
   visibility_detector: ^0.4.0+2
+  # Mode hors ligne du vendeur : produits saisis sans réseau, envoyés au retour
+  # de la connexion, et données du chemin tableau de bord → ajout de produit.
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
