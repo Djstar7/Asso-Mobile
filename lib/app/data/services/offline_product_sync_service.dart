@@ -19,8 +19,11 @@ import 'connectivity_service.dart';
 /// Produits créés hors ligne : mise en file, puis envoi au serveur dès que la
 /// connexion revient.
 ///
-/// Les envois partent un par un, dans l'ordre de saisie. Selon la réponse :
-/// - créé → retiré de la file, photos locales supprimées ;
+/// Les envois partent un par un, dans l'ordre de saisie, chacun avec sa
+/// référence (`client_reference`) : un renvoi ne crée jamais de doublon.
+/// Selon la réponse :
+/// - créé (ou déjà créé lors d'un envoi précédent) → retiré de la file,
+///   photos locales supprimées ;
 /// - réseau absent ou serveur en panne (5xx) → reste en attente, nouvel
 ///   essai au prochain retour de connexion ;
 /// - refusé (422, forfait absent, espace insuffisant…) → marqué en échec
@@ -216,7 +219,13 @@ class OfflineProductSyncService extends GetxService {
 
     final response = await ApiProvider.multipart(
       '/v1/products',
-      fields: item.fields,
+      fields: {
+        ...item.fields,
+        // Même référence à chaque renvoi : si une réponse s'est perdue alors
+        // que le produit était créé, le serveur le rend au lieu d'en créer
+        // un second.
+        'client_reference': item.id,
+      },
       mediaFiles: files,
     );
 
