@@ -132,6 +132,9 @@ class OrderManagementController extends GetxController {
                   '0',
             ) ??
             0,
+        freeDeliveryAmount: order['free_delivery'] == true
+            ? double.tryParse(order['free_delivery_amount']?.toString() ?? '') ?? 0
+            : 0,
         deliveryCompanyName: order['delivery_company']?['name']?.toString() ??
             delivery?.companyName,
         // Transporteur : « preparing » ne signifie pas qu'un livreur est assigné.
@@ -1027,6 +1030,7 @@ class OrderManagementController extends GetxController {
                 OrderDeliveryDetails(
                   delivery: order.delivery!,
                   formatPrice: (v) => formatPrice(v),
+                  freeDeliveryAmount: order.freeDeliveryAmount,
                 ),
                 if (order.canHandToCarrier || order.canAddTrackingStep)
                   Padding(
@@ -1075,6 +1079,11 @@ class OrderManagementController extends GetxController {
                 Icons.payments_outlined,
                 'Pour vous : ${formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount)}',
               ),
+              if (order.freeDeliveryAmount > 0)
+                line(
+                  Icons.local_shipping_outlined,
+                  'Livraison offerte au client : − ${formatPrice(order.freeDeliveryAmount)} (déjà déduite)',
+                ),
               line(
                 Icons.receipt_long_outlined,
                 'Total payé par le client : ${formatPrice(order.totalAmount)}',

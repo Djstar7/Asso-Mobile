@@ -48,6 +48,7 @@ class CustomerOrderDeliverySection extends StatelessWidget {
                 OrderDeliveryDetails(
                   delivery: delivery,
                   deliveryFee: order.deliveryFee,
+                  freeDeliveryAmount: order.freeDeliveryAmount,
                   formatPrice: (v) => controller.formatPrice(v),
                 ),
               ],

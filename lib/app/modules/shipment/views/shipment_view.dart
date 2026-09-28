@@ -7,6 +7,7 @@ import '../../myOrder/controllers/my_order_controller.dart';
 import '../../myOrder/models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../myOrder/views/order_delivery_section.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
@@ -219,7 +220,13 @@ class ShipmentView extends GetView<MyOrderController> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Livraison', style: context.caption),
-                    Text(controller.formatPrice(order.deliveryFee), style: context.caption),
+                    order.freeDeliveryAmount > 0
+                        ? DeliveryPriceText(
+                            price: controller.formatPrice(order.freeDeliveryAmount),
+                            isFree: true,
+                            style: context.caption,
+                          )
+                        : Text(controller.formatPrice(order.deliveryFee), style: context.caption),
                   ],
                 ),
                 if (order.deliveryCompanyName != null) ...[

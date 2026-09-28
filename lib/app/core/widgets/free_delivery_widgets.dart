@@ -31,6 +31,54 @@ class FreeDeliveryBadge extends StatelessWidget {
   }
 }
 
+/// Bandeau d'une commande dont la course a été offerte par le vendeur.
+class FreeDeliveryNotice extends StatelessWidget {
+  const FreeDeliveryNotice({super.key, required this.price, this.message});
+
+  final String price;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesign.space3),
+      decoration: BoxDecoration(
+        color: AppDesign.successSubtle,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.local_shipping_rounded,
+            size: 18,
+            color: AppDesign.success,
+          ),
+          const SizedBox(width: AppDesign.space2),
+          Expanded(
+            child: Text(
+              message ?? 'Livraison offerte par le vendeur',
+              style: context.textStyle(
+                FontSizeType.body2,
+                fontWeight: FontWeight.w600,
+                color: AppDesign.successText,
+              ),
+            ),
+          ),
+          DeliveryPriceText(
+            price: price,
+            isFree: true,
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Prix d'une course. Offerte, il reste affiché mais barré, suivi de
 /// « Offerte ».
 class DeliveryPriceText extends StatelessWidget {

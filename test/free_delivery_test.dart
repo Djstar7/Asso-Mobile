@@ -1,5 +1,6 @@
 import 'package:asso/app/core/widgets/free_delivery_widgets.dart';
 import 'package:asso/app/data/models/delivery_info.dart';
+import 'package:asso/app/modules/myOrder/models/customer_order_models.dart';
 import 'package:asso/app/modules/product/controllers/product_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,5 +62,28 @@ void main() {
     expect(readFreeDelivery('true'), isTrue);
     expect(readFreeDelivery(null), isFalse);
     expect(readFreeDelivery(0), isFalse);
+  });
+
+  test('le suivi de commande lit la course offerte', () {
+    final offered = CustomerOrder.fromMap({
+      'id': 7,
+      'status': 'pending',
+      'subtotal': 21000,
+      'delivery_fee': 0,
+      'free_delivery': true,
+      'free_delivery_amount': 500,
+      'total': 21000,
+    });
+    expect(offered.freeDeliveryAmount, 500);
+    expect(offered.deliveryFee, 0);
+
+    final paid = CustomerOrder.fromMap({
+      'id': 8,
+      'status': 'pending',
+      'delivery_fee': 500,
+      'free_delivery': false,
+      'free_delivery_amount': 0,
+    });
+    expect(paid.freeDeliveryAmount, 0);
   });
 }
