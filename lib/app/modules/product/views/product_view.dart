@@ -26,7 +26,7 @@ import '../../../core/widgets/scoped_controller_page.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/quantity_stepper.dart';
-import '../../../core/widgets/variant_quantity_list.dart';
+import '../../../core/widgets/variant_combo_picker.dart';
 import '../../../core/utils/app_navigation.dart';
 
 /// Fiche produit telle que la route l'ouvre : chaque fiche empilée
@@ -2331,7 +2331,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Plusieurs couleurs ou tailles ? Indiquez une quantité pour chacune.',
+            'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante : plusieurs couleurs et tailles dans la même commande.',
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -2339,7 +2339,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 12),
           Obx(
-            () => VariantQuantityList(
+            () => VariantComboPicker(
               catalog: catalog,
               quantities: Map<int, int>.from(controller.variantQuantities),
               onChanged: controller.setVariantQuantities,
