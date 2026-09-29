@@ -39,6 +39,19 @@ class PriceTier {
     weightKg: (j['weight_kg'] as num?)?.toDouble(),
     formattedPrice: j['formatted_price']?.toString() ?? '',
   );
+
+  /// Palier applicable à [quantity] : le plus haut dont le seuil est atteint ;
+  /// sous le premier seuil, le premier palier (même règle que le serveur).
+  static PriceTier? forQuantity(List<PriceTier> tiers, int quantity) {
+    if (tiers.isEmpty) return null;
+    final sorted = [...tiers]
+      ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
+    PriceTier result = sorted.first;
+    for (final tier in sorted) {
+      if (tier.minQuantity <= quantity) result = tier;
+    }
+    return result;
+  }
 }
 
 class ShippingOption {
@@ -175,6 +188,10 @@ class WholesaleProduct {
   /// Douala est offerte, l'expédition jusqu'à Douala reste due.
   final bool freeDelivery;
 
+  /// Les options (couleurs, tailles) se cumulent-elles pour atteindre un
+  /// palier ? Sinon chaque option atteint son palier seule.
+  final bool tierMixVariants;
+
   const WholesaleProduct({
     required this.id,
     required this.name,
@@ -192,6 +209,7 @@ class WholesaleProduct {
     this.images = const [],
     this.video,
     this.freeDelivery = false,
+    this.tierMixVariants = true,
   });
 
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
@@ -228,7 +246,15 @@ class WholesaleProduct {
         const [],
     video: WholesaleVideo.fromJson(j['video']),
     freeDelivery: j['free_delivery'] == true,
+    tierMixVariants: j['tier_mix_variants'] != false,
   );
+
+  /// Paliers du plus petit seuil au plus grand.
+  List<PriceTier> get sortedTiers =>
+      [...priceTiers]..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
+
+  /// Premier palier : son seuil est le minimum de commande.
+  PriceTier? get firstTier => sortedTiers.isEmpty ? null : sortedTiers.first;
 
   /// Prix d'entrée = plus petit prix parmi les paliers (pour l'affichage « à partir de »).
   PriceTier? get entryTier {

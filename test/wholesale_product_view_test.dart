@@ -96,18 +96,20 @@ void main() {
     expect(find.textContaining('Minimum 50 pour'), findsNothing);
   });
 
-  testWidgets('signale une quantité sous le minimum', (tester) async {
+  testWidgets('accepte une quantité sous le premier palier, à son prix', (
+    tester,
+  ) async {
     await openPage(tester);
 
     await tester.enterText(quantityField(), '12');
     await tester.pump();
 
-    expect(find.textContaining('Minimum 50 pour'), findsOneWidget);
+    // Pas de minimum : 12 × 1 000 + 20 000.
+    expect(find.textContaining('32'), findsWidgets);
+    expect(find.textContaining('Total : 12'), findsOneWidget);
   });
 
-  testWidgets('les boutons ajustent la quantité sans passer sous le minimum', (
-    tester,
-  ) async {
+  testWidgets('les boutons ajustent la quantité', (tester) async {
     await openPage(tester);
 
     await tester.tap(find.byTooltip('Augmenter'));
@@ -118,7 +120,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byTooltip('Diminuer'));
     await tester.pump();
-    expect(tester.widget<TextField>(quantityField()).controller!.text, '50');
+    expect(tester.widget<TextField>(quantityField()).controller!.text, '49');
   });
 
   testWidgets('garde le total et « Commander » au-dessus du clavier', (
@@ -134,6 +136,87 @@ void main() {
       lessThanOrEqualTo(keyboardTop),
     );
     expect(tester.takeException(), isNull);
+  });
+
+  group('paliers', () {
+    // 50 à 1 000 FCFA, 100 à 750 FCFA.
+    WholesaleProduct tiered() => const WholesaleProduct(
+      id: 8,
+      name: 'Gobelets',
+      currency: 'XAF',
+      priceTiers: [
+        PriceTier(
+          id: 2,
+          label: 'Pack de 100',
+          unitPrice: 750,
+          unitPriceXaf: 750,
+          currency: 'XAF',
+          minQuantity: 100,
+          formattedPrice: '750 FCFA',
+        ),
+        PriceTier(
+          id: 1,
+          label: 'Pack de 50',
+          unitPrice: 1000,
+          unitPriceXaf: 1000,
+          currency: 'XAF',
+          minQuantity: 50,
+          formattedPrice: '1 000 FCFA',
+        ),
+      ],
+    );
+
+    Future<void> openTiered(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: WholesaleProductView(
+            product: tiered(),
+            shippingOptions: _shipping,
+            countryFlag: '🇨🇳',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('part du premier palier', (tester) async {
+      await openTiered(tester);
+      expect(tester.widget<TextField>(quantityField()).controller!.text, '50');
+      // 50 × 1 000 + 20 000.
+      expect(find.textContaining('70'), findsWidgets);
+    });
+
+    testWidgets('toucher un palier y amène la quantité et le prix', (
+      tester,
+    ) async {
+      await openTiered(tester);
+
+      await tester.tap(find.text('Pack de 100'));
+      await tester.pump();
+
+      expect(tester.widget<TextField>(quantityField()).controller!.text, '100');
+      // 100 × 750 + 20 000.
+      expect(find.textContaining('95'), findsWidgets);
+    });
+
+    testWidgets('le prix suit la quantité saisie', (tester) async {
+      await openTiered(tester);
+
+      // Entre deux paliers : prix du palier atteint.
+      await tester.enterText(quantityField(), '80');
+      await tester.pump();
+      expect(find.textContaining('encore 20'), findsOneWidget);
+      // 80 × 1 000 + 20 000.
+      expect(find.textContaining('100'), findsWidgets);
+
+      await tester.enterText(quantityField(), '120');
+      await tester.pump();
+      // 120 × 750 + 20 000.
+      expect(find.textContaining('110'), findsWidgets);
+    });
   });
 
   testWidgets('porte un bouton retour', (tester) async {

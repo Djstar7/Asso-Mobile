@@ -10,6 +10,7 @@ import '../../../data/providers/shop_service.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
+import '../../../data/models/category_catalog.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../data/providers/offline_store.dart';
 import '../../../data/services/connectivity_service.dart';
@@ -240,8 +241,7 @@ class AddProductController extends GetxController {
 
   // ───────────── Mode hors ligne ─────────────
 
-  static const _categoriesKey = 'product_categories';
-  static const _shopFreeDeliveryKey = 'shop_free_delivery';
+    static const _shopFreeDeliveryKey = 'shop_free_delivery';
 
   /// Joignabilité du serveur (badge, envoi différé).
   bool get isOffline => ConnectivityService.isOffline;
@@ -254,7 +254,7 @@ class AddProductController extends GetxController {
       final categories = await ProductService.getCategories();
       final list = categories.data?['categories'];
       if (categories.success && list is List && list.isNotEmpty) {
-        await OfflineStore.saveSnapshot(_categoriesKey, list);
+        await OfflineStore.saveSnapshot(CategoryCatalog.snapshotKey, list);
       }
       final shop = await ShopService.getShop();
       final shopData = shop.data?['shop'];
@@ -343,9 +343,7 @@ class AddProductController extends GetxController {
             selectedSubcategoryId.value!.isNotEmpty &&
             descriptionController.text.trim().isNotEmpty;
       case 2:
-        final price = double.tryParse(
-          priceController.text.trim().replaceAll(',', '.'),
-        );
+        final price = parsePrice(priceController.text);
         return price != null && price > 0;
       case 3:
         // Les déclinaisons sont facultatives.
@@ -447,6 +445,8 @@ class AddProductController extends GetxController {
       selectedSubcategoryId.value = subcategoryId;
       selectedSubcategory.value = draft.fields['subcategory'];
     }
+    // Un brouillon peut dater d'une autre liste de catégories.
+    if (_catalog != null) _reconcileSelectedCategory();
 
     productImages.assignAll(
       draft.existingImagePaths.map((path) => XFile(path)),
@@ -473,39 +473,8 @@ class AddProductController extends GetxController {
 
   final ImagePicker _picker = ImagePicker();
 
-  // Fake data pour les catégories/sous-catégories
-  final Map<String, List<Map<String, String>>> categoriesData = {
-    'Électronique': [
-      {'id': '1', 'name': 'Smartphones'},
-      {'id': '2', 'name': 'Ordinateurs portables'},
-      {'id': '3', 'name': 'Tablettes'},
-      {'id': '4', 'name': 'Accessoires électroniques'},
-    ],
-    'Mode & Vêtements': [
-      {'id': '5', 'name': 'Vêtements homme'},
-      {'id': '6', 'name': 'Vêtements femme'},
-      {'id': '7', 'name': 'Chaussures'},
-      {'id': '8', 'name': 'Accessoires de mode'},
-    ],
-    'Alimentation': [
-      {'id': '9', 'name': 'Fruits et légumes'},
-      {'id': '10', 'name': 'Viandes et poissons'},
-      {'id': '11', 'name': 'Produits laitiers'},
-      {'id': '12', 'name': 'Épicerie'},
-    ],
-    'Maison & Jardin': [
-      {'id': '13', 'name': 'Meubles'},
-      {'id': '14', 'name': 'Décoration'},
-      {'id': '15', 'name': 'Électroménager'},
-      {'id': '16', 'name': 'Jardinage'},
-    ],
-    'Beauté & Santé': [
-      {'id': '17', 'name': 'Soins du visage'},
-      {'id': '18', 'name': 'Maquillage'},
-      {'id': '19', 'name': 'Parfums'},
-      {'id': '20', 'name': 'Produits de santé'},
-    ],
-  };
+  /// Catégories du serveur par nom, avec leurs sous-catégories.
+  final Map<String, List<Map<String, String>>> categoriesData = {};
 
   /// Nombre total d'images (existantes + nouvelles)
   int get totalImagesCount => existingImages.length + productImages.length;
@@ -586,10 +555,9 @@ class AddProductController extends GetxController {
       print('📝 ADD_PRODUCT: Create mode - starting fresh');
     }
 
-    // Construire les sous-catégories hardcodées d'abord
-    _buildAllSubcategoriesFromHardcoded();
-    // Puis charger depuis l'API
+    // Catégories du serveur (ou leur copie locale hors ligne).
     _initializeData();
+    _refreshCategoriesWhenOnline();
     // Charger les devises disponibles pour le sélecteur de prix
     _loadCurrencies();
 
@@ -662,6 +630,7 @@ class AddProductController extends GetxController {
   @override
   void onClose() {
     _previewDebounce?.cancel();
+    _onlineWorker?.dispose();
     // Les images sont des XFile (mémoire/cache géré par la plateforme) :
     // aucun nettoyage manuel de fichiers n'est nécessaire (et impossible sur le web).
     nameController.dispose();
@@ -672,57 +641,44 @@ class AddProductController extends GetxController {
     super.onClose();
   }
 
-  /// Charge les catégories depuis l'API
+  /// Catégories telles que la base du serveur les connaît (réponse du
+  /// serveur ou sa dernière copie locale). Vide tant qu'aucune n'a été lue.
+  CategoryCatalog? _catalog;
+
+  /// Les catégories affichées viennent d'une réponse fraîche du serveur.
+  bool _categoriesFromServer = false;
+
+  /// Faux quand aucune liste du serveur n'est disponible (hors ligne sans
+  /// passage préalable en ligne) : le choix de catégorie est alors bloqué
+  /// plutôt que de proposer des identifiants inconnus de la base.
+  final categoriesAvailable = false.obs;
+
+  /// Charge les catégories depuis l'API, sinon depuis la dernière réponse
+  /// gardée en local. Jamais depuis une liste inventée : ses identifiants
+  /// n'existeraient pas en base.
   Future<void> _loadCategories() async {
-    if (isOffline) {
-      if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
-      return;
-    }
-    try {
-      print('📂 ADD_PRODUCT: Chargement des catégories depuis l\'API...');
-      final response = await ProductService.getCategories();
-
-      print('📂 ADD_PRODUCT: Réponse API - success: ${response.success}');
-      print('📂 ADD_PRODUCT: Réponse API - data: ${response.data}');
-
-      if (response.success && response.data != null) {
-        // La réponse de l'API est: { success: true, categories: [...] }
-        final categoriesFromApi = response.data!['categories'];
-
-        print(
-          '📂 ADD_PRODUCT: Type de categories: ${categoriesFromApi.runtimeType}',
-        );
-        print(
-          '📂 ADD_PRODUCT: Nombre de catégories: ${categoriesFromApi is List ? categoriesFromApi.length : 'N/A'}',
-        );
-
-        if (categoriesFromApi is List && categoriesFromApi.isNotEmpty) {
-          OfflineStore.saveSnapshot(_categoriesKey, categoriesFromApi);
-          _applyCategories(categoriesFromApi);
-        } else {
-          print(
-            '⚠️ ADD_PRODUCT: Format de données inattendu ou liste vide, utilisation des données hardcodées',
-          );
-          if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
+    if (!isOffline) {
+      try {
+        final response = await ProductService.getCategories();
+        final list = response.data?['categories'];
+        if (response.success && list is List && list.isNotEmpty) {
+          OfflineStore.saveSnapshot(CategoryCatalog.snapshotKey, list);
+          _applyCategories(list);
+          _categoriesFromServer = true;
+          return;
         }
-      } else {
-        print(
-          '❌ ADD_PRODUCT: Échec de la réponse API - Message: ${response.message}',
-        );
-        if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
+        print('⚠️ ADD_PRODUCT: Catégories indisponibles: ${response.message}');
+      } catch (e) {
+        print('❌ ADD_PRODUCT: Erreur lors du chargement des catégories: $e');
       }
-    } catch (e, stackTrace) {
-      print('❌ ADD_PRODUCT: Erreur lors du chargement des catégories: $e');
-      print('❌ ADD_PRODUCT: Stack trace: $stackTrace');
-      // Dernière liste connue, sinon les catégories codées en dur.
-      if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
     }
+    _applyCachedCategories();
   }
 
   /// Catégories de la dernière réponse du serveur gardée en local. Faux
   /// s'il n'y en a pas.
   bool _applyCachedCategories() {
-    final cached = OfflineStore.readSnapshot(_categoriesKey);
+    final cached = OfflineStore.readSnapshot(CategoryCatalog.snapshotKey);
     if (cached is! List || cached.isEmpty) return false;
     try {
       _applyCategories(cached);
@@ -734,69 +690,121 @@ class AddProductController extends GetxController {
 
   /// Range les catégories du serveur (liste avec sous-catégories).
   void _applyCategories(List categoriesFromApi) {
-    // Restructure categories from API format
+    final catalog = CategoryCatalog.fromApi(categoriesFromApi);
+    if (catalog.isEmpty) return;
+
     final Map<String, List<Map<String, String>>> categories = {};
     final List<Map<String, String>> allSubs = [];
 
-    for (var cat in categoriesFromApi) {
-      final catMap = Map<String, dynamic>.from(cat as Map);
-      final catName = catMap['name'] ?? 'Autre';
-      final catId = catMap['id']?.toString() ?? '';
-
-      print(
-        '📂 ADD_PRODUCT: Traitement catégorie: $catName (ID: $catId)',
-      );
-
-      if (!categories.containsKey(catName)) {
-        categories[catName] = [];
-      }
-
-      // Add subcategories if they exist
-      if (catMap['subcategories'] is List) {
-        final subcats = catMap['subcategories'] as List;
-        print('   └─ Nombre de sous-catégories: ${subcats.length}');
-
-        for (var subcat in subcats) {
-          final subMap = Map<String, dynamic>.from(subcat as Map);
-          final subcatData = <String, String>{
-            'id': subMap['id']?.toString() ?? '',
-            'name': subMap['name'] ?? 'Sous-catégorie',
-            'category_name': catName,
-            'category_id': catId,
-          };
-
-          print(
-            '   └─ Sous-catégorie: ${subcatData['name']} (ID: ${subcatData['id']})',
-          );
-
-          categories[catName]!.add(subcatData);
-          allSubs.add(subcatData);
-        }
-      } else {
-        print(
-          '   └─ Aucune sous-catégorie, ajout de la catégorie comme sous-catégorie',
-        );
-        // If no subcategories, add the category itself as a subcategory
-        final subcatData = <String, String>{
+    for (final category in catalog.categories) {
+      final entries = categories.putIfAbsent(category.name, () => []);
+      final catId = '${category.id}';
+      if (category.subcategories.isEmpty) {
+        // Sans sous-catégorie, la catégorie se choisit elle-même ; elle ne
+        // doit pas partir comme subcategory_id.
+        final entry = <String, String>{
           'id': catId,
-          'name': catName,
-          'category_name': catName,
+          'name': category.name,
+          'category_name': category.name,
+          'category_id': catId,
+          'category_only': '1',
+        };
+        entries.add(entry);
+        allSubs.add(entry);
+        continue;
+      }
+      for (final sub in category.subcategories) {
+        final entry = <String, String>{
+          'id': '${sub.id}',
+          'name': sub.name,
+          'category_name': category.name,
           'category_id': catId,
         };
-        categories[catName]!.add(subcatData);
-        allSubs.add(subcatData);
+        entries.add(entry);
+        allSubs.add(entry);
       }
     }
 
-    categoriesData.clear();
-    categoriesData.addAll(categories);
+    _catalog = catalog;
+    categoriesData
+      ..clear()
+      ..addAll(categories);
     allSubcategories.value = allSubs;
+    categoriesAvailable.value = true;
+    _reconcileSelectedCategory();
 
     print(
-      '✅ ADD_PRODUCT: ${categories.length} catégories chargées depuis l\'API',
+      '✅ ADD_PRODUCT: ${categories.length} catégories, ${allSubs.length} sous-catégories',
     );
-    print('✅ ADD_PRODUCT: ${allSubs.length} sous-catégories au total');
   }
+
+  /// Entrée de la liste affichée pour la sélection courante, si elle y est.
+  Map<String, String>? get _selectedEntry {
+    final id = selectedSubcategoryId.value;
+    if (id == null || id.isEmpty) return null;
+    final category = selectedCategory.value;
+    return allSubcategories.firstWhereOrNull(
+          (entry) => entry['id'] == id && entry['category_name'] == category,
+        ) ??
+        allSubcategories.firstWhereOrNull((entry) => entry['id'] == id);
+  }
+
+  /// Aligne la sélection (brouillon, saisie faite avant la réponse du
+  /// serveur…) sur les catégories réelles : retrouvée par son nom, sinon
+  /// effacée pour que le vendeur la choisisse à nouveau.
+  void _reconcileSelectedCategory() {
+    final id = selectedSubcategoryId.value;
+    final category = selectedCategory.value;
+    if ((id == null || id.isEmpty) && (category == null || category.isEmpty)) {
+      return;
+    }
+    final entry = _resolveSelectedEntry();
+    if (entry != null) {
+      selectedSubcategoryId.value = entry['id'];
+      selectedSubcategory.value = entry['name'];
+      selectedCategory.value = entry['category_name'];
+      return;
+    }
+    // Une catégorie connue reste choisie, seule la sous-catégorie est à refaire.
+    selectedSubcategoryId.value = null;
+    selectedSubcategory.value = null;
+    if (category != null && !categoriesData.containsKey(category)) {
+      selectedCategory.value = null;
+    }
+  }
+
+  /// Entrée de la liste qui correspond vraiment à la sélection, d'après
+  /// le catalogue du serveur.
+  Map<String, String>? _resolveSelectedEntry() {
+    final catalog = _catalog;
+    if (catalog == null) return null;
+    final isCategoryOnly = _selectedEntry?['category_only'] == '1';
+    final resolved = catalog.resolve(
+      categoryName: selectedCategory.value,
+      subcategoryId: isCategoryOnly ? null : selectedSubcategoryId.value,
+      subcategoryName: isCategoryOnly ? null : selectedSubcategory.value,
+      categoryId: isCategoryOnly ? selectedSubcategoryId.value : null,
+    );
+    if (resolved == null) return null;
+    final subId = resolved.subcategoryId;
+    return allSubcategories.firstWhereOrNull(
+      (entry) => subId != null
+          ? entry['id'] == subId && entry['category_only'] != '1'
+          : entry['id'] == resolved.categoryId &&
+              entry['category_only'] == '1',
+    );
+  }
+
+  /// Recharge les catégories au retour du réseau si le formulaire s'était
+  /// ouvert sans la liste fraîche du serveur.
+  void _refreshCategoriesWhenOnline() {
+    if (!Get.isRegistered<ConnectivityService>()) return;
+    _onlineWorker = ever<bool>(ConnectivityService.to.isOnline, (online) {
+      if (online && !_categoriesFromServer) _loadCategories();
+    });
+  }
+
+  Worker? _onlineWorker;
 
   Future<XFile?> _downloadImage(String url) async {
     try {
@@ -824,24 +832,6 @@ class AddProductController extends GetxController {
       print('❌ ADD_PRODUCT: Error downloading image: $e — URL: $url');
     }
     return null;
-  }
-
-  /// Construit la liste de toutes les sous-catégories depuis les données hardcodées
-  void _buildAllSubcategoriesFromHardcoded() {
-    final List<Map<String, String>> allSubs = [];
-
-    categoriesData.forEach((categoryName, subcategories) {
-      for (var subcat in subcategories) {
-        allSubs.add(<String, String>{
-          'id': subcat['id'] ?? '',
-          'name': subcat['name'] ?? '',
-          'category_name': categoryName,
-          'category_id': categoryName,
-        });
-      }
-    });
-
-    allSubcategories.value = allSubs;
   }
 
   /// Charge les espaces de stockage depuis l'API
@@ -950,6 +940,11 @@ class AddProductController extends GetxController {
 
       if (category != null) {
         final catName = category['name'];
+        // Catégorie sans sous-catégorie : elle se choisit elle-même.
+        if (subcategory == null && category['id'] != null) {
+          selectedSubcategoryId.value = category['id'].toString();
+          selectedSubcategory.value = catName?.toString();
+        }
         if (catName != null) {
           selectedCategory.value = catName;
           print('📝 ADD_PRODUCT: Category set: $catName');
@@ -1219,13 +1214,16 @@ class AddProductController extends GetxController {
 
       // Chercher la catégorie correspondante dans allSubcategories
       final matchingSubcat = allSubcategories.firstWhereOrNull(
-        (subcat) => subcat['id'] == (subcategoryId ?? categoryId),
+        (subcat) => subcategoryId != null
+            ? subcat['id'] == subcategoryId && subcat['category_only'] != '1'
+            : subcat['category_id'] == categoryId &&
+                subcat['category_only'] == '1',
       );
 
       if (matchingSubcat != null) {
         selectedSubcategoryId.value = matchingSubcat['id'];
         selectedSubcategory.value = matchingSubcat['name'];
-        selectedCategory.value = matchingSubcat['category'];
+        selectedCategory.value = matchingSubcat['category_name'];
         print('   └─ Category/Subcategory applied: ${matchingSubcat['name']}');
       } else {
         print('   └─ Warning: Could not find matching category/subcategory');
@@ -1259,6 +1257,31 @@ class AddProductController extends GetxController {
     return value > 0 ? value : null;
   }
 
+  /// Prix saisi (« 15 000 », « 1500,50 », « 9.99 ») ; null si illisible.
+  ///
+  /// L'étape Prix acceptait la virgule mais l'envoi relisait le texte brut :
+  /// « 1500,50 » partait à 0. Une seule lecture sert désormais aux deux.
+  static double? parsePrice(String raw) {
+    final text = raw.replaceAll(RegExp(r'[\s\u00A0\u202F]'), '').replaceAll(',', '.');
+    if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)) return null;
+    return double.tryParse(text);
+  }
+
+  /// Prix envoyé à l'API : entier tel quel, sinon deux décimales (devises
+  /// à centimes). Arrondir à l'unité faisait passer 9,99 € à 10 €.
+  static String formatPriceForApi(double price) =>
+      price == price.roundToDouble()
+          ? price.toStringAsFixed(0)
+          : price.toStringAsFixed(2);
+
+  /// Référence de la création en cours (voir
+  /// [OfflineProductSyncService.newReference]) : la même à chaque nouvel
+  /// essai, en ligne comme depuis la file hors ligne.
+  String? _clientReference;
+
+  String get _creationReference =>
+      _clientReference ??= OfflineProductSyncService.newReference();
+
   /// Valeur saisie strictement numérique (virgule ou point décimal).
   static final _weightInput = RegExp(r'^\d+([.,]\d{1,3})?$');
 
@@ -1278,6 +1301,7 @@ class AddProductController extends GetxController {
     if (!_weightInput.hasMatch(text)) return 'Saisissez un nombre, ex. 2,5';
     final value = double.tryParse(text.replaceAll(',', '.')) ?? 0;
     if (value <= 0) return 'Le poids doit être supérieur à 0';
+    if (value > 100000) return 'Le poids ne peut dépasser 100 000 kg';
     return null;
   }
 
@@ -1311,6 +1335,16 @@ class AddProductController extends GetxController {
       return;
     }
 
+    // Mêmes limites que le serveur : hors ligne, un refus n'arriverait qu'à
+    // la synchronisation, une fois le vendeur parti.
+    if (nameController.text.trim().length > 255) {
+      _warnMissingField(
+        'Nom trop long',
+        'Le nom du produit ne peut dépasser 255 caractères.',
+      );
+      return;
+    }
+
     if (productImages.isEmpty) {
       _warnMissingField(
         'Image requise',
@@ -1332,6 +1366,26 @@ class AddProductController extends GetxController {
       _warnMissingField(
         'Prix requis',
         'Veuillez entrer le prix du produit',
+      );
+      return;
+    }
+
+    final parsedPrice = parsePrice(priceController.text);
+    if (parsedPrice == null || parsedPrice <= 0) {
+      _warnMissingField(
+        'Prix invalide',
+        'Saisissez un prix supérieur à zéro, ex. 15000 ou 9,99.',
+      );
+      return;
+    }
+
+    final stockText = stockController.text.trim();
+    if (stockText.isNotEmpty &&
+        !variantEditor.hasVariants &&
+        int.tryParse(stockText) == null) {
+      _warnMissingField(
+        'Stock invalide',
+        'Le stock est un nombre entier, ex. 200.',
       );
       return;
     }
@@ -1416,8 +1470,16 @@ class AddProductController extends GetxController {
         print('   └─ Existing images: ${newImageStartIndex.value}');
         print('   └─ New images to upload: ${imagesToUpload.length}');
       } else {
-        // En mode création, envoyer toutes les images
-        imagesToUpload = productImages;
+        // En mode création, envoyer toutes les images, la principale en
+        // tête : le serveur prend la première comme photo principale.
+        final primary = primaryImageIndex.value;
+        imagesToUpload = primary > 0 && primary < productImages.length
+            ? [
+                productImages[primary],
+                for (var i = 0; i < productImages.length; i++)
+                  if (i != primary) productImages[i],
+              ]
+            : productImages.toList();
         print('📦 ADD_PRODUCT: Mode CREATE - Sending all images');
         print('   └─ Total images to upload: ${imagesToUpload.length}');
       }
@@ -1439,22 +1501,25 @@ class AddProductController extends GetxController {
         filesMap['images[$i]'] = imagesToUpload[i];
       }
 
-      // Récupérer le category_id depuis les données de la sous-catégorie sélectionnée
-      String? categoryId;
-      if (selectedSubcategoryId.value != null) {
-        final selectedSubcat = allSubcategories.firstWhere(
-          (subcat) => subcat['id'] == selectedSubcategoryId.value,
-          orElse: () => <String, String>{},
-        );
-        categoryId = selectedSubcat['category_id'];
+      // Identifiants vérifiés sur les catégories du serveur : ce qui part
+      // (tout de suite ou plus tard depuis la file hors ligne) doit exister
+      // en base.
+      final categoryEntry = _resolveSelectedEntry();
+      if (categoryEntry == null) {
+        _invalidCategory();
+        return;
       }
+      final categoryId = categoryEntry['category_id']!;
+      final subcategoryId = categoryEntry['category_only'] == '1'
+          ? null
+          : categoryEntry['id'];
 
       print('📦 ADD_PRODUCT: category_id = $categoryId');
-      print('📦 ADD_PRODUCT: subcategory_id = ${selectedSubcategoryId.value}');
+      print('📦 ADD_PRODUCT: subcategory_id = $subcategoryId');
 
       // Prix envoyé tel quel dans la devise choisie par le vendeur (plus de conversion
       // XOF côté mobile). Le backend calcule price_xaf (valeur canonique).
-      final price = double.tryParse(priceController.text.trim()) ?? 0;
+      final price = parsedPrice;
 
       print('📦 ADD_PRODUCT: Prix envoyé: $price ${selectedCurrency.value}');
 
@@ -1463,7 +1528,7 @@ class AddProductController extends GetxController {
         'name': nameController.text.trim(),
         'description': descriptionController.text.trim(),
         'type': articleType.value,
-        'price': price.toStringAsFixed(0),
+        'price': formatPriceForApi(price),
         'currency': selectedCurrency.value,
         'condition': 'new', // L'API requiert ce champ
       };
@@ -1484,23 +1549,8 @@ class AddProductController extends GetxController {
         }
       }
 
-      // Ajouter category_id (REQUIS par l'API)
-      if (categoryId != null && categoryId.isNotEmpty) {
-        fieldsMap['category_id'] = categoryId;
-      } else {
-        Get.snackbar(
-          'Erreur',
-          'Une erreur s\'est produite. Veuillez sélectionner à nouveau la catégorie.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
-
-      // Ajouter subcategory_id si disponible
-      if (selectedSubcategoryId.value != null &&
-          selectedSubcategoryId.value!.isNotEmpty) {
-        fieldsMap['subcategory_id'] = selectedSubcategoryId.value!;
-      }
+      fieldsMap['category_id'] = categoryId;
+      if (subcategoryId != null) fieldsMap['subcategory_id'] = subcategoryId;
 
       // Ajouter stock si disponible
       if (stockController.text.trim().isNotEmpty) {
@@ -1534,15 +1584,24 @@ class AddProductController extends GetxController {
       // actif du vendeur, qui est unique. Le bloc « Espace de stockage » du
       // formulaire est purement informatif.
 
-      if (primaryImageIndex.value > 0 &&
-          primaryImageIndex.value < productImages.length) {
-        fieldsMap['primary_image_index'] = primaryImageIndex.value.toString();
+      // Création : même référence pour l'envoi en ligne et, si la connexion
+      // tombe, pour la fiche mise en file. Jamais de doublon.
+      if (!isEditMode.value) {
+        fieldsMap['client_reference'] = _creationReference;
       }
 
       // Hors ligne : la fiche est gardée sur le téléphone et partira seule
       // au retour de la connexion.
       if (!isEditMode.value && isOffline) {
-        await _saveOffline(fieldsMap, imagesToUpload);
+        await _saveOffline(
+          fieldsMap,
+          imagesToUpload,
+          labels: {
+            'category_name': categoryEntry['category_name'] ?? '',
+            if (subcategoryId != null)
+              'subcategory_name': categoryEntry['name'] ?? '',
+          },
+        );
         return;
       }
 
@@ -1577,7 +1636,15 @@ class AddProductController extends GetxController {
           !isEditMode.value &&
           Get.isRegistered<ConnectivityService>() &&
           !await ConnectivityService.to.check()) {
-        await _saveOffline(fieldsMap, imagesToUpload);
+        await _saveOffline(
+          fieldsMap,
+          imagesToUpload,
+          labels: {
+            'category_name': categoryEntry['category_name'] ?? '',
+            if (subcategoryId != null)
+              'subcategory_name': categoryEntry['name'] ?? '',
+          },
+        );
         return;
       }
 
@@ -1739,12 +1806,41 @@ class AddProductController extends GetxController {
     }
   }
 
+  /// Aucune liste du serveur n'a encore été lue sur ce téléphone.
+  void warnCategoriesUnavailable() {
+    if (!isOffline) _loadCategories();
+    _warnMissingField(
+      'Catégories indisponibles',
+      isOffline
+          ? 'Connectez-vous une fois pour récupérer les catégories : elles resteront ensuite disponibles hors ligne.'
+          : 'Chargement des catégories en cours, réessayez dans un instant.',
+    );
+  }
+
+  /// La catégorie choisie n'existe pas dans la base : le vendeur la choisit
+  /// à nouveau dans la liste du serveur.
+  void _invalidCategory() {
+    selectedSubcategoryId.value = null;
+    selectedSubcategory.value = null;
+    if (!categoriesData.containsKey(selectedCategory.value)) {
+      selectedCategory.value = null;
+    }
+    currentStep.value = 1;
+    _warnMissingField(
+      'Catégorie à revoir',
+      categoriesAvailable.value
+          ? 'Cette catégorie n\'existe plus. Choisissez-en une dans la liste.'
+          : 'Les catégories n\'ont pas encore été chargées. Connectez-vous une fois pour les récupérer, puis choisissez la catégorie.',
+    );
+  }
+
   /// Met la fiche en file d'envoi (Hive) et ramène le vendeur au tableau
   /// de bord.
   Future<void> _saveOffline(
     Map<String, String> fields,
-    List<XFile> images,
-  ) async {
+    List<XFile> images, {
+    Map<String, String> labels = const {},
+  }) async {
     if (!Get.isRegistered<OfflineProductSyncService>()) {
       _warnMissingField(
         'Hors ligne',
@@ -1756,6 +1852,8 @@ class AddProductController extends GetxController {
       await OfflineProductSyncService.to.enqueue(
         fields: fields,
         images: images,
+        labels: labels,
+        reference: fields['client_reference'],
       );
     } catch (e) {
       _warnMissingField(

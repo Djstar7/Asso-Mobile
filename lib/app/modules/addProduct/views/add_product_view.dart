@@ -1547,6 +1547,10 @@ class AddProductView extends GetView<AddProductController> {
 
   /// Bottom sheet pour sélectionner la catégorie
   void _showCategoryBottomSheet(BuildContext context) {
+    if (!controller.categoriesAvailable.value) {
+      controller.warnCategoriesUnavailable();
+      return;
+    }
     final searchController = TextEditingController();
     final categories = controller.categoriesData.keys.toList();
     final filteredCategories = categories.obs;
@@ -1721,6 +1725,10 @@ class AddProductView extends GetView<AddProductController> {
 
   /// Bottom sheet pour sélectionner la sous-catégorie
   void _showSubcategoryBottomSheet(BuildContext context) {
+    if (!controller.categoriesAvailable.value) {
+      controller.warnCategoriesUnavailable();
+      return;
+    }
     final searchController = TextEditingController();
     final category = controller.selectedCategory.value;
 
@@ -1941,7 +1949,12 @@ class AddProductView extends GetView<AddProductController> {
               child: Obx(
                 () => TextField(
                   controller: controller.priceController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9 .,]')),
+                  ],
                   decoration: InputDecoration(
                     hintText: 'Entrez le prix',
                     filled: true,
@@ -2553,6 +2566,7 @@ class AddProductView extends GetView<AddProductController> {
             controller: controller.stockController,
             readOnly: fromVariants,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               helperText: fromVariants
                   ? 'Calculée automatiquement à partir des couleurs / tailles'

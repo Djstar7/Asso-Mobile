@@ -10,9 +10,11 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/utils/app_design.dart';
+import '../models/category_catalog.dart';
 import '../models/pending_product.dart';
 import '../providers/api_provider.dart';
 import '../providers/offline_store.dart';
+import '../providers/product_service.dart';
 import '../providers/storage_service.dart';
 import 'connectivity_service.dart';
 
@@ -21,6 +23,10 @@ import 'connectivity_service.dart';
 ///
 /// Les envois partent un par un, dans l'ordre de saisie, chacun avec sa
 /// référence (`client_reference`) : un renvoi ne crée jamais de doublon.
+/// Avant l'envoi, la catégorie de chaque fiche est vérifiée sur la liste
+/// fraîche du serveur (voir [CategoryCatalog]) : seuls des identifiants qui
+/// existent en base partent.
+///
 /// Selon la réponse :
 /// - créé (ou déjà créé lors d'un envoi précédent) → retiré de la file,
 ///   photos locales supprimées ;
@@ -84,8 +90,18 @@ class OfflineProductSyncService extends GetxService {
 
   // ── Mise en file ──────────────────────────────────────────────────────
 
+  /// Référence unique d'une création de produit (`client_reference`).
+  ///
+  /// Le formulaire la tire avant le premier envoi en ligne et la garde : si
+  /// la connexion tombe après que le serveur a créé le produit, la fiche mise
+  /// en file part avec la même référence et le serveur rend le produit déjà
+  /// créé au lieu d'en publier un second.
+  static String newReference() =>
+      '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+
   /// Enregistre un produit pour envoi ultérieur. [fields] sont les champs du
-  /// multipart de création, [images] les photos dans l'ordre du formulaire.
+  /// multipart de création, [images] les photos dans l'ordre du formulaire,
+  /// [reference] la référence déjà utilisée pour un envoi en ligne.
   ///
   /// Les photos sont copiées dans le dossier de l'application : celles de
   /// l'appareil photo vivent dans un cache que le système peut vider avant
@@ -93,14 +109,17 @@ class OfflineProductSyncService extends GetxService {
   Future<PendingProduct> enqueue({
     required Map<String, String> fields,
     required List<XFile> images,
+    Map<String, String> labels = const {},
+    String? reference,
   }) async {
     final userId = StorageService.getUser()?.id;
     if (userId == null || kIsWeb) {
       throw StateError('Enregistrement hors ligne indisponible');
     }
 
-    final id =
-        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+    final id = (reference != null && reference.isNotEmpty)
+        ? reference
+        : newReference();
     final dir = await _productDir(id);
     await dir.create(recursive: true);
 
@@ -124,6 +143,7 @@ class OfflineProductSyncService extends GetxService {
       createdAt: DateTime.now(),
       fields: Map<String, String>.from(fields),
       imagePaths: paths,
+      labels: Map<String, String>.from(labels),
     );
     await OfflineStore.putPendingProduct(id, item.toJson());
     pending.add(item);
@@ -166,8 +186,12 @@ class OfflineProductSyncService extends GetxService {
     var published = 0;
     var rejected = 0;
     try {
+      final catalog = await _loadCatalog();
+      // Sans la liste du serveur, impossible de garantir les catégories :
+      // on attend le prochain passage.
+      if (catalog == null) return;
       for (final item in queue) {
-        final outcome = await _send(item);
+        final outcome = await _send(item, catalog);
         if (outcome == _Outcome.published) {
           published++;
         } else if (outcome == _Outcome.rejected) {
@@ -201,7 +225,53 @@ class OfflineProductSyncService extends GetxService {
     }
   }
 
-  Future<_Outcome> _send(PendingProduct item) async {
+  /// Catégories actuelles du serveur (gardées aussi pour le formulaire).
+  Future<CategoryCatalog?> _loadCatalog() async {
+    try {
+      final response = await ProductService.getCategories();
+      final list = response.data?['categories'];
+      if (!response.success || list is! List || list.isEmpty) return null;
+      await OfflineStore.saveSnapshot(CategoryCatalog.snapshotKey, list);
+      final catalog = CategoryCatalog.fromApi(list);
+      return catalog.isEmpty ? null : catalog;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Remplace la catégorie de la fiche par les identifiants de la base.
+  /// Faux si elle ne correspond à aucune catégorie existante.
+  Future<bool> _alignCategory(PendingProduct item, CategoryCatalog catalog) async {
+    final fields = item.fields;
+    final categoryName = item.labels['category_name'];
+    final selection = catalog.resolve(
+          categoryId: fields['category_id'],
+          subcategoryId: fields['subcategory_id'],
+          categoryName: categoryName,
+          subcategoryName: item.labels['subcategory_name'],
+        ) ??
+        // Sous-catégorie disparue : la catégorie seule suffit au serveur.
+        catalog.resolve(
+          categoryId: fields['category_id'],
+          categoryName: categoryName,
+        );
+    if (selection == null) return false;
+
+    final before = '${fields['category_id']}|${fields['subcategory_id']}';
+    fields['category_id'] = selection.categoryId;
+    final subcategoryId = selection.subcategoryId;
+    if (subcategoryId != null) {
+      fields['subcategory_id'] = subcategoryId;
+    } else {
+      fields.remove('subcategory_id');
+    }
+    if (before != '${fields['category_id']}|${fields['subcategory_id']}') {
+      await _persist(item);
+    }
+    return true;
+  }
+
+  Future<_Outcome> _send(PendingProduct item, CategoryCatalog catalog) async {
     final files = <String, XFile>{};
     for (var i = 0; i < item.imagePaths.length; i++) {
       final path = item.imagePaths[i];
@@ -210,6 +280,19 @@ class OfflineProductSyncService extends GetxService {
     }
     if (files.isEmpty) {
       return _reject(item, 'Les photos de ce produit sont introuvables sur le téléphone.');
+    }
+
+    if (!await _alignCategory(item, catalog)) {
+      final label = item.labels['subcategory_name'] ??
+          item.labels['category_name'] ??
+          item.fields['category_id'] ??
+          '';
+      return _reject(
+        item,
+        label.isNotEmpty
+            ? 'La catégorie « $label » n\'existe plus. Retirez ce produit et ajoutez-le à nouveau.'
+            : 'La catégorie de ce produit n\'existe plus. Retirez ce produit et ajoutez-le à nouveau.',
+      );
     }
 
     item
