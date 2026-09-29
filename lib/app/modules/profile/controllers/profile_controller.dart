@@ -31,7 +31,7 @@ class ProfileController extends GetxController {
   void _setGuestProfile() {
     profile.value = {
       'name': 'Invité',
-      'avatar': '?',
+      'initials': '?',
       'email': '',
       'phone': '',
       'location': 'Cameroun',
@@ -98,7 +98,7 @@ class ProfileController extends GetxController {
     profile.value = {
       ...data,
       'name': fullName.isEmpty ? 'Utilisateur' : fullName,
-      'avatar': initials,
+      'initials': initials,
       'email': data['email'] ?? '',
       'phone': data['phone'] ?? '',
       'location': data['address'] ?? data['city'] ?? 'Cameroun',

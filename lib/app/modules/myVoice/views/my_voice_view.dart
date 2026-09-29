@@ -6,6 +6,7 @@ import '../controllers/my_voice_controller.dart';
 import '../../../data/models/post.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../core/widgets/app_ui.dart';
 
 /// Limite acceptée par l'API (PostController::MAX_CONTENT_LENGTH).
@@ -88,7 +89,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
       ),
       child: Row(
         children: [
-          _Avatar(name: controller.currentUserInitials, size: 40),
+          const UserAvatar(size: 40),
           SizedBox(width: AppDesign.space3),
           Expanded(
             child: Material(
@@ -396,12 +397,9 @@ class MyVoiceView extends GetView<MyVoiceController> {
             Obx(
               () => Row(
                 children: [
-                  _Avatar(
-                    name: isAnonymous.value
-                        ? '?'
-                        : controller.currentUserInitials,
-                    size: 36,
-                  ),
+                  isAnonymous.value
+                      ? const _Avatar(name: '?', size: 36)
+                      : const UserAvatar(size: 36),
                   SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: Column(

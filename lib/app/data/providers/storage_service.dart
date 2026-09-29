@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../core/values/constants.dart';
 import '../models/user_model.dart';
@@ -65,6 +66,13 @@ class StorageService {
 
   // ==================== User Data Management ====================
 
+  /// Incrémenté à chaque écriture ou effacement de l'utilisateur en cache.
+  ///
+  /// Le cache n'est pas réactif : les écrans qui affichent l'identité
+  /// (photo de profil, nom) l'observent pour se redessiner dès qu'un profil
+  /// est enregistré, où que ce soit dans l'application.
+  static final RxInt userRevision = 0.obs;
+
   /// Save user data to storage
   static void saveUser(UserModel user) {
     developer.log(
@@ -73,6 +81,7 @@ class StorageService {
       error: 'User: ${user.toString()}',
     );
     _storage.write(AppConstants.keyUser, user.toJson());
+    userRevision.value++;
   }
 
   /// Get cached user data
@@ -118,6 +127,7 @@ class StorageService {
   static void clearUser() {
     developer.log('Clearing user data', name: 'StorageService');
     _storage.remove(AppConstants.keyUser);
+    userRevision.value++;
   }
 
   // ==================== Preferences Management ====================
@@ -255,6 +265,7 @@ class StorageService {
       name: 'StorageService',
     );
     _storage.erase();
+    userRevision.value++;
   }
 
   /// Save complete auth session (token + user)

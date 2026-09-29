@@ -23,6 +23,7 @@ import '../../import/views/import_view.dart';
 import '../../search/views/search_view.dart';
 import '../../notification/controllers/notification_controller.dart';
 import '../../../core/widgets/offline_badge.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -406,19 +407,7 @@ class HomeView extends GetView<HomeController> {
 
                     return Row(
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: AppDesign.accentSubtle,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            color: AppDesign.accentText,
-                            size: 24,
-                          ),
-                        ),
+                        const UserAvatar(size: 48),
                         SizedBox(width: AppDesign.space3),
                         Expanded(
                           child: Column(
