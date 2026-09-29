@@ -138,15 +138,20 @@ class PreferencesController extends GetxController {
   // Loading state
   final isLoading = false.obs;
 
+  /// true seulement quand la page est l'étape d'onboarding (splash, OTP) :
+  /// c'est le seul cas où un compte qui a déjà ses préférences est renvoyé
+  /// vers l'accueil. Ouverte depuis le profil, le menu ou ailleurs, la page
+  /// restait ouverte 300 ms puis se refermait d'elle-même.
+  late final bool _isOnboarding;
+
   @override
   void onInit() {
     super.onInit();
+    // Lu une fois ici : après l'appel réseau, Get.arguments peut désigner
+    // une autre route.
+    _isOnboarding = (Get.arguments as Map?)?['onboarding'] == true;
     _loadPreferences();
   }
-
-  // true si l'utilisateur ouvre la page volontairement pour modifier
-  // (depuis le drawer), false si c'est l'étape d'onboarding après inscription.
-  bool get _isEditMode => (Get.arguments as Map?)?['isEditing'] == true;
 
   Future<void> _loadPreferences() async {
     // Mode vitrine (invite): pas de token, on n'appelle pas l'API et on laisse
@@ -177,13 +182,13 @@ class PreferencesController extends GetxController {
           print('✅ Pre-selected ${selectedSubcategories.length} categories');
           print('📋 Selected: ${selectedSubcategories.toList()}');
 
-          // AUTO-NAVIGATE : uniquement en onboarding, jamais en mode édition.
-          if (!_isEditMode && selectedSubcategories.isNotEmpty) {
+          // AUTO-NAVIGATE : uniquement en onboarding, jamais en consultation.
+          if (_isOnboarding && selectedSubcategories.isNotEmpty) {
             print(
               '🏠 AUTO-NAVIGATE: User has existing preferences, navigating to HOME',
             );
             await Future.delayed(const Duration(milliseconds: 300));
-            Get.offAllNamed(Routes.HOME);
+            if (!isClosed) Get.offAllNamed(Routes.HOME);
           }
         }
       } else {
@@ -260,15 +265,28 @@ class PreferencesController extends GetxController {
       duration: const Duration(seconds: 2),
     );
 
-    // Naviguer vers Home
     await Future.delayed(const Duration(milliseconds: 500));
-    Get.offAllNamed(Routes.HOME);
+    _leave();
   }
 
   void skipPreferences() {
     // Passer compte comme une réponse : l'écran ne sera pas reproposé.
     StorageService.setPreferencesPrompted();
-    Get.offAllNamed(Routes.HOME);
+    _leave();
+  }
+
+  /// Ouverte par-dessus un autre écran : on y revient. Racine de
+  /// l'onboarding : on part vers l'accueil.
+  void _leave() {
+    if (isClosed) return;
+    final navigator = Get.key.currentState;
+    // Navigator.pop et non Get.back : Get.back refermerait seulement le
+    // snackbar de confirmation encore affiché.
+    if (!_isOnboarding && navigator != null && navigator.canPop()) {
+      navigator.pop(true);
+    } else {
+      Get.offAllNamed(Routes.HOME);
+    }
   }
 
   /// Reprend la sélection enregistrée sur l'appareil, s'il y en a une.

@@ -218,7 +218,7 @@ class SplashController extends GetxController {
           } else {
             print('➡️ Navigating to PREFERENCES (no preferences set)');
             developer.log('→ Navigating to PREFERENCES (no preferences)', name: 'SplashController');
-            Get.offAllNamed(Routes.PREFERENCES);
+            Get.offAllNamed(Routes.PREFERENCES, arguments: {'onboarding': true});
           }
         } else {
           print('❌ ERROR: Authenticated but user is NULL - clearing auth');
