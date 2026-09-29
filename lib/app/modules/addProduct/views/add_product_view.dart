@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
+import '../../../core/widgets/image_source_sheet.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../controllers/add_product_controller.dart';
 import '../controllers/product_draft_store.dart';
@@ -1413,136 +1415,13 @@ class AddProductView extends GetView<AddProductController> {
   }
 
   /// Bottom sheet pour choisir la source de l'image (caméra ou galerie)
-  void _showImageSourceBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.only(
-            left: context.horizontalPadding,
-            right: context.horizontalPadding,
-            top: context.verticalPadding,
-            bottom: context.bottomSheetPadding,
-          ),
-          decoration: BoxDecoration(
-            color: context.backgroundColor,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(
-                AppThemeSystem.getBorderRadius(context, BorderRadiusType.large),
-              ),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.borderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              SizedBox(height: context.elementSpacing),
-
-              // Titre
-              Text(
-                'Ajouter des images',
-                style: context.h5.copyWith(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: context.sectionSpacing),
-
-              // Option Caméra
-              _buildImageSourceOption(
-                context,
-                icon: Icons.camera_alt,
-                title: 'Appareil photo',
-                subtitle: 'Prendre une photo',
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.takePhoto();
-                },
-              ),
-              SizedBox(height: context.elementSpacing),
-
-              // Option Galerie
-              _buildImageSourceOption(
-                context,
-                icon: Icons.photo_library,
-                title: 'Galerie',
-                subtitle: 'Sélectionner depuis la galerie',
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.pickImages();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Widget pour une option de source d'image
-  Widget _buildImageSourceOption(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: context.borderRadius(BorderRadiusType.medium),
-      child: Container(
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(color: context.borderColor, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(context.elementSpacing),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                borderRadius: context.borderRadius(BorderRadiusType.small),
-              ),
-              child: Icon(icon, color: AppThemeSystem.primaryColor, size: 28),
-            ),
-            SizedBox(width: context.elementSpacing),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: context.subtitle1.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: context.caption.copyWith(
-                      color: context.secondaryTextColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: context.secondaryTextColor,
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _showImageSourceBottomSheet(BuildContext context) async {
+    final source = await showImageSourceSheet(context);
+    if (source == ImageSource.camera) {
+      controller.takePhoto();
+    } else if (source == ImageSource.gallery) {
+      controller.pickImages();
+    }
   }
 
   /// Bottom sheet pour sélectionner la catégorie

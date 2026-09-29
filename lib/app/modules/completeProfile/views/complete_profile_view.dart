@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/user_avatar.dart';
+import '../../../data/providers/storage_service.dart';
 import '../controllers/complete_profile_controller.dart';
 
 class CompleteProfileView extends GetView<CompleteProfileController> {
@@ -57,6 +59,9 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildAvatarPicker(context),
+                  SizedBox(height: context.sectionSpacing),
+
                   // First Name Field
                   _buildTextFieldLabel(context, 'Prénom', true),
                   SizedBox(height: context.elementSpacing),
@@ -192,6 +197,72 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Photo de profil : la pastille montre la photo en place ou celle qui
+  /// vient d'être choisie, et un toucher rouvre le choix de la source.
+  Widget _buildAvatarPicker(BuildContext context) {
+    return Center(
+      child: Obx(() {
+        final picked = controller.avatarImage.value;
+        StorageService.userRevision.value;
+        final hasPhoto =
+            picked != null ||
+            (StorageService.getUser()?.avatar?.trim().isNotEmpty ?? false);
+
+        return Column(
+          children: [
+            Semantics(
+              button: true,
+              label: hasPhoto
+                  ? 'Changer la photo de profil'
+                  : 'Ajouter une photo de profil',
+              child: GestureDetector(
+                onTap: () => controller.pickAvatar(context),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    UserAvatar(size: 96, localImage: picked),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: context.backgroundColor,
+                            width: 3,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.photo_camera_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: context.elementSpacing),
+            TextButton(
+              onPressed: () => controller.pickAvatar(context),
+              child: Text(
+                hasPhoto ? 'Changer la photo' : 'Ajouter une photo',
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w600,
+                  color: AppThemeSystem.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 

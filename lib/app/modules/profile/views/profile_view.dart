@@ -5,6 +5,7 @@ import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/profile_controller.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/user_avatar.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -129,24 +130,7 @@ class ProfileView extends GetView<ProfileController> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: AppDesign.accentSubtle,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    profile['avatar']?.toString() ?? '',
-                    style: context.textStyle(
-                      FontSizeType.h5,
-                      fontWeight: FontWeight.w700,
-                      color: AppDesign.accentText,
-                    ),
-                  ),
-                ),
-              ),
+              const UserAvatar(size: 64),
               Positioned(
                 right: -2,
                 bottom: -2,

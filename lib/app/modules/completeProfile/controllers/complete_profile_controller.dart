@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/widgets/image_source_sheet.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../profile/controllers/profile_controller.dart';
@@ -14,6 +16,15 @@ class CompleteProfileController extends GetxController {
   final Rx<DateTime?> birthDate = Rx<DateTime?>(null);
   final RxString address = ''.obs;
   final RxBool isLoading = false.obs;
+
+  /// Photo de profil choisie, envoyée avec le reste du formulaire.
+  final Rx<XFile?> avatarImage = Rx<XFile?>(null);
+  final ImagePicker _picker = ImagePicker();
+
+  /// Une pastille de profil n'est jamais affichée au-delà de quelques
+  /// centaines de pixels ; 1024 px garde de la marge pour les écrans denses
+  /// et reste sous la limite de 2 Mo du serveur.
+  static const double avatarMaxSide = 1024;
   late final String returnRoute;
 
   @override
@@ -97,7 +108,10 @@ class CompleteProfileController extends GetxController {
         data['address'] = address.value;
       }
 
-      final response = await AuthService.updateProfile(data);
+      final response = await AuthService.updateProfile(
+        data,
+        avatar: avatarImage.value,
+      );
 
       if (response.success) {
         // Le cache est déjà mis à jour dans AuthService.updateProfile
@@ -151,6 +165,35 @@ class CompleteProfileController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Choisit la photo de profil avec la même feuille que les photos produit.
+  Future<void> pickAvatar(BuildContext context) async {
+    final source = await showImageSourceSheet(
+      context,
+      title: 'Photo de profil',
+      gallerySubtitle: 'Choisir une photo existante',
+    );
+    if (source == null) return;
+
+    try {
+      final image = await _picker.pickImage(
+        source: source,
+        maxWidth: avatarMaxSide,
+        maxHeight: avatarMaxSide,
+        imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front,
+      );
+      if (image != null) avatarImage.value = image;
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        source == ImageSource.camera
+            ? 'Impossible de prendre une photo'
+            : 'Impossible de sélectionner l\'image',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

@@ -5,6 +5,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../controllers/settings_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/user_avatar.dart';
 
 class SettingsView extends GetView<SettingsController> {
   const SettingsView({super.key});
@@ -196,19 +197,7 @@ class SettingsView extends GetView<SettingsController> {
               Row(
                 children: [
                   // Avatar
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      color: AppDesign.accentSubtle,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 28,
-                      color: AppDesign.accentText,
-                    ),
-                  ),
+                  const UserAvatar(size: 56),
                   const SizedBox(width: 16),
 
                   // Informations

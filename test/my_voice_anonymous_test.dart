@@ -2,8 +2,10 @@ import 'package:asso/app/data/models/post.dart';
 import 'package:asso/app/modules/myVoice/controllers/my_voice_controller.dart';
 import 'package:asso/app/modules/myVoice/views/my_voice_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Contrôleur figé : la vue est testée seule, sans appel réseau.
@@ -67,6 +69,17 @@ Future<void> pumpFeed(WidgetTester tester, Post post) async {
 }
 
 void main() {
+  // Le composeur affiche la pastille de l'utilisateur en cache.
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (call) async => '.',
+        );
+    await GetStorage.init();
+  });
+
   tearDown(Get.reset);
 
   testWidgets(
