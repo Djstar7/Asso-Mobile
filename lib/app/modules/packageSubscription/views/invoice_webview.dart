@@ -68,7 +68,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
               if (mounted) {
                 setState(() {
                   _isLoading = false;
-                  _error = 'Erreur de chargement: ${error.description}';
+                  _error = 'package_subscription.invoice.load_error'.trParams({'error': error.description});
                 });
               }
             },
@@ -89,7 +89,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Erreur d\'initialisation: $e';
+          _error = 'package_subscription.invoice.init_error'.trParams({'error': '$e'});
         });
       }
     }
@@ -173,21 +173,21 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
         // Share the PDF file
         await Share.shareXFiles(
           [XFile(file.path)],
-          subject: 'Facture ASSO',
-          text: 'Voici votre facture ASSO',
+          subject: 'package_subscription.invoice.share_subject'.tr,
+          text: 'package_subscription.invoice.share_text'.tr,
         );
 
         Get.snackbar(
-          'Succès',
-          'Facture téléchargée avec succès',
+          'wallet.webview.success_title'.tr,
+          'package_subscription.invoice.downloaded'.tr,
           backgroundColor: AppThemeSystem.successColor,
           colorText: Colors.white,
         );
       } else {
         debugPrint('❌ PDF Download Error: ${response.statusCode}');
         Get.snackbar(
-          'Erreur',
-          'Impossible de télécharger la facture (${response.statusCode})',
+          'package_subscription.error'.tr,
+          'package_subscription.invoice.download_failed'.trParams({'code': '${response.statusCode}'}),
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white,
         );
@@ -197,8 +197,8 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
       debugPrint('❌ StackTrace: $stackTrace');
       Get.back(); // Close loading dialog if open
       Get.snackbar(
-        'Erreur',
-        'Erreur lors du téléchargement: $e',
+        'package_subscription.error'.tr,
+        'package_subscription.invoice.download_error'.trParams({'error': '$e'}),
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
@@ -215,7 +215,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
         elevation: 0,
         leading: const AppBackButton(close: true),
         title: Text(
-          'Facture',
+          'package_subscription.invoice.title'.tr,
           style: context.h4.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -255,9 +255,9 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppThemeSystem.primaryColor,
                       ),
-                      child: const Text(
-                        'Réessayer',
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        'wallet.retry'.tr,
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   ],
@@ -280,7 +280,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Chargement de la facture...',
+                      'package_subscription.invoice.loading'.tr,
                       style: context.body2.copyWith(
                         color: context.secondaryTextColor,
                       ),

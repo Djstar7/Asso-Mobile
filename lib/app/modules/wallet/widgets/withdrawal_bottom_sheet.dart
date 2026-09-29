@@ -96,7 +96,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
   bool get isKpay => widget.provider == 'kpay';
 
-  String get title => 'Retrait Mobile Money';
+  String get title => 'wallet.withdrawal.title'.tr;
   String get providerLabel => 'Mobile Money';
 
   double get minAmount => appConfig.minWithdrawalAmount;
@@ -129,8 +129,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                     strokeWidth: 2,
                   ),
                 )
-              : const Text(
-                  'Confirmer le retrait',
+              : Text(
+                  'wallet.withdrawal.confirm'.tr,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -158,7 +158,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    isKpay ? 'Solde $_kpayCurrency' : 'Solde $providerLabel',
+                    'wallet.withdrawal.balance_of'.trParams({'label': isKpay ? _kpayCurrency : providerLabel}),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppThemeSystem.getSecondaryTextColor(context),
@@ -188,9 +188,9 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
               ),
               decoration: InputDecoration(
                 labelText: isKpay
-                    ? 'Montant à retirer (${_currencyLabel(_kpayCurrency)})'
-                    : 'Montant à retirer (FCFA)',
-                hintText: 'Ex: ${minAmount.toStringAsFixed(0)}',
+                    ? 'wallet.withdrawal.amount_label'.trParams({'currency': _currencyLabel(_kpayCurrency)})
+                    : 'wallet.withdrawal.amount_label'.trParams({'currency': 'FCFA'}),
+                hintText: 'wallet.withdrawal.amount_hint'.trParams({'amount': minAmount.toStringAsFixed(0)}),
                 prefixIcon: const Icon(Icons.attach_money),
                 filled: true,
                 fillColor: AppThemeSystem.getSurfaceColor(context),
@@ -216,14 +216,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer un montant';
+                  return 'wallet.recharge.amount_required'.tr;
                 }
                 final amount = double.tryParse(value);
                 if (amount == null || amount < minAmount) {
-                  return 'Le montant minimum est de ${minAmount.toStringAsFixed(0)} FCFA';
+                  return 'wallet.withdrawal.min_amount'.trParams({'amount': minAmount.toStringAsFixed(0)});
                 }
                 if (amount > _availableBalance) {
-                  return 'Solde insuffisant';
+                  return 'wallet.stripe_dialog.insufficient_balance'.tr;
                 }
                 return null;
               },
@@ -266,8 +266,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   dense: true,
                   title: Text(
                     _savedAccount == null
-                        ? 'Mémoriser ce numéro pour mes prochains retraits'
-                        : 'Remplacer mon compte de retrait enregistré',
+                        ? 'wallet.withdrawal.remember_number'.tr
+                        : 'wallet.withdrawal.replace_account'.tr,
                     style: TextStyle(
                       fontSize: 13,
                       color: AppThemeSystem.getPrimaryTextColor(context),
@@ -286,8 +286,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                 color: AppThemeSystem.getPrimaryTextColor(context),
               ),
               decoration: InputDecoration(
-                labelText: 'Notes (optionnel)',
-                hintText: 'Ajouter une note pour ce retrait...',
+                labelText: 'wallet.withdrawal.notes_label'.tr,
+                hintText: 'wallet.withdrawal.notes_hint'.tr,
                 prefixIcon: const Icon(Icons.note_outlined),
                 filled: true,
                 fillColor: AppThemeSystem.getSurfaceColor(context),
@@ -335,7 +335,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Le retrait sera traité dans les 24-48h ouvrables.',
+                      'wallet.withdrawal.processing_delay'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppThemeSystem.getSecondaryTextColor(context),
@@ -355,8 +355,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
     // Validation supplémentaire pour KPay (opérateur + numéro valides)
     if (isKpay && (!_kpayValid || _kpayProvider == null || _kpayPhone == null)) {
       Get.snackbar(
-        'Erreur',
-        'Sélectionnez votre opérateur et saisissez un numéro valide.',
+        'wallet.recharge.error'.tr,
+        'wallet.recharge.fields_required_message'.tr,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: AppThemeSystem.whiteColor,
       );
@@ -404,8 +404,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
         // Afficher un message de succès
         Get.snackbar(
-          'Succès',
-          result['message'] ?? 'Retrait initié avec succès',
+          'wallet.webview.success_title'.tr,
+          result['message'] ?? 'wallet.messages.withdrawal_initiated'.tr,
           backgroundColor: AppThemeSystem.successColor,
           colorText: AppThemeSystem.whiteColor,
           duration: const Duration(seconds: 3),
@@ -418,8 +418,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
         Get.toNamed(Routes.WALLET_HISTORY);
       } else {
         Get.snackbar(
-          'Erreur',
-          result['message'] ?? 'Échec du retrait',
+          'wallet.recharge.error'.tr,
+          result['message'] ?? 'wallet.withdrawal.failed'.tr,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: AppThemeSystem.whiteColor,
         );
@@ -427,8 +427,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
     } catch (e) {
       print('[WithdrawalBottomSheet] Error: $e');
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'wallet.recharge.error'.tr,
+        'wallet.recharge.generic_error'.tr,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: AppThemeSystem.whiteColor,
       );

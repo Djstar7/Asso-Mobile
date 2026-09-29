@@ -14,7 +14,7 @@ class WalletHistoryView extends GetView<WalletController> {
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
       appBar: AppBar(
-        title: const Text('Historique des transactions'),
+        title: Text('wallet.history.title'.tr),
         centerTitle: true,
         elevation: 0,
         backgroundColor: AppThemeSystem.primaryColor,
@@ -45,7 +45,7 @@ class WalletHistoryView extends GetView<WalletController> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Aucune transaction',
+                    'wallet.history.empty_title'.tr,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -54,7 +54,7 @@ class WalletHistoryView extends GetView<WalletController> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Vos transactions apparaîtront ici',
+                    'wallet.history.empty_subtitle'.tr,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppThemeSystem.getSecondaryTextColor(context),
@@ -82,7 +82,7 @@ class WalletHistoryView extends GetView<WalletController> {
                                 onPressed: () =>
                                     controller.loadTransactions(loadMore: true),
                                 icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('Charger plus'),
+                                label: Text('wallet.history.load_more'.tr),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppThemeSystem.primaryColor,
                                   side: const BorderSide(
@@ -127,69 +127,69 @@ class WalletHistoryView extends GetView<WalletController> {
       onSelected: (value) => controller.filterByType(value),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: null,
           child: Row(
             children: [
-              Icon(Icons.all_inclusive_rounded, size: 18),
-              SizedBox(width: 12),
-              Text('Toutes'),
+              const Icon(Icons.all_inclusive_rounded, size: 18),
+              const SizedBox(width: 12),
+              Text('wallet.history.filter_all'.tr),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'credit',
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.arrow_downward_rounded,
                 size: 18,
                 color: AppThemeSystem.successColor,
               ),
-              SizedBox(width: 12),
-              Text('Recharges'),
+              const SizedBox(width: 12),
+              Text('wallet.history.filter_credit'.tr),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'debit',
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.arrow_upward_rounded,
                 size: 18,
                 color: AppThemeSystem.errorColor,
               ),
-              SizedBox(width: 12),
-              Text('Paiements'),
+              const SizedBox(width: 12),
+              Text('wallet.history.filter_debit'.tr),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'bonus',
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.card_giftcard_rounded,
                 size: 18,
                 color: AppThemeSystem.warningColor,
               ),
-              SizedBox(width: 12),
-              Text('Bonus'),
+              const SizedBox(width: 12),
+              Text('wallet.history.filter_bonus'.tr),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'refund',
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.replay_rounded,
                 size: 18,
                 color: AppThemeSystem.infoColor,
               ),
-              SizedBox(width: 12),
-              Text('Remboursements'),
+              const SizedBox(width: 12),
+              Text('wallet.history.filter_refund'.tr),
             ],
           ),
         ),
@@ -389,11 +389,18 @@ class WalletHistoryView extends GetView<WalletController> {
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return 'Aujourd\'hui à ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      return 'wallet.history.today_at'.trParams({
+        'time':
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
+      });
     } else if (difference.inDays == 1) {
-      return 'Hier à ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      return 'wallet.history.yesterday_at'.trParams({
+        'time':
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
+      });
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} jours';
+      return 'wallet.history.days'
+          .trParams({'days': '${difference.inDays}'});
     } else {
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     }

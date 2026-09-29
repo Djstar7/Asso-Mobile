@@ -85,7 +85,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
       case 'paypal':
         return 'PayPal';
       case 'stripe':
-        return 'Carte bancaire';
+        return 'wallet.recharge.bank_card'.tr;
       default:
         return method;
     }
@@ -158,7 +158,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
 
                 // Success title
                 Text(
-                  'Paiement réussi !',
+                  'package_subscription.success.title'.tr,
                   style: context.h4.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppThemeSystem.successColor,
@@ -170,7 +170,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
 
                 // Package info
                 Text(
-                  'Votre package ${widget.packageName} a été activé avec succès',
+                  'package_subscription.success.activated'.trParams({'name': widget.packageName}),
                   style: context.body1.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -193,27 +193,27 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                     children: [
                       _buildDetailRow(
                         context,
-                        'Package',
+                        'package_subscription.success.package'.tr,
                         widget.packageName,
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         context,
-                        'Montant',
+                        'package_subscription.success.amount'.tr,
                         _formatPrice(widget.amount),
                         isHighlight: true,
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         context,
-                        'Méthode',
+                        'package_subscription.success.method'.tr,
                         _paymentMethodLabel(widget.paymentMethod),
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         context,
-                        'Date',
-                        DateFormat('dd MMM yyyy à HH:mm', 'fr_FR')
+                        'package_subscription.success.date'.tr,
+                        DateFormat('package_subscription.success.date_format'.tr)
                             .format(DateTime.now()),
                       ),
                     ],
@@ -238,7 +238,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                             );
                           },
                           icon: Icon(Icons.receipt_long_rounded),
-                          label: Text('Voir la facture'),
+                          label: Text('package_subscription.success.view_invoice'.tr),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
@@ -290,7 +290,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
                           ),
                         ),
                         child: Text(
-                          'Voir mon dashboard',
+                          'package_subscription.success.view_dashboard'.tr,
                           style: context.button.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

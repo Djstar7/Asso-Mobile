@@ -3,17 +3,17 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 
 class PaymentLoadingDialog extends StatefulWidget {
-  final String message;
+  final String? message;
 
   const PaymentLoadingDialog({
     super.key,
-    this.message = 'Traitement du paiement en cours...',
+    this.message,
   });
 
   static void show({String? message}) {
     Get.dialog(
       PaymentLoadingDialog(
-        message: message ?? 'Traitement du paiement en cours...',
+        message: message ?? 'package_subscription.loading.processing'.tr,
       ),
       barrierDismissible: false,
     );
@@ -138,7 +138,7 @@ class _PaymentLoadingDialogState extends State<PaymentLoadingDialog>
 
             // Message
             Text(
-              widget.message,
+              widget.message ?? 'package_subscription.loading.processing'.tr,
               style: context.body1.copyWith(
                 fontWeight: FontWeight.w600,
                 color: context.primaryTextColor,
@@ -150,7 +150,7 @@ class _PaymentLoadingDialogState extends State<PaymentLoadingDialog>
 
             // Subtitle
             Text(
-              'Veuillez patienter',
+              'package_subscription.loading.please_wait'.tr,
               style: context.body2.copyWith(
                 color: context.secondaryTextColor,
               ),

@@ -59,18 +59,18 @@ class SalesCodeInput {
       if (response.statusCode == 0 || response.statusCode >= 500 || response.statusCode == 429) {
         // Pas de réponse exploitable : on laisse l'utilisateur réessayer.
         errorMessage.value = response.statusCode == 429
-            ? 'Trop de tentatives. Réessayez dans une minute.'
-            : 'Vérification impossible pour le moment. Réessayez.';
+            ? 'package_subscription.sales_code.too_many_attempts'.tr
+            : 'package_subscription.sales_code.verify_unavailable'.tr;
         status.value = SalesCodeStatus.unverified;
         return false;
       }
       errorMessage.value = response.message.isNotEmpty && response.message != 'Erreur'
           ? response.message
-          : "Ce code commercial n'existe pas ou n'est plus actif.";
+          : 'package_subscription.sales_code.invalid'.tr;
       status.value = SalesCodeStatus.invalid;
       return false;
     } catch (_) {
-      errorMessage.value = 'Vérification impossible pour le moment. Réessayez.';
+      errorMessage.value = 'package_subscription.sales_code.verify_unavailable'.tr;
       status.value = SalesCodeStatus.unverified;
       return false;
     }
@@ -105,10 +105,10 @@ class SalesCodeInput {
 
   void _warn() {
     Get.snackbar(
-      'Code commercial',
+      'package_subscription.sales_code.title'.tr,
       errorMessage.value.isNotEmpty
-          ? '${errorMessage.value} Corrigez-le ou videz le champ pour continuer.'
-          : 'Vérifiez le code commercial ou videz le champ pour continuer.',
+          ? 'package_subscription.sales_code.warn_with_error'.trParams({'error': errorMessage.value})
+          : 'package_subscription.sales_code.warn'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppDesign.danger,
       colorText: AppDesign.neutral0,
@@ -141,7 +141,7 @@ class SalesCodeField extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Code commercial',
+              'package_subscription.sales_code.title'.tr,
               style: context.subtitle2.copyWith(
                 fontWeight: FontWeight.w600,
                 color: ds.textPrimary,
@@ -149,7 +149,7 @@ class SalesCodeField extends StatelessWidget {
             ),
             SizedBox(height: AppDesign.space1),
             Text(
-              "Facultatif. Si un commercial ASSO vous a accompagné, saisissez son code.",
+              'package_subscription.sales_code.subtitle'.tr,
               style: context.body2.copyWith(color: ds.textSecondary),
             ),
             SizedBox(height: AppDesign.space3),
@@ -170,7 +170,7 @@ class SalesCodeField extends StatelessWidget {
                     ],
                     style: const TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w600),
                     decoration: InputDecoration(
-                      hintText: 'Ex. ASSO-7K3Q9',
+                      hintText: 'package_subscription.sales_code.hint'.tr,
                       counterText: '',
                       isDense: true,
                       filled: true,
@@ -184,7 +184,7 @@ class SalesCodeField extends StatelessWidget {
                           ? null
                           : IconButton(
                               icon: const Icon(Icons.close, size: 18),
-                              tooltip: 'Effacer',
+                              tooltip: 'package_subscription.sales_code.clear'.tr,
                               onPressed: input.clear,
                             ),
                     ),
@@ -214,7 +214,7 @@ class SalesCodeField extends StatelessWidget {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2, color: AppDesign.neutral0),
                           )
-                        : const Text('Vérifier'),
+                        : Text('package_subscription.sales_code.verify'.tr),
                   ),
                 ),
               ],
@@ -229,8 +229,8 @@ class SalesCodeField extends StatelessWidget {
                   Expanded(
                     child: Text(
                       input.agentName.value.isNotEmpty
-                          ? 'Code valide — commercial : ${input.agentName.value}'
-                          : 'Code valide',
+                          ? 'package_subscription.sales_code.valid_with_agent'.trParams({'name': input.agentName.value})
+                          : 'package_subscription.sales_code.valid'.tr,
                       style: context.body2.copyWith(color: AppDesign.successText),
                     ),
                   ),

@@ -24,7 +24,7 @@ class BoostProductPicker extends GetView<BoostController> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            "Vous n'avez aucun article en ligne à sponsoriser.",
+            'boost.picker.empty'.tr,
             style: TextStyle(
               color: AppDesign.textSecondary(context),
               fontSize: 14,
@@ -59,7 +59,7 @@ class BoostProductPicker extends GetView<BoostController> {
                   Expanded(
                     child: selected == null
                         ? Text(
-                            'Choisir un article',
+                            'boost.picker.choose'.tr,
                             style: TextStyle(
                               color: AppDesign.textSecondary(context),
                               fontSize: 14,
@@ -173,7 +173,7 @@ class BoostProductPicker extends GetView<BoostController> {
               child: Row(
                 children: [
                   Text(
-                    'Vos articles en ligne',
+                    'boost.picker.title'.tr,
                     style: TextStyle(
                       color: AppDesign.textPrimary(context),
                       fontSize: 16,
@@ -244,7 +244,7 @@ class BoostProductPicker extends GetView<BoostController> {
                     const SizedBox(height: 2),
                     Text(
                       boosted
-                          ? 'Déjà sponsorisé'
+                          ? 'boost.picker.already_boosted'.tr
                           : _price(product),
                       style: TextStyle(
                         color: boosted

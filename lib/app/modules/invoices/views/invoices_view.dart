@@ -19,7 +19,7 @@ class InvoicesView extends GetView<InvoicesController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Mes Factures',
+          'invoices.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -112,7 +112,7 @@ class InvoicesView extends GetView<InvoicesController> {
           ),
           SizedBox(height: context.elementSpacing),
           Text(
-            'Aucune facture',
+            'invoices.empty_title'.tr,
             style: context.h5.copyWith(
               color: context.primaryTextColor,
               fontWeight: FontWeight.w600,
@@ -120,7 +120,7 @@ class InvoicesView extends GetView<InvoicesController> {
           ),
           SizedBox(height: context.elementSpacing * 0.5),
           Text(
-            'Vous n\'avez pas encore de factures',
+            'invoices.empty_subtitle'.tr,
             style: context.body2.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -131,7 +131,7 @@ class InvoicesView extends GetView<InvoicesController> {
   }
 
   Widget _buildInvoiceCard(BuildContext context, InvoiceModel invoice) {
-    final dateFormat = DateFormat('dd MMM yyyy', 'fr_FR');
+    final dateFormat = DateFormat('dd MMM yyyy');
 
     return Container(
       margin: EdgeInsets.only(bottom: context.elementSpacing),
@@ -253,7 +253,7 @@ class InvoicesView extends GetView<InvoicesController> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Télécharger',
+                              'invoices.download'.tr,
                               style: context.caption.copyWith(
                                 color: AppThemeSystem.primaryColor,
                                 fontWeight: FontWeight.w600,

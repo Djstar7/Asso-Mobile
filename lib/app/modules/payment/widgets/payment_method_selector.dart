@@ -23,8 +23,8 @@ import '../../../routes/app_pages.dart';
 class PaymentMethodSelector extends StatefulWidget {
   final double amount;
   final String currency;
-  final String amountLabel;
-  final String title;
+  final String? amountLabel;
+  final String? title;
 
   /// Options pré-construites. Si fourni, le widget les affiche telles quelles au
   /// lieu d'interroger `/v1/payments/methods` — permet de réutiliser EXACTEMENT ce
@@ -43,8 +43,8 @@ class PaymentMethodSelector extends StatefulWidget {
     super.key,
     required this.amount,
     required this.currency,
-    this.amountLabel = 'Montant à payer',
-    this.title = 'Choisir un moyen de paiement',
+    this.amountLabel,
+    this.title,
     this.options,
     this.allowedCodes,
     this.includeWallet = false,
@@ -53,8 +53,8 @@ class PaymentMethodSelector extends StatefulWidget {
   static Future<PaymentMethodOption?> show({
     required double amount,
     required String currency,
-    String amountLabel = 'Montant à payer',
-    String title = 'Choisir un moyen de paiement',
+    String? amountLabel,
+    String? title,
     List<PaymentMethodOption>? options,
     Set<String>? allowedCodes,
     bool includeWallet = false,
@@ -92,7 +92,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     if (widget.options != null) {
       _methods.assignAll(widget.options!);
       if (widget.options!.isEmpty) {
-        _error.value = 'Aucune méthode disponible pour le moment.';
+        _error.value = 'payment.selector.no_method'.tr;
       }
       _loading.value = false;
       return;
@@ -114,10 +114,10 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 .toList();
       _methods.assignAll(visible);
       if (visible.isEmpty) {
-        _error.value = 'Aucun moyen de paiement disponible pour le moment.';
+        _error.value = 'payment.selector.no_payment_method'.tr;
       }
     } catch (e) {
-      _error.value = 'Impossible de charger les moyens de paiement.';
+      _error.value = 'payment.selector.load_error'.tr;
     } finally {
       _loading.value = false;
     }
@@ -161,8 +161,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     // Solde insuffisant : raccourci direct vers la recharge du Wallet.
     if (m.isWallet) {
       Get.snackbar(
-        'Solde Wallet insuffisant',
-        hint ?? 'Rechargez votre Wallet ASSO pour payer avec votre solde.',
+        'payment.selector.wallet_insufficient'.tr,
+        hint ?? 'payment.selector.recharge_hint'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(12),
         borderRadius: 12,
@@ -177,14 +177,14 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             if (mounted) Navigator.of(context).pop();
             Get.toNamed(Routes.WALLET, arguments: {'openRecharge': true});
           },
-          child: const Text('Recharger'),
+          child: Text('wallet.actions.recharge'.tr),
         ),
       );
       return;
     }
     final reason = (hint != null && hint.trim().isNotEmpty)
         ? hint
-        : "Ce moyen n'est pas disponible pour le moment.";
+        : 'payment.selector.method_unavailable'.tr;
     Get.snackbar(
       m.label,
       reason,
@@ -203,13 +203,16 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     // Pas de marge pour le clavier ici : la route de la feuille s'en charge
     // déjà, et la compter deux fois laissait un grand vide sous la liste.
     return AppSheet(
-      title: widget.title,
+      title: widget.title ?? 'payment.selector.title'.tr,
       color: AppThemeSystem.getBackgroundColor(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${widget.amountLabel} : ${_fmt(widget.amount, widget.currency)}',
+            'payment.selector.amount_line'.trParams({
+              'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
+              'amount': _fmt(widget.amount, widget.currency),
+            }),
             style: context.textStyle(
               FontSizeType.body2,
               fontWeight: FontWeight.w600,
@@ -258,14 +261,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       // Solde et manque renvoyés en XAF : affichés dans la devise de l'utilisateur.
       final balance = CurrencyService.formatFromPivot(m.balance ?? 0);
       hint = canPay
-          ? 'Solde disponible : $balance'
-          : 'Solde : $balance — il manque ${CurrencyService.formatFromPivot(m.missingAmount ?? 0)}';
+          ? 'payment.selector.balance_available'.trParams({'balance': balance})
+          : 'payment.selector.balance_missing'.trParams({
+              'balance': balance,
+              'missing': CurrencyService.formatFromPivot(m.missingAmount ?? 0),
+            });
     }
     if (hint == null) {
       if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
-        hint = 'Minimum ${_fmt(m.minAmount!, m.minCurrency)}';
+        hint = 'payment.selector.minimum'.trParams({'amount': _fmt(m.minAmount!, m.minCurrency)});
       } else if (!canPay && m.unavailableReason == 'disabled') {
-        hint = 'Indisponible';
+        hint = 'wallet.recharge.unavailable_title'.tr;
       } else if (canPay && m.convertedAmount != null && m.targetCurrency != null) {
         hint = '≈ ${_fmt(m.convertedAmount!, m.targetCurrency!)}';
       }

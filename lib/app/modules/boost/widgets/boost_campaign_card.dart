@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../data/models/boost_models.dart';
@@ -85,7 +86,7 @@ class BoostCampaignCard extends StatelessWidget {
                       size: 20,
                       color: AppDesign.textTertiary(context),
                     ),
-                    tooltip: 'Arrêter',
+                    tooltip: 'boost.cancel_dialog.stop'.tr,
                   ),
               ],
             ),
@@ -109,7 +110,10 @@ class BoostCampaignCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${_n(campaign.impressionsServed)} / ${_n(campaign.impressionsQuota)} personnes touchées',
+                    'boost.card.reached'.trParams({
+                      'served': _n(campaign.impressionsServed),
+                      'quota': _n(campaign.impressionsQuota),
+                    }),
                     style: TextStyle(
                       color: AppDesign.textSecondary(context),
                       fontSize: 12.5,
@@ -119,8 +123,9 @@ class BoostCampaignCard extends StatelessWidget {
                 if (campaign.isRunning)
                   Text(
                     campaign.remainingDays > 0
-                        ? '${campaign.remainingDays} j restant${campaign.remainingDays > 1 ? 's' : ''}'
-                        : 'Dernier jour',
+                        ? (campaign.remainingDays > 1 ? 'boost.card.days_left' : 'boost.card.day_left')
+                            .trParams({'days': '${campaign.remainingDays}'})
+                        : 'boost.card.last_day'.tr,
                     style: TextStyle(
                       color: AppDesign.textTertiary(context),
                       fontSize: 12.5,

@@ -30,12 +30,12 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
     required String itemLabel,
     required double amount,
     required double balance,
-    String title = 'Payer avec mon Wallet',
+    String? title,
     String? salesCode,
   }) async {
     final ok = await Get.dialog<bool>(
       WalletPaymentConfirmDialog(
-        title: title,
+        title: title ?? 'payment.wallet_confirm.title'.tr,
         itemLabel: itemLabel,
         amount: amount,
         balance: balance,
@@ -110,15 +110,15 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          row('Solde actuel', _fmt(balance)),
-          row('À payer', '− ${_fmt(amount)}', color: AppThemeSystem.errorColor),
+          row('payment.wallet_confirm.current_balance'.tr, _fmt(balance)),
+          row('payment.wallet_confirm.to_pay'.tr, '− ${_fmt(amount)}', color: AppThemeSystem.errorColor),
           const Divider(height: 20),
-          row('Solde après paiement', _fmt(after), strong: true),
+          row('payment.wallet_confirm.balance_after'.tr, _fmt(after), strong: true),
           if (salesCode != null && salesCode!.isNotEmpty)
-            row('Code commercial', salesCode!),
+            row('payment.wallet_confirm.sales_code'.tr, salesCode!),
           const SizedBox(height: 8),
           Text(
-            'Le montant est débité immédiatement de votre Wallet ASSO.',
+            'payment.wallet_confirm.debit_info'.tr,
             style: TextStyle(
               fontSize: 12,
               color: AppThemeSystem.getSecondaryTextColor(context),
@@ -131,7 +131,7 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
         // que la bannière éventuellement affichée, pas le dialogue.
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Annuler'),
+          child: Text('payment.cancel'.tr),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
@@ -140,7 +140,7 @@ class WalletPaymentConfirmDialog extends StatelessWidget {
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Confirmer le paiement'),
+          child: Text('wallet.recharge.confirm_payment'.tr),
         ),
       ],
     );
