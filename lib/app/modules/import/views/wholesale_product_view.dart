@@ -10,11 +10,13 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_video_player.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/widgets/quantity_stepper.dart';
+import '../../../core/widgets/variant_combo_picker.dart';
 import '../../../core/widgets/variant_quantity_list.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../data/models/wholesale_models.dart';
@@ -69,7 +71,6 @@ class WholesaleProductView extends StatefulWidget {
 }
 
 class _WholesaleProductViewState extends State<WholesaleProductView> {
-  PriceTier? _tier;
   ShippingOption? _shipping;
   /// Quantité d'un produit sans options.
   int _singleQuantity = 0;
@@ -77,6 +78,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   /// Quantité par option (identifiant de variante → quantité) : un client
   /// peut prendre 300 rouges et 200 noires dans la même commande.
   Map<int, int> _variantQuantities = {};
+
+  /// Combinaison en cours de saisie : c'est elle que touche un palier.
+  int? _focusedVariantId;
   bool _submitting = false;
   bool _contactingSupport = false;
   int _imageIndex = 0;
@@ -88,14 +92,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   /// Livraison de l'entrepôt ASSO de Douala jusqu'au client, chiffrée au poids.
   late final WholesaleDelivery _delivery = WholesaleDelivery(
-    items: () => [
-      if (_quantity > 0)
-        {
-          'product_id': widget.product.id,
-          'quantity': _quantity,
-          if (_tier != null) 'price_tier_id': _tier!.id,
-        },
-    ],
+    items: () => _orderItems,
   )..addListener(_onDeliveryChanged);
   Timer? _requote;
 
@@ -121,8 +118,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   @override
   void initState() {
     super.initState();
-    _tier = widget.product.entryTier;
-    _singleQuantity = _tier?.minQuantity ?? 1;
+    _singleQuantity = widget.product.firstTier?.minQuantity ?? 1;
     if (widget.shippingOptions.isNotEmpty) {
       _shipping = widget.shippingOptions.first;
     }
@@ -168,8 +164,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         (variant, _variantQuantities[VariantQuantityList.idOf(variant)]!),
   ];
 
-  /// Quantité totale : le minimum du palier s'applique à ce total, toutes
-  /// options confondues (le serveur applique la même règle).
+  /// Quantité totale : le palier se lit sur ce total, toutes options
+  /// confondues, si le produit les cumule (le serveur applique la même règle).
   int get _quantity => _hasVariants
       ? VariantQuantityList.totalOf(_variantQuantities)
       : _singleQuantity;
@@ -191,11 +187,49 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     return false;
   }
 
-  int get _minQuantity => _tier?.minQuantity ?? 1;
+  List<PriceTier> get _tiers => widget.product.sortedTiers;
 
-  bool get _quantityTooLow => _quantity < _minQuantity;
+  /// Le palier se lit sur le total du produit, sauf si l'équipe a choisi que
+  /// chaque option atteigne son palier seule.
+  bool get _mixVariants => !_hasVariants || widget.product.tierMixVariants;
 
-  double get _subtotal => (_tier?.unitPriceXaf ?? 0) * _quantity;
+  /// Lignes commandées : (variante, quantité), variante nulle sans options.
+  List<(int?, int)> get _lines => _hasVariants
+      ? [
+          for (final (variant, quantity) in _variantLines)
+            (VariantQuantityList.idOf(variant), quantity),
+        ]
+      : [if (_singleQuantity > 0) (null, _singleQuantity)];
+
+  /// Palier appliqué à une ligne : celui que la quantité atteint (sous le
+  /// premier seuil, le premier palier). Même règle que le serveur.
+  PriceTier? _tierFor(int lineQuantity) =>
+      PriceTier.forQuantity(_tiers, _mixVariants ? _quantity : lineQuantity);
+
+  /// Palier mis en avant : celui du total, ou de l'option en cours de saisie.
+  PriceTier? get _tier => _tierFor(
+    _mixVariants ? _quantity : (_variantQuantities[_focusedVariantId] ?? 0),
+  );
+
+  /// Pas de minimum de commande : sous le premier seuil, le client paie le
+  /// prix du premier palier. Il faut seulement une quantité.
+  bool get _quantityTooLow => _lines.isEmpty;
+
+  double get _subtotal => _lines.fold(
+    0,
+    (sum, line) => sum + (_tierFor(line.$2)?.unitPriceXaf ?? 0) * line.$2,
+  );
+
+  /// Lignes envoyées au serveur (commande et devis de livraison).
+  List<Map<String, int>> get _orderItems => [
+    for (final (variantId, quantity) in _lines)
+      {
+        'product_id': widget.product.id,
+        'quantity': quantity,
+        'price_tier_id': ?_tierFor(quantity)?.id,
+        'variant_id': ?variantId,
+      },
+  ];
 
   double get _shippingCost {
     final s = _shipping;
@@ -210,29 +244,54 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
   }
 
-  double get _total => _subtotal + _shippingCost + _delivery.price;
+  double get _total => _subtotal + _shippingCost + _delivery.buyerPrice;
 
   /// Ville d'arrivée de l'import, d'où part la livraison locale.
   String get _hubCity => _shipping?.destination ?? 'Douala';
 
   bool get _needsWeight => _shipping?.rateType == 'per_kg';
   bool get _needsCbm => _shipping?.rateType == 'per_cbm';
-  double get _shippingWeightKg =>
-      (_unitWeightKg ?? 0) * _quantity;
-
   /// Poids d'une unité commandée : celui du palier (un pack, un bidon…),
   /// sinon celui de la fiche.
-  double? get _unitWeightKg => _tier?.weightKg ?? widget.product.unitWeightKg;
+  double get _shippingWeightKg => _lines.fold(
+    0,
+    (sum, line) =>
+        sum +
+        (_tierFor(line.$2)?.weightKg ?? widget.product.unitWeightKg ?? 0) *
+            line.$2,
+  );
 
+  /// Toucher un palier y amène la quantité : 100 pour « à partir de 100 ».
+  /// Avec options cumulées, c'est l'option en cours de saisie qui comble
+  /// l'écart ; sinon elle prend la quantité du palier.
   void _selectTier(PriceTier tier) {
-    setState(() {
-      _tier = tier;
-      // Sans options, on remonte d'office au minimum du palier. Avec options,
-      // la répartition appartient au client : le total manquant est signalé.
-      if (!_hasVariants && _singleQuantity < tier.minQuantity) {
-        _singleQuantity = tier.minQuantity;
-      }
-    });
+    if (!_hasVariants) {
+      setState(() => _singleQuantity = tier.minQuantity);
+      _quantityChanged();
+      return;
+    }
+    final id = _focusedVariantId ?? _lines.lastOrNull?.$1;
+    if (id == null) {
+      Get.snackbar(
+        'Choisissez une option',
+        'Sélectionnez d’abord une couleur ou une taille, puis le palier.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    final current = _variantQuantities[id] ?? 0;
+    final next = _mixVariants
+        ? tier.minQuantity - (_quantity - current)
+        : tier.minQuantity;
+    if (next < 1) {
+      Get.snackbar(
+        'Quantités déjà supérieures',
+        'Vos autres options font déjà ${_quantity - current} au total : réduisez-les pour revenir à « ${tier.label} ».',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    setState(() => _variantQuantities = {..._variantQuantities, id: next});
     _quantityChanged();
   }
 
@@ -280,16 +339,18 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                             const SizedBox(height: AppDesign.space3),
                           ],
                           _buildHeaderCard(context, p),
-                          // Le conditionnement vient d'abord : c'est lui qui
-                          // fixe le minimum à répartir ensuite.
+                          // Les paliers viennent d'abord : ils disent quel prix
+                          // chaque quantité obtient.
                           if (p.priceTiers.isNotEmpty) ...[
                             const SizedBox(height: AppDesign.space3),
                             _section(
                               context,
-                              title: 'Conditionnement',
-                              subtitle: 'Prix unitaire et quantité minimale',
+                              title: 'Prix selon la quantité',
+                              subtitle: _mixVariants
+                                  ? 'Le prix suit la quantité totale. Touchez un palier pour l’appliquer.'
+                                  : 'Chaque option a le prix de sa propre quantité. Touchez un palier pour l’appliquer à l’option choisie.',
                               child: Column(
-                                children: p.priceTiers.map(_tierTile).toList(),
+                                children: _tiers.map(_tierTile).toList(),
                               ),
                             ),
                           ],
@@ -299,7 +360,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                                   context,
                                   title: 'Options et quantités',
                                   subtitle:
-                                      'Plusieurs couleurs ou tailles ? Indiquez une quantité pour chacune.',
+                                      'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.',
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
@@ -307,10 +368,23 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                                       // En gros, le stock saisi sur une
                                       // variante n'a pas de sens : toutes les
                                       // options restent commandables.
-                                      VariantQuantityList(
+                                      VariantComboPicker(
                                         catalog: _variantCatalog,
                                         quantities: _variantQuantities,
                                         limitToStock: false,
+                                        priceOf: (variant) {
+                                          final id = VariantQuantityList.idOf(
+                                            variant,
+                                          );
+                                          final tier = _tierFor(
+                                            _variantQuantities[id] ?? 0,
+                                          );
+                                          return tier == null
+                                              ? ''
+                                              : '${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
+                                        },
+                                        onFocusChanged: (id) =>
+                                            _focusedVariantId = id,
                                         onChanged: (next) {
                                           setState(
                                             () => _variantQuantities = next,
@@ -332,7 +406,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                                     children: [
                                       QuantityStepper(
                                         value: _singleQuantity,
-                                        min: _minQuantity,
+                                        min: 1,
                                         hasError: _quantityTooLow,
                                         onChanged: (value) {
                                           setState(
@@ -646,10 +720,17 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppBadge(
-            label: 'Commande en gros',
-            tone: AppBadgeTone.accent,
-            icon: Icons.inventory_2_outlined,
+          Wrap(
+            spacing: AppDesign.space2,
+            runSpacing: AppDesign.space2,
+            children: [
+              const AppBadge(
+                label: 'Commande en gros',
+                tone: AppBadgeTone.accent,
+                icon: Icons.inventory_2_outlined,
+              ),
+              if (p.freeDelivery) const FreeDeliveryBadge(),
+            ],
           ),
           const SizedBox(height: AppDesign.space3),
           Text(
@@ -690,14 +771,16 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                 ],
               ),
             ),
-            const SizedBox(height: AppDesign.space1),
-            Text(
-              'Minimum ${entry.minQuantity} unités',
-              style: context.textStyle(
-                FontSizeType.caption,
-                color: context.ds.textSecondary,
+            if (p.priceTiers.length > 1) ...[
+              const SizedBox(height: AppDesign.space1),
+              Text(
+                'Prix dégressif selon la quantité',
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  color: context.ds.textSecondary,
+                ),
               ),
-            ),
+            ],
           ],
         ],
       ),
@@ -815,7 +898,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Minimum ${t.minQuantity}',
+                        t.id == _tiers.first.id
+                            ? (_tiers.length > 1
+                                  ? 'Jusqu’à ${_tiers[1].minQuantity - 1}'
+                                  : 'Toute quantité')
+                            : 'À partir de ${t.minQuantity}',
                         style: context.textStyle(
                           FontSizeType.caption,
                           color: context.ds.textSecondary,
@@ -841,20 +928,30 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
   }
 
-  /// Rappel du minimum sous la quantité, en rouge tant qu'il n'est pas
-  /// atteint. Avec options, il porte sur le total de toutes les options.
+  /// Total, prix du palier atteint et quantité manquante pour le suivant.
+  /// Avec options cumulées, il porte sur le total de toutes les options.
   Widget _buildQuantityHint(BuildContext context) {
     final tooLow = _quantityTooLow;
-    final tierLabel = _tier?.label ?? 'ce conditionnement';
     final String text;
-    if (_hasVariants) {
-      text = tooLow
-          ? 'Total : $_quantity — minimum $_minQuantity pour « $tierLabel », toutes options confondues'
-          : 'Total : $_quantity unités';
+    if (tooLow) {
+      text = _hasVariants
+          ? 'Choisissez une option et indiquez sa quantité'
+          : 'Indiquez une quantité';
+    } else if (!_mixVariants) {
+      text = 'Total : $_quantity unités · chaque option a le prix de sa quantité';
     } else {
-      text = tooLow
-          ? 'Minimum $_minQuantity pour « $tierLabel »'
-          : 'Touchez le nombre pour saisir une quantité · minimum $_minQuantity';
+      final tier = _tier;
+      final price = tier == null
+          ? ''
+          : ' à ${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
+      // Palier suivant : combien il manque pour le prix plus bas.
+      final next = _tiers
+          .where((t) => t.minQuantity > _quantity)
+          .firstOrNull;
+      final nudge = next == null
+          ? ''
+          : ' · encore ${next.minQuantity - _quantity} pour ${_fmtConverted(next.unitPrice, next.currency)} / unité';
+      text = 'Total : $_quantity$price$nudge';
     }
 
     return Row(
@@ -1007,7 +1104,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       children: [
         _sumRow(
           context,
-          'Produit ($_quantity × ${_tier?.label ?? ''})',
+          _mixVariants
+              ? 'Produit ($_quantity × ${_tier?.label ?? ''})'
+              : 'Produit ($_quantity unités)',
           _fmt(_subtotal),
         ),
         const SizedBox(height: AppDesign.space2),
@@ -1023,6 +1122,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               ? 'Livraison depuis $_hubCity'
               : 'Livraison ${_delivery.selected!.companyName} jusqu’à vous',
           _delivery.selected == null ? '—' : _fmt(_delivery.price),
+          struck: _delivery.isFree,
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
@@ -1033,7 +1133,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
   }
 
-  Widget _sumRow(BuildContext c, String l, String v, {bool bold = false}) =>
+  Widget _sumRow(
+    BuildContext c,
+    String l,
+    String v, {
+    bool bold = false,
+    bool struck = false,
+  }) =>
       Row(
         children: [
           Expanded(
@@ -1049,8 +1155,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             ),
           ),
           const SizedBox(width: AppDesign.space2),
-          Text(
-            v,
+          // Course offerte par le vendeur : prix barré, suivi de « Offerte ».
+          DeliveryPriceText(
+            price: v,
+            isFree: struck,
             style: c.textStyle(
               bold ? FontSizeType.body1 : FontSizeType.body2,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
@@ -1127,20 +1235,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
     if (!_requireVariant()) return;
     final tier = _tier, shipping = _shipping;
-    if (tier == null || shipping == null) {
+    if (tier == null || shipping == null || _lines.isEmpty) {
       Get.snackbar(
         'Erreur',
         'Choisissez un conditionnement et une expédition.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    if (_quantity < tier.minQuantity) {
-      Get.snackbar(
-        'Quantité minimale',
-        _hasVariants
-            ? 'Minimum ${tier.minQuantity} au total pour ${tier.label}, toutes options confondues.'
-            : 'Minimum ${tier.minQuantity} pour ${tier.label}.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -1185,24 +1283,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
     if (method == null) return;
 
-    // Une ligne par option commandée, toutes sur le même palier.
-    final items = _hasVariants
-        ? [
-            for (final (variant, quantity) in _variantLines)
-              {
-                'product_id': widget.product.id,
-                'price_tier_id': tier.id,
-                'quantity': quantity,
-                'variant_id': VariantQuantityList.idOf(variant),
-              },
-          ]
-        : [
-            {
-              'product_id': widget.product.id,
-              'price_tier_id': tier.id,
-              'quantity': _quantity,
-            },
-          ];
+    // Une ligne par option commandée, au palier que sa quantité atteint.
+    final items = _orderItems;
     final weight = _needsWeight ? _shippingWeightKg : null;
     final cbm = null;
 

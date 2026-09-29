@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/values/constants.dart';
@@ -25,7 +26,7 @@ import '../../../core/widgets/scoped_controller_page.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/quantity_stepper.dart';
-import '../../../core/widgets/variant_quantity_list.dart';
+import '../../../core/widgets/variant_combo_picker.dart';
 import '../../../core/utils/app_navigation.dart';
 
 /// Fiche produit telle que la route l'ouvre : chaque fiche empilée
@@ -419,6 +420,10 @@ class ProductView extends GetView<ProductController> {
               ),
             ),
           ),
+          if (readFreeDelivery(product['free_delivery'])) ...[
+            SizedBox(height: AppDesign.space2),
+            const FreeDeliveryBadge(),
+          ],
           SizedBox(height: AppDesign.space2),
           Text(
             product['name']?.toString() ?? 'Produit',
@@ -1843,10 +1848,11 @@ class ProductView extends GetView<ProductController> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text(
-                            controller.formatPrice(
+                          DeliveryPriceText(
+                            price: controller.formatPrice(
                               controller.deliveryPrice.value,
                             ),
+                            isFree: controller.deliveryIsFree,
                             style: context.textStyle(
                               FontSizeType.body2,
                               fontWeight: FontWeight.w600,
@@ -2197,13 +2203,9 @@ class ProductView extends GetView<ProductController> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        controller.formatPrice(partner.price),
-                        style: context.textStyle(
-                          FontSizeType.body1,
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.primaryColor,
-                        ),
+                      DeliveryPriceText(
+                        price: controller.formatPrice(partner.price),
+                        isFree: partner.isFree,
                       ),
                       if (isSelected)
                         Icon(
@@ -2329,7 +2331,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Plusieurs couleurs ou tailles ? Indiquez une quantité pour chacune.',
+            'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante : plusieurs couleurs et tailles dans la même commande.',
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -2337,7 +2339,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 12),
           Obx(
-            () => VariantQuantityList(
+            () => VariantComboPicker(
               catalog: catalog,
               quantities: Map<int, int>.from(controller.variantQuantities),
               onChanged: controller.setVariantQuantities,
@@ -2711,12 +2713,40 @@ class ProductView extends GetView<ProductController> {
                   controller.orderSubtotal(product),
                 ),
               ),
-              line(
-                'Livraison',
-                controller.formatPrice(
-                  controller.deliveryPrice.value,
+              if (controller.deliveryIsFree)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Livraison',
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            color: AppThemeSystem.grey600,
+                          ),
+                        ),
+                      ),
+                      DeliveryPriceText(
+                        price: controller.formatPrice(
+                          controller.deliveryPrice.value,
+                        ),
+                        isFree: true,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                line(
+                  'Livraison',
+                  controller.formatPrice(
+                    controller.deliveryPrice.value,
+                  ),
                 ),
-              ),
               const Divider(height: 16),
               line(
                 'Total à payer',

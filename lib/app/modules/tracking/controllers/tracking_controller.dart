@@ -302,6 +302,10 @@ class TrackingController extends GetxController {
       'rawStatus': status,
       'delivery': delivery,
       'deliveryFee': double.tryParse(order['delivery_fee']?.toString() ?? ''),
+      // Course offerte par le vendeur : prix affiché barré.
+      'freeDeliveryAmount': order['free_delivery'] == true
+          ? double.tryParse(order['free_delivery_amount']?.toString() ?? '') ?? 0.0
+          : 0.0,
     };
   }
 

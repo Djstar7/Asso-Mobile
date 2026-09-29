@@ -135,6 +135,18 @@ class VendorProductService {
     );
   }
 
+  /// Livraison gratuite d'un produit : true/false force le choix, null le
+  /// fait suivre la boutique.
+  static Future<ApiResponse> updateProductFreeDelivery(
+    int productId,
+    bool? freeDelivery,
+  ) {
+    return ApiProvider.put(
+      '/v1/vendor/products/$productId/free-delivery',
+      body: {'free_delivery': freeDelivery},
+    );
+  }
+
   /// Get inventory history for the vendor
   static Future<ApiResponse> getInventory({
     int page = 1,

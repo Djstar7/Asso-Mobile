@@ -30,6 +30,9 @@ class OrderModel {
   /// Montant versé au vendeur : ses propres prix (la commission ASSO est payée
   /// en plus par le client).
   final double vendorAmount;
+
+  /// Livraison offerte au client par le vendeur : prix retenu sur sa part.
+  final double freeDeliveryAmount;
   final String? deliveryCompanyName;
 
   /// Livreur déjà assigné (statut serveur « preparing »).
@@ -77,6 +80,7 @@ class OrderModel {
     this.addressDetails,
     this.paymentStatus = 'paid',
     this.vendorAmount = 0,
+    this.freeDeliveryAmount = 0,
     this.deliveryCompanyName,
     this.deliveryAssigned = false,
     this.rawStatus = '',
@@ -184,6 +188,7 @@ class OrderModel {
       addressDetails: addressDetails,
       paymentStatus: paymentStatus,
       vendorAmount: vendorAmount,
+      freeDeliveryAmount: freeDeliveryAmount,
       deliveryCompanyName: deliveryCompanyName,
       deliveryAssigned: deliveryAssigned,
       rawStatus: rawStatus,

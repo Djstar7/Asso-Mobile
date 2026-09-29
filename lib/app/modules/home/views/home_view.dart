@@ -22,6 +22,7 @@ import '../../profile/views/profile_view.dart';
 import '../../import/views/import_view.dart';
 import '../../search/views/search_view.dart';
 import '../../notification/controllers/notification_controller.dart';
+import '../../../core/widgets/offline_badge.dart';
 import '../controllers/home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -224,6 +225,7 @@ class HomeView extends GetView<HomeController> {
                             overflow: TextOverflow.ellipsis,
                           ),
                   ),
+                  const OfflineBadge(),
                   // La messagerie a quitté la navigation basse : elle se
                   // consulte ponctuellement, comme les favoris et les
                   // notifications.

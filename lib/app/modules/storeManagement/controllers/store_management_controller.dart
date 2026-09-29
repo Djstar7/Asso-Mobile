@@ -11,6 +11,7 @@ import '../../../data/providers/vendor_product_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 
 class StoreManagementController extends GetxController {
   // État de chargement
@@ -43,6 +44,10 @@ class StoreManagementController extends GetxController {
   // Bannières promotionnelles
   final RxList<PromotionalBanner> banners = <PromotionalBanner>[].obs;
   final RxInt currentBannerIndex = 0.obs;
+
+  // Livraison gratuite sur toute la boutique (financée par le vendeur).
+  final freeDelivery = false.obs;
+  final isSavingFreeDelivery = false.obs;
 
   // Logo en cours d'envoi depuis « Ma boutique »
   final RxBool isUploadingLogo = false.obs;
@@ -97,6 +102,7 @@ class StoreManagementController extends GetxController {
         // Parser les informations de la boutique
         if (shop != null) {
           storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
+          freeDelivery.value = readFreeDelivery(shop['free_delivery']);
           print('✅ CONTROLLER: Store info loaded: ${storeInfo.value?.name}');
           print('  └─ Categories: ${storeInfo.value?.categories.join(", ")}');
         } else {
@@ -300,6 +306,49 @@ class StoreManagementController extends GetxController {
         .toList();
   }
 
+  /// Active ou coupe la livraison gratuite sur toute la boutique. Le
+  /// changement s'affiche tout de suite et revient en arrière en cas d'échec.
+  Future<void> setFreeDelivery(bool value) async {
+    if (isSavingFreeDelivery.value) return;
+    final previous = freeDelivery.value;
+    freeDelivery.value = value;
+    isSavingFreeDelivery.value = true;
+    try {
+      final response = await ShopService.updateFreeDelivery(value);
+      if (!response.success) {
+        freeDelivery.value = previous;
+        Get.snackbar(
+          'Livraison gratuite',
+          response.message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      final overridden =
+          (response.data?['overridden_products'] as num?)?.toInt() ?? 0;
+      Get.snackbar(
+        'Livraison gratuite',
+        [
+          value
+              ? 'Activée sur toute la boutique.'
+              : 'Désactivée sur la boutique.',
+          if (overridden > 0)
+            '$overridden produit${overridden > 1 ? 's gardent' : ' garde'} son propre réglage.',
+        ].join(' '),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (_) {
+      freeDelivery.value = previous;
+      Get.snackbar(
+        'Livraison gratuite',
+        'Impossible d’enregistrer ce choix. Réessayez.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isSavingFreeDelivery.value = false;
+    }
+  }
+
   /// Boutique renvoyée par l'API (`GET` ou `PUT /vendor/shop`).
   static StoreInfo storeInfoFromApi(Map<String, dynamic> shop) {
     // Nettoyer l'adresse (gérer les valeurs placeholder)
@@ -350,6 +399,7 @@ class StoreManagementController extends GetxController {
       final shop = response.data?['shop'];
       if (response.success && shop is Map) {
         storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
+        freeDelivery.value = readFreeDelivery(shop['free_delivery']);
         Get.snackbar(
           'Succès',
           'Logo de la boutique mis à jour',
@@ -636,6 +686,7 @@ class StoreManagementController extends GetxController {
         final shop = response.data!['shop'];
         if (shop is Map) {
           storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
+          freeDelivery.value = readFreeDelivery(shop['free_delivery']);
 
           print('');
           print('✅ CONTROLLER: Store info updated from API response');

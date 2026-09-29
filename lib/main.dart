@@ -17,6 +17,9 @@ import 'app/core/widgets/app_ui.dart';
 import 'app/core/widgets/app_update_gate.dart';
 import 'app/core/controllers/app_config_controller.dart';
 import 'app/data/services/app_lifecycle_service.dart';
+import 'app/data/services/connectivity_service.dart';
+import 'app/data/services/offline_product_sync_service.dart';
+import 'app/data/providers/offline_store.dart';
 import 'app/data/services/websocket_service.dart';
 import 'app/data/services/firebase_messaging_service.dart';
 import 'app/data/providers/diaspo_service.dart';
@@ -56,6 +59,14 @@ Future<void> _bootstrap() async {
   // demande : avant tout écran, pour que le plafond s'applique dès le départ.
   Get.put(AppLifecycleService(), permanent: true);
 
+  // Mode hors ligne vendeur : base Hive locale et joignabilité du serveur,
+  // sondée avant le premier écran pour ne pas attendre un réseau absent.
+  await OfflineStore.init();
+  final connectivity =
+      await Get.putAsync(() => ConnectivityService().init(), permanent: true);
+  Get.put(OfflineProductSyncService(), permanent: true);
+  print('✅ Offline store ready (online: ${connectivity.isOnline.value})');
+
   // Initialiser Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -89,7 +100,13 @@ Future<void> _bootstrap() async {
 
   // Initialiser AppConfigController pour charger les paramètres de l'app
   final appConfigController = Get.put(AppConfigController(), permanent: true);
-  await appConfigController.loadSettings(); // Attendre le chargement des settings
+  if (connectivity.isOnline.value) {
+    await appConfigController.loadSettings(); // Attendre le chargement des settings
+  } else {
+    // Hors ligne : l'application s'ouvre sur ses valeurs par défaut, les
+    // réglages seront relus quand le serveur répondra.
+    unawaited(appConfigController.loadSettings());
+  }
   print('✅ AppConfigController initialized and settings loaded');
 
   // Initialiser les données de formatage de dates pour les locales

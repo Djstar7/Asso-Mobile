@@ -565,6 +565,8 @@ class TrackingView extends GetView<TrackingController> {
                     OrderDeliveryDetails(
                       delivery: delivery,
                       deliveryFee: shipment['deliveryFee'] as double?,
+                      freeDeliveryAmount:
+                          shipment['freeDeliveryAmount'] as double? ?? 0,
                       formatPrice: (v) => controller.formatPrice(v),
                       showTimeline: false,
                     ),

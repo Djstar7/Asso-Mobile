@@ -204,7 +204,7 @@ void main() {
     expect(value, 1);
   });
 
-  testWidgets('en gros, le minimum porte sur le total des tailles', (
+  testWidgets('en gros, le total cumule les tailles', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1080, 2340);
@@ -243,22 +243,29 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    Finder fieldOf(String label) => find.descendant(
-      of: find.ancestor(
-        of: find.text(label),
-        matching: find.byType(AnimatedContainer),
-      ),
-      matching: find.byType(TextField),
+    // Une taille à la fois : on la choisit, puis on saisit sa quantité
+    // dans le champ unique de la combinaison.
+    Finder comboField() => find.byWidgetPredicate(
+      (w) => w is TextField && w.keyboardType == TextInputType.number,
     );
 
-    await tester.enterText(fieldOf('L'), '30');
+    // Les tailles sont sous le palier : on les amène au-dessus de la barre
+    // du total.
+    Scrollable.ensureVisible(tester.element(find.text('L')), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('L'));
     await tester.pump();
-    expect(find.textContaining('minimum 50'), findsOneWidget);
+    await tester.enterText(comboField(), '30');
+    await tester.pump();
+    expect(find.textContaining('Total : 30'), findsOneWidget);
 
-    // 30 L + 20 XL = 50 : le minimum est atteint sans qu'aucune taille ne
-    // l'atteigne seule.
-    await tester.enterText(fieldOf('XL'), '20');
+    // 30 L + 20 XL : une ligne par taille, un seul total.
+    await tester.tap(find.text('XL'));
     await tester.pump();
-    expect(find.text('Total : 50 unités'), findsOneWidget);
+    await tester.enterText(comboField(), '20');
+    await tester.pump();
+    expect(find.textContaining('Total : 50'), findsOneWidget);
+    expect(find.text('L × 30'), findsOneWidget);
+    expect(find.text('XL × 20'), findsOneWidget);
   });
 }

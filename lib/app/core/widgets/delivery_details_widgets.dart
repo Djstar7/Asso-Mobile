@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/delivery_info.dart';
 import '../utils/app_theme_system.dart';
+import 'free_delivery_widgets.dart';
 
 typedef PriceFormatter = String Function(double amount);
 
@@ -456,12 +457,16 @@ class OrderDeliveryDetails extends StatelessWidget {
   final double? deliveryFee;
   final bool showTimeline;
 
+  /// Course offerte par le vendeur : son prix, affiché barré (0 sinon).
+  final double freeDeliveryAmount;
+
   const OrderDeliveryDetails({
     super.key,
     required this.delivery,
     required this.formatPrice,
     this.deliveryFee,
     this.showTimeline = true,
+    this.freeDeliveryAmount = 0,
   });
 
   @override
@@ -470,6 +475,10 @@ class OrderDeliveryDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (freeDeliveryAmount > 0) ...[
+          FreeDeliveryNotice(price: formatPrice(freeDeliveryAmount)),
+          const SizedBox(height: 10),
+        ],
         // Commande en gros : l'import jusqu'à Douala, puis la livraison locale.
         if (importLeg != null) ...[
           DeliveryInfoLine(importLeg.label, formatPrice(importLeg.price)),
@@ -517,7 +526,7 @@ class OrderDeliveryDetails extends StatelessWidget {
                 priceGrid: delivery.priceGrid,
                 conditions: delivery.conditions,
                 weightKg: delivery.weightKg,
-                fallbackTotal: deliveryFee,
+                fallbackTotal: freeDeliveryAmount > 0 ? freeDeliveryAmount : deliveryFee,
                 formatPrice: formatPrice,
               ),
             ],
@@ -638,7 +647,9 @@ Future<void> showDeliveryQuoteDetails(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
-                      'Choisir ce partenaire — ${formatPrice(quote.price)}',
+                      quote.isFree
+                          ? 'Choisir ce partenaire — livraison offerte'
+                          : 'Choisir ce partenaire — ${formatPrice(quote.price)}',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),

@@ -6,13 +6,20 @@ import 'package:http/http.dart' as http;
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/providers/shop_service.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/currency_model.dart';
+import '../../../data/providers/offline_store.dart';
+import '../../../data/services/connectivity_service.dart';
+import '../../../data/services/offline_product_sync_service.dart';
+import '../../vendorDashboard/controllers/vendor_dashboard_controller.dart';
 import 'product_draft_store.dart';
 import 'variant_editor_state.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
+import '../../../routes/app_pages.dart';
 
 class AddProductController extends GetxController {
   // Form controllers
@@ -194,6 +201,73 @@ class AddProductController extends GetxController {
   /// se rafraîchir), plutôt que depuis le tableau de bord.
   bool _openedFromProductManagement = false;
   final editProductId = Rx<int?>(null);
+
+  // Livraison gratuite : réglage de la boutique, et choix propre au produit
+  // (null = suit la boutique).
+  final shopFreeDelivery = false.obs;
+  final freeDeliveryOverride = Rxn<bool>();
+
+  bool get freeDeliveryEffective =>
+      freeDeliveryOverride.value ?? shopFreeDelivery.value;
+
+  /// Le produit ne garde un choix propre que s'il diffère de la boutique :
+  /// revenir au réglage de la boutique le fait de nouveau suivre.
+  void setFreeDelivery(bool value) {
+    freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
+  }
+
+  Future<void> _loadShopFreeDelivery() async {
+    if (!ConnectivityService.isOffline) {
+      try {
+        final response = await ShopService.getShop();
+        final shop = response.data?['shop'];
+        if (response.success && shop is Map) {
+          shopFreeDelivery.value = readFreeDelivery(shop['free_delivery']);
+          OfflineStore.saveSnapshot(
+            _shopFreeDeliveryKey,
+            shopFreeDelivery.value,
+          );
+          return;
+        }
+      } catch (_) {
+        // Repli sur la dernière valeur connue ci-dessous.
+      }
+    }
+    // Réglage inconnu : l'interrupteur part de « désactivé ».
+    shopFreeDelivery.value =
+        OfflineStore.readSnapshot(_shopFreeDeliveryKey) == true;
+  }
+
+  // ───────────── Mode hors ligne ─────────────
+
+  static const _categoriesKey = 'product_categories';
+  static const _shopFreeDeliveryKey = 'shop_free_delivery';
+
+  /// Joignabilité du serveur (badge, envoi différé).
+  bool get isOffline => ConnectivityService.isOffline;
+
+  /// Garde en local ce que le formulaire lit sur le serveur, pour qu'il
+  /// reste utilisable hors ligne. Appelé par le tableau de bord quand il se
+  /// charge en ligne ; silencieux en cas d'échec.
+  static Future<void> warmOfflineCache() async {
+    try {
+      final categories = await ProductService.getCategories();
+      final list = categories.data?['categories'];
+      if (categories.success && list is List && list.isNotEmpty) {
+        await OfflineStore.saveSnapshot(_categoriesKey, list);
+      }
+      final shop = await ShopService.getShop();
+      final shopData = shop.data?['shop'];
+      if (shop.success && shopData is Map) {
+        await OfflineStore.saveSnapshot(
+          _shopFreeDeliveryKey,
+          readFreeDelivery(shopData['free_delivery']),
+        );
+      }
+    } catch (_) {
+      // Le cache sera complété au prochain passage en ligne.
+    }
+  }
 
   // ───────────── Parcours en étapes ─────────────
 
@@ -552,7 +626,7 @@ class AddProductController extends GetxController {
       selectedCurrency.value = userCode.isNotEmpty ? userCode : 'XAF';
     }
 
-    if (Get.isRegistered<CurrencyService>()) {
+    if (Get.isRegistered<CurrencyService>() && !isOffline) {
       final list = await CurrencyService.to.getAllCurrencies();
       if (list.isNotEmpty) {
         availableCurrencies.assignAll(list.where((c) => c.isActive));
@@ -571,7 +645,11 @@ class AddProductController extends GetxController {
   Future<void> _initializeData() async {
     isLoading.value = true;
 
-    await Future.wait([_loadCategories(), _loadStorages()]);
+    await Future.wait([
+      _loadCategories(),
+      _loadStorages(),
+      _loadShopFreeDelivery(),
+    ]);
 
     // If in edit mode, populate fields with product data
     if (isEditMode.value && editProductData != null) {
@@ -596,6 +674,10 @@ class AddProductController extends GetxController {
 
   /// Charge les catégories depuis l'API
   Future<void> _loadCategories() async {
+    if (isOffline) {
+      if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
+      return;
+    }
     try {
       print('📂 ADD_PRODUCT: Chargement des catégories depuis l\'API...');
       final response = await ProductService.getCategories();
@@ -615,86 +697,105 @@ class AddProductController extends GetxController {
         );
 
         if (categoriesFromApi is List && categoriesFromApi.isNotEmpty) {
-          // Restructure categories from API format
-          final Map<String, List<Map<String, String>>> categories = {};
-          final List<Map<String, String>> allSubs = [];
-
-          for (var cat in categoriesFromApi) {
-            final catMap = cat as Map<String, dynamic>;
-            final catName = catMap['name'] ?? 'Autre';
-            final catId = catMap['id']?.toString() ?? '';
-
-            print(
-              '📂 ADD_PRODUCT: Traitement catégorie: $catName (ID: $catId)',
-            );
-
-            if (!categories.containsKey(catName)) {
-              categories[catName] = [];
-            }
-
-            // Add subcategories if they exist
-            if (catMap['subcategories'] is List) {
-              final subcats = catMap['subcategories'] as List;
-              print('   └─ Nombre de sous-catégories: ${subcats.length}');
-
-              for (var subcat in subcats) {
-                final subMap = subcat as Map<String, dynamic>;
-                final subcatData = <String, String>{
-                  'id': subMap['id']?.toString() ?? '',
-                  'name': subMap['name'] ?? 'Sous-catégorie',
-                  'category_name': catName,
-                  'category_id': catId,
-                };
-
-                print(
-                  '   └─ Sous-catégorie: ${subcatData['name']} (ID: ${subcatData['id']})',
-                );
-
-                categories[catName]!.add(subcatData);
-                allSubs.add(subcatData);
-              }
-            } else {
-              print(
-                '   └─ Aucune sous-catégorie, ajout de la catégorie comme sous-catégorie',
-              );
-              // If no subcategories, add the category itself as a subcategory
-              final subcatData = <String, String>{
-                'id': catId,
-                'name': catName,
-                'category_name': catName,
-                'category_id': catId,
-              };
-              categories[catName]!.add(subcatData);
-              allSubs.add(subcatData);
-            }
-          }
-
-          categoriesData.clear();
-          categoriesData.addAll(categories);
-          allSubcategories.value = allSubs;
-
-          print(
-            '✅ ADD_PRODUCT: ${categories.length} catégories chargées depuis l\'API',
-          );
-          print('✅ ADD_PRODUCT: ${allSubs.length} sous-catégories au total');
+          OfflineStore.saveSnapshot(_categoriesKey, categoriesFromApi);
+          _applyCategories(categoriesFromApi);
         } else {
           print(
             '⚠️ ADD_PRODUCT: Format de données inattendu ou liste vide, utilisation des données hardcodées',
           );
-          _buildAllSubcategoriesFromHardcoded();
+          if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
         }
       } else {
         print(
           '❌ ADD_PRODUCT: Échec de la réponse API - Message: ${response.message}',
         );
-        _buildAllSubcategoriesFromHardcoded();
+        if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
       }
     } catch (e, stackTrace) {
       print('❌ ADD_PRODUCT: Erreur lors du chargement des catégories: $e');
       print('❌ ADD_PRODUCT: Stack trace: $stackTrace');
-      // Keep the hardcoded categories as fallback
-      _buildAllSubcategoriesFromHardcoded();
+      // Dernière liste connue, sinon les catégories codées en dur.
+      if (!_applyCachedCategories()) _buildAllSubcategoriesFromHardcoded();
     }
+  }
+
+  /// Catégories de la dernière réponse du serveur gardée en local. Faux
+  /// s'il n'y en a pas.
+  bool _applyCachedCategories() {
+    final cached = OfflineStore.readSnapshot(_categoriesKey);
+    if (cached is! List || cached.isEmpty) return false;
+    try {
+      _applyCategories(cached);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Range les catégories du serveur (liste avec sous-catégories).
+  void _applyCategories(List categoriesFromApi) {
+    // Restructure categories from API format
+    final Map<String, List<Map<String, String>>> categories = {};
+    final List<Map<String, String>> allSubs = [];
+
+    for (var cat in categoriesFromApi) {
+      final catMap = Map<String, dynamic>.from(cat as Map);
+      final catName = catMap['name'] ?? 'Autre';
+      final catId = catMap['id']?.toString() ?? '';
+
+      print(
+        '📂 ADD_PRODUCT: Traitement catégorie: $catName (ID: $catId)',
+      );
+
+      if (!categories.containsKey(catName)) {
+        categories[catName] = [];
+      }
+
+      // Add subcategories if they exist
+      if (catMap['subcategories'] is List) {
+        final subcats = catMap['subcategories'] as List;
+        print('   └─ Nombre de sous-catégories: ${subcats.length}');
+
+        for (var subcat in subcats) {
+          final subMap = Map<String, dynamic>.from(subcat as Map);
+          final subcatData = <String, String>{
+            'id': subMap['id']?.toString() ?? '',
+            'name': subMap['name'] ?? 'Sous-catégorie',
+            'category_name': catName,
+            'category_id': catId,
+          };
+
+          print(
+            '   └─ Sous-catégorie: ${subcatData['name']} (ID: ${subcatData['id']})',
+          );
+
+          categories[catName]!.add(subcatData);
+          allSubs.add(subcatData);
+        }
+      } else {
+        print(
+          '   └─ Aucune sous-catégorie, ajout de la catégorie comme sous-catégorie',
+        );
+        // If no subcategories, add the category itself as a subcategory
+        final subcatData = <String, String>{
+          'id': catId,
+          'name': catName,
+          'category_name': catName,
+          'category_id': catId,
+        };
+        categories[catName]!.add(subcatData);
+        allSubs.add(subcatData);
+      }
+    }
+
+    categoriesData.clear();
+    categoriesData.addAll(categories);
+    allSubcategories.value = allSubs;
+
+    print(
+      '✅ ADD_PRODUCT: ${categories.length} catégories chargées depuis l\'API',
+    );
+    print('✅ ADD_PRODUCT: ${allSubs.length} sous-catégories au total');
   }
 
   Future<XFile?> _downloadImage(String url) async {
@@ -745,40 +846,52 @@ class AddProductController extends GetxController {
 
   /// Charge les espaces de stockage depuis l'API
   Future<void> _loadStorages() async {
+    // Hors ligne : forfait tel que le tableau de bord l'a vu en dernier.
+    if (isOffline) {
+      final snapshot = OfflineStore.readSnapshot(
+        VendorDashboardController.dashboardSnapshotKey,
+      );
+      if (snapshot is Map) _applyStorage(snapshot);
+      return;
+    }
     try {
       final response = await VendorService.getVendorDashboard();
 
       if (response.success && response.data != null) {
         final data = response.data!['data'] ?? response.data!;
-
-        if (data['package'] != null &&
-            data['package']['vendor_package'] != null) {
-          final vendorPackage = data['package']['vendor_package'];
-          final storageTotalMb = (vendorPackage['storage_total_mb'] ?? 0)
-              .toDouble();
-          final storageRemainingMb =
-              (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
-          final packageName =
-              vendorPackage['package']?['name'] ?? 'Package actif';
-
-          storageList.value = [
-            {
-              'id': vendorPackage['id']?.toString() ?? '1',
-              'name': packageName,
-              'available': storageRemainingMb / 1024, // Convert MB to GB
-              'total': storageTotalMb / 1024, // Convert MB to GB
-            },
-          ];
-
-          // Sélectionner automatiquement
-          if (storageList.isNotEmpty) {
-            selectedStorage.value = storageList.first;
-          }
-        }
+        _applyStorage(data);
       }
     } catch (e) {
       print('Erreur lors du chargement du stockage: $e');
       // Si erreur, on laisse vide - l'utilisateur devra souscrire à un package
+    }
+  }
+
+  /// Espace du forfait actif, lu dans une réponse du tableau de bord.
+  void _applyStorage(Map data) {
+    if (data['package'] != null &&
+        data['package']['vendor_package'] != null) {
+      final vendorPackage = data['package']['vendor_package'];
+      final storageTotalMb = (vendorPackage['storage_total_mb'] ?? 0)
+          .toDouble();
+      final storageRemainingMb =
+          (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
+      final packageName =
+          vendorPackage['package']?['name'] ?? 'Package actif';
+
+      storageList.value = [
+        {
+          'id': vendorPackage['id']?.toString() ?? '1',
+          'name': packageName,
+          'available': storageRemainingMb / 1024, // Convert MB to GB
+          'total': storageTotalMb / 1024, // Convert MB to GB
+        },
+      ];
+
+      // Sélectionner automatiquement
+      if (storageList.isNotEmpty) {
+        selectedStorage.value = storageList.first;
+      }
     }
   }
 
@@ -848,6 +961,12 @@ class AddProductController extends GetxController {
       if (productType == 'article' || productType == 'service') {
         articleType.value = productType!;
       }
+
+      // Livraison gratuite propre au produit (null = suit la boutique).
+      final freeSetting = product['free_delivery_setting'];
+      freeDeliveryOverride.value = freeSetting == null
+          ? null
+          : readFreeDelivery(freeSetting);
 
       // Poids réel en kg (utilisé pour chiffrer la livraison).
       final weightKg = parseWeightKg(product['weight']?.toString());
@@ -992,6 +1111,19 @@ class AddProductController extends GetxController {
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
         icon: const Icon(Icons.warning, color: Colors.white),
+      );
+      return;
+    }
+
+    if (isOffline) {
+      Get.snackbar(
+        'Hors ligne',
+        'L\'analyse de la photo demande une connexion. Remplissez la fiche '
+            'vous-même : elle sera publiée au retour du réseau.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppThemeSystem.warningColor,
+        colorText: Colors.white,
+        icon: const Icon(Icons.cloud_off_rounded, color: Colors.white),
       );
       return;
     }
@@ -1222,6 +1354,16 @@ class AddProductController extends GetxController {
       return;
     }
 
+    // Le mode hors ligne ne couvre que la création : une modification part
+    // des données du serveur, qui font foi.
+    if (isEditMode.value && isOffline) {
+      _warnMissingField(
+        'Hors ligne',
+        'La modification d\'un produit demande une connexion.',
+      );
+      return;
+    }
+
     // Note: Les champs storage et stock ne sont pas encore requis par l'API
     // Ces validations sont commentées pour le moment
 
@@ -1376,6 +1518,12 @@ class AddProductController extends GetxController {
       // En modification, on envoie toujours l'état complet (y compris « plus aucune variante »).
       if (isEditMode.value) fieldsMap['replace_variants'] = '1';
 
+      // Livraison gratuite : vide = suit la boutique.
+      final freeOverride = freeDeliveryOverride.value;
+      fieldsMap['free_delivery'] = freeOverride == null
+          ? ''
+          : (freeOverride ? '1' : '0');
+
       // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
       final weightText = weightKgController.text.trim();
       if (weightText.isNotEmpty) {
@@ -1389,6 +1537,13 @@ class AddProductController extends GetxController {
       if (primaryImageIndex.value > 0 &&
           primaryImageIndex.value < productImages.length) {
         fieldsMap['primary_image_index'] = primaryImageIndex.value.toString();
+      }
+
+      // Hors ligne : la fiche est gardée sur le téléphone et partira seule
+      // au retour de la connexion.
+      if (!isEditMode.value && isOffline) {
+        await _saveOffline(fieldsMap, imagesToUpload);
+        return;
       }
 
       print('📦 ADD_PRODUCT: Envoi de la requête au backend...');
@@ -1414,6 +1569,17 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: Réponse reçue - success: ${response.success}');
       print('📦 ADD_PRODUCT: Réponse reçue - message: ${response.message}');
       print('📦 ADD_PRODUCT: Réponse reçue - data: ${response.data}');
+
+      // Connexion perdue pendant l'envoi : plutôt que de perdre la saisie,
+      // on la garde pour l'envoi différé.
+      if (!response.success &&
+          response.statusCode == 0 &&
+          !isEditMode.value &&
+          Get.isRegistered<ConnectivityService>() &&
+          !await ConnectivityService.to.check()) {
+        await _saveOffline(fieldsMap, imagesToUpload);
+        return;
+      }
 
       if (response.success) {
         print('');
@@ -1573,6 +1739,56 @@ class AddProductController extends GetxController {
     }
   }
 
+  /// Met la fiche en file d'envoi (Hive) et ramène le vendeur au tableau
+  /// de bord.
+  Future<void> _saveOffline(
+    Map<String, String> fields,
+    List<XFile> images,
+  ) async {
+    if (!Get.isRegistered<OfflineProductSyncService>()) {
+      _warnMissingField(
+        'Hors ligne',
+        'Impossible d\'enregistrer le produit sans connexion.',
+      );
+      return;
+    }
+    try {
+      await OfflineProductSyncService.to.enqueue(
+        fields: fields,
+        images: images,
+      );
+    } catch (e) {
+      _warnMissingField(
+        'Enregistrement impossible',
+        'Le produit n\'a pas pu être gardé sur le téléphone : $e',
+      );
+      return;
+    }
+
+    // La fiche est en file : son brouillon n'a plus lieu d'être proposé.
+    discardDraft();
+
+    Get.snackbar(
+      'Enregistré hors ligne',
+      'Votre produit sera publié automatiquement dès le retour de la connexion.',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: AppDesign.warning,
+      colorText: Colors.white,
+      icon: const Icon(Icons.cloud_upload_outlined, color: Colors.white),
+      margin: const EdgeInsets.all(AppDesign.space4),
+      borderRadius: AppDesign.radiusMd,
+      duration: const Duration(seconds: 4),
+    );
+
+    // Retour à l'écran d'où l'on vient (tableau de bord ou liste) ; la
+    // liste des produits, elle, demande le réseau.
+    if (Get.key.currentState?.canPop() ?? false) {
+      AppNavigation.pop(true);
+    } else {
+      Get.offAllNamed(Routes.VENDOR_DASHBOARD);
+    }
+  }
+
   // ================================
   // CURRENCY FORMATTING
   // ================================
@@ -1602,7 +1818,8 @@ class AddProductController extends GetxController {
     final price = double.tryParse(
       priceController.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
     );
-    if (price == null || price <= 0) {
+    // Hors ligne, le prix client sera calculé par le serveur à l'envoi.
+    if (price == null || price <= 0 || isOffline) {
       buyerPricePreview.value = null;
       return;
     }

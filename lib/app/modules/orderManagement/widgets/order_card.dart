@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/order_management_controller.dart';
 import '../models/order_model.dart';
@@ -173,6 +174,30 @@ class OrderCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            // Livraison offerte au client : déjà déduite du montant ci-dessus.
+            if (order.freeDeliveryAmount > 0) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_shipping_outlined,
+                    size: 16,
+                    color: AppDesign.success,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Livraison offerte : − ${controller.formatPrice(order.freeDeliveryAmount)} (déjà déduite)',
+                      style: context.caption.copyWith(
+                        color: AppDesign.successText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
 
             SizedBox(height: context.elementSpacing),
 

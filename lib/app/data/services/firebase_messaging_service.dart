@@ -203,13 +203,17 @@ class FirebaseMessagingService extends GetxService {
         return;
       }
 
-      final token = await _firebaseMessaging.getToken();
+      // Borné : sans réseau, la demande de token peut rester pendante et
+      // retenait le premier écran (mode hors ligne vendeur).
+      final token = await _firebaseMessaging
+          .getToken()
+          .timeout(const Duration(seconds: 5));
       fcmToken.value = token;
 
       if (token != null) {
         print('🔑 FCM Token: $token');
-        // Envoyer le token au backend
-        await _sendTokenToBackend(token);
+        // Envoyer le token au backend, sans retenir le démarrage.
+        unawaited(_sendTokenToBackend(token));
       } else {
         print('⚠️ Impossible d\'obtenir le token FCM');
       }

@@ -277,6 +277,13 @@ class DeliveryPartnerQuote {
   String? get vehicle => _toText(raw['vehicle']);
   String? get vehicleLabel => _toText(raw['vehicle_label']);
   double get price => _toDouble(raw['delivery_price']) ?? 0;
+
+  /// Course offerte par le vendeur : [price] reste affiché, barré, et
+  /// l'acheteur ne le paie pas.
+  bool get isFree => raw['free_delivery'] == true;
+
+  /// Ce que l'acheteur paie pour cette course.
+  double get buyerPrice => isFree ? 0 : price;
   double get assoCommission => _toDouble(raw['asso_commission']) ?? 0;
   List<DeliveryPriceGridRow> get priceGrid =>
       DeliveryPriceGridRow.listFrom(raw['price_grid']);

@@ -99,6 +99,9 @@ class CustomerOrder {
   final List<CustomerOrderItem> items;
   final double subtotal;
   final double deliveryFee;
+
+  /// Course offerte par le vendeur : prix affiché barré (0 sinon).
+  final double freeDeliveryAmount;
   final double total;
   final DateTime orderDate;
   final DateTime? deliveryDate;
@@ -127,6 +130,7 @@ class CustomerOrder {
     required this.items,
     required this.subtotal,
     required this.deliveryFee,
+    this.freeDeliveryAmount = 0,
     required this.total,
     required this.orderDate,
     this.deliveryDate,
@@ -152,6 +156,9 @@ class CustomerOrder {
       items: (map['items'] as List?)?.map((i) => CustomerOrderItem.fromMap(Map<String, dynamic>.from(i))).toList() ?? [],
       subtotal: double.tryParse(map['subtotal']?.toString() ?? '0') ?? 0,
       deliveryFee: double.tryParse(map['delivery_fee']?.toString() ?? '0') ?? 0,
+      freeDeliveryAmount: map['free_delivery'] == true
+          ? double.tryParse(map['free_delivery_amount']?.toString() ?? '0') ?? 0
+          : 0,
       total: double.tryParse(map['total']?.toString() ?? '0') ?? 0,
       orderDate: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
       deliveryDate: map['delivered_at'] != null ? DateTime.tryParse(map['delivered_at']) : null,

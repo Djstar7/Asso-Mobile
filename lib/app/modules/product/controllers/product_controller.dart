@@ -661,9 +661,16 @@ class ProductController extends GetxController {
   double orderSubtotal(Map<String, dynamic> product) =>
       orderLines(product).fold(0.0, (sum, line) => sum + line.totalXaf);
 
+  /// Course choisie offerte par le vendeur : son prix s'affiche barré et
+  /// n'entre pas dans le total.
+  bool get deliveryIsFree {
+    final partner = selectedPartner.value;
+    return partner != null && DeliveryPartnerQuote(partner).isFree;
+  }
+
   double orderTotal(Map<String, dynamic> product) {
     final total = orderSubtotal(product);
-    if (withDelivery.value) {
+    if (withDelivery.value && !deliveryIsFree) {
       return total + deliveryPrice.value;
     }
     return total;

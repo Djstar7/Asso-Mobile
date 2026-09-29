@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/free_delivery_widgets.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
@@ -364,7 +365,20 @@ class MyOrderView extends GetView<MyOrderController> {
           // Totaux
           _buildPriceRow(context, 'Sous-total', order.subtotal),
           const SizedBox(height: 8),
-          _buildPriceRow(context, 'Frais de livraison', order.deliveryFee),
+          if (order.freeDeliveryAmount > 0)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Frais de livraison', style: context.body2),
+                DeliveryPriceText(
+                  price: controller.formatPrice(order.freeDeliveryAmount),
+                  isFree: true,
+                  style: context.body2.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            )
+          else
+            _buildPriceRow(context, 'Frais de livraison', order.deliveryFee),
           const SizedBox(height: 8),
           Divider(color: context.borderColor),
           const SizedBox(height: 8),
