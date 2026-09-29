@@ -272,9 +272,7 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
                 minWidth: 48,
                 minHeight: AppDesign.minTapTarget,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDesign.space3,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                 border: Border.all(
@@ -364,7 +362,8 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
       if (widget.priceOf != null) widget.priceOf!(variant),
       if (widget.limitToStock) '$stock en stock',
     ];
-    final hasError = quantity > 0 && (widget.lineHasError?.call(id, quantity) ?? false);
+    final hasError =
+        quantity > 0 && (widget.lineHasError?.call(id, quantity) ?? false);
 
     return Container(
       padding: const EdgeInsets.all(AppDesign.space3),
@@ -373,26 +372,35 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
         borderRadius: BorderRadius.circular(AppDesign.radiusSm),
         border: Border.all(color: AppDesign.accent, width: 1.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      // Libellé à gauche, quantité à droite : une seule ligne nette.
+      child: Row(
         children: [
-          Text(
-            'Quantité pour ${VariantCatalog.labelOf(variant)}',
-            style: context.textStyle(
-              FontSizeType.body2,
-              fontWeight: FontWeight.w700,
-              color: context.ds.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  VariantCatalog.labelOf(variant),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
+                if (details.isNotEmpty)
+                  Text(
+                    details.join(' · '),
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
+              ],
             ),
           ),
-          if (details.isNotEmpty)
-            Text(
-              details.join(' · '),
-              style: context.textStyle(
-                FontSizeType.caption,
-                color: context.ds.textSecondary,
-              ),
-            ),
-          const SizedBox(height: AppDesign.space2),
+          const SizedBox(width: AppDesign.space2),
           QuantityStepper(
             // Nouvelle combinaison : champ neuf, sans reprendre la saisie
             // de la précédente.
@@ -481,7 +489,9 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
                 style: context.textStyle(
                   FontSizeType.caption,
                   fontWeight: FontWeight.w600,
-                  color: hasError ? AppDesign.dangerText : context.ds.textPrimary,
+                  color: hasError
+                      ? AppDesign.dangerText
+                      : context.ds.textPrimary,
                 ),
               ),
               IconButton(
