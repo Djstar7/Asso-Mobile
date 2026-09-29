@@ -746,7 +746,7 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Choisissez vos options',
+                'Options disponibles',
                 style: context.textStyle(
                   FontSizeType.subtitle1,
                   fontWeight: FontWeight.bold,
@@ -754,20 +754,18 @@ class ProductView extends GetView<ProductController> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Obx(
-            () => ProductVariantSelector(
-              key: ValueKey(
-                'page-variants-${controller.variantSelectorEpoch.value}',
-              ),
-              catalog: catalog,
-              selectedVariantId:
-                  controller.selectedVariant.value?['id'] as int?,
-              onChanged: (variant) =>
-                  controller.onVariantChanged(product, variant),
-              formatAdjustment: controller.formatPrice,
+          const SizedBox(height: 4),
+          // Le choix se fait dans la feuille de commande, où plusieurs
+          // combinaisons peuvent être prises à la fois.
+          Text(
+            'Vous choisirez vos couleurs, tailles et quantités en commandant.',
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
             ),
           ),
+          const SizedBox(height: 16),
+          VariantOptionsPreview(catalog: catalog),
         ],
       ),
     );

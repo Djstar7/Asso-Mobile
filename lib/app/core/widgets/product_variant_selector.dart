@@ -719,3 +719,117 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
     );
   }
 }
+
+/// Aperçu des options d'un produit, en lecture seule : l'acheteur voit les
+/// couleurs et tailles proposées sur la fiche et ne les choisit qu'au moment
+/// de commander.
+class VariantOptionsPreview extends StatelessWidget {
+  final VariantCatalog catalog;
+
+  /// Vente au détail : une valeur sans aucune variante en stock est grisée.
+  /// En gros, le stock des variantes est sans objet.
+  final bool dimOutOfStock;
+
+  const VariantOptionsPreview({
+    super.key,
+    required this.catalog,
+    this.dimOutOfStock = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (catalog.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (index, group) in catalog.groups.indexed) ...[
+          if (index > 0) const SizedBox(height: 16),
+          Text(
+            '${group.name} (${group.values.length})',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Une ligne par groupe, qui défile de côté quand les valeurs
+          // dépassent la largeur de l'écran.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (i, option) in group.values.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: i == 0 ? 0 : (group.isColor ? 12 : 8),
+                    ),
+                    child: Opacity(
+                      opacity:
+                          !dimOutOfStock ||
+                              catalog.isAvailable(
+                                group.name,
+                                option.value,
+                                const {},
+                              )
+                          ? 1
+                          : 0.4,
+                      child: group.isColor
+                          ? _colorSwatch(context, option)
+                          : _chip(context, option),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _colorSwatch(BuildContext context, VariantOptionValue option) {
+    final color = option.color ?? VariantPalette.guess(option.value);
+    return SizedBox(
+      width: 52,
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black.withValues(alpha: 0.12)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            option.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: context.secondaryTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, VariantOptionValue option) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: context.ds.surfaceMuted,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      option.value,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: context.primaryTextColor,
+      ),
+    ),
+  );
+}

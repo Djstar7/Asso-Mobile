@@ -9,6 +9,7 @@ import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/string_utils.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/utils/media_url.dart';
@@ -272,11 +273,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
     final id = _focusedVariantId ?? _lines.lastOrNull?.$1;
     if (id == null) {
-      Get.snackbar(
-        'Choisissez une option',
-        'Sélectionnez d’abord une couleur ou une taille, puis le palier.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      _openOptionsSheet(thenPay: false);
       return;
     }
     final current = _variantQuantities[id] ?? 0;
@@ -293,6 +290,56 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
     setState(() => _variantQuantities = {..._variantQuantities, id: next});
     _quantityChanged();
+  }
+
+  /// Feuille où l'acheteur choisit ses options et leurs quantités : sur la
+  /// fiche, couleurs et tailles ne sont qu'affichées. « Commander » l'ouvre
+  /// avant le paiement ([thenPay]) ; elle rend `true` une fois validée.
+  Future<bool?> _openOptionsSheet({required bool thenPay}) {
+    return AppSheet.show<bool>(
+      StatefulBuilder(
+        builder: (context, setSheetState) => AppSheet(
+          title: 'Vos options et quantités',
+          subtitle:
+              'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.',
+          footer: AppButton(
+            label: thenPay ? 'Continuer vers le paiement' : 'Valider',
+            icon: thenPay ? Icons.lock_rounded : Icons.check_rounded,
+            size: AppButtonSize.large,
+            onPressed: () {
+              if (_requireVariant()) AppNavigation.pop(true);
+            },
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // En gros, le stock saisi sur une variante n'a pas de sens :
+              // toutes les options restent commandables.
+              VariantComboPicker(
+                catalog: _variantCatalog,
+                quantities: _variantQuantities,
+                limitToStock: false,
+                priceOf: (variant) {
+                  final id = VariantQuantityList.idOf(variant);
+                  final tier = _tierFor(_variantQuantities[id] ?? 0);
+                  return tier == null
+                      ? ''
+                      : '${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
+                },
+                onFocusChanged: (id) => _focusedVariantId = id,
+                onChanged: (next) {
+                  setState(() => _variantQuantities = next);
+                  setSheetState(() {});
+                  _quantityChanged();
+                },
+              ),
+              const SizedBox(height: AppDesign.space3),
+              _buildQuantityHint(context),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ─────────────────────────── Page ───────────────────────────
@@ -348,7 +395,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                               title: 'Prix selon la quantité',
                               subtitle: _mixVariants
                                   ? 'Le prix suit la quantité totale. Touchez un palier pour l’appliquer.'
-                                  : 'Chaque option a le prix de sa propre quantité. Touchez un palier pour l’appliquer à l’option choisie.',
+                                  : 'Chaque option a le prix de sa propre quantité.',
                               child: Column(
                                 children: _tiers.map(_tierTile).toList(),
                               ),
@@ -358,42 +405,38 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                           _hasVariants
                               ? _section(
                                   context,
-                                  title: 'Options et quantités',
+                                  title: 'Options disponibles',
                                   subtitle:
-                                      'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.',
+                                      'Vous choisirez vos couleurs, tailles et quantités en commandant.',
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      // En gros, le stock saisi sur une
-                                      // variante n'a pas de sens : toutes les
-                                      // options restent commandables.
-                                      VariantComboPicker(
+                                      VariantOptionsPreview(
                                         catalog: _variantCatalog,
-                                        quantities: _variantQuantities,
-                                        limitToStock: false,
-                                        priceOf: (variant) {
-                                          final id = VariantQuantityList.idOf(
-                                            variant,
-                                          );
-                                          final tier = _tierFor(
-                                            _variantQuantities[id] ?? 0,
-                                          );
-                                          return tier == null
-                                              ? ''
-                                              : '${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
-                                        },
-                                        onFocusChanged: (id) =>
-                                            _focusedVariantId = id,
-                                        onChanged: (next) {
-                                          setState(
-                                            () => _variantQuantities = next,
-                                          );
-                                          _quantityChanged();
-                                        },
+                                        dimOutOfStock: false,
                                       ),
-                                      const SizedBox(height: AppDesign.space3),
-                                      _buildQuantityHint(context),
+                                      if (!_quantityTooLow) ...[
+                                        const SizedBox(
+                                          height: AppDesign.space3,
+                                        ),
+                                        _buildQuantityHint(context),
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: TextButton.icon(
+                                            onPressed: () => _openOptionsSheet(
+                                              thenPay: false,
+                                            ),
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 18,
+                                            ),
+                                            label: const Text(
+                                              'Modifier mes choix',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 )
@@ -1233,7 +1276,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     if (!AuthGuard.checkAuthWithAlert(context, featureName: 'le paiement')) {
       return;
     }
-    if (!_requireVariant()) return;
+    if (_hasVariants) {
+      final confirmed = await _openOptionsSheet(thenPay: true);
+      if (confirmed != true || !mounted) return;
+    }
     final tier = _tier, shipping = _shipping;
     if (tier == null || shipping == null || _lines.isEmpty) {
       Get.snackbar(
