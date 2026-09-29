@@ -185,7 +185,7 @@ class ProfileController extends GetxController {
 
   /// Navigation vers les preferences (vitrine) : accessible sans connexion.
   void goToPreferences() {
-    Get.toNamed(Routes.PREFERENCES);
+    Get.toNamed(Routes.PREFERENCES, arguments: {'isEditing': true});
   }
 
   /// Recalcule l'etat d'authentification et recharge le profil.

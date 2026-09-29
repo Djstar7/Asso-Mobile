@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/settings_controller.dart';
+import '../../../routes/app_pages.dart';
 import '../../../core/widgets/app_ui.dart';
 
 class SettingsView extends GetView<SettingsController> {
@@ -108,6 +109,33 @@ class SettingsView extends GetView<SettingsController> {
             _buildSettingsCard(
               context,
               children: [
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.help_outline,
+                  title: 'Aide & Support',
+                  subtitle: 'Nous contacter, sujets d\'aide',
+                  onTap: () => Get.toNamed(Routes.HELP),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.quiz_outlined,
+                  title: 'FAQ',
+                  subtitle: 'Questions fréquentes',
+                  onTap: () => Get.toNamed(Routes.FAQ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.gavel_outlined,
+                  title: 'Conditions & politiques',
+                  subtitle: 'CGU, CGV, confidentialité…',
+                  onTap: () => Get.toNamed(Routes.LEGAL),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
                 _buildSettingsTile(
                   context,
                   icon: Icons.info_outline,

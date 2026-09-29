@@ -627,6 +627,7 @@ class HomeView extends GetView<HomeController> {
                 ),
 
                 // SECTION: AIDE & SUPPORT
+                // Mêmes destinations que les entrées homonymes des paramètres.
                 _buildSectionHeader(context, 'Aide & Support'),
                 _buildDrawerItem(
                   context: context,
@@ -634,16 +635,7 @@ class HomeView extends GetView<HomeController> {
                   title: 'Aide & Support',
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'Support',
-                      'Contactez-nous à support@asso.cm ou appelez le 1234',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 3),
-                      backgroundColor: AppThemeSystem.infoColor,
-                      colorText: Colors.white,
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.HELP);
                   },
                 ),
                 _buildDrawerItem(
@@ -652,30 +644,25 @@ class HomeView extends GetView<HomeController> {
                   title: 'FAQ',
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'FAQ',
-                      'Questions fréquemment posées - En cours de développement',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.FAQ);
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.gavel_rounded,
+                  title: 'Conditions & politiques',
+                  onTap: () {
+                    Get.back();
+                    Get.toNamed(Routes.LEGAL);
                   },
                 ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.info_outline_rounded,
-                  title: 'À Propos',
+                  title: 'À propos',
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'À Propos',
-                      'Asso v1.0.0 - Votre marketplace au Cameroun',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.ABOUT);
                   },
                 ),
 

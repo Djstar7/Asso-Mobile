@@ -4,6 +4,8 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/about_controller.dart';
+import '../../../routes/app_pages.dart';
+import '../../legal/views/legal_view.dart';
 
 class AboutView extends GetView<AboutController> {
   const AboutView({super.key});
@@ -145,63 +147,41 @@ class AboutView extends GetView<AboutController> {
   }
 
   Widget _buildLegalSection(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        children: [
-          _buildLegalItem(
-            context,
-            icon: Icons.description,
-            title: 'Conditions d\'utilisation',
-            subtitle: 'Consultez nos conditions d\'utilisation',
-            onTap: controller.showTermsOfService,
-          ),
-          Divider(color: context.borderColor, height: 1),
-          _buildLegalItem(
-            context,
-            icon: Icons.privacy_tip,
-            title: 'Politique de confidentialité',
-            subtitle: 'Comment nous protégeons vos données',
-            onTap: controller.showPrivacyPolicy,
-          ),
-          Divider(color: context.borderColor, height: 1),
-          _buildLegalItem(
-            context,
-            icon: Icons.info_outline,
-            title: 'Licences open source',
-            subtitle: 'Bibliothèques et licences utilisées',
-            onTap: controller.showLicenses,
-          ),
-        ],
+    final licences = LegalTile(
+      icon: Icons.info_outline,
+      title: 'Licences open source',
+      subtitle: 'Bibliothèques et licences utilisées',
+      onTap: () => showLicensePage(
+        context: context,
+        applicationName: controller.appName.value,
+        applicationVersion: controller.appVersion.value,
       ),
     );
-  }
 
-  Widget _buildLegalItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
-      ),
-      title: Text(title, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: context.caption),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+      child: Obx(() {
+        // Documents pas encore reçus (hors ligne) : la page dédiée les
+        // recharge d'elle-même.
+        if (controller.legalDocuments.isEmpty) {
+          return LegalDocumentsCard(
+            documents: const [],
+            trailing: [
+              LegalTile(
+                icon: Icons.gavel_outlined,
+                title: 'Conditions & politiques',
+                subtitle: 'CGU, CGV, confidentialité…',
+                onTap: () => Get.toNamed(Routes.LEGAL),
+              ),
+              licences,
+            ],
+          );
+        }
+        return LegalDocumentsCard(
+          documents: controller.legalDocuments,
+          trailing: [licences],
+        );
+      }),
     );
   }
 

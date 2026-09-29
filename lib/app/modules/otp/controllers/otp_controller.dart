@@ -323,7 +323,7 @@ class OtpController extends GetxController {
 
           if (isNew) {
             developer.log('Navigating to PREFERENCES', name: 'OtpController');
-            Get.offAllNamed(Routes.PREFERENCES);
+            Get.offAllNamed(Routes.PREFERENCES, arguments: {'onboarding': true});
           } else {
             developer.log('Navigating to HOME', name: 'OtpController');
             Get.offAllNamed(Routes.HOME);
