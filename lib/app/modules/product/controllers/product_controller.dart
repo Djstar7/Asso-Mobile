@@ -72,10 +72,6 @@ class ProductController extends GetxController {
   /// sur sa propre ligne.
   final variantQuantities = <int, int>{}.obs;
 
-  /// Incrémenté quand la variante change hors de la fiche (feuille de commande) :
-  /// le sélecteur de la fiche est alors reconstruit sur le nouveau choix.
-  final variantSelectorEpoch = 0.obs;
-
   /// Texte saisi, observé pour activer/désactiver le bouton de paiement.
   final customerPhone = ''.obs;
   final PageController imagePageController = PageController();
@@ -442,18 +438,6 @@ class ProductController extends GetxController {
             unitPriceXaf: _priceFor(product, variant),
           ),
     ];
-  }
-
-  /// Ramène la quantité dans le stock de la nouvelle variante.
-  void onVariantChanged(
-    Map<String, dynamic> product,
-    Map<String, dynamic>? variant,
-  ) {
-    selectedVariant.value = variant;
-    final max = maxQuantity(product);
-    if (max != null && max > 0 && orderQuantity.value > max) {
-      orderQuantity.value = max;
-    }
   }
 
   bool get hasValidLocation =>

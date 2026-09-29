@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:asso/app/core/widgets/app_sheet.dart';
 import 'package:asso/app/core/widgets/product_variant_selector.dart';
 import 'package:asso/app/core/widgets/quantity_stepper.dart';
 import 'package:asso/app/core/widgets/variant_quantity_list.dart';
@@ -243,28 +244,40 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Une taille à la fois : on la choisit, puis on saisit sa quantité
-    // dans le champ unique de la combinaison.
+    // Sur la fiche, les tailles sont seulement affichées : les toucher
+    // n'ouvre aucune saisie.
     Finder comboField() => find.byWidgetPredicate(
       (w) => w is TextField && w.keyboardType == TextInputType.number,
     );
-
-    // Les tailles sont sous le palier : on les amène au-dessus de la barre
-    // du total.
     Scrollable.ensureVisible(tester.element(find.text('L')), alignment: 0.5);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('L'));
+    await tester.tap(find.text('L'), warnIfMissed: false);
+    await tester.pump();
+    expect(comboField(), findsNothing);
+
+    // Le choix se fait dans la feuille des options ; toucher un palier sans
+    // option choisie l'ouvre.
+    await tester.tap(find.text('Carton de 50'));
+    await tester.pumpAndSettle();
+    final sheet = find.byType(AppSheet);
+    expect(sheet, findsOneWidget);
+    Finder inSheet(Finder finder) =>
+        find.descendant(of: sheet, matching: finder);
+
+    // Une taille à la fois : on la choisit, puis on saisit sa quantité
+    // dans le champ unique de la combinaison.
+    await tester.tap(inSheet(find.text('L')));
     await tester.pump();
     await tester.enterText(comboField(), '30');
     await tester.pump();
-    expect(find.textContaining('Total : 30'), findsOneWidget);
+    expect(inSheet(find.textContaining('Total : 30')), findsOneWidget);
 
     // 30 L + 20 XL : une ligne par taille, un seul total.
-    await tester.tap(find.text('XL'));
+    await tester.tap(inSheet(find.text('XL')));
     await tester.pump();
     await tester.enterText(comboField(), '20');
     await tester.pump();
-    expect(find.textContaining('Total : 50'), findsOneWidget);
+    expect(inSheet(find.textContaining('Total : 50')), findsOneWidget);
     expect(find.text('L × 30'), findsOneWidget);
     expect(find.text('XL × 20'), findsOneWidget);
   });
