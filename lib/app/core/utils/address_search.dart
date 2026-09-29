@@ -55,7 +55,7 @@ class AddressSearch {
         Uri.https('photon.komoot.io', '/api/', {
           'q': q,
           'limit': '$limit',
-          'lang': 'fr',
+          'lang': LocaleService.currentLanguage,
           if (nearLatitude != null && nearLongitude != null) ...{
             'lat': '$nearLatitude',
             'lon': '$nearLongitude',
@@ -82,7 +82,7 @@ class AddressSearch {
           'format': 'json',
           'addressdetails': '1',
           'limit': '$limit',
-          'accept-language': 'fr',
+          'accept-language': LocaleService.currentLanguage,
         }),
       );
       return (data as List)
@@ -108,7 +108,7 @@ class AddressSearch {
           'lon': '$longitude',
           'zoom': '18',
           'addressdetails': '1',
-          'accept-language': 'fr',
+          'accept-language': LocaleService.currentLanguage,
         }),
       );
       final result = fromNominatim(data as Map);
@@ -120,7 +120,7 @@ class AddressSearch {
         Uri.https('photon.komoot.io', '/reverse', {
           'lat': '$latitude',
           'lon': '$longitude',
-          'lang': 'fr',
+          'lang': LocaleService.currentLanguage,
           'limit': '1',
         }),
       );

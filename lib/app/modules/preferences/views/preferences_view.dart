@@ -74,7 +74,7 @@ class _Header extends GetView<PreferencesController> {
               if (canGoBack) const AppBackButton(),
               Expanded(
                 child: Text(
-                  'Vos centres d\'intérêt',
+                  'preferences.title'.tr,
                   style: context.textStyle(
                     FontSizeType.h4,
                     fontWeight: FontWeight.w700,
@@ -92,7 +92,7 @@ class _Header extends GetView<PreferencesController> {
                   padding: EdgeInsets.symmetric(horizontal: AppDesign.space2),
                 ),
                 child: Text(
-                  'Passer',
+                  'preferences.skip'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.w600,
@@ -109,8 +109,7 @@ class _Header extends GetView<PreferencesController> {
               left: canGoBack ? context.ds.gutter - AppDesign.space1 : 0,
             ),
             child: Text(
-              'Nous mettrons en avant ces produits sur votre accueil. '
-              'Vous pourrez changer d\'avis à tout moment.',
+              'preferences.subtitle'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: context.ds.textSecondary,
@@ -136,7 +135,7 @@ class _LoadingState extends StatelessWidget {
           const CircularProgressIndicator(),
           SizedBox(height: AppDesign.space4),
           Text(
-            'Chargement de vos préférences…',
+            'preferences.loading'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -256,7 +255,7 @@ class _CategoryCard extends GetView<PreferencesController> {
                   ),
                 if (hidden > 0 || expanded)
                   _MoreChip(
-                    label: expanded ? 'Moins' : '+$hidden',
+                    label: expanded ? 'preferences.less'.tr : '+$hidden',
                     expanded: expanded,
                     onTap: () => controller.toggleCategory(category.id),
                   ),
@@ -431,8 +430,11 @@ class _BottomBar extends GetView<PreferencesController> {
             children: [
               Text(
                 count == 0
-                    ? 'Choisissez au moins un centre d\'intérêt'
-                    : '$count sélectionné${count > 1 ? 's' : ''}',
+                    ? 'preferences.choose_at_least_one'.tr
+                    : (count > 1
+                            ? 'preferences.selected_many'
+                            : 'preferences.selected_one')
+                        .trParams({'count': '$count'}),
                 style: context.textStyle(
                   FontSizeType.overline,
                   // Posé sur le blanc de la barre, donc l'accent de marque :
@@ -445,7 +447,7 @@ class _BottomBar extends GetView<PreferencesController> {
               ),
               SizedBox(height: AppDesign.space2),
               AppButton(
-                label: 'Continuer',
+                label: 'common.continue'.tr,
                 size: AppButtonSize.large,
                 icon: Icons.arrow_forward_rounded,
                 // Désactivé plutôt qu'actif-puis-refusé : l'attente se lit

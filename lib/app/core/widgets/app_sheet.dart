@@ -238,7 +238,7 @@ class _SheetHeader extends StatelessWidget {
             AppIconButton(
               icon: Icons.arrow_back_ios_new_rounded,
               size: 20,
-              tooltip: 'Retour',
+              tooltip: 'common.back'.tr,
               onPressed: onBack,
             ),
           Expanded(
@@ -275,7 +275,7 @@ class _SheetHeader extends StatelessWidget {
           if (showClose)
             AppIconButton(
               icon: Icons.close_rounded,
-              tooltip: 'Fermer',
+              tooltip: 'common.close'.tr,
               onPressed: onClose ?? () => Navigator.of(context).maybePop(),
             ),
         ],

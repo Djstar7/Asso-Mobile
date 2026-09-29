@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -103,7 +104,7 @@ class VariantQuantityList extends StatelessWidget {
 
     final details = [
       if (priceOf != null) priceOf!(variant),
-      if (limitToStock) soldOut ? 'Épuisé' : '$stock en stock',
+      if (limitToStock) soldOut ? 'core.variant.sold_out'.tr : 'core.variant.in_stock'.trParams({'count': '$stock'}),
     ];
 
     return AnimatedContainer(
@@ -141,7 +142,7 @@ class VariantQuantityList extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    label.isEmpty ? 'Option' : label,
+                    label.isEmpty ? 'core.variant.option'.tr : label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: context.textStyle(

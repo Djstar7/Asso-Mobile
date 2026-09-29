@@ -216,7 +216,7 @@ class DiaspoService extends GetxService {
       final response = await _dio.delete('/v1/diaspo/offers/$id');
 
       if (response.data['success'] != true) {
-        throw Exception(response.data['message'] ?? 'Échec de la suppression');
+        throw Exception(response.data['message'] ?? 'data.diaspo.delete_failed'.tr);
       }
     } on DioException catch (e) {
       print('❌ Error deleting offer: ${e.message}');
@@ -225,7 +225,7 @@ class DiaspoService extends GetxService {
       if (e.response?.data != null && e.response!.data['message'] != null) {
         throw Exception(e.response!.data['message']);
       }
-      throw Exception('Impossible de supprimer l\'offre');
+      throw Exception('data.diaspo.delete_offer_error'.tr);
     } catch (e) {
       print('❌ Unexpected error deleting offer: $e');
       rethrow;
@@ -373,7 +373,7 @@ class DiaspoService extends GetxService {
       if (e.response?.data != null && e.response!.data['message'] != null) {
         throw Exception(e.response!.data['message']);
       }
-      throw Exception('Impossible de confirmer la livraison');
+      throw Exception('data.diaspo.confirm_delivery_error'.tr);
     } catch (e) {
       print('❌ Unexpected error confirming delivery: $e');
       rethrow;
@@ -400,7 +400,7 @@ class DiaspoService extends GetxService {
       if (e.response?.data != null && e.response!.data['message'] != null) {
         throw Exception(e.response!.data['message']);
       }
-      throw Exception('Impossible de confirmer la livraison avec ce code');
+      throw Exception('data.diaspo.confirm_delivery_code_error'.tr);
     } catch (e) {
       print('❌ Unexpected error confirming delivery by code: $e');
       rethrow;

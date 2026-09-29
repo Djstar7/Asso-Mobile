@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -286,7 +287,7 @@ class ProductCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              'Sponsorisé',
+                              'core.product_card.sponsored'.tr,
                               style: context.textStyle(
                                 FontSizeType.overline,
                                 color: AppDesign.info,
@@ -415,7 +416,7 @@ class CertifiedMark extends StatelessWidget {
           const Icon(Icons.verified_rounded, size: 12, color: AppDesign.info),
           const SizedBox(width: 3),
           Text(
-            'Vérifié',
+            'core.product_card.verified'.tr,
             style: context.textStyle(
               FontSizeType.overline,
               fontWeight: FontWeight.w600,

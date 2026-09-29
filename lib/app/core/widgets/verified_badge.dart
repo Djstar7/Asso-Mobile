@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../core/utils/app_design.dart';
 
 /// Blue verified badge widget for certified shops/vendors
@@ -58,7 +59,7 @@ class VerifiedBadgeWithLabel extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          'Certifié',
+          'core.badge.certified'.tr,
           style: textStyle ??
               TextStyle(
                 fontSize: iconSize - 2,

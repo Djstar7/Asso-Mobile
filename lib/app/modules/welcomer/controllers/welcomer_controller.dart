@@ -93,8 +93,8 @@ class WelcomerController extends GetxController {
 
       if (!GetUtils.isEmail(email.value)) {
         Get.snackbar(
-          'Email invalide',
-          'Veuillez entrer une adresse email valide',
+          'welcomer.invalid_email_title'.tr,
+          'welcomer.invalid_email_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -107,8 +107,8 @@ class WelcomerController extends GetxController {
 
       if (password.value.length < 6) {
         Get.snackbar(
-          'Mot de passe trop court',
-          'Le mot de passe doit contenir au moins 6 caractères',
+          'welcomer.password_too_short_title'.tr,
+          'welcomer.password_too_short_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -121,8 +121,8 @@ class WelcomerController extends GetxController {
 
       if (password.value != confirmPassword.value) {
         Get.snackbar(
-          'Mots de passe différents',
-          'Les mots de passe ne correspondent pas',
+          'welcomer.passwords_mismatch_title'.tr,
+          'welcomer.passwords_mismatch_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -139,8 +139,8 @@ class WelcomerController extends GetxController {
     if (!termsAccepted.value) {
       developer.log('Terms not accepted', name: 'WelcomerController');
       Get.snackbar(
-        'Politique requise',
-        'Veuillez accepter notre Politique de Confidentialité pour continuer',
+        'welcomer.policy_required_title'.tr,
+        'welcomer.policy_required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -175,8 +175,8 @@ class WelcomerController extends GetxController {
         );
 
         Get.snackbar(
-          'Code envoyé',
-          'Un code de vérification a été envoyé à ${email.value}',
+          'welcomer.code_sent_title'.tr,
+          'welcomer.code_sent_message'.trParams({'email': email.value}),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -203,7 +203,7 @@ class WelcomerController extends GetxController {
           error: response.message,
         );
         Get.snackbar(
-          'Erreur',
+          'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
@@ -221,8 +221,8 @@ class WelcomerController extends GetxController {
         stackTrace: stackTrace,
       );
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue. Veuillez réessayer.',
+        'common.error'.tr,
+        'common.generic_error_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -239,7 +239,7 @@ class WelcomerController extends GetxController {
     developer.log('Continue with Google', name: 'WelcomerController');
     Get.snackbar(
       'Google',
-      'Connexion avec Google...',
+      'welcomer.google_signing_in'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
     // TODO: Implémenter l'authentification Google
@@ -250,7 +250,7 @@ class WelcomerController extends GetxController {
     developer.log('Continue with Apple', name: 'WelcomerController');
     Get.snackbar(
       'Apple',
-      'Connexion avec Apple...',
+      'welcomer.apple_signing_in'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
     // TODO: Implémenter l'authentification Apple

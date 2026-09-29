@@ -177,8 +177,8 @@ class CountrySelectionController extends GetxController {
     } catch (e) {
       hasError.value = true;
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger la liste des pays',
+        'common.error'.tr,
+        'country_selection.load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -252,8 +252,8 @@ class CountrySelectionController extends GetxController {
       Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de définir le pays sélectionné',
+        'common.error'.tr,
+        'country_selection.select_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

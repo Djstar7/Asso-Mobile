@@ -67,14 +67,14 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'Erreur serveur', statusCode: 500);
+      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
     } catch (e, stackTrace) {
       developer.log('GET error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -102,14 +102,14 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'Erreur serveur', statusCode: 500);
+      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
     } catch (e, stackTrace) {
       developer.log('POST error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -137,11 +137,11 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } catch (e, stackTrace) {
       developer.log('PUT error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -173,7 +173,7 @@ class ApiProvider {
     } catch (e, stackTrace) {
       developer.log('DELETE error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -254,7 +254,7 @@ class ApiProvider {
     } catch (e, stackTrace) {
       developer.log('MULTIPART error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -283,7 +283,7 @@ class ApiProvider {
       final messageField = body['message'];
       final messageString = messageField is String
           ? messageField
-          : (success ? 'Succès' : 'Erreur');
+          : (success ? 'common.success'.tr : 'common.error'.tr);
 
       developer.log(
         'Response parsed',
@@ -300,7 +300,7 @@ class ApiProvider {
         _handleUnauthorized();
         return ApiResponse(
           success: false,
-          message: 'Session expirée. Veuillez vous reconnecter.',
+          message: 'network.session_expired'.tr,
           statusCode: 401,
           data: body,
         );
@@ -321,7 +321,7 @@ class ApiProvider {
       );
       return ApiResponse(
         success: false,
-        message: 'Erreur de parsing: ${response.body}',
+        message: 'network.parsing_error'.trParams({'body': response.body}),
         statusCode: response.statusCode,
       );
     }

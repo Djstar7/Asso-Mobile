@@ -28,7 +28,7 @@ class CountrySelectionView extends GetView<CountrySelectionController> {
         // Premier écran après l'installation, il n'a rien derrière lui : pas
         // de retour. Ouvert par-dessus un autre écran, il en propose un.
         leading: Navigator.canPop(context) ? const AppBackButton() : null,
-        title: const Text('Choisissez votre pays'),
+        title: Text('country_selection.title'.tr),
         centerTitle: false,
       ),
       body: SafeArea(
@@ -52,11 +52,11 @@ class CountrySelectionView extends GetView<CountrySelectionController> {
                   }
 
                   if (controller.filteredCountries.isEmpty) {
-                    return const AppEmptyState(
+                    return AppEmptyState(
                       icon: Icons.search_off_rounded,
-                      title: 'Aucun pays trouvé',
+                      title: 'country_selection.no_result_title'.tr,
                       message:
-                          'Essayez avec un autre nom de pays ou un code de devise.',
+                          'country_selection.no_result_message'.tr,
                     );
                   }
 
@@ -86,7 +86,7 @@ class _SearchHeader extends GetView<CountrySelectionController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Les prix et les frais de livraison seront affichés dans la devise du pays choisi.',
+            'country_selection.intro'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -95,7 +95,7 @@ class _SearchHeader extends GetView<CountrySelectionController> {
           ),
           SizedBox(height: AppDesign.space3),
           AppTextField(
-            hint: 'Rechercher un pays ou une devise',
+            hint: 'country_selection.search_hint'.tr,
             onChanged: controller.filterCountries,
             prefixIcon: Icon(
               Icons.search_rounded,
@@ -111,7 +111,10 @@ class _SearchHeader extends GetView<CountrySelectionController> {
             return Padding(
               padding: EdgeInsets.only(top: AppDesign.space2),
               child: Text(
-                count > 1 ? '$count pays trouvés' : '$count pays trouvé',
+                (count > 1
+                        ? 'country_selection.count_many'
+                        : 'country_selection.count_one')
+                    .trParams({'count': '$count'}),
                 style: context.textStyle(
                   FontSizeType.overline,
                   color: context.ds.textTertiary,
@@ -174,7 +177,7 @@ class _CountryListState extends State<_CountryList> {
             slivers: [
               if (browsing && suggestions.isNotEmpty) ...[
                 _SectionHeaderSliver(
-                  label: 'Suggestions',
+                  label: 'country_selection.suggestions'.tr,
                   icon: Icons.star_rounded,
                 ),
                 SliverToBoxAdapter(
@@ -659,7 +662,9 @@ void _showConfirmationSheet(BuildContext context, CountryOption option) {
                   SizedBox(width: AppDesign.space2),
                   Expanded(
                     child: Text(
-                      'Les prix seront affichés en ${currency.code}. Vous pourrez changer de pays plus tard dans les réglages.',
+                      'country_selection.confirm_note'.trParams({
+                        'currency': currency.code,
+                      }),
                       style: context.textStyle(
                         FontSizeType.overline,
                         color: context.ds.textSecondary,
@@ -675,7 +680,7 @@ void _showConfirmationSheet(BuildContext context, CountryOption option) {
               children: [
                 Expanded(
                   child: AppButton(
-                    label: 'Annuler',
+                    label: 'common.cancel'.tr,
                     variant: AppButtonVariant.secondary,
                     onPressed: () => Get.back<void>(),
                   ),
@@ -684,7 +689,7 @@ void _showConfirmationSheet(BuildContext context, CountryOption option) {
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: 'Confirmer',
+                    label: 'common.confirm'.tr,
                     onPressed: () {
                       Get.back<void>();
                       controller.selectCountry(option);
@@ -729,7 +734,7 @@ class _LoadFailure extends StatelessWidget {
             ),
             SizedBox(height: AppDesign.space3),
             Text(
-              'Liste des pays indisponible',
+              'country_selection.load_failed_title'.tr,
               textAlign: TextAlign.center,
               style: context.textStyle(
                 FontSizeType.body1,
@@ -739,7 +744,7 @@ class _LoadFailure extends StatelessWidget {
             ),
             SizedBox(height: AppDesign.space2),
             Text(
-              'Vérifiez votre connexion, puis réessayez.',
+              'country_selection.load_failed_message'.tr,
               textAlign: TextAlign.center,
               style: context.textStyle(
                 FontSizeType.caption,
@@ -748,7 +753,7 @@ class _LoadFailure extends StatelessWidget {
               ),
             ),
             SizedBox(height: AppDesign.space4),
-            AppButton(label: 'Réessayer', onPressed: onRetry),
+            AppButton(label: 'common.retry'.tr, onPressed: onRetry),
           ],
         ),
       ),

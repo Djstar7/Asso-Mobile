@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/widgets.dart' show Locale;
@@ -7,6 +8,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../data/providers/api_provider.dart';
+import '../../data/providers/storage_service.dart';
 import '../values/country_catalog.dart';
 
 /// Langue de l'interface : choix au premier lancement, selon le pays, et
@@ -22,6 +25,10 @@ class LocaleService extends GetxService {
   static const String keyLocaleManual = 'app_locale_manual';
 
   static const List<String> supportedLanguages = ['fr', 'en'];
+
+  /// Langue du compte côté serveur : les notifications push partent dans
+  /// cette langue.
+  static const String updateLocaleUrl = '/v1/auth/locale';
 
   static const Locale french = Locale('fr', 'FR');
   static const Locale english = Locale('en', 'US');
@@ -64,6 +71,10 @@ class LocaleService extends GetxService {
         ? saved
         : _legacyLanguage() ?? deviceLanguage();
     await _apply(code);
+
+    // À chaque connexion (nouveau jeton), le compte reprend la langue de
+    // l'application.
+    ever(StorageService.userRevision, (_) => _syncAfterLogin());
     return this;
   }
 
@@ -74,6 +85,29 @@ class LocaleService extends GetxService {
     if (manual) await _storage.write(keyLocaleManual, true);
     await _apply(code);
     Get.updateLocale(localeFor(code));
+    unawaited(syncWithServer());
+  }
+
+  String? _syncedToken;
+
+  /// Enregistre la langue sur le compte, si l'utilisateur est connecté.
+  /// Un échec n'a pas de conséquence : l'en-tête Accept-Language couvre les
+  /// réponses, et la synchronisation est retentée à la connexion suivante.
+  Future<void> syncWithServer() async {
+    final token = ApiProvider.token;
+    if (token == null) return;
+    try {
+      final response = await ApiProvider.put(
+        updateLocaleUrl,
+        body: {'locale': language.value},
+      );
+      if (response.success) _syncedToken = token;
+    } catch (_) {}
+  }
+
+  void _syncAfterLogin() {
+    final token = ApiProvider.token;
+    if (token != null && token != _syncedToken) unawaited(syncWithServer());
   }
 
   /// Applique la langue du pays choisi, sauf si l'utilisateur a déjà fixé

@@ -65,8 +65,8 @@ class LoginController extends GetxController {
     if (!isFormValid.value) {
       developer.log('Invalid form', name: 'LoginController');
       Get.snackbar(
-        'Formulaire invalide',
-        'Veuillez vérifier vos identifiants',
+        'login.invalid_form_title'.tr,
+        'login.invalid_form_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -134,7 +134,7 @@ class LoginController extends GetxController {
           error: response.message,
         );
         Get.snackbar(
-          'Erreur',
+          'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
@@ -152,8 +152,8 @@ class LoginController extends GetxController {
         stackTrace: stackTrace,
       );
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue. Veuillez réessayer.',
+        'common.error'.tr,
+        'common.generic_error_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -189,8 +189,8 @@ class LoginController extends GetxController {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.snackbar(
-        'Succès',
-        'Connexion réussie',
+        'common.success'.tr,
+        'login.success'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.primary,
         colorText: Get.theme.colorScheme.onPrimary,

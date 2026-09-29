@@ -178,8 +178,8 @@ class DeepLinkService extends GetxService {
   /// qui s'est passé.
   void _reportNotFound() {
     Get.snackbar(
-      'Produit introuvable',
-      "Ce produit n'est plus disponible.",
+      'data.deep_link.product_not_found_title'.tr,
+      'data.deep_link.product_not_found_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 4),
     );

@@ -30,11 +30,11 @@ class ProfileController extends GetxController {
 
   void _setGuestProfile() {
     profile.value = {
-      'name': 'Invité',
+      'name': 'profile.guest_name'.tr,
       'initials': '?',
       'email': '',
       'phone': '',
-      'location': 'Cameroun',
+      'location': 'profile.default_location'.tr,
       'memberSince': '',
       'role': 'guest',
       'stats': {'orders': 0, 'reviews': 0, 'favorites': 0},
@@ -97,11 +97,11 @@ class ProfileController extends GetxController {
     // Build profile map with keys expected by the view
     profile.value = {
       ...data,
-      'name': fullName.isEmpty ? 'Utilisateur' : fullName,
+      'name': fullName.isEmpty ? 'profile.default_user_name'.tr : fullName,
       'initials': initials,
       'email': data['email'] ?? '',
       'phone': data['phone'] ?? '',
-      'location': data['address'] ?? data['city'] ?? 'Cameroun',
+      'location': data['address'] ?? data['city'] ?? 'profile.default_location'.tr,
       'memberSince': _formatMemberSince(data['created_at']),
       'role': data['role'] ?? 'client',
       'stats':
@@ -115,33 +115,36 @@ class ProfileController extends GetxController {
   }
 
   String _formatMemberSince(dynamic createdAt) {
-    if (createdAt == null) return 'Membre récent';
+    if (createdAt == null) return 'profile.recent_member'.tr;
     try {
       final date = DateTime.parse(createdAt.toString());
       final months = [
-        'Jan',
-        'Fév',
-        'Mar',
-        'Avr',
-        'Mai',
-        'Jun',
-        'Jul',
-        'Aoû',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Déc',
+        'profile.months.jan'.tr,
+        'profile.months.feb'.tr,
+        'profile.months.mar'.tr,
+        'profile.months.apr'.tr,
+        'profile.months.may'.tr,
+        'profile.months.jun'.tr,
+        'profile.months.jul'.tr,
+        'profile.months.aug'.tr,
+        'profile.months.sep'.tr,
+        'profile.months.oct'.tr,
+        'profile.months.nov'.tr,
+        'profile.months.dec'.tr,
       ];
-      return 'Membre depuis ${months[date.month - 1]} ${date.year}';
+      return 'profile.member_since'.trParams({
+        'month': months[date.month - 1],
+        'year': '${date.year}',
+      });
     } catch (e) {
-      return 'Membre récent';
+      return 'profile.recent_member'.tr;
     }
   }
 
   /// Getter compatible avec la vue qui attend 'userProfile'
   RxMap<String, dynamic> get userProfile => profile;
 
-  String get displayName => profile['name'] ?? 'Utilisateur';
+  String get displayName => profile['name'] ?? 'profile.default_user_name'.tr;
   String get email => profile['email'] ?? '';
   String get phone => profile['phone'] ?? '';
   String get avatar => profile['avatar'] ?? '';
@@ -156,11 +159,11 @@ class ProfileController extends GetxController {
       if (ctx != null) {
         AppDialogs.showLoginRequiredDialog(
           ctx,
-          featureName: 'la modification du profil',
+          featureName: 'profile.feature_edit_profile'.tr,
         );
       } else {
         AppDialogs.showLoginRequiredSnackbar(
-          featureName: 'la modification du profil',
+          featureName: 'profile.feature_edit_profile'.tr,
         );
       }
       return;
@@ -175,8 +178,8 @@ class ProfileController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'ouvrir l\'éditeur de profil',
+        'common.error'.tr,
+        'profile.edit_profile_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );

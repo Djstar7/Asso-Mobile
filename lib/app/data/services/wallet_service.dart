@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import '../providers/api_provider.dart';
 import '../providers/wallet_service.dart' as wallet_provider;
 import '../models/wallet_model.dart';
@@ -92,20 +93,20 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'Recharge réussie',
+          'message': response.data?['message'] ?? 'data.wallet.recharge_success'.tr,
           ...?response.data,
         };
       }
 
       return {
         'success': false,
-        'message': response.data?['message'] ?? 'Échec de la recharge',
+        'message': response.data?['message'] ?? 'data.wallet.recharge_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error recharging wallet: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la recharge',
+        'message': 'data.wallet.recharge_error'.tr,
       };
     }
   }
@@ -127,13 +128,13 @@ class WalletService {
 
       return {
         'can_pay': false,
-        'message': 'Impossible de vérifier le solde',
+        'message': 'data.wallet.balance_check_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error checking payment ability: $e');
       return {
         'can_pay': false,
-        'message': 'Erreur lors de la vérification',
+        'message': 'data.wallet.check_error'.tr,
       };
     }
   }
@@ -158,20 +159,20 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'Paiement réussi',
+          'message': response.data?['message'] ?? 'data.wallet.payment_success'.tr,
           ...?response.data,
         };
       }
 
       return {
         'success': false,
-        'message': response.data?['message'] ?? 'Échec du paiement',
+        'message': response.data?['message'] ?? 'data.wallet.payment_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error paying with wallet: $e');
       return {
         'success': false,
-        'message': 'Erreur lors du paiement',
+        'message': 'data.wallet.payment_error'.tr,
       };
     }
   }
@@ -227,20 +228,20 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'Retrait initié avec succès',
+          'message': response.data?['message'] ?? 'data.wallet.withdrawal_initiated'.tr,
           ...?response.data,
         };
       }
 
       return {
         'success': false,
-        'message': response.data?['message'] ?? 'Échec du retrait',
+        'message': response.data?['message'] ?? 'data.wallet.withdrawal_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error initiating KPay withdrawal: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de l\'initiation du retrait',
+        'message': 'data.wallet.withdrawal_error'.tr,
       };
     }
   }
@@ -261,7 +262,7 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'Virement initié avec succès',
+          'message': response.data?['message'] ?? 'data.wallet.transfer_initiated'.tr,
           ...?response.data,
         };
       }
@@ -270,13 +271,13 @@ class WalletService {
         'success': false,
         'message': response.message.isNotEmpty
             ? response.message
-            : (response.data?['message'] ?? 'Échec du virement'),
+            : (response.data?['message'] ?? 'data.wallet.transfer_failed'.tr),
       };
     } catch (e) {
       print('[WalletService] Error initiating Stripe withdrawal: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de l\'initiation du virement',
+        'message': 'data.wallet.transfer_error'.tr,
       };
     }
   }
@@ -305,7 +306,7 @@ class WalletService {
       return {'success': false, 'message': response.message};
     } catch (e) {
       print('[WalletService] Error fetching Stripe quote: $e');
-      return {'success': false, 'message': 'Conversion indisponible'};
+      return {'success': false, 'message': 'data.wallet.conversion_unavailable'.tr};
     }
   }
 
@@ -329,13 +330,13 @@ class WalletService {
 
       return {
         'success': false,
-        'message': 'Impossible de vérifier le statut',
+        'message': 'data.wallet.status_check_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error checking withdrawal status: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la vérification du statut',
+        'message': 'data.wallet.status_check_error'.tr,
       };
     }
   }
@@ -400,13 +401,13 @@ class WalletService {
 
       return {
         'success': false,
-        'message': 'Impossible de vérifier le statut du paiement',
+        'message': 'data.wallet.payment_status_check_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error checking payment status: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la vérification du statut',
+        'message': 'data.wallet.status_check_error'.tr,
       };
     }
   }

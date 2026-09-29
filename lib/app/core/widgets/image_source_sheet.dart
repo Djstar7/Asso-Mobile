@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../utils/app_theme_system.dart';
@@ -10,9 +11,9 @@ import '../utils/app_theme_system.dart';
 /// `null` si la feuille est fermée sans choix.
 Future<ImageSource?> showImageSourceSheet(
   BuildContext context, {
-  String title = 'Ajouter des images',
-  String cameraSubtitle = 'Prendre une photo',
-  String gallerySubtitle = 'Sélectionner depuis la galerie',
+  String? title,
+  String? cameraSubtitle,
+  String? gallerySubtitle,
 }) {
   return showModalBottomSheet<ImageSource>(
     context: context,
@@ -49,7 +50,7 @@ Future<ImageSource?> showImageSourceSheet(
 
             // Titre
             Text(
-              title,
+              title ?? 'core.image_source.add_images'.tr,
               style: context.h5.copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: context.sectionSpacing),
@@ -57,8 +58,8 @@ Future<ImageSource?> showImageSourceSheet(
             // Option Caméra
             _ImageSourceOption(
               icon: Icons.camera_alt,
-              title: 'Appareil photo',
-              subtitle: cameraSubtitle,
+              title: 'core.media.camera'.tr,
+              subtitle: cameraSubtitle ?? 'core.image_source.take_photo'.tr,
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             SizedBox(height: context.elementSpacing),
@@ -66,8 +67,8 @@ Future<ImageSource?> showImageSourceSheet(
             // Option Galerie
             _ImageSourceOption(
               icon: Icons.photo_library,
-              title: 'Galerie',
-              subtitle: gallerySubtitle,
+              title: 'core.media.gallery'.tr,
+              subtitle: gallerySubtitle ?? 'core.image_source.from_gallery'.tr,
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
           ],

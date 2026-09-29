@@ -86,7 +86,7 @@ class _LegalDocumentViewState extends State<LegalDocumentView> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Ouvrir dans le navigateur',
+            tooltip: 'legal.open_in_browser'.tr,
             icon: const Icon(Icons.open_in_new_rounded),
             onPressed: () => launchUrl(
               Uri.parse(widget.document.url),
@@ -100,9 +100,9 @@ class _LegalDocumentViewState extends State<LegalDocumentView> {
           if (_hasError)
             AppEmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Document indisponible',
-              message: 'Vérifiez votre connexion puis réessayez.',
-              actionLabel: 'Réessayer',
+              title: 'legal.document_unavailable'.tr,
+              message: 'legal.check_connection'.tr,
+              actionLabel: 'common.retry'.tr,
               onAction: () {
                 _update(loading: true, error: false);
                 _controller.loadRequest(_uri);

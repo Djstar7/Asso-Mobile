@@ -104,7 +104,7 @@ class AuthGuard {
         return phone;
       }
     }
-    return 'Invité';
+    return 'core.auth.guest'.tr;
   }
 
   /// Retourne le numéro de téléphone formaté ou null

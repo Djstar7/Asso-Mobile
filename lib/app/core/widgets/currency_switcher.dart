@@ -173,7 +173,7 @@ class _CurrencySheetState extends State<_CurrencySheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Devise d\'affichage',
+                    'core.currency.title'.tr,
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.w700,
                       color: ds.textPrimary,
@@ -181,8 +181,7 @@ class _CurrencySheetState extends State<_CurrencySheet> {
                   ),
                   SizedBox(height: AppDesign.space1),
                   Text(
-                    'Vos ventes, statistiques et prix seront affichés dans cette '
-                    'devise. Les montants réels ne changent pas.',
+                    'core.currency.description'.tr,
                     style: context.body2.copyWith(color: ds.textSecondary),
                   ),
                   SizedBox(height: AppDesign.space4),
@@ -191,7 +190,7 @@ class _CurrencySheetState extends State<_CurrencySheet> {
                     onChanged: (value) => setState(() => _query = value),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Rechercher une devise…',
+                      hintText: 'core.currency.search_hint'.tr,
                       isDense: true,
                       filled: true,
                       fillColor: ds.surfaceMuted,
@@ -220,7 +219,7 @@ class _CurrencySheetState extends State<_CurrencySheet> {
               Padding(
                 padding: EdgeInsets.symmetric(vertical: AppDesign.space8),
                 child: Text(
-                  'Aucune devise ne correspond.',
+                  'core.currency.no_match'.tr,
                   style: context.body2.copyWith(color: ds.textTertiary),
                 ),
               )

@@ -16,7 +16,7 @@ class FaqView extends GetView<FaqController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Questions Fréquentes',
+          'faq.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -60,7 +60,7 @@ class FaqView extends GetView<FaqController> {
       child: TextField(
         onChanged: (value) => controller.searchQuery.value = value,
         decoration: InputDecoration(
-          hintText: 'Rechercher une question...',
+          hintText: 'faq.search_hint'.tr,
           prefixIcon: const Icon(Icons.search),
           suffixIcon: Obx(() => controller.searchQuery.value.isNotEmpty
               ? IconButton(
@@ -101,12 +101,12 @@ class FaqView extends GetView<FaqController> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Aucun résultat trouvé',
+            'faq.no_results'.tr,
             style: context.h6.copyWith(color: context.secondaryTextColor),
           ),
           const SizedBox(height: 8),
           Text(
-            'Essayez avec d\'autres mots-clés',
+            'faq.try_other_keywords'.tr,
             style: context.caption,
           ),
         ],

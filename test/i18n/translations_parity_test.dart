@@ -9,8 +9,9 @@ Map<String, String> _read(String path) => AppTranslations.flatten(
       jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>,
     );
 
+/// Paramètres `@nom`, sans compter les adresses e-mail d'exemple.
 Set<String> _params(String value) =>
-    RegExp(r'@(\w+)').allMatches(value).map((m) => m.group(1)!).toSet();
+    RegExp(r'(?<!\w)@(\w+)').allMatches(value).map((m) => m.group(1)!).toSet();
 
 void main() {
   final fr = _read('assets/i18n/fr.json');

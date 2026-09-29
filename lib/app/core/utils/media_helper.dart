@@ -28,7 +28,7 @@ class MediaHelper {
   /// [title] et [subtitle] permettent de contextualiser (photo de profil, logo,
   /// pièce d'identité, etc.).
   static Future<XFile?> pickBrandedImage({
-    String title = 'Ajouter une photo',
+    String? title,
     String? subtitle,
     double? maxWidth,
     double? maxHeight,
@@ -49,8 +49,8 @@ class MediaHelper {
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        "Impossible de sélectionner l'image",
+        'common.error'.tr,
+        'core.media.pick_image_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -66,9 +66,10 @@ class MediaHelper {
   /// disponible, sinon le sélecteur de fichiers ; les deux entrées restent donc
   /// pertinentes.
   static Future<ImageSource?> showBrandedImageSourceSheet({
-    String title = 'Ajouter une photo',
+    String? title,
     String? subtitle,
   }) {
+    final sheetTitle = title ?? 'core.media.add_photo'.tr;
     final context = Get.context!;
     final isDark = AppThemeSystem.isDarkMode(context);
     final surface =
@@ -100,7 +101,7 @@ class MediaHelper {
               ),
             ),
             Text(
-              title,
+              sheetTitle,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -117,8 +118,8 @@ class MediaHelper {
             const SizedBox(height: 20),
             _sourceTile(
               icon: Icons.photo_camera_rounded,
-              label: 'Appareil photo',
-              helper: 'Prendre une nouvelle photo',
+              label: 'core.media.camera'.tr,
+              helper: 'core.media.take_new_photo'.tr,
               onTap: () => Get.back(result: ImageSource.camera),
               primaryText: primaryText,
               secondaryText: secondaryText,
@@ -126,8 +127,8 @@ class MediaHelper {
             const SizedBox(height: 12),
             _sourceTile(
               icon: Icons.photo_library_rounded,
-              label: 'Galerie',
-              helper: 'Choisir une image existante',
+              label: 'core.media.gallery'.tr,
+              helper: 'core.media.choose_existing'.tr,
               onTap: () => Get.back(result: ImageSource.gallery),
               primaryText: primaryText,
               secondaryText: secondaryText,
@@ -139,8 +140,8 @@ class MediaHelper {
                 foregroundColor: secondaryText,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: const Text(
-                'Annuler',
+              child: Text(
+                'common.cancel'.tr,
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

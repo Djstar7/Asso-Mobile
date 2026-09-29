@@ -69,7 +69,7 @@ class SplashView extends GetView<SplashController> {
                       ),
                       SizedBox(height: AppDesign.space2),
                       Text(
-                        'Votre marketplace de confiance',
+                        'splash.tagline'.tr,
                         textAlign: TextAlign.center,
                         style: context.textStyle(
                           FontSizeType.body2,

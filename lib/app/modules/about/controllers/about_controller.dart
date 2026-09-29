@@ -32,7 +32,7 @@ class AboutController extends GetxController {
   final developedBy = 'ASSO Team'.obs;
   final copyright = ''.obs;
 
-  final releaseDate = 'Mars 2026';
+  String get releaseDate => 'about.release_date'.tr;
 
   // Réseaux sociaux
   final socialLinks = <SocialLink>[].obs;
@@ -144,8 +144,8 @@ class AboutController extends GetxController {
   Future<void> openUrl(String url) async {
     if (url.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'URL non disponible',
+        'common.error'.tr,
+        'about.errors.url_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
@@ -161,8 +161,8 @@ class AboutController extends GetxController {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le lien',
+          'common.error'.tr,
+          'about.errors.open_link'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -171,8 +171,8 @@ class AboutController extends GetxController {
     } catch (e) {
       developer.log('Error opening URL', name: 'AboutController', error: e);
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'ouvrir le lien',
+        'common.error'.tr,
+        'about.errors.open_link'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -191,8 +191,8 @@ class AboutController extends GetxController {
       openUrl('mailto:${contactEmail.value}');
     } else {
       Get.snackbar(
-        'Non disponible',
-        'Email de contact non disponible',
+        'about.unavailable'.tr,
+        'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
@@ -206,8 +206,8 @@ class AboutController extends GetxController {
       openUrl('mailto:${contactEmail.value}?subject=Feedback%20ASSO%20Market');
     } else {
       Get.snackbar(
-        'Non disponible',
-        'Email de contact non disponible',
+        'about.unavailable'.tr,
+        'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,

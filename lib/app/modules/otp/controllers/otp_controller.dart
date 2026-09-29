@@ -151,9 +151,9 @@ class OtpController extends GetxController {
     focusNodes[0].requestFocus();
 
     Get.snackbar(
-      response.success ? 'Code renvoyé' : 'Erreur',
+      response.success ? 'otp.code_resent_title'.tr : 'common.error'.tr,
       response.success
-          ? 'Un nouveau code a été envoyé au ${phoneNumber.value}'
+          ? 'otp.code_resent_message'.trParams({'phone': phoneNumber.value})
           : response.message,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: response.success
@@ -183,8 +183,8 @@ class OtpController extends GetxController {
     if (!isOtpComplete.value) {
       developer.log('OTP incomplete', name: 'OtpController');
       Get.snackbar(
-        'Code incomplet',
-        'Veuillez entrer le code à 6 chiffres',
+        'otp.incomplete_title'.tr,
+        'otp.incomplete_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -221,8 +221,8 @@ class OtpController extends GetxController {
 
         if (response.success) {
           Get.snackbar(
-            'Succès',
-            'Numéro de téléphone modifié avec succès',
+            'common.success'.tr,
+            'otp.phone_changed'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
@@ -243,7 +243,7 @@ class OtpController extends GetxController {
             error: response.message,
           );
           Get.snackbar(
-            'Code incorrect',
+            'otp.incorrect_code'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Get.theme.colorScheme.error,
@@ -273,8 +273,8 @@ class OtpController extends GetxController {
 
         if (response.success) {
           Get.snackbar(
-            'Succès',
-            'Connexion réussie',
+            'common.success'.tr,
+            'login.success'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
@@ -335,7 +335,7 @@ class OtpController extends GetxController {
             error: response.message,
           );
           Get.snackbar(
-            'Code incorrect',
+            'otp.incorrect_code'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Get.theme.colorScheme.error,
@@ -360,8 +360,8 @@ class OtpController extends GetxController {
         stackTrace: stackTrace,
       );
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue. Veuillez réessayer.',
+        'common.error'.tr,
+        'common.generic_error_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,

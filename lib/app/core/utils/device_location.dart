@@ -27,13 +27,13 @@ class DeviceLocationResult {
   /// Explication à montrer à l'utilisateur ; null si la position est connue.
   String? get message => switch (failure) {
     LocationFailure.serviceDisabled =>
-      'La localisation de votre téléphone est désactivée.',
+      'core.location.service_disabled'.tr,
     LocationFailure.permissionDenied =>
-      'Autorisez ASSO à accéder à votre position.',
+      'core.location.permission_denied'.tr,
     LocationFailure.deniedForever =>
-      'L’accès à la position est bloqué pour ASSO. Activez-le dans les réglages.',
+      'core.location.denied_forever'.tr,
     LocationFailure.unavailable =>
-      'Votre position n’a pas pu être détectée pour le moment.',
+      'core.location.unavailable'.tr,
     null => null,
   };
 }
@@ -144,14 +144,14 @@ class DeviceLocation {
     final message = result.message;
     if (message == null) return;
     Get.snackbar(
-      'Position indisponible',
+      'core.location.unavailable_title'.tr,
       hint == null ? message : '$message $hint',
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 5),
       mainButton: result.needsSettings
           ? TextButton(
               onPressed: () => openSettings(result.failure),
-              child: const Text('Réglages'),
+              child: Text('core.location.settings'.tr),
             )
           : null,
     );

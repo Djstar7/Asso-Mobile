@@ -24,7 +24,7 @@ class ProfileView extends GetView<ProfileController> {
           : AppBar(
               leading: const AppBackButton(),
               title: Text(
-                'Compte',
+                'profile.title'.tr,
                 style: context.h5.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -42,23 +42,23 @@ class ProfileView extends GetView<ProfileController> {
             SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
             // Menu principal (plus de Obx : aucune variable réactive à observer ici)
-            _buildMenuSection(context, 'Mon compte', [
+            _buildMenuSection(context, 'profile.sections.my_account'.tr, [
               _MenuItem(
                 icon: Icons.account_balance_wallet_rounded,
-                title: 'Mon Wallet',
-                subtitle: 'Solde, recharge et remboursements',
+                title: 'profile.menu.wallet'.tr,
+                subtitle: 'profile.menu.wallet_subtitle'.tr,
                 onTap: controller.goToWallet,
               ),
               _MenuItem(
                 icon: Icons.favorite_outline_rounded,
-                title: 'Mes favoris',
-                subtitle: 'Articles sauvegardés',
+                title: 'profile.menu.favorites'.tr,
+                subtitle: 'profile.menu.favorites_subtitle'.tr,
                 onTap: controller.goToFavorites,
               ),
               _MenuItem(
                 icon: Icons.receipt_long_rounded,
-                title: 'Mes commandes',
-                subtitle: 'Historique d\'achats',
+                title: 'profile.menu.orders'.tr,
+                subtitle: 'profile.menu.orders_subtitle'.tr,
                 onTap: controller.goToOrders,
               ),
             ]),
@@ -66,23 +66,23 @@ class ProfileView extends GetView<ProfileController> {
             SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 
             // Support & Paramètres
-            _buildMenuSection(context, 'Support & Paramètres', [
+            _buildMenuSection(context, 'profile.sections.support_settings'.tr, [
               _MenuItem(
                 icon: Icons.tune_rounded,
-                title: 'Préférences',
-                subtitle: 'Vos centres d\'intérêt',
+                title: 'profile.menu.preferences'.tr,
+                subtitle: 'profile.menu.preferences_subtitle'.tr,
                 onTap: controller.goToPreferences,
               ),
               _MenuItem(
                 icon: Icons.help_outline_rounded,
-                title: 'Aide & Support',
-                subtitle: 'FAQ et contact',
+                title: 'profile.menu.help'.tr,
+                subtitle: 'profile.menu.help_subtitle'.tr,
                 onTap: controller.goToHelp,
               ),
               _MenuItem(
                 icon: Icons.settings_outlined,
-                title: 'Paramètres',
-                subtitle: 'Préférences de l\'app',
+                title: 'profile.menu.settings'.tr,
+                subtitle: 'profile.menu.settings_subtitle'.tr,
                 onTap: controller.goToSettings,
               ),
             ]),
@@ -202,7 +202,7 @@ class ProfileView extends GetView<ProfileController> {
           SizedBox(width: AppDesign.space2),
           AppIconButton(
             icon: Icons.edit_outlined,
-            tooltip: 'Modifier le profil',
+            tooltip: 'profile.edit_profile'.tr,
             onPressed: controller.editProfile,
           ),
         ],
@@ -370,7 +370,7 @@ class ProfileView extends GetView<ProfileController> {
             size: deviceType == DeviceType.mobile ? 20 : 24,
           ),
           label: Text(
-            'Déconnexion',
+            'profile.logout'.tr,
             style: context.textStyle(
               deviceType == DeviceType.mobile
                   ? FontSizeType.body1

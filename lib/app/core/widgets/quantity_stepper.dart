@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -167,7 +168,7 @@ class _QuantityStepperState extends State<QuantityStepper> {
             children: [
               _StepButton(
                 icon: Icons.remove_rounded,
-                tooltip: 'Diminuer',
+                tooltip: 'core.quantity.decrease'.tr,
                 size: height,
                 onTap: canDecrease ? () => _step(-1) : null,
               ),
@@ -210,7 +211,7 @@ class _QuantityStepperState extends State<QuantityStepper> {
               divider,
               _StepButton(
                 icon: Icons.add_rounded,
-                tooltip: 'Augmenter',
+                tooltip: 'core.quantity.increase'.tr,
                 size: height,
                 onTap: canIncrease
                     ? () => _step(1)

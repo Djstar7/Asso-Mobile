@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_navigation.dart';
 import '../utils/app_theme_system.dart';
@@ -24,9 +25,9 @@ class UnknownRouteView extends StatelessWidget {
       ),
       body: AppEmptyState(
         icon: Icons.explore_off_outlined,
-        title: 'Page introuvable',
-        message: 'Cette page n’existe plus ou le lien est incomplet.',
-        actionLabel: 'Retour',
+        title: 'core.unknown_route.title'.tr,
+        message: 'core.unknown_route.message'.tr,
+        actionLabel: 'common.back'.tr,
         onAction: () => AppNavigation.back(context),
       ),
     );

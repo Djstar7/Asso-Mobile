@@ -23,7 +23,7 @@ class OfflineBadge extends StatelessWidget {
         return const SizedBox.shrink();
       }
       return Semantics(
-        label: 'Hors ligne',
+        label: 'core.offline.label'.tr,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: AppDesign.space1),
           padding: const EdgeInsets.symmetric(
@@ -44,7 +44,7 @@ class OfflineBadge extends StatelessWidget {
               ),
               const SizedBox(width: AppDesign.space1),
               Text(
-                'Hors ligne',
+                'core.offline.label'.tr,
                 style: context.caption.copyWith(
                   color: AppDesign.warningText,
                   fontWeight: FontWeight.w600,

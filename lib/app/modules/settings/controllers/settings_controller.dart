@@ -82,7 +82,7 @@ class SettingsController extends GetxController {
     final lastName = data['last_name'] ?? '';
     final fullName = '$firstName $lastName'.trim();
 
-    userName.value = fullName.isEmpty ? 'Utilisateur' : fullName;
+    userName.value = fullName.isEmpty ? 'settings.default_user_name'.tr : fullName;
     userEmail.value = data['email'] ?? '';
     userPhone.value = data['phone'] ?? '';
   }
@@ -135,7 +135,7 @@ class SettingsController extends GetxController {
                         SizedBox(width: context.elementSpacing),
                         Expanded(
                           child: Text(
-                            'Changer le numéro de téléphone',
+                            'settings.phone_change.title'.tr,
                             style: context.textStyle(
                               FontSizeType.h5,
                               fontWeight: FontWeight.bold,
@@ -164,7 +164,7 @@ class SettingsController extends GetxController {
                           SizedBox(width: context.elementSpacing * 0.5),
                           Expanded(
                             child: Text(
-                              'Votre numéro actuel: ${userPhone.value}',
+                              'settings.phone_change.current'.trParams({'phone': userPhone.value}),
                               style: context.textStyle(
                                 FontSizeType.caption,
                                 color: AppThemeSystem.grey600,
@@ -179,7 +179,7 @@ class SettingsController extends GetxController {
 
                     // Champ de saisie
                     Text(
-                      'Nouveau numéro de téléphone',
+                      'settings.phone_change.new_label'.tr,
                       style: context.textStyle(
                         FontSizeType.body2,
                         fontWeight: FontWeight.w600,
@@ -213,7 +213,7 @@ class SettingsController extends GetxController {
                           FontSizeType.body1,
                           fontWeight: FontWeight.w600,
                         ),
-                        hintText: 'Ex: 658895572',
+                        hintText: 'settings.phone_change.hint'.tr,
                         hintStyle: context.textStyle(
                           FontSizeType.body1,
                           color: AppThemeSystem.grey400,
@@ -238,7 +238,7 @@ class SettingsController extends GetxController {
                         SizedBox(width: context.elementSpacing * 0.5),
                         Expanded(
                           child: Text(
-                            'Un code OTP sera envoyé à ce numéro',
+                            'settings.phone_change.otp_notice'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.infoColor,
@@ -266,7 +266,7 @@ class SettingsController extends GetxController {
                                 ),
                               ),
                               child: Text(
-                                'Annuler',
+                                'common.cancel'.tr,
                                 style: context.textStyle(
                                   FontSizeType.button,
                                   fontWeight: FontWeight.w600,
@@ -292,7 +292,7 @@ class SettingsController extends GetxController {
                                 ),
                               ),
                               child: Text(
-                                'Continuer',
+                                'common.continue'.tr,
                                 style: context.textStyle(
                                   FontSizeType.button,
                                   fontWeight: FontWeight.w600,
@@ -318,8 +318,8 @@ class SettingsController extends GetxController {
         // Validate phone number (basic validation)
         if (newPhone.length < 8) {
           Get.snackbar(
-            'Erreur',
-            'Numéro de téléphone invalide',
+            'common.error'.tr,
+            'settings.phone_change.invalid'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -344,7 +344,7 @@ class SettingsController extends GetxController {
           });
 
           Get.snackbar(
-            'Code envoyé',
+            'settings.phone_change.code_sent'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.success,
@@ -352,7 +352,7 @@ class SettingsController extends GetxController {
           );
         } else {
           Get.snackbar(
-            'Erreur',
+            'common.error'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
@@ -362,8 +362,8 @@ class SettingsController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de modifier le numéro de téléphone',
+        'common.error'.tr,
+        'settings.phone_change.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -410,7 +410,7 @@ class SettingsController extends GetxController {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Effacer le cache',
+                          'settings.cache.title'.tr,
                           style: context.textStyle(
                             FontSizeType.h5,
                             fontWeight: FontWeight.bold,
@@ -424,7 +424,7 @@ class SettingsController extends GetxController {
 
                   // Message
                   Text(
-                    'Êtes-vous sûr de vouloir effacer le cache de l\'application ?',
+                    'settings.cache.confirm_question'.tr,
                     style: context.textStyle(
                       FontSizeType.body1,
                       height: 1.5,
@@ -453,7 +453,7 @@ class SettingsController extends GetxController {
                         SizedBox(width: context.elementSpacing * 0.5),
                         Expanded(
                           child: Text(
-                            'Cette action libérera de l\'espace de stockage mais pourrait ralentir temporairement l\'application.',
+                            'settings.cache.notice'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.infoColor,
@@ -482,7 +482,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Annuler',
+                              'common.cancel'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -508,7 +508,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Effacer',
+                              'settings.cache.clear'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -535,16 +535,16 @@ class SettingsController extends GetxController {
       await Future.delayed(const Duration(seconds: 1));
 
       Get.snackbar(
-        'Succès',
-        'Cache effacé avec succès',
+        'common.success'.tr,
+        'settings.cache.cleared'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'effacer le cache',
+        'common.error'.tr,
+        'settings.cache.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -600,7 +600,7 @@ class SettingsController extends GetxController {
                   // Titre
                   Center(
                     child: Text(
-                      'Supprimer le compte',
+                      'settings.delete_account.title'.tr,
                       style: context.textStyle(
                         FontSizeType.h5,
                         fontWeight: FontWeight.bold,
@@ -626,17 +626,17 @@ class SettingsController extends GetxController {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Cette action est irréversible et entraînera :',
+                          'settings.delete_account.irreversible'.tr,
                           style: context.textStyle(
                             FontSizeType.body2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: context.elementSpacing * 0.75),
-                        _buildWarningItem(context, 'Suppression de toutes vos données'),
-                        _buildWarningItem(context, 'Annulation de vos commandes en cours'),
-                        _buildWarningItem(context, 'Suppression de vos produits (si vendeur)'),
-                        _buildWarningItem(context, 'Perte de votre historique'),
+                        _buildWarningItem(context, 'settings.delete_account.consequence_data'.tr),
+                        _buildWarningItem(context, 'settings.delete_account.consequence_orders'.tr),
+                        _buildWarningItem(context, 'settings.delete_account.consequence_products'.tr),
+                        _buildWarningItem(context, 'settings.delete_account.consequence_history'.tr),
                       ],
                     ),
                   ),
@@ -646,7 +646,7 @@ class SettingsController extends GetxController {
                   // Question finale
                   Center(
                     child: Text(
-                      'Êtes-vous absolument sûr ?',
+                      'settings.delete_account.are_you_sure'.tr,
                       style: context.textStyle(
                         FontSizeType.body1,
                         fontWeight: FontWeight.bold,
@@ -673,7 +673,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Annuler',
+                              'common.cancel'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -699,7 +699,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Continuer',
+                              'common.continue'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -758,7 +758,7 @@ class SettingsController extends GetxController {
                         SizedBox(width: context.elementSpacing),
                         Expanded(
                           child: Text(
-                            'Confirmation finale',
+                            'settings.delete_account.final_title'.tr,
                             style: context.textStyle(
                               FontSizeType.h5,
                               fontWeight: FontWeight.bold,
@@ -772,7 +772,7 @@ class SettingsController extends GetxController {
 
                     // Instructions
                     Text(
-                      'Pour confirmer la suppression de votre compte, tapez exactement le mot ci-dessous :',
+                      'settings.delete_account.type_instruction'.tr,
                       style: context.textStyle(
                         FontSizeType.body2,
                         height: 1.5,
@@ -796,7 +796,7 @@ class SettingsController extends GetxController {
                           ),
                         ),
                         child: Text(
-                          'SUPPRIMER',
+                          'settings.delete_account.confirm_word'.tr,
                           style: context.textStyle(
                             FontSizeType.h6,
                             fontWeight: FontWeight.bold,
@@ -835,7 +835,7 @@ class SettingsController extends GetxController {
                             width: 2,
                           ),
                         ),
-                        hintText: 'Tapez ici...',
+                        hintText: 'settings.delete_account.type_hint'.tr,
                         hintStyle: context.textStyle(
                           FontSizeType.body1,
                           color: AppThemeSystem.grey400,
@@ -864,7 +864,7 @@ class SettingsController extends GetxController {
                                 ),
                               ),
                               child: Text(
-                                'Annuler',
+                                'common.cancel'.tr,
                                 style: context.textStyle(
                                   FontSizeType.button,
                                   fontWeight: FontWeight.w600,
@@ -881,12 +881,15 @@ class SettingsController extends GetxController {
                             height: context.buttonHeight,
                             child: ElevatedButton(
                               onPressed: () {
-                                if (textController.text.toUpperCase() == 'SUPPRIMER') {
+                                if (textController.text.toUpperCase() ==
+                                    'settings.delete_account.confirm_word'.tr) {
                                   Get.back(result: true);
                                 } else {
                                   Get.snackbar(
-                                    'Erreur',
-                                    'Veuillez taper exactement "SUPPRIMER"',
+                                    'common.error'.tr,
+                                    'settings.delete_account.type_exact_error'.trParams({
+                                      'word': 'settings.delete_account.confirm_word'.tr,
+                                    }),
                                     snackPosition: SnackPosition.BOTTOM,
                                     backgroundColor: AppThemeSystem.warningColor,
                                     colorText: Colors.white,
@@ -904,7 +907,7 @@ class SettingsController extends GetxController {
                                 ),
                               ),
                               child: Text(
-                                'Supprimer définitivement',
+                                'settings.delete_account.delete_permanently'.tr,
                                 style: context.textStyle(
                                   FontSizeType.button,
                                   fontWeight: FontWeight.w600,
@@ -933,8 +936,8 @@ class SettingsController extends GetxController {
 
       if (response.success) {
         Get.snackbar(
-          'Compte supprimé',
-          'Votre compte a été supprimé avec succès',
+          'settings.delete_account.deleted_title'.tr,
+          'settings.delete_account.deleted_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -946,7 +949,7 @@ class SettingsController extends GetxController {
         Get.offAllNamed('/login');
       } else {
         Get.snackbar(
-          'Erreur',
+          'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
@@ -955,8 +958,8 @@ class SettingsController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de supprimer le compte',
+        'common.error'.tr,
+        'settings.delete_account.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -1004,7 +1007,7 @@ class SettingsController extends GetxController {
 
                   // Titre
                   Text(
-                    'Déconnexion',
+                    'settings.logout.title'.tr,
                     style: context.textStyle(
                       FontSizeType.h5,
                       fontWeight: FontWeight.bold,
@@ -1016,7 +1019,7 @@ class SettingsController extends GetxController {
 
                   // Message
                   Text(
-                    'Êtes-vous sûr de vouloir vous déconnecter ?',
+                    'settings.logout.confirm'.tr,
                     style: context.textStyle(
                       FontSizeType.body1,
                       height: 1.5,
@@ -1041,7 +1044,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Annuler',
+                              'common.cancel'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -1067,7 +1070,7 @@ class SettingsController extends GetxController {
                               ),
                             ),
                             child: Text(
-                              'Déconnexion',
+                              'settings.logout.title'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -1097,8 +1100,8 @@ class SettingsController extends GetxController {
       Get.offAllNamed(Routes.LOGIN);
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de se déconnecter',
+        'common.error'.tr,
+        'settings.logout.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -1113,7 +1116,7 @@ class SettingsController extends GetxController {
     // haut de l'écran sur un petit téléphone.
     AppSheet.show(
       AppSheet(
-        title: 'Préférences',
+        title: 'settings.preferences.title'.tr,
         // Les sections gèrent elles-mêmes leurs marges latérales.
         bodyPadding: const EdgeInsets.only(bottom: AppDesign.space2),
         child: Builder(
@@ -1125,7 +1128,7 @@ class SettingsController extends GetxController {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
                 child: Text(
-                  'Pays et Devise',
+                  'settings.preferences.country_currency'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.bold,
@@ -1172,7 +1175,7 @@ class SettingsController extends GetxController {
                                   children: [
                                     Text(
                                       selectedCountry.value.isEmpty
-                                          ? 'Sélectionner un pays'
+                                          ? 'settings.preferences.select_country'.tr
                                           : selectedCountry.value,
                                       style: context.textStyle(
                                         FontSizeType.body1,
@@ -1182,7 +1185,7 @@ class SettingsController extends GetxController {
                                     SizedBox(height: context.elementSpacing * 0.25),
                                     Text(
                                       selectedCurrency.value.isEmpty
-                                          ? 'Aucune devise sélectionnée'
+                                          ? 'settings.preferences.no_currency'.tr
                                           : selectedCurrency.value,
                                       style: context.textStyle(
                                         FontSizeType.caption,
@@ -1251,7 +1254,7 @@ class SettingsController extends GetxController {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
                 child: Text(
-                  'Notifications',
+                  'settings.notifications.title'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.bold,
@@ -1291,7 +1294,7 @@ class SettingsController extends GetxController {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Activer les notifications',
+                            'settings.notifications.enable'.tr,
                             style: context.textStyle(
                               FontSizeType.body1,
                               fontWeight: FontWeight.w600,
@@ -1299,7 +1302,7 @@ class SettingsController extends GetxController {
                           ),
                           SizedBox(height: context.elementSpacing * 0.25),
                           Text(
-                            'Recevoir des notifications push',
+                            'settings.notifications.receive_push'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.grey600,
@@ -1462,10 +1465,10 @@ class SettingsController extends GetxController {
     // TODO: Configurer les notifications système (Firebase, etc.)
 
     Get.snackbar(
-      enabled ? 'Notifications activées' : 'Notifications désactivées',
+      enabled ? 'settings.notifications.enabled_title'.tr : 'settings.notifications.disabled_title'.tr,
       enabled
-          ? 'Vous recevrez des notifications push'
-          : 'Vous ne recevrez plus de notifications push',
+          ? 'settings.notifications.enabled_message'.tr
+          : 'settings.notifications.disabled_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: enabled ? AppThemeSystem.successColor : AppThemeSystem.grey600,
       colorText: Colors.white,
@@ -1513,7 +1516,7 @@ class SettingsController extends GetxController {
     // d'état.
     AppSheet.show(
       AppSheet(
-        title: 'Sélectionnez votre pays',
+        title: 'settings.country.sheet_title'.tr,
         scrollable: false,
         bodyPadding: EdgeInsets.zero,
         child: Builder(
@@ -1525,7 +1528,7 @@ class SettingsController extends GetxController {
                 child: TextField(
                   onChanged: filterCountries,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher un pays ou une devise...',
+                    hintText: 'settings.country.search_hint'.tr,
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -1559,7 +1562,7 @@ class SettingsController extends GetxController {
                           ),
                           SizedBox(height: context.elementSpacing),
                           Text(
-                            'Aucun pays trouvé',
+                            'settings.country.none_found'.tr,
                             style: context.textStyle(
                               FontSizeType.body1,
                               color: AppThemeSystem.grey600,
@@ -1708,8 +1711,8 @@ class SettingsController extends GetxController {
       print('❌ Error fetching countries: $e');
       print('Stack trace: $stackTrace');
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger la liste des pays',
+        'common.error'.tr,
+        'settings.country.load_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -1747,13 +1750,13 @@ class SettingsController extends GetxController {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Confirmer votre choix'),
+          title: Text('settings.country.confirm_title'.tr),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Pays : $country',
+                'settings.country.country_line'.trParams({'country': country}),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1761,7 +1764,10 @@ class SettingsController extends GetxController {
               ),
               const SizedBox(height: 8),
               Text(
-                'Devise : ${currency.code} (${currency.symbol})',
+                'settings.country.currency_line'.trParams({
+                  'code': currency.code,
+                  'symbol': currency.symbol,
+                }),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[700],
@@ -1788,7 +1794,7 @@ class SettingsController extends GetxController {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Les prix seront affichés en ${currency.code}',
+                        'settings.country.prices_in'.trParams({'code': currency.code}),
                         style: TextStyle(
                           fontSize: 12,
                           color: AppDesign.info,
@@ -1803,7 +1809,7 @@ class SettingsController extends GetxController {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Annuler'),
+              child: Text('common.cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1814,7 +1820,7 @@ class SettingsController extends GetxController {
                 backgroundColor: AppThemeSystem.primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Confirmer'),
+              child: Text('common.confirm'.tr),
             ),
           ],
         );
@@ -1845,8 +1851,11 @@ class SettingsController extends GetxController {
       Get.back();
 
       Get.snackbar(
-        'Succès',
-        'Pays et devise mis à jour : $country - ${currency.code}',
+        'common.success'.tr,
+        'settings.country.updated'.trParams({
+          'country': country,
+          'code': currency.code,
+        }),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.successColor,
         colorText: Colors.white,
@@ -1856,8 +1865,8 @@ class SettingsController extends GetxController {
     } catch (e) {
       print('Error selecting country: $e');
       Get.snackbar(
-        'Erreur',
-        'Impossible de définir le pays sélectionné',
+        'common.error'.tr,
+        'settings.country.select_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,

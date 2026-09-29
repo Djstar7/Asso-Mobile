@@ -73,8 +73,8 @@ class CompleteProfileController extends GetxController {
   Future<void> saveProfile() async {
     if (firstNameController.text.isEmpty || lastNameController.text.isEmpty) {
       Get.snackbar(
-        'Champs requis',
-        'Veuillez remplir votre prénom et nom',
+        'complete_profile.required_title'.tr,
+        'complete_profile.required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -118,8 +118,8 @@ class CompleteProfileController extends GetxController {
         // Mais on va forcer un refresh du profil si on revient en arrière
 
         Get.snackbar(
-          'Profil complété',
-          'Votre profil a été mis à jour avec succès',
+          'complete_profile.completed_title'.tr,
+          'complete_profile.completed_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -144,7 +144,7 @@ class CompleteProfileController extends GetxController {
         navigateBack();
       } else {
         Get.snackbar(
-          'Erreur',
+          'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
@@ -155,8 +155,8 @@ class CompleteProfileController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'common.error'.tr,
+        'complete_profile.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -172,8 +172,8 @@ class CompleteProfileController extends GetxController {
   Future<void> pickAvatar(BuildContext context) async {
     final source = await showImageSourceSheet(
       context,
-      title: 'Photo de profil',
-      gallerySubtitle: 'Choisir une photo existante',
+      title: 'complete_profile.photo_sheet_title'.tr,
+      gallerySubtitle: 'complete_profile.photo_gallery_subtitle'.tr,
     );
     if (source == null) return;
 
@@ -188,10 +188,10 @@ class CompleteProfileController extends GetxController {
       if (image != null) avatarImage.value = image;
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'common.error'.tr,
         source == ImageSource.camera
-            ? 'Impossible de prendre une photo'
-            : 'Impossible de sélectionner l\'image',
+            ? 'complete_profile.photo_camera_failed'.tr
+            : 'complete_profile.photo_pick_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
