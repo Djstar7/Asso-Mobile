@@ -157,7 +157,7 @@ class VendorConfigController extends GetxController {
       print(stackTrace.toString().split('\n').take(3).join('\n'));
       print('  └─ Using fallback categories');
 
-      categoriesLoadError.value = 'Impossible de charger les catégories';
+      categoriesLoadError.value = 'vendor_config.categories_load_error'.tr;
       _useFallbackCategories();
       isCategoriesLoading.value = false;
       print('========================================');
@@ -270,8 +270,8 @@ class VendorConfigController extends GetxController {
       if (permission == LocationPermission.deniedForever) {
         // Permission refusée de façon permanente
         Get.snackbar(
-          'Permission requise',
-          'Veuillez autoriser l\'accès à la localisation dans les paramètres',
+          'vendor_config.permission_required_title'.tr,
+          'vendor_config.permission_required_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
@@ -290,8 +290,8 @@ class VendorConfigController extends GetxController {
     isPickingProfileImage.value = true;
     try {
       final XFile? image = await MediaHelper.pickBrandedImage(
-        title: 'Photo de profil',
-        subtitle: 'Ajoutez une photo qui vous représente',
+        title: 'vendor_config.profile_photo_title'.tr,
+        subtitle: 'vendor_config.profile_photo_subtitle'.tr,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
@@ -312,8 +312,8 @@ class VendorConfigController extends GetxController {
     isPickingShopLogo.value = true;
     try {
       final XFile? image = await MediaHelper.pickBrandedImage(
-        title: 'Logo de la boutique',
-        subtitle: 'Choisissez le logo qui identifiera votre boutique',
+        title: 'vendor_config.shop_logo_title'.tr,
+        subtitle: 'vendor_config.shop_logo_subtitle'.tr,
         maxWidth: 512,
         maxHeight: 512,
         imageQuality: 85,
@@ -333,8 +333,8 @@ class VendorConfigController extends GetxController {
   bool validateStep1() {
     if (firstNameController.text.trim().isEmpty) {
       Get.snackbar(
-        'Champ requis',
-        'Veuillez entrer votre prénom',
+        'vendor_config.validation.required_title'.tr,
+        'vendor_config.validation.first_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -342,8 +342,8 @@ class VendorConfigController extends GetxController {
 
     if (lastNameController.text.trim().isEmpty) {
       Get.snackbar(
-        'Champ requis',
-        'Veuillez entrer votre nom',
+        'vendor_config.validation.required_title'.tr,
+        'vendor_config.validation.last_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -351,8 +351,8 @@ class VendorConfigController extends GetxController {
 
     if (selectedGender.value.isEmpty) {
       Get.snackbar(
-        'Champ requis',
-        'Veuillez sélectionner votre genre',
+        'vendor_config.validation.required_title'.tr,
+        'vendor_config.validation.gender'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -360,8 +360,8 @@ class VendorConfigController extends GetxController {
 
     if (profileImage.value == null) {
       Get.snackbar(
-        'Photo requise',
-        'Veuillez ajouter une photo de profil',
+        'vendor_config.validation.photo_required_title'.tr,
+        'vendor_config.validation.photo_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -374,8 +374,8 @@ class VendorConfigController extends GetxController {
   bool validateStep2() {
     if (shopNameController.text.trim().isEmpty) {
       Get.snackbar(
-        'Champ requis',
-        'Veuillez entrer le nom de votre boutique',
+        'vendor_config.validation.required_title'.tr,
+        'vendor_config.validation.shop_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -383,8 +383,8 @@ class VendorConfigController extends GetxController {
 
     if (shopDescriptionController.text.trim().isEmpty) {
       Get.snackbar(
-        'Champ requis',
-        'Veuillez décrire votre activité',
+        'vendor_config.validation.required_title'.tr,
+        'vendor_config.validation.shop_description'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -392,8 +392,8 @@ class VendorConfigController extends GetxController {
 
     if (shopLogo.value == null) {
       Get.snackbar(
-        'Logo requis',
-        'Veuillez ajouter le logo de votre boutique',
+        'vendor_config.validation.logo_required_title'.tr,
+        'vendor_config.validation.logo_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -401,8 +401,8 @@ class VendorConfigController extends GetxController {
 
     if (shopLocation.value.isEmpty) {
       Get.snackbar(
-        'Emplacement requis',
-        'Veuillez sélectionner l\'emplacement de votre boutique',
+        'vendor_config.validation.location_required_title'.tr,
+        'vendor_config.validation.location_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -414,8 +414,8 @@ class VendorConfigController extends GetxController {
 
     if (selectedCategories.isEmpty) {
       Get.snackbar(
-        'Catégorie requise',
-        'Veuillez sélectionner au moins une catégorie',
+        'vendor_config.validation.category_required_title'.tr,
+        'vendor_config.validation.category_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
@@ -565,7 +565,7 @@ class VendorConfigController extends GetxController {
       print(stackTrace.toString().split('\n').take(3).join('\n'));
 
       isDeliveryAvailable.value = false;
-      deliveryAvailabilityMessage.value = 'Erreur lors de la vérification';
+      deliveryAvailabilityMessage.value = 'vendor_config.delivery_check_error'.tr;
     } finally {
       isCheckingDeliveryAvailability.value = false;
       print('========================================');
@@ -603,7 +603,7 @@ class VendorConfigController extends GetxController {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Chargement de la carte...',
+                  'vendor_config.map_loading'.tr,
                   style: Get.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -611,7 +611,7 @@ class VendorConfigController extends GetxController {
                 if (isLoadingDeliveryPartners.value) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Récupération des partenaires de livraison...',
+                    'vendor_config.map_loading_partners'.tr,
                     style: Get.textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -713,7 +713,7 @@ class VendorConfigController extends GetxController {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'Vérification de la zone de livraison...',
+                      'vendor_config.checking_zone'.tr,
                       style: Get.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -721,7 +721,7 @@ class VendorConfigController extends GetxController {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Veuillez patienter',
+                      'vendor_config.please_wait'.tr,
                       style: Get.textTheme.bodyMedium?.copyWith(
                         color: Get.theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -765,11 +765,13 @@ class VendorConfigController extends GetxController {
           print('✅ Position SAVED! Button "Finaliser" should now be enabled');
 
           // Validation de l'adresse avant sauvegarde
-          if (address.contains('Chargement') || address.trim().isEmpty) {
+          if (address.contains('Chargement') ||
+              address == 'vendor_config.map.loading_address'.tr ||
+              address.trim().isEmpty) {
             print('⚠️ WARNING: Invalid address detected: "$address"');
             Get.snackbar(
-              'Adresse invalide',
-              'L\'adresse n\'a pas pu être récupérée. Veuillez réessayer.',
+              'vendor_config.invalid_address_title'.tr,
+              'vendor_config.invalid_address_message'.tr,
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: AppThemeSystem.warningColor,
               colorText: Colors.white,
@@ -795,8 +797,8 @@ class VendorConfigController extends GetxController {
       }
 
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'ouvrir la carte',
+        'vendor_config.error'.tr,
+        'vendor_config.map_open_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -818,7 +820,7 @@ class VendorConfigController extends GetxController {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Zone non desservie',
+                  'vendor_config.no_zone.title'.tr,
                   style: Get.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Get.theme.colorScheme.error,
@@ -832,14 +834,14 @@ class VendorConfigController extends GetxController {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Désolé, l\'emplacement de votre boutique est en dehors des zones de livraison disponibles.',
+                'vendor_config.no_zone.message'.tr,
                 style: Get.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Pour créer une boutique sur Asso, vous devez choisir un emplacement dans une zone où nous avons des partenaires de livraison actifs.',
+                'vendor_config.no_zone.explanation'.tr,
                 style: Get.textTheme.bodyMedium?.copyWith(
                   color: Get.theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -864,7 +866,7 @@ class VendorConfigController extends GetxController {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Nous travaillons pour étendre nos services à plus de zones.',
+                        'vendor_config.no_zone.expanding'.tr,
                         style: Get.textTheme.bodySmall?.copyWith(
                           color: Get.theme.colorScheme.primary,
                         ),
@@ -893,9 +895,9 @@ class VendorConfigController extends GetxController {
                   ),
                 ),
                 icon: const Icon(Icons.edit_location),
-                label: const Text(
-                  'Modifier mon emplacement',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                label: Text(
+                  'vendor_config.no_zone.change_location'.tr,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -919,9 +921,9 @@ class VendorConfigController extends GetxController {
                   ),
                 ),
                 icon: const Icon(Icons.home),
-                label: const Text(
-                  'Retour à l\'accueil',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                label: Text(
+                  'vendor_config.no_zone.back_home'.tr,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -1039,8 +1041,8 @@ class VendorConfigController extends GetxController {
         }
 
         Get.snackbar(
-          'Succès',
-          'Vous êtes maintenant vendeur !',
+          'vendor_config.success'.tr,
+          'vendor_config.now_vendor'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -1054,7 +1056,7 @@ class VendorConfigController extends GetxController {
         print('  └─ Error Message: ${response.message}');
 
         Get.snackbar(
-          'Erreur',
+          'vendor_config.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
@@ -1072,8 +1074,8 @@ class VendorConfigController extends GetxController {
       print(stackTrace.toString().split('\n').take(5).join('\n'));
 
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
+        'vendor_config.error'.tr,
+        'vendor_config.error_occurred'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,

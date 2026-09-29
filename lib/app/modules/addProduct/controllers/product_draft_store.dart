@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 /// Brouillon local d'une fiche produit en cours de rédaction.
@@ -41,7 +42,7 @@ class ProductDraft {
   /// Libellé court pour la reprise (« Chaussures en cuir », ou l'étape en cours).
   String get label {
     final name = fields['name']?.trim() ?? '';
-    return name.isNotEmpty ? name : 'Produit sans nom';
+    return name.isNotEmpty ? name : 'add_product.draft.unnamed'.tr;
   }
 
   /// Ne garde que les photos encore présentes sur l'appareil : une image

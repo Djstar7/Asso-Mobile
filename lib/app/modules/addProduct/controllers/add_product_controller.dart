@@ -272,12 +272,12 @@ class AddProductController extends GetxController {
   // ───────────── Parcours en étapes ─────────────
 
   /// Étapes du formulaire, dans l'ordre où un vendeur pense sa fiche.
-  static const stepTitles = <String>[
-    'Photos',
-    'Description',
-    'Prix & stock',
-    'Déclinaisons',
-    'Vérification',
+  static List<String> get stepTitles => <String>[
+    'add_product.steps.photos'.tr,
+    'add_product.steps.description'.tr,
+    'add_product.steps.price_stock'.tr,
+    'add_product.steps.variants'.tr,
+    'add_product.steps.review'.tr,
   ];
 
   static const stepCount = 5;
@@ -358,18 +358,18 @@ class AddProductController extends GetxController {
     if (isStepValid(step)) return null;
     switch (step) {
       case 0:
-        return 'Ajoutez au moins une photo du produit.';
+        return 'add_product.blocking.add_photo'.tr;
       case 1:
         if (nameController.text.trim().isEmpty) {
-          return 'Donnez un nom à votre produit.';
+          return 'add_product.blocking.name'.tr;
         }
         if (selectedSubcategoryId.value == null ||
             selectedSubcategoryId.value!.isEmpty) {
-          return 'Choisissez une catégorie et une sous-catégorie.';
+          return 'add_product.blocking.category'.tr;
         }
-        return 'Décrivez votre produit.';
+        return 'add_product.blocking.description'.tr;
       case 2:
-        return 'Indiquez un prix supérieur à zéro.';
+        return 'add_product.blocking.price'.tr;
       default:
         return null;
     }
@@ -867,7 +867,7 @@ class AddProductController extends GetxController {
       final storageRemainingMb =
           (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
       final packageName =
-          vendorPackage['package']?['name'] ?? 'Package actif';
+          vendorPackage['package']?['name'] ?? 'add_product.active_package'.tr;
 
       storageList.value = [
         {
@@ -1029,8 +1029,8 @@ class AddProductController extends GetxController {
       print('❌ ADD_PRODUCT: Error populating edit data: $e');
       print('Stack trace: $stackTrace');
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les données du produit',
+        'add_product.error'.tr,
+        'add_product.snack.load_product_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -1062,8 +1062,8 @@ class AddProductController extends GetxController {
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la sélection des images: $e');
       Get.snackbar(
-        'Erreur',
-        'Impossible de sélectionner les images',
+        'add_product.error'.tr,
+        'add_product.snack.pick_images_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -1086,8 +1086,8 @@ class AddProductController extends GetxController {
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la prise de photo: $e');
       Get.snackbar(
-        'Erreur',
-        'Impossible de prendre une photo',
+        'add_product.error'.tr,
+        'add_product.snack.take_photo_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -1100,8 +1100,8 @@ class AddProductController extends GetxController {
     // Validation: au moins une image
     if (productImages.isEmpty) {
       Get.snackbar(
-        'Aucune image',
-        'Veuillez ajouter au moins une image avant l\'analyse',
+        'add_product.snack.no_image_title'.tr,
+        'add_product.snack.no_image_message'.tr,
         snackPosition: SnackPosition.TOP,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -1112,9 +1112,8 @@ class AddProductController extends GetxController {
 
     if (isOffline) {
       Get.snackbar(
-        'Hors ligne',
-        'L\'analyse de la photo demande une connexion. Remplissez la fiche '
-            'vous-même : elle sera publiée au retour du réseau.',
+        'add_product.offline'.tr,
+        'add_product.snack.analysis_offline'.tr,
         snackPosition: SnackPosition.TOP,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -1151,8 +1150,8 @@ class AddProductController extends GetxController {
 
           // Afficher un snackbar de succès
           Get.snackbar(
-            'Analyse terminée',
-            'Les informations ont été pré-remplies avec succès',
+            'add_product.snack.analysis_done_title'.tr,
+            'add_product.snack.analysis_done_message'.tr,
             snackPosition: SnackPosition.TOP,
             backgroundColor: AppThemeSystem.successColor,
             colorText: Colors.white,
@@ -1160,16 +1159,16 @@ class AddProductController extends GetxController {
             duration: const Duration(seconds: 3),
           );
         } else {
-          throw Exception('Données d\'analyse invalides');
+          throw Exception('add_product.snack.analysis_invalid_data'.tr);
         }
       } else {
-        throw Exception(response.message ?? 'Erreur lors de l\'analyse');
+        throw Exception(response.message ?? 'add_product.snack.analysis_error'.tr);
       }
     } catch (e) {
       print('❌ Analysis error: $e');
       Get.snackbar(
-        'Erreur d\'analyse',
-        'Impossible d\'analyser l\'image: $e',
+        'add_product.snack.analysis_failed_title'.tr,
+        'add_product.snack.analysis_failed_message'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.TOP,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -1297,11 +1296,11 @@ class AddProductController extends GetxController {
   String? get weightError {
     final text = weightKgController.text.trim();
     if (articleType.value != 'article' && text.isEmpty) return null;
-    if (text.isEmpty) return 'Le poids est obligatoire pour un article';
-    if (!_weightInput.hasMatch(text)) return 'Saisissez un nombre, ex. 2,5';
+    if (text.isEmpty) return 'add_product.weight.required'.tr;
+    if (!_weightInput.hasMatch(text)) return 'add_product.weight.not_a_number'.tr;
     final value = double.tryParse(text.replaceAll(',', '.')) ?? 0;
-    if (value <= 0) return 'Le poids doit être supérieur à 0';
-    if (value > 100000) return 'Le poids ne peut dépasser 100 000 kg';
+    if (value <= 0) return 'add_product.weight.positive'.tr;
+    if (value > 100000) return 'add_product.weight.too_heavy'.tr;
     return null;
   }
 
@@ -1329,8 +1328,8 @@ class AddProductController extends GetxController {
     // Validation
     if (nameController.text.trim().isEmpty) {
       _warnMissingField(
-        'Champ requis',
-        'Veuillez entrer le nom du produit',
+        'add_product.validation.required_title'.tr,
+        'add_product.validation.name_required'.tr,
       );
       return;
     }
@@ -1339,16 +1338,16 @@ class AddProductController extends GetxController {
     // la synchronisation, une fois le vendeur parti.
     if (nameController.text.trim().length > 255) {
       _warnMissingField(
-        'Nom trop long',
-        'Le nom du produit ne peut dépasser 255 caractères.',
+        'add_product.validation.name_too_long_title'.tr,
+        'add_product.validation.name_too_long'.tr,
       );
       return;
     }
 
     if (productImages.isEmpty) {
       _warnMissingField(
-        'Image requise',
-        'Veuillez ajouter au moins une image du produit',
+        'add_product.validation.image_required_title'.tr,
+        'add_product.validation.image_required'.tr,
       );
       return;
     }
@@ -1356,16 +1355,16 @@ class AddProductController extends GetxController {
     if (selectedSubcategoryId.value == null ||
         selectedSubcategoryId.value!.isEmpty) {
       _warnMissingField(
-        'Catégorie requise',
-        'Veuillez sélectionner une catégorie',
+        'add_product.validation.category_required_title'.tr,
+        'add_product.validation.category_required'.tr,
       );
       return;
     }
 
     if (priceController.text.trim().isEmpty) {
       _warnMissingField(
-        'Prix requis',
-        'Veuillez entrer le prix du produit',
+        'add_product.validation.price_required_title'.tr,
+        'add_product.validation.price_required'.tr,
       );
       return;
     }
@@ -1373,8 +1372,8 @@ class AddProductController extends GetxController {
     final parsedPrice = parsePrice(priceController.text);
     if (parsedPrice == null || parsedPrice <= 0) {
       _warnMissingField(
-        'Prix invalide',
-        'Saisissez un prix supérieur à zéro, ex. 15000 ou 9,99.',
+        'add_product.validation.price_invalid_title'.tr,
+        'add_product.validation.price_invalid'.tr,
       );
       return;
     }
@@ -1384,16 +1383,16 @@ class AddProductController extends GetxController {
         !variantEditor.hasVariants &&
         int.tryParse(stockText) == null) {
       _warnMissingField(
-        'Stock invalide',
-        'Le stock est un nombre entier, ex. 200.',
+        'add_product.validation.stock_invalid_title'.tr,
+        'add_product.validation.stock_invalid'.tr,
       );
       return;
     }
 
     if (descriptionController.text.trim().isEmpty) {
       _warnMissingField(
-        'Description requise',
-        'Veuillez entrer une description du produit',
+        'add_product.validation.description_required_title'.tr,
+        'add_product.validation.description_required'.tr,
       );
       return;
     }
@@ -1402,8 +1401,8 @@ class AddProductController extends GetxController {
     final weightProblem = weightError;
     if (weightProblem != null) {
       _warnMissingField(
-        'Poids requis',
-        '$weightProblem (poids réel du colis en kg).',
+        'add_product.validation.weight_required_title'.tr,
+        'add_product.validation.weight_problem'.trParams({'problem': weightProblem}),
       );
       return;
     }
@@ -1412,8 +1411,8 @@ class AddProductController extends GetxController {
     // des données du serveur, qui font foi.
     if (isEditMode.value && isOffline) {
       _warnMissingField(
-        'Hors ligne',
-        'La modification d\'un produit demande une connexion.',
+        'add_product.offline'.tr,
+        'add_product.validation.edit_offline'.tr,
       );
       return;
     }
@@ -1674,10 +1673,12 @@ class AddProductController extends GetxController {
 
         // Toast de succès avec style responsive
         Get.snackbar(
-          isEditMode.value ? 'Produit modifié !' : 'Produit créé !',
           isEditMode.value
-              ? 'Votre produit a été modifié avec succès. Redirection vers la liste...'
-              : 'Votre produit a été ajouté avec succès. Redirection vers la liste...',
+              ? 'add_product.success.updated_title'.tr
+              : 'add_product.success.created_title'.tr,
+          isEditMode.value
+              ? 'add_product.success.updated_message'.tr
+              : 'add_product.success.created_message'.tr,
           snackPosition: SnackPosition.TOP,
           backgroundColor: AppThemeSystem.successColor,
           colorText: Colors.white,
@@ -1723,15 +1724,15 @@ class AddProductController extends GetxController {
         if (response.data?['error_code'] == 'NO_ACTIVE_PACKAGE') {
           Get.dialog(
             AlertDialog(
-              title: const Text('Package requis'),
+              title: Text('add_product.dialog.package_required_title'.tr),
               content: Text(
                 response.message ??
-                    'Vous devez souscrire à un package de stockage',
+                    'add_product.dialog.package_required_message'.tr,
               ),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(),
-                  child: const Text('Annuler'),
+                  child: Text('add_product.cancel'.tr),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -1742,8 +1743,8 @@ class AddProductController extends GetxController {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppDesign.accent,
                   ),
-                  child: const Text(
-                    'Voir les packages',
+                  child: Text(
+                    'add_product.dialog.view_packages'.tr,
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
@@ -1756,16 +1757,17 @@ class AddProductController extends GetxController {
 
           Get.dialog(
             AlertDialog(
-              title: const Text('Espace insuffisant'),
+              title: Text('add_product.dialog.insufficient_space_title'.tr),
               content: Text(
-                'Espace requis : ${requiredMb.toStringAsFixed(2)} MB\n'
-                'Espace disponible : ${availableMb.toStringAsFixed(2)} MB\n\n'
-                'Veuillez souscrire à un package supplémentaire.',
+                'add_product.dialog.insufficient_space_message'.trParams({
+                  'required': requiredMb.toStringAsFixed(2),
+                  'available': availableMb.toStringAsFixed(2),
+                }),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(),
-                  child: const Text('Annuler'),
+                  child: Text('add_product.cancel'.tr),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -1775,8 +1777,8 @@ class AddProductController extends GetxController {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppDesign.accent,
                   ),
-                  child: const Text(
-                    'Voir les packages',
+                  child: Text(
+                    'add_product.dialog.view_packages'.tr,
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
@@ -1785,8 +1787,8 @@ class AddProductController extends GetxController {
           );
         } else {
           Get.snackbar(
-            'Erreur',
-            response.message ?? 'Impossible d\'ajouter le produit',
+            'add_product.error'.tr,
+            response.message ?? 'add_product.snack.add_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -1795,8 +1797,8 @@ class AddProductController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue lors de l\'ajout du produit: $e',
+        'add_product.error'.tr,
+        'add_product.snack.add_error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -1810,10 +1812,10 @@ class AddProductController extends GetxController {
   void warnCategoriesUnavailable() {
     if (!isOffline) _loadCategories();
     _warnMissingField(
-      'Catégories indisponibles',
+      'add_product.categories.unavailable_title'.tr,
       isOffline
-          ? 'Connectez-vous une fois pour récupérer les catégories : elles resteront ensuite disponibles hors ligne.'
-          : 'Chargement des catégories en cours, réessayez dans un instant.',
+          ? 'add_product.categories.unavailable_offline'.tr
+          : 'add_product.categories.loading'.tr,
     );
   }
 
@@ -1827,10 +1829,10 @@ class AddProductController extends GetxController {
     }
     currentStep.value = 1;
     _warnMissingField(
-      'Catégorie à revoir',
+      'add_product.categories.invalid_title'.tr,
       categoriesAvailable.value
-          ? 'Cette catégorie n\'existe plus. Choisissez-en une dans la liste.'
-          : 'Les catégories n\'ont pas encore été chargées. Connectez-vous une fois pour les récupérer, puis choisissez la catégorie.',
+          ? 'add_product.categories.no_longer_exists'.tr
+          : 'add_product.categories.not_loaded'.tr,
     );
   }
 
@@ -1843,8 +1845,8 @@ class AddProductController extends GetxController {
   }) async {
     if (!Get.isRegistered<OfflineProductSyncService>()) {
       _warnMissingField(
-        'Hors ligne',
-        'Impossible d\'enregistrer le produit sans connexion.',
+        'add_product.offline'.tr,
+        'add_product.offline_save.unavailable'.tr,
       );
       return;
     }
@@ -1857,8 +1859,8 @@ class AddProductController extends GetxController {
       );
     } catch (e) {
       _warnMissingField(
-        'Enregistrement impossible',
-        'Le produit n\'a pas pu être gardé sur le téléphone : $e',
+        'add_product.offline_save.failed_title'.tr,
+        'add_product.offline_save.failed_message'.trParams({'error': '$e'}),
       );
       return;
     }
@@ -1867,8 +1869,8 @@ class AddProductController extends GetxController {
     discardDraft();
 
     Get.snackbar(
-      'Enregistré hors ligne',
-      'Votre produit sera publié automatiquement dès le retour de la connexion.',
+      'add_product.offline_save.saved_title'.tr,
+      'add_product.offline_save.saved_message'.tr,
       snackPosition: SnackPosition.TOP,
       backgroundColor: AppDesign.warning,
       colorText: Colors.white,

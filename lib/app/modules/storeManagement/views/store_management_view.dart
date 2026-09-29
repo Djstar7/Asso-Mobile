@@ -33,7 +33,7 @@ class StoreManagementView extends GetView<StoreManagementController> {
         leading: const AppBackButton(),
         centerTitle: false,
         title: Text(
-          'Ma boutique',
+          'store_management.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w700,
             color: ds.textPrimary,
@@ -42,7 +42,7 @@ class StoreManagementView extends GetView<StoreManagementController> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: ds.textSecondary, size: 20),
-            tooltip: 'Actualiser',
+            tooltip: 'store_management.refresh'.tr,
             onPressed: controller.loadData,
           ),
         ],
@@ -459,13 +459,13 @@ class _FreeDeliveryCard extends GetView<StoreManagementController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader('Livraison'),
+        _SectionHeader('store_management.delivery.section'.tr),
         Obx(
           () => FreeDeliveryToggle(
-            title: 'Livraison gratuite sur toute la boutique',
+            title: 'store_management.delivery.shop_wide_title'.tr,
             subtitle: controller.freeDelivery.value
-                ? 'Vos clients ne paient pas la livraison : son prix est retenu sur vos ventes. Si elle coûte plus que la vente, le client la paie.'
-                : 'Offrez la livraison à vos clients. Son prix sera retenu sur vos ventes.',
+                ? 'store_management.delivery.shop_wide_on'.tr
+                : 'store_management.delivery.shop_wide_off'.tr,
             value: controller.freeDelivery.value,
             busy: controller.isSavingFreeDelivery.value,
             onChanged: controller.setFreeDelivery,
@@ -495,7 +495,7 @@ class _StorageCard extends GetView<StoreManagementController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader('Stockage'),
+          _SectionHeader('store_management.storage.section'.tr),
           _Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,7 +504,7 @@ class _StorageCard extends GetView<StoreManagementController> {
                 // à 0 sur 0 n'aurait aucun sens, on explique l'état.
                 if (!storage.hasQuota) ...[
                   Text(
-                    'Aucun espace alloué',
+                    'store_management.storage.no_quota_title'.tr,
                     style: context.subtitle1.copyWith(
                       fontWeight: FontWeight.w700,
                       color: ds.textPrimary,
@@ -512,8 +512,7 @@ class _StorageCard extends GetView<StoreManagementController> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Souscrivez à un forfait pour publier les photos et vidéos '
-                    'de vos produits.',
+                    'store_management.storage.no_quota_message'.tr,
                     style: context.body2.copyWith(color: ds.textSecondary),
                   ),
                 ] else ...[
@@ -523,19 +522,23 @@ class _StorageCard extends GetView<StoreManagementController> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Espace utilisé',
+                          'store_management.storage.used_space'.tr,
                           style: context.body2.copyWith(color: ds.textSecondary),
                         ),
                       ),
                       Text(
-                        '${storage.usedSpaceGB.toStringAsFixed(1)} Go',
+                        'store_management.storage.used_gb'.trParams({
+                          'value': storage.usedSpaceGB.toStringAsFixed(1),
+                        }),
                         style: context.body2.copyWith(
                           color: ds.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
-                        ' / ${storage.totalSpaceGB.toStringAsFixed(1)} Go',
+                        'store_management.storage.total_gb'.trParams({
+                          'value': storage.totalSpaceGB.toStringAsFixed(1),
+                        }),
                         style: context.body2.copyWith(color: ds.textTertiary),
                       ),
                     ],
@@ -552,8 +555,11 @@ class _StorageCard extends GetView<StoreManagementController> {
                   ),
                   SizedBox(height: AppDesign.space2),
                   Text(
-                    '${percent.toStringAsFixed(0)} % utilisé · '
-                    '${storage.totalProducts} produits · ${storage.totalImages} images',
+                    'store_management.storage.summary'.trParams({
+                      'percent': percent.toStringAsFixed(0),
+                      'products': '${storage.totalProducts}',
+                      'images': '${storage.totalImages}',
+                    }),
                     style: context.caption.copyWith(color: ds.textTertiary),
                   ),
                 ],
@@ -562,7 +568,7 @@ class _StorageCard extends GetView<StoreManagementController> {
                   SizedBox(height: AppDesign.space4),
                   _Notice(
                     icon: Icons.warning_amber_rounded,
-                    message: 'Votre espace de stockage est presque plein.',
+                    message: 'store_management.storage.almost_full'.tr,
                     background: AppDesign.warningSubtle,
                     foreground: AppDesign.warningText,
                   ),
@@ -571,8 +577,8 @@ class _StorageCard extends GetView<StoreManagementController> {
                 SizedBox(height: AppDesign.space4),
                 _PrimaryButton(
                   label: storage.hasQuota
-                      ? "Augmenter l'espace"
-                      : 'Voir les forfaits',
+                      ? 'store_management.storage.increase'.tr
+                      : 'store_management.storage.see_plans'.tr,
                   onPressed: controller.upgradeStorage,
                 ),
               ],
@@ -615,21 +621,21 @@ class _CertificationCard extends GetView<StoreManagementController> {
     if (isExpired) {
       badgeBackground = AppDesign.dangerSubtle;
       badgeForeground = AppDesign.dangerText;
-      badgeLabel = 'Expirée';
+      badgeLabel = 'store_management.certification.badge_expired'.tr;
     } else if (isExpiringSoon) {
       badgeBackground = AppDesign.warningSubtle;
       badgeForeground = AppDesign.warningText;
-      badgeLabel = 'Expire bientôt';
+      badgeLabel = 'store_management.certification.badge_expiring_soon'.tr;
     } else {
       badgeBackground = AppDesign.successSubtle;
       badgeForeground = AppDesign.successText;
-      badgeLabel = 'Active';
+      badgeLabel = 'store_management.certification.badge_active'.tr;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader('Certification'),
+        _SectionHeader('store_management.certification.section'.tr),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -644,7 +650,7 @@ class _CertificationCard extends GetView<StoreManagementController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Boutique certifiée',
+                          'store_management.certification.certified_title'.tr,
                           style: context.subtitle1.copyWith(
                             fontWeight: FontWeight.w700,
                             color: ds.textPrimary,
@@ -652,7 +658,7 @@ class _CertificationCard extends GetView<StoreManagementController> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Badge de confiance affiché sur votre vitrine',
+                          'store_management.certification.certified_subtitle'.tr,
                           style: context.caption.copyWith(color: ds.textSecondary),
                         ),
                       ],
@@ -690,10 +696,12 @@ class _CertificationCard extends GetView<StoreManagementController> {
                   Expanded(
                     child: Text(
                       isExpired
-                          ? 'Certification expirée'
+                          ? 'store_management.certification.expired'.tr
                           : daysRemaining == 1
-                              ? 'Expire demain'
-                              : 'Expire dans $daysRemaining jours',
+                              ? 'store_management.certification.expires_tomorrow'.tr
+                              : 'store_management.certification.expires_in_days'.trParams({
+                                  'days': '$daysRemaining',
+                                }),
                       style: context.body2.copyWith(color: ds.textSecondary),
                     ),
                   ),
@@ -703,7 +711,7 @@ class _CertificationCard extends GetView<StoreManagementController> {
               if (isExpiringSoon || isExpired) ...[
                 SizedBox(height: AppDesign.space4),
                 _PrimaryButton(
-                  label: 'Renouveler la certification',
+                  label: 'store_management.certification.renew'.tr,
                   onPressed: controller.requestCertification,
                 ),
               ],
@@ -721,13 +729,13 @@ class _CertificationCard extends GetView<StoreManagementController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader('Certification'),
+        _SectionHeader('store_management.certification.section'.tr),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Devenez une boutique certifiée',
+                'store_management.certification.offer_title'.tr,
                 style: context.subtitle1.copyWith(
                   fontWeight: FontWeight.w700,
                   color: ds.textPrimary,
@@ -735,19 +743,19 @@ class _CertificationCard extends GetView<StoreManagementController> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Gagnez la confiance de vos clients.',
+                'store_management.certification.offer_subtitle'.tr,
                 style: context.body2.copyWith(color: ds.textSecondary),
               ),
               SizedBox(height: AppDesign.space4),
-              const _CertificationBenefit(text: 'Visibilité accrue sur vos produits'),
+              _CertificationBenefit(text: 'store_management.certification.benefit_visibility'.tr),
               SizedBox(height: AppDesign.space3),
-              const _CertificationBenefit(text: 'Badge de confiance sur votre vitrine'),
+              _CertificationBenefit(text: 'store_management.certification.benefit_badge'.tr),
               SizedBox(height: AppDesign.space3),
-              const _CertificationBenefit(
-                  text: 'Priorité dans les résultats de recherche'),
+              _CertificationBenefit(
+                  text: 'store_management.certification.benefit_search'.tr),
               SizedBox(height: AppDesign.space5),
               _PrimaryButton(
-                label: 'Demander la certification',
+                label: 'store_management.certification.request'.tr,
                 onPressed: controller.requestCertification,
               ),
             ],
@@ -801,8 +809,8 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
-            'Audience',
-            action: 'Voir le détail',
+            'store_management.audience.section'.tr,
+            action: 'store_management.audience.see_details'.tr,
             onAction: controller.openStatistics,
           ),
           _Card(
@@ -817,14 +825,14 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
                     children: [
                       Expanded(
                         child: _StatBox(
-                          label: 'Visites',
+                          label: 'store_management.audience.visits'.tr,
                           value: NumberFormat('#,###').format(stats.totalViews),
                         ),
                       ),
                       _StatDivider(),
                       Expanded(
                         child: _StatBox(
-                          label: 'Produits vus',
+                          label: 'store_management.audience.products_viewed'.tr,
                           value: NumberFormat('#,###').format(stats.totalClicks),
                         ),
                       ),
@@ -841,14 +849,14 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
                     children: [
                       Expanded(
                         child: _StatBox(
-                          label: 'Commandes',
+                          label: 'store_management.audience.orders'.tr,
                           value: stats.totalOrders.toString(),
                         ),
                       ),
                       _StatDivider(),
                       Expanded(
                         child: _StatBox(
-                          label: 'Conversion',
+                          label: 'store_management.audience.conversion'.tr,
                           value: '${stats.conversionRate.toStringAsFixed(1)} %',
                         ),
                       ),
@@ -857,7 +865,7 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
                 ),
                 SizedBox(height: AppDesign.space5),
                 _SecondaryButton(
-                  label: 'Booster mes produits',
+                  label: 'store_management.audience.boost'.tr,
                   onPressed: controller.boostProducts,
                 ),
               ],
@@ -928,8 +936,10 @@ class _InventoryCard extends GetView<StoreManagementController> {
         Obx(() {
           final entries = controller.filteredInventory;
           return _SectionHeader(
-            'Inventaire',
-            action: entries.length > 3 ? 'Voir tout (${entries.length})' : null,
+            'store_management.inventory.title'.tr,
+            action: entries.length > 3
+                ? 'store_management.inventory.see_all'.trParams({'count': '${entries.length}'})
+                : null,
             onAction: entries.length > 3 ? controller.viewAllInventory : null,
           );
         }),
@@ -942,21 +952,21 @@ class _InventoryCard extends GetView<StoreManagementController> {
                     runSpacing: AppDesign.space2,
                     children: [
                       _FilterChip(
-                        label: 'Tous',
+                        label: 'store_management.inventory.filter_all'.tr,
                         isSelected:
                             controller.selectedInventoryFilter.value == null,
                         onTap: () =>
                             controller.selectedInventoryFilter.value = null,
                       ),
                       _FilterChip(
-                        label: 'Entrées',
+                        label: 'store_management.inventory.filter_entries'.tr,
                         isSelected: controller.selectedInventoryFilter.value ==
                             InventoryType.entry,
                         onTap: () => controller.selectedInventoryFilter.value =
                             InventoryType.entry,
                       ),
                       _FilterChip(
-                        label: 'Sorties',
+                        label: 'store_management.inventory.filter_exits'.tr,
                         isSelected: controller.selectedInventoryFilter.value ==
                             InventoryType.exit,
                         onTap: () => controller.selectedInventoryFilter.value =
@@ -972,7 +982,7 @@ class _InventoryCard extends GetView<StoreManagementController> {
                     padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
                     child: Center(
                       child: Text(
-                        "Aucun mouvement d'inventaire.",
+                        'store_management.inventory.empty'.tr,
                         style: context.body2
                             .copyWith(color: context.ds.textSecondary),
                       ),
@@ -1089,7 +1099,7 @@ class _InventoryItem extends GetView<StoreManagementController> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      DateFormat('d MMM yyyy', 'fr_FR').format(entry.date),
+                      DateFormat('d MMM yyyy').format(entry.date),
                       style: context.caption.copyWith(color: ds.textTertiary),
                     ),
                   ],
@@ -1127,8 +1137,8 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
-            'Informations',
-            action: 'Modifier',
+            'store_management.info.section'.tr,
+            action: 'store_management.info.edit'.tr,
             onAction: () => Get.to(() => const EditStoreView()),
           ),
           _Card(
@@ -1144,7 +1154,7 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            store.name.isNotEmpty ? store.name : 'Sans nom',
+                            store.name.isNotEmpty ? store.name : 'store_management.info.unnamed'.tr,
                             style: context.subtitle1.copyWith(
                               fontWeight: FontWeight.w700,
                               color: ds.textPrimary,
@@ -1154,7 +1164,7 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Touchez le logo pour le remplacer',
+                            'store_management.info.tap_logo'.tr,
                             style: context.caption.copyWith(color: ds.textTertiary),
                           ),
                         ],
@@ -1168,19 +1178,19 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                 SizedBox(height: AppDesign.space2),
 
                 _InfoRow(
-                  label: 'Localisation',
+                  label: 'store_management.info.location'.tr,
                   value: store.city,
-                  placeholder: 'Non renseignée',
+                  placeholder: 'store_management.info.not_provided_f'.tr,
                 ),
                 _InfoRow(
-                  label: 'Adresse',
+                  label: 'store_management.info.address'.tr,
                   value: store.address,
-                  placeholder: 'Non renseignée',
+                  placeholder: 'store_management.info.not_provided_f'.tr,
                 ),
                 _InfoRow(
-                  label: 'Téléphone',
+                  label: 'store_management.info.phone'.tr,
                   value: store.phone,
-                  placeholder: 'Non renseigné',
+                  placeholder: 'store_management.info.not_provided_m'.tr,
                 ),
               ],
             ),
@@ -1333,9 +1343,9 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
         padding: EdgeInsets.only(bottom: AppDesign.space6),
         child: _Notice(
           icon: Icons.schedule_outlined,
-          title: 'Changement de localisation en attente',
+          title: 'store_management.location_pending.title'.tr,
           message:
-              'Votre demande sera examinée par un administrateur. Vous serez notifié de la décision.',
+              'store_management.location_pending.message'.tr,
           background: AppDesign.warningSubtle,
           foreground: AppDesign.warningText,
         ),

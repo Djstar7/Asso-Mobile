@@ -40,8 +40,8 @@ class AddProductView extends GetView<AddProductController> {
         title: Obx(
           () => Text(
             controller.isEditMode.value
-                ? 'Modifier le produit'
-                : 'Ajouter un produit',
+                ? 'add_product.view.edit_title'.tr
+                : 'add_product.view.add_title'.tr,
             style: context.h5.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
@@ -84,12 +84,12 @@ class AddProductView extends GetView<AddProductController> {
                 ),
                 SizedBox(height: context.sectionSpacing),
                 Text(
-                  'Chargement des données...',
+                  'add_product.view.loading'.tr,
                   style: context.h6.copyWith(fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: context.elementSpacing * 0.5),
                 Text(
-                  'Récupération des catégories et packages',
+                  'add_product.view.loading_subtitle'.tr,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -152,14 +152,14 @@ class AddProductView extends GetView<AddProductController> {
           borderRadius: BorderRadius.circular(AppDesign.radiusLg),
         ),
         title: Text(
-          'Garder ce brouillon ?',
+          'add_product.draft.keep_title'.tr,
           style: context.subtitle1.copyWith(
             fontWeight: FontWeight.w700,
             color: ds.textPrimary,
           ),
         ),
         content: Text(
-          'Vous pourrez reprendre cette fiche là où vous vous êtes arrêté.',
+          'add_product.draft.keep_message'.tr,
           style: context.body2.copyWith(color: ds.textSecondary),
         ),
         actionsPadding: EdgeInsets.fromLTRB(
@@ -172,7 +172,7 @@ class AddProductView extends GetView<AddProductController> {
           TextButton(
             onPressed: () => Get.back(result: false),
             style: TextButton.styleFrom(foregroundColor: AppDesign.danger),
-            child: const Text('Supprimer'),
+            child: Text('add_product.draft.delete'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
@@ -185,7 +185,7 @@ class AddProductView extends GetView<AddProductController> {
               ),
             ),
             child: Text(
-              'Garder',
+              'add_product.draft.keep'.tr,
               style: context.button.copyWith(color: AppDesign.neutral0),
             ),
           ),
@@ -229,7 +229,7 @@ class AddProductView extends GetView<AddProductController> {
                 SizedBox(width: AppDesign.space2),
                 Expanded(
                   child: Text(
-                    'Reprendre votre brouillon ?',
+                    'add_product.draft.resume_title'.tr,
                     style: context.subtitle2.copyWith(
                       fontWeight: FontWeight.w700,
                       color: ds.textPrimary,
@@ -240,7 +240,10 @@ class AddProductView extends GetView<AddProductController> {
             ),
             SizedBox(height: AppDesign.space2),
             Text(
-              '« ${draft.label} » · ${_draftAge(draft)}',
+              'add_product.draft.resume_label'.trParams({
+                'label': draft.label,
+                'age': _draftAge(draft),
+              }),
               style: context.body2.copyWith(color: ds.textSecondary),
             ),
             SizedBox(height: AppDesign.space4),
@@ -260,7 +263,7 @@ class AddProductView extends GetView<AddProductController> {
                         ),
                       ),
                       child: Text(
-                        'Recommencer',
+                        'add_product.draft.restart'.tr,
                         style: context.body2.copyWith(
                           color: ds.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -285,7 +288,7 @@ class AddProductView extends GetView<AddProductController> {
                         ),
                       ),
                       child: Text(
-                        'Reprendre',
+                        'add_product.draft.resume'.tr,
                         style: context.body2.copyWith(
                           color: AppDesign.neutral0,
                           fontWeight: FontWeight.w600,
@@ -304,10 +307,15 @@ class AddProductView extends GetView<AddProductController> {
 
   String _draftAge(ProductDraft draft) {
     final elapsed = DateTime.now().difference(draft.savedAt);
-    if (elapsed.inMinutes < 1) return "à l'instant";
-    if (elapsed.inMinutes < 60) return 'il y a ${elapsed.inMinutes} min';
-    if (elapsed.inHours < 24) return 'il y a ${elapsed.inHours} h';
-    return 'il y a ${elapsed.inDays} j';
+    if (elapsed.inMinutes < 1) return 'add_product.draft.age_now'.tr;
+    if (elapsed.inMinutes < 60) {
+      return 'add_product.draft.age_minutes'
+          .trParams({'n': '${elapsed.inMinutes}'});
+    }
+    if (elapsed.inHours < 24) {
+      return 'add_product.draft.age_hours'.trParams({'n': '${elapsed.inHours}'});
+    }
+    return 'add_product.draft.age_days'.trParams({'n': '${elapsed.inDays}'});
   }
 
   // ==========================================================================
@@ -369,9 +377,8 @@ class AddProductView extends GetView<AddProductController> {
       children: [
         _buildStepIntro(
           context,
-          title: 'Photos du produit',
-          subtitle:
-              'La première image est celle que verront vos clients dans la liste.',
+          title: 'add_product.view.photos_title'.tr,
+          subtitle: 'add_product.view.photos_subtitle'.tr,
         ),
         _buildImagesSection(context),
       ],
@@ -384,8 +391,8 @@ class AddProductView extends GetView<AddProductController> {
       children: [
         _buildStepIntro(
           context,
-          title: 'Description',
-          subtitle: 'Nommez et classez votre produit pour qu\'on le trouve.',
+          title: 'add_product.steps.description'.tr,
+          subtitle: 'add_product.view.identity_subtitle'.tr,
         ),
         _buildNameSection(context),
         SizedBox(height: AppDesign.space6),
@@ -404,9 +411,8 @@ class AddProductView extends GetView<AddProductController> {
       children: [
         _buildStepIntro(
           context,
-          title: 'Prix & stock',
-          subtitle:
-              'Le poids sert au calcul des frais de livraison.',
+          title: 'add_product.steps.price_stock'.tr,
+          subtitle: 'add_product.view.pricing_subtitle'.tr,
         ),
         _buildPriceSection(context),
         SizedBox(height: AppDesign.space6),
@@ -430,17 +436,17 @@ class AddProductView extends GetView<AddProductController> {
         children: [
           _buildStepIntro(
             context,
-            title: 'Type de produit',
-            subtitle: 'Votre produit se décline-t-il en plusieurs versions ?',
+            title: 'add_product.view.kind_title'.tr,
+            subtitle: 'add_product.view.kind_subtitle'.tr,
           ),
 
           _buildKindCard(
             context,
             selected: !isVariable,
             icon: Icons.inventory_2_outlined,
-            title: 'Produit simple',
-            subtitle: 'Un seul prix, un seul stock.',
-            example: 'Un sac de riz, un livre, un accessoire unique',
+            title: 'add_product.view.simple_product'.tr,
+            subtitle: 'add_product.view.simple_subtitle'.tr,
+            example: 'add_product.view.simple_example'.tr,
             onTap: () => controller.setProductKind(variable: false),
           ),
           SizedBox(height: AppDesign.space3),
@@ -448,9 +454,9 @@ class AddProductView extends GetView<AddProductController> {
             context,
             selected: isVariable,
             icon: Icons.style_outlined,
-            title: 'Produit variable',
-            subtitle: 'Plusieurs couleurs, tailles ou options.',
-            example: 'Un t-shirt en S/M/L, une chaussure en plusieurs pointures',
+            title: 'add_product.view.variable_product'.tr,
+            subtitle: 'add_product.view.variable_subtitle'.tr,
+            example: 'add_product.view.variable_example'.tr,
             onTap: () => controller.setProductKind(variable: true),
           ),
 
@@ -465,7 +471,7 @@ class AddProductView extends GetView<AddProductController> {
                     children: [
                       SizedBox(height: AppDesign.space8),
                       Text(
-                        'Vos déclinaisons',
+                        'add_product.view.your_variants'.tr,
                         style: context.subtitle1.copyWith(
                           fontWeight: FontWeight.w700,
                           color: context.ds.textPrimary,
@@ -473,7 +479,7 @@ class AddProductView extends GetView<AddProductController> {
                       ),
                       SizedBox(height: AppDesign.space1),
                       Text(
-                        'Chaque combinaison a son propre stock et son propre prix.',
+                        'add_product.view.your_variants_subtitle'.tr,
                         style: context.body2
                             .copyWith(color: context.ds.textSecondary),
                       ),
@@ -586,8 +592,8 @@ class AddProductView extends GetView<AddProductController> {
         children: [
           _buildStepIntro(
             context,
-            title: 'Vérification',
-            subtitle: 'Relisez votre fiche avant de la publier.',
+            title: 'add_product.steps.review'.tr,
+            subtitle: 'add_product.view.review_subtitle'.tr,
           ),
 
           Container(
@@ -624,7 +630,7 @@ class AddProductView extends GetView<AddProductController> {
                             children: [
                               Text(
                                 controller.nameController.text.trim().isEmpty
-                                    ? 'Sans nom'
+                                    ? 'add_product.view.no_name'.tr
                                     : controller.nameController.text.trim(),
                                 style: context.subtitle1.copyWith(
                                   fontWeight: FontWeight.w700,
@@ -635,8 +641,12 @@ class AddProductView extends GetView<AddProductController> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${controller.productImages.length} photo'
-                                '${controller.productImages.length > 1 ? 's' : ''}',
+                                (controller.productImages.length > 1
+                                        ? 'add_product.view.photo_count_plural'
+                                        : 'add_product.view.photo_count')
+                                    .trParams({
+                                  'count': '${controller.productImages.length}',
+                                }),
                                 style: context.caption
                                     .copyWith(color: ds.textTertiary),
                               ),
@@ -649,21 +659,24 @@ class AddProductView extends GetView<AddProductController> {
                 Divider(height: 1, color: ds.border),
                 _buildReviewRow(
                   context,
-                  'Catégorie',
-                  controller.selectedSubcategory.value ?? 'Non renseignée',
+                  'add_product.view.category'.tr,
+                  controller.selectedSubcategory.value ??
+                      'add_product.view.not_set_f'.tr,
                   onEdit: () => controller.goToStep(1),
                 ),
                 _buildReviewRow(
                   context,
-                  hasVariants ? 'Prix de base' : 'Prix',
+                  hasVariants
+                      ? 'add_product.view.base_price'.tr
+                      : 'add_product.view.price'.tr,
                   price > 0
                       ? controller.formatPrice(price)
-                      : 'Non renseigné',
+                      : 'add_product.view.not_set_m'.tr,
                   onEdit: () => controller.goToStep(2),
                 ),
                 _buildReviewRow(
                   context,
-                  'Stock total',
+                  'add_product.view.total_stock'.tr,
                   controller.stockController.text.trim().isEmpty
                       ? '0'
                       : controller.stockController.text.trim(),
@@ -671,11 +684,13 @@ class AddProductView extends GetView<AddProductController> {
                 ),
                 _buildReviewRow(
                   context,
-                  'Type',
+                  'add_product.view.type'.tr,
                   controller.isVariableProduct.value
-                      ? 'Variable · ${combos.length} déclinaison'
-                          '${combos.length > 1 ? 's' : ''}'
-                      : 'Produit simple',
+                      ? (combos.length > 1
+                              ? 'add_product.view.variable_count_plural'
+                              : 'add_product.view.variable_count')
+                          .trParams({'count': '${combos.length}'})
+                      : 'add_product.view.simple_product'.tr,
                   onEdit: () => controller.goToStep(3),
                   isLast: true,
                 ),
@@ -699,7 +714,7 @@ class AddProductView extends GetView<AddProductController> {
                   SizedBox(width: AppDesign.space2),
                   Expanded(
                     child: Text(
-                      'Le stock total est la somme de vos déclinaisons.',
+                      'add_product.view.total_stock_hint'.tr,
                       style: context.body2
                           .copyWith(color: AppDesign.accentText),
                     ),
@@ -831,7 +846,7 @@ class AddProductView extends GetView<AddProductController> {
                           ),
                         ),
                         child: Text(
-                          'Retour',
+                          'add_product.view.back'.tr,
                           style: context.button.copyWith(
                             color: ds.textPrimary,
                             fontWeight: FontWeight.w600,
@@ -877,9 +892,9 @@ class AddProductView extends GetView<AddProductController> {
                           : Text(
                               isLast
                                   ? (controller.isEditMode.value
-                                      ? 'Enregistrer'
-                                      : 'Publier le produit')
-                                  : 'Continuer',
+                                      ? 'add_product.view.save'.tr
+                                      : 'add_product.view.publish'.tr)
+                                  : 'add_product.view.continue'.tr,
                               style: context.button.copyWith(
                                 color: controller.canGoNext || isLast
                                     ? AppDesign.neutral0
@@ -1009,7 +1024,9 @@ class AddProductView extends GetView<AddProductController> {
                     ),
                     SizedBox(height: AppDesign.space3),
                     Text(
-                      isEmpty ? 'Ajouter des photos' : 'Ajouter une autre photo',
+                      isEmpty
+                          ? 'add_product.view.add_photos'.tr
+                          : 'add_product.view.add_another_photo'.tr,
                       style: context.subtitle2.copyWith(
                         color: AppDesign.accentText,
                         fontWeight: FontWeight.w700,
@@ -1018,12 +1035,12 @@ class AddProductView extends GetView<AddProductController> {
                     if (isEmpty) ...[
                       SizedBox(height: AppDesign.space1),
                       Text(
-                        'Au moins une image est requise',
+                        'add_product.view.image_required'.tr,
                         style: context.body2.copyWith(color: ds.textSecondary),
                       ),
                       SizedBox(height: AppDesign.space1),
                       Text(
-                        'Appareil photo ou galerie',
+                        'add_product.view.camera_or_gallery'.tr,
                         style: context.caption.copyWith(color: ds.textTertiary),
                       ),
                     ],
@@ -1039,7 +1056,10 @@ class AddProductView extends GetView<AddProductController> {
               children: [
                 Expanded(
                   child: Text(
-                    '$total photo${total > 1 ? 's' : ''}',
+                    (total > 1
+                            ? 'add_product.view.photo_count_plural'
+                            : 'add_product.view.photo_count')
+                        .trParams({'count': '$total'}),
                     style: context.subtitle2.copyWith(
                       fontWeight: FontWeight.w700,
                       color: ds.textPrimary,
@@ -1047,7 +1067,7 @@ class AddProductView extends GetView<AddProductController> {
                   ),
                 ),
                 Text(
-                  'Touchez pour choisir la principale',
+                  'add_product.view.tap_to_choose_main'.tr,
                   style: context.caption.copyWith(color: ds.textTertiary),
                 ),
               ],
@@ -1145,7 +1165,7 @@ class AddProductView extends GetView<AddProductController> {
                   borderRadius: BorderRadius.circular(AppDesign.radiusXs),
                 ),
                 child: Text(
-                  'Principale',
+                  'add_product.view.main'.tr,
                   style: context.caption.copyWith(
                     color: AppDesign.neutral0,
                     fontSize: 8,
@@ -1226,15 +1246,15 @@ class AddProductView extends GetView<AddProductController> {
                 ),
               ),
             ),
-            const Positioned(
+            Positioned(
               bottom: 24,
               left: 0,
               right: 0,
               child: SafeArea(
                 child: Text(
-                  'Pincez pour zoomer',
+                  'add_product.view.pinch_to_zoom'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ),
             ),
@@ -1250,14 +1270,14 @@ class AddProductView extends GetView<AddProductController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Nom du produit *',
+          'add_product.view.name_label'.tr,
           style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
         TextField(
           controller: controller.nameController,
           decoration: InputDecoration(
-            hintText: 'Ex: iPhone 13 Pro Max',
+            hintText: 'add_product.view.name_hint'.tr,
             filled: true,
             fillColor: context.inputFieldColor,
             prefixIcon: const Icon(Icons.inventory_2_outlined),
@@ -1291,7 +1311,7 @@ class AddProductView extends GetView<AddProductController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Catégorie *',
+            'add_product.view.category_label'.tr,
             style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
@@ -1322,7 +1342,7 @@ class AddProductView extends GetView<AddProductController> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      category ?? 'Sélectionnez une catégorie',
+                      category ?? 'add_product.view.select_category_hint'.tr,
                       style: context.body1.copyWith(
                         color: category != null
                             ? AppThemeSystem.primaryColor
@@ -1357,7 +1377,7 @@ class AddProductView extends GetView<AddProductController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Sous-catégorie *',
+            'add_product.view.subcategory_label'.tr,
             style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
@@ -1388,7 +1408,8 @@ class AddProductView extends GetView<AddProductController> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      subcategory ?? 'Sélectionnez une sous-catégorie',
+                      subcategory ??
+                          'add_product.view.select_subcategory_hint'.tr,
                       style: context.body1.copyWith(
                         color: subcategory != null
                             ? AppThemeSystem.primaryColor
@@ -1484,7 +1505,7 @@ class AddProductView extends GetView<AddProductController> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Sélectionner une catégorie',
+                            'add_product.view.select_category'.tr,
                             style: context.h5.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -1501,7 +1522,7 @@ class AddProductView extends GetView<AddProductController> {
                     TextField(
                       controller: searchController,
                       decoration: InputDecoration(
-                        hintText: 'Rechercher...',
+                        hintText: 'add_product.view.search'.tr,
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: context.backgroundColor,
@@ -1670,8 +1691,9 @@ class AddProductView extends GetView<AddProductController> {
                         Expanded(
                           child: Text(
                             category != null
-                                ? 'Sous-catégories de $category'
-                                : 'Sélectionner une sous-catégorie',
+                                ? 'add_product.view.subcategories_of'
+                                    .trParams({'category': category})
+                                : 'add_product.view.select_subcategory'.tr,
                             style: context.h5.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -1688,7 +1710,7 @@ class AddProductView extends GetView<AddProductController> {
                     TextField(
                       controller: searchController,
                       decoration: InputDecoration(
-                        hintText: 'Rechercher...',
+                        hintText: 'add_product.view.search'.tr,
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: context.backgroundColor,
@@ -1729,8 +1751,8 @@ class AddProductView extends GetView<AddProductController> {
                         padding: EdgeInsets.all(context.horizontalPadding),
                         child: Text(
                           category != null
-                              ? 'Aucune sous-catégorie trouvée'
-                              : 'Veuillez sélectionner une catégorie d\'abord',
+                              ? 'add_product.view.no_subcategory_found'.tr
+                              : 'add_product.view.select_category_first'.tr,
                           style: context.body1.copyWith(
                             color: context.secondaryTextColor,
                           ),
@@ -1817,7 +1839,9 @@ class AddProductView extends GetView<AddProductController> {
         // Avec des déclinaisons, ce prix sert de base : chacune lui applique
         // son propre supplément.
         Obx(() => Text(
-              controller.isVariableProduct.value ? 'Prix de base *' : 'Prix *',
+              controller.isVariableProduct.value
+                  ? 'add_product.view.base_price_label'.tr
+                  : 'add_product.view.price_label'.tr,
               style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
             )),
         SizedBox(height: context.elementSpacing),
@@ -1835,7 +1859,7 @@ class AddProductView extends GetView<AddProductController> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9 .,]')),
                   ],
                   decoration: InputDecoration(
-                    hintText: 'Entrez le prix',
+                    hintText: 'add_product.view.price_hint'.tr,
                     filled: true,
                     fillColor: context.inputFieldColor,
                     prefixIcon: const Icon(Icons.payments_outlined),
@@ -1878,7 +1902,7 @@ class AddProductView extends GetView<AddProductController> {
           );
           if (buyer == null || seller == null || buyer <= seller) {
             return Text(
-              'Vous recevez exactement le prix que vous saisissez.',
+              'add_product.view.receive_exact_price'.tr,
               style: context.caption.copyWith(color: context.secondaryTextColor),
             );
           }
@@ -1893,7 +1917,9 @@ class AddProductView extends GetView<AddProductController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Prix affiché aux clients : ${controller.formatInSelectedCurrency(buyer)}',
+                  'add_product.view.buyer_price'.trParams({
+                    'price': controller.formatInSelectedCurrency(buyer),
+                  }),
                   style: context.body2.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppThemeSystem.primaryColor,
@@ -1901,7 +1927,9 @@ class AddProductView extends GetView<AddProductController> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Vous recevez ${controller.formatInSelectedCurrency(seller)} par vente. La commission ASSO est payée par le client.',
+                  'add_product.view.seller_receives'.trParams({
+                    'price': controller.formatInSelectedCurrency(seller),
+                  }),
                   style: context.caption.copyWith(color: context.secondaryTextColor),
                 ),
               ],
@@ -2006,7 +2034,7 @@ class AddProductView extends GetView<AddProductController> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Sélectionner une devise',
+                            'add_product.view.select_currency'.tr,
                             style: context.h5.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -2024,7 +2052,7 @@ class AddProductView extends GetView<AddProductController> {
                       controller: searchController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        hintText: 'Rechercher par code ou nom...',
+                        hintText: 'add_product.view.search_currency'.tr,
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: context.backgroundColor,
@@ -2062,7 +2090,7 @@ class AddProductView extends GetView<AddProductController> {
                       child: Padding(
                         padding: EdgeInsets.all(context.horizontalPadding),
                         child: Text(
-                          'Aucune devise trouvée',
+                          'add_product.view.no_currency_found'.tr,
                           style: context.body1.copyWith(
                             color: context.secondaryTextColor,
                           ),
@@ -2159,7 +2187,7 @@ class AddProductView extends GetView<AddProductController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Description *',
+          'add_product.view.description_label'.tr,
           style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
@@ -2167,7 +2195,7 @@ class AddProductView extends GetView<AddProductController> {
           controller: controller.descriptionController,
           maxLines: 5,
           decoration: InputDecoration(
-            hintText: 'Décrivez votre produit en détail...',
+            hintText: 'add_product.view.description_hint'.tr,
             filled: true,
             fillColor: context.inputFieldColor,
             border: OutlineInputBorder(
@@ -2203,13 +2231,13 @@ class AddProductView extends GetView<AddProductController> {
       final followsShop = controller.freeDeliveryOverride.value == null;
 
       return FreeDeliveryToggle(
-        title: 'Livraison gratuite',
+        title: 'add_product.free_delivery.title'.tr,
         subtitle: [
           value
-              ? 'Le client ne paie pas la livraison : son prix est retenu sur la vente.'
-              : 'Offrez la livraison de ce produit : son prix sera retenu sur la vente.',
-          if (followsShop && shop) 'Réglage de votre boutique.',
-          if (!followsShop && shop) 'Exclu de la livraison gratuite de la boutique.',
+              ? 'add_product.free_delivery.on'.tr
+              : 'add_product.free_delivery.off'.tr,
+          if (followsShop && shop) 'add_product.free_delivery.shop_setting'.tr,
+          if (!followsShop && shop) 'add_product.free_delivery.excluded'.tr,
         ].join(' '),
         value: value,
         onChanged: controller.setFreeDelivery,
@@ -2229,7 +2257,9 @@ class AddProductView extends GetView<AddProductController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isArticle ? 'Poids du produit (kg) *' : 'Poids du produit (kg)',
+            isArticle
+                ? 'add_product.view.weight_label_required'.tr
+                : 'add_product.view.weight_label'.tr,
             style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: context.elementSpacing),
@@ -2240,8 +2270,8 @@ class AddProductView extends GetView<AddProductController> {
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
             decoration: InputDecoration(
-              hintText: 'Ex: 2,5',
-              helperText: 'Poids réel du colis en kg — utilisé pour calculer la livraison',
+              hintText: 'add_product.view.weight_hint'.tr,
+              helperText: 'add_product.view.weight_helper'.tr,
               helperMaxLines: 2,
               errorText: error,
               filled: true,
@@ -2334,7 +2364,7 @@ class AddProductView extends GetView<AddProductController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Couleurs, tailles & options',
+                          'add_product.variants.title'.tr,
                           style: context.subtitle1.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -2342,8 +2372,11 @@ class AddProductView extends GetView<AddProductController> {
                         const SizedBox(height: 2),
                         Text(
                           combos.isEmpty
-                              ? 'Facultatif · ex. couleur d’un téléphone, pointure d’une chaussure'
-                              : '${combos.length} choix · ${editor.totalStock} en stock au total',
+                              ? 'add_product.view.variants_optional'.tr
+                              : 'add_product.view.variants_summary'.trParams({
+                                  'count': '${combos.length}',
+                                  'stock': '${editor.totalStock}',
+                                }),
                           style: context.caption.copyWith(
                             color: context.secondaryTextColor,
                           ),
@@ -2434,7 +2467,7 @@ class AddProductView extends GetView<AddProductController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quantité en stock *',
+          'add_product.view.stock_label'.tr,
           style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: context.elementSpacing),
@@ -2448,13 +2481,13 @@ class AddProductView extends GetView<AddProductController> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               helperText: fromVariants
-                  ? 'Calculée automatiquement à partir des couleurs / tailles'
+                  ? 'add_product.view.stock_auto'.tr
                   : null,
-              hintText: 'Ex: 200',
+              hintText: 'add_product.view.stock_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: const Icon(Icons.inventory_outlined),
-              suffixText: 'unités',
+              suffixText: 'add_product.view.units'.tr,
               border: OutlineInputBorder(
                 borderRadius: context.borderRadius(BorderRadiusType.medium),
                 borderSide: BorderSide(color: context.borderColor),
@@ -2486,14 +2519,14 @@ class AddProductView extends GetView<AddProductController> {
           children: [
             Expanded(
               child: Text(
-                'Espace de stockage',
+                'add_product.storage.title'.tr,
                 style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             TextButton.icon(
               onPressed: controller.addNewStorage,
               icon: const Icon(Icons.add_circle_outline, size: 20),
-              label: const Text('Ajouter'),
+              label: Text('add_product.variants.add'.tr),
               style: TextButton.styleFrom(
                 foregroundColor: AppThemeSystem.primaryColor,
               ),
@@ -2523,7 +2556,7 @@ class AddProductView extends GetView<AddProductController> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Aucun package actif. Veuillez souscrire à un package.',
+                      'add_product.storage.no_package'.tr,
                       style: context.body2.copyWith(
                         color: AppThemeSystem.warningColor,
                       ),
@@ -2581,7 +2614,7 @@ class AddProductView extends GetView<AddProductController> {
                             BorderRadius.circular(AppDesign.radiusPill),
                       ),
                       child: Text(
-                        'Actif',
+                        'add_product.storage.active'.tr,
                         style: context.caption.copyWith(
                           color: AppDesign.successText,
                           fontWeight: FontWeight.w600,
@@ -2598,19 +2631,21 @@ class AddProductView extends GetView<AddProductController> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Espace utilisé',
+                        'add_product.storage.used'.tr,
                         style: context.body2.copyWith(color: ds.textSecondary),
                       ),
                     ),
                     Text(
-                      '${used.toStringAsFixed(1)} Go',
+                      'add_product.storage.gb'
+                          .trParams({'value': used.toStringAsFixed(1)}),
                       style: context.body2.copyWith(
                         color: ds.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      ' / ${total.toStringAsFixed(0)} Go',
+                      'add_product.storage.of_total'
+                          .trParams({'value': total.toStringAsFixed(0)}),
                       style: context.body2.copyWith(color: ds.textTertiary),
                     ),
                   ],
@@ -2628,8 +2663,10 @@ class AddProductView extends GetView<AddProductController> {
                 ),
                 SizedBox(height: AppDesign.space2),
                 Text(
-                  '${percentageUsed.toStringAsFixed(0)} % utilisé · '
-                  '${available.toStringAsFixed(1)} Go disponibles',
+                  'add_product.storage.usage'.trParams({
+                    'percent': percentageUsed.toStringAsFixed(0),
+                    'available': available.toStringAsFixed(1),
+                  }),
                   style: context.caption.copyWith(color: ds.textTertiary),
                 ),
               ],

@@ -227,8 +227,8 @@ class StoreManagementController extends GetxController {
       inventoryEntries.value = [];
 
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les données: ${e.toString()}',
+        'store_management.error'.tr,
+        'store_management.load_error'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -259,38 +259,38 @@ class StoreManagementController extends GetxController {
     banners.value = [
       PromotionalBanner(
         id: 'banner_1',
-        title: 'Augmentez votre espace',
-        description: 'Passez à 50 GB de stockage',
+        title: 'store_management.banner.storage_title'.tr,
+        description: 'store_management.banner.storage_description'.tr,
         imageUrl: '',
         type: BannerType.storage,
-        actionLabel: 'Voir les offres',
+        actionLabel: 'store_management.banner.storage_action'.tr,
         onTap: upgradeStorage,
       ),
       PromotionalBanner(
         id: 'banner_2',
-        title: 'Boostez vos produits',
-        description: 'Augmentez votre visibilité de 300%',
+        title: 'store_management.banner.boost_title'.tr,
+        description: 'store_management.banner.boost_description'.tr,
         imageUrl: '',
         type: BannerType.boost,
-        actionLabel: 'Booster maintenant',
+        actionLabel: 'store_management.banner.boost_action'.tr,
         onTap: boostProducts,
       ),
       PromotionalBanner(
         id: 'banner_3',
-        title: 'Devenez certifié',
-        description: 'Gagnez la confiance des clients',
+        title: 'store_management.banner.certification_title'.tr,
+        description: 'store_management.banner.certification_description'.tr,
         imageUrl: '',
         type: BannerType.certification,
-        actionLabel: 'Demander certification',
+        actionLabel: 'store_management.banner.certification_action'.tr,
         onTap: requestCertification,
       ),
       PromotionalBanner(
         id: 'banner_4',
-        title: 'Passez Premium',
-        description: 'Accédez à toutes les fonctionnalités',
+        title: 'store_management.banner.premium_title'.tr,
+        description: 'store_management.banner.premium_description'.tr,
         imageUrl: '',
         type: BannerType.premium,
-        actionLabel: 'Découvrir',
+        actionLabel: 'store_management.banner.premium_action'.tr,
         onTap: upgradeToPremium,
       ),
     ];
@@ -318,7 +318,7 @@ class StoreManagementController extends GetxController {
       if (!response.success) {
         freeDelivery.value = previous;
         Get.snackbar(
-          'Livraison gratuite',
+          'store_management.free_delivery.title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
         );
@@ -327,21 +327,24 @@ class StoreManagementController extends GetxController {
       final overridden =
           (response.data?['overridden_products'] as num?)?.toInt() ?? 0;
       Get.snackbar(
-        'Livraison gratuite',
+        'store_management.free_delivery.title'.tr,
         [
           value
-              ? 'Activée sur toute la boutique.'
-              : 'Désactivée sur la boutique.',
+              ? 'store_management.free_delivery.enabled'.tr
+              : 'store_management.free_delivery.disabled'.tr,
           if (overridden > 0)
-            '$overridden produit${overridden > 1 ? 's gardent' : ' garde'} son propre réglage.',
+            (overridden > 1
+                    ? 'store_management.free_delivery.overridden_many'
+                    : 'store_management.free_delivery.overridden_one')
+                .trParams({'count': '$overridden'}),
         ].join(' '),
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (_) {
       freeDelivery.value = previous;
       Get.snackbar(
-        'Livraison gratuite',
-        'Impossible d’enregistrer ce choix. Réessayez.',
+        'store_management.free_delivery.title'.tr,
+        'store_management.free_delivery.save_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -376,8 +379,8 @@ class StoreManagementController extends GetxController {
 
   /// Choisit une image pour le logo (picker de marque partagé, web + mobile).
   Future<XFile?> pickLogoImage() => MediaHelper.pickBrandedImage(
-    title: 'Logo de la boutique',
-    subtitle: 'Choisissez le logo qui identifiera votre boutique',
+    title: 'store_management.logo.title'.tr,
+    subtitle: 'store_management.logo.subtitle'.tr,
     maxWidth: 1024,
     maxHeight: 1024,
     imageQuality: 85,
@@ -401,18 +404,18 @@ class StoreManagementController extends GetxController {
         storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
         freeDelivery.value = readFreeDelivery(shop['free_delivery']);
         Get.snackbar(
-          'Succès',
-          'Logo de la boutique mis à jour',
+          'store_management.success'.tr,
+          'store_management.logo.updated'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
         Get.snackbar(
-          'Erreur',
+          'store_management.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de mettre à jour le logo',
+              : 'store_management.logo.update_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -420,8 +423,8 @@ class StoreManagementController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de mettre à jour le logo',
+        'store_management.error'.tr,
+        'store_management.logo.update_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -470,8 +473,8 @@ class StoreManagementController extends GetxController {
     final count = ordersResponse.data?['active_orders_count'] as int? ?? 0;
     if (ordersResponse.success && (ordersResponse.data?['has_active_orders'] == true)) {
       Get.snackbar(
-        'Commandes en cours',
-        'Vous avez $count commande(s) en cours. Terminez-les avant de changer d’emplacement.',
+        'store_management.move.active_orders_title'.tr,
+        'store_management.move.active_orders_message'.trParams({'count': '$count'}),
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
       );
@@ -496,8 +499,8 @@ class StoreManagementController extends GetxController {
       await checkDeliveryAvailability(latitude, longitude);
       if (!isDeliveryAvailable.value) {
         Get.snackbar(
-          'Hors zone de livraison',
-          'Aucun livreur ne dessert ce point. Choisissez un emplacement dans une zone colorée de la carte.',
+          'store_management.out_of_zone_title'.tr,
+          'store_management.move.out_of_zone_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
@@ -514,10 +517,10 @@ class StoreManagementController extends GetxController {
       );
       if (!response.success) {
         Get.snackbar(
-          'Demande non envoyée',
+          'store_management.move.request_not_sent'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Réessayez dans un instant.',
+              : 'store_management.move.retry_later'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return false;
@@ -584,7 +587,7 @@ class StoreManagementController extends GetxController {
       print(stackTrace.toString().split('\n').take(3).join('\n'));
 
       isDeliveryAvailable.value = false;
-      deliveryAvailabilityMessage.value = 'Erreur lors de la vérification';
+      deliveryAvailabilityMessage.value = 'store_management.delivery_check_error'.tr;
     } finally {
       isCheckingDeliveryAvailability.value = false;
       print('========================================');
@@ -645,8 +648,8 @@ class StoreManagementController extends GetxController {
         await checkDeliveryAvailability(latitude, longitude);
         if (!isDeliveryAvailable.value) {
           Get.snackbar(
-            'Hors zone de livraison',
-            'Cet emplacement est en dehors des zones de livraison. Choisissez un emplacement dans une zone desservie.',
+            'store_management.out_of_zone_title'.tr,
+            'store_management.out_of_zone_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: Colors.white,
@@ -700,7 +703,7 @@ class StoreManagementController extends GetxController {
           print('  └─ Categories: ${storeInfo.value?.categories}');
         }
 
-        final message = 'Informations de la boutique mises à jour avec succès';
+        final message = 'store_management.save_success'.tr;
 
         print('');
         print('========================================');
@@ -709,7 +712,7 @@ class StoreManagementController extends GetxController {
         print('========================================');
 
         Get.snackbar(
-          'Succès',
+          'store_management.success'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
@@ -719,10 +722,10 @@ class StoreManagementController extends GetxController {
         return true;
       } else {
         Get.snackbar(
-          'Erreur',
+          'store_management.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de sauvegarder les informations',
+              : 'store_management.save_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -731,8 +734,8 @@ class StoreManagementController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de sauvegarder les informations: ${e.toString()}',
+        'store_management.error'.tr,
+        'store_management.save_error_detail'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -765,8 +768,8 @@ class StoreManagementController extends GetxController {
   /// Passer en premium
   void upgradeToPremium() {
     Get.snackbar(
-      'Premium',
-      'Upgrade premium en cours de développement',
+      'store_management.premium.title'.tr,
+      'store_management.premium.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -774,7 +777,7 @@ class StoreManagementController extends GetxController {
   /// Voir les détails de l'inventaire
   void viewInventoryDetails(InventoryEntry entry) {
     Get.snackbar(
-      'Inventaire',
+      'store_management.inventory.title'.tr,
       '${entry.type.label}: ${entry.productName} (${entry.quantity})',
       snackPosition: SnackPosition.BOTTOM,
     );
