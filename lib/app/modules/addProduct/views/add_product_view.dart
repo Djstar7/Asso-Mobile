@@ -1547,6 +1547,10 @@ class AddProductView extends GetView<AddProductController> {
 
   /// Bottom sheet pour sélectionner la catégorie
   void _showCategoryBottomSheet(BuildContext context) {
+    if (!controller.categoriesAvailable.value) {
+      controller.warnCategoriesUnavailable();
+      return;
+    }
     final searchController = TextEditingController();
     final categories = controller.categoriesData.keys.toList();
     final filteredCategories = categories.obs;
@@ -1721,6 +1725,10 @@ class AddProductView extends GetView<AddProductController> {
 
   /// Bottom sheet pour sélectionner la sous-catégorie
   void _showSubcategoryBottomSheet(BuildContext context) {
+    if (!controller.categoriesAvailable.value) {
+      controller.warnCategoriesUnavailable();
+      return;
+    }
     final searchController = TextEditingController();
     final category = controller.selectedCategory.value;
 
