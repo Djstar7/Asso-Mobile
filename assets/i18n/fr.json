@@ -1,0 +1,12 @@
+{
+  "common": {
+    "coming_soon": "Bientôt disponible"
+  },
+  "settings": {
+    "language": {
+      "title": "Langue",
+      "changed_title": "Langue modifiée",
+      "changed_message": "La langue a été changée en @language"
+    }
+  }
+}

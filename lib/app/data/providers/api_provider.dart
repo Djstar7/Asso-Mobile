@@ -9,6 +9,7 @@ import '../../core/values/constants.dart';
 import '../services/connectivity_service.dart';
 import '../services/websocket_service.dart';
 import 'storage_service.dart';
+import '../../core/services/locale_service.dart';
 
 class ApiProvider {
   static http.Client _client = http.Client();
@@ -24,6 +25,7 @@ class ApiProvider {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Accept-Language': LocaleService.currentLanguage,
     };
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';

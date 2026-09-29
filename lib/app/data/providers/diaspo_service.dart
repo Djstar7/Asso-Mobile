@@ -5,6 +5,7 @@ import '../models/diaspo_offer.dart';
 import '../models/diaspo_booking.dart';
 import '../../core/values/constants.dart';
 import 'storage_service.dart';
+import '../../core/services/locale_service.dart';
 
 class DiaspoService extends GetxService {
   final Dio _dio = Dio(BaseOptions(
@@ -27,6 +28,7 @@ class DiaspoService extends GetxService {
           options.headers['Authorization'] = 'Bearer $token';
         }
         options.headers['Accept'] = 'application/json';
+        options.headers['Accept-Language'] = LocaleService.currentLanguage;
         return handler.next(options);
       },
       onError: (error, handler) {

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -16,6 +15,8 @@ import 'app/core/utils/route_stack_guard.dart';
 import 'app/core/widgets/app_ui.dart';
 import 'app/core/widgets/app_update_gate.dart';
 import 'app/core/controllers/app_config_controller.dart';
+import 'app/core/i18n/app_translations.dart';
+import 'app/core/services/locale_service.dart';
 import 'app/data/services/app_lifecycle_service.dart';
 import 'app/data/services/connectivity_service.dart';
 import 'app/data/services/offline_product_sync_service.dart';
@@ -54,6 +55,17 @@ Future<void> _bootstrap() async {
 
   await GetStorage.init();
   print('✅ GetStorage initialized');
+
+  // Textes de l'interface (assets/i18n/*.json) et langue courante : celle
+  // enregistrée, sinon celle du téléphone au premier lancement. Avant tout
+  // appel réseau, car chaque requête annonce la langue au serveur.
+  //
+  // Les durées relatives (« il y a 3 heures ») : l'anglais est intégré au
+  // paquet, le français s'enregistre ; la langue suit LocaleService.
+  timeago.setLocaleMessages('fr', timeago.FrMessages());
+  final translations = await AppTranslations.load();
+  final localeService =
+      await Get.putAsync(() => LocaleService().init(), permanent: true);
 
   // Plafonne le cache d'images et libère la mémoire quand le système le
   // demande : avant tout écran, pour que le plafond s'applique dès le départ.
@@ -109,15 +121,7 @@ Future<void> _bootstrap() async {
   }
   print('✅ AppConfigController initialized and settings loaded');
 
-  // Initialiser les données de formatage de dates pour les locales
-  await initializeDateFormatting('fr_FR', null);
-
-  // Les durées relatives (« il y a 3 heures ») sont enregistrées une fois
-  // pour toute l'application : la locale était déclarée dans une seule vue,
-  // les autres retombaient donc sur l'anglais.
-  timeago.setLocaleMessages('fr', timeago.FrMessages());
-  timeago.setDefaultLocale('fr');
-  print('✅ Date formatting initialized');
+  print('✅ Locale: ${localeService.language.value}');
 
   print('🎯 Initial route: ${AppPages.INITIAL}');
   print('========================================');
@@ -144,17 +148,15 @@ Future<void> _bootstrap() async {
       builder: (context, child) => AppKeyboardDismisser(
         child: AppUpdateGate(child: child ?? const SizedBox.shrink()),
       ),
-      // Support de la localisation française
+      translations: translations,
+      fallbackLocale: LocaleService.french,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('fr', 'FR'),
-        Locale('en', 'US'),
-      ],
-      locale: const Locale('fr', 'FR'),
+      supportedLocales: const [LocaleService.french, LocaleService.english],
+      locale: localeService.currentLocale,
     ),
   );
 }

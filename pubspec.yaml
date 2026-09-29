@@ -81,6 +81,7 @@ flutter:
     - assets/images/
     - assets/lotties/
     - assets/svgs/categories/
+    - assets/i18n/
     - Politique de confidentialité.md
     - shorebird.yaml
 

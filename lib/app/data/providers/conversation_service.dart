@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import '../providers/api_provider.dart';
 import '../../core/values/constants.dart';
 import '../providers/storage_service.dart';
+import '../../core/services/locale_service.dart';
 
 class ConversationService {
   /// Get user's conversations
@@ -97,6 +98,7 @@ class ConversationService {
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
+      request.headers['Accept-Language'] = LocaleService.currentLanguage;
 
       // Ajouter le message texte si fourni
       if (message != null && message.isNotEmpty) {

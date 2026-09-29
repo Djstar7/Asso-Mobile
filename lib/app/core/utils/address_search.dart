@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import '../services/locale_service.dart';
 
 /// La recherche d'adresse n'a pas pu joindre de service (réseau, blocage).
 class AddressSearchException implements Exception {
@@ -27,10 +28,10 @@ class AddressSearch {
   static http.Client Function() newClient = http.Client.new;
 
   static const _timeout = Duration(seconds: 10);
-  static const _headers = {
+  static Map<String, String> get _headers => {
     // Nominatim bloque les User-Agent génériques des bibliothèques HTTP.
     'User-Agent': 'AssoApp/1.0 (com.asso.asso)',
-    'Accept-Language': 'fr',
+    'Accept-Language': LocaleService.currentLanguage,
   };
 
   /// Adresses correspondant à [query], les plus proches de

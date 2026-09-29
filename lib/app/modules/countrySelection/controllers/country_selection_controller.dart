@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/services/locale_service.dart';
 import '../../../core/values/country_catalog.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../data/providers/api_provider.dart';
@@ -241,6 +242,12 @@ class CountrySelectionController extends GetxController {
       await CurrencyService.to.setCountryAndCurrency(
         option.country,
         option.currency,
+      );
+      // La langue suit le pays (langue professionnelle), sauf si
+      // l'utilisateur l'a déjà fixée dans les réglages.
+      await LocaleService.to.applyCountry(
+        isoCode: option.isoCode,
+        country: option.country,
       );
       Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {

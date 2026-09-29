@@ -10,6 +10,7 @@ import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/values/country_catalog.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/services/locale_service.dart';
 
 class SettingsController extends GetxController {
   // États
@@ -21,7 +22,8 @@ class SettingsController extends GetxController {
   final userPhone = ''.obs;
 
   // Préférences
-  final selectedLanguage = 'Français'.obs;
+  /// Code de la langue affichée (`fr`, `en`), tenu par [LocaleService].
+  RxString get selectedLanguage => LocaleService.to.language;
   final notificationsEnabled = true.obs;
 
   // Pays et devise
@@ -55,7 +57,6 @@ class SettingsController extends GetxController {
   void _loadPreferences() {
     final preferences = StorageService.getPreferences();
     if (preferences != null) {
-      selectedLanguage.value = preferences['language'] ?? 'Français';
       notificationsEnabled.value = preferences['notifications'] ?? true;
     }
   }
@@ -1209,7 +1210,7 @@ class SettingsController extends GetxController {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
                 child: Text(
-                  'Langue',
+                  'settings.language.title'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.bold,
@@ -1223,19 +1224,23 @@ class SettingsController extends GetxController {
               // Options de langue
               Obx(() => Column(
                 children: [
+                  // Chaque langue est nommée dans sa propre langue : on la
+                  // reconnaît même sans lire la langue courante.
                   _buildLanguageOption(
                     context,
+                    'fr',
                     'Français',
                     '🇫🇷',
-                    isSelected: selectedLanguage.value == 'Français',
+                    isSelected: selectedLanguage.value == 'fr',
                     isAvailable: true,
                   ),
                   _buildLanguageOption(
                     context,
+                    'en',
                     'English',
                     '🇬🇧',
-                    isSelected: selectedLanguage.value == 'English',
-                    isAvailable: false,
+                    isSelected: selectedLanguage.value == 'en',
+                    isAvailable: true,
                   ),
                 ],
               )),
@@ -1325,6 +1330,7 @@ class SettingsController extends GetxController {
   /// Widget pour une option de langue
   Widget _buildLanguageOption(
     BuildContext context,
+    String code,
     String language,
     String flag, {
     required bool isSelected,
@@ -1340,8 +1346,7 @@ class SettingsController extends GetxController {
         child: InkWell(
           onTap: isAvailable
               ? () {
-                  selectedLanguage.value = language;
-                  _saveLanguagePreference(language);
+                  _saveLanguagePreference(code, language);
                 }
               : null,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
@@ -1397,7 +1402,7 @@ class SettingsController extends GetxController {
                             borderRadius: context.borderRadius(BorderRadiusType.small),
                           ),
                           child: Text(
-                            'Coming Soon',
+                            'common.coming_soon'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               fontWeight: FontWeight.w600,
@@ -1433,14 +1438,13 @@ class SettingsController extends GetxController {
   }
 
   /// Sauvegarder la préférence de langue
-  void _saveLanguagePreference(String language) {
-    final preferences = StorageService.getPreferences() ?? {};
-    preferences['language'] = language;
-    StorageService.savePreferences(preferences);
+  Future<void> _saveLanguagePreference(String code, String language) async {
+    if (code == selectedLanguage.value) return;
+    await LocaleService.to.setLanguage(code, manual: true);
 
     Get.snackbar(
-      'Langue modifiée',
-      'La langue a été changée en $language',
+      'settings.language.changed_title'.tr,
+      'settings.language.changed_message'.trParams({'language': language}),
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.successColor,
       colorText: Colors.white,
@@ -1668,6 +1672,7 @@ class SettingsController extends GetxController {
             for (final info in currencyModel.countriesDetailed) {
               countries.add({
                 'country': info.name,
+                'isoCode': info.isoCode,
                 'currency': currencyModel,
                 'flag': info.flag.isNotEmpty
                     ? info.flag
@@ -1827,6 +1832,10 @@ class SettingsController extends GetxController {
 
       // Set the currency using CurrencyService
       await CurrencyService.to.setCountryAndCurrency(country, currency);
+      await LocaleService.to.applyCountry(
+        isoCode: countryData['isoCode'] as String? ?? '',
+        country: country,
+      );
 
       // Update local state
       selectedCountry.value = country;
