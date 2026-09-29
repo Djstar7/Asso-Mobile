@@ -31,7 +31,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Nous avons besoin d'accéder à votre caméra pour prendre des photos de vos produits et de votre profil</string>
+	<string>Nous avons besoin d'accéder à votre caméra pour photographier vos produits, lire leur code-barres et leur étiquette, et pour votre photo de profil</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Nous avons besoin de votre localisation pour vous permettre de gérer votre boutique et recevoir les commandes à proximité</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

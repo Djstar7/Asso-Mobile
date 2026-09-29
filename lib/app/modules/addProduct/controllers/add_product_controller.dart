@@ -11,6 +11,8 @@ import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/category_catalog.dart';
+import '../../../data/models/scan_result.dart';
+import '../../../data/services/product_label_scanner.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../data/providers/offline_store.dart';
 import '../../../data/services/connectivity_service.dart';
@@ -29,6 +31,9 @@ class AddProductController extends GetxController {
   final TextEditingController priceController = TextEditingController();
   final TextEditingController stockController = TextEditingController();
   final TextEditingController weightKgController = TextEditingController();
+  // Lus au scan de l'étiquette, modifiables par le vendeur.
+  final TextEditingController barcodeController = TextEditingController();
+  final TextEditingController brandController = TextEditingController();
 
   // Images — XFile pour compatibilité web ET mobile (pas de dart:io).
   final productImages = <XFile>[].obs;
@@ -316,6 +321,9 @@ class AddProductController extends GetxController {
       nameController,
       descriptionController,
       priceController,
+      barcodeController,
+      brandController,
+      weightKgController,
     ]) {
       controller.addListener(() => formRevision.value++);
     }
@@ -341,7 +349,8 @@ class AddProductController extends GetxController {
         return nameController.text.trim().isNotEmpty &&
             selectedSubcategoryId.value != null &&
             selectedSubcategoryId.value!.isNotEmpty &&
-            descriptionController.text.trim().isNotEmpty;
+            descriptionController.text.trim().isNotEmpty &&
+            barcodeError == null;
       case 2:
         final price = double.tryParse(
           priceController.text.trim().replaceAll(',', '.'),
@@ -369,7 +378,10 @@ class AddProductController extends GetxController {
             selectedSubcategoryId.value!.isEmpty) {
           return 'Choisissez une catégorie et une sous-catégorie.';
         }
-        return 'Décrivez votre produit.';
+        if (descriptionController.text.trim().isEmpty) {
+          return 'Décrivez votre produit.';
+        }
+        return barcodeError;
       case 2:
         return 'Indiquez un prix supérieur à zéro.';
       default:
@@ -419,6 +431,8 @@ class AddProductController extends GetxController {
           'price': priceController.text,
           'stock': stockController.text,
           'weight': weightKgController.text,
+          'barcode': barcodeController.text,
+          'brand': brandController.text,
           'category': selectedCategory.value ?? '',
           'subcategoryId': selectedSubcategoryId.value ?? '',
           'subcategory': selectedSubcategory.value ?? '',
@@ -438,6 +452,8 @@ class AddProductController extends GetxController {
     priceController.text = draft.fields['price'] ?? '';
     stockController.text = draft.fields['stock'] ?? '';
     weightKgController.text = draft.fields['weight'] ?? '';
+    barcodeController.text = draft.fields['barcode'] ?? '';
+    brandController.text = draft.fields['brand'] ?? '';
 
     final category = draft.fields['category'] ?? '';
     if (category.isNotEmpty) selectedCategory.value = category;
@@ -640,6 +656,8 @@ class AddProductController extends GetxController {
     priceController.dispose();
     stockController.dispose();
     weightKgController.dispose();
+    barcodeController.dispose();
+    brandController.dispose();
     super.onClose();
   }
 
@@ -897,6 +915,8 @@ class AddProductController extends GetxController {
       // Champs texte
       nameController.text = product['name'] ?? '';
       descriptionController.text = product['description'] ?? '';
+      barcodeController.text = product['barcode']?.toString() ?? '';
+      brandController.text = product['brand']?.toString() ?? '';
 
       // Devise + prix source du produit
       final productCurrency = (product['currency']?.toString() ?? 'XAF')
@@ -1095,151 +1115,175 @@ class AddProductController extends GetxController {
     }
   }
 
-  /// Analyser l'image du produit avec Gemini AI
-  final isAnalyzing = false.obs;
+  // ───────────── Remplissage automatique (scan ML Kit, sans LLM) ─────────────
 
-  Future<void> analyzeProductImage() async {
-    // Validation: au moins une image
-    if (productImages.isEmpty) {
-      Get.snackbar(
-        'Aucune image',
-        'Veuillez ajouter au moins une image avant l\'analyse',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppThemeSystem.warningColor,
-        colorText: Colors.white,
-        icon: const Icon(Icons.warning, color: Colors.white),
-      );
-      return;
-    }
+  /// Confiance minimale d'une proposition du serveur pour l'appliquer.
+  static const _minScanConfidence = 0.3;
 
-    if (isOffline) {
-      Get.snackbar(
-        'Hors ligne',
-        'L\'analyse de la photo demande une connexion. Remplissez la fiche '
-            'vous-même : elle sera publiée au retour du réseau.',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppThemeSystem.warningColor,
-        colorText: Colors.white,
-        icon: const Icon(Icons.cloud_off_rounded, color: Colors.white),
-      );
-      return;
-    }
+  /// Valeur posée par le scan, par champ. Le badge « À vérifier » reste
+  /// affiché tant que le vendeur ne l'a pas modifiée.
+  final prefilled = <String, String>{}.obs;
 
-    isAnalyzing.value = true;
+  /// Le scan crée une fiche : il n'est pas proposé en modification.
+  /// (isEditMode lu en premier : abonne toujours les Obx.)
+  bool get canScan => !isEditMode.value && ProductLabelScanner.isSupported;
 
-    try {
-      print('🤖 Starting Gemini AI analysis...');
-
-      // Analyser l'image primaire
-      final primaryImage = productImages[primaryImageIndex.value];
-      print('   └─ Analyzing image: ${primaryImage.name}');
-
-      // Appeler l'API d'analyse
-      final response = await ProductService.analyzeProductImage(primaryImage);
-
-      if (response.success && response.data != null) {
-        final analysis =
-            response.data!['suggested_data'] as Map<String, dynamic>?;
-        final confidence =
-            response.data!['confidence'] as Map<String, dynamic>?;
-
-        if (analysis != null) {
-          print('✅ Analysis completed successfully!');
-          print('   └─ Suggested name: ${analysis['name']}');
-          print('   └─ Category ID: ${analysis['category_id']}');
-
-          // Pré-remplir les champs avec les résultats
-          _applyAnalysisResults(analysis, confidence ?? {});
-
-          // Afficher un snackbar de succès
-          Get.snackbar(
-            'Analyse terminée',
-            'Les informations ont été pré-remplies avec succès',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: AppThemeSystem.successColor,
-            colorText: Colors.white,
-            icon: const Icon(Icons.auto_awesome, color: Colors.white),
-            duration: const Duration(seconds: 3),
-          );
-        } else {
-          throw Exception('Données d\'analyse invalides');
-        }
-      } else {
-        throw Exception(response.message ?? 'Erreur lors de l\'analyse');
-      }
-    } catch (e) {
-      print('❌ Analysis error: $e');
-      Get.snackbar(
-        'Erreur d\'analyse',
-        'Impossible d\'analyser l\'image: $e',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppThemeSystem.errorColor,
-        colorText: Colors.white,
-        icon: const Icon(Icons.error, color: Colors.white),
-        duration: const Duration(seconds: 4),
-      );
-    } finally {
-      isAnalyzing.value = false;
-    }
+  bool isPrefilled(String field) {
+    // Lecture volontaire : abonne les Obx aux saisies clavier.
+    formRevision.value;
+    final applied = prefilled[field];
+    return applied != null && _fieldValue(field) == applied;
   }
 
-  /// Appliquer les résultats de l'analyse aux champs du formulaire
-  void _applyAnalysisResults(
-    Map<String, dynamic> analysis,
-    Map<String, dynamic> confidence,
-  ) {
-    print('📝 Applying analysis results to form...');
+  String? _fieldValue(String field) => switch (field) {
+        'name' => nameController.text,
+        'description' => descriptionController.text,
+        'brand' => brandController.text,
+        'barcode' => barcodeController.text,
+        'weight' => weightKgController.text,
+        'category' => selectedSubcategoryId.value ?? selectedCategory.value,
+        _ => null,
+      };
 
-    // Nom du produit
-    if (analysis['name'] != null && (confidence['name'] ?? 0) > 0.3) {
-      nameController.text = analysis['name'];
-      print('   └─ Name applied: ${analysis['name']}');
+  /// Erreur de saisie du code-barres, ou null (vide ou valide).
+  String? get barcodeError {
+    final text = barcodeController.text.trim();
+    if (text.isEmpty || RegExp(r'^\d{8,14}$').hasMatch(text)) return null;
+    return 'Le code-barres compte 8 à 14 chiffres (ou laissez-le vide).';
+  }
+
+  /// Ouvre le viseur (ou directement la galerie) puis applique le résultat.
+  Future<void> openScanner({bool fromGallery = false}) async {
+    final result = await Get.toNamed(
+      Routes.PRODUCT_SCAN,
+      arguments: fromGallery ? {'source': 'gallery'} : null,
+    );
+    if (result is ScanResult) applyScanResult(result);
+  }
+
+  /// Pré-remplit le formulaire. Un champ déjà saisi n'est jamais écrasé.
+  void applyScanResult(ScanResult result) {
+    final extraction = result.extraction;
+    final suggestion = result.suggestion;
+    final applied = <String>[];
+
+    void fill(
+      String field,
+      TextEditingController target,
+      String? value,
+      double confidence,
+    ) {
+      final text = value?.trim() ?? '';
+      if (text.isEmpty || confidence < _minScanConfidence) return;
+      if (target.text.trim().isNotEmpty) return;
+      target.text = text;
+      prefilled[field] = text;
+      applied.add(field);
     }
 
-    // Description
-    if (analysis['description'] != null &&
-        (confidence['description'] ?? 0) > 0.3) {
-      descriptionController.text = analysis['description'];
-      print('   └─ Description applied');
+    // La photo analysée rejoint les photos du produit, en tête.
+    if (!productImages.any((image) => image.path == extraction.imagePath)) {
+      final hadImages = productImages.isNotEmpty;
+      productImages.insert(0, XFile(extraction.imagePath));
+      if (hadImages) primaryImageIndex.value++;
     }
 
-    // Type de produit
-    if (analysis['type'] != null) {
-      articleType.value = analysis['type'];
-      print('   └─ Type applied: ${analysis['type']}');
-    }
-
-    // Catégorie et sous-catégorie
-    if (analysis['category_id'] != null) {
-      final categoryId = analysis['category_id'].toString();
-      final subcategoryId = analysis['subcategory_id']?.toString();
-
-      // Chercher la catégorie correspondante dans allSubcategories
-      final matchingSubcat = allSubcategories.firstWhereOrNull(
-        (subcat) => subcategoryId != null
-            ? subcat['id'] == subcategoryId && subcat['category_only'] != '1'
-            : subcat['category_id'] == categoryId &&
-                subcat['category_only'] == '1',
-      );
-
-      if (matchingSubcat != null) {
-        selectedSubcategoryId.value = matchingSubcat['id'];
-        selectedSubcategory.value = matchingSubcat['name'];
-        selectedCategory.value = matchingSubcat['category_name'];
-        print('   └─ Category/Subcategory applied: ${matchingSubcat['name']}');
-      } else {
-        print('   └─ Warning: Could not find matching category/subcategory');
+    fill('barcode', barcodeController,
+        suggestion?.barcode ?? extraction.barcode, 1);
+    if (suggestion != null) {
+      fill('name', nameController, suggestion.name,
+          suggestion.confidenceOf('name'));
+      fill('brand', brandController, suggestion.brand,
+          suggestion.confidenceOf('brand'));
+      fill('description', descriptionController, suggestion.description,
+          suggestion.confidenceOf('description'));
+      final weight = suggestion.weightKg;
+      if (weight != null && weight > 0 && articleType.value == 'article') {
+        fill('weight', weightKgController, formatWeightInput(weight),
+            suggestion.confidenceOf('weight'));
       }
+      if (_applySuggestedCategory(suggestion)) applied.add('category');
+    } else {
+      // Sans réponse du serveur : la plus grande ligne lisible sert de nom.
+      final firstLine = extraction.ocrLines.firstWhereOrNull(
+        (line) => RegExp(r'[A-Za-zÀ-ÿ]{3}').hasMatch(line),
+      );
+      fill('name', nameController, firstLine, 1);
     }
 
-    // Poids
-    if (analysis['weight_category'] != null &&
-        weightTypes.containsKey(analysis['weight_category'])) {
-      selectedWeightType.value = analysis['weight_category'];
-      print('   └─ Weight category applied: ${analysis['weight_category']}');
-    }
+    formRevision.value++;
+    saveDraft();
+    _announceScan(suggestion, applied);
+  }
 
-    print('✅ Analysis results applied successfully!');
+  /// Catégorie proposée, si le vendeur n'en a pas déjà choisi une.
+  bool _applySuggestedCategory(ScanSuggestion suggestion) {
+    final categoryId = suggestion.categoryId;
+    if (categoryId == null ||
+        suggestion.confidenceOf('category') < _minScanConfidence) {
+      return false;
+    }
+    if ((selectedSubcategoryId.value ?? '').isNotEmpty ||
+        (selectedCategory.value ?? '').isNotEmpty) {
+      return false;
+    }
+    final subcategoryId = suggestion.subcategoryId;
+    final entry = allSubcategories.firstWhereOrNull(
+      (e) => subcategoryId != null
+          ? e['id'] == subcategoryId &&
+              e['category_id'] == categoryId &&
+              e['category_only'] != '1'
+          : e['category_id'] == categoryId && e['category_only'] == '1',
+    );
+    if (entry != null) {
+      selectedSubcategoryId.value = entry['id'];
+      selectedSubcategory.value = entry['name'];
+      selectedCategory.value = entry['category_name'];
+      prefilled['category'] = entry['id']!;
+      return true;
+    }
+    // Catégorie seule : le vendeur choisit la sous-catégorie.
+    final any = allSubcategories.firstWhereOrNull(
+      (e) => e['category_id'] == categoryId,
+    );
+    if (any == null) return false;
+    selectedCategory.value = any['category_name'];
+    prefilled['category'] = any['category_name']!;
+    return true;
+  }
+
+  void _announceScan(ScanSuggestion? suggestion, List<String> applied) {
+    final String title;
+    final String message;
+    var color = AppDesign.info;
+    if (suggestion == null && isOffline) {
+      title = 'Hors ligne';
+      message = 'Photo ajoutée. La recherche du produit demande une '
+          'connexion : complétez la fiche vous-même.';
+      color = AppDesign.warning;
+    } else if (applied.isEmpty) {
+      title = 'Photo ajoutée';
+      message = 'Aucune information exploitable sur cette photo : '
+          'complétez la fiche vous-même.';
+      color = AppDesign.warning;
+    } else {
+      title = 'Fiche pré-remplie';
+      message = suggestion == null
+          ? 'Vérifiez les champs marqués « À vérifier ».'
+          : 'Source : ${suggestion.sourceLabel}. Vérifiez les champs '
+              'marqués « À vérifier ».';
+      color = AppDesign.success;
+    }
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: color,
+      colorText: AppDesign.neutral0,
+      margin: const EdgeInsets.all(AppDesign.space4),
+      borderRadius: AppDesign.radiusMd,
+      duration: const Duration(seconds: 4),
+    );
   }
 
   /// Naviguer vers la page de souscription de package
@@ -1308,6 +1352,12 @@ class AddProductController extends GetxController {
         'Champ requis',
         'Veuillez entrer le nom du produit',
       );
+      return;
+    }
+
+    final barcodeProblem = barcodeError;
+    if (barcodeProblem != null) {
+      _warnMissingField('Code-barres', barcodeProblem);
       return;
     }
 
@@ -1511,6 +1561,12 @@ class AddProductController extends GetxController {
       fieldsMap['free_delivery'] = freeOverride == null
           ? ''
           : (freeOverride ? '1' : '0');
+
+      // Code-barres et marque : en modification, un champ vidé les efface.
+      final barcode = barcodeController.text.trim();
+      final brand = brandController.text.trim();
+      if (isEditMode.value || barcode.isNotEmpty) fieldsMap['barcode'] = barcode;
+      if (isEditMode.value || brand.isNotEmpty) fieldsMap['brand'] = brand;
 
       // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
       final weightText = weightKgController.text.trim();

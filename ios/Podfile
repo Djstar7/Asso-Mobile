@@ -1,6 +1,7 @@
 # Uncomment this line to define a global platform for your project
 # flutter_stripe requiert iOS 13.0 minimum
-platform :ios, '15.0'
+# Google ML Kit (scan de l'étiquette produit) exige iOS 15.5.
+platform :ios, '15.5'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

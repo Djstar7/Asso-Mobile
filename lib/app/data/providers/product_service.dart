@@ -1,4 +1,3 @@
-import 'package:image_picker/image_picker.dart' show XFile;
 import '../../core/values/constants.dart';
 import 'api_provider.dart';
 
@@ -112,23 +111,12 @@ class ProductService {
     });
   }
 
-  /// Analyze product image using Gemini AI (XFile — compatible web ET mobile)
-  static Future<ApiResponse> analyzeProductImage(XFile image) async {
-    return await ApiProvider.multipart(
-      '${AppConstants.productsUrl}/analyze',
-      mediaFiles: {
-        'image': image,
-      },
+  /// Fiche pré-remplie à partir de ce que ML Kit a lu sur le téléphone
+  /// (code-barres, texte de l'étiquette, labels). Aucune image envoyée.
+  static Future<ApiResponse> scanLookup(Map<String, dynamic> payload) async {
+    return await ApiProvider.post(
+      '${AppConstants.productsUrl}/scan-lookup',
+      body: payload,
     );
-  }
-
-  /// Get available categories with subcategories
-  static Future<ApiResponse> getCategoriesForAnalysis() async {
-    return await ApiProvider.get('${AppConstants.productsUrl}/categories');
-  }
-
-  /// Health check for Gemini service
-  static Future<ApiResponse> checkGeminiHealth() async {
-    return await ApiProvider.get('${AppConstants.productsUrl}/analyze/health');
   }
 }

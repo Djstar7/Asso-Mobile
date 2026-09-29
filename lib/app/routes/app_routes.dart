@@ -40,6 +40,7 @@ abstract class Routes {
   static const CERTIFICATION_PACKAGES = _Paths.CERTIFICATION_PACKAGES;
   static const PRODUCT_MANAGEMENT = _Paths.PRODUCT_MANAGEMENT;
   static const ADD_PRODUCT = _Paths.ADD_PRODUCT;
+  static const PRODUCT_SCAN = _Paths.PRODUCT_SCAN;
   static const USSD_WAITING = _Paths.USSD_WAITING;
   static const WALLET_HISTORY = _Paths.WALLET_HISTORY;
   static const INVENTORY_LIST = _Paths.INVENTORY_LIST;
@@ -97,6 +98,7 @@ abstract class _Paths {
   static const CERTIFICATION_PACKAGES = '/certification-packages';
   static const PRODUCT_MANAGEMENT = '/product-management';
   static const ADD_PRODUCT = '/add-product';
+  static const PRODUCT_SCAN = '/add-product/scan';
   static const USSD_WAITING = '/ussd-waiting';
   static const WALLET_HISTORY = '/wallet/history';
   static const INVENTORY_LIST = '/inventory-list';

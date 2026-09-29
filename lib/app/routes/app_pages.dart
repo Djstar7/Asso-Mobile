@@ -83,6 +83,8 @@ import '../modules/certificationPackages/bindings/certification_packages_binding
 import '../modules/certificationPackages/views/certification_packages_view.dart';
 import '../modules/addProduct/bindings/add_product_binding.dart';
 import '../modules/addProduct/views/add_product_view.dart';
+import '../modules/productScan/bindings/product_scan_binding.dart';
+import '../modules/productScan/views/product_scan_view.dart';
 import '../modules/productManagement/bindings/product_management_binding.dart';
 import '../modules/productManagement/views/product_management_view.dart';
 import '../modules/inventoryList/bindings/inventory_list_binding.dart';
@@ -292,6 +294,11 @@ class AppPages {
       name: _Paths.ADD_PRODUCT,
       page: () => const AddProductView(),
       binding: AddProductBinding(),
+    ),
+    GetPage(
+      name: _Paths.PRODUCT_SCAN,
+      page: () => const ProductScanView(),
+      binding: ProductScanBinding(),
     ),
     GetPage(
       name: _Paths.USSD_WAITING,

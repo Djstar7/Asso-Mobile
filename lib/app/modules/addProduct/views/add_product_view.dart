@@ -371,6 +371,14 @@ class AddProductView extends GetView<AddProductController> {
           subtitle:
               'La première image est celle que verront vos clients dans la liste.',
         ),
+        Obx(
+          () => controller.canScan
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: AppDesign.space6),
+                  child: _buildScanCard(context),
+                )
+              : const SizedBox.shrink(),
+        ),
         _buildImagesSection(context),
       ],
     );
@@ -387,11 +395,31 @@ class AddProductView extends GetView<AddProductController> {
         ),
         _buildNameSection(context),
         SizedBox(height: AppDesign.space6),
+        _buildOptionalTextField(
+          context,
+          label: 'Marque',
+          field: 'brand',
+          textController: controller.brandController,
+          hint: 'Ex: Nestlé, Samsung…',
+          icon: Icons.sell_outlined,
+        ),
+        SizedBox(height: AppDesign.space6),
         _buildCategorySelector(context),
         SizedBox(height: AppDesign.space6),
         _buildSubcategorySelector(context),
         SizedBox(height: AppDesign.space6),
         _buildDescriptionSection(context),
+        SizedBox(height: AppDesign.space6),
+        _buildOptionalTextField(
+          context,
+          label: 'Code-barres',
+          field: 'barcode',
+          textController: controller.barcodeController,
+          hint: '8 à 14 chiffres, sous le code-barres',
+          icon: Icons.qr_code_2_rounded,
+          digitsOnly: true,
+          errorOf: () => controller.barcodeError,
+        ),
       ],
     );
   }
@@ -1247,10 +1275,7 @@ class AddProductView extends GetView<AddProductController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Nom du produit *',
-          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-        ),
+        _fieldLabel(context, 'Nom du produit *', 'name'),
         SizedBox(height: context.elementSpacing),
         TextField(
           controller: controller.nameController,
@@ -1280,6 +1305,147 @@ class AddProductView extends GetView<AddProductController> {
     );
   }
 
+  /// Libellé de champ, avec le badge « À vérifier » tant qu'une valeur
+  /// posée par le scan n'a pas été modifiée.
+  Widget _fieldLabel(BuildContext context, String label, String field) {
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Obx(
+          () => controller.isPrefilled(field)
+              ? const Padding(
+                  padding: EdgeInsets.only(left: AppDesign.space2),
+                  child: AppBadge(
+                    label: 'À vérifier',
+                    tone: AppBadgeTone.accent,
+                    icon: Icons.auto_awesome_outlined,
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  /// Champ texte facultatif (marque, code-barres).
+  Widget _buildOptionalTextField(
+    BuildContext context, {
+    required String label,
+    required String field,
+    required TextEditingController textController,
+    required String hint,
+    required IconData icon,
+    bool digitsOnly = false,
+    String? Function()? errorOf,
+  }) {
+    OutlineInputBorder border(Color color, {double width = 1}) =>
+        OutlineInputBorder(
+          borderRadius: context.borderRadius(BorderRadiusType.medium),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel(context, label, field),
+        SizedBox(height: context.elementSpacing),
+        Obx(() {
+          controller.formRevision.value; // réagit à la saisie
+          return TextField(
+            controller: textController,
+            keyboardType: digitsOnly ? TextInputType.number : TextInputType.text,
+            textCapitalization: digitsOnly
+                ? TextCapitalization.none
+                : TextCapitalization.words,
+            inputFormatters: digitsOnly
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(14),
+                  ]
+                : [LengthLimitingTextInputFormatter(120)],
+            decoration: InputDecoration(
+              hintText: hint,
+              helperText: 'Facultatif',
+              errorText: errorOf?.call(),
+              filled: true,
+              fillColor: context.inputFieldColor,
+              prefixIcon: Icon(icon),
+              border: border(context.borderColor),
+              enabledBorder: border(context.borderColor),
+              focusedBorder: border(AppThemeSystem.primaryColor, width: 2),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  /// Accroche du remplissage automatique (photo analysée sur le téléphone).
+  Widget _buildScanCard(BuildContext context) {
+    final ds = context.ds;
+    return AppCard(
+      color: AppDesign.accentSubtle,
+      elevated: false,
+      padding: const EdgeInsets.all(AppDesign.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.document_scanner_outlined,
+                color: AppDesign.accentText,
+              ),
+              const SizedBox(width: AppDesign.space2),
+              Expanded(
+                child: Text(
+                  'Remplir automatiquement',
+                  style: context.subtitle1.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppDesign.accentText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDesign.space2),
+          Text(
+            'Filmez le code-barres puis l\'étiquette : nom, marque, catégorie '
+            'et poids se remplissent seuls. Vous vérifiez avant de publier.',
+            style: context.body2.copyWith(color: ds.textSecondary),
+          ),
+          const SizedBox(height: AppDesign.space4),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: AppButton(
+                  label: 'Filmer le produit',
+                  icon: Icons.qr_code_scanner_rounded,
+                  onPressed: () => controller.openScanner(),
+                ),
+              ),
+              const SizedBox(width: AppDesign.space3),
+              Expanded(
+                flex: 2,
+                child: AppButton(
+                  label: 'Galerie',
+                  icon: Icons.photo_library_outlined,
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => controller.openScanner(fromGallery: true),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Sélecteur de catégorie avec bottom sheet
   Widget _buildCategorySelector(BuildContext context) {
     return Obx(() {
@@ -1288,10 +1454,7 @@ class AddProductView extends GetView<AddProductController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Catégorie *',
-            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-          ),
+          _fieldLabel(context, 'Catégorie *', 'category'),
           SizedBox(height: context.elementSpacing),
           GestureDetector(
             onTap: () => _showCategoryBottomSheet(context),
@@ -2274,10 +2437,7 @@ class AddProductView extends GetView<AddProductController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Description *',
-          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
-        ),
+        _fieldLabel(context, 'Description *', 'description'),
         SizedBox(height: context.elementSpacing),
         TextField(
           controller: controller.descriptionController,
@@ -2344,9 +2504,10 @@ class AddProductView extends GetView<AddProductController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          _fieldLabel(
+            context,
             isArticle ? 'Poids du produit (kg) *' : 'Poids du produit (kg)',
-            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+            'weight',
           ),
           SizedBox(height: context.elementSpacing),
           TextField(
