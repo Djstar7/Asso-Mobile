@@ -90,8 +90,18 @@ class OfflineProductSyncService extends GetxService {
 
   // ── Mise en file ──────────────────────────────────────────────────────
 
+  /// Référence unique d'une création de produit (`client_reference`).
+  ///
+  /// Le formulaire la tire avant le premier envoi en ligne et la garde : si
+  /// la connexion tombe après que le serveur a créé le produit, la fiche mise
+  /// en file part avec la même référence et le serveur rend le produit déjà
+  /// créé au lieu d'en publier un second.
+  static String newReference() =>
+      '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+
   /// Enregistre un produit pour envoi ultérieur. [fields] sont les champs du
-  /// multipart de création, [images] les photos dans l'ordre du formulaire.
+  /// multipart de création, [images] les photos dans l'ordre du formulaire,
+  /// [reference] la référence déjà utilisée pour un envoi en ligne.
   ///
   /// Les photos sont copiées dans le dossier de l'application : celles de
   /// l'appareil photo vivent dans un cache que le système peut vider avant
@@ -100,14 +110,16 @@ class OfflineProductSyncService extends GetxService {
     required Map<String, String> fields,
     required List<XFile> images,
     Map<String, String> labels = const {},
+    String? reference,
   }) async {
     final userId = StorageService.getUser()?.id;
     if (userId == null || kIsWeb) {
       throw StateError('Enregistrement hors ligne indisponible');
     }
 
-    final id =
-        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+    final id = (reference != null && reference.isNotEmpty)
+        ? reference
+        : newReference();
     final dir = await _productDir(id);
     await dir.create(recursive: true);
 

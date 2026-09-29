@@ -343,9 +343,7 @@ class AddProductController extends GetxController {
             selectedSubcategoryId.value!.isNotEmpty &&
             descriptionController.text.trim().isNotEmpty;
       case 2:
-        final price = double.tryParse(
-          priceController.text.trim().replaceAll(',', '.'),
-        );
+        final price = parsePrice(priceController.text);
         return price != null && price > 0;
       case 3:
         // Les déclinaisons sont facultatives.
@@ -1259,6 +1257,31 @@ class AddProductController extends GetxController {
     return value > 0 ? value : null;
   }
 
+  /// Prix saisi (« 15 000 », « 1500,50 », « 9.99 ») ; null si illisible.
+  ///
+  /// L'étape Prix acceptait la virgule mais l'envoi relisait le texte brut :
+  /// « 1500,50 » partait à 0. Une seule lecture sert désormais aux deux.
+  static double? parsePrice(String raw) {
+    final text = raw.replaceAll(RegExp(r'[\s\u00A0\u202F]'), '').replaceAll(',', '.');
+    if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)) return null;
+    return double.tryParse(text);
+  }
+
+  /// Prix envoyé à l'API : entier tel quel, sinon deux décimales (devises
+  /// à centimes). Arrondir à l'unité faisait passer 9,99 € à 10 €.
+  static String formatPriceForApi(double price) =>
+      price == price.roundToDouble()
+          ? price.toStringAsFixed(0)
+          : price.toStringAsFixed(2);
+
+  /// Référence de la création en cours (voir
+  /// [OfflineProductSyncService.newReference]) : la même à chaque nouvel
+  /// essai, en ligne comme depuis la file hors ligne.
+  String? _clientReference;
+
+  String get _creationReference =>
+      _clientReference ??= OfflineProductSyncService.newReference();
+
   /// Valeur saisie strictement numérique (virgule ou point décimal).
   static final _weightInput = RegExp(r'^\d+([.,]\d{1,3})?$');
 
@@ -1278,6 +1301,7 @@ class AddProductController extends GetxController {
     if (!_weightInput.hasMatch(text)) return 'Saisissez un nombre, ex. 2,5';
     final value = double.tryParse(text.replaceAll(',', '.')) ?? 0;
     if (value <= 0) return 'Le poids doit être supérieur à 0';
+    if (value > 100000) return 'Le poids ne peut dépasser 100 000 kg';
     return null;
   }
 
@@ -1311,6 +1335,16 @@ class AddProductController extends GetxController {
       return;
     }
 
+    // Mêmes limites que le serveur : hors ligne, un refus n'arriverait qu'à
+    // la synchronisation, une fois le vendeur parti.
+    if (nameController.text.trim().length > 255) {
+      _warnMissingField(
+        'Nom trop long',
+        'Le nom du produit ne peut dépasser 255 caractères.',
+      );
+      return;
+    }
+
     if (productImages.isEmpty) {
       _warnMissingField(
         'Image requise',
@@ -1332,6 +1366,26 @@ class AddProductController extends GetxController {
       _warnMissingField(
         'Prix requis',
         'Veuillez entrer le prix du produit',
+      );
+      return;
+    }
+
+    final parsedPrice = parsePrice(priceController.text);
+    if (parsedPrice == null || parsedPrice <= 0) {
+      _warnMissingField(
+        'Prix invalide',
+        'Saisissez un prix supérieur à zéro, ex. 15000 ou 9,99.',
+      );
+      return;
+    }
+
+    final stockText = stockController.text.trim();
+    if (stockText.isNotEmpty &&
+        !variantEditor.hasVariants &&
+        int.tryParse(stockText) == null) {
+      _warnMissingField(
+        'Stock invalide',
+        'Le stock est un nombre entier, ex. 200.',
       );
       return;
     }
@@ -1416,8 +1470,16 @@ class AddProductController extends GetxController {
         print('   └─ Existing images: ${newImageStartIndex.value}');
         print('   └─ New images to upload: ${imagesToUpload.length}');
       } else {
-        // En mode création, envoyer toutes les images
-        imagesToUpload = productImages;
+        // En mode création, envoyer toutes les images, la principale en
+        // tête : le serveur prend la première comme photo principale.
+        final primary = primaryImageIndex.value;
+        imagesToUpload = primary > 0 && primary < productImages.length
+            ? [
+                productImages[primary],
+                for (var i = 0; i < productImages.length; i++)
+                  if (i != primary) productImages[i],
+              ]
+            : productImages.toList();
         print('📦 ADD_PRODUCT: Mode CREATE - Sending all images');
         print('   └─ Total images to upload: ${imagesToUpload.length}');
       }
@@ -1457,7 +1519,7 @@ class AddProductController extends GetxController {
 
       // Prix envoyé tel quel dans la devise choisie par le vendeur (plus de conversion
       // XOF côté mobile). Le backend calcule price_xaf (valeur canonique).
-      final price = double.tryParse(priceController.text.trim()) ?? 0;
+      final price = parsedPrice;
 
       print('📦 ADD_PRODUCT: Prix envoyé: $price ${selectedCurrency.value}');
 
@@ -1466,7 +1528,7 @@ class AddProductController extends GetxController {
         'name': nameController.text.trim(),
         'description': descriptionController.text.trim(),
         'type': articleType.value,
-        'price': price.toStringAsFixed(0),
+        'price': formatPriceForApi(price),
         'currency': selectedCurrency.value,
         'condition': 'new', // L'API requiert ce champ
       };
@@ -1522,9 +1584,10 @@ class AddProductController extends GetxController {
       // actif du vendeur, qui est unique. Le bloc « Espace de stockage » du
       // formulaire est purement informatif.
 
-      if (primaryImageIndex.value > 0 &&
-          primaryImageIndex.value < productImages.length) {
-        fieldsMap['primary_image_index'] = primaryImageIndex.value.toString();
+      // Création : même référence pour l'envoi en ligne et, si la connexion
+      // tombe, pour la fiche mise en file. Jamais de doublon.
+      if (!isEditMode.value) {
+        fieldsMap['client_reference'] = _creationReference;
       }
 
       // Hors ligne : la fiche est gardée sur le téléphone et partira seule
@@ -1790,6 +1853,7 @@ class AddProductController extends GetxController {
         fields: fields,
         images: images,
         labels: labels,
+        reference: fields['client_reference'],
       );
     } catch (e) {
       _warnMissingField(

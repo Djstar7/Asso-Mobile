@@ -1949,7 +1949,12 @@ class AddProductView extends GetView<AddProductController> {
               child: Obx(
                 () => TextField(
                   controller: controller.priceController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9 .,]')),
+                  ],
                   decoration: InputDecoration(
                     hintText: 'Entrez le prix',
                     filled: true,
@@ -2561,6 +2566,7 @@ class AddProductView extends GetView<AddProductController> {
             controller: controller.stockController,
             readOnly: fromVariants,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               helperText: fromVariants
                   ? 'Calculée automatiquement à partir des couleurs / tailles'
