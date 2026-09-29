@@ -57,7 +57,10 @@ class DiaspoDetailController extends GetxController {
       offer.value = fetchedOffer;
       _checkIfMyOffer(); // Vérifier si c'est mon offre après le fetch
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de charger l\'offre');
+      Get.snackbar(
+        'diaspo_detail.error'.tr,
+        'diaspo_detail.load_error'.tr,
+      );
       // Pas `Get.back()` : avec le snackbar tout juste ouvert, il se
       // contentait de le refermer et laissait l'utilisateur sur une page vide.
       // Page déjà quittée : rien à fermer.
@@ -81,7 +84,7 @@ class DiaspoDetailController extends GetxController {
       if (response.success && response.data != null) {
         final conversationData = response.data!['conversation'];
         final otherUser = conversationData['other_user'];
-        final userName = otherUser?['name'] ?? 'Utilisateur';
+        final userName = otherUser?['name'] ?? 'diaspo_detail.user_fallback'.tr;
 
         // Naviguer vers le chat avec les données de la conversation et l'offre Diaspo
         Get.toNamed('/chatdetail', arguments: {
@@ -99,19 +102,19 @@ class DiaspoDetailController extends GetxController {
             'currency': offer.value!.currency,
             'remaining_kg': offer.value!.remainingKg,
           },
-          'default_message': 'Ya til encore des kilo disponible ?',
+          'default_message': 'diaspo_detail.chat_default_message'.tr,
         });
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible de démarrer la conversation',
+          'diaspo_detail.error'.tr,
+          'diaspo_detail.chat_start_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: ${e.toString()}',
+        'diaspo_detail.error'.tr,
+        'diaspo_detail.generic_error'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -154,26 +157,23 @@ class DiaspoDetailController extends GetxController {
 
     Get.dialog(
       AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: AppDesign.accent),
-            SizedBox(width: 12),
+            const Icon(Icons.warning, color: AppDesign.accent),
+            const SizedBox(width: 12),
             Flexible(
               child: Text(
-                'Confirmer la suppression',
+                'diaspo_detail.delete_dialog.title'.tr,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        content: const Text(
-          'Voulez-vous vraiment supprimer cette offre ?\n\n'
-          'Cette action est irréversible.',
-        ),
+        content: Text('diaspo_detail.delete_dialog.message'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Annuler'),
+            child: Text('diaspo_detail.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () {
@@ -183,7 +183,7 @@ class DiaspoDetailController extends GetxController {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppDesign.danger,
             ),
-            child: const Text('Supprimer'),
+            child: Text('diaspo_detail.delete'.tr),
           ),
         ],
       ),
@@ -208,15 +208,15 @@ class DiaspoDetailController extends GetxController {
 
       Get.back(); // Return to previous screen
       Get.snackbar(
-        'Succès',
-        'Offre supprimée avec succès',
+        'diaspo_detail.success'.tr,
+        'diaspo_detail.delete_success'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'diaspo_detail.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,

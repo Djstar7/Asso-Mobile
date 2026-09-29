@@ -181,8 +181,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   bool _requireVariant() {
     if (!_hasVariants || _variantQuantities.isNotEmpty) return true;
     Get.snackbar(
-      'Faites votre choix',
-      'Indiquez la quantité d’au moins une option.',
+      'import.wholesale.choose_title'.tr,
+      'import.wholesale.choose_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
     return false;
@@ -282,8 +282,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         : tier.minQuantity;
     if (next < 1) {
       Get.snackbar(
-        'Quantités déjà supérieures',
-        'Vos autres options font déjà ${_quantity - current} au total : réduisez-les pour revenir à « ${tier.label} ».',
+        'import.wholesale.quantities_exceeded_title'.tr,
+        'import.wholesale.quantities_exceeded_message'.trParams({
+          'count': '${_quantity - current}',
+          'tier': tier.label,
+        }),
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -299,11 +302,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     return AppSheet.show<bool>(
       StatefulBuilder(
         builder: (context, setSheetState) => AppSheet(
-          title: 'Vos options et quantités',
-          subtitle:
-              'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.',
+          title: 'import.wholesale.options_sheet.title'.tr,
+          subtitle: 'import.wholesale.options_sheet.subtitle'.tr,
           footer: AppButton(
-            label: thenPay ? 'Continuer vers le paiement' : 'Valider',
+            label: thenPay
+                ? 'import.wholesale.options_sheet.continue_to_payment'.tr
+                : 'import.wholesale.options_sheet.confirm'.tr,
             icon: thenPay ? Icons.lock_rounded : Icons.check_rounded,
             size: AppButtonSize.large,
             onPressed: () {
@@ -324,7 +328,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                   final tier = _tierFor(_variantQuantities[id] ?? 0);
                   return tier == null
                       ? ''
-                      : '${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
+                      : 'import.wholesale.price_per_unit'.trParams({
+                          'price': _fmtConverted(tier.unitPrice, tier.currency),
+                        });
                 },
                 onFocusChanged: (id) => _focusedVariantId = id,
                 onChanged: (next) {
@@ -392,10 +398,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                             const SizedBox(height: AppDesign.space3),
                             _section(
                               context,
-                              title: 'Prix selon la quantité',
+                              title: 'import.wholesale.tiers_title'.tr,
                               subtitle: _mixVariants
-                                  ? 'Le prix suit la quantité totale. Touchez un palier pour l’appliquer.'
-                                  : 'Chaque option a le prix de sa propre quantité.',
+                                  ? 'import.wholesale.tiers_mixed_subtitle'.tr
+                                  : 'import.wholesale.tiers_per_option_subtitle'
+                                        .tr,
                               child: Column(
                                 children: _tiers.map(_tierTile).toList(),
                               ),
@@ -405,9 +412,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                           _hasVariants
                               ? _section(
                                   context,
-                                  title: 'Options disponibles',
+                                  title: 'import.wholesale.options_title'.tr,
                                   subtitle:
-                                      'Vous choisirez vos couleurs, tailles et quantités en commandant.',
+                                      'import.wholesale.options_subtitle'.tr,
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
@@ -431,8 +438,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                                               Icons.edit_outlined,
                                               size: 18,
                                             ),
-                                            label: const Text(
-                                              'Modifier mes choix',
+                                            label: Text(
+                                              'import.wholesale.edit_choices'
+                                                  .tr,
                                             ),
                                           ),
                                         ),
@@ -442,7 +450,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                                 )
                               : _section(
                                   context,
-                                  title: 'Quantité souhaitée',
+                                  title: 'import.wholesale.quantity_title'.tr,
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
@@ -467,9 +475,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                             const SizedBox(height: AppDesign.space3),
                             _section(
                               context,
-                              title: 'Expédition jusqu’à $_hubCity',
-                              subtitle:
-                                  'Quelle que soit la provenance, la commande arrive à l’entrepôt ASSO de $_hubCity.',
+                              title: 'import.wholesale.shipping_title'.trParams(
+                                {'city': _hubCity},
+                              ),
+                              subtitle: 'import.wholesale.shipping_subtitle'
+                                  .trParams({'city': _hubCity}),
                               child: Column(
                                 children: [
                                   ...widget.shippingOptions.map(_shippingTile),
@@ -482,9 +492,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                           const SizedBox(height: AppDesign.space3),
                           _section(
                             context,
-                            title: 'Livraison depuis $_hubCity',
-                            subtitle:
-                                'De l’entrepôt ASSO jusqu’à votre adresse, au prix calculé selon votre adresse et le poids du colis.',
+                            title: 'import.wholesale.delivery_title'.trParams({
+                              'city': _hubCity,
+                            }),
+                            subtitle: 'import.wholesale.delivery_subtitle'.tr,
                             child: WholesaleDeliverySection(
                               delivery: _delivery,
                               formatPrice: _fmt,
@@ -494,7 +505,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                           const SizedBox(height: AppDesign.space3),
                           _section(
                             context,
-                            title: 'Récapitulatif',
+                            title: 'import.wholesale.summary_title'.tr,
                             child: _summary(context),
                           ),
                           const SizedBox(height: AppDesign.space4),
@@ -502,8 +513,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                           // commande en gros.
                           AppButton(
                             label: _contactingSupport
-                                ? 'Ouverture…'
-                                : 'Poser une question au support',
+                                ? 'import.wholesale.opening'.tr
+                                : 'import.wholesale.ask_support'.tr,
                             icon: Icons.chat_bubble_outline_rounded,
                             variant: AppButtonVariant.secondary,
                             isLoading: _contactingSupport,
@@ -616,8 +627,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                               const SizedBox(width: 6),
                               Text(
                                 _images.length == 1
-                                    ? '1 photo'
-                                    : '${_images.length} photos',
+                                    ? 'import.wholesale.one_photo'.tr
+                                    : 'import.wholesale.photos_count'.trParams({
+                                        'count': '${_images.length}',
+                                      }),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -767,8 +780,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             spacing: AppDesign.space2,
             runSpacing: AppDesign.space2,
             children: [
-              const AppBadge(
-                label: 'Commande en gros',
+              AppBadge(
+                label: 'import.wholesale.badge'.tr,
                 tone: AppBadgeTone.accent,
                 icon: Icons.inventory_2_outlined,
               ),
@@ -790,7 +803,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: 'À partir de ',
+                    text: 'import.wholesale.from_prefix'.tr,
                     style: context.textStyle(
                       FontSizeType.body2,
                       color: context.ds.textSecondary,
@@ -805,7 +818,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                     ),
                   ),
                   TextSpan(
-                    text: ' / unité',
+                    text: 'import.wholesale.per_unit_suffix'.tr,
                     style: context.textStyle(
                       FontSizeType.body2,
                       color: context.ds.textSecondary,
@@ -817,7 +830,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             if (p.priceTiers.length > 1) ...[
               const SizedBox(height: AppDesign.space1),
               Text(
-                'Prix dégressif selon la quantité',
+                'import.wholesale.degressive_price'.tr,
                 style: context.textStyle(
                   FontSizeType.caption,
                   color: context.ds.textSecondary,
@@ -871,9 +884,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   /// carte, et seulement si le fournisseur l'a renseignée.
   List<Widget> _buildDetailSections(BuildContext context, WholesaleProduct p) {
     final blocks = <(String, String?)>[
-      ('Description', p.description),
-      ('Caractéristiques', p.characteristics),
-      ('Informations commerciales', p.commercialInformation),
+      ('import.wholesale.details.description'.tr, p.description),
+      ('import.wholesale.details.characteristics'.tr, p.characteristics),
+      (
+        'import.wholesale.details.commercial_information'.tr,
+        p.commercialInformation,
+      ),
     ];
 
     return [
@@ -943,9 +959,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                       Text(
                         t.id == _tiers.first.id
                             ? (_tiers.length > 1
-                                  ? 'Jusqu’à ${_tiers[1].minQuantity - 1}'
-                                  : 'Toute quantité')
-                            : 'À partir de ${t.minQuantity}',
+                                  ? 'import.wholesale.tier_up_to'.trParams({
+                                      'count': '${_tiers[1].minQuantity - 1}',
+                                    })
+                                  : 'import.wholesale.tier_any_quantity'.tr)
+                            : 'import.wholesale.tier_from'.trParams({
+                                'count': '${t.minQuantity}',
+                              }),
                         style: context.textStyle(
                           FontSizeType.caption,
                           color: context.ds.textSecondary,
@@ -978,23 +998,34 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final String text;
     if (tooLow) {
       text = _hasVariants
-          ? 'Choisissez une option et indiquez sa quantité'
-          : 'Indiquez une quantité';
+          ? 'import.wholesale.hint.choose_option'.tr
+          : 'import.wholesale.hint.enter_quantity'.tr;
     } else if (!_mixVariants) {
-      text = 'Total : $_quantity unités · chaque option a le prix de sa quantité';
+      text = 'import.wholesale.hint.total_per_option'.trParams({
+        'quantity': '$_quantity',
+      });
     } else {
       final tier = _tier;
       final price = tier == null
           ? ''
-          : ' à ${_fmtConverted(tier.unitPrice, tier.currency)} / unité';
+          : 'import.wholesale.hint.at_price'.trParams({
+              'price': _fmtConverted(tier.unitPrice, tier.currency),
+            });
       // Palier suivant : combien il manque pour le prix plus bas.
       final next = _tiers
           .where((t) => t.minQuantity > _quantity)
           .firstOrNull;
       final nudge = next == null
           ? ''
-          : ' · encore ${next.minQuantity - _quantity} pour ${_fmtConverted(next.unitPrice, next.currency)} / unité';
-      text = 'Total : $_quantity$price$nudge';
+          : 'import.wholesale.hint.nudge'.trParams({
+              'count': '${next.minQuantity - _quantity}',
+              'price': _fmtConverted(next.unitPrice, next.currency),
+            });
+      text = 'import.wholesale.hint.total'.trParams({
+        'quantity': '$_quantity',
+        'price': price,
+        'nudge': nudge,
+      });
     }
 
     return Row(
@@ -1034,7 +1065,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             : ''}';
     final details = [
       rate,
-      if (s.leadTimeDays != null) '≈ ${s.leadTimeDays} jours',
+      if (s.leadTimeDays != null)
+        'import.wholesale.lead_time_days'.trParams({
+          'days': '${s.leadTimeDays}',
+        }),
       if (s.expeditionNote != null && s.expeditionNote!.isNotEmpty)
         s.expeditionNote!,
     ].join(' · ');
@@ -1130,8 +1164,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         Expanded(
           child: Text(
             _needsWeight && _shippingWeightKg > 0
-                ? 'Poids calculé par ASSO : ${_shippingWeightKg.toStringAsFixed(2)} kg'
-                : 'Le poids/volume d\'expédition est renseigné par ASSO.',
+                ? 'import.wholesale.weight_computed'.trParams({
+                    'weight': _shippingWeightKg.toStringAsFixed(2),
+                  })
+                : 'import.wholesale.weight_set_by_asso'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: AppDesign.infoText,
@@ -1148,22 +1184,32 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         _sumRow(
           context,
           _mixVariants
-              ? 'Produit ($_quantity × ${_tier?.label ?? ''})'
-              : 'Produit ($_quantity unités)',
+              ? 'import.wholesale.summary.product_tier'.trParams({
+                  'quantity': '$_quantity',
+                  'tier': _tier?.label ?? '',
+                })
+              : 'import.wholesale.summary.product_units'.trParams({
+                  'quantity': '$_quantity',
+                }),
           _fmt(_subtotal),
         ),
         const SizedBox(height: AppDesign.space2),
         _sumRow(
           context,
-          'Expédition jusqu’à $_hubCity (${_shipping?.modeLabel ?? '—'})',
+          'import.wholesale.summary.shipping'.trParams({
+            'city': _hubCity,
+            'mode': _shipping?.modeLabel ?? '—',
+          }),
           _fmt(_shippingCost),
         ),
         const SizedBox(height: AppDesign.space2),
         _sumRow(
           context,
           _delivery.selected == null
-              ? 'Livraison depuis $_hubCity'
-              : 'Livraison ${_delivery.selected!.companyName} jusqu’à vous',
+              ? 'import.wholesale.delivery_title'.trParams({'city': _hubCity})
+              : 'import.wholesale.summary.delivery_company'.trParams({
+                  'company': _delivery.selected!.companyName,
+                }),
           _delivery.selected == null ? '—' : _fmt(_delivery.price),
           struck: _delivery.isFree,
         ),
@@ -1171,7 +1217,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
           child: AppDivider(),
         ),
-        _sumRow(context, 'Total', _fmt(_total), bold: true),
+        _sumRow(context, 'import.wholesale.total'.tr, _fmt(_total), bold: true),
       ],
     );
   }
@@ -1235,7 +1281,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total',
+                    'import.wholesale.total'.tr,
                     style: context.textStyle(
                       FontSizeType.caption,
                       color: context.ds.textSecondary,
@@ -1254,7 +1300,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               const SizedBox(width: AppDesign.space4),
               Expanded(
                 child: AppButton(
-                  label: 'Commander',
+                  label: 'import.wholesale.order_button'.tr,
                   icon: Icons.lock_rounded,
                   size: AppButtonSize.large,
                   isLoading: _submitting,
@@ -1273,7 +1319,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     AppNavigation.dismissKeyboard();
     // En mode invité, ne pas ouvrir un sélecteur vide ("aucun moyen disponible") :
     // exiger la connexion d'abord.
-    if (!AuthGuard.checkAuthWithAlert(context, featureName: 'le paiement')) {
+    if (!AuthGuard.checkAuthWithAlert(
+      context,
+      featureName: 'import.wholesale.feature_payment'.tr,
+    )) {
       return;
     }
     if (_hasVariants) {
@@ -1283,24 +1332,24 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final tier = _tier, shipping = _shipping;
     if (tier == null || shipping == null || _lines.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Choisissez un conditionnement et une expédition.',
+        'import.wholesale.error'.tr,
+        'import.wholesale.choose_tier_and_shipping'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
     if (_needsWeight && _shippingWeightKg <= 0) {
       Get.snackbar(
-        'Poids indisponible',
-        'ASSO doit encore renseigner le poids de ce colis avant le paiement.',
+        'import.wholesale.weight_unavailable_title'.tr,
+        'import.wholesale.weight_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
     if (_needsCbm) {
       Get.snackbar(
-        'Volume indisponible',
-        'ASSO doit encore valider le volume de ce colis avant le paiement.',
+        'import.wholesale.volume_unavailable_title'.tr,
+        'import.wholesale.volume_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -1308,7 +1357,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final deliveryMissing = _delivery.missingStep;
     if (deliveryMissing != null) {
       Get.snackbar(
-        'Livraison depuis $_hubCity',
+        'import.wholesale.delivery_title'.trParams({'city': _hubCity}),
         deliveryMissing,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -1323,7 +1372,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final method = await PaymentMethodSelector.show(
       amount: displayAmount,
       currency: displayCurrency,
-      amountLabel: 'Total à payer',
+      amountLabel: 'import.wholesale.amount_to_pay'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -1336,7 +1385,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
     if (method.code == 'wallet') {
       final confirmed = await WalletPaymentConfirmDialog.show(
-        itemLabel: 'Commande en gros — ${widget.product.name}',
+        itemLabel: 'import.wholesale.wallet_item_label'.trParams({
+          'name': widget.product.name,
+        }),
         amount: _total,
         balance: method.balance ?? 0,
       );
@@ -1345,7 +1396,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     } else if (method.code == 'kpay') {
       final sel = await KpayDirectPaymentSheet.show(
         amount: _total,
-        amountLabel: 'Total à payer',
+        amountLabel: 'import.wholesale.amount_to_pay'.tr,
       );
       if (sel == null) return;
       await _create(
@@ -1361,8 +1412,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       await _createCard(items, shipping.id, weight, cbm);
     } else {
       Get.snackbar(
-        'Indisponible',
-        "Ce moyen n'est pas disponible pour les commandes en gros.",
+        'import.wholesale.unavailable'.tr,
+        'import.wholesale.method_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -1392,8 +1443,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
       if (!res.success) {
         Get.snackbar(
-          'Erreur',
-          res.message.isNotEmpty ? res.message : 'Échec de la commande',
+          'import.wholesale.error'.tr,
+          res.message.isNotEmpty
+              ? res.message
+              : 'import.wholesale.order_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1406,8 +1459,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
       if (mode == 'wallet') {
         Get.snackbar(
-          'Commande payée',
-          'Payée avec votre Wallet ASSO. En cas de refus, le montant vous est rendu immédiatement.',
+          'import.wholesale.paid_title'.tr,
+          'import.wholesale.paid_wallet_message'.tr,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
@@ -1419,8 +1472,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       if (mode == 'kpay_direct') {
         _pollOrder(orderId);
         Get.snackbar(
-          'Commande créée',
-          'Validez le paiement sur votre téléphone (USSD).',
+          'import.wholesale.created_title'.tr,
+          'import.wholesale.created_kpay_message'.tr,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
@@ -1432,8 +1485,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       // paypal/stripe : ouvrir le checkout (WebView mobile, navigateur sinon), puis polling.
       if (approvalUrl == null || approvalUrl.isEmpty) {
         Get.snackbar(
-          'Erreur',
-          'Lien de paiement indisponible.',
+          'import.wholesale.error'.tr,
+          'import.wholesale.payment_link_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1454,8 +1507,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       }
       _pollOrder(orderId);
       Get.snackbar(
-        'Paiement en cours',
-        'La confirmation est automatique. Vous serez notifié.',
+        'import.wholesale.payment_pending_title'.tr,
+        'import.wholesale.payment_pending_message'.tr,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
@@ -1463,8 +1516,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
     } catch (_) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue.',
+        'import.wholesale.error'.tr,
+        'import.wholesale.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -1481,8 +1534,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   ) async {
     if (!StripeNativeService.isSupported) {
       Get.snackbar(
-        'Indisponible',
-        "Le paiement par carte est disponible sur l'application mobile.",
+        'import.wholesale.unavailable'.tr,
+        'import.wholesale.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -1500,8 +1553,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
       if (!res.success) {
         Get.snackbar(
-          'Erreur',
-          res.message.isNotEmpty ? res.message : 'Échec de la commande',
+          'import.wholesale.error'.tr,
+          res.message.isNotEmpty
+              ? res.message
+              : 'import.wholesale.order_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1515,8 +1570,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           publishableKey == null ||
           publishableKey.isEmpty) {
         Get.snackbar(
-          'Erreur',
-          'Données de paiement carte indisponibles.',
+          'import.wholesale.error'.tr,
+          'import.wholesale.card_data_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1528,8 +1583,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
       if (!ok) {
         Get.snackbar(
-          'Paiement annulé',
-          "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
+          'import.wholesale.payment_cancelled_title'.tr,
+          'import.wholesale.payment_cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1540,8 +1595,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       AppNavigation.pop(); // fermer la fiche : la commande est passée
       _pollOrder(orderId);
       Get.snackbar(
-        'Paiement en cours',
-        'La confirmation est automatique. Vous serez notifié.',
+        'import.wholesale.payment_pending_title'.tr,
+        'import.wholesale.payment_pending_message'.tr,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
         duration: const Duration(seconds: 5),
@@ -1549,7 +1604,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'import.wholesale.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -1567,8 +1622,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         final status = res.data?['data']?['payment_status'];
         if (status == 'paid') {
           Get.snackbar(
-            'Paiement confirmé',
-            'Votre commande en gros est payée. En attente de validation du vendeur.',
+            'import.wholesale.payment_confirmed_title'.tr,
+            'import.wholesale.payment_confirmed_message'.tr,
             backgroundColor: AppDesign.success,
             colorText: Colors.white,
             duration: const Duration(seconds: 4),
@@ -1577,8 +1632,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           return;
         } else if (status == 'failed') {
           Get.snackbar(
-            'Paiement échoué',
-            "Le paiement n'a pas abouti.",
+            'import.wholesale.payment_failed_title'.tr,
+            'import.wholesale.payment_failed_message'.tr,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),
@@ -1595,7 +1650,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   /// un message pré-rempli (nom du produit + quantité).
   Future<void> _contactSupport() async {
     // Fonctionnalité réservée aux utilisateurs connectés (messagerie).
-    if (!AuthGuard.checkAuthWithAlert(context, featureName: 'la messagerie')) {
+    if (!AuthGuard.checkAuthWithAlert(
+      context,
+      featureName: 'import.wholesale.feature_messaging'.tr,
+    )) {
       return;
     }
 
@@ -1609,8 +1667,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
       if (supportUserId == null) {
         Get.snackbar(
-          'Support indisponible',
-          "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
+          'import.wholesale.support_unavailable_title'.tr,
+          'import.wholesale.support_unavailable_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1622,8 +1680,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
       if (!response.success || response.data == null) {
         Get.snackbar(
-          'Erreur',
-          'Impossible de démarrer la conversation avec le support.',
+          'import.wholesale.error'.tr,
+          'import.wholesale.support_start_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1633,8 +1691,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       final conversationId = conversationData?['id'];
       if (conversationId == null) {
         Get.snackbar(
-          'Erreur',
-          'Conversation indisponible.',
+          'import.wholesale.error'.tr,
+          'import.wholesale.conversation_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -1659,8 +1717,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
+        'import.wholesale.error'.tr,
+        'import.wholesale.error_with_details'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

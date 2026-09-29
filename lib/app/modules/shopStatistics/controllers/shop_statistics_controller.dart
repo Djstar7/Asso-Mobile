@@ -11,10 +11,10 @@ enum StatsMetric { visits, productViews, orders, revenue }
 
 extension StatsMetricX on StatsMetric {
   String get label => switch (this) {
-        StatsMetric.visits => 'Visites',
-        StatsMetric.productViews => 'Produits consultés',
-        StatsMetric.orders => 'Commandes',
-        StatsMetric.revenue => 'Chiffre d\'affaires',
+        StatsMetric.visits => 'shop_statistics.metric.visits'.tr,
+        StatsMetric.productViews => 'shop_statistics.metric.product_views'.tr,
+        StatsMetric.orders => 'shop_statistics.metric.orders'.tr,
+        StatsMetric.revenue => 'shop_statistics.metric.revenue'.tr,
       };
 
   String get apiKey => switch (this) {
@@ -27,12 +27,13 @@ extension StatsMetricX on StatsMetric {
 
 /// Statistiques de la boutique du vendeur (P8) : audience, commandes, ventes, CA.
 class ShopStatisticsController extends GetxController {
-  static const periods = <String, String>{
-    '7d': '7 jours',
-    '30d': '30 jours',
-    '90d': '90 jours',
-    '365d': '12 mois',
-    'all': 'Tout',
+  /// Libellés traduits à chaque lecture (suivent la langue courante).
+  static Map<String, String> get periods => <String, String>{
+    '7d': 'shop_statistics.period.days_7'.tr,
+    '30d': 'shop_statistics.period.days_30'.tr,
+    '90d': 'shop_statistics.period.days_90'.tr,
+    '365d': 'shop_statistics.period.months_12'.tr,
+    'all': 'shop_statistics.period.all'.tr,
   };
 
   final period = '30d'.obs;
@@ -93,17 +94,17 @@ class ShopStatisticsController extends GetxController {
       );
 
       if (file == null) {
-        _notify('Export impossible', 'Le rapport n\'a pas pu être généré.',
+        _notify('shop_statistics.export.failed_title'.tr, 'shop_statistics.export.not_generated'.tr,
             isError: true);
         return;
       }
 
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: 'Statistiques ${periods[period.value] ?? ''}',
+        subject: 'shop_statistics.export.subject'.trParams({'period': periods[period.value] ?? ''}),
       );
     } catch (_) {
-      _notify('Export impossible', 'Vérifiez votre connexion et réessayez.',
+      _notify('shop_statistics.export.failed_title'.tr, 'shop_statistics.export.check_connection'.tr,
           isError: true);
     } finally {
       isExporting.value = false;
@@ -138,7 +139,7 @@ class ShopStatisticsController extends GetxController {
       if (!response.success || data is! Map) {
         errorMessage.value = response.message.isNotEmpty
             ? response.message
-            : 'Impossible de charger les statistiques';
+            : 'shop_statistics.load_failed'.tr;
         return;
       }
 
@@ -153,7 +154,7 @@ class ShopStatisticsController extends GetxController {
       );
       granularity.value = data['period']?['granularity']?.toString() ?? 'day';
     } catch (_) {
-      errorMessage.value = 'Impossible de charger les statistiques';
+      errorMessage.value = 'shop_statistics.load_failed'.tr;
     } finally {
       isLoading.value = false;
     }

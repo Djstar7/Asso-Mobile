@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
@@ -61,8 +62,8 @@ class DiaspoEditController extends GetxController {
     if (args == null || args['offer'] == null) {
       Get.back();
       Get.snackbar(
-        'Erreur',
-        'Offre introuvable',
+        'diaspo_edit.error'.tr,
+        'diaspo_edit.offer_not_found'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -94,8 +95,8 @@ class DiaspoEditController extends GetxController {
       if (!formKey1.currentState!.validate()) return;
       if (departureDateTime.value == null || arrivalDateTime.value == null) {
         Get.snackbar(
-          'Erreur',
-          'Veuillez sélectionner les dates de départ et d\'arrivée',
+          'diaspo_edit.error'.tr,
+          'diaspo_edit.select_dates'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -121,8 +122,8 @@ class DiaspoEditController extends GetxController {
     // Validate dates before submitting
     if (departureDateTime.value == null || arrivalDateTime.value == null) {
       Get.snackbar(
-        'Erreur',
-        'Veuillez sélectionner les dates de départ et d\'arrivée',
+        'diaspo_edit.error'.tr,
+        'diaspo_edit.select_dates'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -133,8 +134,8 @@ class DiaspoEditController extends GetxController {
     if (arrivalDateTime.value!.isBefore(departureDateTime.value!) ||
         arrivalDateTime.value!.isAtSameMomentAs(departureDateTime.value!)) {
       Get.snackbar(
-        'Erreur',
-        'La date d\'arrivée doit être après la date de départ',
+        'diaspo_edit.error'.tr,
+        'diaspo_edit.arrival_after_departure'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -161,26 +162,34 @@ class DiaspoEditController extends GetxController {
 
       Get.back(result: true); // Return true to indicate success
       Get.snackbar(
-        'Succès',
-        'Votre offre a été mise à jour avec succès',
+        'diaspo_edit.success'.tr,
+        'diaspo_edit.updated_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
     } catch (e) {
       // Parse error message from server
-      String errorMessage = 'Impossible de mettre à jour l\'offre. Veuillez réessayer.';
+      String errorMessage = 'diaspo_edit.update_failed'.tr;
 
       if (e.toString().contains('arrival datetime field must be a date after departure datetime')) {
-        errorMessage = 'La date d\'arrivée doit être après la date de départ';
+        errorMessage = 'diaspo_edit.arrival_after_departure'.tr;
       } else if (e.toString().contains('cannot be modified')) {
-        errorMessage = 'Cette offre ne peut plus être modifiée';
-      } else if (e.toString().contains('Non autorisé')) {
-        errorMessage = 'Vous n\'êtes pas autorisé à modifier cette offre';
+        errorMessage = 'diaspo_edit.cannot_be_modified'.tr;
+      } else if (e.toString().contains('Non autorisé') ||
+          e.toString().contains('Unauthorized')) {
+        errorMessage = 'diaspo_edit.not_authorized'.tr;
+      } else if (e is DioException && e.response?.data is Map) {
+        // Le serveur répond dans la langue de l'application : son message
+        // (offre terminée, réservations actives…) s'affiche tel quel.
+        final serverMessage = (e.response!.data as Map)['message'];
+        if (serverMessage is String && serverMessage.isNotEmpty) {
+          errorMessage = serverMessage;
+        }
       }
 
       Get.snackbar(
-        'Erreur',
+        'diaspo_edit.error'.tr,
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
@@ -248,8 +257,8 @@ class DiaspoEditController extends GetxController {
         if (selectedArrivalDateTime.isBefore(minDate) ||
             selectedArrivalDateTime.isAtSameMomentAs(minDate)) {
           Get.snackbar(
-            'Erreur',
-            'L\'heure d\'arrivée doit être après l\'heure de départ',
+            'diaspo_edit.error'.tr,
+            'diaspo_edit.arrival_time_after_departure'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -264,8 +273,11 @@ class DiaspoEditController extends GetxController {
 
   /// Format date time
   String formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return 'Sélectionner';
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    if (dateTime == null) return 'diaspo_edit.select'.tr;
+    return 'diaspo_edit.date_time'.trParams({
+      'date': '${dateTime.day}/${dateTime.month}/${dateTime.year}',
+      'time': '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}',
+    });
   }
 
   // ================================

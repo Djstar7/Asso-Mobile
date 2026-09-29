@@ -17,7 +17,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Réserver des kilos'),
+        title: Text('diaspo_booking.title'.tr),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -119,14 +119,14 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Départ', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text('diaspo_booking.departure'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
                     const SizedBox(height: 2),
                     Text(
                       '${offer.departureCity}, ${offer.departureCountry}',
                       style: TextStyle(fontWeight: FontWeight.w600, color: _title(isDark)),
                     ),
                     const SizedBox(height: 14),
-                    Text('Arrivée', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text('diaspo_booking.arrival'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
                     const SizedBox(height: 2),
                     Text(
                       '${offer.arrivalCity}, ${offer.arrivalCountry}',
@@ -145,7 +145,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
               Expanded(
                 child: _statTile(
                   isDark,
-                  label: 'Prix par kilo',
+                  label: 'diaspo_booking.price_per_kg'.tr,
                   value: '${offer.formattedPricePerKg} ${offer.currencySymbol}',
                   valueColor: AppThemeSystem.primaryColor,
                 ),
@@ -154,7 +154,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
               Expanded(
                 child: _statTile(
                   isDark,
-                  label: 'Disponible',
+                  label: 'diaspo_booking.available'.tr,
                   value: '${offer.remainingKg.toStringAsFixed(1)} kg',
                   valueColor: AppDesign.success,
                 ),
@@ -184,7 +184,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Nombre de kilos', isDark),
+          _sectionTitle('diaspo_booking.kg_count'.tr, isDark),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -218,7 +218,10 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'Min ${controller.minKg.toStringAsFixed(1)} kg · Max ${controller.remainingKg.toStringAsFixed(1)} kg',
+              'diaspo_booking.min_max'.trParams({
+                'min': controller.minKg.toStringAsFixed(1),
+                'max': controller.remainingKg.toStringAsFixed(1),
+              }),
               style: TextStyle(fontSize: 12, color: _muted(isDark)),
             ),
           ),
@@ -250,7 +253,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionTitle('Détails du paiement', isDark),
+              _sectionTitle('diaspo_booking.payment_details'.tr, isDark),
               const SizedBox(height: 16),
               _priceRow(
                 '${controller.kgBooked.value.toStringAsFixed(controller.kgBooked.value % 1 == 0 ? 0 : 1)} kg × ${controller.formatOfferAmount(controller.pricePerKg)}',
@@ -261,7 +264,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
               ),
-              _priceRow('Total', controller.formatOfferAmount(controller.totalPrice.value), isDark, isTotal: true),
+              _priceRow('diaspo_booking.total'.tr, controller.formatOfferAmount(controller.totalPrice.value), isDark, isTotal: true),
             ],
           ),
         ));
@@ -305,8 +308,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Vous recevrez un code de confirmation à remettre au voyageur. '
-              'Les fonds ne sont débloqués qu\'à la confirmation de réception.',
+              'diaspo_booking.escrow_note'.tr,
               style: TextStyle(fontSize: 12, color: _muted(isDark), height: 1.4),
             ),
           ),
@@ -355,7 +357,11 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                         const Icon(Icons.lock_outline, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          'Payer ${controller.formatOfferAmount(controller.totalPrice.value)}',
+                          'diaspo_booking.pay'.trParams({
+                            'amount': controller.formatOfferAmount(
+                              controller.totalPrice.value,
+                            ),
+                          }),
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ],
