@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import '../../../data/models/delivery_info.dart';
 
 /// Statut de commande client
@@ -14,17 +16,17 @@ extension CustomerOrderStatusExtension on CustomerOrderStatus {
   String get label {
     switch (this) {
       case CustomerOrderStatus.pending:
-        return 'En attente';
+        return 'my_order.status.pending'.tr;
       case CustomerOrderStatus.confirmed:
-        return 'Confirmée';
+        return 'my_order.status.confirmed'.tr;
       case CustomerOrderStatus.preparing:
-        return 'En préparation';
+        return 'my_order.status.preparing'.tr;
       case CustomerOrderStatus.shipped:
-        return 'Expédiée';
+        return 'my_order.status.shipped'.tr;
       case CustomerOrderStatus.delivered:
-        return 'Livrée';
+        return 'my_order.status.delivered'.tr;
       case CustomerOrderStatus.cancelled:
-        return 'Annulée';
+        return 'my_order.status.cancelled'.tr;
     }
   }
 
@@ -79,7 +81,7 @@ class CustomerOrderItem {
     return CustomerOrderItem(
       productId: (map['product_id'] ?? map['id'] ?? '').toString(),
       productName:
-          map['product']?['name'] ?? map['product_name']?.toString() ?? 'Produit',
+          map['product']?['name'] ?? map['product_name']?.toString() ?? 'my_order.default_product'.tr,
       productImage: map['product']?['main_image'] ?? map['product_image'],
       quantity: map['quantity'] ?? 1,
       unitPrice: double.tryParse(map['unit_price']?.toString() ?? '0') ?? 0,

@@ -21,7 +21,7 @@ class MyOrderView extends GetView<MyOrderController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Mes commandes',
+          'my_order.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -64,13 +64,13 @@ class MyOrderView extends GetView<MyOrderController> {
 
   Widget _buildStatusFilters(BuildContext context) {
     final filters = [
-      {'label': 'Tout', 'value': 'all'},
-      {'label': 'En attente', 'value': 'pending'},
-      {'label': 'Confirmée', 'value': 'confirmed'},
-      {'label': 'En préparation', 'value': 'preparing'},
-      {'label': 'Expédiée', 'value': 'shipped'},
-      {'label': 'Livrée', 'value': 'delivered'},
-      {'label': 'Annulée', 'value': 'cancelled'},
+      {'label': 'my_order.filters.all'.tr, 'value': 'all'},
+      {'label': 'my_order.filters.pending'.tr, 'value': 'pending'},
+      {'label': 'my_order.filters.confirmed'.tr, 'value': 'confirmed'},
+      {'label': 'my_order.filters.preparing'.tr, 'value': 'preparing'},
+      {'label': 'my_order.filters.shipped'.tr, 'value': 'shipped'},
+      {'label': 'my_order.filters.delivered'.tr, 'value': 'delivered'},
+      {'label': 'my_order.filters.cancelled'.tr, 'value': 'cancelled'},
     ];
 
     return Container(
@@ -122,12 +122,12 @@ class MyOrderView extends GetView<MyOrderController> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Aucune commande',
+            'my_order.empty.title'.tr,
             style: context.h6.copyWith(color: context.secondaryTextColor),
           ),
           const SizedBox(height: 8),
           Text(
-            'Vos commandes apparaîtront ici',
+            'my_order.empty.message'.tr,
             style: context.caption,
           ),
         ],
@@ -164,7 +164,7 @@ class MyOrderView extends GetView<MyOrderController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Articles',
+                  'my_order.items'.tr,
                   style: context.body2.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
@@ -216,7 +216,7 @@ class MyOrderView extends GetView<MyOrderController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Commande ${order.id}',
+                  'my_order.order_number'.trParams({'id': order.id}),
                   style: context.body1.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
@@ -247,11 +247,11 @@ class MyOrderView extends GetView<MyOrderController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                DateFormat('dd/MM/yyyy', 'fr_FR').format(order.orderDate),
+                DateFormat('dd/MM/yyyy').format(order.orderDate),
                 style: context.caption,
               ),
               Text(
-                DateFormat('HH:mm', 'fr_FR').format(order.orderDate),
+                DateFormat('HH:mm').format(order.orderDate),
                 style: context.caption.copyWith(color: context.secondaryTextColor),
               ),
             ],
@@ -262,7 +262,7 @@ class MyOrderView extends GetView<MyOrderController> {
   }
 
   Widget _buildOrderItem(BuildContext context, CustomerOrderItem item) {
-    final numberFormat = NumberFormat('#,###', 'fr_FR');
+    final numberFormat = NumberFormat('#,###');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -297,7 +297,7 @@ class MyOrderView extends GetView<MyOrderController> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Qté: ${item.quantity}',
+                  'my_order.quantity'.trParams({'quantity': '${item.quantity}'}),
                   style: context.caption,
                 ),
               ],
@@ -315,7 +315,7 @@ class MyOrderView extends GetView<MyOrderController> {
   }
 
   Widget _buildOrderDetails(BuildContext context, CustomerOrder order) {
-    final numberFormat = NumberFormat('#,###', 'fr_FR');
+    final numberFormat = NumberFormat('#,###');
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -326,7 +326,7 @@ class MyOrderView extends GetView<MyOrderController> {
           _buildDetailRow(
             context,
             icon: Icons.location_on,
-            label: 'Adresse de livraison',
+            label: 'my_order.details.delivery_address'.tr,
             value: order.deliveryAddress,
           ),
 
@@ -335,7 +335,7 @@ class MyOrderView extends GetView<MyOrderController> {
             _buildDetailRow(
               context,
               icon: Icons.local_shipping,
-              label: 'Numéro de suivi',
+              label: 'my_order.details.tracking_number'.tr,
               value: order.trackingNumber!,
             ),
           ],
@@ -345,7 +345,7 @@ class MyOrderView extends GetView<MyOrderController> {
             _buildDetailRow(
               context,
               icon: Icons.person,
-              label: 'Livreur',
+              label: 'my_order.details.delivery_person'.tr,
               value: order.deliveryPersonName!,
             ),
           ],
@@ -355,21 +355,21 @@ class MyOrderView extends GetView<MyOrderController> {
             _buildDetailRow(
               context,
               icon: Icons.event_available,
-              label: 'Date de livraison',
-              value: DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR').format(order.deliveryDate!),
+              label: 'my_order.details.delivery_date'.tr,
+              value: DateFormat('my_order.details.date_time_format'.tr).format(order.deliveryDate!),
             ),
           ],
 
           const SizedBox(height: 16),
 
           // Totaux
-          _buildPriceRow(context, 'Sous-total', order.subtotal),
+          _buildPriceRow(context, 'my_order.details.subtotal'.tr, order.subtotal),
           const SizedBox(height: 8),
           if (order.freeDeliveryAmount > 0)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Frais de livraison', style: context.body2),
+                Text('my_order.details.delivery_fee'.tr, style: context.body2),
                 DeliveryPriceText(
                   price: controller.formatPrice(order.freeDeliveryAmount),
                   isFree: true,
@@ -378,13 +378,13 @@ class MyOrderView extends GetView<MyOrderController> {
               ],
             )
           else
-            _buildPriceRow(context, 'Frais de livraison', order.deliveryFee),
+            _buildPriceRow(context, 'my_order.details.delivery_fee'.tr, order.deliveryFee),
           const SizedBox(height: 8),
           Divider(color: context.borderColor),
           const SizedBox(height: 8),
           _buildPriceRow(
             context,
-            'Total',
+            'my_order.details.total'.tr,
             order.total,
             isTotal: true,
           ),
@@ -463,7 +463,7 @@ class MyOrderView extends GetView<MyOrderController> {
               child: OutlinedButton.icon(
                 onPressed: () => controller.cancelOrder(order.id),
                 icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: const Text('Annuler'),
+                label: Text('my_order.actions.cancel'.tr),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppDesign.danger,
                   side: const BorderSide(color: AppDesign.danger),
@@ -486,7 +486,7 @@ class MyOrderView extends GetView<MyOrderController> {
                 child: ElevatedButton.icon(
                   onPressed: () => controller.trackOrder(order.id),
                   icon: const Icon(Icons.map_outlined, size: 18),
-                  label: const Text('Suivre'),
+                  label: Text('my_order.actions.track'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -498,7 +498,7 @@ class MyOrderView extends GetView<MyOrderController> {
                 child: ElevatedButton.icon(
                   onPressed: () => controller.trackOrder(order.id),
                   icon: const Icon(Icons.map_outlined, size: 18),
-                  label: const Text('Suivre la livraison'),
+                  label: Text('my_order.actions.track_delivery'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -530,7 +530,7 @@ class MyOrderView extends GetView<MyOrderController> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Votre note ', style: TextStyle(fontSize: 13)),
+                  Text('my_order.actions.your_rating'.tr, style: const TextStyle(fontSize: 13)),
                   for (var i = 1; i <= 5; i++)
                     Icon(
                       i <= order.ratingValue!
@@ -549,7 +549,7 @@ class MyOrderView extends GetView<MyOrderController> {
               child: ElevatedButton.icon(
                 onPressed: () => controller.showRatingDialog(order),
                 icon: const Icon(Icons.star_rounded, size: 18, color: Colors.white),
-                label: const Text('Noter', style: TextStyle(color: Colors.white)),
+                label: Text('my_order.actions.rate'.tr, style: const TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppDesign.warning,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -563,7 +563,7 @@ class MyOrderView extends GetView<MyOrderController> {
               child: ElevatedButton.icon(
                 onPressed: () => controller.confirmDelivery(order.id),
                 icon: const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text('Confirmer la réception'),
+                label: Text('my_order.actions.confirm_reception'.tr),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppDesign.success,
                   foregroundColor: Colors.white,

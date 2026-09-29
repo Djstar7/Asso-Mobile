@@ -8,7 +8,7 @@ import '../../../data/providers/storage_service.dart';
 /// Cet écran détermine si l'utilisateur doit aller vers la config ou le dashboard
 class DeliveryCheckController extends GetxController {
   final isLoading = true.obs;
-  final statusMessage = 'Vérification en cours...'.obs;
+  final statusMessage = 'delivery_check.verifying'.tr.obs;
   final companyName = ''.obs;
   final companyLogo = Rx<String?>(null);
 
@@ -27,14 +27,14 @@ class DeliveryCheckController extends GetxController {
       print('========================================');
 
       // Étape 1: Vérifier le cache local
-      statusMessage.value = 'Vérification de votre profil...';
+      statusMessage.value = 'delivery_check.checking_profile'.tr;
       var currentUser = StorageService.getUser();
       print('  └─ Cache local: role=${currentUser?.role}, roles=${currentUser?.roles}');
 
       // Étape 2: Si pas dans le cache ou pas livreur, rafraîchir depuis le backend
       if (currentUser == null || !currentUser.isDelivery) {
         print('⚠️  Cache local ne confirme pas, vérification backend...');
-        statusMessage.value = 'Synchronisation avec le serveur...';
+        statusMessage.value = 'delivery_check.syncing'.tr;
 
         await _refreshUserProfileFromBackend();
         currentUser = StorageService.getUser();
@@ -44,7 +44,7 @@ class DeliveryCheckController extends GetxController {
       // Étape 3: Vérifier si l'utilisateur est livreur
       if (currentUser != null && currentUser.isDelivery) {
         print('✅ Utilisateur est livreur');
-        statusMessage.value = 'Chargement de vos informations...';
+        statusMessage.value = 'delivery_check.loading_info'.tr;
 
         // Charger les infos de livraison
         try {
@@ -65,7 +65,9 @@ class DeliveryCheckController extends GetxController {
 
               // Mettre à jour le message de statut avec le nom de l'entreprise
               if (companyName.value.isNotEmpty) {
-                statusMessage.value = 'Bienvenue chez ${companyName.value}';
+                statusMessage.value = 'delivery_check.welcome'.trParams({
+                  'company': companyName.value,
+                });
               }
 
               // Petit délai pour que l'utilisateur voie le logo et le nom
@@ -86,7 +88,7 @@ class DeliveryCheckController extends GetxController {
         Get.offAllNamed('/delivery-dashboard');
       } else {
         print('ℹ️  Utilisateur n\'est pas encore livreur');
-        statusMessage.value = 'Configuration requise...';
+        statusMessage.value = 'delivery_check.setup_required'.tr;
 
         // Délai pour une transition smooth
         await Future.delayed(const Duration(milliseconds: 300));
@@ -106,7 +108,7 @@ class DeliveryCheckController extends GetxController {
       print('========================================');
 
       // En cas d'erreur, rediriger vers la config par sécurité
-      statusMessage.value = 'Erreur, redirection...';
+      statusMessage.value = 'delivery_check.error_redirecting'.tr;
       await Future.delayed(const Duration(milliseconds: 500));
       if (isClosed) return;
       Get.offAllNamed('/ship-config');

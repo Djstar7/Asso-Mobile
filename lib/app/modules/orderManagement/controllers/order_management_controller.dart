@@ -78,8 +78,8 @@ class OrderManagementController extends GetxController {
       applyFilters();
 
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les commandes',
+        'order_management.errors.title'.tr,
+        'order_management.errors.load_orders'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -155,7 +155,7 @@ class OrderManagementController extends GetxController {
 
       return OrderItem(
         productId: (orderItem['product_id'] ?? '').toString(),
-        productName: orderItem['product_name'] ?? product?['name'] ?? 'Produit',
+        productName: orderItem['product_name'] ?? product?['name'] ?? 'order_management.default_product'.tr,
         quantity: orderItem['quantity'] ?? 1,
         unitPrice: double.tryParse(orderItem['unit_price']?.toString() ?? '0') ?? 0,
         totalPrice: double.tryParse(orderItem['total_price']?.toString() ?? '0') ?? 0,
@@ -249,18 +249,21 @@ class OrderManagementController extends GetxController {
     try {
       final confirm = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('Valider la commande'),
+          title: Text('order_management.validate_dialog.title'.tr),
           content: Text(
-            'Voulez-vous valider la commande #${order.id} de ${order.clientName} ?\n\nLes fonds seront crédités sur votre wallet et disponibles immédiatement.',
+            'order_management.validate_dialog.message'.trParams({
+              'id': order.id,
+              'name': order.clientName,
+            }),
           ),
           actions: [
             TextButton(
               onPressed: () => Get.back(result: false),
-              child: const Text('Annuler'),
+              child: Text('order_management.actions.cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () => Get.back(result: true),
-              child: const Text('Valider'),
+              child: Text('order_management.actions.validate'.tr),
             ),
           ],
         ),
@@ -277,18 +280,21 @@ class OrderManagementController extends GetxController {
         if (response.success) {
           await loadOrders(); // Recharger depuis l'API
           Get.snackbar(
-            'Commande validée',
+            'order_management.validate_dialog.success_title'.tr,
             order.isCarrier
-                ? 'Déposez le colis à l’agence ${order.delivery?.companyName ?? 'du transporteur'} puis appuyez sur « Remettre au transporteur ».'
-                : 'Fonds crédités et disponibles. Le livreur a été notifié.',
+                ? 'order_management.validate_dialog.success_carrier'.trParams({
+                    'agency': order.delivery?.companyName ??
+                        'order_management.validate_dialog.default_carrier'.tr,
+                  })
+                : 'order_management.validate_dialog.success_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.success,
             colorText: Colors.white,
           );
         } else {
           Get.snackbar(
-            'Erreur',
-            response.message.isNotEmpty ? response.message : 'Impossible de valider la commande',
+            'order_management.errors.title'.tr,
+            response.message.isNotEmpty ? response.message : 'order_management.errors.validate_order'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -297,8 +303,8 @@ class OrderManagementController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de valider la commande',
+        'order_management.errors.title'.tr,
+        'order_management.errors.validate_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -314,7 +320,7 @@ class OrderManagementController extends GetxController {
       final reasonController = TextEditingController();
       final confirm = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('Refuser la commande'),
+          title: Text('order_management.reject_dialog.title'.tr),
           // Défilant : clavier ouvert, le message et le champ de trois lignes
           // débordaient de la boîte sur les petits écrans.
           content: SingleChildScrollView(
@@ -322,13 +328,16 @@ class OrderManagementController extends GetxController {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Voulez-vous refuser la commande #${order.id} de ${order.clientName} ?\n\nLe client sera intégralement remboursé.',
+                  'order_management.reject_dialog.message'.trParams({
+                    'id': order.id,
+                    'name': order.clientName,
+                  }),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: reasonController,
-                  decoration: const InputDecoration(
-                    labelText: 'Raison du refus (optionnel)',
+                  decoration: InputDecoration(
+                    labelText: 'order_management.reject_dialog.reason_label'.tr,
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 3,
@@ -339,12 +348,12 @@ class OrderManagementController extends GetxController {
           actions: [
             TextButton(
               onPressed: () => Get.back(result: false),
-              child: const Text('Non'),
+              child: Text('order_management.actions.no'.tr),
             ),
             ElevatedButton(
               onPressed: () => Get.back(result: true),
               style: ElevatedButton.styleFrom(backgroundColor: AppDesign.danger),
-              child: const Text('Refuser la commande', style: TextStyle(color: Colors.white)),
+              child: Text('order_management.reject_dialog.confirm'.tr, style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -364,16 +373,16 @@ class OrderManagementController extends GetxController {
         if (response.success) {
           await loadOrders();
           Get.snackbar(
-            'Commande refusée',
-            'Le client a été notifié et remboursé.',
+            'order_management.reject_dialog.success_title'.tr,
+            'order_management.reject_dialog.success_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.accent,
             colorText: Colors.white,
           );
         } else {
           Get.snackbar(
-            'Erreur',
-            response.message.isNotEmpty ? response.message : 'Impossible de refuser la commande',
+            'order_management.errors.title'.tr,
+            response.message.isNotEmpty ? response.message : 'order_management.errors.reject_order'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -382,8 +391,8 @@ class OrderManagementController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de refuser la commande',
+        'order_management.errors.title'.tr,
+        'order_management.errors.reject_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -397,8 +406,8 @@ class OrderManagementController extends GetxController {
   void openChat(OrderModel order) {
     // TODO: Implémenter l'ouverture du chat
     Get.snackbar(
-      'Chat',
-      'Conversation avec ${order.clientName}',
+      'order_management.chat.title'.tr,
+      'order_management.chat.message'.trParams({'name': order.clientName}),
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -424,8 +433,8 @@ class OrderManagementController extends GetxController {
         _showDeliverersSheet(company, persons);
       } else {
         Get.snackbar(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Impossible de charger les livreurs',
+          'order_management.errors.title'.tr,
+          response.message.isNotEmpty ? response.message : 'order_management.errors.load_deliverers'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -433,8 +442,8 @@ class OrderManagementController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les livreurs',
+        'order_management.errors.title'.tr,
+        'order_management.errors.load_deliverers'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -491,14 +500,16 @@ class OrderManagementController extends GetxController {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          company['name'] ?? 'Entreprise de livraison',
+                          company['name'] ?? 'order_management.deliverers.default_company'.tr,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          '${persons.length} livreur(s) disponible(s)',
+                          'order_management.deliverers.available_count'.trParams({
+                            'count': '${persons.length}',
+                          }),
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -512,16 +523,16 @@ class OrderManagementController extends GetxController {
               const Divider(height: 24),
             ],
             // Title
-            const Text(
-              'Livreurs disponibles',
-              style: TextStyle(
+            Text(
+              'order_management.deliverers.title'.tr,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Appuyez sur le numéro pour le copier',
+              'order_management.deliverers.tap_to_copy'.tr,
               style: TextStyle(fontSize: 13, color: Colors.grey[500]),
             ),
             const SizedBox(height: 12),
@@ -535,7 +546,7 @@ class OrderManagementController extends GetxController {
                       Icon(Icons.person_off, size: 48, color: Colors.grey[400]),
                       const SizedBox(height: 12),
                       Text(
-                        'Aucun livreur synchronisé',
+                        'order_management.deliverers.empty'.tr,
                         style: TextStyle(color: Colors.grey[600], fontSize: 15),
                       ),
                     ],
@@ -562,7 +573,7 @@ class OrderManagementController extends GetxController {
   }
 
   Widget _buildDelivererTile(Map<String, dynamic> person) {
-    final name = person['name'] ?? 'Livreur';
+    final name = person['name'] ?? 'order_management.deliverers.default_name'.tr;
     final phone = person['phone']?.toString() ?? '';
     final avatar = person['avatar'] as String?;
     final address = person['address']?.toString() ?? '';
@@ -591,8 +602,10 @@ class OrderManagementController extends GetxController {
               onTap: () {
                 Clipboard.setData(ClipboardData(text: phone));
                 Get.snackbar(
-                  'Copié !',
-                  'Numéro $phone copié dans le presse-papier',
+                  'order_management.deliverers.copied_title'.tr,
+                  'order_management.deliverers.copied_message'.trParams({
+                    'phone': phone,
+                  }),
                   snackPosition: SnackPosition.BOTTOM,
                   duration: const Duration(seconds: 2),
                   backgroundColor: AppThemeSystem.successColor,
@@ -652,23 +665,30 @@ class OrderManagementController extends GetxController {
     final locationCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
     final error = RxnString();
-    final company = order.delivery?.companyName ?? 'transporteur';
+    final company = order.delivery?.companyName ??
+        'order_management.hand_to_carrier.default_carrier'.tr;
 
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: Text('Remettre à $company'),
+        title: Text(
+          'order_management.hand_to_carrier.title'.trParams({'company': company}),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Déposez le colis à l’agence $company puis saisissez le numéro de suivi figurant sur le bordereau. Le client pourra suivre son colis.',
+                'order_management.hand_to_carrier.message'.trParams({
+                  'company': company,
+                }),
                 style: const TextStyle(fontSize: 13),
               ),
               if (order.delivery?.routeLabel != null) ...[
                 const SizedBox(height: 6),
                 Text(
-                  'Trajet : ${order.delivery!.routeLabel}',
+                  'order_management.hand_to_carrier.route'.trParams({
+                    'route': '${order.delivery!.routeLabel}',
+                  }),
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -677,8 +697,8 @@ class OrderManagementController extends GetxController {
                     controller: numberCtrl,
                     textCapitalization: TextCapitalization.characters,
                     decoration: _fieldDecoration(
-                      'Numéro de suivi *',
-                      hint: 'Ex. SLX123456',
+                      'order_management.hand_to_carrier.tracking_number'.tr,
+                      hint: 'order_management.hand_to_carrier.tracking_number_hint'.tr,
                       icon: Icons.qr_code_2_rounded,
                     ).copyWith(errorText: error.value),
                   )),
@@ -686,8 +706,8 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: locationCtrl,
                 decoration: _fieldDecoration(
-                  'Agence de dépôt (facultatif)',
-                  hint: 'Ex. Agence SOLEX Douala Akwa',
+                  'order_management.hand_to_carrier.agency'.tr,
+                  hint: 'order_management.hand_to_carrier.agency_hint'.tr,
                   icon: Icons.store_mall_directory_outlined,
                 ),
               ),
@@ -695,7 +715,7 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: noteCtrl,
                 maxLines: 2,
-                decoration: _fieldDecoration('Note (facultatif)', icon: Icons.notes_rounded),
+                decoration: _fieldDecoration('order_management.tracking_form.note'.tr, icon: Icons.notes_rounded),
               ),
             ],
           ),
@@ -703,18 +723,18 @@ class OrderManagementController extends GetxController {
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('order_management.actions.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () {
               if (numberCtrl.text.trim().isEmpty) {
-                error.value = 'Le numéro de suivi est obligatoire';
+                error.value = 'order_management.hand_to_carrier.tracking_required'.tr;
                 return;
               }
               Get.back(result: true);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
-            child: const Text('Confirmer la remise', style: TextStyle(color: Colors.white)),
+            child: Text('order_management.hand_to_carrier.confirm'.tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -728,8 +748,8 @@ class OrderManagementController extends GetxController {
         location: locationCtrl.text.trim(),
         note: noteCtrl.text.trim(),
       ),
-      successTitle: 'Colis remis au transporteur',
-      successMessage: 'Le client a reçu le numéro de suivi.',
+      successTitle: 'order_management.hand_to_carrier.success_title'.tr,
+      successMessage: 'order_management.hand_to_carrier.success_message'.tr,
     );
   }
 
@@ -744,7 +764,7 @@ class OrderManagementController extends GetxController {
 
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Ajouter une étape'),
+        title: Text('order_management.tracking_form.title'.tr),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -753,14 +773,16 @@ class OrderManagementController extends GetxController {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'N° de suivi : ${order.delivery!.carrierTrackingNumber}',
+                    'order_management.tracking_form.tracking_number'.trParams({
+                      'number': '${order.delivery!.carrierTrackingNumber}',
+                    }),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               Obx(() => DropdownButtonFormField<String>(
                     initialValue: step.value,
                     isExpanded: true,
-                    decoration: _fieldDecoration('Étape *', icon: Icons.timeline_rounded)
+                    decoration: _fieldDecoration('order_management.tracking_form.step'.tr, icon: Icons.timeline_rounded)
                         .copyWith(errorText: error.value),
                     items: DeliveryInfo.trackingStepsFor(order.delivery).entries
                         .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
@@ -774,8 +796,8 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: locationCtrl,
                 decoration: _fieldDecoration(
-                  'Lieu (facultatif)',
-                  hint: 'Ex. Agence SOLEX Yaoundé',
+                  'order_management.tracking_form.location'.tr,
+                  hint: 'order_management.tracking_form.location_hint'.tr,
                   icon: Icons.place_outlined,
                 ),
               ),
@@ -783,7 +805,7 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: noteCtrl,
                 maxLines: 2,
-                decoration: _fieldDecoration('Note (facultatif)', icon: Icons.notes_rounded),
+                decoration: _fieldDecoration('order_management.tracking_form.note'.tr, icon: Icons.notes_rounded),
               ),
             ],
           ),
@@ -791,18 +813,18 @@ class OrderManagementController extends GetxController {
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('order_management.actions.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () {
               if (step.value == null) {
-                error.value = 'Choisissez une étape';
+                error.value = 'order_management.tracking_form.step_required'.tr;
                 return;
               }
               Get.back(result: true);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
-            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+            child: Text('order_management.tracking_form.submit'.tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -816,9 +838,10 @@ class OrderManagementController extends GetxController {
         location: locationCtrl.text.trim(),
         note: noteCtrl.text.trim(),
       ),
-      successTitle: 'Suivi mis à jour',
-      successMessage:
-          '« ${DeliveryInfo.trackingStepsFor(order.delivery)[step.value]} » ajouté. Le client est informé.',
+      successTitle: 'order_management.tracking_form.success_title'.tr,
+      successMessage: 'order_management.tracking_form.success_message'.trParams({
+        'step': '${DeliveryInfo.trackingStepsFor(order.delivery)[step.value]}',
+      }),
     );
   }
 
@@ -842,8 +865,8 @@ class OrderManagementController extends GetxController {
         );
       } else {
         Get.snackbar(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Action impossible',
+          'order_management.errors.title'.tr,
+          response.message.isNotEmpty ? response.message : 'order_management.errors.action_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -851,8 +874,8 @@ class OrderManagementController extends GetxController {
       }
     } catch (_) {
       Get.snackbar(
-        'Erreur',
-        'Action impossible pour le moment',
+        'order_management.errors.title'.tr,
+        'order_management.errors.action_failed_now'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -904,16 +927,22 @@ class OrderManagementController extends GetxController {
       ),
     );
 
-    void copy(String value, String what) {
+    void copy(String value, String message) {
       Clipboard.setData(ClipboardData(text: value));
-      Get.snackbar('Copié', '$what copié', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'order_management.details.copied_title'.tr,
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
 
     // Fiche longue : la feuille standard s'arrête sous la barre d'état et
     // garde une croix, là où l'ancienne ne se refermait qu'en glissant.
     AppSheet.show(
       AppSheet(
-        title: 'Commande ${order.displayNumber}',
+        title: 'order_management.details.title'.trParams({
+          'number': order.displayNumber,
+        }),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -922,8 +951,8 @@ class OrderManagementController extends GetxController {
                 Expanded(
                   child: Text(
                     order.isPaid
-                        ? 'Paiement reçu'
-                        : 'Paiement du client en attente',
+                        ? 'order_management.details.payment_received'.tr
+                        : 'order_management.details.payment_pending'.tr,
                     style: context.caption.copyWith(
                       color: order.isPaid
                           ? AppThemeSystem.successColor
@@ -936,7 +965,7 @@ class OrderManagementController extends GetxController {
               ],
             ),
 
-            section('À préparer', [
+            section('order_management.details.to_prepare'.tr, [
               for (final item in order.items)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -997,36 +1026,46 @@ class OrderManagementController extends GetxController {
                 ),
             ]),
 
-            section('Client et livraison', [
+            section('order_management.details.client_delivery'.tr, [
               line(Icons.person_outline, order.clientName),
               if (phone.isNotEmpty)
                 line(
                   Icons.phone_outlined,
                   phone,
-                  onCopy: () => copy(phone, 'Numéro'),
+                  onCopy: () => copy(
+                    phone,
+                    'order_management.details.phone_copied'.tr,
+                  ),
                 ),
               if (order.address.isNotEmpty)
                 line(
                   Icons.place_outlined,
                   order.address,
-                  onCopy: () => copy(order.address, 'Adresse'),
+                  onCopy: () => copy(
+                    order.address,
+                    'order_management.details.address_copied'.tr,
+                  ),
                 ),
               if (order.addressDetails?.isNotEmpty == true)
                 line(Icons.info_outline, order.addressDetails!),
               if (order.deliveryCompanyName != null)
                 line(
                   Icons.local_shipping_outlined,
-                  'Livraison : ${order.deliveryCompanyName}',
+                  'order_management.details.delivery_company'.trParams({
+                    'name': '${order.deliveryCompanyName}',
+                  }),
                 ),
               if (order.deliveryPersonName != null)
                 line(
                   Icons.delivery_dining_outlined,
-                  'Livreur : ${order.deliveryPersonName}',
+                  'order_management.details.delivery_person'.trParams({
+                    'name': '${order.deliveryPersonName}',
+                  }),
                 ),
             ]),
 
             if (order.delivery != null)
-              section('Livraison et suivi', [
+              section('order_management.details.delivery_tracking'.tr, [
                 OrderDeliveryDetails(
                   delivery: order.delivery!,
                   formatPrice: (v) => formatPrice(v),
@@ -1052,8 +1091,8 @@ class OrderManagementController extends GetxController {
                         ),
                         label: Text(
                           order.canHandToCarrier
-                              ? 'Remettre au transporteur'
-                              : 'Ajouter une étape',
+                              ? 'order_management.card.hand_to_carrier'.tr
+                              : 'order_management.card.add_step'.tr,
                           style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -1065,28 +1104,34 @@ class OrderManagementController extends GetxController {
               ]),
 
             if (order.notes?.isNotEmpty == true)
-              section('Note du client', [
+              section('order_management.details.client_note'.tr, [
                 line(Icons.sticky_note_2_outlined, order.notes!),
               ]),
 
             if (order.cancelReason?.isNotEmpty == true)
-              section('Motif d’annulation', [
+              section('order_management.details.cancel_reason'.tr, [
                 line(Icons.cancel_outlined, order.cancelReason!),
               ]),
 
-            section('Montants', [
+            section('order_management.details.amounts'.tr, [
               line(
                 Icons.payments_outlined,
-                'Pour vous : ${formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount)}',
+                'order_management.details.for_you'.trParams({
+                  'amount': formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount),
+                }),
               ),
               if (order.freeDeliveryAmount > 0)
                 line(
                   Icons.local_shipping_outlined,
-                  'Livraison offerte au client : − ${formatPrice(order.freeDeliveryAmount)} (déjà déduite)',
+                  'order_management.details.free_delivery'.trParams({
+                    'amount': formatPrice(order.freeDeliveryAmount),
+                  }),
                 ),
               line(
                 Icons.receipt_long_outlined,
-                'Total payé par le client : ${formatPrice(order.totalAmount)}',
+                'order_management.details.total_paid'.trParams({
+                  'amount': formatPrice(order.totalAmount),
+                }),
               ),
             ]),
           ],

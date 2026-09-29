@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 /// Type de livreur
 enum DeliveryPersonType {
   personal,
@@ -8,18 +9,18 @@ extension DeliveryPersonTypeExtension on DeliveryPersonType {
   String get label {
     switch (this) {
       case DeliveryPersonType.personal:
-        return 'Personnel';
+        return 'ship_config.person_type.personal'.tr;
       case DeliveryPersonType.company:
-        return 'Entreprise';
+        return 'ship_config.person_type.company'.tr;
     }
   }
 
   String get description {
     switch (this) {
       case DeliveryPersonType.personal:
-        return 'Je livre en tant que particulier';
+        return 'ship_config.person_type.personal_desc'.tr;
       case DeliveryPersonType.company:
-        return 'Je représente une entreprise de livraison';
+        return 'ship_config.person_type.company_desc'.tr;
     }
   }
 }

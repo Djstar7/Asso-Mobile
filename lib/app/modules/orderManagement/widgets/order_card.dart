@@ -26,7 +26,7 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR');
+    final dateFormat = DateFormat('order_management.card.date_time_format'.tr);
     final controller = Get.find<OrderManagementController>();
 
     return InkWell(
@@ -51,7 +51,9 @@ class OrderCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Commande ${order.displayNumber}',
+                    'order_management.card.order_number'.trParams({
+                      'number': order.displayNumber,
+                    }),
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -68,10 +70,14 @@ class OrderCard extends StatelessWidget {
                 icon: Icons.local_shipping_rounded,
                 color: AppThemeSystem.infoColor,
                 text: [
-                  'Transporteur ${order.delivery?.companyName ?? ''}'.trim(),
+                  'order_management.card.carrier'.trParams({
+                    'name': order.delivery?.companyName ?? '',
+                  }).trim(),
                   if (order.delivery?.routeLabel != null) order.delivery!.routeLabel!,
                   if (order.delivery?.carrierTrackingNumber != null)
-                    'Suivi ${order.delivery!.carrierTrackingNumber}'
+                    'order_management.card.tracking'.trParams({
+                      'number': '${order.delivery!.carrierTrackingNumber}',
+                    })
                   else if (order.delivery?.trackingStatusLabel != null)
                     order.delivery!.trackingStatusLabel!,
                 ].join(' · '),
@@ -92,8 +98,11 @@ class OrderCard extends StatelessWidget {
                     ? AppThemeSystem.warningColor
                     : AppThemeSystem.infoColor,
                 text: !order.isPaid
-                    ? 'Paiement du client en attente : ne préparez pas encore'
-                    : 'Livreur assigné${order.deliveryPersonName != null ? ' : ${order.deliveryPersonName}' : ''}',
+                    ? 'order_management.card.payment_pending'.tr
+                    : order.deliveryPersonName != null
+                        ? 'order_management.card.deliverer_assigned_named'
+                            .trParams({'name': order.deliveryPersonName!})
+                        : 'order_management.card.deliverer_assigned'.tr,
               ),
             ],
 
@@ -114,7 +123,9 @@ class OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  order.city.isNotEmpty ? order.city : 'Ville inconnue',
+                  order.city.isNotEmpty
+                      ? order.city
+                      : 'order_management.card.unknown_city'.tr,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -154,7 +165,7 @@ class OrderCard extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Pour vous :',
+                    'order_management.card.for_you'.tr,
                     style: context.body2.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -188,7 +199,9 @@ class OrderCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Livraison offerte : − ${controller.formatPrice(order.freeDeliveryAmount)} (déjà déduite)',
+                      'order_management.card.free_delivery_deducted'.trParams({
+                        'amount': controller.formatPrice(order.freeDeliveryAmount),
+                      }),
                       style: context.caption.copyWith(
                         color: AppDesign.successText,
                         fontWeight: FontWeight.w600,
@@ -401,7 +414,9 @@ class OrderCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 12, top: 4),
             child: Text(
-              '+ ${order.items.length - 2} autre(s) article(s)',
+              'order_management.card.more_items'.trParams({
+                'count': '${order.items.length - 2}',
+              }),
               style: context.caption.copyWith(
                 color: AppThemeSystem.primaryColor,
                 fontWeight: FontWeight.w500,
@@ -423,7 +438,7 @@ class OrderCard extends StatelessWidget {
             child: _buildCompactButton(
               context,
               icon: Icons.check,
-              label: 'Valider',
+              label: 'order_management.card.validate'.tr,
               color: AppThemeSystem.successColor,
               onPressed: onValidate,
               isTablet: isTablet,
@@ -434,7 +449,7 @@ class OrderCard extends StatelessWidget {
             child: _buildCompactButton(
               context,
               icon: Icons.close,
-              label: 'Annuler',
+              label: 'order_management.card.cancel'.tr,
               color: AppThemeSystem.errorColor,
               onPressed: onCancel,
               isTablet: isTablet,
@@ -445,7 +460,7 @@ class OrderCard extends StatelessWidget {
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
-              label: 'Chat',
+              label: 'order_management.card.chat'.tr,
               color: AppThemeSystem.infoColor,
               onPressed: onChat,
               isTablet: isTablet,
@@ -466,8 +481,8 @@ class OrderCard extends StatelessWidget {
                   ? Icons.local_shipping_rounded
                   : Icons.add_location_alt_outlined,
               label: order.canHandToCarrier
-                  ? 'Remettre au transporteur'
-                  : 'Ajouter une étape',
+                  ? 'order_management.card.hand_to_carrier'.tr
+                  : 'order_management.card.add_step'.tr,
               color: AppThemeSystem.primaryColor,
               onPressed: () => order.canHandToCarrier
                   ? controller.handToCarrier(order)
@@ -480,7 +495,7 @@ class OrderCard extends StatelessWidget {
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
-              label: 'Chat',
+              label: 'order_management.card.chat'.tr,
               color: AppThemeSystem.infoColor,
               onPressed: onChat,
               isTablet: isTablet,
@@ -507,7 +522,9 @@ class OrderCard extends StatelessWidget {
                 : _buildCompactButton(
                     context,
                     icon: Icons.delivery_dining,
-                    label: isTablet ? 'Contacter livreur' : 'Livreur',
+                    label: isTablet
+                        ? 'order_management.card.contact_deliverer'.tr
+                        : 'order_management.card.deliverer'.tr,
                     color: AppThemeSystem.infoColor,
                     onPressed: onContactDelivery,
                     isTablet: isTablet,
@@ -519,7 +536,7 @@ class OrderCard extends StatelessWidget {
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
-              label: 'Chat',
+              label: 'order_management.card.chat'.tr,
               color: AppThemeSystem.infoColor,
               onPressed: onChat,
               isTablet: isTablet,
@@ -531,7 +548,9 @@ class OrderCard extends StatelessWidget {
       return _buildCompactButton(
         context,
         icon: Icons.chat_bubble_outline,
-        label: isTablet ? 'Contacter le client' : 'Chat client',
+        label: isTablet
+            ? 'order_management.card.contact_client'.tr
+            : 'order_management.card.chat_client'.tr,
         color: AppThemeSystem.infoColor,
         onPressed: onChat,
         isTablet: isTablet,

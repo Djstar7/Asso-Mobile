@@ -125,7 +125,7 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
               right: 16,
               child: _roundButton(
                 icon: Icons.my_location,
-                tooltip: 'Ma position',
+                tooltip: 'delivery_dashboard.map.my_position'.tr,
                 onTap: () async {
                   await controller.locateMe(zoom: false);
                   final position = controller.myPosition.value;
@@ -143,7 +143,7 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
                 right: 16,
                 child: _roundButton(
                   icon: Icons.fullscreen,
-                  tooltip: 'Voir tout le trajet',
+                  tooltip: 'delivery_dashboard.map.fit_route'.tr,
                   onTap: () {
                     try {
                       mapController.fitCamera(
@@ -201,7 +201,9 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  tracked != null ? 'Course #${tracked.orderId}' : 'Itinéraire',
+                  tracked != null
+                      ? 'delivery_dashboard.map.run_title'.trParams({'order': '${tracked.orderId}'})
+                      : 'delivery_dashboard.map.route'.tr,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -222,7 +224,7 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
             _leg(
               Icons.storefront,
               AppThemeSystem.infoColor,
-              'Retrait',
+              'delivery_dashboard.map.pickup'.tr,
               tracked!.pickup!.name!,
             ),
           ],
@@ -231,7 +233,7 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
             _leg(
               Icons.person_pin_circle,
               AppThemeSystem.successColor,
-              'Livraison',
+              'delivery_dashboard.map.dropoff'.tr,
               tracked!.dropoff!.name!,
             ),
           ],
@@ -245,7 +247,7 @@ class DeliveryMapFullscreenView extends GetView<DeliveryDashboardController> {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
-        Text('$label : ', style: const TextStyle(fontSize: 12)),
+        Text('delivery_dashboard.map.label_colon'.trParams({'label': label}), style: const TextStyle(fontSize: 12)),
         Expanded(
           child: Text(
             value,

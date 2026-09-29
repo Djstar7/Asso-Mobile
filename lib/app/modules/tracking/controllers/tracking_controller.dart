@@ -15,7 +15,7 @@ import '../../../data/models/delivery_info.dart';
 class TrackingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   final RxList<Map<String, dynamic>> shipments = <Map<String, dynamic>>[].obs;
-  final RxString selectedFilter = 'Tous'.obs;
+  final RxString selectedFilter = 'tracking.filters.all'.obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
 
@@ -23,7 +23,14 @@ class TrackingController extends GetxController {
   /// d'ouverture. Sert à afficher un indicateur de chargement sur la bonne carte.
   final RxString openingChatOrderId = ''.obs;
 
-  final List<String> filters = ['Tous', 'En attente livreur', 'En livraison', 'Livré', 'Annulé'];
+  // Clés de traduction : l'affichage passe par .tr, le filtrage compare statusKey.
+  final List<String> filters = [
+    'tracking.filters.all',
+    'tracking.status.awaiting_courier',
+    'tracking.status.shipped',
+    'tracking.status.delivered',
+    'tracking.status.cancelled',
+  ];
 
   StreamSubscription? _orderFcmSubscription;
 
@@ -81,16 +88,16 @@ class TrackingController extends GetxController {
         shipments.value = newShipments;
       } else {
         Get.snackbar(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Impossible de charger les commandes',
+          'tracking.errors.error'.tr,
+          response.message.isNotEmpty ? response.message : 'tracking.errors.load_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2),
         );
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur de connexion',
-        'Impossible de rafraîchir les commandes',
+        'tracking.errors.connection'.tr,
+        'tracking.errors.refresh_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
@@ -105,8 +112,8 @@ class TrackingController extends GetxController {
 
     // Ne montrer que les commandes qui ont avancé (pas pending = pas encore validé)
     // On garde pending aussi pour que le client voit tout
-    final fmt = DateFormat('dd MMM, HH:mm', 'fr_FR');
-    final fmtDate = DateFormat('dd MMM yyyy', 'fr_FR');
+    final fmt = DateFormat('dd MMM, HH:mm');
+    final fmtDate = DateFormat('dd MMM yyyy');
 
     final createdAt = DateTime.tryParse(order['created_at'] ?? '') ?? DateTime.now();
     final confirmedAt = order['confirmed_at'] != null ? DateTime.tryParse(order['confirmed_at']) : null;
@@ -116,42 +123,50 @@ class TrackingController extends GetxController {
 
     // Déterminer le statut display + couleur
     String displayStatus;
+    String statusKey;
     int statusColor;
     // Couleurs prises aux tokens sémantiques : la palette écrite en dur ici
     // introduisait un second orange, concurrent de l'accent de marque.
     switch (status) {
       case 'pending':
-        displayStatus = 'En attente';
+        statusKey = 'tracking.status.pending';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.warning.toARGB32();
         break;
       case 'confirmed':
-        displayStatus = 'En attente livreur';
+        statusKey = 'tracking.status.awaiting_courier';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.info.toARGB32();
         break;
       case 'preparing':
-        displayStatus = 'En préparation';
+        statusKey = 'tracking.status.preparing';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.info.toARGB32();
         break;
       case 'shipped':
-        displayStatus = 'En livraison';
+        statusKey = 'tracking.status.shipped';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.accent.toARGB32();
         break;
       case 'delivered':
-        displayStatus = 'Livré';
+        statusKey = 'tracking.status.delivered';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.success.toARGB32();
         break;
       case 'cancelled':
-        displayStatus = 'Annulé';
+        statusKey = 'tracking.status.cancelled';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.danger.toARGB32();
         break;
       default:
-        displayStatus = 'En attente';
+        statusKey = 'tracking.status.pending';
+        displayStatus = statusKey.tr;
         statusColor = AppDesign.warning.toARGB32();
     }
 
     // Items info
     final items = order['items'] as List? ?? [];
-    String productName = 'Commande';
+    String productName = 'tracking.order'.tr;
     String productImage = '';
 
     // Vendeur associé à la commande (si l'API l'expose). À défaut de vendeur,
@@ -169,7 +184,7 @@ class TrackingController extends GetxController {
 
     if (items.isNotEmpty) {
       final firstItem = items[0] as Map<String, dynamic>;
-      productName = firstItem['product_name'] ?? 'Produit';
+      productName = firstItem['product_name'] ?? 'tracking.product'.tr;
       productImage = firstItem['product_image'] ?? '';
       firstProductId = int.tryParse(firstItem['product_id']?.toString() ?? '');
 
@@ -186,7 +201,8 @@ class TrackingController extends GetxController {
       }
 
       if (items.length > 1) {
-        productName += ' +${items.length - 1} autre${items.length > 2 ? 's' : ''}';
+        productName += (items.length > 2 ? 'tracking.more_items_many' : 'tracking.more_items_one')
+            .trParams({'count': '${items.length - 1}'});
       }
     }
 
@@ -198,49 +214,49 @@ class TrackingController extends GetxController {
     final trackingSteps = <Map<String, dynamic>>[];
 
     trackingSteps.add({
-      'title': 'Commande passée',
+      'title': 'tracking.steps.placed'.tr,
       'date': fmt.format(createdAt),
       'completed': true,
     });
 
     if (status == 'cancelled') {
       trackingSteps.add({
-        'title': 'Commande annulée',
-        'date': cancelledAt != null ? fmt.format(cancelledAt) : 'Annulée',
+        'title': 'tracking.steps.cancelled'.tr,
+        'date': cancelledAt != null ? fmt.format(cancelledAt) : 'tracking.steps.cancelled_date'.tr,
         'completed': true,
       });
     } else {
       trackingSteps.add({
-        'title': 'Validée par le vendeur',
-        'date': confirmedAt != null ? fmt.format(confirmedAt) : 'En attente',
+        'title': 'tracking.steps.confirmed'.tr,
+        'date': confirmedAt != null ? fmt.format(confirmedAt) : 'tracking.steps.pending'.tr,
         'completed': confirmedAt != null,
       });
 
       trackingSteps.add({
-        'title': 'En attente d\'un livreur',
+        'title': 'tracking.steps.awaiting_courier'.tr,
         'date': confirmedAt != null && shippedAt == null
-            ? 'Les livreurs ont été notifiés...'
-            : (shippedAt != null ? 'Livreur trouvé' : 'En attente'),
+            ? 'tracking.steps.couriers_notified'.tr
+            : (shippedAt != null ? 'tracking.steps.courier_found'.tr : 'tracking.steps.pending'.tr),
         'completed': shippedAt != null,
       });
 
       trackingSteps.add({
-        'title': 'Prise en charge par le livreur',
+        'title': 'tracking.steps.picked_up'.tr,
         'date': shippedAt != null
             ? '${fmt.format(shippedAt)}${deliveryPerson != null ? ' — ${deliveryPerson['name'] ?? ''}' : ''}'
-            : 'En attente',
+            : 'tracking.steps.pending'.tr,
         'completed': shippedAt != null,
       });
 
       trackingSteps.add({
-        'title': 'En cours de livraison',
-        'date': shippedAt != null && deliveredAt == null ? 'En route...' : (shippedAt != null ? fmt.format(shippedAt) : 'En attente'),
+        'title': 'tracking.steps.in_transit'.tr,
+        'date': shippedAt != null && deliveredAt == null ? 'tracking.steps.en_route'.tr : (shippedAt != null ? fmt.format(shippedAt) : 'tracking.steps.pending'.tr),
         'completed': shippedAt != null,
       });
 
       trackingSteps.add({
-        'title': 'Livrée',
-        'date': deliveredAt != null ? fmt.format(deliveredAt) : 'En attente',
+        'title': 'tracking.steps.delivered'.tr,
+        'date': deliveredAt != null ? fmt.format(deliveredAt) : 'tracking.steps.pending'.tr,
         'completed': deliveredAt != null,
       });
     }
@@ -251,7 +267,7 @@ class TrackingController extends GetxController {
     // Localisation courante
     String currentLocation;
     if (status == 'delivered') {
-      currentLocation = 'Livré';
+      currentLocation = 'tracking.location.delivered'.tr;
     } else if (delivery != null &&
         delivery.isCarrier &&
         delivery.trackingStatusLabel != null &&
@@ -262,15 +278,17 @@ class TrackingController extends GetxController {
         if (last?.location != null) last!.location!,
       ].join(' — ');
     } else if (status == 'shipped') {
-      currentLocation = 'En livraison${deliveryPerson != null ? ' par ${deliveryPerson['name']}' : ''}';
+      currentLocation = deliveryPerson != null
+          ? 'tracking.location.shipped_by'.trParams({'name': '${deliveryPerson['name']}'})
+          : 'tracking.location.shipped'.tr;
     } else if (status == 'confirmed') {
-      currentLocation = 'En attente d\'un livreur — les livreurs ont été notifiés';
+      currentLocation = 'tracking.location.awaiting_courier'.tr;
     } else if (status == 'preparing') {
-      currentLocation = 'En préparation chez le vendeur';
+      currentLocation = 'tracking.location.preparing'.tr;
     } else if (status == 'cancelled') {
-      currentLocation = 'Annulé';
+      currentLocation = 'tracking.location.cancelled'.tr;
     } else {
-      currentLocation = 'En attente de validation';
+      currentLocation = 'tracking.location.pending'.tr;
     }
 
     final total = double.tryParse(order['total']?.toString() ?? '0') ?? 0;
@@ -281,6 +299,7 @@ class TrackingController extends GetxController {
       'productName': productName,
       'productImage': productImage,
       'status': displayStatus,
+      'statusKey': statusKey,
       'statusColor': statusColor,
       'orderDate': fmtDate.format(createdAt),
       'estimatedDelivery': '',
@@ -313,22 +332,21 @@ class TrackingController extends GetxController {
   Future<bool> confirmReception(Map<String, dynamic> shipment) async {
     final ok = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Colis reçu ?'),
-        content: const Text(
-          'Confirmez uniquement si vous avez bien récupéré votre colis. '
-          'Le vendeur sera alors payé et la commande sera marquée comme livrée.',
+        title: Text('tracking.receipt.title'.tr),
+        content: Text(
+          'tracking.receipt.message'.tr,
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Pas encore'),
+            child: Text('tracking.receipt.not_yet'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text(
-              'Oui, j’ai reçu mon colis',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              'tracking.receipt.confirm'.tr,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -341,8 +359,8 @@ class TrackingController extends GetxController {
     final response = await OrderService.confirmReception(orderId);
     if (response.success) {
       Get.snackbar(
-        'Merci !',
-        'Réception confirmée.',
+        'tracking.receipt.thanks_title'.tr,
+        'tracking.receipt.thanks_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
@@ -351,10 +369,10 @@ class TrackingController extends GetxController {
       return true;
     }
     Get.snackbar(
-      'Erreur',
+      'tracking.errors.error'.tr,
       response.message.isNotEmpty
           ? response.message
-          : 'Impossible de confirmer la réception',
+          : 'tracking.errors.confirm_receipt_failed'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
     return false;
@@ -363,8 +381,8 @@ class TrackingController extends GetxController {
   List<Map<String, dynamic>> get filteredShipments {
     var results = shipments.toList();
 
-    if (selectedFilter.value != 'Tous') {
-      results = results.where((s) => s['status'] == selectedFilter.value).toList();
+    if (selectedFilter.value != 'tracking.filters.all') {
+      results = results.where((s) => s['statusKey'] == selectedFilter.value).toList();
     }
 
     if (searchQuery.value.isNotEmpty) {
@@ -409,7 +427,7 @@ class TrackingController extends GetxController {
       final sellerId = shipment['sellerId'] as int?;
       final productId = shipment['firstProductId'] as int?;
       // Message pré-rempli repris par chatdetail_controller (default_message).
-      final defaultMessage = 'Commande $orderRef : ';
+      final defaultMessage = 'tracking.chat.default_message'.trParams({'order': orderRef});
 
       if (sellerId != null) {
         // ── Conversation avec le vendeur ──
@@ -420,8 +438,8 @@ class TrackingController extends GetxController {
 
         if (!response.success || response.data == null) {
           Get.snackbar(
-            'Erreur',
-            'Impossible de démarrer la conversation avec le vendeur.',
+            'tracking.errors.error'.tr,
+            'tracking.errors.chat_seller_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
           );
           return;
@@ -431,7 +449,7 @@ class TrackingController extends GetxController {
         final conversationId =
             conversation['id'] ?? conversation['conversation_id'];
         if (conversationId == null) {
-          Get.snackbar('Erreur', 'Conversation indisponible.',
+          Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
               snackPosition: SnackPosition.BOTTOM);
           return;
         }
@@ -440,7 +458,7 @@ class TrackingController extends GetxController {
         final sellerNameRaw = shipment['sellerName']?.toString() ?? '';
         final userName = (otherUser?['name']?.toString().isNotEmpty == true)
             ? otherUser!['name'].toString()
-            : (sellerNameRaw.isNotEmpty ? sellerNameRaw : 'Vendeur');
+            : (sellerNameRaw.isNotEmpty ? sellerNameRaw : 'tracking.chat.seller'.tr);
 
         Get.toNamed('/chatdetail', arguments: {
           'id': conversationId.toString(),
@@ -460,8 +478,8 @@ class TrackingController extends GetxController {
 
       if (supportUserId == null) {
         Get.snackbar(
-          'Support indisponible',
-          "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
+          'tracking.errors.support_unavailable_title'.tr,
+          'tracking.errors.support_unavailable_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -471,8 +489,8 @@ class TrackingController extends GetxController {
           await ConversationService.startConversation(userId: supportUserId);
       if (!response.success || response.data == null) {
         Get.snackbar(
-          'Erreur',
-          'Impossible de démarrer la conversation avec le support.',
+          'tracking.errors.error'.tr,
+          'tracking.errors.chat_support_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -481,7 +499,7 @@ class TrackingController extends GetxController {
       final conversation = response.data!['conversation'];
       final conversationId = conversation?['id'];
       if (conversationId == null) {
-        Get.snackbar('Erreur', 'Conversation indisponible.',
+        Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
             snackPosition: SnackPosition.BOTTOM);
         return;
       }
@@ -496,7 +514,7 @@ class TrackingController extends GetxController {
         'is_support': true,
       });
     } catch (e) {
-      Get.snackbar('Erreur', 'Une erreur est survenue: $e',
+      Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.generic'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       openingChatOrderId.value = '';
@@ -505,8 +523,8 @@ class TrackingController extends GetxController {
 
   void contactSupport() {
     Get.snackbar(
-      'Support',
-      'Fonction de contact support en développement',
+      'tracking.support.title'.tr,
+      'tracking.support.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
   }
