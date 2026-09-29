@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../core/utils/app_design.dart';
+import '../../legal/controllers/legal_controller.dart';
 
 class AboutController extends GetxController {
   final isLoading = false.obs;
@@ -24,9 +25,8 @@ class AboutController extends GetxController {
   final contactWebsite = ''.obs;
 
   // Legal
-  final termsUrl = ''.obs;
-  final privacyUrl = ''.obs;
-  final licensesUrl = ''.obs;
+  // Documents légaux du back-office (CGU, CGV, confidentialité…).
+  final legalDocuments = <LegalDocument>[].obs;
 
   // Credits
   final developedBy = 'ASSO Team'.obs;
@@ -81,9 +81,7 @@ class AboutController extends GetxController {
         // Legal
         final legal = aboutData['legal'] as Map<String, dynamic>?;
         if (legal != null) {
-          termsUrl.value = legal['terms_url'] as String? ?? '';
-          privacyUrl.value = legal['privacy_url'] as String? ?? '';
-          licensesUrl.value = legal['licenses_url'] as String? ?? '';
+          legalDocuments.assignAll(LegalDocument.listFrom(legal['pages']));
         }
 
         // Social
@@ -185,51 +183,6 @@ class AboutController extends GetxController {
   /// Ouvrir un lien social
   void openSocialLink(String url) {
     openUrl(url);
-  }
-
-  /// Afficher les conditions d'utilisation
-  void showTermsOfService() {
-    if (termsUrl.value.isNotEmpty) {
-      openUrl(termsUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'Les conditions d\'utilisation ne sont pas encore disponibles',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
-  }
-
-  /// Afficher la politique de confidentialité
-  void showPrivacyPolicy() {
-    if (privacyUrl.value.isNotEmpty) {
-      openUrl(privacyUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'La politique de confidentialité n\'est pas encore disponible',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
-  }
-
-  /// Afficher les licences
-  void showLicenses() {
-    if (licensesUrl.value.isNotEmpty) {
-      openUrl(licensesUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'Les licences ne sont pas encore disponibles',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
   }
 
   /// Contacter le support
