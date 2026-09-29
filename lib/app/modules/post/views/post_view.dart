@@ -12,13 +12,13 @@ class PostView extends GetView<PostController> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('PostView'),
+        title: Text('post.title'.tr),
         centerTitle: true,
       ),
-      body: const Center(
+      body: Center(
         child: Text(
-          'PostView is working',
-          style: TextStyle(fontSize: 20),
+          'post.working'.tr,
+          style: const TextStyle(fontSize: 20),
         ),
       ),
     );

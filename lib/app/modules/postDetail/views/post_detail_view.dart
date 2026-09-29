@@ -25,7 +25,7 @@ class PostDetailView extends GetView<PostDetailController> {
       child: Scaffold(
         backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
         appBar: AppBar(
-          title: const Text('Discussion'),
+          title: Text('post_detail.title'.tr),
           backgroundColor: isDark ? AppThemeSystem.darkCardColor : AppThemeSystem.primaryColor,
           // Passe par le même `WillPopScope` que le retour système, qui
           // renvoie le message à jour à l'écran précédent.
@@ -38,7 +38,7 @@ class PostDetailView extends GetView<PostDetailController> {
 
         final post = controller.post.value;
         if (post == null) {
-          return const Center(child: Text('Post introuvable'));
+          return Center(child: Text('post_detail.not_found'.tr));
         }
 
         return RefreshIndicator(
@@ -60,7 +60,7 @@ class PostDetailView extends GetView<PostDetailController> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Commentaires (${post.commentsCount})',
+                        'post_detail.comments_count'.trParams({'count': '${post.commentsCount}'}),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -95,7 +95,7 @@ class PostDetailView extends GetView<PostDetailController> {
                             Icon(Icons.comment_outlined, size: 48, color: Colors.grey[400]),
                             const SizedBox(height: 8),
                             Text(
-                              'Aucun commentaire',
+                              'post_detail.no_comments'.tr,
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                           ],
@@ -168,8 +168,8 @@ class PostDetailView extends GetView<PostDetailController> {
                           Flexible(
                             child: Text(
                               post.isAnonymous
-                                  ? 'ANONYME'
-                                  : (post.user?.fullName ?? 'Anonyme'),
+                                  ? 'post_detail.anonymous_upper'.tr
+                                  : (post.user?.fullName ?? 'post_detail.anonymous'.tr),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -190,9 +190,9 @@ class PostDetailView extends GetView<PostDetailController> {
                                 color: AppThemeSystem.primaryColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Text(
-                                'Anonyme',
-                                style: TextStyle(
+                              child: Text(
+                                'post_detail.anonymous'.tr,
+                                style: const TextStyle(
                                   fontSize: 10,
                                   color: Colors.white,
                                 ),
@@ -202,7 +202,7 @@ class PostDetailView extends GetView<PostDetailController> {
                         ],
                       ),
                       Text(
-                        timeago.format(post.createdAt, locale: 'fr'),
+                        timeago.format(post.createdAt),
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -339,8 +339,8 @@ class PostDetailView extends GetView<PostDetailController> {
                           Flexible(
                             child: Text(
                               comment.isAnonymous
-                                  ? 'ANONYME'
-                                  : (comment.user?.fullName ?? 'Anonyme'),
+                                  ? 'post_detail.anonymous_upper'.tr
+                                  : (comment.user?.fullName ?? 'post_detail.anonymous'.tr),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -361,9 +361,9 @@ class PostDetailView extends GetView<PostDetailController> {
                                 color: AppThemeSystem.primaryColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Text(
-                                'Anonyme',
-                                style: TextStyle(
+                              child: Text(
+                                'post_detail.anonymous'.tr,
+                                style: const TextStyle(
                                   fontSize: 9,
                                   color: Colors.white,
                                 ),
@@ -373,7 +373,7 @@ class PostDetailView extends GetView<PostDetailController> {
                         ],
                       ),
                       Text(
-                        timeago.format(comment.createdAt, locale: 'fr'),
+                        timeago.format(comment.createdAt),
                         style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
@@ -418,12 +418,12 @@ class PostDetailView extends GetView<PostDetailController> {
                 const SizedBox(width: 20),
                 InkWell(
                   onTap: () => _showAddCommentDialog(context, replyTo: comment),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.reply, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text('Répondre', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Icon(Icons.reply, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text('post_detail.reply'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -463,8 +463,8 @@ class PostDetailView extends GetView<PostDetailController> {
                             children: [
                               Text(
                                 reply.isAnonymous
-                                    ? 'ANONYME'
-                                    : (reply.user?.fullName ?? 'Anonyme'),
+                                    ? 'post_detail.anonymous_upper'.tr
+                                    : (reply.user?.fullName ?? 'post_detail.anonymous'.tr),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
@@ -473,7 +473,7 @@ class PostDetailView extends GetView<PostDetailController> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  '· ${timeago.format(reply.createdAt, locale: 'fr')}',
+                                  '· ${timeago.format(reply.createdAt)}',
                                   style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                                 ),
                               ),
@@ -522,8 +522,12 @@ class PostDetailView extends GetView<PostDetailController> {
     AppSheet.show(
       AppSheet(
         title: replyTo == null
-            ? 'Ajouter un commentaire'
-            : 'Répondre à ${replyTo.isAnonymous ? 'Anonyme' : (replyTo.user?.fullName ?? 'Anonyme')}',
+            ? 'post_detail.add_comment'.tr
+            : 'post_detail.reply_to'.trParams({
+                'name': replyTo.isAnonymous
+                    ? 'post_detail.anonymous'.tr
+                    : (replyTo.user?.fullName ?? 'post_detail.anonymous'.tr),
+              }),
         footer: SizedBox(
           width: double.infinity,
           child: Obx(() => ElevatedButton(
@@ -541,8 +545,8 @@ class PostDetailView extends GetView<PostDetailController> {
                     final content = contentController.text.trim();
                     if (content.isEmpty) {
                       Get.snackbar(
-                        'Commentaire vide',
-                        'Écrivez quelques mots avant de publier.',
+                        'post_detail.empty_comment_title'.tr,
+                        'post_detail.empty_comment_message'.tr,
                         snackPosition: SnackPosition.BOTTOM,
                       );
                       return;
@@ -562,9 +566,9 @@ class PostDetailView extends GetView<PostDetailController> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text(
-                    'Publier',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                : Text(
+                    'post_detail.publish'.tr,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
           )),
         ),
@@ -578,7 +582,7 @@ class PostDetailView extends GetView<PostDetailController> {
               maxLength: 2000,
               style: TextStyle(color: isDark ? Colors.white : Colors.black),
               decoration: InputDecoration(
-                hintText: 'Écrivez votre commentaire...',
+                hintText: 'post_detail.comment_hint'.tr,
                 hintStyle: TextStyle(
                   color: isDark ? Colors.white54 : Colors.black54,
                 ),
@@ -605,13 +609,13 @@ class PostDetailView extends GetView<PostDetailController> {
             Obx(
               () => CheckboxListTile(
                 title: Text(
-                  'Commenter en mode anonyme',
+                  'post_detail.anonymous_comment'.tr,
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
                 subtitle: Text(
-                  'Votre nom ne sera pas visible',
+                  'post_detail.anonymous_comment_hint'.tr,
                   style: TextStyle(
                     color: isDark ? Colors.white70 : Colors.black54,
                   ),

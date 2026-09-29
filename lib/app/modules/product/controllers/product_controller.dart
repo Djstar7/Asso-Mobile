@@ -145,8 +145,8 @@ class ProductController extends GetxController {
     final url = shareUrl(product);
     if (url == null) {
       Get.snackbar(
-        'Partage indisponible',
-        'Ce produit ne peut pas encore être partagé.',
+        'product.share.unavailable_title'.tr,
+        'product.share.unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -375,10 +375,13 @@ class ProductController extends GetxController {
   /// Explique pourquoi la quantité ne monte plus.
   void notifyStockLimit(int max) {
     Get.snackbar(
-      'Stock limité',
+      'product.stock.limited_title'.tr,
       max <= 0
-          ? 'Cette option est épuisée.'
-          : 'Il ne reste que $max article${max > 1 ? 's' : ''} disponible${max > 1 ? 's' : ''}.',
+          ? 'product.stock.option_sold_out'.tr
+          : (max > 1
+                ? 'product.stock.only_left_plural'
+                : 'product.stock.only_left_singular')
+              .trParams({'count': '$max'}),
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -455,15 +458,15 @@ class ProductController extends GetxController {
   /// Étapes restantes avant de pouvoir payer (vide = commande prête).
   List<String> missingOrderSteps(Map<String, dynamic> product) => [
     if (productHasVariants(product) && variantQuantities.isEmpty)
-      'Indiquer la quantité d’au moins une option'
+      'product.order.step_option_quantity'.tr
     else if (orderQuantity.value < 1)
-      'Indiquer une quantité',
-    if (!hasValidLocation) 'Indiquer l’adresse de livraison',
-    if (!hasValidPhone) 'Renseigner un numéro à contacter valide',
+      'product.order.step_quantity'.tr,
+    if (!hasValidLocation) 'product.order.step_address'.tr,
+    if (!hasValidPhone) 'product.order.step_phone'.tr,
     if (deliveryBlockedMessage.value != null)
-      'Livraison impossible : le vendeur doit renseigner le poids du produit'
+      'product.order.step_weight_missing'.tr
     else if (selectedPartner.value == null)
-      'Choisir un partenaire de livraison',
+      'product.order.step_partner'.tr,
   ];
 
   Future<void> fetchCurrentLocation() async {
@@ -529,7 +532,10 @@ class ProductController extends GetxController {
         label ??
         (fallbackAddress?.trim().isNotEmpty == true
             ? fallbackAddress!.trim()
-            : 'Position GPS (${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)})');
+            : 'product.location.gps_position'.trParams({
+                'lat': latitude.toStringAsFixed(4),
+                'lng': longitude.toStringAsFixed(4),
+              }));
   }
 
   Future<void> openLocationSettings() async {
@@ -590,14 +596,18 @@ class ProductController extends GetxController {
           deliveryBlockedMessage.value =
               quote['message']?.toString() ??
               response.data?['message']?.toString() ??
-              'Livraison impossible à chiffrer : le vendeur doit renseigner le poids${products.isNotEmpty ? ' de $products' : ' du produit'}.';
+              (products.isNotEmpty
+                      ? 'product.delivery.weight_missing_products'.trParams({
+                          'products': products,
+                        })
+                      : 'product.delivery.weight_missing_product'.tr);
           return;
         }
       }
 
       if (!response.success) {
         Get.snackbar(
-          'Livraison indisponible',
+          'product.delivery.unavailable'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
         );
@@ -625,8 +635,8 @@ class ProductController extends GetxController {
     } catch (_) {
       if (request != _partnersRequest) return;
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les partenaires de livraison.',
+        'product.error'.tr,
+        'product.delivery.partners_load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -661,7 +671,7 @@ class ProductController extends GetxController {
   }
 
   String formatPrice(double amount) {
-    final formatter = NumberFormat.decimalPattern('fr_FR');
+    final formatter = NumberFormat.decimalPattern();
     return '${formatter.format(amount.round())} FCFA';
   }
 
@@ -678,7 +688,7 @@ class ProductController extends GetxController {
     final missing = missingOrderSteps(product);
     if (missing.isNotEmpty) {
       Get.snackbar(
-        'Commande incomplète',
+        'product.order.incomplete'.tr,
         missing.first,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -697,8 +707,8 @@ class ProductController extends GetxController {
             deliveryZoneId == null &&
             deliveryGridId == null)) {
       Get.snackbar(
-        'Erreur',
-        'Le partenaire sélectionné ne contient pas de zone ou de trajet de livraison valide.',
+        'product.error'.tr,
+        'product.delivery.partner_invalid'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
@@ -754,7 +764,7 @@ class ProductController extends GetxController {
 
       if (!response.success) {
         Get.snackbar(
-          'Commande impossible',
+          'product.order.failed_title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
         );
@@ -764,8 +774,8 @@ class ProductController extends GetxController {
       return response.data ?? const {};
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue pendant la commande: $e',
+        'product.error'.tr,
+        'product.order.error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
@@ -785,8 +795,8 @@ class ProductController extends GetxController {
         final status = res.data?['data']?['payment_status'];
         if (status == 'paid') {
           Get.snackbar(
-            'Paiement confirmé',
-            'Votre commande est payée. Le vendeur va la préparer.',
+            'product.payment.confirmed_title'.tr,
+            'product.payment.confirmed_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.success,
             colorText: Colors.white,
@@ -796,8 +806,8 @@ class ProductController extends GetxController {
         }
         if (status == 'failed') {
           Get.snackbar(
-            'Paiement échoué',
-            "Le paiement n'a pas abouti. Vous pouvez réessayer depuis vos commandes.",
+            'product.payment.failed_title'.tr,
+            'product.payment.failed_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -833,8 +843,8 @@ class ProductController extends GetxController {
     );
     if (sellerId == null) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de démarrer la conversation.',
+        'product.error'.tr,
+        'product.chat.start_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -858,10 +868,10 @@ class ProductController extends GetxController {
       }
       if (!response.success || conversationId == null) {
         Get.snackbar(
-          'Erreur',
+          'product.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de démarrer la conversation.',
+              : 'product.chat.start_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -870,7 +880,8 @@ class ProductController extends GetxController {
       final otherName = conversation['other_user']?['name']?.toString();
       final name = otherName?.isNotEmpty == true
           ? otherName!
-          : (shop?['name'] ?? seller?['name'] ?? 'Vendeur').toString();
+          : (shop?['name'] ?? seller?['name'] ?? 'product.seller'.tr)
+                .toString();
       final variantLabel = VariantCatalog.labelOf(selectedVariant.value);
 
       await Get.toNamed(
@@ -883,14 +894,17 @@ class ProductController extends GetxController {
           'productId': productId,
           'isOnline': false,
           'default_message':
-              'Bonjour, je suis intéressé(e) par « ${product['name']}'
-              '${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''} ». ',
+              'product.chat.default_message'.trParams({
+                'product':
+                    '${product['name']}'
+                    '${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''}',
+              }),
         },
       );
     } catch (_) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de démarrer la conversation.',
+        'product.error'.tr,
+        'product.chat.start_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

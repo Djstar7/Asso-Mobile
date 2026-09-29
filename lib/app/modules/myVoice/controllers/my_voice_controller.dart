@@ -23,9 +23,9 @@ class MyVoiceController extends GetxController {
   /// que d'afficher un point d'interrogation.
   String get currentUserInitials {
     final user = ApiProvider.cachedUser;
-    if (user == null) return 'Vous';
+    if (user == null) return 'my_voice.you'.tr;
     final name = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
-    return name.isEmpty ? 'Vous' : name;
+    return name.isEmpty ? 'my_voice.you'.tr : name;
   }
 
   /// Incrémenté à chaque rafraîchissement : ignore les réponses d'une page
@@ -68,7 +68,7 @@ class MyVoiceController extends GetxController {
       if (!response.success || pagination is! Map) {
         loadError.value = response.message.isNotEmpty
             ? response.message
-            : 'Impossible de charger les publications';
+            : 'my_voice.load_error'.tr;
         return;
       }
 
@@ -88,7 +88,7 @@ class MyVoiceController extends GetxController {
       currentPage = page + 1;
     } catch (e) {
       if (generation == _generation) {
-        loadError.value = 'Impossible de charger les publications';
+        loadError.value = 'my_voice.load_error'.tr;
       }
     } finally {
       if (generation == _generation) {
@@ -132,8 +132,8 @@ class MyVoiceController extends GetxController {
       final created = response.data?['data'];
       if (!response.success || created is! Map) {
         _snack(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Impossible de publier le message',
+          'my_voice.error'.tr,
+          response.message.isNotEmpty ? response.message : 'my_voice.publish_error'.tr,
           error: true,
         );
         return false;
@@ -146,10 +146,10 @@ class MyVoiceController extends GetxController {
       } else {
         posts.add(post);
       }
-      _snack('Succès', 'Votre message a été publié');
+      _snack('my_voice.success'.tr, 'my_voice.published'.tr);
       return true;
     } catch (e) {
-      _snack('Erreur', 'Impossible de publier le message', error: true);
+      _snack('my_voice.error'.tr, 'my_voice.publish_error'.tr, error: true);
       return false;
     } finally {
       isSubmitting.value = false;
@@ -165,17 +165,17 @@ class MyVoiceController extends GetxController {
       final updated = response.data?['data'];
       if (!response.success || updated is! Map) {
         _snack(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Modification impossible',
+          'my_voice.error'.tr,
+          response.message.isNotEmpty ? response.message : 'my_voice.edit_error'.tr,
           error: true,
         );
         return false;
       }
       updatePostInList(Post.fromJson(Map<String, dynamic>.from(updated)));
-      _snack('Succès', 'Message modifié');
+      _snack('my_voice.success'.tr, 'my_voice.edited'.tr);
       return true;
     } catch (_) {
-      _snack('Erreur', 'Modification impossible', error: true);
+      _snack('my_voice.error'.tr, 'my_voice.edit_error'.tr, error: true);
       return false;
     } finally {
       isSubmitting.value = false;
@@ -186,13 +186,13 @@ class MyVoiceController extends GetxController {
   Future<void> deletePost(int postId) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Supprimer le message ?'),
-        content: const Text('Il sera retiré du fil avec ses commentaires.'),
+        title: Text('my_voice.delete_title'.tr),
+        content: Text('my_voice.delete_message'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Get.back(result: false), child: Text('my_voice.cancel'.tr)),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Supprimer', style: TextStyle(color: AppDesign.danger)),
+            child: Text('my_voice.delete'.tr, style: const TextStyle(color: AppDesign.danger)),
           ),
         ],
       ),
@@ -203,16 +203,16 @@ class MyVoiceController extends GetxController {
       final response = await PostService.deletePost(postId);
       if (response.success) {
         posts.removeWhere((post) => post.id == postId);
-        _snack('Succès', 'Message supprimé');
+        _snack('my_voice.success'.tr, 'my_voice.deleted'.tr);
       } else {
         _snack(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Suppression impossible',
+          'my_voice.error'.tr,
+          response.message.isNotEmpty ? response.message : 'my_voice.delete_error'.tr,
           error: true,
         );
       }
     } catch (e) {
-      _snack('Erreur', 'Suppression impossible', error: true);
+      _snack('my_voice.error'.tr, 'my_voice.delete_error'.tr, error: true);
     }
   }
 
@@ -234,10 +234,10 @@ class MyVoiceController extends GetxController {
           posts[index] = posts[index].withReaction(data);
         }
       } else if (!response.success) {
-        _snack('Erreur', response.message, error: true);
+        _snack('my_voice.error'.tr, response.message, error: true);
       }
     } catch (e) {
-      _snack('Erreur', 'Impossible de réagir au message', error: true);
+      _snack('my_voice.error'.tr, 'my_voice.react_error'.tr, error: true);
     }
   }
 

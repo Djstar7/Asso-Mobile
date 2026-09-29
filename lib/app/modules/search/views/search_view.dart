@@ -15,6 +15,34 @@ import '../../import/views/wholesale_product_view.dart';
 import '../controllers/search_controller.dart' as search_ctrl;
 import '../../../core/widgets/scoped_controller_page.dart';
 
+/// Libellé affiché d'une catégorie de repli ou d'un tag populaire : la
+/// valeur française reste la donnée (filtre, requête), seul l'affichage
+/// est traduit. Les catégories venues de l'API sont affichées telles quelles.
+String _categoryLabel(String category) {
+  switch (category) {
+    case 'Vêtements':
+      return 'search.categories.clothing'.tr;
+    case 'Électronique':
+      return 'search.categories.electronics'.tr;
+    case 'Chaussures':
+      return 'search.categories.shoes'.tr;
+    case 'Accessoires':
+      return 'search.categories.accessories'.tr;
+    case 'Maison':
+      return 'search.categories.home'.tr;
+    case 'Sport':
+      return 'search.categories.sport'.tr;
+    case 'Beauté':
+      return 'search.categories.beauty'.tr;
+    case 'Livres':
+      return 'search.categories.books'.tr;
+    case 'Autres':
+      return 'search.categories.other'.tr;
+    default:
+      return category;
+  }
+}
+
 /// Vue de recherche, ouverte comme un écran à part entière.
 ///
 /// Elle a son propre contrôleur, distinct de celui de l'onglet : la
@@ -158,8 +186,8 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                         hintText:
                             controller.scope.value ==
                                 search_ctrl.SearchScope.passcolis
-                            ? 'Rechercher une ville, un pays...'
-                            : 'Rechercher des produits...',
+                            ? 'search.hint_passcolis'.tr
+                            : 'search.hint_products'.tr,
                         hintStyle: TextStyle(
                           color: AppThemeSystem.grey500,
                           fontSize: 15,
@@ -309,12 +337,12 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
         child: Row(
           children: [
             tab(
-              'Produits',
+              'search.tab_products'.tr,
               Icons.grid_view_rounded,
               search_ctrl.SearchScope.products,
             ),
             tab(
-              'Passcolis',
+              'search.tab_passcolis'.tr,
               Icons.flight_takeoff_rounded,
               search_ctrl.SearchScope.passcolis,
             ),
@@ -347,7 +375,10 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               return _buildFilterChip(
                 context,
                 isDark,
-                label: category,
+                // « Tous » reste la valeur interne ; seul son libellé est traduit.
+                label: index == 0 && category == 'Tous'
+                    ? 'search.all_categories'.tr
+                    : _categoryLabel(category),
                 icon: index == 0 ? Icons.grid_view_rounded : null,
                 isSelected: isSelected,
                 onTap: () {
@@ -468,10 +499,9 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     if (controller.wall.loadFailed.value) {
       return AppEmptyState(
         icon: Icons.wifi_off_rounded,
-        title: 'Produits indisponibles',
-        message:
-            "Les produits n'ont pas pu être chargés. Vérifiez votre connexion puis réessayez.",
-        actionLabel: 'Réessayer',
+        title: 'search.products_unavailable_title'.tr,
+        message: 'search.products_unavailable_message'.tr,
+        actionLabel: 'search.retry'.tr,
         onAction: controller.retry,
       );
     }
@@ -497,10 +527,9 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
         controller.passcolisOffers.isEmpty) {
       return AppEmptyState(
         icon: Icons.wifi_off_rounded,
-        title: 'Trajets indisponibles',
-        message:
-            "Les trajets n'ont pas pu être chargés. Vérifiez votre connexion puis réessayez.",
-        actionLabel: 'Réessayer',
+        title: 'search.trips_unavailable_title'.tr,
+        message: 'search.trips_unavailable_message'.tr,
+        actionLabel: 'search.retry'.tr,
         onAction: () => controller.loadPasscolisOffers(isRefresh: true),
       );
     }
@@ -511,11 +540,15 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       final hasQuery = controller.searchQuery.value.isNotEmpty;
       return AppEmptyState(
         icon: Icons.flight_takeoff_rounded,
-        title: hasQuery ? 'Aucun trajet trouvé' : 'Aucun trajet disponible',
+        title: hasQuery
+            ? 'search.no_trip_found'.tr
+            : 'search.no_trip_available'.tr,
         message: hasQuery
-            ? 'Aucun voyageur ne dessert « ${controller.searchQuery.value} » pour le moment. Essayez une autre ville ou un pays.'
-            : 'Aucun voyageur ne propose de kilos pour le moment. Revenez bientôt.',
-        actionLabel: hasQuery ? 'Effacer la recherche' : 'Actualiser',
+            ? 'search.no_trip_found_message'.trParams({
+                'query': controller.searchQuery.value,
+              })
+            : 'search.no_trip_available_message'.tr,
+        actionLabel: hasQuery ? 'search.clear_search'.tr : 'search.refresh'.tr,
         onAction: hasQuery
             ? controller.clearSearch
             : () => controller.loadPasscolisOffers(isRefresh: true),
@@ -538,7 +571,10 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               return Padding(
                 padding: EdgeInsets.only(bottom: AppDesign.space1),
                 child: Text(
-                  '${offers.length} trajet${offers.length > 1 ? 's' : ''}',
+                  (offers.length > 1
+                          ? 'search.trips_count_plural'
+                          : 'search.trips_count')
+                      .trParams({'count': '${offers.length}'}),
                   style: context.textStyle(
                     FontSizeType.body1,
                     fontWeight: FontWeight.w600,
@@ -600,7 +636,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recherches récentes',
+                  'search.recent_searches'.tr,
                   style: context.textStyle(
                     FontSizeType.h5,
                     fontWeight: FontWeight.bold,
@@ -609,7 +645,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 TextButton(
                   onPressed: controller.clearHistory,
                   child: Text(
-                    'Effacer tout',
+                    'search.clear_all'.tr,
                     style: context.textStyle(
                       FontSizeType.body2,
                       color: AppThemeSystem.primaryColor,
@@ -693,7 +729,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Recherchez des produits',
+              'search.initial_title'.tr,
               style: context.textStyle(
                 FontSizeType.h4,
                 fontWeight: FontWeight.bold,
@@ -701,7 +737,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Trouvez ce que vous cherchez parmi\ndes milliers de produits',
+              'search.initial_message'.tr,
               textAlign: TextAlign.center,
               style: context.textStyle(
                 FontSizeType.body2,
@@ -744,7 +780,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                           ),
                         ),
                         child: Text(
-                          tag,
+                          _categoryLabel(tag),
                           style: context.textStyle(FontSizeType.body2),
                         ),
                       ),
@@ -780,7 +816,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Aucun résultat trouvé',
+              'search.no_results_title'.tr,
               style: context.textStyle(
                 FontSizeType.h4,
                 fontWeight: FontWeight.bold,
@@ -788,7 +824,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Essayez avec des mots-clés différents\nou parcourez les catégories',
+              'search.no_results_message'.tr,
               textAlign: TextAlign.center,
               style: context.textStyle(
                 FontSizeType.body2,
@@ -799,7 +835,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             ElevatedButton.icon(
               onPressed: controller.clearSearch,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Nouvelle recherche'),
+              label: Text('search.new_search'.tr),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeSystem.primaryColor,
                 foregroundColor: Colors.white,
@@ -954,7 +990,10 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '$count produit${count > 1 ? 's' : ''}',
+            (count > 1
+                    ? 'search.products_count_plural'
+                    : 'search.products_count')
+                .trParams({'count': '$count'}),
             style: context.textStyle(
               FontSizeType.body1,
               fontWeight: FontWeight.w600,
@@ -1052,10 +1091,14 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           : ProductCard.isShopCertified(product)
           ? const CertifiedMark()
           : null,
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'search.product_fallback'.tr,
       price: controller.formatPrice(price),
       meta: isSponsored
-          ? (location.isEmpty ? 'Sponsorisé' : 'Sponsorisé · $location')
+          ? (location.isEmpty
+                ? 'search.sponsored'.tr
+                : 'search.sponsored_with_location'.trParams({
+                    'location': location,
+                  }))
           : location,
       metaIcon: isSponsored
           ? Icons.campaign_outlined
@@ -1098,8 +1141,11 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       // Le prix affiché est celui du palier le plus avantageux : il ne
       // s'entend qu'à partir de sa quantité.
       meta: tier == null
-          ? 'Vente en gros'
-          : 'Dès ${tier.minQuantity} pièce${tier.minQuantity > 1 ? 's' : ''}',
+          ? 'search.wholesale'.tr
+          : (tier.minQuantity > 1
+                    ? 'search.from_pieces_plural'
+                    : 'search.from_pieces')
+                .trParams({'count': '${tier.minQuantity}'}),
       metaIcon: Icons.inventory_2_outlined,
       onTap: () => WholesaleProductView.open(
         product: product,
@@ -1119,7 +1165,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     // d'état, boutons toujours visibles au-dessus du clavier.
     AppSheet.show(
       AppSheet(
-        title: 'Filtres et tri',
+        title: 'search.filters.title'.tr,
         color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         // Boutons d'action, épinglés : au bout du contenu ils passaient
         // sous le clavier dès qu'on saisissait un prix.
@@ -1136,7 +1182,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   side: BorderSide(color: AppThemeSystem.primaryColor),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Réinitialiser'),
+                child: Text('search.filters.reset'.tr),
               ),
             ),
             const SizedBox(width: 12),
@@ -1152,7 +1198,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Appliquer les filtres'),
+                child: Text('search.filters.apply'.tr),
               ),
             ),
           ],
@@ -1164,7 +1210,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           children: [
             // Filtre de prix
             Text(
-              'Fourchette de prix',
+              'search.filters.price_range'.tr,
               style: context.textStyle(
                 FontSizeType.body1,
                 fontWeight: FontWeight.w600,
@@ -1180,7 +1226,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                     () => _buildPriceInputField(
                       context,
                       isDark,
-                      label: 'Min',
+                      label: 'search.filters.min'.tr,
                       textController: controller.minPriceController,
                       onChanged: (value) {
                         controller.minPrice.value = value;
@@ -1203,7 +1249,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                     () => _buildPriceInputField(
                       context,
                       isDark,
-                      label: 'Max',
+                      label: 'search.filters.max'.tr,
                       textController: controller.maxPriceController,
                       onChanged: (value) {
                         controller.maxPrice.value = value;
@@ -1222,7 +1268,13 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildPriceChip(context, isDark, 'Moins de 5.000', 0, 5000),
+                  _buildPriceChip(
+                    context,
+                    isDark,
+                    'search.filters.under_5000'.tr,
+                    0,
+                    5000,
+                  ),
                   _buildPriceChip(
                     context,
                     isDark,
@@ -1247,7 +1299,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                   _buildPriceChip(
                     context,
                     isDark,
-                    'Plus de 100.000',
+                    'search.filters.over_100000'.tr,
                     100000,
                     1000000,
                   ),
@@ -1259,7 +1311,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
 
             // Options de tri
             Text(
-              'Trier par',
+              'search.filters.sort_by'.tr,
               style: context.textStyle(
                 FontSizeType.body1,
                 fontWeight: FontWeight.w600,
@@ -1326,9 +1378,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                                   : FontWeight.w500,
                               color: isSelected
                                   ? Colors.white
-                                  : AppThemeSystem.getPrimaryTextColor(
-                                      context,
-                                    ),
+                                  : AppThemeSystem.getPrimaryTextColor(context),
                             ),
                           ),
                         ],
@@ -1476,7 +1526,7 @@ class _WholesaleBadge extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            'Gros',
+            'search.wholesale_badge'.tr,
             style: context.textStyle(
               FontSizeType.overline,
               color: Colors.white,

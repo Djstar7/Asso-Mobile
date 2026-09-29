@@ -34,7 +34,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   final FocusNode _searchFocusNode = FocusNode();
 
   LatLng _selectedPosition = LatLng(4.0511, 9.7679); // Douala par défaut
-  String _selectedAddress = 'Douala, Cameroun';
+  String _selectedAddress = 'product.map.default_address'.tr;
   bool _isLoadingAddress = false;
   bool _isLocating = false;
   bool _isSearching = false;
@@ -204,7 +204,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       setState(() => _isLocating = false);
       DeviceLocation.showFailure(
         result,
-        hint: 'Déplacez le repère sur la carte ou recherchez votre adresse.',
+        hint: 'product.map.locate_failed_hint'.tr,
       );
       return;
     }
@@ -355,7 +355,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          widget.readOnly ? 'Localisation du produit' : 'Choisir la position',
+          widget.readOnly
+              ? 'product.map.title_readonly'.tr
+              : 'product.map.title_pick'.tr,
           style: context.textStyle(
             FontSizeType.h5,
             fontWeight: FontWeight.bold,
@@ -597,7 +599,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                   controller: _searchController,
                   focusNode: _searchFocusNode,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une adresse...',
+                    hintText: 'product.map.search_hint'.tr,
                     hintStyle: context.textStyle(
                       FontSizeType.body2,
                       color: AppThemeSystem.grey600,
@@ -672,7 +674,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Toutes les zones de livraison (${_coverageList('zone_areas').length + _coverageList('zones').length})',
+                          'product.map.all_zones'.trParams({
+                            'count':
+                                '${_coverageList('zone_areas').length + _coverageList('zones').length}',
+                          }),
                           style: context.textStyle(
                             FontSizeType.caption,
                             fontWeight: FontWeight.w600,
@@ -815,8 +820,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                 children: [
                                   Text(
                                     widget.readOnly
-                                        ? 'Localisation'
-                                        : 'Position sélectionnée',
+                                        ? 'product.map.location'.tr
+                                        : 'product.map.selected_position'.tr,
                                     style: context.textStyle(
                                       FontSizeType.caption,
                                       color: AppThemeSystem.grey600,
@@ -843,8 +848,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                             SizedBox(width: 8),
                                             Text(
                                               _isLoadingAddress
-                                                  ? 'Récupération de l\'adresse...'
-                                                  : 'Détection de votre position…',
+                                                  ? 'product.map.fetching_address'.tr
+                                                  : 'product.map.detecting_position'.tr,
                                               style: context.textStyle(
                                                 FontSizeType.body2,
                                                 color: AppThemeSystem.grey600,
@@ -940,7 +945,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                 elevation: 4,
                               ),
                               child: Text(
-                                'Confirmer cette position',
+                                'product.map.confirm_position'.tr,
                                 style: context.textStyle(
                                   FontSizeType.body1,
                                   fontWeight: FontWeight.bold,
@@ -986,7 +991,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           ),
           const SizedBox(width: 8),
           Text(
-            'Recherche des livreurs…',
+            'product.map.searching_couriers'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: AppThemeSystem.grey600,
@@ -1007,7 +1012,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Zones de livraison indisponibles pour le moment.',
+              'product.map.zones_unavailable'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: AppThemeSystem.grey600,
@@ -1016,7 +1021,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           ),
           TextButton(
             onPressed: () => _loadCoverage(_selectedPosition),
-            child: const Text('Réessayer'),
+            child: Text('product.retry'.tr),
           ),
         ],
       );
@@ -1034,9 +1039,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           Icons.local_shipping_rounded,
           s['company_name'].toString(),
           [
-            if (s['quarter'] != null) 'Quartier ${s['quarter']}',
+            if (s['quarter'] != null)
+              'product.map.quarter'.trParams({'name': '${s['quarter']}'}),
             if (s['zone'] != null)
-              'Zone ${s['zone']}'
+              'product.map.zone'.trParams({'zone': '${s['zone']}'})
             else
               s['zone_label']?.toString() ?? '',
             if ((s['vehicles'] as List?)?.isNotEmpty ?? false)
@@ -1048,7 +1054,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         _coverageLine(
           context,
           Icons.warehouse_rounded,
-          '${a['company_name']} — agence à ${a['city']}',
+          'product.map.agency_in'.trParams({
+            'company': '${a['company_name']}',
+            'city': '${a['city']}',
+          }),
           (((a['destinations'] as List?) ?? const [])
               .whereType<Map>()
               .map(
@@ -1085,10 +1094,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               Expanded(
                 child: Text(
                   served
-                      ? 'Livreurs présents dans cette zone'
+                      ? 'product.map.couriers_here'.tr
                       : agencies.isNotEmpty
-                      ? 'Retrait en agence possible ici'
-                      : 'Aucun livreur ne dessert ce point',
+                      ? 'product.map.agency_pickup_here'.tr
+                      : 'product.map.no_courier_here'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.w600,
@@ -1109,7 +1118,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           if (lines.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              'Les offres et les prix dépendent de la boutique : ils s’affichent à l’étape suivante.',
+              'product.map.offers_depend_on_shop'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: AppThemeSystem.grey600,
@@ -1128,7 +1137,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           ] else ...[
             const SizedBox(height: 4),
             Text(
-              'Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison.',
+              'product.map.move_to_zone_hint'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: AppThemeSystem.grey600,

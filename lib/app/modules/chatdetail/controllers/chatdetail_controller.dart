@@ -331,7 +331,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
         if (!response.success) {
           print('❌ [CHAT] Message sending failed!');
-          Get.snackbar('Erreur', 'Message non envoyé',
+          Get.snackbar('chatdetail.error'.tr, 'chatdetail.message_not_sent'.tr,
             snackPosition: SnackPosition.BOTTOM,
           );
         } else {
@@ -341,7 +341,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         print('❌ [CHAT] Exception while sending message:');
         print('   └─ Error: $e');
         print('   └─ StackTrace: $stackTrace');
-        Get.snackbar('Erreur', 'Impossible d\'envoyer le message',
+        Get.snackbar('chatdetail.error'.tr, 'chatdetail.send_message_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
@@ -431,8 +431,8 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'accéder à la caméra',
+        'chatdetail.error'.tr,
+        'chatdetail.camera_access_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -453,8 +453,8 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'accéder à la galerie',
+        'chatdetail.error'.tr,
+        'chatdetail.gallery_access_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -517,8 +517,8 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
       if (!response.success) {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'envoyer l\'image',
+          'chatdetail.error'.tr,
+          'chatdetail.send_image_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         // Retirer le message temporaire en cas d'échec
@@ -544,8 +544,8 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Erreur lors de l\'envoi de l\'image',
+        'chatdetail.error'.tr,
+        'chatdetail.send_image_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       messages.removeWhere((m) => m['id'] == tempMessage['id']);
@@ -566,21 +566,21 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       if (response.success) {
         Get.back(); // Retour à la liste des conversations
         Get.snackbar(
-          'Succès',
-          'Conversation masquée',
+          'chatdetail.success'.tr,
+          'chatdetail.conversation_hidden'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible de masquer la conversation',
+          'chatdetail.error'.tr,
+          'chatdetail.hide_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'chatdetail.error'.tr,
+        'chatdetail.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }

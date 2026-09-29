@@ -21,9 +21,9 @@ class NotificationView extends GetView<NotificationController> {
       appBar: AppBar(
         backgroundColor: AppThemeSystem.whiteColor,
         elevation: 0,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
+        title: Text(
+          'notification.title'.tr,
+          style: const TextStyle(
             color: AppThemeSystem.blackColor,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -44,23 +44,23 @@ class NotificationView extends GetView<NotificationController> {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'mark_all_read',
                         child: Row(
                           children: [
-                            Icon(Icons.done_all, size: 20),
-                            SizedBox(width: 12),
-                            Text('Tout marquer comme lu'),
+                            const Icon(Icons.done_all, size: 20),
+                            const SizedBox(width: 12),
+                            Text('notification.mark_all_read'.tr),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete_all',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_sweep, size: 20, color: AppThemeSystem.errorColor),
-                            SizedBox(width: 12),
-                            Text('Tout supprimer', style: TextStyle(color: AppThemeSystem.errorColor)),
+                            const Icon(Icons.delete_sweep, size: 20, color: AppThemeSystem.errorColor),
+                            const SizedBox(width: 12),
+                            Text('notification.delete_all'.tr, style: const TextStyle(color: AppThemeSystem.errorColor)),
                           ],
                         ),
                       ),
@@ -119,7 +119,7 @@ class NotificationView extends GetView<NotificationController> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Aucune notification',
+            'notification.empty_title'.tr,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -128,7 +128,7 @@ class NotificationView extends GetView<NotificationController> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Vous serez notifié ici',
+            'notification.empty_message'.tr,
             style: TextStyle(
               fontSize: 14,
               color: AppThemeSystem.blackColor.withOpacity(0.4),
@@ -224,7 +224,7 @@ class NotificationView extends GetView<NotificationController> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      timeago.format(notification.createdAt, locale: 'fr'),
+                      timeago.format(notification.createdAt),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppThemeSystem.blackColor.withOpacity(0.5),
@@ -296,18 +296,18 @@ class NotificationView extends GetView<NotificationController> {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer la notification'),
-        content: const Text('Voulez-vous vraiment supprimer cette notification ?'),
+        title: Text('notification.delete_title'.tr),
+        content: Text('notification.delete_message'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text('notification.cancel'.tr),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Supprimer',
-              style: TextStyle(color: AppThemeSystem.errorColor),
+            child: Text(
+              'notification.delete'.tr,
+              style: const TextStyle(color: AppThemeSystem.errorColor),
             ),
           ),
         ],
@@ -319,18 +319,18 @@ class NotificationView extends GetView<NotificationController> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer toutes les notifications'),
-        content: const Text('Voulez-vous vraiment supprimer toutes vos notifications ?'),
+        title: Text('notification.delete_all_title'.tr),
+        content: Text('notification.delete_all_message'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text('notification.cancel'.tr),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Supprimer tout',
-              style: TextStyle(color: AppThemeSystem.errorColor),
+            child: Text(
+              'notification.delete_all_confirm'.tr,
+              style: const TextStyle(color: AppThemeSystem.errorColor),
             ),
           ),
         ],

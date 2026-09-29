@@ -93,7 +93,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    controller.conversation['name'] ?? 'Utilisateur',
+                    controller.conversation['name'] ?? 'chatdetail.default_user_name'.tr,
                     style: context.textStyle(
                       FontSizeType.body1,
                       fontWeight: FontWeight.bold,
@@ -101,14 +101,14 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   ),
                   Obx(() => controller.otherUserTyping.value
                       ? Text(
-                          'En train d\'écrire...',
+                          'chatdetail.typing'.tr,
                           style: context.textStyle(
                             FontSizeType.caption,
                             color: AppThemeSystem.primaryColor,
                           ),
                         )
                       : Text(
-                          controller.conversation['isOnline'] == true ? 'En ligne' : 'Hors ligne',
+                          controller.conversation['isOnline'] == true ? 'chatdetail.online'.tr : 'chatdetail.offline'.tr,
                           style: context.textStyle(
                             FontSizeType.caption,
                             color: AppThemeSystem.grey600,
@@ -170,7 +170,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
   /// Mieux vaut une invitation à écrire qu'une page blanche : on vient
   /// souvent ici depuis une fiche produit, sans savoir par quoi commencer.
   Widget _buildConversationStart(BuildContext context) {
-    final name = controller.conversation['name'] ?? 'votre interlocuteur';
+    final name = controller.conversation['name'] ?? 'chatdetail.default_interlocutor'.tr;
 
     return Center(
       child: Padding(
@@ -185,7 +185,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
             ),
             SizedBox(height: 16),
             Text(
-              'Démarrez la conversation',
+              'chatdetail.start.title'.tr,
               style: context.textStyle(
                 FontSizeType.h6,
                 fontWeight: FontWeight.w700,
@@ -194,7 +194,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
             ),
             SizedBox(height: 8),
             Text(
-              'Envoyez un premier message à $name pour lancer l\'échange.',
+              'chatdetail.start.message'.trParams({'name': '$name'}),
               style: context.textStyle(
                 FontSizeType.body2,
                 color: AppThemeSystem.getSecondaryTextColor(context),
@@ -537,7 +537,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        product['name'] ?? 'Produit',
+                        product['name'] ?? 'chatdetail.product'.tr,
                         style: context.textStyle(
                           FontSizeType.caption,
                           color: AppThemeSystem.primaryColor,
@@ -647,7 +647,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       // auxquels on s'apprête à répondre.
                       onTap: _scrollToLatestOnceKeyboardIsUp,
                       decoration: InputDecoration(
-                        hintText: 'Tapez votre message...',
+                        hintText: 'chatdetail.message_hint'.tr,
                         hintStyle: context.textStyle(
                           FontSizeType.body2,
                           color: AppThemeSystem.grey600,
@@ -734,7 +734,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Envoyer une image',
+                  'chatdetail.image_source.title'.tr,
                   style: context.textStyle(
                     FontSizeType.h6,
                     fontWeight: FontWeight.bold,
@@ -748,7 +748,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   _buildImageSourceOption(
                     context,
                     Icons.camera_alt_rounded,
-                    'Caméra',
+                    'chatdetail.camera'.tr,
                     AppThemeSystem.primaryColor,
                     () {
                       Get.back();
@@ -758,7 +758,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   _buildImageSourceOption(
                     context,
                     Icons.photo_library_rounded,
-                    'Galerie',
+                    'chatdetail.gallery'.tr,
                     AppDesign.neutral500,
                     () {
                       Get.back();
@@ -837,9 +837,9 @@ class ChatdetailView extends GetView<ChatdetailController> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Taguer un produit'),
+        title: Text('chatdetail.tag_product.title'.tr),
         content: Text(
-          'Pour taguer un produit dans votre message, utilisez le produit de la conversation ou sélectionnez-en un autre.',
+          'chatdetail.tag_product.message'.tr,
           style: context.textStyle(FontSizeType.body2),
         ),
         actions: [
@@ -849,11 +849,11 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 controller.selectProduct(controller.conversation['product']);
                 Navigator.pop(context);
               },
-              child: Text('Produit de la conversation'),
+              child: Text('chatdetail.tag_product.conversation_product'.tr),
             ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
+            child: Text('chatdetail.cancel'.tr),
           ),
         ],
       ),
@@ -887,34 +887,34 @@ class ChatdetailView extends GetView<ChatdetailController> {
               _buildMenuItem(
                 context,
                 Icons.search_rounded,
-                'Rechercher dans la conversation',
+                'chatdetail.menu.search'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('Recherche', 'Fonction en cours de développement');
+                  Get.snackbar('chatdetail.menu.search_title'.tr, 'chatdetail.feature_in_progress'.tr);
                 },
               ),
               _buildMenuItem(
                 context,
                 Icons.notifications_off_rounded,
-                'Désactiver les notifications',
+                'chatdetail.menu.mute'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('Notifications', 'Notifications désactivées');
+                  Get.snackbar('chatdetail.menu.notifications_title'.tr, 'chatdetail.menu.notifications_muted'.tr);
                 },
               ),
               _buildMenuItem(
                 context,
                 Icons.block_rounded,
-                'Bloquer l\'utilisateur',
+                'chatdetail.menu.block'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('Bloquer', 'Utilisateur bloqué');
+                  Get.snackbar('chatdetail.menu.block_title'.tr, 'chatdetail.menu.user_blocked'.tr);
                 },
               ),
               _buildMenuItem(
                 context,
                 Icons.delete_rounded,
-                'Supprimer la conversation',
+                'chatdetail.menu.delete'.tr,
                 () {
                   Get.back(); // Fermer le menu
                   controller.hideConversation(); // Cacher la conversation
@@ -962,26 +962,26 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       _buildAttachmentOption(
                         context,
                         Icons.image_rounded,
-                        'Photo',
+                        'chatdetail.attachment.photo'.tr,
                         AppThemeSystem.primaryColor,
                       ),
                     if (!controller.isSupport)
                       _buildAttachmentOption(
                         context,
                         Icons.camera_alt_rounded,
-                        'Caméra',
+                        'chatdetail.camera'.tr,
                         AppDesign.neutral500,
                       ),
                     _buildAttachmentOption(
                       context,
                       Icons.insert_drive_file_rounded,
-                      'Document',
+                      'chatdetail.attachment.document'.tr,
                       AppDesign.info,
                     ),
                     _buildAttachmentOption(
                       context,
                       Icons.location_on_rounded,
-                      'Position',
+                      'chatdetail.attachment.location'.tr,
                       AppDesign.success,
                     ),
                   ],
@@ -1029,7 +1029,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return InkWell(
       onTap: () {
         Get.back();
-        Get.snackbar(label, 'Fonction en cours de développement');
+        Get.snackbar(label, 'chatdetail.feature_in_progress'.tr);
       },
       borderRadius: BorderRadius.circular(12),
       child: Column(
@@ -1101,7 +1101,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Produit',
+                    'chatdetail.product'.tr,
                     style: context.textStyle(
                       FontSizeType.overline,
                       color: isSentByMe
@@ -1112,7 +1112,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    product['name'] ?? 'Produit',
+                    product['name'] ?? 'chatdetail.product'.tr,
                     style: context.textStyle(
                       FontSizeType.caption,
                       color: isSentByMe
@@ -1249,7 +1249,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'Produit',
+                          'chatdetail.product'.tr,
                           style: context.textStyle(
                             FontSizeType.overline,
                             color: AppThemeSystem.primaryColor,
@@ -1260,7 +1260,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       SizedBox(height: 8),
                       // Nom du produit
                       Text(
-                        product['name'] ?? 'Produit',
+                        product['name'] ?? 'chatdetail.product'.tr,
                         style: context.textStyle(
                           FontSizeType.body1,
                           fontWeight: FontWeight.w600,
@@ -1351,7 +1351,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
       }
       return '$price ${controller.currencySymbol}';
     }
-    return 'Prix non défini';
+    return 'chatdetail.price_undefined'.tr;
   }
 
   /// Widget pour afficher l'offre Diaspo comme une citation dans le message (style WhatsApp)
@@ -1441,7 +1441,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     ),
                     SizedBox(width: 10),
                     Text(
-                      'Sécurité ASSO',
+                      'chatdetail.security_title'.tr,
                       style: context.textStyle(
                         FontSizeType.subtitle2,
                         fontWeight: FontWeight.bold,
@@ -1609,7 +1609,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Offre Diaspo',
+                    'chatdetail.diaspo_offer'.tr,
                     style: context.textStyle(
                       FontSizeType.overline,
                       color: isSentByMe
