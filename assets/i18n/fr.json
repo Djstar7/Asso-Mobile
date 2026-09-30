@@ -452,7 +452,11 @@
     "about_app": "À propos de l'application",
     "licenses": {
       "title": "Licences open source",
-      "subtitle": "Bibliothèques et licences utilisées"
+      "subtitle": "Bibliothèques et licences utilisées",
+      "header": "@count bibliothèques open source utilisées",
+      "count": "@count licence(s)",
+      "search": "Rechercher une bibliothèque",
+      "no_results": "Aucune bibliothèque trouvée"
     },
     "legal_subtitle": "CGU, CGV, confidentialité…",
     "send_feedback": "Envoyer un feedback",
@@ -468,7 +472,8 @@
     "check_connection": "Vérifiez votre connexion puis réessayez.",
     "open_in_browser": "Ouvrir dans le navigateur",
     "document_unavailable": "Document indisponible",
-    "document_fallback": "Document"
+    "document_fallback": "Document",
+    "updated_at": "Mis à jour le @date"
   },
   "profile": {
     "guest_name": "Invité",
