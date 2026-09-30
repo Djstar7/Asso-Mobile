@@ -3,8 +3,9 @@ import 'package:get/get.dart';
 /// Produit créé hors ligne, en attente d'envoi au serveur.
 ///
 /// Il garde exactement ce que le formulaire aurait envoyé (champs du
-/// multipart `POST /v1/products`) et les chemins de ses photos, copiées dans
-/// le dossier de l'application pour survivre au nettoyage du cache système.
+/// multipart `POST /v1/products`) et les références de ses photos, copiées
+/// en octets dans Hive (ou, pour les fiches plus anciennes, chemins de
+/// fichiers dans le dossier de l'application).
 class PendingProduct {
   PendingProduct({
     required this.id,

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -1309,16 +1309,25 @@ class _PendingProductsSheet extends StatelessWidget {
               child: SizedBox(
                 width: 48,
                 height: 48,
-                child: thumbnail != null && File(thumbnail).existsSync()
-                    ? Image.file(
-                        File(thumbnail),
+                child: FutureBuilder<Uint8List?>(
+                  future: thumbnail == null
+                      ? null
+                      : sync.imageBytes(thumbnail),
+                  builder: (context, snapshot) {
+                    final bytes = snapshot.data;
+                    if (bytes != null && bytes.isNotEmpty) {
+                      return Image.memory(
+                        bytes,
                         fit: BoxFit.cover,
                         cacheWidth: 144,
-                      )
-                    : ColoredBox(
-                        color: ds.surfaceMuted,
-                        child: Icon(Icons.image_outlined, color: ds.textTertiary),
-                      ),
+                      );
+                    }
+                    return ColoredBox(
+                      color: ds.surfaceMuted,
+                      child: Icon(Icons.image_outlined, color: ds.textTertiary),
+                    );
+                  },
+                ),
               ),
             ),
             SizedBox(width: AppDesign.space3),

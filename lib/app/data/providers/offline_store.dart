@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -13,16 +14,23 @@ import 'storage_service.dart';
 ///   rangées par vendeur pour qu'un changement de compte n'affiche jamais
 ///   les données d'un autre ;
 /// - `offline_products` : produits créés sans réseau, en attente d'envoi.
+///
+/// Les photos de ces produits vont dans une troisième boîte, en octets et
+/// chargée à la demande (`offline_product_images`) : elle marche sur le web
+/// comme sur téléphone, sans système de fichiers.
 class OfflineStore {
   OfflineStore._();
 
   static const _cacheBoxName = 'offline_cache';
   static const _productsBoxName = 'offline_products';
+  static const _imagesBoxName = 'offline_product_images';
 
   static Box<String>? _cache;
   static Box<String>? _products;
+  static LazyBox<Uint8List>? _images;
 
-  static bool get isReady => _cache != null && _products != null;
+  static bool get isReady =>
+      _cache != null && _products != null && _images != null;
 
   /// À appeler une fois au démarrage, avant tout écran.
   static Future<void> init() async {
@@ -30,6 +38,16 @@ class OfflineStore {
     await Hive.initFlutter();
     _cache = await _openBox(_cacheBoxName);
     _products = await _openBox(_productsBoxName);
+    _images = await _openImageBox();
+  }
+
+  static Future<LazyBox<Uint8List>> _openImageBox() async {
+    try {
+      return await Hive.openLazyBox<Uint8List>(_imagesBoxName);
+    } catch (_) {
+      await Hive.deleteBoxFromDisk(_imagesBoxName);
+      return Hive.openLazyBox<Uint8List>(_imagesBoxName);
+    }
   }
 
   /// Une boîte corrompue (écriture interrompue) ne doit pas empêcher
@@ -104,5 +122,25 @@ class OfflineStore {
 
   static Future<void> deletePendingProduct(String id) async {
     await _products?.delete(id);
+  }
+
+  // ── Photos des produits en attente ────────────────────────────────────
+
+  static Future<void> putPendingImage(String key, Uint8List bytes) async {
+    final box = _images;
+    if (box == null) throw StateError('Offline store not ready');
+    await box.put(key, bytes);
+  }
+
+  static Future<Uint8List?> readPendingImage(String key) async {
+    try {
+      return await _images?.get(key);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> deletePendingImages(Iterable<String> keys) async {
+    await _images?.deleteAll(keys);
   }
 }
