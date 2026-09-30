@@ -6,6 +6,7 @@ import '../../../core/widgets/app_ui.dart';
 import '../controllers/about_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../legal/views/legal_view.dart';
+import 'licenses_view.dart';
 
 class AboutView extends GetView<AboutController> {
   const AboutView({super.key});
@@ -152,10 +153,9 @@ class AboutView extends GetView<AboutController> {
       icon: Icons.info_outline,
       title: 'about.licenses.title'.tr,
       subtitle: 'about.licenses.subtitle'.tr,
-      onTap: () => showLicensePage(
-        context: context,
-        applicationName: controller.appName.value,
-        applicationVersion: controller.appVersion.value,
+      onTap: () => LicensesView.open(
+        appName: controller.appName.value,
+        version: controller.appVersion.value,
       ),
     );
 
