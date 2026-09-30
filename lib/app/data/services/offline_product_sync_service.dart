@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../core/utils/app_design.dart';
 import '../models/category_catalog.dart';
@@ -96,16 +96,19 @@ class OfflineProductSyncService extends GetxService {
   /// la connexion tombe après que le serveur a créé le produit, la fiche mise
   /// en file part avec la même référence et le serveur rend le produit déjà
   /// créé au lieu d'en publier un second.
+  ///
+  /// Borne en littéral : sur le web, `1 << 32` vaut 0 (entiers JavaScript
+  /// sur 32 bits) et `nextInt(0)` lève une RangeError.
   static String newReference() =>
-      '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
+      '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(0x7fffffff)}';
 
   /// Enregistre un produit pour envoi ultérieur. [fields] sont les champs du
   /// multipart de création, [images] les photos dans l'ordre du formulaire,
   /// [reference] la référence déjà utilisée pour un envoi en ligne.
   ///
-  /// Les photos sont copiées dans le dossier de l'application : celles de
-  /// l'appareil photo vivent dans un cache que le système peut vider avant
-  /// le retour du réseau.
+  /// Les photos sont copiées en octets dans Hive (voir [OfflineStore]) :
+  /// celles de l'appareil photo vivent dans un cache que le système peut
+  /// vider, et celles du web dans des URL `blob:` qui meurent avec la page.
   Future<PendingProduct> enqueue({
     required Map<String, String> fields,
     required List<XFile> images,
@@ -113,27 +116,28 @@ class OfflineProductSyncService extends GetxService {
     String? reference,
   }) async {
     final userId = StorageService.getUser()?.id;
-    if (userId == null || kIsWeb) {
+    if (userId == null) {
       throw StateError('Enregistrement hors ligne indisponible');
     }
 
     final id = (reference != null && reference.isNotEmpty)
         ? reference
         : newReference();
-    final dir = await _productDir(id);
-    await dir.create(recursive: true);
 
-    final paths = <String>[];
+    final refs = <String>[];
     try {
       for (var i = 0; i < images.length; i++) {
         final image = images[i];
         final ext = p.extension(image.name.isNotEmpty ? image.name : image.path);
-        final target = p.join(dir.path, '$i${ext.isNotEmpty ? ext : '.jpg'}');
-        await File(target).writeAsBytes(await image.readAsBytes(), flush: true);
-        paths.add(target);
+        final ref = '$_imagePrefix$id/$i${ext.isNotEmpty ? ext : '.jpg'}';
+        await OfflineStore.putPendingImage(
+          ref.substring(_imagePrefix.length),
+          await image.readAsBytes(),
+        );
+        refs.add(ref);
       }
     } catch (_) {
-      await _deleteDir(id);
+      await _deleteImages(refs);
       rethrow;
     }
 
@@ -142,18 +146,29 @@ class OfflineProductSyncService extends GetxService {
       userId: userId,
       createdAt: DateTime.now(),
       fields: Map<String, String>.from(fields),
-      imagePaths: paths,
+      imagePaths: refs,
       labels: Map<String, String>.from(labels),
     );
     await OfflineStore.putPendingProduct(id, item.toJson());
-    pending.add(item);
+    // Même référence = même produit : la fiche remplace l'éventuelle
+    // précédente au lieu de s'ajouter à côté.
+    pending
+      ..removeWhere((e) => e.id == id)
+      ..add(item);
+
+    // Mis en file alors que le serveur semble répondre (panne passagère) :
+    // aucun retour de connexion ne relancera l'envoi, on le tente nous-mêmes.
+    if (!ConnectivityService.isOffline) {
+      Future.delayed(const Duration(seconds: 5), syncNow);
+    }
     return item;
   }
 
   /// Retire un produit de la file sans l'envoyer.
   Future<void> remove(String id) async {
+    final item = pending.firstWhereOrNull((e) => e.id == id);
     await OfflineStore.deletePendingProduct(id);
-    await _deleteDir(id);
+    await _deleteImages(item?.imagePaths ?? const []);
     pending.removeWhere((item) => item.id == id);
   }
 
@@ -276,9 +291,10 @@ class OfflineProductSyncService extends GetxService {
   Future<_Outcome> _send(PendingProduct item, CategoryCatalog catalog) async {
     final files = <String, XFile>{};
     for (var i = 0; i < item.imagePaths.length; i++) {
-      final path = item.imagePaths[i];
-      if (!File(path).existsSync()) continue;
-      files['images[$i]'] = XFile(path);
+      final ref = item.imagePaths[i];
+      final bytes = await imageBytes(ref);
+      if (bytes == null || bytes.isEmpty) continue;
+      files['images[$i]'] = XFile.fromData(bytes, name: p.basename(ref));
     }
     if (files.isEmpty) {
       return _reject(item, 'data.offline_sync.photos_missing'.tr);
@@ -317,7 +333,7 @@ class OfflineProductSyncService extends GetxService {
 
     if (response.success) {
       await OfflineStore.deletePendingProduct(item.id);
-      await _deleteDir(item.id);
+      await _deleteImages(item.imagePaths);
       pending.removeWhere((e) => e.id == item.id);
       return _Outcome.published;
     }
@@ -367,17 +383,44 @@ class OfflineProductSyncService extends GetxService {
     pending.refresh();
   }
 
-  // ── Fichiers ──────────────────────────────────────────────────────────
+  // ── Photos ────────────────────────────────────────────────────────
 
-  Future<Directory> _productDir(String id) async {
-    final root = await getApplicationDocumentsDirectory();
-    return Directory(p.join(root.path, 'offline_products', id));
+  /// Préfixe des photos rangées dans Hive. Sans lui, la référence est le
+  /// chemin d'un fichier, format des fiches mises en file avant le passage
+  /// à Hive (téléphone uniquement).
+  static const _imagePrefix = 'hive:';
+
+  /// Octets d'une photo en attente (aussi pour la vignette du tableau de
+  /// bord), ou null si elle a disparu.
+  Future<Uint8List?> imageBytes(String ref) async {
+    if (ref.startsWith(_imagePrefix)) {
+      return OfflineStore.readPendingImage(ref.substring(_imagePrefix.length));
+    }
+    if (kIsWeb) return null;
+    try {
+      final file = File(ref);
+      return await file.exists() ? await file.readAsBytes() : null;
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<void> _deleteDir(String id) async {
+  Future<void> _deleteImages(List<String> refs) async {
     try {
-      final dir = await _productDir(id);
-      if (await dir.exists()) await dir.delete(recursive: true);
+      await OfflineStore.deletePendingImages(
+        refs
+            .where((ref) => ref.startsWith(_imagePrefix))
+            .map((ref) => ref.substring(_imagePrefix.length)),
+      );
+      if (kIsWeb) return;
+      // Anciennes fiches : photos copiées dans Documents/offline_products.
+      for (final ref in refs.where((ref) => !ref.startsWith(_imagePrefix))) {
+        final dir = Directory(p.dirname(ref));
+        if (p.basename(p.dirname(dir.path)) == 'offline_products' &&
+            await dir.exists()) {
+          await dir.delete(recursive: true);
+        }
+      }
     } catch (_) {
       // Quelques photos orphelines ne valent pas d'interrompre l'envoi.
     }

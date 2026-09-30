@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -47,8 +48,11 @@ class ProductDraft {
 
   /// Ne garde que les photos encore présentes sur l'appareil : une image
   /// supprimée de la galerie entre deux sessions ferait échouer l'envoi.
-  List<String> get existingImagePaths =>
-      imagePaths.where((path) => File(path).existsSync()).toList();
+  /// Sur le web, les photos choisies sont des URL `blob:` qui meurent avec
+  /// la page : le brouillon reprend alors sans elles.
+  List<String> get existingImagePaths => kIsWeb
+      ? const []
+      : imagePaths.where((path) => File(path).existsSync()).toList();
 
   Map<String, dynamic> toJson() => {
         'savedAt': savedAt.toIso8601String(),
