@@ -38,7 +38,7 @@ class CustomerOrderDeliverySection extends StatelessWidget {
                 color: AppThemeSystem.primaryColor,
               ),
               title: Text(
-                'Livraison et suivi',
+                'my_order.delivery.title'.tr,
                 style: context.body2.copyWith(fontWeight: FontWeight.w600),
               ),
               subtitle: delivery.trackingStatusLabel != null
@@ -60,7 +60,7 @@ class CustomerOrderDeliverySection extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () => controller.confirmReception(order),
                 icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                label: const Text('J’ai reçu mon colis'),
+                label: Text('my_order.delivery.received'.tr),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,

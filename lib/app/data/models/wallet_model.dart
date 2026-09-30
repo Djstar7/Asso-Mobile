@@ -213,23 +213,23 @@ class WalletTransactionModel {
   String get typeLabel {
     switch (type) {
       case 'credit':
-        return 'Recharge';
+        return 'data.wallet.type.credit'.tr;
       case 'debit':
-        return 'Paiement';
+        return 'data.wallet.type.debit'.tr;
       case 'refund':
-        return 'Remboursement';
+        return 'data.wallet.type.refund'.tr;
       case 'bonus':
-        return 'Bonus';
+        return 'data.wallet.type.bonus'.tr;
       case 'adjustment':
-        return 'Ajustement';
+        return 'data.wallet.type.adjustment'.tr;
       case 'lock':
-        return 'Fonds bloqués';
+        return 'data.wallet.type.lock'.tr;
       case 'unlock':
-        return 'Fonds débloqués';
+        return 'data.wallet.type.unlock'.tr;
       case 'escrow_release':
-        return 'Paiement libéré';
+        return 'data.wallet.type.escrow_release'.tr;
       default:
-        return 'Transaction';
+        return 'data.wallet.type.other'.tr;
     }
   }
 
@@ -261,16 +261,16 @@ class WalletTransactionModel {
   String get statusText {
     switch (status) {
       case 'completed':
-        return 'Complété';
+        return 'data.wallet.status.completed'.tr;
       case 'processing':
-        return 'En cours';
+        return 'data.wallet.status.processing'.tr;
       case 'pending':
-        return 'En attente';
+        return 'data.wallet.status.pending'.tr;
       case 'failed':
-        return 'Échoué';
+        return 'data.wallet.status.failed'.tr;
       case 'cancelled':
       case 'canceled':
-        return 'Annulé';
+        return 'data.wallet.status.cancelled'.tr;
       default:
         return status;
     }

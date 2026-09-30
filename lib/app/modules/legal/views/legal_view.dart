@@ -19,7 +19,7 @@ class LegalView extends GetView<LegalController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Conditions & politiques',
+          'legal.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -39,12 +39,12 @@ class LegalView extends GetView<LegalController> {
                 ? Icons.wifi_off_rounded
                 : Icons.description_outlined,
             title: controller.hasError.value
-                ? 'Chargement impossible'
-                : 'Aucun document disponible',
+                ? 'legal.load_failed'.tr
+                : 'legal.no_documents'.tr,
             message: controller.hasError.value
-                ? 'Vérifiez votre connexion puis réessayez.'
+                ? 'legal.check_connection'.tr
                 : null,
-            actionLabel: 'Réessayer',
+            actionLabel: 'common.retry'.tr,
             onAction: controller.fetchDocuments,
           );
         }

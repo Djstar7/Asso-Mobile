@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_navigation.dart';
@@ -863,7 +864,7 @@ class AppBackButton extends StatelessWidget {
         // Suit la couleur d'icône de l'AppBar qui l'accueille : sur une barre
         // colorée, la flèche restait sombre alors que le titre était blanc.
         color: color ?? IconTheme.of(context).color,
-        tooltip: tooltip ?? (close ? 'Fermer' : 'Retour'),
+        tooltip: tooltip ?? (close ? 'common.close'.tr : 'common.back'.tr),
         onPressed: onPressed ?? () => AppNavigation.back(context),
       ),
     );

@@ -22,7 +22,7 @@ class LegalDocument {
     if (url.isEmpty) return null;
     return LegalDocument(
       slug: json['slug']?.toString() ?? '',
-      title: json['title']?.toString() ?? 'Document',
+      title: json['title']?.toString() ?? 'legal.document_fallback'.tr,
       url: url,
     );
   }

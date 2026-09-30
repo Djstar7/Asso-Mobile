@@ -210,16 +210,18 @@ class OfflineProductSyncService extends GetxService {
       syncedRevision.value++;
       _notify(
         published == 1
-            ? 'Votre produit enregistré hors ligne a été publié.'
-            : '$published produits enregistrés hors ligne ont été publiés.',
+            ? 'data.offline_sync.published_one'.tr
+            : 'data.offline_sync.published_many'
+                .trParams({'count': '$published'}),
         AppDesign.success,
       );
     }
     if (rejected > 0) {
       _notify(
         rejected == 1
-            ? 'Un produit hors ligne a été refusé. Ouvrez votre tableau de bord pour le voir.'
-            : '$rejected produits hors ligne ont été refusés. Ouvrez votre tableau de bord pour les voir.',
+            ? 'data.offline_sync.rejected_one'.tr
+            : 'data.offline_sync.rejected_many'
+                .trParams({'count': '$rejected'}),
         AppDesign.danger,
       );
     }
@@ -279,7 +281,7 @@ class OfflineProductSyncService extends GetxService {
       files['images[$i]'] = XFile(path);
     }
     if (files.isEmpty) {
-      return _reject(item, 'Les photos de ce produit sont introuvables sur le téléphone.');
+      return _reject(item, 'data.offline_sync.photos_missing'.tr);
     }
 
     if (!await _alignCategory(item, catalog)) {
@@ -290,8 +292,9 @@ class OfflineProductSyncService extends GetxService {
       return _reject(
         item,
         label.isNotEmpty
-            ? 'La catégorie « $label » n\'existe plus. Retirez ce produit et ajoutez-le à nouveau.'
-            : 'La catégorie de ce produit n\'existe plus. Retirez ce produit et ajoutez-le à nouveau.',
+            ? 'data.offline_sync.category_removed_named'
+                .trParams({'label': label})
+            : 'data.offline_sync.category_removed'.tr,
       );
     }
 
@@ -344,9 +347,9 @@ class OfflineProductSyncService extends GetxService {
     final data = response.data;
     switch (data?['error_code']) {
       case 'NO_ACTIVE_PACKAGE':
-        return 'Aucun forfait actif : souscrivez un forfait pour publier ce produit.';
+        return 'data.offline_sync.no_active_package'.tr;
       case 'INSUFFICIENT_STORAGE':
-        return 'Espace de stockage insuffisant dans votre forfait.';
+        return 'data.offline_sync.insufficient_storage'.tr;
     }
     final errors = data?['errors'];
     if (errors is Map && errors.isNotEmpty) {
@@ -356,7 +359,7 @@ class OfflineProductSyncService extends GetxService {
     }
     return response.message.isNotEmpty
         ? response.message
-        : 'Le serveur a refusé ce produit.';
+        : 'data.offline_sync.server_rejected'.tr;
   }
 
   Future<void> _persist(PendingProduct item) async {
@@ -382,7 +385,7 @@ class OfflineProductSyncService extends GetxService {
 
   void _notify(String message, Color color) {
     Get.snackbar(
-      'Synchronisation',
+      'data.offline_sync.title'.tr,
       message,
       snackPosition: SnackPosition.TOP,
       backgroundColor: color,

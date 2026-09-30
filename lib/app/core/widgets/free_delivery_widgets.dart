@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -23,8 +24,8 @@ class FreeDeliveryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppBadge(
-      label: 'Livraison gratuite',
+    return AppBadge(
+      label: 'core.free_delivery.title'.tr,
       tone: AppBadgeTone.success,
       icon: Icons.local_shipping_rounded,
     );
@@ -57,7 +58,7 @@ class FreeDeliveryNotice extends StatelessWidget {
           const SizedBox(width: AppDesign.space2),
           Expanded(
             child: Text(
-              message ?? 'Livraison offerte par le vendeur',
+              message ?? 'core.free_delivery.offered_by_seller'.tr,
               style: context.textStyle(
                 FontSizeType.body2,
                 fontWeight: FontWeight.w600,
@@ -122,7 +123,7 @@ class DeliveryPriceText extends StatelessWidget {
           ),
         ),
         Text(
-          'Offerte',
+          'core.free_delivery.offered'.tr,
           style: context.textStyle(
             FontSizeType.overline,
             fontWeight: FontWeight.w700,
@@ -142,14 +143,14 @@ class FreeDeliveryToggle extends StatelessWidget {
     super.key,
     required this.value,
     required this.onChanged,
-    this.title = 'Livraison gratuite',
+    this.title,
     this.subtitle,
     this.busy = false,
   });
 
   final bool value;
   final ValueChanged<bool>? onChanged;
-  final String title;
+  final String? title;
   final String? subtitle;
   final bool busy;
 
@@ -157,6 +158,7 @@ class FreeDeliveryToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onChanged != null && !busy;
     final active = AppDesign.success;
+    final title = this.title ?? 'core.free_delivery.title'.tr;
 
     return Semantics(
       toggled: value,

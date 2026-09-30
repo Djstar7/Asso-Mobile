@@ -200,7 +200,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     setState(() {
       _selection++;
       selectedPosition = position;
-      selectedAddress = 'Chargement de l\'adresse...';
+      selectedAddress = 'vendor_config.map.loading_address'.tr;
       searchResults = []; // Fermer les résultats de recherche
     });
 
@@ -375,7 +375,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     if (position == null) {
       DeviceLocation.showFailure(
         result,
-        hint: 'Touchez la carte ou recherchez l’adresse de votre boutique.',
+        hint: 'vendor_config.map.location_hint'.tr,
       );
       return;
     }
@@ -385,7 +385,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     setState(() {
       _selection++;
       selectedPosition = newPosition;
-      selectedAddress = 'Chargement de l\'adresse...';
+      selectedAddress = 'vendor_config.map.loading_address'.tr;
       searchResults = [];
     });
 
@@ -396,8 +396,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     _reverseGeocode(newPosition);
 
     Get.snackbar(
-      'Position trouvée',
-      'Votre position actuelle a été détectée',
+      'vendor_config.map.position_found_title'.tr,
+      'vendor_config.map.position_found_message'.tr,
       snackPosition: SnackPosition.TOP,
       backgroundColor: AppThemeSystem.successColor.withValues(alpha: 0.9),
       colorText: Colors.white,
@@ -417,7 +417,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Sélectionner la position',
+          'vendor_config.map.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
@@ -430,8 +430,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                 color: AppThemeSystem.primaryColor,
               ),
               tooltip: showDeliveryPartners
-                  ? 'Masquer les partenaires'
-                  : 'Afficher les partenaires',
+                  ? 'vendor_config.map.hide_partners'.tr
+                  : 'vendor_config.map.show_partners'.tr,
               onPressed: () {
                 setState(() {
                   showDeliveryPartners = !showDeliveryPartners;
@@ -440,7 +440,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
             ),
           IconButton(
             icon: Icon(Icons.my_location, color: AppThemeSystem.primaryColor),
-            tooltip: 'Ma position actuelle',
+            tooltip: 'vendor_config.map.my_location'.tr,
             onPressed: _getCurrentLocation,
           ),
         ],
@@ -482,9 +482,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             color: AppDesign.danger,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'Ma boutique',
-                            style: TextStyle(
+                          child: Text(
+                            'vendor_config.map.my_shop'.tr,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -610,7 +610,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                     focusNode: _searchFocusNode,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Rechercher une adresse...',
+                      hintText: 'vendor_config.map.search_hint'.tr,
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       prefixIcon: Icon(
                         Icons.search,
@@ -689,9 +689,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                           color: AppThemeSystem.primaryColor,
                         ),
                         const SizedBox(width: 6),
-                        const Text(
-                          'Légende',
-                          style: TextStyle(
+                        Text(
+                          'vendor_config.map.legend'.tr,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
@@ -707,7 +707,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         Icon(Icons.location_pin, color: AppDesign.danger, size: 20),
                         const SizedBox(width: 6),
                         Text(
-                          'Ma boutique',
+                          'vendor_config.map.my_shop'.tr,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey[700],
@@ -736,7 +736,9 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Partenaires (${widget.deliveryPartners!.length})',
+                          'vendor_config.map.partners_count'.trParams({
+                            'count': '${widget.deliveryPartners!.length}',
+                          }),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey[700],
@@ -936,7 +938,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Position de ma boutique',
+                            'vendor_config.map.shop_position'.tr,
                             style: context.subtitle1.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -965,7 +967,10 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${widget.deliveryPartners!.length} partenaires',
+                                  'vendor_config.map.partners'.trParams({
+                                    'count':
+                                        '${widget.deliveryPartners!.length}',
+                                  }),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -1000,7 +1005,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Appuyez sur la carte pour choisir l\'emplacement de votre boutique',
+                                'vendor_config.map.tap_to_choose'.tr,
                                 style: context.body2.copyWith(
                                   color: AppDesign.info,
                                   fontSize: 12,
@@ -1059,7 +1064,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         onPressed:
                             (selectedAddress.isEmpty ||
                                 isGeocodingInProgress ||
-                                selectedAddress.contains('Chargement'))
+                                selectedAddress ==
+                                    'vendor_config.map.loading_address'.tr)
                             ? null
                             : _confirmLocation,
                         style: ElevatedButton.styleFrom(
@@ -1076,8 +1082,8 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                         ),
                         child: Text(
                           isGeocodingInProgress
-                              ? 'Chargement de l\'adresse...'
-                              : 'Confirmer cette position',
+                              ? 'vendor_config.map.loading_address'.tr
+                              : 'vendor_config.map.confirm'.tr,
                           style: context.button.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

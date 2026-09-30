@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
+import '../../core/services/locale_service.dart';
 import '../../core/values/constants.dart';
 
 class AppConfigService {
@@ -36,6 +37,7 @@ class AppConfigService {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
+              'Accept-Language': LocaleService.currentLanguage,
             },
           )
           .timeout(startupTimeout);
@@ -75,6 +77,7 @@ class AppConfigService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Accept-Language': LocaleService.currentLanguage,
         },
       );
 
@@ -103,6 +106,7 @@ class AppConfigService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Accept-Language': LocaleService.currentLanguage,
         },
       );
 

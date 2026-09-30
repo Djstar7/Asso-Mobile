@@ -3,6 +3,7 @@ import '../../core/values/constants.dart';
 import '../../modules/shipConfig/models/sync_models.dart';
 import '../models/deliverer_model.dart';
 import 'api_provider.dart';
+import 'package:get/get.dart';
 
 /// Service pour la gestion de la synchronisation des livreurs
 class DelivererService {
@@ -146,7 +147,7 @@ class DelivererService {
       // Retourner une réponse d'erreur
       return SyncProfileResponse(
         success: false,
-        message: 'Une erreur est survenue lors de la synchronisation: $e',
+        message: 'data.deliverer.sync_error'.trParams({'error': '$e'}),
       );
     }
   }

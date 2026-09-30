@@ -21,8 +21,8 @@ class LoginView extends GetView<LoginController> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       animationAsset: 'assets/lotties/Ecommerce.json',
-      title: 'Bon retour',
-      subtitle: 'Connectez-vous pour retrouver vos commandes et vos favoris.',
+      title: 'login.title'.tr,
+      subtitle: 'login.subtitle'.tr,
       onSkip: controller.continueAsGuest,
       children: [
         _buildEmailForm(context),
@@ -36,7 +36,7 @@ class LoginView extends GetView<LoginController> {
             // par défaut, étranger à la palette de l'application.
             style: TextButton.styleFrom(foregroundColor: AppDesign.accent),
             child: Text(
-              'Mot de passe oublié ?',
+              'login.forgot_password'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 fontWeight: FontWeight.w600,
@@ -51,8 +51,8 @@ class LoginView extends GetView<LoginController> {
         const AuthDivider(),
         SizedBox(height: AppDesign.space2),
         AuthSwitchLink(
-          question: 'Pas encore de compte ?',
-          action: "S'inscrire",
+          question: 'login.no_account'.tr,
+          action: 'login.sign_up'.tr,
           onPressed: controller.goToRegister,
         ),
       ],
@@ -62,8 +62,8 @@ class LoginView extends GetView<LoginController> {
   /// Formulaire email
   Widget _buildEmailForm(BuildContext context) {
     return AppTextField(
-      label: 'Adresse e-mail',
-      hint: 'exemple@email.com',
+      label: 'welcomer.email_label'.tr,
+      hint: 'welcomer.email_hint'.tr,
       controller: controller.emailController,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
@@ -76,8 +76,8 @@ class LoginView extends GetView<LoginController> {
   Widget _buildPasswordForm(BuildContext context) {
     return Obx(
       () => AppTextField(
-        label: 'Mot de passe',
-        hint: 'Votre mot de passe',
+        label: 'welcomer.password_label'.tr,
+        hint: 'login.password_hint'.tr,
         controller: controller.passwordController,
         obscureText: controller.obscurePassword.value,
         textInputAction: TextInputAction.done,
@@ -96,7 +96,7 @@ class LoginView extends GetView<LoginController> {
               : Icons.visibility_outlined,
           size: 19,
           color: context.ds.textTertiary,
-          tooltip: controller.obscurePassword.value ? 'Afficher' : 'Masquer',
+          tooltip: controller.obscurePassword.value ? 'welcomer.show_password'.tr : 'welcomer.hide_password'.tr,
           onPressed: controller.togglePasswordVisibility,
         ),
       ),
@@ -114,7 +114,7 @@ class LoginView extends GetView<LoginController> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Réinitialiser le mot de passe'),
+          title: Text('login.reset.title'.tr),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,8 +123,8 @@ class LoginView extends GetView<LoginController> {
               // code sans savoir qu'il fallait revenir ici pour le saisir.
               Text(
                 codeSent
-                    ? 'Saisissez le code reçu par e-mail, puis votre nouveau mot de passe.'
-                    : 'Nous vous enverrons un code de vérification à cette adresse.',
+                    ? 'login.reset.enter_code'.tr
+                    : 'login.reset.will_send_code'.tr,
                 style: context.textStyle(
                   FontSizeType.caption,
                   color: context.ds.textSecondary,
@@ -133,8 +133,8 @@ class LoginView extends GetView<LoginController> {
               ),
               SizedBox(height: AppDesign.space4),
               AppTextField(
-                label: 'Adresse e-mail',
-                hint: 'exemple@email.com',
+                label: 'welcomer.email_label'.tr,
+                hint: 'welcomer.email_hint'.tr,
                 controller: email,
                 enabled: !codeSent,
                 keyboardType: TextInputType.emailAddress,
@@ -142,15 +142,15 @@ class LoginView extends GetView<LoginController> {
               if (codeSent) ...[
                 SizedBox(height: AppDesign.space4),
                 AppTextField(
-                  label: 'Code reçu',
-                  hint: '6 chiffres',
+                  label: 'login.reset.code_label'.tr,
+                  hint: 'login.reset.code_hint'.tr,
                   controller: code,
                   keyboardType: TextInputType.number,
                 ),
                 SizedBox(height: AppDesign.space4),
                 AppTextField(
-                  label: 'Nouveau mot de passe',
-                  hint: 'Au moins 6 caractères',
+                  label: 'login.reset.new_password'.tr,
+                  hint: 'welcomer.password_hint'.tr,
                   controller: password,
                   obscureText: true,
                 ),
@@ -160,7 +160,7 @@ class LoginView extends GetView<LoginController> {
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Annuler'),
+              child: Text('common.cancel'.tr),
             ),
             FilledButton(
               onPressed: loading
@@ -183,8 +183,8 @@ class LoginView extends GetView<LoginController> {
                           content: Text(
                             response.message ??
                                 (response.success
-                                    ? 'Opération réussie'
-                                    : 'Une erreur est survenue'),
+                                    ? 'login.reset.success'.tr
+                                    : 'common.generic_error'.tr),
                           ),
                         ),
                       );
@@ -198,8 +198,8 @@ class LoginView extends GetView<LoginController> {
                     },
               child: Text(
                 loading
-                    ? 'Veuillez patienter…'
-                    : (codeSent ? 'Modifier' : 'Envoyer le code'),
+                    ? 'common.please_wait'.tr
+                    : (codeSent ? 'common.edit'.tr : 'login.reset.send_code'.tr),
               ),
             ),
           ],
@@ -215,7 +215,7 @@ class LoginView extends GetView<LoginController> {
   Widget _buildLoginButton(BuildContext context) {
     return Obx(
       () => AppButton(
-        label: 'Se connecter',
+        label: 'welcomer.sign_in'.tr,
         size: AppButtonSize.large,
         isLoading: controller.isLoading.value,
         onPressed: controller.isFormValid.value ? controller.login : null,

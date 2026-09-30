@@ -80,7 +80,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
           ),
           SizedBox(height: 16),
           Text(
-            'Chargement de la boutique...',
+            'vendor_details.loading'.tr,
             style: context.textStyle(
               FontSizeType.body1,
               color: AppThemeSystem.grey600,
@@ -105,7 +105,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             ),
             SizedBox(height: 16),
             Text(
-              'Erreur',
+              'vendor_details.error_title'.tr,
               style: context.textStyle(
                 FontSizeType.h5,
                 fontWeight: FontWeight.bold,
@@ -124,7 +124,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             ElevatedButton.icon(
               onPressed: () => AppNavigation.back(context),
               icon: Icon(Icons.arrow_back_ios_new_rounded),
-              label: Text('Retour'),
+              label: Text('vendor_details.back'.tr),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeSystem.primaryColor,
                 foregroundColor: Colors.white,
@@ -195,7 +195,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
   /// Le nom ne figure plus qu'ici : répété juste en dessous dans la fiche, il
   /// occupait deux fois la même place sans rien apprendre de plus.
   Widget _buildAppBar(BuildContext context, Map<String, dynamic> shop) {
-    final shopName = shop['name']?.toString() ?? 'Boutique';
+    final shopName = shop['name']?.toString() ?? 'vendor_details.default_shop_name'.tr;
     final shopLogo = shop['logo']?.toString();
     final cover = shop['cover']?.toString() ?? shop['banner']?.toString();
 
@@ -211,7 +211,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
         // ouverte depuis un lien), sur une pastille lisible sur la photo.
         child: _GlassIconButton(
           icon: Icons.arrow_back_ios_new_rounded,
-          tooltip: 'Retour',
+          tooltip: 'vendor_details.back'.tr,
           onPressed: () => AppNavigation.back(context),
         ),
       ),
@@ -257,8 +257,8 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isCertified) ...[
-            const AppBadge(
-              label: 'Boutique certifiée',
+            AppBadge(
+              label: 'vendor_details.certified_shop'.tr,
               tone: AppBadgeTone.info,
               icon: Icons.verified_rounded,
             ),
@@ -288,7 +288,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
           if (ownerName != null && ownerName.isNotEmpty)
             _MetaRow(
               leading: _OwnerAvatar(url: ownerAvatar),
-              label: 'Tenue par',
+              label: 'vendor_details.run_by'.tr,
               value: ownerName,
             ),
           if (address.isNotEmpty) ...[
@@ -299,7 +299,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
                 color: AppDesign.accent,
                 size: 20,
               ),
-              label: 'Adresse',
+              label: 'vendor_details.address'.tr,
               value: address,
             ),
           ],
@@ -334,14 +334,14 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             Expanded(
               child: _StatTile(
                 value: '${stats['products_count'] ?? 0}',
-                label: 'Produits',
+                label: 'vendor_details.stats.products'.tr,
               ),
             ),
             _StatSeparator(),
             Expanded(
               child: _StatTile(
                 value: ratingLabel,
-                label: 'Note',
+                label: 'vendor_details.stats.rating'.tr,
                 icon: Icons.star_rounded,
                 iconColor: AppDesign.warning,
               ),
@@ -350,7 +350,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             Expanded(
               child: _StatTile(
                 value: '${stats['reviews_count'] ?? 0}',
-                label: 'Avis',
+                label: 'vendor_details.stats.reviews'.tr,
               ),
             ),
           ],
@@ -376,12 +376,12 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
             ? Icons.search_off_rounded
             : Icons.shopping_bag_outlined,
         title: filtered
-            ? 'Aucun produit ne correspond'
-            : 'Boutique encore vide',
+            ? 'vendor_details.empty.no_match_title'.tr
+            : 'vendor_details.empty.empty_shop_title'.tr,
         message: filtered
-            ? 'Essayez un autre mot, ou revenez au catalogue complet.'
-            : 'Cette boutique n\'a pas encore mis d\'article en vente.',
-        actionLabel: filtered ? 'Tout afficher' : null,
+            ? 'vendor_details.empty.no_match_message'.tr
+            : 'vendor_details.empty.empty_shop_message'.tr,
+        actionLabel: filtered ? 'vendor_details.empty.show_all'.tr : null,
         onAction: filtered ? controller.resetFilters : null,
       ),
     );
@@ -424,11 +424,11 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
     }
 
     return ProductCard(
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'vendor_details.default_product_name'.tr,
       price: controller.formatPrice(
         price is num ? price.toDouble() : double.tryParse('$price') ?? 0,
       ),
-      badgeLabel: isOutOfStock ? 'Épuisé' : null,
+      badgeLabel: isOutOfStock ? 'vendor_details.out_of_stock'.tr : null,
       badgeTone: AppBadgeTone.neutral,
       imageBuilder: image == null || image.isEmpty
           ? null
@@ -831,7 +831,7 @@ class _FilterRow extends StatelessWidget {
         child: Row(
           children: [
             _FilterChip(
-              label: 'En stock',
+              label: 'vendor_details.filters.in_stock'.tr,
               icon: Icons.check_circle_outline_rounded,
               selected: controller.inStockOnly.value,
               onTap: controller.toggleInStockOnly,
@@ -873,7 +873,7 @@ class _SearchField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           isDense: true,
-          hintText: 'Rechercher dans la boutique',
+          hintText: 'vendor_details.search_hint'.tr,
           hintStyle: context.textStyle(
             FontSizeType.body2,
             color: context.ds.textTertiary,
@@ -890,7 +890,7 @@ class _SearchField extends StatelessWidget {
                     size: 18,
                     color: context.ds.textSecondary,
                   ),
-                  tooltip: 'Effacer',
+                  tooltip: 'vendor_details.clear'.tr,
                   onPressed: controller.clearSearch,
                 )
               : null,

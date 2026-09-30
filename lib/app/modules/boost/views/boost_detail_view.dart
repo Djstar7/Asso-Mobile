@@ -60,7 +60,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
         // derrière elle et la flèche implicite disparaissait.
         leading: const AppBackButton(),
         title: Text(
-          'Suivi de la campagne',
+          'boost.detail.title'.tr,
           style: TextStyle(
             color: AppDesign.textPrimary(context),
             fontWeight: FontWeight.w600,
@@ -74,7 +74,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
           : campaign == null
               ? Center(
                   child: Text(
-                    'Campagne introuvable.',
+                    'boost.detail.not_found'.tr,
                     style: TextStyle(color: AppDesign.textSecondary(context)),
                   ),
                 )
@@ -141,7 +141,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${c.packageName ?? 'Sponsoring'} · ${c.statusLabel}',
+                '${c.packageName ?? 'boost.detail.sponsoring'.tr} · ${c.statusLabel}',
                 style: TextStyle(
                   color: AppDesign.textSecondary(context),
                   fontSize: 13,
@@ -173,7 +173,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Portée délivrée',
+                      'boost.detail.reach_delivered'.tr,
                       style: TextStyle(
                         color: AppDesign.textSecondary(context),
                         fontSize: 13,
@@ -216,9 +216,9 @@ class _BoostDetailViewState extends State<BoostDetailView> {
           const SizedBox(height: 10),
           Text(
             c.isRunning
-                ? 'Il reste ${_n(c.impressionsRemaining)} vues à délivrer '
-                    'et ${c.remainingDays} jour${c.remainingDays > 1 ? 's' : ''}.'
-                : 'Campagne terminée.',
+                ? (c.remainingDays > 1 ? 'boost.detail.remaining_days' : 'boost.detail.remaining_day')
+                    .trParams({'views': _n(c.impressionsRemaining), 'days': '${c.remainingDays}'})
+                : 'boost.detail.ended'.tr,
             style: TextStyle(
               color: AppDesign.textSecondary(context),
               fontSize: 12.5,
@@ -236,32 +236,32 @@ class _BoostDetailViewState extends State<BoostDetailView> {
         _funnelRow(
           context,
           icon: Icons.campaign_outlined,
-          label: 'Personnes touchées',
-          hint: "Votre annonce s'est affichée",
+          label: 'boost.detail.reached'.tr,
+          hint: 'boost.detail.reached_hint'.tr,
           value: _n(c.reached),
         ),
         const SizedBox(height: 10),
         _funnelRow(
           context,
           icon: Icons.touch_app_outlined,
-          label: 'Ont ouvert votre article',
-          hint: "${c.clickThroughRate.toStringAsFixed(1)} % des personnes touchées",
+          label: 'boost.detail.clicks'.tr,
+          hint: 'boost.detail.clicks_hint'.trParams({'rate': c.clickThroughRate.toStringAsFixed(1)}),
           value: _n(c.clicks),
         ),
         const SizedBox(height: 10),
         _funnelRow(
           context,
           icon: Icons.visibility_outlined,
-          label: 'Ont vu la fiche',
-          hint: 'Personnes différentes, toutes origines',
+          label: 'boost.detail.viewers'.tr,
+          hint: 'boost.detail.viewers_hint'.tr,
           value: _n(c.viewers),
         ),
         const SizedBox(height: 10),
         _funnelRow(
           context,
           icon: Icons.chat_bubble_outline,
-          label: 'Vous ont contacté',
-          hint: 'Personnes différentes',
+          label: 'boost.detail.interactions'.tr,
+          hint: 'boost.detail.interactions_hint'.tr,
           value: _n(c.interactions),
           highlight: true,
         ),
@@ -360,7 +360,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Diffusion jour par jour',
+            'boost.detail.daily'.tr,
             style: TextStyle(
               color: AppDesign.textPrimary(context),
               fontSize: 15,
@@ -433,7 +433,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        label: const Text('Arrêter le sponsoring'),
+        label: Text('boost.detail.stop'.tr),
       ),
     );
   }

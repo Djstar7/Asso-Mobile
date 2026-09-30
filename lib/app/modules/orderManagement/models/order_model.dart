@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import '../../../data/models/delivery_info.dart';
 
 /// Modèle de données pour une commande
@@ -260,30 +262,30 @@ extension OrderStatusExtension on OrderStatus {
   String get label {
     switch (this) {
       case OrderStatus.pending:
-        return 'En attente';
+        return 'order_management.status.pending'.tr;
       case OrderStatus.validated:
-        return 'Validée';
+        return 'order_management.status.validated'.tr;
       case OrderStatus.cancelled:
-        return 'Annulée';
+        return 'order_management.status.cancelled'.tr;
       case OrderStatus.inDelivery:
-        return 'En livraison';
+        return 'order_management.status.in_delivery'.tr;
       case OrderStatus.delivered:
-        return 'Livrée';
+        return 'order_management.status.delivered'.tr;
     }
   }
 
   String get shortLabel {
     switch (this) {
       case OrderStatus.pending:
-        return 'Attente';
+        return 'order_management.status.pending_short'.tr;
       case OrderStatus.validated:
-        return 'Validée';
+        return 'order_management.status.validated'.tr;
       case OrderStatus.cancelled:
-        return 'Annulée';
+        return 'order_management.status.cancelled'.tr;
       case OrderStatus.inDelivery:
-        return 'Livraison';
+        return 'order_management.status.in_delivery_short'.tr;
       case OrderStatus.delivered:
-        return 'Livrée';
+        return 'order_management.status.delivered'.tr;
     }
   }
 }

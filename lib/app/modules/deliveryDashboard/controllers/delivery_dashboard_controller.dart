@@ -277,8 +277,8 @@ class DeliveryDashboardController extends GetxController {
       );
 
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les demandes de livraison',
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.errors.load_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -318,7 +318,7 @@ class DeliveryDashboardController extends GetxController {
       // Le backend peut retourner 'customer' comme objet ou des champs plats
       final customer = request['customer'] as Map<String, dynamic>?;
       final customerName =
-          request['customer_name'] ?? customer?['name'] ?? 'Client';
+          request['customer_name'] ?? customer?['name'] ?? 'delivery_dashboard.customer'.tr;
       final customerPhone =
           request['customer_phone']?.toString() ??
           customer?['phone']?.toString() ??
@@ -490,10 +490,10 @@ class DeliveryDashboardController extends GetxController {
     isOnline.value = !isOnline.value;
 
     Get.snackbar(
-      isOnline.value ? 'Vous êtes en ligne' : 'Vous êtes hors ligne',
+      isOnline.value ? 'delivery_dashboard.online.title_on'.tr : 'delivery_dashboard.online.title_off'.tr,
       isOnline.value
-          ? 'Vous pouvez recevoir des demandes de livraison'
-          : 'Vous ne recevrez plus de demandes',
+          ? 'delivery_dashboard.online.message_on'.tr
+          : 'delivery_dashboard.online.message_off'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isOnline.value ? AppDesign.success : AppDesign.accent,
       colorText: Colors.white,
@@ -512,18 +512,18 @@ class DeliveryDashboardController extends GetxController {
       if (response.success) {
         await loadDeliveries();
         Get.snackbar(
-          'Livraison acceptée',
-          'Course démarrée — dirigez-vous vers le point de retrait',
+          'delivery_dashboard.accept.success_title'.tr,
+          'delivery_dashboard.accept.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
         Get.snackbar(
-          'Erreur',
+          'delivery_dashboard.errors.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible d\'accepter',
+              : 'delivery_dashboard.accept.failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -531,8 +531,8 @@ class DeliveryDashboardController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'accepter la demande',
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.accept.request_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -573,16 +573,16 @@ class DeliveryDashboardController extends GetxController {
       _applyFilter();
 
       Get.snackbar(
-        'Demande refusée',
-        'La demande a été refusée',
+        'delivery_dashboard.decline.title'.tr,
+        'delivery_dashboard.decline.message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de refuser la demande',
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.decline.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -599,12 +599,12 @@ class DeliveryDashboardController extends GetxController {
         // Clavier ouvert sur un petit écran : le contenu défile, le bouton
         // Confirmer reste visible au-dessus du clavier.
         scrollable: true,
-        title: const Text('Confirmer la livraison'),
+        title: Text('delivery_dashboard.confirm.title'.tr),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Entrez le code secret à 6 chiffres communiqué par le client :',
+            Text(
+              'delivery_dashboard.confirm.prompt'.tr,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -628,11 +628,11 @@ class DeliveryDashboardController extends GetxController {
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('delivery_dashboard.actions.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Confirmer'),
+            child: Text('delivery_dashboard.actions.confirm'.tr),
           ),
         ],
       ),
@@ -652,16 +652,16 @@ class DeliveryDashboardController extends GetxController {
       if (response.success) {
         await loadDeliveries();
         Get.snackbar(
-          'Livraison confirmée !',
-          'Commission créditée sur votre wallet.',
+          'delivery_dashboard.confirm.success_title'.tr,
+          'delivery_dashboard.confirm.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
         Get.snackbar(
-          'Erreur',
-          response.message.isNotEmpty ? response.message : 'Code incorrect',
+          'delivery_dashboard.errors.error'.tr,
+          response.message.isNotEmpty ? response.message : 'delivery_dashboard.confirm.wrong_code'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -669,8 +669,8 @@ class DeliveryDashboardController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de confirmer la livraison',
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.confirm.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -682,8 +682,8 @@ class DeliveryDashboardController extends GetxController {
   void openChat(String requestId) {
     // TODO: Implémenter le chat
     Get.snackbar(
-      'Chat',
-      'Fonctionnalité en cours de développement',
+      'delivery_dashboard.chat.title'.tr,
+      'delivery_dashboard.chat.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -696,8 +696,8 @@ class DeliveryDashboardController extends GetxController {
     final uri = Uri(scheme: 'tel', path: cleaned);
     if (!await launchUrl(uri)) {
       Get.snackbar(
-        'Appel',
-        'Impossible de lancer l\'appel vers $phone',
+        'delivery_dashboard.call.title'.tr,
+        'delivery_dashboard.call.failed'.trParams({'phone': phone}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -724,7 +724,7 @@ class DeliveryDashboardController extends GetxController {
         if (zoom) {
           DeviceLocation.showFailure(
             result,
-            hint: 'Vous n’apparaissez pas sur la carte pour le moment.',
+            hint: 'delivery_dashboard.map.not_visible'.tr,
           );
         }
         return;
@@ -868,8 +868,8 @@ class DeliveryDashboardController extends GetxController {
     }
 
     Get.snackbar(
-      'Zone changée',
-      'Vous êtes maintenant à ${zone.name}',
+      'delivery_dashboard.zone.changed_title'.tr,
+      'delivery_dashboard.zone.changed_message'.trParams({'zone': zone.name}),
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppDesign.info,
       colorText: Colors.white,
@@ -883,21 +883,19 @@ class DeliveryDashboardController extends GetxController {
     // Demander confirmation
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Désynchronisation'),
-        content: const Text(
-          'Êtes-vous sûr de vouloir vous désynchroniser ?\n\n'
-          'Cela supprimera votre rôle de livreur et vous ne pourrez plus recevoir de demandes de livraison.\n\n'
-          'Le code de synchronisation sera libéré et pourra être utilisé par une autre personne.',
+        title: Text('delivery_dashboard.unsync.title'.tr),
+        content: Text(
+          'delivery_dashboard.unsync.message'.tr,
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('delivery_dashboard.actions.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(backgroundColor: AppDesign.danger),
-            child: const Text('Désynchroniser'),
+            child: Text('delivery_dashboard.unsync.confirm'.tr),
           ),
         ],
       ),
@@ -912,8 +910,8 @@ class DeliveryDashboardController extends GetxController {
 
       if (response.success) {
         Get.snackbar(
-          'Désynchronisation réussie',
-          'Vous n\'êtes plus livreur',
+          'delivery_dashboard.unsync.success_title'.tr,
+          'delivery_dashboard.unsync.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
@@ -926,10 +924,10 @@ class DeliveryDashboardController extends GetxController {
         });
       } else {
         Get.snackbar(
-          'Erreur',
+          'delivery_dashboard.errors.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de se désynchroniser',
+              : 'delivery_dashboard.unsync.failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -938,8 +936,8 @@ class DeliveryDashboardController extends GetxController {
     } catch (e) {
       print('❌ Erreur lors de la désynchronisation: $e');
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue lors de la désynchronisation',
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.unsync.error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,

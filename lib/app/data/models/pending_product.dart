@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 /// Produit créé hors ligne, en attente d'envoi au serveur.
 ///
 /// Il garde exactement ce que le formulaire aurait envoyé (champs du
@@ -37,7 +39,7 @@ class PendingProduct {
 
   String get name {
     final value = fields['name']?.trim() ?? '';
-    return value.isNotEmpty ? value : 'Produit sans nom';
+    return value.isNotEmpty ? value : 'data.pending_product.unnamed'.tr;
   }
 
   bool get isFailed => status == PendingProductStatus.failed;

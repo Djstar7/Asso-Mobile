@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 
 import '../utils/app_design.dart';
@@ -28,7 +29,7 @@ class AuthScaffold extends StatelessWidget {
     required this.subtitle,
     required this.children,
     this.onSkip,
-    this.skipLabel = 'Passer',
+    this.skipLabel,
     this.bannerRatio = 0.30,
   });
 
@@ -47,7 +48,7 @@ class AuthScaffold extends StatelessWidget {
   /// Entrée sans compte. Absente, le bouton n'est pas affiché.
   final VoidCallback? onSkip;
 
-  final String skipLabel;
+  final String? skipLabel;
 
   /// Part de la hauteur d'écran occupée par le bandeau.
   ///
@@ -93,7 +94,7 @@ class AuthScaffold extends StatelessWidget {
             back: canGoBack ? const AppBackButton() : null,
             skip: onSkip == null
                 ? null
-                : _SkipButton(label: skipLabel, onPressed: onSkip!),
+                : _SkipButton(label: skipLabel ?? 'core.auth.skip'.tr, onPressed: onSkip!),
           ),
           Expanded(
             child: Container(

@@ -31,7 +31,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
   late final String phoneNumber;
   late final Future<Map<String, dynamic>> Function() rechargeCallback;
 
-  String _statusMessage = 'Validation en attente...';
+  String _statusMessage = 'wallet.ussd.pending_validation'.tr;
   bool _isCompleted = false;
   bool _isError = false;
   String? _errorMessage;
@@ -159,20 +159,20 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
         if (status == 'completed') {
           _handleSuccess();
         } else if (status == 'failed') {
-          _handleFailure(result['failure_reason'] as String? ?? 'Le paiement a échoué');
+          _handleFailure(result['failure_reason'] as String? ?? 'wallet.messages.payment_failed'.tr);
         } else {
           // Status pending ou autre
           setState(() {
-            _statusMessage = result['message'] ?? 'Paiement en cours...';
+            _statusMessage = result['message'] ?? 'wallet.ussd.in_progress'.tr;
           });
         }
       } else {
-        _handleFailure(result['message'] as String? ?? 'Erreur lors du paiement');
+        _handleFailure(result['message'] as String? ?? 'wallet.errors.payment_error'.tr);
       }
     } catch (e) {
       print('❌ [USSD WAITING] Erreur lors de la recharge: $e');
       if (mounted) {
-        _handleFailure('Une erreur est survenue. Veuillez réessayer.');
+        _handleFailure('wallet.ussd.retry_error'.tr);
       }
     } finally {
       _isRequestInProgress = false;
@@ -216,7 +216,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
 
     setState(() {
       _isCompleted = true;
-      _statusMessage = 'Paiement validé avec succès !';
+      _statusMessage = 'wallet.ussd.validated'.tr;
     });
 
     _timeoutTimer?.cancel();
@@ -239,7 +239,7 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
 
     setState(() {
       _isError = true;
-      _statusMessage = 'Échec du paiement';
+      _statusMessage = 'wallet.errors.payment_failed'.tr;
       _errorMessage = reason;
     });
 
@@ -252,8 +252,8 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
 
     setState(() {
       _isError = true;
-      _statusMessage = 'Délai dépassé';
-      _errorMessage = 'Le délai d\'attente a été dépassé. Vérifiez votre téléphone et votre wallet.';
+      _statusMessage = 'wallet.ussd.timeout_title'.tr;
+      _errorMessage = 'wallet.ussd.timeout_message'.tr;
     });
   }
 
@@ -267,21 +267,21 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
         final shouldPop = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Annuler la recharge ?'),
-            content: const Text(
-              'Le paiement est en cours de traitement. Êtes-vous sûr de vouloir quitter ?',
+            title: Text('wallet.ussd.cancel_title'.tr),
+            content: Text(
+              'wallet.ussd.cancel_message'.tr,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Continuer d\'attendre'),
+                child: Text('wallet.ussd.keep_waiting'.tr),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: TextButton.styleFrom(
                   foregroundColor: AppThemeSystem.errorColor,
                 ),
-                child: const Text('Annuler'),
+                child: Text('wallet.stripe_dialog.cancel'.tr),
               ),
             ],
           ),
@@ -378,7 +378,8 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Temps restant: $_remainingSeconds secondes',
+                    'wallet.ussd.remaining_time'
+                        .trParams({'seconds': '$_remainingSeconds'}),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppThemeSystem.getSecondaryTextColor(context),
@@ -401,13 +402,13 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                   child: Column(
                     children: [
                       _buildDetailRow(
-                        'Montant',
+                        'wallet.locked.amount'.tr,
                         '${amount.toStringAsFixed(0)} FCFA',
                         context,
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
-                        'Numéro',
+                        'wallet.ussd.number'.tr,
                         phoneNumber,
                         context,
                       ),
@@ -431,14 +432,14 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.info_outline, color: AppDesign.accent),
-                            SizedBox(width: 12),
+                            const Icon(Icons.info_outline, color: AppDesign.accent),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Instructions',
-                                style: TextStyle(
+                                'wallet.ussd.instructions_title'.tr,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -448,10 +449,8 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '1. Vérifiez votre téléphone ($phoneNumber)\n'
-                          '2. Une notification USSD devrait apparaître\n'
-                          '3. Entrez votre code PIN pour confirmer\n'
-                          '4. Attendez la confirmation',
+                          'wallet.ussd.instructions'
+                              .trParams({'phone': phoneNumber}),
                           style: TextStyle(
                             fontSize: 14,
                             color: AppThemeSystem.getSecondaryTextColor(context),
@@ -478,9 +477,9 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Continuer',
-                        style: TextStyle(
+                      child: Text(
+                        'wallet.ussd.continue'.tr,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -502,9 +501,9 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Réessayer',
-                            style: TextStyle(
+                          child: Text(
+                            'wallet.retry'.tr,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -514,14 +513,14 @@ class _UssdWaitingViewState extends State<UssdWaitingView>
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: const Text('Annuler'),
+                        child: Text('wallet.stripe_dialog.cancel'.tr),
                       ),
                     ],
                   )
                 else
                   TextButton(
                     onPressed: () => Get.back(),
-                    child: const Text('Annuler la recharge'),
+                    child: Text('wallet.ussd.cancel_recharge'.tr),
                   ),
               ],
             ),

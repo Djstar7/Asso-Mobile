@@ -117,7 +117,7 @@ class DeliveryCheckView extends GetView<DeliveryCheckController> {
 
             // Message secondaire
             Text(
-              'Veuillez patienter...',
+              'delivery_check.please_wait'.tr,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),

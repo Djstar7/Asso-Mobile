@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -169,7 +170,7 @@ class AssoAdsBanner extends StatelessWidget {
                               BorderRadius.circular(AppDesign.radiusPill),
                         ),
                         child: Text(
-                          'Voir',
+                          'core.ads.see'.tr,
                           style: context.textStyle(
                             FontSizeType.caption,
                             color: Colors.white,

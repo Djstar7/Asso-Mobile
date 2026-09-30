@@ -48,12 +48,12 @@ class CertificationPackagesController extends GetxController {
               packages.firstOrNull;
         }
       } else {
-        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de charger les packages',
+        Get.snackbar('certification.error'.tr, response.message.isNotEmpty ? response.message : 'certification.load_error'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Une erreur est survenue: $e',
+      Get.snackbar('certification.error'.tr, 'certification.generic_error_detail'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
     } finally {
@@ -109,12 +109,12 @@ Future<bool> createOrder({
     } else if (salesCode.handleServerRejection(response)) {
       return false;
     } else {
-      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+      Get.snackbar('certification.error'.tr, response.message.isNotEmpty ? response.message : 'certification.order_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return false;
     }
   } catch (e) {
-    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('certification.error'.tr, 'certification.generic_error'.tr, snackPosition: SnackPosition.BOTTOM);
     return false;
   } finally {
     if (!_isDisposed) isCreatingOrder.value = false;
@@ -134,16 +134,16 @@ Future<String?> payWithWallet({required int packageId}) async {
     );
     if (salesCode.handleServerRejection(response)) return null;
     if (!response.success) {
-      Get.snackbar('Paiement impossible',
-          response.message.isNotEmpty ? response.message : 'Échec du paiement',
+      Get.snackbar('certification.payment_impossible'.tr,
+          response.message.isNotEmpty ? response.message : 'wallet.errors.payment_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white);
       return null;
     }
     loadWallet();
-    return response.message.isNotEmpty ? response.message : 'Certification activée.';
+    return response.message.isNotEmpty ? response.message : 'certification.activated'.tr;
   } catch (e) {
-    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('certification.error'.tr, 'certification.generic_error'.tr, snackPosition: SnackPosition.BOTTOM);
     return null;
   } finally {
     if (!_isDisposed) isCreatingOrder.value = false;
@@ -177,15 +177,15 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
           'publishable_key': publishableKey,
         };
       }
-      Get.snackbar('Erreur', 'Données de paiement carte indisponibles', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('certification.error'.tr, 'wallet.recharge.card_data_unavailable'.tr, snackPosition: SnackPosition.BOTTOM);
       return null;
     } else {
-      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Échec de la commande',
+      Get.snackbar('certification.error'.tr, response.message.isNotEmpty ? response.message : 'certification.order_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return null;
     }
   } catch (e) {
-    Get.snackbar('Erreur', 'Une erreur est survenue', snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('certification.error'.tr, 'certification.generic_error'.tr, snackPosition: SnackPosition.BOTTOM);
     return null;
   } finally {
     if (!_isDisposed) isCreatingOrder.value = false;
@@ -205,13 +205,13 @@ void _pollOrderPayment(int subscriptionId) async {
       if (status == 'paid') {
         loadWallet();
         loadPackages();
-        Get.snackbar('Paiement confirmé', 'Votre certification a été activée.',
+        Get.snackbar('certification.payment_confirmed'.tr, 'certification.activated_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.success, colorText: Colors.white,
             duration: const Duration(seconds: 4));
         return;
       } else if (status == 'failed') {
-        Get.snackbar('Paiement échoué', 'Le paiement n\'a pas abouti.',
+        Get.snackbar('package_subscription.payment_failed'.tr, 'certification.payment_not_completed'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor, colorText: Colors.white,
             duration: const Duration(seconds: 5));

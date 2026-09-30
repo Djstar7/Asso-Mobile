@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -103,7 +104,7 @@ class AddressSuggestionList extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(AppDesign.accent),
                 ),
               ),
-              text: 'Recherche en cours…',
+              text: 'core.map_search.searching'.tr,
             )
           : failed
           ? _status(
@@ -113,8 +114,7 @@ class AddressSuggestionList extends StatelessWidget {
                 size: 20,
                 color: context.ds.textTertiary,
               ),
-              text:
-                  'Recherche indisponible. Vérifiez votre connexion, ou touchez la carte pour placer le repère.',
+              text: 'core.map_search.unavailable'.tr,
             )
           : results.isEmpty
           ? _status(
@@ -124,7 +124,7 @@ class AddressSuggestionList extends StatelessWidget {
                 size: 20,
                 color: context.ds.textTertiary,
               ),
-              text: 'Aucune adresse trouvée. Essayez un quartier ou une ville.',
+              text: 'core.map_search.no_results'.tr,
             )
           : ListView.separated(
               shrinkWrap: true,
@@ -148,7 +148,7 @@ class AddressSuggestionList extends StatelessWidget {
         .map((part) => part.trim())
         .where((part) => part.isNotEmpty)
         .toList();
-    final title = parts.isEmpty ? 'Adresse' : parts.first;
+    final title = parts.isEmpty ? 'core.map_search.address'.tr : parts.first;
     final subtitle = parts.length > 1 ? parts.skip(1).join(', ') : null;
 
     return ListTile(

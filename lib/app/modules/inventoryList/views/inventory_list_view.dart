@@ -18,7 +18,7 @@ class InventoryListView extends GetView<InventoryListController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Historique d\'inventaire',
+          'inventory_list.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -66,19 +66,19 @@ class InventoryListView extends GetView<InventoryListController> {
         scrollDirection: Axis.horizontal,
         children: [
           Obx(() => _FilterChip(
-            label: 'Tout',
+            label: 'inventory_list.filter_all'.tr,
             isSelected: controller.selectedFilter.value == null,
             onTap: () => controller.changeFilter(null),
           )),
           SizedBox(width: 8),
           Obx(() => _FilterChip(
-            label: 'Entrées',
+            label: 'inventory_list.filter_entries'.tr,
             isSelected: controller.selectedFilter.value == InventoryType.entry,
             onTap: () => controller.changeFilter(InventoryType.entry),
           )),
           SizedBox(width: 8),
           Obx(() => _FilterChip(
-            label: 'Sorties',
+            label: 'inventory_list.filter_exits'.tr,
             isSelected: controller.selectedFilter.value == InventoryType.exit,
             onTap: () => controller.changeFilter(InventoryType.exit),
           )),
@@ -108,7 +108,7 @@ class InventoryListView extends GetView<InventoryListController> {
             ),
             SizedBox(height: context.sectionSpacing),
             Text(
-              'Aucune entrée d\'inventaire',
+              'inventory_list.empty_title'.tr,
               style: context.h4.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -116,7 +116,7 @@ class InventoryListView extends GetView<InventoryListController> {
             ),
             SizedBox(height: context.elementSpacing),
             Text(
-              'Vos entrées et sorties de stock\napparaîtront ici',
+              'inventory_list.empty_message'.tr,
               style: context.body2.copyWith(
                 color: context.secondaryTextColor,
                 height: 1.5,
@@ -250,11 +250,11 @@ class InventoryListView extends GetView<InventoryListController> {
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return 'Aujourd\'hui';
+      return 'inventory_list.today'.tr;
     } else if (difference.inDays == 1) {
-      return 'Hier';
+      return 'inventory_list.yesterday'.tr;
     } else if (difference.inDays < 7) {
-      return 'Il y a ${difference.inDays} jours';
+      return 'inventory_list.days_ago'.trParams({'count': '${difference.inDays}'});
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }

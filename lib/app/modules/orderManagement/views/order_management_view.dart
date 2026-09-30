@@ -19,7 +19,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Gestion des commandes',
+          'order_management.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -134,7 +134,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
               child: _buildStatItem(
                 context,
                 icon: Icons.shopping_bag_outlined,
-                label: 'Total',
+                label: 'order_management.stats.total'.tr,
                 value: controller.allOrders.length.toString(),
               ),
             ),
@@ -147,7 +147,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
               child: _buildStatItem(
                 context,
                 icon: Icons.access_time,
-                label: 'En attente',
+                label: 'order_management.stats.pending'.tr,
                 value: controller
                     .allOrders
                     .where((order) => order.status.toString().contains('pending'))
@@ -164,7 +164,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
               child: _buildStatItem(
                 context,
                 icon: Icons.check_circle_outline,
-                label: 'Validées',
+                label: 'order_management.stats.validated'.tr,
                 value: controller
                     .allOrders
                     .where((order) => order.status.toString().contains('validated'))
@@ -227,7 +227,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
           ),
           SizedBox(height: context.elementSpacing),
           Text(
-            'Chargement des commandes...',
+            'order_management.loading'.tr,
             style: context.body1.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -250,12 +250,12 @@ class OrderManagementView extends GetView<OrderManagementController> {
     return AppEmptyState(
       icon: Icons.inbox_outlined,
       title: hasFilters
-          ? 'Aucune commande pour ces filtres'
-          : 'Aucune commande pour le moment',
+          ? 'order_management.empty.filtered_title'.tr
+          : 'order_management.empty.title'.tr,
       message: hasFilters
-          ? 'Aucune commande ne correspond à votre recherche.'
-          : 'Vos commandes apparaîtront ici dès qu’un client aura acheté un de vos produits.',
-      actionLabel: hasFilters ? 'Réinitialiser les filtres' : null,
+          ? 'order_management.empty.filtered_message'.tr
+          : 'order_management.empty.message'.tr,
+      actionLabel: hasFilters ? 'order_management.empty.reset_filters'.tr : null,
       onAction: hasFilters ? controller.resetFilters : null,
     );
   }

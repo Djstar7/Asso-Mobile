@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'kpay_phone_selector.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../core/utils/app_design.dart';
@@ -9,21 +10,23 @@ import '../../../core/widgets/app_sheet.dart';
 /// `{provider, phone, currency}` à la confirmation (ou null si annulé).
 class KpayDirectPaymentSheet extends StatefulWidget {
   final double amount;
-  final String amountLabel; // ex. "Total à payer"
+  final String? amountLabel; // ex. "Total à payer"
 
   const KpayDirectPaymentSheet({
     super.key,
     required this.amount,
-    this.amountLabel = 'Montant à payer',
+    this.amountLabel,
   });
 
   /// Affiche le sheet ; renvoie {provider, phone, currency} ou null.
   static Future<Map<String, String>?> show({
     required double amount,
-    String amountLabel = 'Total à payer',
+    String? amountLabel,
   }) {
     return AppSheet.show<Map<String, String>>(
-      KpayDirectPaymentSheet(amount: amount, amountLabel: amountLabel),
+      KpayDirectPaymentSheet(
+          amount: amount,
+          amountLabel: amountLabel ?? 'wallet.kpay.total_to_pay'.tr),
     );
   }
 
@@ -91,7 +94,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
     // marge du clavier n'est plus ajoutée ici : la route de la feuille s'en
     // charge déjà, la compter deux fois écrasait le formulaire.
     return AppSheet(
-      title: 'Paiement Mobile Money',
+      title: 'wallet.webview.title_mobile_money'.tr,
       footer: SizedBox(
         height: 52,
         child: ElevatedButton(
@@ -110,9 +113,9 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Payer maintenant',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          child: Text(
+            'wallet.kpay.pay_now'.tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -136,7 +139,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      widget.amountLabel,
+                      widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
                     Text(
@@ -168,7 +171,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Débité par votre opérateur',
+                            'wallet.kpay.debited_by_operator'.tr,
                             style: TextStyle(
                               color: Colors.grey.shade700,
                               fontSize: 12.5,

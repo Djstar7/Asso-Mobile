@@ -160,7 +160,7 @@ class FcmService extends GetxService {
       if (inForeground) {
         _showLocalNotification(
           title: message.notification?.title ?? 'Wallet',
-          body: message.notification?.body ?? 'Transaction mise à jour',
+          body: message.notification?.body ?? 'data.notifications.wallet_body'.tr,
           payload: 'wallet:${data['wallet_transaction_id'] ?? data['withdrawal_id']}',
         );
       }
@@ -172,8 +172,8 @@ class FcmService extends GetxService {
       // Si en foreground, afficher une notification locale
       if (inForeground) {
         _showLocalNotification(
-          title: message.notification?.title ?? '🎉 Package activé',
-          body: message.notification?.body ?? 'Votre package a été activé avec succès',
+          title: message.notification?.title ?? 'data.notifications.package_activated_title'.tr,
+          body: message.notification?.body ?? 'data.notifications.package_activated_body'.tr,
           payload: 'vendor_dashboard',
         );
       }
@@ -190,8 +190,8 @@ class FcmService extends GetxService {
 
       if (inForeground) {
         _showLocalNotification(
-          title: message.notification?.title ?? '⚠️ Package expirant',
-          body: message.notification?.body ?? 'Votre package va bientôt expirer',
+          title: message.notification?.title ?? 'data.notifications.package_expiring_title'.tr,
+          body: message.notification?.body ?? 'data.notifications.package_expiring_body'.tr,
           payload: 'package_subscription',
         );
       }
@@ -212,8 +212,8 @@ class FcmService extends GetxService {
 
       if (inForeground) {
         _showLocalNotification(
-          title: message.notification?.title ?? 'Commande',
-          body: message.notification?.body ?? 'Mise à jour de commande',
+          title: message.notification?.title ?? 'data.notifications.order_title'.tr,
+          body: message.notification?.body ?? 'data.notifications.order_body'.tr,
           payload: 'order_details:${data['order_id'] ?? ''}',
         );
       }

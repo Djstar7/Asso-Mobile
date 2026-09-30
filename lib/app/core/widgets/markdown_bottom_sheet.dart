@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:get/get.dart';
 import '../utils/app_theme_system.dart';
 
 class MarkdownBottomSheet {
@@ -60,7 +61,7 @@ class _MarkdownBottomSheetContentState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Erreur lors du chargement du document: $e';
+        _error = 'core.markdown.load_error'.trParams({'error': '$e'});
         _isLoading = false;
       });
     }

@@ -85,7 +85,7 @@ class InvoicesController extends GetxController {
         );
       } else {
         Get.snackbar(
-          'Erreur',
+          'invoices.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
@@ -100,8 +100,8 @@ class InvoicesController extends GetxController {
         stackTrace: stackTrace,
       );
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les factures',
+        'invoices.error'.tr,
+        'invoices.load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -148,8 +148,8 @@ class InvoicesController extends GetxController {
 
     if (url == null) {
       Get.snackbar(
-        'Erreur',
-        'URL de t�l�chargement non disponible',
+        'invoices.error'.tr,
+        'invoices.download_url_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
@@ -169,8 +169,8 @@ class InvoicesController extends GetxController {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le lien',
+          'invoices.error'.tr,
+          'invoices.open_link_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -183,8 +183,8 @@ class InvoicesController extends GetxController {
         error: e,
       );
       Get.snackbar(
-        'Erreur',
-        'Impossible de t�l�charger la facture',
+        'invoices.error'.tr,
+        'invoices.download_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -195,11 +195,11 @@ class InvoicesController extends GetxController {
   String getTypeLabel(String type) {
     switch (type) {
       case 'all':
-        return 'Toutes';
+        return 'invoices.filter_all'.tr;
       case 'package':
-        return 'Packages';
+        return 'invoices.filter_packages'.tr;
       case 'wallet':
-        return 'Recharges';
+        return 'invoices.filter_recharges'.tr;
       default:
         return type;
     }

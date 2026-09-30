@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -208,7 +209,7 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
                 ),
               ),
               TextSpan(
-                text: '  ${selected ?? 'Choisissez'}',
+                text: '  ${selected ?? 'core.variant.choose'.tr}',
                 style: context.textStyle(
                   FontSizeType.body2,
                   fontWeight: selected == null
@@ -350,8 +351,8 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
         context,
         icon: Icons.touch_app_outlined,
         text: missing.isEmpty
-            ? 'Cette combinaison n’est pas disponible'
-            : 'Choisissez : ${missing.join(', ')}',
+            ? 'core.variant.unavailable_combination'.tr
+            : 'core.variant.choose_missing'.trParams({'options': missing.join(', ')}),
       );
     }
 
@@ -360,7 +361,7 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
     final stock = VariantCatalog.stockOf(variant);
     final details = [
       if (widget.priceOf != null) widget.priceOf!(variant),
-      if (widget.limitToStock) '$stock en stock',
+      if (widget.limitToStock) 'core.variant.in_stock'.trParams({'count': '$stock'}),
     ];
     final hasError =
         quantity > 0 && (widget.lineHasError?.call(id, quantity) ?? false);
@@ -428,7 +429,7 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Votre sélection · $total au total',
+          'core.variant.selection_total'.trParams({'total': '$total'}),
           style: context.textStyle(
             FontSizeType.caption,
             fontWeight: FontWeight.w700,
@@ -495,7 +496,7 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
                 ),
               ),
               IconButton(
-                tooltip: 'Retirer',
+                tooltip: 'core.variant.remove'.tr,
                 visualDensity: VisualDensity.compact,
                 iconSize: 16,
                 onPressed: () => _set(id, 0),

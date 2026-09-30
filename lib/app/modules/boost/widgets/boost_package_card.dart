@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../data/models/boost_models.dart';
@@ -80,9 +81,9 @@ class BoostPackageCard extends StatelessWidget {
                             color: AppDesign.accent,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'Populaire',
-                            style: TextStyle(
+                          child: Text(
+                            'boost.package.popular'.tr,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,

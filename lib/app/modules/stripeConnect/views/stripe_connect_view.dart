@@ -15,7 +15,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Compte de virement'),
+        title: Text('stripe_connect.view.title'.tr),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -73,11 +73,10 @@ class StripeConnectView extends GetView<StripeConnectController> {
         children: [
           Icon(Icons.account_balance, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              "Enregistrez votre IBAN pour recevoir vos paiements par virement bancaire. "
-              "Vos informations sont vérifiées par notre équipe avant activation.",
-              style: TextStyle(fontSize: 13.5, height: 1.35),
+              'stripe_connect.view.intro'.tr,
+              style: const TextStyle(fontSize: 13.5, height: 1.35),
             ),
           ),
         ],
@@ -103,22 +102,20 @@ class StripeConnectView extends GetView<StripeConnectController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Informations complémentaires demandées',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppDesign.accent),
+                Text(
+                  'stripe_connect.view.more_info_title'.tr,
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppDesign.accent),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   controller.partnerVerification.value ??
-                      "Notre partenaire bancaire a besoin de précisions avant d'autoriser "
-                          'vos virements.',
+                      'stripe_connect.view.more_info_default'.tr,
                   style: const TextStyle(fontSize: 13, height: 1.3),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Notre équipe va vous recontacter pour compléter votre dossier. '
-                  'Vos informations restent enregistrées.',
-                  style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.3),
+                Text(
+                  'stripe_connect.view.more_info_contact'.tr,
+                  style: const TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.3),
                 ),
               ],
             ),
@@ -142,9 +139,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
           child: const Icon(Icons.cloud_off_rounded, size: 40, color: AppDesign.accent),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'État du compte indisponible',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+        Text(
+          'stripe_connect.view.status_unavailable'.tr,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -157,12 +154,11 @@ class StripeConnectView extends GetView<StripeConnectController> {
           ),
         ),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
-            "Si vous avez déjà enregistré un IBAN, il est toujours là : "
-            "cet écran n'a pas pu le récupérer.",
-            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+            'stripe_connect.view.status_unavailable_hint'.tr,
+            style: const TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
             textAlign: TextAlign.center,
           ),
         ),
@@ -172,7 +168,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
           child: ElevatedButton.icon(
             onPressed: controller.loadStatus,
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Réessayer'),
+            label: Text('stripe_connect.view.retry'.tr),
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           ),
         ),
@@ -185,20 +181,20 @@ class StripeConnectView extends GetView<StripeConnectController> {
       'approved' => (
           AppDesign.success,
           Icons.verified,
-          'Compte validé',
-          'Vous pouvez être payé par virement sur cet IBAN.'
+          'stripe_connect.view.banner_approved_title'.tr,
+          'stripe_connect.view.banner_approved_detail'.tr
         ),
       'rejected' => (
           AppDesign.danger,
           Icons.cancel,
-          'Compte rejeté',
-          controller.rejectionReason.value ?? 'Veuillez corriger vos informations et renvoyer.'
+          'stripe_connect.view.banner_rejected_title'.tr,
+          controller.rejectionReason.value ?? 'stripe_connect.view.banner_rejected_detail'.tr
         ),
       _ => (
           AppDesign.accent,
           Icons.hourglass_top,
-          'En attente de validation',
-          'Votre IBAN est en cours de vérification (24-48h).'
+          'stripe_connect.view.banner_pending_title'.tr,
+          'stripe_connect.view.banner_pending_detail'.tr
         ),
     };
 
@@ -224,8 +220,8 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 if (controller.ibanLast4.value != null) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'IBAN : •••• ${controller.ibanLast4.value}'
-                    '${controller.bankCountry.value != null ? '  (${controller.bankCountry.value})' : ''}',
+                    'stripe_connect.view.iban_masked'.trParams({'last4': '${controller.ibanLast4.value}'}) +
+                        (controller.bankCountry.value != null ? '  (${controller.bankCountry.value})' : ''),
                     style: const TextStyle(fontSize: 12.5, color: Colors.black54),
                   ),
                 ],
@@ -258,18 +254,17 @@ class StripeConnectView extends GetView<StripeConnectController> {
           child: const Icon(Icons.hourglass_top, size: 44, color: orange),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Vérification en cours',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          'stripe_connect.view.pending_title'.tr,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
-            "Votre IBAN a bien été enregistré. Notre équipe le vérifie avant "
-            "d'activer les virements sur votre compte (généralement sous 24-48h).",
-            style: TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
+            'stripe_connect.view.pending_message'.tr,
+            style: const TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
             textAlign: TextAlign.center,
           ),
         ),
@@ -282,26 +277,25 @@ class StripeConnectView extends GetView<StripeConnectController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Informations enregistrées',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text('stripe_connect.view.saved_info'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 12),
-                _readonlyRow('Titulaire', (holder ?? '').isNotEmpty ? holder! : '—'),
+                _readonlyRow('stripe_connect.view.holder'.tr, (holder ?? '').isNotEmpty ? holder! : '—'),
                 _readonlyRow('IBAN', last4 != null ? '•••• •••• $last4' : '••••'),
-                _readonlyRow('Pays', country ?? '—'),
+                _readonlyRow('stripe_connect.view.country'.tr, country ?? '—'),
               ],
             ),
           ),
         ),
         const SizedBox(height: 16),
         Row(
-          children: const [
-            Icon(Icons.info_outline, size: 18, color: Colors.black45),
-            SizedBox(width: 8),
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: Colors.black45),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                "Vous ne pouvez pas modifier votre IBAN pendant la vérification. "
-                "Tirez vers le bas pour actualiser le statut.",
-                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+                'stripe_connect.view.pending_locked'.tr,
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
               ),
             ),
           ],
@@ -332,18 +326,17 @@ class StripeConnectView extends GetView<StripeConnectController> {
           child: const Icon(Icons.verified_rounded, size: 44, color: green),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Compte de virement validé',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          'stripe_connect.view.approved_title'.tr,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
-            "Vos paiements peuvent désormais être virés sur ce compte bancaire. "
-            "Le montant est converti depuis votre portefeuille au moment du retrait.",
-            style: TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
+            'stripe_connect.view.approved_message'.tr,
+            style: const TextStyle(fontSize: 13.5, height: 1.4, color: Colors.black87),
             textAlign: TextAlign.center,
           ),
         ),
@@ -354,12 +347,12 @@ class StripeConnectView extends GetView<StripeConnectController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Informations enregistrées',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text('stripe_connect.view.saved_info'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 12),
-                _readonlyRow('Titulaire', (holder ?? '').isNotEmpty ? holder! : '—'),
+                _readonlyRow('stripe_connect.view.holder'.tr, (holder ?? '').isNotEmpty ? holder! : '—'),
                 _readonlyRow('IBAN', last4 != null ? '•••• •••• $last4' : '••••'),
-                _readonlyRow('Pays', country ?? '—'),
+                _readonlyRow('stripe_connect.view.country'.tr, country ?? '—'),
                 _partnerStateNotice(),
               ],
             ),
@@ -371,7 +364,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
           child: ElevatedButton.icon(
             onPressed: () => Get.back(),
             icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-            label: const Text('Retour au portefeuille'),
+            label: Text('stripe_connect.view.back_to_wallet'.tr),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -379,13 +372,13 @@ class StripeConnectView extends GetView<StripeConnectController> {
         ),
         const SizedBox(height: 12),
         Row(
-          children: const [
-            Icon(Icons.lock_outline, size: 18, color: Colors.black45),
-            SizedBox(width: 8),
+          children: [
+            const Icon(Icons.lock_outline, size: 18, color: Colors.black45),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                "Pour modifier un IBAN déjà validé, contactez le support.",
-                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+                'stripe_connect.view.approved_locked'.tr,
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
               ),
             ),
           ],
@@ -404,7 +397,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
       if (controller.partnerReady.value) return const SizedBox.shrink();
 
       final message = controller.partnerVerification.value ??
-          "Vérification bancaire en cours.";
+          'stripe_connect.view.partner_verification_default'.tr;
       final missing = controller.partnerRequirements;
 
       return Container(
@@ -429,8 +422,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
                   if (missing.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Les virements resteront indisponibles tant que ce point '
-                      "n'est pas réglé.",
+                      'stripe_connect.view.partner_blocking'.tr,
                       style: TextStyle(
                           fontSize: 12, color: AppDesign.accent, height: 1.3),
                     ),
@@ -463,20 +455,20 @@ class StripeConnectView extends GetView<StripeConnectController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (controller.isRejected)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'Corrigez vos informations puis renvoyez.',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                'stripe_connect.view.fix_and_resend'.tr,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           TextFormField(
             controller: controller.holderController,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Nom du titulaire du compte',
-              hintText: 'Nom complet du titulaire du compte',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'stripe_connect.view.holder_label'.tr,
+              hintText: 'stripe_connect.view.holder_hint'.tr,
+              border: const OutlineInputBorder(),
             ),
             validator: controller.validateHolder,
           ),
@@ -496,23 +488,22 @@ class StripeConnectView extends GetView<StripeConnectController> {
             controller: controller.countryController,
             textCapitalization: TextCapitalization.characters,
             maxLength: 2,
-            decoration: const InputDecoration(
-              labelText: 'Pays du compte (code à 2 lettres)',
+            decoration: InputDecoration(
+              labelText: 'stripe_connect.view.country_label'.tr,
               hintText: 'FR',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             validator: controller.validateCountry,
           ),
           const SizedBox(height: 22),
-          const Text(
-            "Vos informations d'identité",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          Text(
+            'stripe_connect.view.identity_title'.tr,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 4),
-          const Text(
-            "Exigées par notre partenaire bancaire pour autoriser les virements. "
-            "Elles ne sont pas conservées par l'application.",
-            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
+          Text(
+            'stripe_connect.view.identity_subtitle'.tr,
+            style: const TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.35),
           ),
           const SizedBox(height: 14),
           // La date n'est pas saisie au clavier : sélecteur borné à 18 ans.
@@ -521,17 +512,17 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 borderRadius: BorderRadius.circular(4),
                 child: InputDecorator(
                   decoration: InputDecoration(
-                    labelText: 'Date de naissance',
+                    labelText: 'stripe_connect.birth_date'.tr,
                     border: const OutlineInputBorder(),
                     suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     errorText: controller.birthDate.value == null &&
                             controller.isSubmitting.value
-                        ? 'Date de naissance requise'
+                        ? 'stripe_connect.birth_date_required_title'.tr
                         : null,
                   ),
                   child: Text(
                     controller.birthDateLabel.isEmpty
-                        ? 'JJ/MM/AAAA'
+                        ? 'stripe_connect.view.date_placeholder'.tr
                         : controller.birthDateLabel,
                     style: TextStyle(
                       color: controller.birthDateLabel.isEmpty
@@ -545,10 +536,10 @@ class StripeConnectView extends GetView<StripeConnectController> {
           TextFormField(
             controller: controller.phoneController,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Téléphone',
+            decoration: InputDecoration(
+              labelText: 'stripe_connect.view.phone_label'.tr,
               hintText: '+33 6 12 34 56 78',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             validator: controller.validatePhone,
           ),
@@ -556,10 +547,10 @@ class StripeConnectView extends GetView<StripeConnectController> {
           TextFormField(
             controller: controller.addressLine1Controller,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Adresse',
-              hintText: '12 rue de la Paix',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'stripe_connect.view.address_label'.tr,
+              hintText: 'stripe_connect.view.address_hint'.tr,
+              border: const OutlineInputBorder(),
             ),
             validator: controller.validateAddressLine,
           ),
@@ -572,9 +563,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
                 child: TextFormField(
                   controller: controller.addressCityController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Ville',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: 'stripe_connect.view.city_label'.tr,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: controller.validateCity,
                 ),
@@ -583,9 +574,9 @@ class StripeConnectView extends GetView<StripeConnectController> {
               Expanded(
                 child: TextFormField(
                   controller: controller.addressPostalController,
-                  decoration: const InputDecoration(
-                    labelText: 'Code postal',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: 'stripe_connect.view.postal_label'.tr,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: controller.validatePostalCode,
                 ),
@@ -606,7 +597,7 @@ class StripeConnectView extends GetView<StripeConnectController> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(controller.isRejected ? 'Renvoyer mon IBAN' : 'Enregistrer mon IBAN'),
+                      : Text(controller.isRejected ? 'stripe_connect.view.resend_iban'.tr : 'stripe_connect.view.save_iban'.tr),
                 )),
           ),
         ],

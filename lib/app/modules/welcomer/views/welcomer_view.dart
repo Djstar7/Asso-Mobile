@@ -21,9 +21,9 @@ class WelcomerView extends GetView<WelcomerController> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       animationAsset: 'assets/lotties/Sales and Consulting.json',
-      title: 'Créer votre compte',
+      title: 'welcomer.title'.tr,
       subtitle:
-          'Achetez, vendez et suivez vos commandes depuis un seul endroit.',
+          'welcomer.subtitle'.tr,
       onSkip: controller.skipWelcome,
       // Formulaire long (trois champs, conditions, bouton) : un bandeau
       // aussi haut qu'à la connexion repoussait « Créer mon compte »
@@ -39,8 +39,8 @@ class WelcomerView extends GetView<WelcomerController> {
         const AuthDivider(),
         SizedBox(height: AppDesign.space2),
         AuthSwitchLink(
-          question: 'Vous avez déjà un compte ?',
-          action: 'Se connecter',
+          question: 'welcomer.have_account'.tr,
+          action: 'welcomer.sign_in'.tr,
           onPressed: controller.goToLogin,
         ),
       ],
@@ -52,8 +52,8 @@ class WelcomerView extends GetView<WelcomerController> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppTextField(
-          label: 'Adresse e-mail',
-          hint: 'exemple@email.com',
+          label: 'welcomer.email_label'.tr,
+          hint: 'welcomer.email_hint'.tr,
           controller: controller.emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
@@ -63,14 +63,14 @@ class WelcomerView extends GetView<WelcomerController> {
         SizedBox(height: AppDesign.space4),
         Obx(
           () => AppTextField(
-            label: 'Mot de passe',
-            hint: 'Au moins 6 caractères',
+            label: 'welcomer.password_label'.tr,
+            hint: 'welcomer.password_hint'.tr,
             controller: controller.passwordController,
             obscureText: controller.obscurePassword.value,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.newPassword],
             onChanged: (value) => controller.password.value = value,
-            helperText: 'Utilisez 6 caractères ou plus.',
+            helperText: 'welcomer.password_helper'.tr,
             suffixIcon: _visibilityToggle(
               context,
               isObscured: controller.obscurePassword.value,
@@ -87,13 +87,13 @@ class WelcomerView extends GetView<WelcomerController> {
               confirm.isNotEmpty && confirm != controller.password.value;
 
           return AppTextField(
-            label: 'Confirmer le mot de passe',
-            hint: 'Saisissez à nouveau le mot de passe',
+            label: 'welcomer.confirm_password_label'.tr,
+            hint: 'welcomer.confirm_password_hint'.tr,
             controller: controller.confirmPasswordController,
             obscureText: controller.obscureConfirmPassword.value,
             textInputAction: TextInputAction.done,
             onChanged: (value) => controller.confirmPassword.value = value,
-            errorText: mismatch ? 'Les deux mots de passe diffèrent.' : null,
+            errorText: mismatch ? 'welcomer.passwords_differ'.tr : null,
             suffixIcon: _visibilityToggle(
               context,
               isObscured: controller.obscureConfirmPassword.value,
@@ -116,7 +116,7 @@ class WelcomerView extends GetView<WelcomerController> {
           : Icons.visibility_outlined,
       size: 19,
       color: context.ds.textTertiary,
-      tooltip: isObscured ? 'Afficher' : 'Masquer',
+      tooltip: isObscured ? 'welcomer.show_password'.tr : 'welcomer.hide_password'.tr,
       onPressed: onPressed,
     );
   }
@@ -151,9 +151,9 @@ class WelcomerView extends GetView<WelcomerController> {
                     height: 1.45,
                   ),
                   children: [
-                    const TextSpan(text: "J'accepte la "),
+                    TextSpan(text: 'welcomer.terms_prefix'.tr),
                     TextSpan(
-                      text: 'politique de confidentialité',
+                      text: 'welcomer.privacy_policy_link'.tr,
                       style: TextStyle(
                         color: AppDesign.accent,
                         fontWeight: FontWeight.w600,
@@ -161,7 +161,7 @@ class WelcomerView extends GetView<WelcomerController> {
                       recognizer: TapGestureRecognizer()
                         ..onTap = () => MarkdownBottomSheet.show(
                           context: context,
-                          title: 'Politique de confidentialité',
+                          title: 'welcomer.privacy_policy_title'.tr,
                           assetPath: 'Politique de confidentialité.md',
                         ),
                     ),
@@ -179,7 +179,7 @@ class WelcomerView extends GetView<WelcomerController> {
   Widget _buildSubmit(BuildContext context) {
     return Obx(
       () => AppButton(
-        label: 'Créer mon compte',
+        label: 'welcomer.submit'.tr,
         size: AppButtonSize.large,
         isLoading: controller.isLoading.value,
         onPressed: controller.canSubmit

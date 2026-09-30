@@ -28,7 +28,7 @@ class StripeNativeService {
     String merchantDisplayName = 'ASSO',
   }) async {
     if (publishableKey.isEmpty || clientSecret.isEmpty) {
-      throw Exception('Paramètres de paiement carte manquants.');
+      throw Exception('data.stripe.missing_params'.tr);
     }
 
     try {
@@ -51,7 +51,7 @@ class StripeNativeService {
         return false;
       }
       throw Exception(
-        e.error.localizedMessage ?? e.error.message ?? 'Paiement carte échoué.',
+        e.error.localizedMessage ?? e.error.message ?? 'data.stripe.payment_failed'.tr,
       );
     }
   }

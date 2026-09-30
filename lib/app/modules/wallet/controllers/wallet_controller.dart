@@ -176,8 +176,9 @@ class WalletController extends GetxController {
           refresh();
 
           Get.snackbar(
-            '💰 Dépôt réussi',
-            'Votre dépôt de ${data['amount']} FCFA a été confirmé.',
+            'wallet.notif.deposit_success_title'.tr,
+            'wallet.notif.deposit_success_message'
+                .trParams({'amount': '${data['amount']}'}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -188,8 +189,8 @@ class WalletController extends GetxController {
           refresh();
 
           Get.snackbar(
-            '❌ Dépôt échoué',
-            data['reason'] as String? ?? 'Le dépôt a échoué',
+            'wallet.notif.deposit_failed_title'.tr,
+            data['reason'] as String? ?? 'wallet.notif.deposit_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
             duration: const Duration(seconds: 5),
@@ -200,8 +201,9 @@ class WalletController extends GetxController {
           refresh();
 
           Get.snackbar(
-            '💸 Retrait effectué',
-            'Votre retrait de ${data['amount']} FCFA a été envoyé.',
+            'wallet.notif.withdrawal_done_title'.tr,
+            'wallet.notif.withdrawal_done_message'
+                .trParams({'amount': '${data['amount']}'}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -212,8 +214,8 @@ class WalletController extends GetxController {
           refresh();
 
           Get.snackbar(
-            '⚠️ Retrait échoué',
-            'Votre retrait a échoué. Le montant a été remboursé dans votre wallet.',
+            'wallet.notif.withdrawal_failed_title'.tr,
+            'wallet.notif.withdrawal_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
             duration: const Duration(seconds: 5),
@@ -224,8 +226,9 @@ class WalletController extends GetxController {
           refresh();
 
           Get.snackbar(
-            '💰 Fonds débloqués!',
-            'Vous avez reçu ${data['amount']} FCFA. Les fonds sont maintenant disponibles dans votre wallet.',
+            'wallet.notif.funds_unlocked_title'.tr,
+            'wallet.notif.funds_unlocked_message'
+                .trParams({'amount': '${data['amount']}'}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -261,11 +264,11 @@ class WalletController extends GetxController {
         print('  - Locked Paypal: ${result.lockedPaypalBalance}');
         print('  - Has Locked Funds: ${result.hasLockedFunds}');
       } else {
-        errorMessage.value = 'Impossible de charger le wallet';
+        errorMessage.value = 'wallet.errors.load_wallet_failed'.tr;
       }
     } catch (e) {
       print('[WalletController] Error loading wallet: $e');
-      errorMessage.value = 'Erreur lors du chargement du wallet';
+      errorMessage.value = 'wallet.errors.load_wallet_error'.tr;
     } finally {
       isLoading.value = false;
     }
@@ -282,8 +285,8 @@ class WalletController extends GetxController {
     if (user == null) {
       print('❌ HOME: No user found in storage');
       Get.snackbar(
-        'Connexion requise',
-        'Veuillez vous connecter pour accéder au mode vendeur',
+        'wallet.login_required_title'.tr,
+        'wallet.login_required_vendor'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       print('========================================');
@@ -338,7 +341,7 @@ class WalletController extends GetxController {
       totalTransactions.value = result['total'] as int;
     } catch (e) {
       print('[WalletController] Error loading transactions: $e');
-      errorMessage.value = 'Erreur lors du chargement des transactions';
+      errorMessage.value = 'wallet.errors.load_transactions_error'.tr;
     } finally {
       isLoadingTransactions.value = false;
     }
@@ -391,13 +394,13 @@ class WalletController extends GetxController {
         accountHolder: accountHolder,
       );
       if (!res.success) {
-        return res.message.isNotEmpty ? res.message : "Impossible d'enregistrer ce compte.";
+        return res.message.isNotEmpty ? res.message : 'wallet.errors.save_account_failed'.tr;
       }
       final data = res.data?['data'];
       payoutAccount.value = data is Map ? Map<String, dynamic>.from(data) : null;
       return null;
     } catch (e) {
-      return 'Une erreur est survenue.';
+      return 'wallet.errors.generic'.tr;
     } finally {
       isSavingPayoutAccount.value = false;
     }
@@ -465,7 +468,7 @@ class WalletController extends GetxController {
                     'confirmation_code': booking['confirmation_code'],
                     'subtotal': subtotal,
                     'kg_booked': kgBooked,
-                    'buyer_name': booking['buyer']?['name'] ?? 'Client',
+                    'buyer_name': booking['buyer']?['name'] ?? 'wallet.default_client'.tr,
                     'created_at': booking['created_at'],
                   };
                 })
@@ -510,7 +513,7 @@ class WalletController extends GetxController {
       if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Recharge initiée avec succès';
+        successMessage.value = result['message'] ?? 'wallet.messages.recharge_initiated'.tr;
 
         // Si c'est KPay et que le wallet est déjà crédité, rafraîchir
         if (paymentMethod == 'kpay' && result['status'] == 'completed') {
@@ -522,12 +525,12 @@ class WalletController extends GetxController {
 
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'Échec de l\'initiation de la recharge';
+        errorMessage.value = result['message'] ?? 'wallet.errors.recharge_init_failed'.tr;
         return {'success': false, 'message': errorMessage.value};
       }
     } catch (e) {
       print('[WalletController] Error initiating recharge: $e');
-      errorMessage.value = 'Erreur lors de l\'initiation de la recharge';
+      errorMessage.value = 'wallet.errors.recharge_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
       isProcessingPayment.value = false;
@@ -572,7 +575,7 @@ class WalletController extends GetxController {
             return {
               'success': true,
               'status': 'completed',
-              'message': 'Paiement réussi',
+              'message': 'wallet.messages.payment_success'.tr,
               ...result,
             };
           }
@@ -582,7 +585,7 @@ class WalletController extends GetxController {
             return {
               'success': false,
               'status': 'failed',
-              'message': result['failure_reason'] ?? 'Le paiement a échoué',
+              'message': result['failure_reason'] ?? 'wallet.messages.payment_failed'.tr,
               ...result,
             };
           }
@@ -592,7 +595,7 @@ class WalletController extends GetxController {
             return {
               'success': false,
               'status': 'cancelled',
-              'message': 'Le paiement a été annulé',
+              'message': 'wallet.messages.payment_cancelled'.tr,
               ...result,
             };
           }
@@ -612,7 +615,7 @@ class WalletController extends GetxController {
           return {
             'success': false,
             'status': 'error',
-            'message': 'Impossible de vérifier le statut du paiement',
+            'message': 'wallet.errors.payment_status_unverifiable'.tr,
           };
         }
       }
@@ -622,7 +625,7 @@ class WalletController extends GetxController {
     return {
       'success': false,
       'status': 'timeout',
-      'message': 'Le délai de vérification a expiré. Vérifiez votre wallet plus tard.',
+      'message': 'wallet.errors.verification_timeout'.tr,
     };
   }
 
@@ -635,7 +638,7 @@ class WalletController extends GetxController {
       print('[WalletController] Error checking payment status: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la vérification du statut',
+        'message': 'wallet.errors.status_check_error'.tr,
       };
     }
   }
@@ -649,16 +652,16 @@ class WalletController extends GetxController {
       if (status == 'completed') {
         refresh();
         Get.snackbar(
-          '💰 Recharge confirmée',
-          'Votre dépôt a été crédité dans votre wallet.',
+          'wallet.notif.recharge_confirmed_title'.tr,
+          'wallet.notif.recharge_confirmed_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
           duration: const Duration(seconds: 4),
         );
       } else if (status == 'failed' || status == 'cancelled') {
         Get.snackbar(
-          '❌ Recharge échouée',
-          res['message'] ?? 'Le paiement n\'a pas abouti.',
+          'wallet.notif.recharge_failed_title'.tr,
+          res['message'] ?? 'wallet.notif.recharge_failed_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
           duration: const Duration(seconds: 5),
@@ -677,8 +680,8 @@ class WalletController extends GetxController {
       if (status == 'completed') {
         refresh();
         Get.snackbar(
-          '💸 Retrait effectué',
-          'Votre retrait a été envoyé au bénéficiaire.',
+          'wallet.notif.withdrawal_done_title'.tr,
+          'wallet.notif.withdrawal_sent_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
           duration: const Duration(seconds: 4),
@@ -687,8 +690,8 @@ class WalletController extends GetxController {
       } else if (status == 'failed' || status == 'cancelled') {
         refresh();
         Get.snackbar(
-          '⚠️ Retrait échoué',
-          'Le montant a été remboursé dans votre wallet.',
+          'wallet.notif.withdrawal_failed_title'.tr,
+          'wallet.notif.withdrawal_refunded_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
           duration: const Duration(seconds: 5),
@@ -710,7 +713,7 @@ class WalletController extends GetxController {
         'current_balance': wallet.value?.currentBalance ?? 0.0,
         'required_amount': amount,
         'missing_amount': amount - (wallet.value?.currentBalance ?? 0.0),
-        'message': 'Erreur lors de la vérification',
+        'message': 'wallet.errors.check_error'.tr,
       };
     }
   }
@@ -742,7 +745,7 @@ class WalletController extends GetxController {
       if (_isDisposed) return false;
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Paiement effectué avec succès';
+        successMessage.value = result['message'] ?? 'wallet.messages.payment_done'.tr;
 
         // Rafraîchir le wallet et les soldes de retrait après paiement
         await Future.wait([
@@ -752,12 +755,12 @@ class WalletController extends GetxController {
 
         return true;
       } else {
-        errorMessage.value = result['message'] ?? 'Échec du paiement';
+        errorMessage.value = result['message'] ?? 'wallet.errors.payment_failed'.tr;
         return false;
       }
     } catch (e) {
       print('[WalletController] Error paying with wallet: $e');
-      errorMessage.value = 'Erreur lors du paiement';
+      errorMessage.value = 'wallet.errors.payment_error'.tr;
       return false;
     } finally {
       isProcessingPayment.value = false;
@@ -860,7 +863,7 @@ class WalletController extends GetxController {
       print('[WalletController] Error getting withdrawal balances: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la récupération des soldes',
+        'message': 'wallet.errors.balances_error'.tr,
       };
     }
   }
@@ -885,7 +888,7 @@ class WalletController extends GetxController {
       );
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Retrait initié avec succès';
+        successMessage.value = result['message'] ?? 'wallet.messages.withdrawal_initiated'.tr;
 
         // ⚠️ CRITIQUE: Mettre à jour le solde IMMÉDIATEMENT avec la valeur retournée
         // Le backend a déjà débité le solde, il faut refléter ça côté frontend
@@ -901,12 +904,12 @@ class WalletController extends GetxController {
         ]);
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'Échec de l\'initiation du retrait';
+        errorMessage.value = result['message'] ?? 'wallet.errors.withdrawal_init_failed'.tr;
         return result;
       }
     } catch (e) {
       print('[WalletController] Error initiating KPay withdrawal: $e');
-      errorMessage.value = 'Erreur lors de l\'initiation du retrait';
+      errorMessage.value = 'wallet.errors.withdrawal_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
       isProcessingPayment.value = false;
@@ -942,7 +945,7 @@ class WalletController extends GetxController {
     } catch (e) {
       print('[WalletController] Error quoting Stripe withdrawal: $e');
       stripeQuoteAmount.value = 0;
-      stripeQuoteMessage.value = 'Conversion indisponible pour le moment';
+      stripeQuoteMessage.value = 'wallet.errors.conversion_unavailable'.tr;
     } finally {
       isQuotingStripe.value = false;
     }
@@ -965,7 +968,7 @@ class WalletController extends GetxController {
       );
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'Virement initié avec succès';
+        successMessage.value = result['message'] ?? 'wallet.messages.transfer_initiated'.tr;
 
         // Refléter immédiatement le débit côté UI (le backend a déjà débité).
         final newBalance = result['data']?['new_balance'] ?? result['new_balance'];
@@ -979,12 +982,12 @@ class WalletController extends GetxController {
         ]);
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'Échec du virement';
+        errorMessage.value = result['message'] ?? 'wallet.errors.transfer_failed'.tr;
         return result;
       }
     } catch (e) {
       print('[WalletController] Error initiating Stripe withdrawal: $e');
-      errorMessage.value = 'Erreur lors de l\'initiation du virement';
+      errorMessage.value = 'wallet.errors.transfer_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
       isProcessingPayment.value = false;
@@ -1004,7 +1007,7 @@ class WalletController extends GetxController {
       if (kpayProvider == null || phoneNumber == null) {
         return {
           'success': false,
-          'message': 'Opérateur et numéro de téléphone requis pour Mobile Money',
+          'message': 'wallet.errors.operator_phone_required'.tr,
         };
       }
       return await initiateKpayWithdrawal(
@@ -1016,7 +1019,7 @@ class WalletController extends GetxController {
     } else {
       return {
         'success': false,
-        'message': 'Provider invalide: $provider',
+        'message': 'wallet.errors.invalid_provider'.trParams({'provider': provider}),
       };
     }
   }
@@ -1029,7 +1032,7 @@ class WalletController extends GetxController {
       print('[WalletController] Error checking withdrawal status: $e');
       return {
         'success': false,
-        'message': 'Erreur lors de la vérification du statut',
+        'message': 'wallet.errors.status_check_error'.tr,
       };
     }
   }

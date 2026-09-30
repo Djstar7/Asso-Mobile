@@ -47,8 +47,8 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
 
     if (code.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Veuillez entrer le code de confirmation',
+        'wallet.confirm_code.error'.tr,
+        'wallet.confirm_code.code_required'.tr,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
@@ -57,8 +57,8 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
 
     if (code.length != 6) {
       Get.snackbar(
-        'Erreur',
-        'Le code doit contenir 6 caractères',
+        'wallet.confirm_code.error'.tr,
+        'wallet.confirm_code.code_length'.tr,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
@@ -102,7 +102,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Livraison confirmée !',
+                  'wallet.confirm_code.delivery_confirmed'.tr,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Les fonds sont maintenant disponibles dans votre wallet',
+                  'wallet.confirm_code.funds_available'.tr,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppThemeSystem.getSecondaryTextColor(Get.context!),
@@ -164,7 +164,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Fermer'),
+                    child: Text('wallet.confirm_code.close'.tr),
                   ),
                 ),
               ],
@@ -176,7 +176,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
     } catch (e) {
       isSubmitting.value = false;
       Get.snackbar(
-        'Erreur',
+        'wallet.confirm_code.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -231,7 +231,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
 
                   // Title
                   Text(
-                    'Débloquer les fonds',
+                    'wallet.confirm_code.unlock_funds'.tr,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -263,7 +263,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Entrez le code à 6 caractères fourni par le client',
+                            'wallet.confirm_code.enter_client_code'.tr,
                             style: TextStyle(
                               fontSize: 13,
                               color: AppDesign.warning,
@@ -347,7 +347,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Annuler'),
+                    child: Text('wallet.confirm_code.cancel'.tr),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -372,7 +372,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text('Confirmer'),
+                            : Text('wallet.confirm_code.confirm'.tr),
                       )),
                 ),
               ],

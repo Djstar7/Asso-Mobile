@@ -51,7 +51,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
         leading: const AppBackButton(),
         titleSpacing: AppThemeSystem.getHorizontalPadding(context),
         title: Text(
-          'Messages',
+          'chat.title'.tr,
           style: context.textStyle(
             FontSizeType.h5,
             fontWeight: FontWeight.w700,
@@ -81,7 +81,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
               onPressed: controller.isLoading.value
                   ? null
                   : () => controller.loadConversations(refresh: true),
-              tooltip: 'Recharger',
+              tooltip: 'chat.reload'.tr,
             ),
           ),
           SizedBox(width: AppDesign.space1),
@@ -378,19 +378,18 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
   Widget _buildEmptyState(BuildContext context) {
     return AppEmptyState(
       icon: Icons.chat_bubble_outline_rounded,
-      title: 'Aucune conversation',
-      message:
-          'Vos échanges avec les acheteurs et les vendeurs apparaîtront ici.',
-      actionLabel: 'Parcourir les produits',
+      title: 'chat.empty.title'.tr,
+      message: 'chat.empty.message'.tr,
+      actionLabel: 'chat.empty.action'.tr,
       onAction: () => Get.toNamed('/search'),
     );
   }
 
   Widget _buildSearchEmptyState(BuildContext context) {
-    return const AppEmptyState(
+    return AppEmptyState(
       icon: Icons.search_off_rounded,
-      title: 'Aucun résultat',
-      message: 'Aucune conversation ne correspond à votre recherche.',
+      title: 'chat.search_empty.title'.tr,
+      message: 'chat.search_empty.message'.tr,
     );
   }
 
@@ -437,7 +436,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Supprimer cette conversation ?',
+                  'chat.delete_dialog.title'.tr,
                   style: context.textStyle(
                     FontSizeType.h6,
                     fontWeight: FontWeight.bold,
@@ -449,7 +448,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'La conversation sera masquée de votre liste. L\'autre personne pourra toujours la voir.',
+                  'chat.delete_dialog.message'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     color: AppThemeSystem.getSecondaryTextColor(context),
@@ -479,7 +478,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                           ),
                         ),
                         child: Text(
-                          'Annuler',
+                          'chat.cancel'.tr,
                           style: context.textStyle(
                             FontSizeType.button,
                             fontWeight: FontWeight.w600,
@@ -505,7 +504,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                           elevation: 0,
                         ),
                         child: Text(
-                          'Supprimer',
+                          'chat.delete'.tr,
                           style: context.textStyle(
                             FontSizeType.button,
                             fontWeight: FontWeight.w700,
@@ -590,7 +589,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
           style: context.textStyle(FontSizeType.body2),
           decoration: InputDecoration(
             isDense: true,
-            hintText: 'Rechercher une conversation',
+            hintText: 'chat.search_hint'.tr,
             hintStyle: context.textStyle(
               FontSizeType.body2,
               color: AppThemeSystem.getSecondaryTextColor(context),
@@ -604,7 +603,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
                 ? IconButton(
                     icon: const Icon(Icons.close_rounded, size: 18),
                     color: AppThemeSystem.getSecondaryTextColor(context),
-                    tooltip: 'Effacer',
+                    tooltip: 'chat.clear'.tr,
                     onPressed: () => controller.searchQuery.value = '',
                   )
                 : null,

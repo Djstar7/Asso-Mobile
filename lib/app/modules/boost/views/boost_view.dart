@@ -49,18 +49,18 @@ class BoostView extends GetView<BoostController> {
               if (!controller.adsEnabled.value) _suspendedBanner(context),
               _intro(context),
               const SizedBox(height: 24),
-              _section(context, 'Quel article mettre en avant ?'),
+              _section(context, 'boost.view.which_product'.tr),
               const SizedBox(height: 12),
               const BoostProductPicker(),
               const SizedBox(height: 24),
-              _section(context, 'Combien de personnes toucher ?'),
+              _section(context, 'boost.view.how_many'.tr),
               const SizedBox(height: 12),
               ..._packages(context),
               const SizedBox(height: 24),
               _buyButton(context),
               if (controller.campaigns.isNotEmpty) ...[
                 const SizedBox(height: 32),
-                _section(context, 'Mes campagnes'),
+                _section(context, 'boost.view.my_campaigns'.tr),
                 const SizedBox(height: 12),
                 ...controller.campaigns.map(
                   (campaign) => Padding(
@@ -106,7 +106,7 @@ class BoostView extends GetView<BoostController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Chargement incomplet',
+                  'boost.view.load_incomplete'.tr,
                   style: TextStyle(
                     color: AppDesign.dangerText,
                     fontSize: 14,
@@ -115,7 +115,7 @@ class BoostView extends GetView<BoostController> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Vérifiez votre connexion, puis tirez vers le bas pour réessayer.',
+                  'boost.view.load_incomplete_hint'.tr,
                   style: TextStyle(
                     color: AppDesign.dangerText.withValues(alpha: 0.85),
                     fontSize: 13,
@@ -128,7 +128,7 @@ class BoostView extends GetView<BoostController> {
           TextButton(
             onPressed: controller.loadAll,
             style: TextButton.styleFrom(foregroundColor: AppDesign.dangerText),
-            child: const Text('Réessayer'),
+            child: Text('wallet.retry'.tr),
           ),
         ],
       ),
@@ -151,8 +151,7 @@ class BoostView extends GetView<BoostController> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Le sponsoring est momentanément suspendu. Vos campagnes en cours '
-              'reprendront automatiquement, sans consommer de vues entre-temps.',
+              'boost.view.suspended'.tr,
               style: TextStyle(color: AppDesign.warningText, fontSize: 13, height: 1.4),
             ),
           ),
@@ -177,7 +176,7 @@ class BoostView extends GetView<BoostController> {
               Icon(Icons.campaign_outlined, color: AppDesign.accentText, size: 22),
               const SizedBox(width: 8),
               Text(
-                'Faites voir votre article',
+                'boost.view.hero_title'.tr,
                 style: TextStyle(
                   color: AppDesign.accentText,
                   fontSize: 16,
@@ -188,9 +187,7 @@ class BoostView extends GetView<BoostController> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Votre article apparaît dans le fil d'accueil et les résultats de "
-            "recherche, signalé « Sponsorisé ». Vous payez un nombre de vues "
-            "garanti : la campagne s'arrête quand il est atteint.",
+            'boost.view.hero_subtitle'.tr,
             style: TextStyle(
               color: AppDesign.accentText.withValues(alpha: 0.85),
               fontSize: 13,
@@ -223,7 +220,7 @@ class BoostView extends GetView<BoostController> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            'Aucune formule disponible pour le moment.',
+            'boost.view.no_package'.tr,
             style: TextStyle(color: AppDesign.textSecondary(context), fontSize: 14),
           ),
         ),
@@ -275,8 +272,8 @@ class BoostView extends GetView<BoostController> {
                 )
               : Text(
                   package == null
-                      ? 'Choisir une formule'
-                      : 'Sponsoriser pour ${package.formattedPrice}',
+                      ? 'boost.view.choose_package'.tr
+                      : 'boost.view.sponsor_for'.trParams({'price': package.formattedPrice}),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

@@ -19,7 +19,7 @@ class AboutView extends GetView<AboutController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'À propos',
+          'about.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -97,7 +97,10 @@ class AboutView extends GetView<AboutController> {
           )),
           const SizedBox(height: 8),
           Obx(() => Text(
-            'Version ${controller.appVersion.value} (${controller.buildNumber.value})',
+            'about.version'.trParams({
+              'version': controller.appVersion.value,
+              'build': controller.buildNumber.value,
+            }),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -129,16 +132,14 @@ class AboutView extends GetView<AboutController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'À propos de l\'application',
+            'about.about_app'.tr,
             style: context.body1.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Obx(() => Text(
             controller.appDescription.value.isNotEmpty
                 ? controller.appDescription.value
-                : 'Asso Market est une plateforme de commerce en ligne qui connecte '
-                    'les vendeurs et les acheteurs au Cameroun. Nous offrons une expérience '
-                    'd\'achat simple, rapide et sécurisée avec livraison à domicile.',
+                : 'about.default_description'.tr,
             style: context.body2.copyWith(height: 1.5),
           )),
         ],
@@ -149,8 +150,8 @@ class AboutView extends GetView<AboutController> {
   Widget _buildLegalSection(BuildContext context) {
     final licences = LegalTile(
       icon: Icons.info_outline,
-      title: 'Licences open source',
-      subtitle: 'Bibliothèques et licences utilisées',
+      title: 'about.licenses.title'.tr,
+      subtitle: 'about.licenses.subtitle'.tr,
       onTap: () => showLicensePage(
         context: context,
         applicationName: controller.appName.value,
@@ -169,8 +170,8 @@ class AboutView extends GetView<AboutController> {
             trailing: [
               LegalTile(
                 icon: Icons.gavel_outlined,
-                title: 'Conditions & politiques',
-                subtitle: 'CGU, CGV, confidentialité…',
+                title: 'legal.title'.tr,
+                subtitle: 'about.legal_subtitle'.tr,
                 onTap: () => Get.toNamed(Routes.LEGAL),
               ),
               licences,
@@ -191,7 +192,7 @@ class AboutView extends GetView<AboutController> {
       child: ElevatedButton.icon(
         onPressed: controller.sendFeedback,
         icon: const Icon(Icons.feedback_outlined),
-        label: const Text('Envoyer un feedback'),
+        label: Text('about.send_feedback'.tr),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppThemeSystem.primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -210,7 +211,7 @@ class AboutView extends GetView<AboutController> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Tous droits réservés',
+          'about.all_rights_reserved'.tr,
           style: context.caption.copyWith(color: context.secondaryTextColor),
         ),
       ],

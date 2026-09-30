@@ -2,6 +2,8 @@
 /// du prix, grille tarifaire et suivi daté d'une commande.
 library;
 
+import 'package:get/get.dart';
+
 double? _toDouble(dynamic value) {
   if (value == null) return null;
   if (value is num) return value.toDouble();
@@ -196,11 +198,12 @@ class DeliveryInfo {
   }
 
   /// Étapes que le vendeur peut ajouter pour une commande transporteur.
-  static const vendorTrackingSteps = <String, String>{
-    'in_transit': 'En transit',
-    'customs': 'En dédouanement',
-    'arrived': 'Arrivé dans la ville de destination',
-    'ready_for_pickup': 'Disponible au retrait en agence',
+  /// Getter : libellés résolus dans la langue courante.
+  static Map<String, String> get vendorTrackingSteps => <String, String>{
+    'in_transit': stepLabel('in_transit'),
+    'customs': stepLabel('customs'),
+    'arrived': stepLabel('arrived'),
+    'ready_for_pickup': stepLabel('ready_for_pickup'),
   };
 
   /// Import en gros : l'arrivée à l'entrepôt de Douala lance la livraison locale.
@@ -211,39 +214,39 @@ class DeliveryInfo {
       delivery?.importLeg == null
       ? vendorTrackingSteps
       : {
-          'in_transit': 'En transit',
-          'customs': 'En dédouanement',
+          'in_transit': stepLabel('in_transit'),
+          'customs': stepLabel('customs'),
           importHubStep: stepLabel(importHubStep),
-          'arrived': 'Arrivé dans la ville de destination',
-          'ready_for_pickup': 'Disponible au retrait en agence',
+          'arrived': stepLabel('arrived'),
+          'ready_for_pickup': stepLabel('ready_for_pickup'),
         };
 
   static String stepLabel(String step) {
     switch (step) {
       case 'pending':
-        return 'Commande passée';
+        return 'data.delivery.steps.pending'.tr;
       case 'confirmed':
-        return 'Validée par le vendeur';
+        return 'data.delivery.steps.confirmed'.tr;
       case 'preparing':
-        return 'En préparation';
+        return 'data.delivery.steps.preparing'.tr;
       case 'out_for_delivery':
-        return 'En cours de livraison';
+        return 'data.delivery.steps.out_for_delivery'.tr;
       case 'handed_to_carrier':
-        return 'Remis au transporteur';
+        return 'data.delivery.steps.handed_to_carrier'.tr;
       case 'in_transit':
-        return 'En transit';
+        return 'data.delivery.steps.in_transit'.tr;
       case 'customs':
-        return 'En dédouanement';
+        return 'data.delivery.steps.customs'.tr;
       case 'arrived_hub':
-        return 'Arrivé à l’entrepôt ASSO de Douala';
+        return 'data.delivery.steps.arrived_hub'.tr;
       case 'arrived':
-        return 'Arrivé dans la ville de destination';
+        return 'data.delivery.steps.arrived'.tr;
       case 'ready_for_pickup':
-        return 'Disponible au retrait en agence';
+        return 'data.delivery.steps.ready_for_pickup'.tr;
       case 'delivered':
-        return 'Livrée';
+        return 'data.delivery.steps.delivered'.tr;
       case 'cancelled':
-        return 'Annulée';
+        return 'data.delivery.steps.cancelled'.tr;
       default:
         return step;
     }
@@ -261,7 +264,7 @@ class DeliveryPartnerQuote {
   String get serviceType => raw['service_type']?.toString() ?? 'local';
   String get serviceMode => raw['service_mode']?.toString() ?? 'door_to_door';
   bool get isAgencyToAgency => serviceMode == 'agency_to_agency';
-  String get companyName => _toText(raw['company_name']) ?? 'Partenaire';
+  String get companyName => _toText(raw['company_name']) ?? 'data.delivery.partner'.tr;
   String? get companyLogo => _toText(raw['company_logo']);
   String? get zoneName => _toText(raw['zone_name']);
   String? get routeLabel => _toText(raw['route_label']);
@@ -293,11 +296,11 @@ class DeliveryPartnerQuote {
   String get categoryLabel {
     switch (serviceType) {
       case 'intercity':
-        return 'Interurbain';
+        return 'data.delivery.category.intercity'.tr;
       case 'international':
-        return 'International';
+        return 'data.delivery.category.international'.tr;
       default:
-        return 'Urbain';
+        return 'data.delivery.category.urban'.tr;
     }
   }
 
@@ -307,8 +310,8 @@ class DeliveryPartnerQuote {
   String get serviceModeLabel =>
       _toText(raw['service_mode_label']) ??
       (isAgencyToAgency
-          ? "D'agence en agence (dépôt et retrait en agence)"
-          : 'Livraison à domicile');
+          ? 'data.delivery.mode_agency_to_agency'.tr
+          : 'data.delivery.home_delivery'.tr);
 
   /// Libellé du trajet : route transporteur, sinon zone urbaine.
   String? get routeOrZone => routeLabel ?? zoneName;
@@ -317,13 +320,17 @@ class DeliveryPartnerQuote {
   bool get isAgencyPickup => raw['delivery_option']?.toString() == 'agency_pickup';
   String get deliveryOptionLabel =>
       _toText(raw['delivery_option_label']) ??
-      (isAgencyPickup ? 'Retrait en agence' : 'Livraison à domicile');
+      (isAgencyPickup
+          ? 'data.delivery.agency_pickup'.tr
+          : 'data.delivery.home_delivery'.tr);
 
   /// Avis explicite quand le colis est à retirer en agence.
   String? get pickupNotice {
     if (!isAgencyPickup) return null;
-    final where = city != null ? ' de $city' : '';
-    return 'Vous retirerez votre colis à l’agence $companyName$where.';
+    return city != null
+        ? 'data.delivery.pickup_notice_city'
+            .trParams({'company': companyName, 'city': city!})
+        : 'data.delivery.pickup_notice'.trParams({'company': companyName});
   }
 
   /// Identifie un devis (même partenaire + même zone/route).

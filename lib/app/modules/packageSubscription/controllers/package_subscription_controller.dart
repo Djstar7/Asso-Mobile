@@ -67,10 +67,10 @@ class PackageSubscriptionController extends GetxController {
       } else {
         print('❌ Failed to load packages: ${response.message}');
         Get.snackbar(
-          'Erreur',
+          'package_subscription.error'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de charger les forfaits',
+              : 'package_subscription.load_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white,
@@ -79,8 +79,8 @@ class PackageSubscriptionController extends GetxController {
     } catch (e) {
       print('💥 Exception loading packages: $e');
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
+        'package_subscription.error'.tr,
+        'package_subscription.generic_error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -143,7 +143,7 @@ class PackageSubscriptionController extends GetxController {
     final method = await PaymentMethodSelector.show(
       amount: display.amount,
       currency: display.currency,
-      amountLabel: 'Prix du forfait',
+      amountLabel: 'package_subscription.package_price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -162,8 +162,8 @@ class PackageSubscriptionController extends GetxController {
         break;
       default:
         Get.snackbar(
-          'Indisponible',
-          "Ce moyen de paiement n'est pas disponible pour les forfaits.",
+          'package_subscription.unavailable'.tr,
+          'package_subscription.method_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
     }
@@ -176,7 +176,7 @@ class PackageSubscriptionController extends GetxController {
     PaymentMethodOption method,
   ) async {
     final confirmed = await WalletPaymentConfirmDialog.show(
-      itemLabel: 'Forfait ${package['name'] ?? ''}',
+      itemLabel: 'package_subscription.package_item'.trParams({'name': '${package['name'] ?? ''}'}),
       amount: price,
       balance: method.balance ?? 0,
       salesCode: salesCode.code,
@@ -184,7 +184,7 @@ class PackageSubscriptionController extends GetxController {
     if (!confirmed || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'Activation de votre forfait...');
+    PaymentLoadingDialog.show(message: 'package_subscription.activating'.tr);
 
     try {
       final response = await PackageService.subscribePackageDirect(
@@ -204,13 +204,13 @@ class PackageSubscriptionController extends GetxController {
       await loadCurrentPackage();
       if (_isDisposed) return;
       await PaymentSuccessDialog.show(
-        packageName: package['name'] ?? 'Forfait',
+        packageName: package['name'] ?? 'package_subscription.package'.tr,
         amount: price,
         paymentMethod: 'wallet',
       );
     } catch (e) {
       PaymentLoadingDialog.hide();
-      _showSubscriptionError('Une erreur est survenue: $e');
+      _showSubscriptionError('package_subscription.generic_error'.trParams({'error': '$e'}));
     } finally {
       isSubscribing.value = false;
     }
@@ -221,13 +221,13 @@ class PackageSubscriptionController extends GetxController {
     // Sélecteur pays → opérateur → numéro (mêmes valeurs que les commandes).
     final selection = await KpayDirectPaymentSheet.show(
       amount: price,
-      amountLabel: 'Prix du package',
+      amountLabel: 'package_subscription.package_price_alt'.tr,
     );
     if (selection == null) return; // annulé
 
     isSubscribing.value = true;
     PaymentLoadingDialog.show(
-      message: 'Création de votre abonnement ${package['name']}...',
+      message: 'package_subscription.creating'.trParams({'name': '${package['name']}'}),
     );
 
     try {
@@ -250,8 +250,8 @@ class PackageSubscriptionController extends GetxController {
       }
 
       Get.snackbar(
-        'Paiement en attente',
-        'Validez le paiement sur votre téléphone (USSD). L\'abonnement sera activé ensuite.',
+        'package_subscription.payment_pending'.tr,
+        'package_subscription.validate_ussd'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -261,7 +261,7 @@ class PackageSubscriptionController extends GetxController {
       _pollSubscriptionPayment(subscriptionId, package, price, 'kpay');
     } catch (e) {
       PaymentLoadingDialog.hide();
-      _showSubscriptionError('Une erreur est survenue: $e');
+      _showSubscriptionError('package_subscription.generic_error'.trParams({'error': '$e'}));
     } finally {
       isSubscribing.value = false;
     }
@@ -271,15 +271,15 @@ class PackageSubscriptionController extends GetxController {
   Future<void> _subscribeViaCard(Map<String, dynamic> package, double price) async {
     if (!StripeNativeService.isSupported) {
       Get.snackbar(
-        'Indisponible',
-        "Le paiement par carte est disponible sur l'application mobile.",
+        'package_subscription.unavailable'.tr,
+        'wallet.recharge.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'Préparation du paiement...');
+    PaymentLoadingDialog.show(message: 'package_subscription.preparing_payment'.tr);
 
     try {
       final response = await PackageService.subscribePackageDirect(
@@ -302,7 +302,7 @@ class PackageSubscriptionController extends GetxController {
       }
       if (clientSecret == null || clientSecret.isEmpty ||
           publishableKey == null || publishableKey.isEmpty) {
-        _showSubscriptionError('Données de paiement carte indisponibles. Réessayez.');
+        _showSubscriptionError('package_subscription.card_data_unavailable'.tr);
         return;
       }
 
@@ -314,8 +314,8 @@ class PackageSubscriptionController extends GetxController {
 
       if (!ok) {
         Get.snackbar(
-          'Paiement annulé',
-          "Le paiement n'a pas été finalisé.",
+          'wallet.webview.cancelled'.tr,
+          'package_subscription.payment_not_finalized'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.warningColor,
           colorText: Colors.white,
@@ -325,8 +325,8 @@ class PackageSubscriptionController extends GetxController {
       }
 
       Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        'package_subscription.payment_in_progress'.tr,
+        'package_subscription.payment_confirming'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
@@ -371,8 +371,8 @@ class PackageSubscriptionController extends GetxController {
           return;
         } else if (status == 'failed') {
           Get.snackbar(
-            'Paiement échoué',
-            'Le paiement de l\'abonnement n\'a pas abouti.',
+            'package_subscription.payment_failed'.tr,
+            'package_subscription.subscription_payment_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: Colors.white,
@@ -386,8 +386,8 @@ class PackageSubscriptionController extends GetxController {
     // Délai dépassé sans confirmation : rester prudent.
     if (_isDisposed) return;
     Get.snackbar(
-      'Paiement en attente',
-      "La confirmation n'est pas encore arrivée. Vérifiez votre dashboard.",
+      'package_subscription.payment_pending'.tr,
+      'package_subscription.confirmation_not_arrived'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.warningColor,
       colorText: Colors.white,
@@ -404,8 +404,8 @@ class PackageSubscriptionController extends GetxController {
 
   void _showSubscriptionError(String? message) {
     Get.snackbar(
-      'Erreur',
-      message?.isNotEmpty == true ? message! : 'Impossible de souscrire au package',
+      'package_subscription.error'.tr,
+      message?.isNotEmpty == true ? message! : 'package_subscription.subscribe_error'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.errorColor,
       colorText: Colors.white,

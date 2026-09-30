@@ -14,24 +14,25 @@ import '../controllers/onboarding_controller.dart';
 class OnboardingView extends GetView<OnboardingController> {
   const OnboardingView({super.key});
 
-  static const List<_OnboardingPage> _pages = [
+  // Getter : les textes suivent la langue courante.
+  static List<_OnboardingPage> get _pages => [
     _OnboardingPage(
       icon: Icons.storefront_outlined,
-      title: 'Le marché, à portée de main',
+      title: 'onboarding.market_title'.tr,
       description:
-          'Des milliers de produits proposés par des vendeurs proches de chez vous, réunis au même endroit.',
+          'onboarding.market_description'.tr,
     ),
     _OnboardingPage(
       icon: Icons.local_shipping_outlined,
-      title: 'Livré où vous êtes',
+      title: 'onboarding.delivery_title'.tr,
       description:
-          'Suivez chaque commande étape par étape, de la validation du vendeur jusqu\'à votre porte.',
+          'onboarding.delivery_description'.tr,
     ),
     _OnboardingPage(
       icon: Icons.shield_outlined,
-      title: 'Des paiements protégés',
+      title: 'onboarding.payments_title'.tr,
       description:
-          'Votre argent n\'est versé au vendeur qu\'une fois la commande reçue et confirmée.',
+          'onboarding.payments_description'.tr,
     ),
   ];
 
@@ -56,7 +57,7 @@ class OnboardingView extends GetView<OnboardingController> {
                         foregroundColor: context.ds.textSecondary,
                       ),
                       child: Text(
-                        'Passer',
+                        'onboarding.skip'.tr,
                         style: context.textStyle(
                           FontSizeType.body2,
                           fontWeight: FontWeight.w600,
@@ -100,8 +101,8 @@ class OnboardingView extends GetView<OnboardingController> {
                       () => AppButton(
                         label: controller.currentPage.value ==
                                 controller.totalPages - 1
-                            ? 'Commencer'
-                            : 'Continuer',
+                            ? 'onboarding.start'.tr
+                            : 'common.continue'.tr,
                         onPressed: controller.nextPage,
                         size: AppButtonSize.large,
                       ),

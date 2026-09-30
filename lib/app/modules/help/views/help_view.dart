@@ -18,7 +18,7 @@ class HelpView extends GetView<HelpController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Aide et Support',
+          'help.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -52,7 +52,7 @@ class HelpView extends GetView<HelpController> {
                       horizontal: context.horizontalPadding,
                     ),
                     child: Text(
-                      'Questions Fréquentes (FAQ)',
+                      'help.faq_title'.tr,
                       style: context.h6.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppThemeSystem.primaryColor,
@@ -73,7 +73,7 @@ class HelpView extends GetView<HelpController> {
                       horizontal: context.horizontalPadding,
                     ),
                     child: Text(
-                      'Sujets d\'aide',
+                      'help.topics_title'.tr,
                       style: context.h6.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppThemeSystem.primaryColor,
@@ -121,18 +121,18 @@ class HelpView extends GetView<HelpController> {
         children: [
           const Icon(Icons.headset_mic, color: Colors.white, size: 40),
           const SizedBox(height: 16),
-          const Text(
-            'Besoin d\'aide ?',
-            style: TextStyle(
+          Text(
+            'help.need_help'.tr,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Notre équipe est disponible pour vous aider 24h/24 et 7j/7',
-            style: TextStyle(color: Colors.white, fontSize: 15),
+          Text(
+            'help.team_available'.tr,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
           ),
           const SizedBox(height: 24),
           Row(
@@ -154,7 +154,7 @@ class HelpView extends GetView<HelpController> {
                 child: ElevatedButton.icon(
                   onPressed: controller.contactByPhone,
                   icon: const Icon(Icons.phone, size: 18),
-                  label: const Text('Appeler'),
+                  label: Text('help.call'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppThemeSystem.primaryColor,
@@ -261,7 +261,7 @@ class HelpView extends GetView<HelpController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Informations de contact',
+            'help.contact_info'.tr,
             style: context.body1.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -276,7 +276,7 @@ class HelpView extends GetView<HelpController> {
           _buildContactItem(
             context,
             icon: Icons.phone,
-            title: 'Téléphone',
+            title: 'help.phone'.tr,
             value: '658895572 / 651826475',
             onTap: controller.contactByPhone,
           ),
@@ -301,7 +301,7 @@ class HelpView extends GetView<HelpController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Horaires: 24h/24 - 7j/7',
+                'help.hours'.tr,
                 style: context.body2.copyWith(
                   color: context.secondaryTextColor,
                 ),
@@ -390,7 +390,7 @@ class HelpView extends GetView<HelpController> {
             child: TextField(
               controller: controller.searchController,
               decoration: InputDecoration(
-                hintText: 'Rechercher dans l\'aide...',
+                hintText: 'help.search_hint'.tr,
                 hintStyle: context.body2.copyWith(
                   color: AppThemeSystem.grey600,
                 ),
@@ -440,12 +440,12 @@ class HelpView extends GetView<HelpController> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aucun résultat trouvé',
+                        'help.no_results'.tr,
                         style: context.h6.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Essayez avec d\'autres mots-clés',
+                        'help.try_other_keywords'.tr,
                         style: context.body2.copyWith(
                           color: context.secondaryTextColor,
                         ),
@@ -461,7 +461,9 @@ class HelpView extends GetView<HelpController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${results.length} résultat(s) trouvé(s)',
+                  'help.results_count'.trParams({
+                    'count': '${results.length}',
+                  }),
                   style: context.body2.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -508,7 +510,7 @@ class HelpView extends GetView<HelpController> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      category,
+                      category.tr,
                       style: context.body1.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppThemeSystem.primaryColor,
@@ -532,7 +534,9 @@ class HelpView extends GetView<HelpController> {
                         _showAllCategoryFaqs(context, category, categoryFaqs),
                     icon: const Icon(Icons.expand_more),
                     label: Text(
-                      'Voir toutes les ${categoryFaqs.length} questions',
+                      'help.see_all_questions'.trParams({
+                        'count': '${categoryFaqs.length}',
+                      }),
                     ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppThemeSystem.primaryColor,
@@ -580,7 +584,7 @@ class HelpView extends GetView<HelpController> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    faq.category,
+                    faq.category.tr,
                     style: context.caption.copyWith(
                       color: AppThemeSystem.primaryColor,
                       fontWeight: FontWeight.w600,
@@ -609,17 +613,17 @@ class HelpView extends GetView<HelpController> {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Commandes':
+      case 'help.categories.orders':
         return Icons.shopping_cart_outlined;
-      case 'Paiements':
+      case 'help.categories.payments':
         return Icons.payment_outlined;
-      case 'Compte':
+      case 'help.categories.account':
         return Icons.person_outline;
-      case 'Livraison':
+      case 'help.categories.delivery':
         return Icons.local_shipping_outlined;
-      case 'Vendeurs':
+      case 'help.categories.vendors':
         return Icons.store_outlined;
-      case 'Général':
+      case 'help.categories.general':
         return Icons.info_outline;
       default:
         return Icons.help_outline;
@@ -635,7 +639,7 @@ class HelpView extends GetView<HelpController> {
     // d'occuper d'office 80 % de l'écran, et s'arrête sous la barre d'état.
     AppSheet.show(
       AppSheet(
-        title: category,
+        title: category.tr,
         color: context.backgroundColor,
         child: Column(
           mainAxisSize: MainAxisSize.min,

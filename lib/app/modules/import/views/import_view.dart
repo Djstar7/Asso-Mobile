@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/import_service.dart';
 import '../../../data/providers/currency_service.dart';
@@ -457,7 +458,7 @@ class _ImportViewState extends State<ImportView> {
           color: context.ds.textPrimary,
         ),
         decoration: InputDecoration(
-          hintText: 'Rechercher dans le catalogue',
+          hintText: 'import.catalog.search_hint'.tr,
           hintStyle: context.textStyle(
             FontSizeType.body2,
             color: context.ds.textTertiary,
@@ -510,7 +511,7 @@ class _ImportViewState extends State<ImportView> {
         children: [
           Expanded(
             child: _filterChip(
-              label: 'Tous',
+              label: 'import.catalog.all_countries'.tr,
               selected: _selected == _allCountries,
               onTap: () => _selectCountry(_allCountries),
             ),
@@ -818,7 +819,7 @@ class _ImportViewState extends State<ImportView> {
     if (_query.isNotEmpty) return _buildNoResult();
 
     final scope = _selected == _allCountries
-        ? 'le catalogue'
+        ? 'import.catalog.scope_all'.tr
         : _countries
               .firstWhere(
                 (c) => c.code == _selected,
@@ -828,10 +829,9 @@ class _ImportViewState extends State<ImportView> {
 
     return AppEmptyState(
       icon: Icons.inventory_2_outlined,
-      title: 'Catalogue vide',
-      message:
-          'Aucun article dans $scope pour le moment. De nouveaux produits importés arrivent régulièrement.',
-      actionLabel: 'Actualiser',
+      title: 'import.catalog.empty_title'.tr,
+      message: 'import.catalog.empty_message'.trParams({'scope': scope}),
+      actionLabel: 'import.catalog.refresh'.tr,
       onAction: _load,
     );
   }
@@ -857,7 +857,7 @@ class _ImportViewState extends State<ImportView> {
           ),
           SizedBox(height: AppDesign.space3),
           Text(
-            'Aucun résultat pour « $_query »',
+            'import.catalog.no_result'.trParams({'query': _query}),
             textAlign: TextAlign.center,
             style: context.textStyle(
               FontSizeType.subtitle1,
@@ -868,8 +868,8 @@ class _ImportViewState extends State<ImportView> {
           SizedBox(height: AppDesign.space2),
           Text(
             others.isEmpty
-                ? 'Essayez un autre mot, ou un nom plus court.'
-                : 'Disponible ailleurs :',
+                ? 'import.catalog.no_result_hint'.tr
+                : 'import.catalog.available_elsewhere'.tr,
             textAlign: TextAlign.center,
             style: context.textStyle(
               FontSizeType.body2,

@@ -73,8 +73,8 @@ class FavoritesController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les favoris: ${e.toString()}',
+        'favorites.error_title'.tr,
+        'favorites.load_failed'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -119,15 +119,15 @@ class FavoritesController extends GetxController {
         }
 
         Get.snackbar(
-          'Succès',
-          response.data?['message'] ?? (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
+          'favorites.success_title'.tr,
+          response.data?['message'] ?? (isFavorite ? 'favorites.added'.tr : 'favorites.removed'.tr),
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de modifier le favori',
+        'favorites.error_title'.tr,
+        'favorites.toggle_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -137,8 +137,8 @@ class FavoritesController extends GetxController {
   Future<void> removeAllFavorites() async {
     if (favoriteProducts.isEmpty) {
       Get.snackbar(
-        'Info',
-        'Aucun favori à supprimer',
+        'favorites.info_title'.tr,
+        'favorites.nothing_to_remove'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -147,21 +147,23 @@ class FavoritesController extends GetxController {
     // Show confirmation dialog
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: Text('Confirmation'),
+        title: Text('favorites.confirm_title'.tr),
         content: Text(
-          'Voulez-vous vraiment supprimer tous vos favoris (${favoriteProducts.length} produits) ?',
+          'favorites.confirm_remove_all'.trParams({
+            'count': '${favoriteProducts.length}',
+          }),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: Text('Annuler'),
+            child: Text('favorites.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppDesign.danger,
             ),
-            child: Text('Supprimer tout'),
+            child: Text('favorites.remove_all'.tr),
           ),
         ],
       ),
@@ -182,14 +184,14 @@ class FavoritesController extends GetxController {
 
       favoriteProducts.clear();
       Get.snackbar(
-        'Succès',
-        'Tous les favoris ont été supprimés',
+        'favorites.success_title'.tr,
+        'favorites.all_removed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de supprimer tous les favoris',
+        'favorites.error_title'.tr,
+        'favorites.remove_all_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }

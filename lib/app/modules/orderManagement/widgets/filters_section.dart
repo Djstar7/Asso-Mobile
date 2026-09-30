@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../models/cameroon_cities.dart';
 import '../models/order_model.dart';
 import '../controllers/order_management_controller.dart';
 import '../../../core/utils/app_design.dart';
@@ -34,7 +35,7 @@ class FiltersSection extends GetView<OrderManagementController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Filtres',
+                'order_management.filters.title'.tr,
                 style: context.h6.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -52,7 +53,7 @@ class FiltersSection extends GetView<OrderManagementController> {
                 return TextButton.icon(
                   onPressed: controller.resetFilters,
                   icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('Réinitialiser'),
+                  label: Text('order_management.filters.reset'.tr),
                   style: TextButton.styleFrom(
                     foregroundColor: AppThemeSystem.errorColor,
                     padding: const EdgeInsets.symmetric(
@@ -72,7 +73,7 @@ class FiltersSection extends GetView<OrderManagementController> {
             controller: controller.searchController,
             onChanged: (value) => controller.searchQuery.value = value,
             decoration: InputDecoration(
-              hintText: 'Rechercher par nom, téléphone ou n° commande...',
+              hintText: 'order_management.filters.search_hint'.tr,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: Obx(() {
                 if (controller.searchQuery.value.isEmpty) {
@@ -135,7 +136,9 @@ class FiltersSection extends GetView<OrderManagementController> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${controller.filteredOrders.length} commande(s) trouvée(s)',
+                  'order_management.filters.results_count'.trParams({
+                    'count': '${controller.filteredOrders.length}',
+                  }),
                   style: context.caption.copyWith(
                     color: AppThemeSystem.primaryColor,
                     fontWeight: FontWeight.w600,
@@ -154,7 +157,7 @@ class FiltersSection extends GetView<OrderManagementController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'État de la commande',
+          'order_management.filters.status'.tr,
           style: context.body2.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -166,13 +169,13 @@ class FiltersSection extends GetView<OrderManagementController> {
           children: [
             _buildFilterChip(
               context,
-              label: 'Toutes',
+              label: 'order_management.filters.all'.tr,
               isSelected: controller.selectedStatus.value == null,
               onTap: () => controller.selectedStatus.value = null,
             ),
             _buildFilterChip(
               context,
-              label: 'En attente',
+              label: 'order_management.filters.pending'.tr,
               count: controller.getOrderCountByStatus(OrderStatus.pending),
               isSelected: controller.selectedStatus.value == OrderStatus.pending,
               onTap: () => controller.selectedStatus.value = OrderStatus.pending,
@@ -180,7 +183,7 @@ class FiltersSection extends GetView<OrderManagementController> {
             ),
             _buildFilterChip(
               context,
-              label: 'Validées',
+              label: 'order_management.filters.validated'.tr,
               count: controller.getOrderCountByStatus(OrderStatus.validated),
               isSelected: controller.selectedStatus.value == OrderStatus.validated,
               onTap: () => controller.selectedStatus.value = OrderStatus.validated,
@@ -188,7 +191,7 @@ class FiltersSection extends GetView<OrderManagementController> {
             ),
             _buildFilterChip(
               context,
-              label: 'Annulées',
+              label: 'order_management.filters.cancelled'.tr,
               count: controller.getOrderCountByStatus(OrderStatus.cancelled),
               isSelected: controller.selectedStatus.value == OrderStatus.cancelled,
               onTap: () => controller.selectedStatus.value = OrderStatus.cancelled,
@@ -205,7 +208,7 @@ class FiltersSection extends GetView<OrderManagementController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ville',
+          'order_management.filters.city'.tr,
           style: context.body2.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -227,7 +230,11 @@ class FiltersSection extends GetView<OrderManagementController> {
             return DropdownMenuItem(
               value: city,
               child: Text(
-                city,
+                // Valeur sentinelle « toutes les villes » : traduite à
+                // l'affichage seulement.
+                city == CameroonCities.all.first
+                    ? 'order_management.filters.all_cities'.tr
+                    : city,
                 style: context.body2,
               ),
             );
@@ -243,13 +250,13 @@ class FiltersSection extends GetView<OrderManagementController> {
   }
 
   Widget _buildDateFilter(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
+    final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Date',
+          'order_management.filters.date'.tr,
           style: context.body2.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -262,7 +269,6 @@ class FiltersSection extends GetView<OrderManagementController> {
               initialDate: controller.selectedDate.value ?? DateTime.now(),
               firstDate: DateTime.now().subtract(const Duration(days: 365)),
               lastDate: DateTime.now().add(const Duration(days: 365)),
-              locale: const Locale('fr', 'FR'),
             );
             if (date != null) {
               controller.selectedDate.value = date;
@@ -286,7 +292,7 @@ class FiltersSection extends GetView<OrderManagementController> {
                   child: Text(
                     controller.selectedDate.value != null
                         ? dateFormat.format(controller.selectedDate.value!)
-                        : 'Toutes les dates',
+                        : 'order_management.filters.all_dates'.tr,
                     style: context.body2,
                   ),
                 ),

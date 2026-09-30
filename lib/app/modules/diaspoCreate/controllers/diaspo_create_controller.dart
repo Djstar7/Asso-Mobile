@@ -111,7 +111,7 @@ class DiaspoCreateController extends GetxController {
 
     await AppSheet.show(
       AppSheet(
-        title: isDeparture ? 'Pays de départ' : 'Pays d\'arrivée',
+        title: isDeparture ? 'diaspo_create.departure_country'.tr : 'diaspo_create.arrival_country'.tr,
         // La liste défile seule : le champ de recherche reste en haut.
         scrollable: false,
         // Hauteur fixe tant que le clavier est fermé ; la feuille la réduit
@@ -124,7 +124,7 @@ class DiaspoCreateController extends GetxController {
                 autofocus: false,
                 onChanged: (v) => search.value = v.toLowerCase(),
                 decoration: InputDecoration(
-                  hintText: 'Rechercher un pays ou une devise',
+                  hintText: 'diaspo_create.search_country_currency'.tr,
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   isDense: true,
@@ -198,8 +198,8 @@ class DiaspoCreateController extends GetxController {
       if (!formKey1.currentState!.validate()) return;
       if (departureDateTime.value == null || arrivalDateTime.value == null) {
         Get.snackbar(
-          'Erreur',
-          'Veuillez sélectionner les dates de départ et d\'arrivée',
+          'diaspo_create.error'.tr,
+          'diaspo_create.select_dates'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -225,8 +225,8 @@ class DiaspoCreateController extends GetxController {
     // Validate dates before submitting
     if (departureDateTime.value == null || arrivalDateTime.value == null) {
       Get.snackbar(
-        'Erreur',
-        'Veuillez sélectionner les dates de départ et d\'arrivée',
+        'diaspo_create.error'.tr,
+        'diaspo_create.select_dates'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -237,8 +237,8 @@ class DiaspoCreateController extends GetxController {
     if (arrivalDateTime.value!.isBefore(departureDateTime.value!) ||
         arrivalDateTime.value!.isAtSameMomentAs(departureDateTime.value!)) {
       Get.snackbar(
-        'Erreur',
-        'La date d\'arrivée doit être après la date de départ',
+        'diaspo_create.error'.tr,
+        'diaspo_create.arrival_after_departure'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -265,11 +265,14 @@ class DiaspoCreateController extends GetxController {
       Get.offNamed('/diaspo/detail', arguments: {'offer': createdOffer});
       final deadline = createdOffer.formattedVerificationDeadline;
       Get.snackbar(
-        createdOffer.profileVerified ? 'Offre publiée' : 'Offre publiée · Profil non vérifié',
         createdOffer.profileVerified
-            ? 'Votre offre est en ligne et réservable.'
-            : 'Elle sera réservable dès la validation de votre identité'
-                '${deadline != null ? ' (à régulariser avant le $deadline)' : ''}.',
+            ? 'diaspo_create.published_title'.tr
+            : 'diaspo_create.published_unverified_title'.tr,
+        createdOffer.profileVerified
+            ? 'diaspo_create.published_message'.tr
+            : deadline != null
+                ? 'diaspo_create.published_unverified_deadline'.trParams({'deadline': deadline})
+                : 'diaspo_create.published_unverified_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: createdOffer.profileVerified ? AppDesign.success : AppDesign.accent,
         colorText: Colors.white,
@@ -277,14 +280,14 @@ class DiaspoCreateController extends GetxController {
       );
     } catch (e) {
       // Parse error message from server
-      String errorMessage = 'Impossible de créer l\'offre. Veuillez réessayer.';
+      String errorMessage = 'diaspo_create.create_failed'.tr;
 
       if (e.toString().contains('arrival datetime field must be a date after departure datetime')) {
-        errorMessage = 'La date d\'arrivée doit être après la date de départ';
+        errorMessage = 'diaspo_create.arrival_after_departure'.tr;
       }
 
       Get.snackbar(
-        'Erreur',
+        'diaspo_create.error'.tr,
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
@@ -352,8 +355,8 @@ class DiaspoCreateController extends GetxController {
         if (selectedArrivalDateTime.isBefore(minDate) ||
             selectedArrivalDateTime.isAtSameMomentAs(minDate)) {
           Get.snackbar(
-            'Erreur',
-            'L\'heure d\'arrivée doit être après l\'heure de départ',
+            'diaspo_create.error'.tr,
+            'diaspo_create.arrival_time_after_departure'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -368,8 +371,11 @@ class DiaspoCreateController extends GetxController {
 
   /// Format date time
   String formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return 'Sélectionner';
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    if (dateTime == null) return 'diaspo_create.select'.tr;
+    return 'diaspo_create.date_time'.trParams({
+      'date': '${dateTime.day}/${dateTime.month}/${dateTime.year}',
+      'time': '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}',
+    });
   }
 
   // ================================

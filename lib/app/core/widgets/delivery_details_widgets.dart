@@ -144,19 +144,19 @@ class DeliveryBreakdownView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (weight != null) DeliveryInfoLine('Poids total du colis', formatKg(weight)),
-        if (b?.rangeLabel != null) DeliveryInfoLine('Tranche appliquée', b!.rangeLabel!),
+        if (weight != null) DeliveryInfoLine('core.delivery.total_weight'.tr, formatKg(weight)),
+        if (b?.rangeLabel != null) DeliveryInfoLine('core.delivery.applied_range'.tr, b!.rangeLabel!),
         // Transport + livraison à domicile : les deux volets, sans leur prix.
         if (b != null && b.legs.length > 1)
-          for (final leg in b.legs) DeliveryInfoLine('Inclus', leg.label),
+          for (final leg in b.legs) DeliveryInfoLine('core.delivery.included'.tr, leg.label),
         if (total != null && vat > 0) ...[
-          DeliveryInfoLine('Prix livraison HT', formatPrice(total - vat)),
-          DeliveryInfoLine('TVA', formatPrice(vat)),
+          DeliveryInfoLine('core.delivery.price_excl_tax'.tr, formatPrice(total - vat)),
+          DeliveryInfoLine('core.delivery.vat'.tr, formatPrice(vat)),
         ],
         if (total != null) ...[
           const Divider(height: 14),
           DeliveryInfoLine(
-            vat > 0 ? 'Total livraison TTC' : 'Total livraison',
+            vat > 0 ? 'core.delivery.total_incl_tax'.tr : 'core.delivery.total'.tr,
             formatPrice(total),
             strong: true,
           ),
@@ -164,7 +164,7 @@ class DeliveryBreakdownView extends StatelessWidget {
         if (conditions != null && conditions!.trim().isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(
-            'Conditions du transporteur',
+            'core.delivery.carrier_conditions'.tr,
             style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
@@ -196,11 +196,11 @@ class DeliveryServiceLines extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (companyName != null) DeliveryInfoLine('Partenaire', companyName!),
-        if (serviceTypeLabel != null) DeliveryInfoLine('Catégorie', serviceTypeLabel!),
-        if (serviceModeLabel != null) DeliveryInfoLine('Mode', serviceModeLabel!),
-        if (routeLabel != null) DeliveryInfoLine('Trajet', routeLabel!),
-        if (leadTime != null) DeliveryInfoLine('Délai', leadTime!),
+        if (companyName != null) DeliveryInfoLine('core.delivery.partner'.tr, companyName!),
+        if (serviceTypeLabel != null) DeliveryInfoLine('core.delivery.category'.tr, serviceTypeLabel!),
+        if (serviceModeLabel != null) DeliveryInfoLine('core.delivery.mode'.tr, serviceModeLabel!),
+        if (routeLabel != null) DeliveryInfoLine('core.delivery.route'.tr, routeLabel!),
+        if (leadTime != null) DeliveryInfoLine('core.delivery.lead_time'.tr, leadTime!),
       ],
     );
   }
@@ -271,8 +271,8 @@ class CarrierTrackingCard extends StatelessWidget {
       if (!ok) throw Exception();
     } catch (_) {
       Get.snackbar(
-        'Erreur',
-        'Impossible d’ouvrir le site du transporteur.',
+        'common.error'.tr,
+        'core.delivery.open_carrier_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -299,7 +299,9 @@ class CarrierTrackingCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Transporteur${companyName != null ? ' : $companyName' : ''}',
+                  companyName != null
+                      ? 'core.delivery.carrier_named'.trParams({'name': companyName!})
+                      : 'core.delivery.carrier'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.bold,
@@ -311,7 +313,7 @@ class CarrierTrackingCard extends StatelessWidget {
           const SizedBox(height: 8),
           if (number == null)
             Text(
-              'Le numéro de suivi sera disponible dès que le vendeur aura remis le colis au transporteur.',
+              'core.delivery.tracking_pending'.tr,
               style: context.caption,
             )
           else
@@ -319,8 +321,8 @@ class CarrierTrackingCard extends StatelessWidget {
               onTap: () {
                 Clipboard.setData(ClipboardData(text: number));
                 Get.snackbar(
-                  'Copié',
-                  'Numéro de suivi copié',
+                  'core.delivery.copied'.tr,
+                  'core.delivery.tracking_copied'.tr,
                   snackPosition: SnackPosition.BOTTOM,
                   duration: const Duration(seconds: 2),
                 );
@@ -330,7 +332,7 @@ class CarrierTrackingCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    Text('N° de suivi : ', style: context.caption),
+                    Text('core.delivery.tracking_number_label'.tr, style: context.caption),
                     Expanded(
                       child: SelectableText(
                         number,
@@ -352,7 +354,7 @@ class CarrierTrackingCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: _openUrl,
                 icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: const Text('Suivre chez le transporteur'),
+                label: Text('core.delivery.track_with_carrier'.tr),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppThemeSystem.infoColor,
                 ),
@@ -373,7 +375,7 @@ class DeliveryTimelineView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('dd MMM yyyy, HH:mm', 'fr_FR');
+    final fmt = DateFormat('dd MMM yyyy, HH:mm');
     return Column(
       children: List.generate(steps.length, (index) {
         final step = steps[index];
@@ -492,7 +494,7 @@ class OrderDeliveryDetails extends StatelessWidget {
           leadTime: delivery.leadTime,
         ),
         if (delivery.trackingStatusLabel != null)
-          DeliveryInfoLine('Statut', delivery.trackingStatusLabel!),
+          DeliveryInfoLine('core.delivery.status'.tr, delivery.trackingStatusLabel!),
         if (delivery.isCarrier) ...[
           const SizedBox(height: 8),
           CarrierTrackingCard(
@@ -504,7 +506,7 @@ class OrderDeliveryDetails extends StatelessWidget {
         if (showTimeline && delivery.timeline.isNotEmpty) ...[
           const SizedBox(height: 14),
           Text(
-            'Suivi',
+            'core.delivery.tracking'.tr,
             style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -517,7 +519,7 @@ class OrderDeliveryDetails extends StatelessWidget {
             tilePadding: EdgeInsets.zero,
             childrenPadding: const EdgeInsets.only(bottom: 8),
             title: Text(
-              'Détail du prix de livraison',
+              'core.delivery.price_details'.tr,
               style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600),
             ),
             children: [
@@ -597,7 +599,7 @@ Future<void> showDeliveryQuoteDetails(
                           color: deliveryCategoryColor(quote.serviceType),
                         ),
                         DeliveryChip(
-                          quote.isAgencyToAgency ? 'Agence → agence' : 'À domicile',
+                          quote.isAgencyToAgency ? 'core.delivery.agency_to_agency'.tr : 'core.delivery.home_delivery'.tr,
                           color: AppThemeSystem.grey700,
                           icon: quote.isAgencyToAgency
                               ? Icons.store_mall_directory_outlined
@@ -648,8 +650,8 @@ Future<void> showDeliveryQuoteDetails(
                     ),
                     child: Text(
                       quote.isFree
-                          ? 'Choisir ce partenaire — livraison offerte'
-                          : 'Choisir ce partenaire — ${formatPrice(quote.price)}',
+                          ? 'core.delivery.choose_partner_free'.tr
+                          : 'core.delivery.choose_partner_price'.trParams({'price': formatPrice(quote.price)}),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),

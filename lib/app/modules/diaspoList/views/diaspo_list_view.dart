@@ -46,7 +46,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 backgroundColor: AppDesign.accent,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.add),
-                label: const Text('Créer mon offre'),
+                label: Text('diaspo_list.create_my_offer'.tr),
               ),
       ),
     );
@@ -60,21 +60,21 @@ class DiaspoListView extends GetView<DiaspoListController> {
     final isRejected = status == 'rejected';
     final color = isRejected ? AppDesign.danger : AppDesign.accent;
     final title = isPending
-        ? 'Vérification d\'identité en cours'
+        ? 'diaspo_list.banner.pending_title'.tr
         : isRejected
-        ? 'Vérification à compléter'
-        : 'Vérifiez votre identité';
+        ? 'diaspo_list.banner.rejected_title'.tr
+        : 'diaspo_list.banner.unverified_title'.tr;
     final deadline = controller.formattedNextDeadline;
     final deadlineNote = deadline != null
-        ? ' Sans validation avant le $deadline, elles seront retirées.'
+        ? 'diaspo_list.banner.deadline_note'.trParams({'date': deadline})
         : '';
     final message = isPending
-        ? 'Vos offres sont en ligne avec la mention « Profil non vérifié » jusqu\'à la validation.$deadlineNote'
+        ? '${'diaspo_list.banner.pending_message'.tr}$deadlineNote'
         : isRejected
-        ? 'Vos pièces n\'ont pas été acceptées. Renvoyez des pièces conformes.$deadlineNote'
+        ? '${'diaspo_list.banner.rejected_message'.tr}$deadlineNote'
         : deadline != null
-        ? 'Vos offres affichent « Profil non vérifié » et ne sont pas réservables.$deadlineNote'
-        : 'Vous pouvez publier dès maintenant : vos offres afficheront « Profil non vérifié » jusqu\'à la validation de votre identité.';
+        ? '${'diaspo_list.banner.unverified_deadline_message'.tr}$deadlineNote'
+        : 'diaspo_list.banner.unverified_message'.tr;
 
     return Container(
       width: double.infinity,
@@ -114,7 +114,11 @@ class DiaspoListView extends GetView<DiaspoListController> {
           TextButton(
             onPressed: controller.handleVerification,
             child: Text(
-              isPending ? 'Voir' : (isRejected ? 'Compléter' : 'Commencer'),
+              isPending
+                  ? 'diaspo_list.banner.view'.tr
+                  : (isRejected
+                        ? 'diaspo_list.banner.complete'.tr
+                        : 'diaspo_list.banner.start'.tr),
             ),
           ),
         ],
@@ -138,7 +142,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
         child: TextField(
           onChanged: (value) => controller.searchQuery.value = value,
           decoration: InputDecoration(
-            hintText: 'Rechercher par ville ou pays...',
+            hintText: 'diaspo_list.search_hint'.tr,
             hintStyle: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.white54 : Colors.grey[500],
@@ -168,7 +172,12 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
   /// Tabs horizontaux
   Widget _buildTabs(BuildContext context, bool isDark) {
-    final tabs = ['Tous', 'Mes Offres', 'Mes Achats', 'Mes Ventes'];
+    final tabs = [
+      'diaspo_list.tabs.all'.tr,
+      'diaspo_list.tabs.my_offers'.tr,
+      'diaspo_list.tabs.my_purchases'.tr,
+      'diaspo_list.tabs.my_sales'.tr,
+    ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -268,12 +277,16 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 ? Icons.search_off_rounded
                 : Icons.flight_takeoff_rounded,
             title: searching
-                ? 'Aucun résultat pour « ${controller.searchQuery.value} »'
-                : 'Aucune offre disponible',
+                ? 'diaspo_list.empty.no_results'.trParams({
+                    'query': controller.searchQuery.value,
+                  })
+                : 'diaspo_list.empty.no_offers'.tr,
             message: searching
-                ? 'Essayez une autre ville ou un autre pays.'
-                : 'Soyez le premier à publier une offre de transport.',
-            actionLabel: searching ? 'Effacer la recherche' : 'Créer mon offre',
+                ? 'diaspo_list.empty.try_other'.tr
+                : 'diaspo_list.empty.be_first'.tr,
+            actionLabel: searching
+                ? 'diaspo_list.empty.clear_search'.tr
+                : 'diaspo_list.create_my_offer'.tr,
             onAction: searching
                 ? () => controller.searchQuery.value = ''
                 : controller.handleCreateOffer,
@@ -346,14 +359,14 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Vous n\'avez pas encore d\'offres',
+                  'diaspo_list.empty.no_my_offers'.tr,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: controller.handleCreateOffer,
                   icon: const Icon(Icons.add),
-                  label: const Text('Créer une offre'),
+                  label: Text('diaspo_list.empty.create_offer'.tr),
                 ),
               ],
             ),
@@ -398,7 +411,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Vous n\'avez pas encore d\'achats',
+                  'diaspo_list.empty.no_purchases'.tr,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               ],
@@ -440,7 +453,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 Icon(Icons.sell_outlined, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'Vous n\'avez pas encore de ventes',
+                  'diaspo_list.empty.no_sales'.tr,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               ],
@@ -588,7 +601,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Mon offre',
+                              'diaspo_list.card.my_offer'.tr,
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppThemeSystem.primaryColor,
@@ -624,7 +637,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Prix par kilo',
+                          'diaspo_list.card.price_per_kg'.tr,
                           style: TextStyle(fontSize: 12, color: muted),
                         ),
                         const SizedBox(height: 2),
@@ -657,7 +670,9 @@ class DiaspoListView extends GetView<DiaspoListController> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${offer.remainingKg.toStringAsFixed(1)} kg dispo',
+                            'diaspo_list.card.kg_available'.trParams({
+                              'kg': offer.remainingKg.toStringAsFixed(1),
+                            }),
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -687,14 +702,14 @@ class DiaspoListView extends GetView<DiaspoListController> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.gpp_maybe_outlined, size: 14, color: color),
-          SizedBox(width: 5),
+          const Icon(Icons.gpp_maybe_outlined, size: 14, color: color),
+          const SizedBox(width: 5),
           Text(
-            'Profil non vérifié',
-            style: TextStyle(
+            'diaspo_list.unverified_profile'.tr,
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: color,
@@ -713,22 +728,24 @@ class DiaspoListView extends GetView<DiaspoListController> {
     if (offer.verificationStatus == 'rejected' || offer.status == 'rejected') {
       color = AppDesign.danger;
       icon = Icons.cancel_outlined;
-      label = 'Offre refusée';
+      label = 'diaspo_list.status_badge.rejected'.tr;
     } else if (offer.verificationStatus != 'verified') {
       final deadline = offer.formattedVerificationDeadline;
       color = AppDesign.accent;
       icon = Icons.badge_outlined;
       label = deadline != null
-          ? 'Publiée · Profil non vérifié — à régulariser avant le $deadline'
-          : 'Publiée · Profil non vérifié';
+          ? 'diaspo_list.status_badge.unverified_deadline'.trParams({
+              'date': '$deadline',
+            })
+          : 'diaspo_list.status_badge.unverified'.tr;
     } else if (offer.status == 'pending') {
       color = AppDesign.accent;
       icon = Icons.hourglass_top;
-      label = 'En attente d\'approbation';
+      label = 'diaspo_list.status_badge.pending'.tr;
     } else if (offer.status == 'approved' || offer.status == 'active') {
       color = AppDesign.success;
       icon = Icons.check_circle_outline;
-      label = 'Offre publiée';
+      label = 'diaspo_list.status_badge.published'.tr;
     } else {
       color = Colors.grey;
       icon = Icons.info_outline;
@@ -805,7 +822,9 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   ),
                 ),
                 Text(
-                  isBuyer ? 'Achat' : 'Vente',
+                  isBuyer
+                      ? 'diaspo_list.booking.purchase'.tr
+                      : 'diaspo_list.booking.sale'.tr,
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.white70 : Colors.grey[600],
@@ -835,7 +854,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Kilos réservés',
+                      'diaspo_list.booking.kg_booked'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.white70 : Colors.grey[600],
@@ -854,7 +873,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Prix total',
+                      'diaspo_list.booking.total_price'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.white70 : Colors.grey[600],
@@ -908,7 +927,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Votre code secret',
+                                'diaspo_list.booking.secret_code'.tr,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -947,7 +966,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Donnez ce code au voyageur au moment de la remise',
+                              'diaspo_list.booking.code_hint'.tr,
                               style: TextStyle(
                                 fontSize: 11,
                                 color: AppDesign.info,
@@ -971,7 +990,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 child: ElevatedButton.icon(
                   onPressed: () => _showValidateCodeDialog(context, booking),
                   icon: const Icon(Icons.verified_outlined),
-                  label: const Text('Valider le code de livraison'),
+                  label: Text('diaspo_list.booking.validate_code'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.primaryColor,
                     foregroundColor: Colors.white,
@@ -997,8 +1016,8 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   ),
                   label: Text(
                     isBuyer
-                        ? 'Voir mon portefeuille'
-                        : 'Voir mes gains dans le portefeuille',
+                        ? 'diaspo_list.receipt_confirmed.view_wallet'.tr
+                        : 'diaspo_list.booking.view_earnings'.tr,
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppThemeSystem.primaryColor,
@@ -1018,7 +1037,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
               _buildInlineNote(
                 Icons.check_circle_outline,
                 AppThemeSystem.infoColor,
-                'Code validé. En attente de la confirmation de réception par l\'acheteur.',
+                'diaspo_list.booking.awaiting_receipt'.tr,
               ),
             ],
 
@@ -1030,7 +1049,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 child: ElevatedButton.icon(
                   onPressed: () => _confirmReceipt(context, booking),
                   icon: const Icon(Icons.inventory_2_outlined),
-                  label: const Text('J\'ai bien reçu mon colis'),
+                  label: Text('diaspo_list.booking.received'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.successColor,
                     foregroundColor: Colors.white,
@@ -1085,16 +1104,16 @@ class DiaspoListView extends GetView<DiaspoListController> {
           children: [
             Icon(Icons.verified_outlined, color: AppThemeSystem.primaryColor),
             const SizedBox(width: 10),
-            const Expanded(child: Text('Valider la livraison')),
+            Expanded(child: Text('diaspo_list.validate_dialog.title'.tr)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Saisissez le code à 6 chiffres que l\'acheteur vous a communiqué.',
-              style: TextStyle(fontSize: 13),
+            Text(
+              'diaspo_list.validate_dialog.message'.tr,
+              style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -1119,7 +1138,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Annuler')),
+          TextButton(onPressed: () => Get.back(), child: Text('diaspo_list.cancel'.tr)),
           Obx(
             () => ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1132,8 +1151,8 @@ class DiaspoListView extends GetView<DiaspoListController> {
                       final code = codeController.text.trim();
                       if (code.length != 6) {
                         Get.snackbar(
-                          'Code invalide',
-                          'Le code doit contenir 6 chiffres',
+                          'diaspo_list.validate_dialog.invalid_title'.tr,
+                          'diaspo_list.validate_dialog.invalid_message'.tr,
                           snackPosition: SnackPosition.BOTTOM,
                         );
                         return;
@@ -1149,7 +1168,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Valider'),
+                  : Text('diaspo_list.validate_dialog.validate'.tr),
             ),
           ),
         ],
@@ -1162,14 +1181,12 @@ class DiaspoListView extends GetView<DiaspoListController> {
     Get.dialog(
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirmer la réception'),
-        content: const Text(
-          'Confirmez-vous avoir bien reçu votre colis ? Le voyageur sera crédité et la réservation sera clôturée.',
-        ),
+        title: Text('diaspo_list.receipt_dialog.title'.tr),
+        content: Text('diaspo_list.receipt_dialog.message'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Pas encore'),
+            child: Text('diaspo_list.receipt_dialog.not_yet'.tr),
           ),
           Obx(
             () => ElevatedButton(
@@ -1183,7 +1200,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                       booking.id,
                       booking.confirmationCode,
                     ),
-              child: const Text('Oui, confirmer'),
+              child: Text('diaspo_list.receipt_dialog.confirm'.tr),
             ),
           ),
         ],
@@ -1213,17 +1230,17 @@ class DiaspoListView extends GetView<DiaspoListController> {
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
-        return 'Terminé';
+        return 'diaspo_list.booking_status.completed'.tr;
       case 'confirmed':
-        return 'En transit';
+        return 'diaspo_list.booking_status.confirmed'.tr;
       case 'paid':
-        return 'Payé';
+        return 'diaspo_list.booking_status.paid'.tr;
       case 'pending':
-        return 'En attente de paiement';
+        return 'diaspo_list.booking_status.pending'.tr;
       case 'cancelled':
-        return 'Annulé';
+        return 'diaspo_list.booking_status.cancelled'.tr;
       case 'refunded':
-        return 'Remboursé';
+        return 'diaspo_list.booking_status.refunded'.tr;
       default:
         return status;
     }

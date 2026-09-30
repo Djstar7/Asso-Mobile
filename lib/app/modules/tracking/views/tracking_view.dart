@@ -27,7 +27,7 @@ class TrackingView extends GetView<TrackingController> {
           : AppBar(
               leading: const AppBackButton(),
               title: Text(
-                'Suivi',
+                'tracking.title'.tr,
                 style: context.h5.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -96,8 +96,8 @@ class TrackingView extends GetView<TrackingController> {
             onTap: () async {
               await controller.loadOrders();
               Get.snackbar(
-                'Actualisé',
-                'Liste des commandes mise à jour',
+                'tracking.refreshed_title'.tr,
+                'tracking.refreshed_message'.tr,
                 snackPosition: SnackPosition.BOTTOM,
                 duration: const Duration(seconds: 1),
               );
@@ -123,7 +123,7 @@ class TrackingView extends GetView<TrackingController> {
       child: TextField(
         controller: controller.searchController,
         decoration: InputDecoration(
-          hintText: 'Rechercher par numéro de commande...',
+          hintText: 'tracking.search_hint'.tr,
           hintStyle: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600),
           prefixIcon: Icon(Icons.search_rounded, color: AppThemeSystem.grey600),
           suffixIcon: Obx(() => controller.searchQuery.value.isNotEmpty
@@ -161,7 +161,7 @@ class TrackingView extends GetView<TrackingController> {
                   border: Border.all(color: isSelected ? AppThemeSystem.primaryColor : AppThemeSystem.getBorderColor(context)),
                 ),
                 alignment: Alignment.center,
-                child: Text(filter,
+                child: Text(filter.tr,
                   style: context.textStyle(FontSizeType.body2,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected ? Colors.white : null)),
@@ -253,7 +253,7 @@ class TrackingView extends GetView<TrackingController> {
                   children: [
                     Icon(Icons.calendar_today_rounded, size: 16, color: AppThemeSystem.grey600),
                     const SizedBox(width: 6),
-                    Text('Commandé le ${shipment['orderDate']}',
+                    Text('tracking.ordered_on'.trParams({'date': '${shipment['orderDate']}'}),
                       style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
                   ],
                 ),
@@ -278,7 +278,7 @@ class TrackingView extends GetView<TrackingController> {
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: shipment['confirmationCode']));
-                      Get.snackbar('Copié', 'Code copié', snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
+                      Get.snackbar('tracking.copied_title'.tr, 'tracking.code_copied'.tr, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
                     },
                     child: Container(
                       width: double.infinity,
@@ -325,7 +325,7 @@ class TrackingView extends GetView<TrackingController> {
                     children: [
                       const Icon(Icons.check_circle_rounded, size: 16, color: AppDesign.success),
                       const SizedBox(width: 6),
-                      Text('Livré le ${shipment['deliveredDate'] ?? ''}',
+                      Text('tracking.delivered_on'.trParams({'date': '${shipment['deliveredDate'] ?? ''}'}),
                         style: context.textStyle(FontSizeType.caption, color: AppDesign.success, fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -338,7 +338,7 @@ class TrackingView extends GetView<TrackingController> {
                       const Icon(Icons.cancel_rounded, size: 16, color: AppDesign.danger),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text('Raison: ${shipment['cancelReason'] ?? 'Non spécifiée'}',
+                        child: Text('tracking.cancel_reason'.trParams({'reason': '${shipment['cancelReason'] ?? 'tracking.reason_unspecified'.tr}'}),
                           style: context.textStyle(FontSizeType.caption, color: AppDesign.danger)),
                       ),
                     ],
@@ -352,7 +352,7 @@ class TrackingView extends GetView<TrackingController> {
                     _buildChatButton(context, shipment),
                     Row(
                       children: [
-                        Text('Voir le suivi',
+                        Text('tracking.view_tracking'.tr,
                           style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w600)),
                         const SizedBox(width: 4),
                         Icon(Icons.arrow_forward_rounded, size: 16, color: AppThemeSystem.primaryColor),
@@ -404,7 +404,7 @@ class TrackingView extends GetView<TrackingController> {
                 else
                   Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppThemeSystem.primaryColor),
                 const SizedBox(width: 6),
-                Text('Message',
+                Text('tracking.message'.tr,
                   style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.primaryColor, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -460,9 +460,9 @@ class TrackingView extends GetView<TrackingController> {
             child: Icon(Icons.local_shipping_outlined, size: 64, color: AppThemeSystem.primaryColor),
           ),
           const SizedBox(height: 24),
-          Text('Aucune commande', style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
+          Text('tracking.empty.title'.tr, style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Vos commandes apparaîtront ici',
+          Text('tracking.empty.message'.tr,
             style: context.textStyle(FontSizeType.body2, color: AppThemeSystem.grey600)),
         ],
       ),
@@ -475,7 +475,7 @@ class TrackingView extends GetView<TrackingController> {
     // barre d'état) au lieu d'occuper d'office 85 % de l'écran.
     AppSheet.show(
       AppSheet(
-        title: 'Suivi de commande',
+        title: 'tracking.sheet_title'.tr,
         color: AppThemeSystem.getBackgroundColor(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,14 +500,14 @@ class TrackingView extends GetView<TrackingController> {
                       children: [
                         Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
                         const SizedBox(width: 8),
-                        Text('Code de confirmation', style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppDesign.warning)),
+                        Text('tracking.confirmation_code'.tr, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: AppDesign.warning)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(shipment['confirmationCode'],
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8, color: AppDesign.warning)),
                     const SizedBox(height: 8),
-                    Text('Communiquez ce code au livreur',
+                    Text('tracking.code_hint'.tr,
                       style: context.textStyle(FontSizeType.caption, color: AppDesign.warning)),
                   ],
                 ),
@@ -534,7 +534,7 @@ class TrackingView extends GetView<TrackingController> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Votre livreur', style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                          Text('tracking.your_courier'.tr, style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
                           Text(shipment['deliveryPersonName'], style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600)),
                         ],
                       ),
@@ -560,7 +560,7 @@ class TrackingView extends GetView<TrackingController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+                    Text('tracking.delivery'.tr, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     OrderDeliveryDetails(
                       delivery: delivery,
@@ -585,7 +585,7 @@ class TrackingView extends GetView<TrackingController> {
                     if (done) Get.back();
                   },
                   icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                  label: const Text('J’ai reçu mon colis'),
+                  label: Text('tracking.received_parcel'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -596,7 +596,7 @@ class TrackingView extends GetView<TrackingController> {
             ],
 
             const SizedBox(height: 24),
-            Text('Suivi de livraison', style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+            Text('tracking.delivery_tracking'.tr, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             if (delivery != null && delivery.timeline.isNotEmpty)
               DeliveryTimelineView(steps: delivery.timeline)
@@ -650,7 +650,7 @@ class TrackingView extends GetView<TrackingController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Adresse de livraison', style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
+                      Text('tracking.delivery_address'.tr, style: context.textStyle(FontSizeType.caption, color: AppThemeSystem.grey600)),
                       const SizedBox(height: 4),
                       Text(shipment['deliveryAddress'], style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w500)),
                     ],

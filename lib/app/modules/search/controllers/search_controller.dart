@@ -483,7 +483,7 @@ class SearchController extends GetxController {
           target.wholesale.clear();
           target.total.value = 0;
         } else if (target.products.isNotEmpty) {
-          _showError('Impossible de rafraîchir les produits');
+          _showError('search.refresh_failed'.tr);
         }
         target.query.value = query;
         target.loadFailed.value = true;
@@ -967,15 +967,15 @@ extension SortOptionExtension on SortOption {
   String get label {
     switch (this) {
       case SortOption.relevance:
-        return 'Pertinence';
+        return 'search.sort.relevance'.tr;
       case SortOption.priceAsc:
-        return 'Prix croissant';
+        return 'search.sort.price_asc'.tr;
       case SortOption.priceDesc:
-        return 'Prix décroissant';
+        return 'search.sort.price_desc'.tr;
       case SortOption.dateDesc:
-        return 'Plus récents';
+        return 'search.sort.newest'.tr;
       case SortOption.dateAsc:
-        return 'Plus anciens';
+        return 'search.sort.oldest'.tr;
     }
   }
 
@@ -997,7 +997,7 @@ extension SortOptionExtension on SortOption {
 
 void _showError(String message) {
   Get.snackbar(
-    'Erreur',
+    'search.error_title'.tr,
     message,
     snackPosition: SnackPosition.BOTTOM,
     margin: const EdgeInsets.all(16),

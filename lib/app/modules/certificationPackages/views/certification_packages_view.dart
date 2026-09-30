@@ -29,7 +29,7 @@ class CertificationPackagesView
         leading: const AppBackButton(),
         centerTitle: false,
         title: Text(
-          'Certification',
+          'certification.view.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w700,
             color: ds.textPrimary,
@@ -73,7 +73,7 @@ class CertificationPackagesView
                       SizedBox(height: AppDesign.space8),
 
                       Text(
-                        'Choisissez votre formule',
+                        'certification.view.choose'.tr,
                         style: context.subtitle1.copyWith(
                           fontWeight: FontWeight.w700,
                           color: ds.textPrimary,
@@ -81,7 +81,7 @@ class CertificationPackagesView
                       ),
                       SizedBox(height: AppDesign.space1),
                       Text(
-                        'Le badge reste affiché pendant toute la durée de la formule.',
+                        'certification.view.badge_duration'.tr,
                         style: context.body2.copyWith(color: ds.textSecondary),
                       ),
                       SizedBox(height: AppDesign.space4),
@@ -135,7 +135,7 @@ class CertificationPackagesView
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Devenez vendeur certifié',
+                  'certification.view.hero_title'.tr,
                   style: context.h6.copyWith(
                     fontWeight: FontWeight.w700,
                     color: ds.textPrimary,
@@ -144,7 +144,7 @@ class CertificationPackagesView
                 ),
                 SizedBox(height: AppDesign.space1),
                 Text(
-                  'Le badge de certification rassure vos clients et met vos produits en avant.',
+                  'certification.view.hero_subtitle'.tr,
                   style: context.body2.copyWith(
                     color: ds.textSecondary,
                     height: 1.45,
@@ -162,26 +162,26 @@ class CertificationPackagesView
   /// typographie, pas d'une couleur par ligne.
   Widget _buildBenefits(BuildContext context) {
     final ds = context.ds;
-    const benefits = [
+    final benefits = [
       (
         Icons.trending_up_rounded,
-        'Visibilité accrue',
-        'Jusqu’à 3 fois plus de vues sur vos produits',
+        'certification.view.benefit_visibility'.tr,
+        'certification.view.benefit_visibility_desc'.tr,
       ),
       (
         Icons.verified_user_outlined,
-        'Badge de confiance',
-        'Affiché sur votre boutique et vos produits',
+        'certification.view.benefit_badge'.tr,
+        'certification.view.benefit_badge_desc'.tr,
       ),
       (
         Icons.search_rounded,
-        'Priorité dans la recherche',
-        'Vos produits remontent dans les résultats',
+        'certification.view.benefit_search'.tr,
+        'certification.view.benefit_search_desc'.tr,
       ),
       (
         Icons.support_agent_rounded,
-        'Support prioritaire',
-        'Une assistance dédiée 7 j/7',
+        'certification.view.benefit_support'.tr,
+        'certification.view.benefit_support_desc'.tr,
       ),
     ];
 
@@ -241,9 +241,9 @@ class CertificationPackagesView
   Widget _buildEmptyState(BuildContext context) {
     return AppEmptyState(
       icon: Icons.verified_outlined,
-      title: 'Aucune formule disponible',
-      message: 'Les formules de certification seront bientôt proposées.',
-      actionLabel: 'Actualiser',
+      title: 'certification.view.empty_title'.tr,
+      message: 'certification.view.empty_message'.tr,
+      actionLabel: 'certification.view.refresh'.tr,
       onAction: controller.refreshPackages,
     );
   }
@@ -318,8 +318,8 @@ class CertificationPackagesView
                     ),
                     if (isPopular) ...[
                       SizedBox(width: AppDesign.space2),
-                      const AppBadge(
-                        label: 'Recommandé',
+                      AppBadge(
+                        label: 'package_subscription.view.recommended'.tr,
                         tone: AppBadgeTone.accent,
                       ),
                     ],
@@ -393,7 +393,7 @@ class CertificationPackagesView
                       ? Padding(
                           padding: EdgeInsets.only(top: AppDesign.space5),
                           child: AppButton(
-                            label: 'Obtenir la certification',
+                            label: 'certification.view.get_certification'.tr,
                             icon: Icons.verified_outlined,
                             size: AppButtonSize.large,
                             isLoading: controller.isCreatingOrder.value,
@@ -429,7 +429,7 @@ class CertificationPackagesView
     final method = await PaymentMethodSelector.show(
       amount: display.amount,
       currency: display.currency,
-      amountLabel: 'Prix de la certification',
+      amountLabel: 'certification.view.price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -447,8 +447,8 @@ class CertificationPackagesView
         break;
       default:
         Get.snackbar(
-          'Indisponible',
-          "Ce moyen de paiement n'est pas encore disponible pour les certifications.",
+          'package_subscription.unavailable'.tr,
+          'certification.view.method_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
     }
@@ -462,7 +462,7 @@ class CertificationPackagesView
   ) async {
     final selection = await KpayDirectPaymentSheet.show(
       amount: amount,
-      amountLabel: 'Prix de la certification',
+      amountLabel: 'certification.view.price'.tr,
     );
     if (selection == null) return; // paiement annulé
 
@@ -475,8 +475,8 @@ class CertificationPackagesView
 
     if (success) {
       Get.snackbar(
-        'Commande créée !',
-        'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.',
+        'certification.view.order_created'.tr,
+        'certification.view.validate_ussd'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
@@ -492,7 +492,7 @@ class CertificationPackagesView
     PaymentMethodOption method,
   ) async {
     final confirmed = await WalletPaymentConfirmDialog.show(
-      itemLabel: '${package['name'] ?? 'Certification'}',
+      itemLabel: '${package['name'] ?? 'certification.view.title'.tr}',
       amount: price,
       balance: method.balance ?? 0,
       salesCode: controller.salesCode.code,
@@ -505,7 +505,7 @@ class CertificationPackagesView
     if (message == null) return; // erreur déjà affichée
 
     Get.snackbar(
-      'Boutique certifiée ✅',
+      'certification.view.certified'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppDesign.success,
@@ -518,8 +518,8 @@ class CertificationPackagesView
   Future<void> _payViaCard(BuildContext context, int packageId) async {
     if (!StripeNativeService.isSupported) {
       Get.snackbar(
-        'Indisponible',
-        "Le paiement par carte est disponible sur l'application mobile.",
+        'package_subscription.unavailable'.tr,
+        'wallet.recharge.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -538,8 +538,8 @@ class CertificationPackagesView
 
       if (!ok) {
         Get.snackbar(
-          'Paiement annulé',
-          "Le paiement n'a pas été finalisé.",
+          'wallet.webview.cancelled'.tr,
+          'package_subscription.payment_not_finalized'.tr,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
@@ -548,8 +548,8 @@ class CertificationPackagesView
 
       controller.pollOrderPayment(orderId);
       Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation. Vous serez notifié.',
+        'package_subscription.payment_in_progress'.tr,
+        'package_subscription.payment_confirming'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
@@ -557,7 +557,7 @@ class CertificationPackagesView
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'certification.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
