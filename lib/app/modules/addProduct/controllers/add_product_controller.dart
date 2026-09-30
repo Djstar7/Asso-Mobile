@@ -594,6 +594,7 @@ class AddProductController extends GetxController {
       selectedCurrency.value = userCode.isNotEmpty ? userCode : 'XAF';
     }
 
+    await ConnectivityService.ensureFresh();
     if (Get.isRegistered<CurrencyService>() && !isOffline) {
       final list = await CurrencyService.to.getAllCurrencies();
       if (list.isNotEmpty) {
@@ -612,6 +613,11 @@ class AddProductController extends GetxController {
   /// Initialise les données (catégories et stockage)
   Future<void> _initializeData() async {
     isLoading.value = true;
+
+    // L'état « en ligne » peut dater : on vérifie que le backend répond
+    // avant de l'interroger, pour basculer tout de suite sur les copies
+    // locales plutôt que d'attendre l'échec de chaque appel.
+    await ConnectivityService.ensureFresh();
 
     await Future.wait([
       _loadCategories(),
@@ -850,11 +856,16 @@ class AddProductController extends GetxController {
       if (response.success && response.data != null) {
         final data = response.data!['data'] ?? response.data!;
         _applyStorage(data);
+        return;
       }
     } catch (e) {
       print('Erreur lors du chargement du stockage: $e');
-      // Si erreur, on laisse vide - l'utilisateur devra souscrire à un package
     }
+    // Serveur injoignable ou en erreur : dernier forfait connu.
+    final snapshot = OfflineStore.readSnapshot(
+      VendorDashboardController.dashboardSnapshotKey,
+    );
+    if (snapshot is Map) _applyStorage(snapshot);
   }
 
   /// Espace du forfait actif, lu dans une réponse du tableau de bord.
@@ -1409,7 +1420,7 @@ class AddProductController extends GetxController {
 
     // Le mode hors ligne ne couvre que la création : une modification part
     // des données du serveur, qui font foi.
-    if (isEditMode.value && isOffline) {
+    if (isEditMode.value && !await ConnectivityService.ensureFresh()) {
       _warnMissingField(
         'add_product.offline'.tr,
         'add_product.validation.edit_offline'.tr,
@@ -1589,9 +1600,9 @@ class AddProductController extends GetxController {
         fieldsMap['client_reference'] = _creationReference;
       }
 
-      // Hors ligne : la fiche est gardée sur le téléphone et partira seule
-      // au retour de la connexion.
-      if (!isEditMode.value && isOffline) {
+      // Hors ligne (backend injoignable, réseau ou non) : la fiche est
+      // gardée sur le téléphone et partira seule quand il répondra.
+      if (!isEditMode.value && !await ConnectivityService.ensureFresh()) {
         await _saveOffline(
           fieldsMap,
           imagesToUpload,
@@ -1628,13 +1639,11 @@ class AddProductController extends GetxController {
       print('📦 ADD_PRODUCT: Réponse reçue - message: ${response.message}');
       print('📦 ADD_PRODUCT: Réponse reçue - data: ${response.data}');
 
-      // Connexion perdue pendant l'envoi : plutôt que de perdre la saisie,
-      // on la garde pour l'envoi différé.
+      // Backend perdu pendant l'envoi : plutôt que de perdre la saisie, on
+      // la garde pour l'envoi différé (sans doublon grâce à la référence).
       if (!response.success &&
-          response.statusCode == 0 &&
           !isEditMode.value &&
-          Get.isRegistered<ConnectivityService>() &&
-          !await ConnectivityService.to.check()) {
+          await _backendUnreachable(response.statusCode)) {
         await _saveOffline(
           fieldsMap,
           imagesToUpload,
@@ -1834,6 +1843,20 @@ class AddProductController extends GetxController {
           ? 'add_product.categories.no_longer_exists'.tr
           : 'add_product.categories.not_loaded'.tr,
     );
+  }
+
+  /// Vrai si l'échec d'un envoi vient d'un backend injoignable et non d'un
+  /// refus du serveur sur la fiche. Une passerelle en erreur (502/503/504)
+  /// suffit ; un délai dépassé ou une 500 sont confirmés par un sondage.
+  Future<bool> _backendUnreachable(int statusCode) async {
+    if (!Get.isRegistered<ConnectivityService>()) return false;
+    if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
+      return true;
+    }
+    if (statusCode == 0 || statusCode == 408 || statusCode >= 500) {
+      return !await ConnectivityService.to.check();
+    }
+    return false;
   }
 
   /// Met la fiche en file d'envoi (Hive) et ramène le vendeur au tableau

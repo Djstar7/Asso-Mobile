@@ -273,10 +273,11 @@ class ApiProvider {
 
   /// Handle response
   static ApiResponse _handleResponse(http.Response response) {
-    // Toute réponse, même en erreur, prouve que le serveur est joignable.
-    ConnectivityService.reportReachable();
     try {
       final body = jsonDecode(response.body);
+      // Une réponse JSON sous 500, même en erreur, prouve que le backend
+      // traite les requêtes ; une 5xx fait re-sonder le serveur.
+      ConnectivityService.reportResponse(response.statusCode);
       final success = body['success'] == true && response.statusCode >= 200 && response.statusCode < 300;
 
       // Extract message - can be either String or Map
@@ -319,6 +320,9 @@ class ApiProvider {
         error: e,
         stackTrace: stackTrace,
       );
+      // Pas du JSON : page d'erreur d'une passerelle ou d'un portail captif,
+      // pas le backend. On vérifie qu'il est toujours joignable.
+      ConnectivityService.reportResponse(503);
       return ApiResponse(
         success: false,
         message: 'network.parsing_error'.trParams({'body': response.body}),

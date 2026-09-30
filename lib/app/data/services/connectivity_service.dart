@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -9,10 +10,14 @@ import '../../core/values/constants.dart';
 
 /// Joignabilité du serveur ASSO, pour le mode hors ligne du vendeur.
 ///
-/// On ne se fie pas à l'état du Wi-Fi ou des données mobiles : un réseau
+/// « Hors ligne » veut dire : le backend ne peut pas traiter de requête. On
+/// ne se fie donc pas à l'état du Wi-Fi ou des données mobiles — un réseau
 /// peut être « connecté » sans rien laisser passer (forfait épuisé, portail
-/// captif). Le service sonde donc le serveur lui-même — toute réponse HTTP,
-/// même une erreur, prouve qu'il est joignable.
+/// captif), et internet peut marcher alors que le serveur ASSO est tombé.
+/// Le service sonde la route de santé de Laravel (`/up`) : seule une réponse
+/// 2xx de sa part vaut « en ligne ». Une passerelle en erreur (502/503/504),
+/// la maintenance Laravel (503), une redirection de portail captif ou un
+/// délai dépassé valent « hors ligne ».
 ///
 /// Sondages : au démarrage, au retour au premier plan, après un échec réseau
 /// signalé par [ApiProvider], puis régulièrement (plus souvent hors ligne,
@@ -31,11 +36,26 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
   final http.Client _client = http.Client();
   Timer? _timer;
   Future<bool>? _probing;
+  DateTime? _lastProbeAt;
 
   /// Vrai si le service est enregistré et constate l'absence de réseau.
   /// Sans service (tests, démarrage), on se considère en ligne.
   static bool get isOffline =>
       Get.isRegistered<ConnectivityService>() && !to.isOnline.value;
+
+  /// État vérifié récemment, pour décider avant une action (ouverture du
+  /// formulaire, envoi d'un produit) : re-sonde si le dernier sondage date
+  /// de plus de [maxAge]. Sans service, on se considère en ligne.
+  static Future<bool> ensureFresh({
+    Duration maxAge = const Duration(seconds: 15),
+  }) async {
+    if (!Get.isRegistered<ConnectivityService>()) return true;
+    final last = to._lastProbeAt;
+    if (last != null && DateTime.now().difference(last) < maxAge) {
+      return to.isOnline.value;
+    }
+    return to.check();
+  }
 
   /// Premier sondage, attendu avant le premier écran : il décide si le
   /// démarrage attend les réglages du serveur ou part sur les données locales.
@@ -72,10 +92,13 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
   Future<bool> _probe() async {
     bool reachable;
     try {
-      await _client
-          .head(Uri.parse(AppConstants.baseUrl))
-          .timeout(_probeTimeout);
-      reachable = true;
+      final request = http.Request(kIsWeb ? 'HEAD' : 'GET', _probeUri)
+        // Un portail captif répond par une redirection : ce n'est pas le
+        // serveur ASSO.
+        ..followRedirects = false;
+      final response = await _client.send(request).timeout(_probeTimeout);
+      await response.stream.drain<void>();
+      reachable = _isHealthy(response.statusCode);
     } on SocketException {
       reachable = false;
     } on TimeoutException {
@@ -85,8 +108,28 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
     } catch (_) {
       reachable = false;
     }
+    _lastProbeAt = DateTime.now();
     _setOnline(reachable);
     return reachable;
+  }
+
+  /// Route sondée. Sur mobile, la route de santé de Laravel, à la racine du
+  /// site (`…/api` → `…/up`) : elle ne répond 200 que si l'application
+  /// démarre réellement. Sur le web, elle n'est pas ouverte au CORS : on
+  /// garde la racine de l'API.
+  static Uri get _probeUri {
+    final api = Uri.parse(AppConstants.baseUrl);
+    if (kIsWeb) return api;
+    final segments = api.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (segments.isNotEmpty && segments.last == 'api') segments.removeLast();
+    return api.replace(pathSegments: [...segments, 'up']);
+  }
+
+  /// `/up` doit répondre 2xx ; la racine de l'API (web) répond 404 ou 405
+  /// quand tout va bien. Dans les deux cas, 3xx et 5xx = injoignable.
+  static bool _isHealthy(int status) {
+    if (status >= 200 && status < 300) return true;
+    return kIsWeb && status >= 400 && status < 500;
   }
 
   void _setOnline(bool value) {
@@ -103,6 +146,16 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
   }
 
   // ── Signaux venus des appels API ──────────────────────────────────────
+
+  /// Une réponse lisible du serveur est arrivée. Une 5xx (passerelle, panne,
+  /// maintenance) ne prouve rien : on re-sonde au lieu de conclure.
+  static void reportResponse(int statusCode) {
+    if (statusCode >= 500) {
+      if (Get.isRegistered<ConnectivityService>()) to.check();
+      return;
+    }
+    reportReachable();
+  }
 
   /// Une réponse du serveur est arrivée : il est joignable.
   static void reportReachable() {
