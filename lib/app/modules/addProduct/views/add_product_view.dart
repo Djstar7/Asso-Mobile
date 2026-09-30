@@ -893,7 +893,11 @@ class AddProductView extends GetView<AddProductController> {
                               isLast
                                   ? (controller.isEditMode.value
                                       ? 'add_product.view.save'.tr
-                                      : 'add_product.view.publish'.tr)
+                                      : controller.isOffline
+                                          // Backend injoignable : la fiche
+                                          // part en file, pas en ligne.
+                                          ? 'add_product.view.save_offline'.tr
+                                          : 'add_product.view.publish'.tr)
                                   : 'add_product.view.continue'.tr,
                               style: context.button.copyWith(
                                 color: controller.canGoNext || isLast
