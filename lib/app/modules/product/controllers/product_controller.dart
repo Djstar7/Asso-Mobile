@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/values/constants.dart';
@@ -12,6 +11,7 @@ import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/widgets/variant_quantity_list.dart';
 import '../../../data/models/delivery_info.dart';
 import '../../../data/providers/conversation_service.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/product_service.dart';
@@ -153,7 +153,8 @@ class ProductController extends GetxController {
     }
 
     final name = product['name']?.toString().trim() ?? '';
-    final price = product['formatted_price']?.toString().trim() ?? '';
+    // `formatted_price` de l'API est toujours en FCFA : on suit la devise choisie.
+    final price = formatPrice(unitPriceXaf(product));
 
     // Le message porte le nom et le prix : dans une conversation, un lien nu
     // n'apprend rien tant qu'on ne l'a pas ouvert.
@@ -670,10 +671,10 @@ class ProductController extends GetxController {
     return total;
   }
 
-  String formatPrice(double amount) {
-    final formatter = NumberFormat.decimalPattern();
-    return '${formatter.format(amount.round())} FCFA';
-  }
+  /// Montant pivot (XAF) affiché dans la devise choisie par l'utilisateur.
+  /// À appeler dans un Obx pour suivre un changement de devise.
+  String formatPrice(double amountXaf) =>
+      CurrencyService.formatFromPivot(amountXaf);
 
   /// Crée la commande et renvoie la réponse du serveur (`order`, `order_id`,
   /// données Stripe…), ou null si elle n'a pas pu être créée.

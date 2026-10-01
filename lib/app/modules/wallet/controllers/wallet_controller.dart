@@ -178,7 +178,7 @@ class WalletController extends GetxController {
           Get.snackbar(
             'wallet.notif.deposit_success_title'.tr,
             'wallet.notif.deposit_success_message'
-                .trParams({'amount': '${data['amount']}'}),
+                .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -203,7 +203,7 @@ class WalletController extends GetxController {
           Get.snackbar(
             'wallet.notif.withdrawal_done_title'.tr,
             'wallet.notif.withdrawal_done_message'
-                .trParams({'amount': '${data['amount']}'}),
+                .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -228,7 +228,7 @@ class WalletController extends GetxController {
           Get.snackbar(
             'wallet.notif.funds_unlocked_title'.tr,
             'wallet.notif.funds_unlocked_message'
-                .trParams({'amount': '${data['amount']}'}),
+                .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
             duration: const Duration(seconds: 4),
@@ -769,6 +769,10 @@ class WalletController extends GetxController {
 
   /// Getter pour le solde actuel
   double get currentBalance => wallet.value?.currentBalance ?? 0.0;
+
+  /// Montant (XAF) reçu dans une notification, affiché dans la devise choisie.
+  String _notifAmount(dynamic amount) =>
+      CurrencyService.formatFromPivot(double.tryParse('$amount') ?? 0);
 
   /// Getter pour le solde formaté
   String get formattedBalance => wallet.value?.formattedBalance ?? '0 FCFA';
