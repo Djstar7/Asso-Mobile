@@ -902,15 +902,15 @@
   "wallet": {
     "notif": {
       "deposit_success_title": "💰 Dépôt réussi",
-      "deposit_success_message": "Votre dépôt de @amount FCFA a été confirmé.",
+      "deposit_success_message": "Votre dépôt de @amount a été confirmé.",
       "deposit_failed_title": "❌ Dépôt échoué",
       "deposit_failed_message": "Le dépôt a échoué",
       "withdrawal_done_title": "💸 Retrait effectué",
-      "withdrawal_done_message": "Votre retrait de @amount FCFA a été envoyé.",
+      "withdrawal_done_message": "Votre retrait de @amount a été envoyé.",
       "withdrawal_failed_title": "⚠️ Retrait échoué",
       "withdrawal_failed_message": "Votre retrait a échoué. Le montant a été remboursé dans votre wallet.",
       "funds_unlocked_title": "💰 Fonds débloqués!",
-      "funds_unlocked_message": "Vous avez reçu @amount FCFA. Les fonds sont maintenant disponibles dans votre wallet.",
+      "funds_unlocked_message": "Vous avez reçu @amount. Les fonds sont maintenant disponibles dans votre wallet.",
       "recharge_confirmed_title": "💰 Recharge confirmée",
       "recharge_confirmed_message": "Votre dépôt a été crédité dans votre wallet.",
       "recharge_failed_title": "❌ Recharge échouée",

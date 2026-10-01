@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 
 class SellerConfirmCodeDialog extends StatefulWidget {
@@ -183,12 +184,8 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
     }
   }
 
-  String _formatAmount(double amount) {
-    return '${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
-  }
+  /// Montant pivot (XAF) dans la devise choisie par l'utilisateur.
+  String _formatAmount(double amount) => CurrencyService.formatFromPivot(amount);
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,5 @@
+import '../providers/currency_service.dart';
+
 /// Invoice model matching backend structure
 class InvoiceModel {
   final int id;
@@ -65,7 +67,6 @@ class InvoiceModel {
     }
   }
 
-  String getFormattedAmount() {
-    return '${amount.toStringAsFixed(0)} FCFA';
-  }
+  /// Montant (XAF) affiché dans la devise choisie par l'utilisateur.
+  String getFormattedAmount() => CurrencyService.formatFromPivot(amount);
 }
