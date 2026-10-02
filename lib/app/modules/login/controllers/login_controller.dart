@@ -6,6 +6,37 @@ import '../../../data/providers/guest_access.dart';
 import '../../../data/services/firebase_messaging_service.dart';
 import '../../../routes/app_pages.dart';
 
+/// Motif d'un échec de connexion, affiché dans le formulaire.
+///
+/// Le message du serveur n'est pas repris tel quel : un 401 y devenait
+/// « session expirée » (traitement générique d'[ApiProvider]), ce qui
+/// n'a aucun sens pour quelqu'un qui n'est pas encore connecté.
+enum LoginErrorKind {
+  credentials('credentials', Icons.lock_person_outlined),
+  validation('validation', Icons.edit_note_rounded),
+  tooManyAttempts('too_many', Icons.hourglass_top_rounded),
+  network('network', Icons.wifi_off_rounded),
+  server('server', Icons.cloud_off_rounded),
+  generic('generic', Icons.error_outline_rounded);
+
+  const LoginErrorKind(this._key, this.icon);
+
+  final String _key;
+  final IconData icon;
+
+  String get title => 'login.errors.${_key}_title'.tr;
+  String get message => 'login.errors.${_key}_message'.tr;
+
+  static LoginErrorKind fromStatus(int statusCode) {
+    if (statusCode == 401 || statusCode == 404) return credentials;
+    if (statusCode == 422) return validation;
+    if (statusCode == 429) return tooManyAttempts;
+    if (statusCode == 0 || statusCode == 408) return network;
+    if (statusCode >= 500) return server;
+    return generic;
+  }
+}
+
 class LoginController extends GetxController {
   late TextEditingController emailController;
   late TextEditingController passwordController;
@@ -16,6 +47,9 @@ class LoginController extends GetxController {
   final isFormValid = false.obs;
   final obscurePassword = true.obs;
 
+  /// Dernier échec, effacé dès que l'utilisateur corrige sa saisie.
+  final loginError = Rxn<LoginErrorKind>();
+
   @override
   void onInit() {
     super.onInit();
@@ -25,8 +59,8 @@ class LoginController extends GetxController {
     );
     emailController = TextEditingController();
     passwordController = TextEditingController();
-    ever(email, (_) => _validateForm());
-    ever(password, (_) => _validateForm());
+    ever(email, (_) => _onInputChanged());
+    ever(password, (_) => _onInputChanged());
   }
 
   @override
@@ -34,6 +68,11 @@ class LoginController extends GetxController {
     emailController.dispose();
     passwordController.dispose();
     super.onClose();
+  }
+
+  void _onInputChanged() {
+    loginError.value = null;
+    _validateForm();
   }
 
   void _validateForm() {
@@ -78,6 +117,7 @@ class LoginController extends GetxController {
     }
 
     isLoading.value = true;
+    loginError.value = null;
 
     try {
       // Login with email - direct login without OTP
@@ -131,18 +171,9 @@ class LoginController extends GetxController {
         developer.log(
           'Login failed',
           name: 'LoginController',
-          error: response.message,
+          error: '[${response.statusCode}] ${response.message}',
         );
-        Get.snackbar(
-          'common.error'.tr,
-          response.message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Get.theme.colorScheme.error,
-          colorText: Get.theme.colorScheme.onError,
-          duration: const Duration(seconds: 3),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        loginError.value = LoginErrorKind.fromStatus(response.statusCode);
       }
     } catch (e, stackTrace) {
       developer.log(
@@ -151,16 +182,7 @@ class LoginController extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar(
-        'common.error'.tr,
-        'common.generic_error_retry'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      loginError.value = LoginErrorKind.generic;
     } finally {
       // Toujours terminer l'Obx du formulaire AVANT de retirer LoginView de
       // l'arbre. Une mutation après Get.offAll/Get.back provoquait le crash
