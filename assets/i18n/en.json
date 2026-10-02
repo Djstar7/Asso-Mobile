@@ -179,6 +179,20 @@
     },
     "invalid_form_title": "Invalid form",
     "invalid_form_message": "Please check your credentials",
+    "errors": {
+      "credentials_title": "Incorrect credentials",
+      "credentials_message": "This email address and password don't match any account. Check what you typed or reset your password.",
+      "validation_title": "Missing information",
+      "validation_message": "Enter a valid email address and your password.",
+      "too_many_title": "Too many attempts",
+      "too_many_message": "For your security, please wait a few minutes before trying again.",
+      "network_title": "No connection",
+      "network_message": "We can't reach the server. Check your internet connection and try again.",
+      "server_title": "Service unavailable",
+      "server_message": "Our servers are having trouble. Please try again in a moment.",
+      "generic_title": "Unable to sign in",
+      "generic_message": "Something unexpected happened. Please try again in a moment."
+    },
     "success": "Signed in successfully"
   },
   "otp": {

@@ -179,6 +179,20 @@
     },
     "invalid_form_title": "Formulaire invalide",
     "invalid_form_message": "Veuillez vérifier vos identifiants",
+    "errors": {
+      "credentials_title": "Identifiants incorrects",
+      "credentials_message": "L'adresse e-mail ou le mot de passe ne correspond à aucun compte. Vérifiez votre saisie ou réinitialisez votre mot de passe.",
+      "validation_title": "Informations incomplètes",
+      "validation_message": "Saisissez une adresse e-mail valide et votre mot de passe.",
+      "too_many_title": "Trop de tentatives",
+      "too_many_message": "Par sécurité, patientez quelques minutes avant de réessayer.",
+      "network_title": "Pas de connexion",
+      "network_message": "Impossible de joindre le serveur. Vérifiez votre connexion Internet puis réessayez.",
+      "server_title": "Service indisponible",
+      "server_message": "Nos serveurs rencontrent un problème. Réessayez dans un instant.",
+      "generic_title": "Connexion impossible",
+      "generic_message": "Une erreur inattendue est survenue. Réessayez dans un instant."
+    },
     "success": "Connexion réussie"
   },
   "otp": {
