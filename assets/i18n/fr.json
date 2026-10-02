@@ -3219,7 +3219,7 @@
     "error": "Erreur",
     "load_offers_error": "Impossible de charger les offres",
     "code_validated_title": "Code validé",
-    "code_validated_message": "La livraison est confirmée. L'acheteur doit maintenant confirmer la réception.",
+    "code_validated_message": "La livraison est confirmée. Votre part a été créditée sur votre portefeuille.",
     "receipt_confirmed": {
       "title": "Réception confirmée",
       "message": "Merci ! Les fonds ont été débloqués et versés au voyageur. Vous retrouvez le détail de l'opération dans votre portefeuille.",
@@ -3311,7 +3311,7 @@
       "kg_booked": "Kilos réservés",
       "total_price": "Prix total",
       "secret_code": "Votre code secret",
-      "code_hint": "Donnez ce code au voyageur au moment de la remise",
+      "code_hint": "Ne donnez ce code au voyageur qu'à la remise de votre colis : sa validation lui verse le paiement.",
       "validate_code": "Valider le code de livraison",
       "view_earnings": "Voir mes gains dans le portefeuille",
       "awaiting_receipt": "Code validé. En attente de la confirmation de réception par l'acheteur.",
@@ -3319,7 +3319,7 @@
     },
     "validate_dialog": {
       "title": "Valider la livraison",
-      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a communiqué.",
+      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a remis à la livraison. Sa validation clôt la réservation et crédite votre part.",
       "invalid_title": "Code invalide",
       "invalid_message": "Le code doit contenir 6 chiffres",
       "validate": "Valider"

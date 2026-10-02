@@ -3219,7 +3219,7 @@
     "error": "Error",
     "load_offers_error": "Unable to load offers",
     "code_validated_title": "Code validated",
-    "code_validated_message": "Delivery is confirmed. The buyer must now confirm receipt.",
+    "code_validated_message": "Delivery is confirmed. Your share has been credited to your wallet.",
     "receipt_confirmed": {
       "title": "Receipt confirmed",
       "message": "Thank you! The funds have been released and paid to the traveler. You can find the transaction details in your wallet.",
@@ -3311,7 +3311,7 @@
       "kg_booked": "Kilos booked",
       "total_price": "Total price",
       "secret_code": "Your secret code",
-      "code_hint": "Give this code to the traveler at handover",
+      "code_hint": "Only give this code to the traveler when you receive your package: validating it releases their payment.",
       "validate_code": "Validate delivery code",
       "view_earnings": "View my earnings in the wallet",
       "awaiting_receipt": "Code validated. Waiting for the buyer to confirm receipt.",
@@ -3319,7 +3319,7 @@
     },
     "validate_dialog": {
       "title": "Validate delivery",
-      "message": "Enter the 6-digit code the buyer gave you.",
+      "message": "Enter the 6-digit code the buyer gave you at delivery. Validating it closes the booking and credits your share.",
       "invalid_title": "Invalid code",
       "invalid_message": "The code must contain 6 digits",
       "validate": "Validate"
