@@ -36,6 +36,7 @@ abstract class Routes {
   static const HELP = _Paths.HELP;
   static const FAQ = _Paths.FAQ;
   static const ABOUT = _Paths.ABOUT;
+  static const LEGAL = _Paths.LEGAL;
   static const PACKAGE_SUBSCRIPTION = _Paths.PACKAGE_SUBSCRIPTION;
   static const CERTIFICATION_PACKAGES = _Paths.CERTIFICATION_PACKAGES;
   static const PRODUCT_MANAGEMENT = _Paths.PRODUCT_MANAGEMENT;
@@ -93,6 +94,7 @@ abstract class _Paths {
   static const HELP = '/help';
   static const FAQ = '/faq';
   static const ABOUT = '/about';
+  static const LEGAL = '/legal';
   static const PACKAGE_SUBSCRIPTION = '/package-subscription';
   static const CERTIFICATION_PACKAGES = '/certification-packages';
   static const PRODUCT_MANAGEMENT = '/product-management';

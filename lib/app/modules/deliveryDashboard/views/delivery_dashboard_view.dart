@@ -260,7 +260,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  'Calcul de l\'itinéraire...',
+                  'delivery_dashboard.route.computing'.tr,
                   null,
                 ),
               );
@@ -284,8 +284,16 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
             // avec les flèches, sans quitter la carte.
             final hasSeveral = runs.length > 1;
             final label = hasSeveral
-                ? 'Étape ${index + 1}/${runs.length} · #${tracked.orderId} · $details'
-                : 'Course #${tracked.orderId} · $details';
+                ? 'delivery_dashboard.route.step_label'.trParams({
+                    'step': '${index + 1}',
+                    'total': '${runs.length}',
+                    'order': '${tracked.orderId}',
+                    'details': details,
+                  })
+                : 'delivery_dashboard.route.run_label'.trParams({
+                    'order': '${tracked.orderId}',
+                    'details': details,
+                  });
 
             return Positioned(
               bottom: 74,
@@ -328,7 +336,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                         )
                       : const Icon(Icons.my_location, size: 20),
                   onPressed: () => controller.locateMe(),
-                  tooltip: 'Ma position',
+                  tooltip: 'delivery_dashboard.map.my_position'.tr,
                 ),
               ),
             ),
@@ -357,7 +365,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   // Au retour, la carte compacte doit se redessiner.
                   controller.currentPosition.refresh();
                 },
-                tooltip: 'Agrandir la carte',
+                tooltip: 'delivery_dashboard.map.expand'.tr,
               ),
             ),
           ),
@@ -383,7 +391,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
               // derrière lui, on retourne donc explicitement à l'accueil.
               child: AppBackButton(
                 color: AppDesign.neutral900,
-                tooltip: 'Retour à l\'accueil',
+                tooltip: 'delivery_dashboard.back_home'.tr,
                 onPressed: () => Get.offAllNamed('/home'),
               ),
             ),
@@ -493,7 +501,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Dépôt actuel',
+                              'delivery_dashboard.depot.current'.tr,
                               style: context.caption.copyWith(
                                 color: context.secondaryTextColor,
                                 fontSize: 10,
@@ -554,7 +562,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Sélectionner un dépôt',
+                          'delivery_dashboard.depot.select'.tr,
                           style: context.caption.copyWith(
                             color: context.secondaryTextColor,
                             fontSize: 11,
@@ -713,7 +721,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Vous livrez pour',
+                    'delivery_dashboard.company.delivering_for'.tr,
                     style: context.caption.copyWith(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
@@ -775,7 +783,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Actif',
+                          'delivery_dashboard.company.active'.tr,
                           style: context.caption.copyWith(
                             color: Colors.white,
                             fontSize: 10,
@@ -813,7 +821,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Se désynchroniser',
+                          'delivery_dashboard.company.unsync'.tr,
                           style: context.caption.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 10,
@@ -849,7 +857,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   child: _buildStatItem(
                     context,
                     icon: Icons.pending_actions,
-                    label: 'En attente',
+                    label: 'delivery_dashboard.status.pending'.tr,
                     value: '${stats.pendingDeliveries}',
                     color: AppThemeSystem.warningColor,
                   ),
@@ -859,7 +867,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   child: _buildStatItem(
                     context,
                     icon: Icons.local_shipping,
-                    label: 'En cours',
+                    label: 'delivery_dashboard.status.in_progress'.tr,
                     value: '${stats.inProgressDeliveries}',
                     color: AppThemeSystem.primaryColor,
                   ),
@@ -873,7 +881,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   child: _buildStatItem(
                     context,
                     icon: Icons.check_circle,
-                    label: 'Livrés',
+                    label: 'delivery_dashboard.status.delivered_plural'.tr,
                     value: '${stats.completedDeliveries}',
                     color: AppThemeSystem.successColor,
                   ),
@@ -885,7 +893,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                     child: _buildStatItem(
                       context,
                       icon: Icons.account_balance_wallet,
-                      label: 'Commissions',
+                      label: 'delivery_dashboard.stats.commissions'.tr,
                       value: controller.formatPrice(stats.totalCommissions),
                       color: AppThemeSystem.primaryColor,
                       isCompact: true,
@@ -959,23 +967,23 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildTabChip(context, null, 'Tout'),
+                    _buildTabChip(context, null, 'delivery_dashboard.filters.all'.tr),
                     const SizedBox(width: 8),
                     _buildTabChip(
                       context,
                       DeliveryStatus.pending,
-                      'En attente',
+                      'delivery_dashboard.status.pending'.tr,
                     ),
                     const SizedBox(width: 8),
                     _buildTabChip(
                       context,
                       DeliveryStatus.inProgress,
-                      'En cours',
+                      'delivery_dashboard.status.in_progress'.tr,
                     ),
                     const SizedBox(width: 8),
-                    _buildTabChip(context, DeliveryStatus.delivered, 'Livrés'),
+                    _buildTabChip(context, DeliveryStatus.delivered, 'delivery_dashboard.status.delivered_plural'.tr),
                     const SizedBox(width: 8),
-                    _buildTabChip(context, DeliveryStatus.cancelled, 'Annulés'),
+                    _buildTabChip(context, DeliveryStatus.cancelled, 'delivery_dashboard.status.cancelled_plural'.tr),
                   ],
                 ),
               ),
@@ -995,7 +1003,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.refresh, size: 20),
-              tooltip: 'Actualiser',
+              tooltip: 'delivery_dashboard.refresh'.tr,
               visualDensity: VisualDensity.compact,
             ),
           ),
@@ -1044,7 +1052,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Ma tournée',
+                    'delivery_dashboard.tour.title'.tr,
                     style: context.body2.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -1063,7 +1071,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
             if (controller.isAtRunCapacity) ...[
               const SizedBox(height: 4),
               Text(
-                'Tournée complète — livrez une commande pour en accepter une autre.',
+                'delivery_dashboard.tour.full_hint'.tr,
                 style: context.caption.copyWith(
                   color: AppThemeSystem.warningColor,
                   fontSize: 10,
@@ -1180,7 +1188,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Aucune demande',
+                  'delivery_dashboard.empty'.tr,
                   style: context.body1.copyWith(color: AppThemeSystem.grey500),
                 ),
               ],
@@ -1290,11 +1298,14 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                           (r) => r.id == request.id,
                         );
                         final prefix = position >= 0 && runs.length > 1
-                            ? 'Étape ${position + 1}/${runs.length} · '
+                            ? 'delivery_dashboard.route.step_prefix'.trParams({
+                                'step': '${position + 1}',
+                                'total': '${runs.length}',
+                              })
                             : '';
 
                         return Text(
-                          '${prefix}Commande #${request.orderId}',
+                          '$prefix${'delivery_dashboard.order_number'.trParams({'order': '${request.orderId}'})}',
                           style: context.caption.copyWith(
                             color: context.secondaryTextColor,
                           ),
@@ -1330,7 +1341,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
           _buildStopBlock(
             context,
             icon: Icons.storefront_outlined,
-            step: '1. Retrait',
+            step: 'delivery_dashboard.steps.pickup'.tr,
             color: AppThemeSystem.infoColor,
             name: request.pickup?.name,
             phone: request.pickup?.phone,
@@ -1342,7 +1353,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
           _buildStopBlock(
             context,
             icon: Icons.person_pin_circle_outlined,
-            step: '2. Livraison',
+            step: 'delivery_dashboard.steps.dropoff'.tr,
             color: AppThemeSystem.successColor,
             name: request.dropoff?.name ?? request.customerName,
             phone: request.dropoff?.phone ?? request.customerPhone,
@@ -1361,7 +1372,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
               context,
               Icons.inventory_2_outlined,
               request.items.map((i) => '${i.name} x${i.quantity}').join(', '),
-              label: 'Colis',
+              label: 'delivery_dashboard.details.parcel'.tr,
             ),
           ],
 
@@ -1372,7 +1383,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
               context,
               Icons.schedule_outlined,
               request.leadTime!,
-              label: 'Délai',
+              label: 'delivery_dashboard.details.lead_time'.tr,
             ),
           ],
 
@@ -1383,7 +1394,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
               context,
               Icons.receipt_long_outlined,
               controller.formatPrice(request.orderTotal),
-              label: 'Valeur commande',
+              label: 'delivery_dashboard.details.order_value'.tr,
             ),
           ],
 
@@ -1462,7 +1473,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
             IconButton(
               onPressed: () => controller.callCustomer(phone),
               icon: Icon(Icons.phone, size: 18, color: color),
-              tooltip: 'Appeler',
+              tooltip: 'delivery_dashboard.actions.call'.tr,
               visualDensity: VisualDensity.compact,
             ),
         ],
@@ -1526,7 +1537,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   side: BorderSide(color: AppThemeSystem.errorColor),
                 ),
-                child: const Text('Refuser', style: TextStyle(fontSize: 12)),
+                child: Text('delivery_dashboard.actions.decline'.tr, style: const TextStyle(fontSize: 12)),
               ),
             ),
             const SizedBox(width: 8),
@@ -1541,7 +1552,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
                 child: Text(
-                  full ? 'Tournée pleine' : 'Accepter',
+                  full ? 'delivery_dashboard.actions.round_full'.tr : 'delivery_dashboard.actions.accept'.tr,
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
@@ -1565,9 +1576,9 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                 controller.currentPosition.refresh();
               },
               icon: const Icon(Icons.route, size: 16),
-              label: const Text(
-                'Voir l\'itinéraire',
-                style: TextStyle(fontSize: 12),
+              label: Text(
+                'delivery_dashboard.actions.view_route'.tr,
+                style: const TextStyle(fontSize: 12),
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1585,7 +1596,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                     request.dropoff?.phone ?? request.customerPhone,
                   ),
                   icon: const Icon(Icons.phone, size: 16),
-                  label: const Text('Appeler', style: TextStyle(fontSize: 12)),
+                  label: Text('delivery_dashboard.actions.call'.tr, style: const TextStyle(fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -1599,7 +1610,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                     backgroundColor: AppThemeSystem.successColor,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: const Text('Livré', style: TextStyle(fontSize: 12)),
+                  child: Text('delivery_dashboard.actions.delivered'.tr, style: const TextStyle(fontSize: 12)),
                 ),
               ),
             ],
@@ -1611,8 +1622,12 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
     // Pour delivered et cancelled, afficher juste la date
     return Text(
       request.deliveredDate != null
-          ? 'Livré le ${DateFormat('dd/MM/yyyy à HH:mm').format(request.deliveredDate!)}'
-          : 'Annulé le ${DateFormat('dd/MM/yyyy à HH:mm').format(request.requestDate)}',
+          ? 'delivery_dashboard.delivered_on'.trParams({
+              'date': DateFormat('delivery_dashboard.date_time_format'.tr).format(request.deliveredDate!),
+            })
+          : 'delivery_dashboard.cancelled_on'.trParams({
+              'date': DateFormat('delivery_dashboard.date_time_format'.tr).format(request.requestDate),
+            }),
       style: context.caption.copyWith(color: context.secondaryTextColor),
     );
   }

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 
 class SellerConfirmCodeDialog extends StatefulWidget {
@@ -51,8 +52,8 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
 
     if (code.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Veuillez entrer le code de confirmation',
+        'wallet.confirm_code.error'.tr,
+        'wallet.confirm_code.code_required'.tr,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
@@ -61,8 +62,8 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
 
     if (code.length != 6) {
       Get.snackbar(
-        'Erreur',
-        'Le code doit contenir 6 caractères',
+        'wallet.confirm_code.error'.tr,
+        'wallet.confirm_code.code_length'.tr,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
       );
@@ -106,7 +107,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Livraison confirmée !',
+                  'wallet.confirm_code.delivery_confirmed'.tr,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -116,7 +117,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Les fonds sont maintenant disponibles dans votre wallet',
+                  'wallet.confirm_code.funds_available'.tr,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppThemeSystem.getSecondaryTextColor(Get.context!),
@@ -162,7 +163,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Fermer'),
+                    child: Text('wallet.confirm_code.close'.tr),
                   ),
                 ),
               ],
@@ -174,7 +175,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
     } catch (e) {
       isSubmitting.value = false;
       Get.snackbar(
-        'Erreur',
+        'wallet.confirm_code.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -183,12 +184,8 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
     }
   }
 
-  String _formatAmount(double amount) {
-    return '${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
-  }
+  /// Montant pivot (XAF) dans la devise choisie par l'utilisateur.
+  String _formatAmount(double amount) => CurrencyService.formatFromPivot(amount);
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +226,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
 
                   // Title
                   Text(
-                    'Confirmer la livraison',
+                    'wallet.confirm_code.confirm_delivery'.tr,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -265,7 +262,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Client',
+                                'wallet.confirm_code.client'.tr,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppDesign.info,
@@ -317,7 +314,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Demandez au client de vous donner le code secret à 6 chiffres',
+                            'wallet.confirm_code.ask_client_code'.tr,
                             style: TextStyle(
                               fontSize: 13,
                               color: AppDesign.warning,
@@ -401,7 +398,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Annuler'),
+                    child: Text('wallet.confirm_code.cancel'.tr),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -426,7 +423,7 @@ class _SellerConfirmCodeDialogState extends State<SellerConfirmCodeDialog> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text('Confirmer'),
+                            : Text('wallet.confirm_code.confirm'.tr),
                       )),
                 ),
               ],

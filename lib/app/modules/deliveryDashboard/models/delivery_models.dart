@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Statut de livraison
@@ -12,13 +13,13 @@ extension DeliveryStatusExtension on DeliveryStatus {
   String get label {
     switch (this) {
       case DeliveryStatus.pending:
-        return 'En attente';
+        return 'delivery_dashboard.status.pending'.tr;
       case DeliveryStatus.inProgress:
-        return 'En cours';
+        return 'delivery_dashboard.status.in_progress'.tr;
       case DeliveryStatus.delivered:
-        return 'Livré';
+        return 'delivery_dashboard.status.delivered'.tr;
       case DeliveryStatus.cancelled:
-        return 'Annulé';
+        return 'delivery_dashboard.status.cancelled'.tr;
     }
   }
 
@@ -95,7 +96,7 @@ class DeliveryItem {
   final int quantity;
 
   factory DeliveryItem.fromMap(Map<String, dynamic> map) => DeliveryItem(
-    name: (map['product_name'] ?? map['name'] ?? 'Article').toString(),
+    name: (map['product_name'] ?? map['name'] ?? 'delivery_dashboard.item'.tr).toString(),
     quantity: int.tryParse('${map['quantity'] ?? 1}') ?? 1,
   );
 }

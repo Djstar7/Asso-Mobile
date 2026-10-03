@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -175,7 +176,7 @@ class _ProductGalleryVideoState extends State<ProductGalleryVideo>
                   icon: _muted
                       ? Icons.volume_off_rounded
                       : Icons.volume_up_rounded,
-                  tooltip: _muted ? 'Activer le son' : 'Couper le son',
+                  tooltip: _muted ? 'core.video.unmute'.tr : 'core.video.mute'.tr,
                   onPressed: _toggleSound,
                 ),
               ),
@@ -358,7 +359,7 @@ class _ProductVideoFullscreenState extends State<ProductVideoFullscreen> {
                 icon: _muted
                     ? Icons.volume_off_rounded
                     : Icons.volume_up_rounded,
-                tooltip: _muted ? 'Activer le son' : 'Couper le son',
+                tooltip: _muted ? 'core.video.unmute'.tr : 'core.video.mute'.tr,
                 onPressed: _toggleSound,
               ),
             ),
@@ -367,7 +368,7 @@ class _ProductVideoFullscreenState extends State<ProductVideoFullscreen> {
                 icon: value.isPlaying
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
-                tooltip: value.isPlaying ? 'Pause' : 'Lecture',
+                tooltip: value.isPlaying ? 'core.video.pause'.tr : 'core.video.play'.tr,
                 size: 64,
                 onPressed: _togglePlay,
               ),

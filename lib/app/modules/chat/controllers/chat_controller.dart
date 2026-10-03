@@ -69,7 +69,7 @@ class ChatController extends GetxController {
             if (msgText != null && msgText.toString().isNotEmpty) {
               lastMessageText = msgText.toString();
             } else if (hasImage) {
-              lastMessageText = '📷 Image';
+              lastMessageText = 'chat.image_message'.tr;
             } else {
               lastMessageText = '';
             }
@@ -79,7 +79,7 @@ class ChatController extends GetxController {
 
           return <String, dynamic>{
             'id': conv['id']?.toString() ?? '',
-            'name': conv['other_user']?['name'] ?? conv['name'] ?? 'Utilisateur',
+            'name': conv['other_user']?['name'] ?? conv['name'] ?? 'chat.default_user_name'.tr,
             'avatar': StringUtils.getInitials(conv['other_user']?['name'] ?? conv['name'] ?? ''),
             'lastMessage': lastMessageText,
             'timestamp': _formatTimestamp(conv['updated_at'] ?? conv['last_message_at']),
@@ -122,11 +122,19 @@ class ChatController extends GetxController {
       final now = DateTime.now();
       final diff = now.difference(date);
 
-      if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes}min';
+      if (diff.inMinutes < 60) return 'chat.time.minutes_ago'.trParams({'minutes': '${diff.inMinutes}'});
       if (diff.inHours < 24) return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-      if (diff.inDays == 1) return 'Hier';
+      if (diff.inDays == 1) return 'chat.time.yesterday'.tr;
       if (diff.inDays < 7) {
-        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        final days = [
+          'chat.weekdays.monday'.tr,
+          'chat.weekdays.tuesday'.tr,
+          'chat.weekdays.wednesday'.tr,
+          'chat.weekdays.thursday'.tr,
+          'chat.weekdays.friday'.tr,
+          'chat.weekdays.saturday'.tr,
+          'chat.weekdays.sunday'.tr,
+        ];
         return days[date.weekday - 1];
       }
       return '${date.day}/${date.month}/${date.year}';
@@ -171,7 +179,7 @@ class ChatController extends GetxController {
       if (response.success && response.data != null) {
         final conv = response.data!['conversation'] ?? response.data!;
         final otherUser = conv['other_user'];
-        final userName = otherUser?['name'] ?? 'Utilisateur';
+        final userName = otherUser?['name'] ?? 'chat.default_user_name'.tr;
 
         Get.toNamed('/chatdetail', arguments: {
           'id': conv['id']?.toString(),
@@ -183,7 +191,7 @@ class ChatController extends GetxController {
         });
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de démarrer la conversation');
+      Get.snackbar('chat.error'.tr, 'chat.start_conversation_failed'.tr);
     } finally {
       isLoading.value = false;
     }
@@ -200,8 +208,8 @@ class ChatController extends GetxController {
 
       if (conversationId == null) {
         Get.snackbar(
-          'Erreur',
-          'Impossible de supprimer la conversation',
+          'chat.error'.tr,
+          'chat.delete_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -215,8 +223,8 @@ class ChatController extends GetxController {
 
       if (response.success) {
         Get.snackbar(
-          'Succès',
-          'Conversation supprimée',
+          'chat.success'.tr,
+          'chat.conversation_deleted'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.primaryColor,
           colorText: Colors.white,
@@ -225,16 +233,16 @@ class ChatController extends GetxController {
       } else {
         // En cas d'échec, recharger la liste
         Get.snackbar(
-          'Erreur',
-          'Impossible de supprimer la conversation',
+          'chat.error'.tr,
+          'chat.delete_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         await _loadConversations(refresh: true);
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'chat.error'.tr,
+        'chat.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       // Recharger la liste en cas d'erreur

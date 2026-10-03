@@ -4,6 +4,9 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/about_controller.dart';
+import '../../../routes/app_pages.dart';
+import '../../legal/views/legal_view.dart';
+import 'licenses_view.dart';
 
 class AboutView extends GetView<AboutController> {
   const AboutView({super.key});
@@ -17,7 +20,7 @@ class AboutView extends GetView<AboutController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'À propos',
+          'about.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -95,7 +98,10 @@ class AboutView extends GetView<AboutController> {
           )),
           const SizedBox(height: 8),
           Obx(() => Text(
-            'Version ${controller.appVersion.value} (${controller.buildNumber.value})',
+            'about.version'.trParams({
+              'version': controller.appVersion.value,
+              'build': controller.buildNumber.value,
+            }),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -127,16 +133,14 @@ class AboutView extends GetView<AboutController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'À propos de l\'application',
+            'about.about_app'.tr,
             style: context.body1.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Obx(() => Text(
             controller.appDescription.value.isNotEmpty
                 ? controller.appDescription.value
-                : 'Asso Market est une plateforme de commerce en ligne qui connecte '
-                    'les vendeurs et les acheteurs au Cameroun. Nous offrons une expérience '
-                    'd\'achat simple, rapide et sécurisée avec livraison à domicile.',
+                : 'about.default_description'.tr,
             style: context.body2.copyWith(height: 1.5),
           )),
         ],
@@ -145,63 +149,40 @@ class AboutView extends GetView<AboutController> {
   }
 
   Widget _buildLegalSection(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        children: [
-          _buildLegalItem(
-            context,
-            icon: Icons.description,
-            title: 'Conditions d\'utilisation',
-            subtitle: 'Consultez nos conditions d\'utilisation',
-            onTap: controller.showTermsOfService,
-          ),
-          Divider(color: context.borderColor, height: 1),
-          _buildLegalItem(
-            context,
-            icon: Icons.privacy_tip,
-            title: 'Politique de confidentialité',
-            subtitle: 'Comment nous protégeons vos données',
-            onTap: controller.showPrivacyPolicy,
-          ),
-          Divider(color: context.borderColor, height: 1),
-          _buildLegalItem(
-            context,
-            icon: Icons.info_outline,
-            title: 'Licences open source',
-            subtitle: 'Bibliothèques et licences utilisées',
-            onTap: controller.showLicenses,
-          ),
-        ],
+    final licences = LegalTile(
+      icon: Icons.info_outline,
+      title: 'about.licenses.title'.tr,
+      subtitle: 'about.licenses.subtitle'.tr,
+      onTap: () => LicensesView.open(
+        appName: controller.appName.value,
+        version: controller.appVersion.value,
       ),
     );
-  }
 
-  Widget _buildLegalItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: AppThemeSystem.primaryColor, size: 20),
-      ),
-      title: Text(title, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: context.caption),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
+      child: Obx(() {
+        // Documents pas encore reçus (hors ligne) : la page dédiée les
+        // recharge d'elle-même.
+        if (controller.legalDocuments.isEmpty) {
+          return LegalDocumentsCard(
+            documents: const [],
+            trailing: [
+              LegalTile(
+                icon: Icons.gavel_outlined,
+                title: 'legal.title'.tr,
+                subtitle: 'about.legal_subtitle'.tr,
+                onTap: () => Get.toNamed(Routes.LEGAL),
+              ),
+              licences,
+            ],
+          );
+        }
+        return LegalDocumentsCard(
+          documents: controller.legalDocuments,
+          trailing: [licences],
+        );
+      }),
     );
   }
 
@@ -211,7 +192,7 @@ class AboutView extends GetView<AboutController> {
       child: ElevatedButton.icon(
         onPressed: controller.sendFeedback,
         icon: const Icon(Icons.feedback_outlined),
-        label: const Text('Envoyer un feedback'),
+        label: Text('about.send_feedback'.tr),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppThemeSystem.primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -230,7 +211,7 @@ class AboutView extends GetView<AboutController> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Tous droits réservés',
+          'about.all_rights_reserved'.tr,
           style: context.caption.copyWith(color: context.secondaryTextColor),
         ),
       ],

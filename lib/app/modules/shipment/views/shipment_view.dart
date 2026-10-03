@@ -22,7 +22,7 @@ class ShipmentView extends GetView<MyOrderController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Mes commandes',
+          'shipment.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
@@ -74,12 +74,12 @@ class ShipmentView extends GetView<MyOrderController> {
         final selectedStatus = controller.selectedStatus.value;
 
         final filters = [
-          {'label': 'Tout', 'value': 'all'},
-          {'label': 'En attente', 'value': 'pending'},
-          {'label': 'Confirmée', 'value': 'confirmed'},
-          {'label': 'En livraison', 'value': 'shipped'},
-          {'label': 'Livrée', 'value': 'delivered'},
-          {'label': 'Annulée', 'value': 'cancelled'},
+          {'label': 'shipment.filters.all'.tr, 'value': 'all'},
+          {'label': 'shipment.filters.pending'.tr, 'value': 'pending'},
+          {'label': 'shipment.filters.confirmed'.tr, 'value': 'confirmed'},
+          {'label': 'shipment.filters.shipped'.tr, 'value': 'shipped'},
+          {'label': 'shipment.filters.delivered'.tr, 'value': 'delivered'},
+          {'label': 'shipment.filters.cancelled'.tr, 'value': 'cancelled'},
         ];
 
         return ListView.separated(
@@ -111,10 +111,10 @@ class ShipmentView extends GetView<MyOrderController> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return const AppEmptyState(
+    return AppEmptyState(
       icon: Icons.inventory_2_outlined,
-      title: 'Aucune commande',
-      message: 'Les commandes à expédier apparaîtront ici.',
+      title: 'shipment.empty.title'.tr,
+      message: 'shipment.empty.message'.tr,
     );
   }
 
@@ -151,7 +151,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        order.orderNumber != null ? '#${order.orderNumber}' : 'Commande ${order.id}',
+                        order.orderNumber != null ? '#${order.orderNumber}' : 'shipment.order_number'.trParams({'id': order.id}),
                         style: context.body1.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
@@ -219,7 +219,7 @@ class ShipmentView extends GetView<MyOrderController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Livraison', style: context.caption),
+                    Text('shipment.delivery'.tr, style: context.caption),
                     order.freeDeliveryAmount > 0
                         ? DeliveryPriceText(
                             price: controller.formatPrice(order.freeDeliveryAmount),
@@ -243,7 +243,7 @@ class ShipmentView extends GetView<MyOrderController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Total', style: context.body1.copyWith(fontWeight: FontWeight.bold)),
+                    Text('shipment.total'.tr, style: context.body1.copyWith(fontWeight: FontWeight.bold)),
                     Text(controller.formatPrice(order.total),
                       style: context.body1.copyWith(fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor)),
                   ],
@@ -271,7 +271,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     children: [
                       Icon(Icons.key_rounded, color: AppDesign.warning, size: 20),
                       const SizedBox(width: 8),
-                      Text('Code de confirmation',
+                      Text('shipment.confirmation_code'.tr,
                         style: context.body2.copyWith(fontWeight: FontWeight.w600, color: AppDesign.warning)),
                     ],
                   ),
@@ -279,7 +279,7 @@ class ShipmentView extends GetView<MyOrderController> {
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: order.confirmationCode!));
-                      Get.snackbar('Copie', 'Code copie dans le presse-papiers',
+                      Get.snackbar('shipment.copied_title'.tr, 'shipment.code_copied'.tr,
                         snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
                     },
                     child: Container(
@@ -298,7 +298,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('Communiquez ce code au livreur pour confirmer la reception',
+                  Text('shipment.code_hint'.tr,
                     style: context.caption.copyWith(color: AppDesign.warning),
                     textAlign: TextAlign.center),
                 ],
@@ -322,7 +322,7 @@ class ShipmentView extends GetView<MyOrderController> {
               child: OutlinedButton.icon(
                 onPressed: () => controller.cancelOrder(order.id),
                 icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: const Text('Annuler'),
+                label: Text('shipment.cancel'.tr),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppDesign.danger,
                   side: const BorderSide(color: AppDesign.danger),
@@ -348,7 +348,7 @@ class ShipmentView extends GetView<MyOrderController> {
               child: ElevatedButton.icon(
                 onPressed: () => controller.showRatingDialog(order),
                 icon: const Icon(Icons.star_rounded, size: 18, color: Colors.white),
-                label: const Text('Noter', style: TextStyle(color: Colors.white)),
+                label: Text('shipment.rate'.tr, style: const TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppDesign.warning,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -362,7 +362,7 @@ class ShipmentView extends GetView<MyOrderController> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Votre note ', style: TextStyle(fontSize: 13)),
+                  Text('shipment.your_rating'.tr, style: const TextStyle(fontSize: 13)),
                   for (var i = 1; i <= 5; i++)
                     Icon(
                       i <= order.ratingValue! ? Icons.star_rounded : Icons.star_outline_rounded,

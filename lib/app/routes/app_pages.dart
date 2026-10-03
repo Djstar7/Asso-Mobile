@@ -16,6 +16,8 @@ import 'package:get/get.dart';
 
 import '../modules/about/bindings/about_binding.dart';
 import '../modules/about/views/about_view.dart';
+import '../modules/legal/bindings/legal_binding.dart';
+import '../modules/legal/views/legal_view.dart';
 import '../modules/chat/bindings/chat_binding.dart';
 import '../modules/chat/views/chat_view.dart';
 import '../modules/chatdetail/views/chatdetail_view.dart';
@@ -272,6 +274,11 @@ class AppPages {
       name: _Paths.ABOUT,
       page: () => const AboutView(),
       binding: AboutBinding(),
+    ),
+    GetPage(
+      name: _Paths.LEGAL,
+      page: () => const LegalView(),
+      binding: LegalBinding(),
     ),
     GetPage(
       name: _Paths.PACKAGE_SUBSCRIPTION,

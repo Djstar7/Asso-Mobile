@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../models/message_model.dart';
 import '../providers/storage_service.dart';
 import '../../core/values/constants.dart';
+import '../../core/services/locale_service.dart';
 
 class WebSocketService extends GetxService with WidgetsBindingObserver {
   static WebSocketService get to => Get.find<WebSocketService>();
@@ -486,6 +487,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'Accept-Language': LocaleService.currentLanguage,
         },
         body: {'socket_id': _socketId!, 'channel_name': channelName},
       );

@@ -46,7 +46,7 @@ class LogoutLoadingDialog extends StatelessWidget {
               ),
               const SizedBox(height: AppDesign.space5),
               Text(
-                'Déconnexion en cours…',
+                'profile.logging_out'.tr,
                 style: context.textStyle(
                   FontSizeType.body1,
                   fontWeight: FontWeight.w600,
@@ -56,7 +56,7 @@ class LogoutLoadingDialog extends StatelessWidget {
               ),
               const SizedBox(height: AppDesign.space1),
               Text(
-                'Veuillez patienter',
+                'profile.please_wait'.tr,
                 style: context.textStyle(
                   FontSizeType.body2,
                   color: context.ds.textSecondary,

@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../core/utils/app_design.dart';
+import '../../legal/controllers/legal_controller.dart';
 
 class AboutController extends GetxController {
   final isLoading = false.obs;
@@ -24,15 +25,14 @@ class AboutController extends GetxController {
   final contactWebsite = ''.obs;
 
   // Legal
-  final termsUrl = ''.obs;
-  final privacyUrl = ''.obs;
-  final licensesUrl = ''.obs;
+  // Documents légaux du back-office (CGU, CGV, confidentialité…).
+  final legalDocuments = <LegalDocument>[].obs;
 
   // Credits
   final developedBy = 'ASSO Team'.obs;
   final copyright = ''.obs;
 
-  final releaseDate = 'Mars 2026';
+  String get releaseDate => 'about.release_date'.tr;
 
   // Réseaux sociaux
   final socialLinks = <SocialLink>[].obs;
@@ -81,9 +81,7 @@ class AboutController extends GetxController {
         // Legal
         final legal = aboutData['legal'] as Map<String, dynamic>?;
         if (legal != null) {
-          termsUrl.value = legal['terms_url'] as String? ?? '';
-          privacyUrl.value = legal['privacy_url'] as String? ?? '';
-          licensesUrl.value = legal['licenses_url'] as String? ?? '';
+          legalDocuments.assignAll(LegalDocument.listFrom(legal['pages']));
         }
 
         // Social
@@ -146,8 +144,8 @@ class AboutController extends GetxController {
   Future<void> openUrl(String url) async {
     if (url.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'URL non disponible',
+        'common.error'.tr,
+        'about.errors.url_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
@@ -163,8 +161,8 @@ class AboutController extends GetxController {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le lien',
+          'common.error'.tr,
+          'about.errors.open_link'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -173,8 +171,8 @@ class AboutController extends GetxController {
     } catch (e) {
       developer.log('Error opening URL', name: 'AboutController', error: e);
       Get.snackbar(
-        'Erreur',
-        'Impossible d\'ouvrir le lien',
+        'common.error'.tr,
+        'about.errors.open_link'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -187,59 +185,14 @@ class AboutController extends GetxController {
     openUrl(url);
   }
 
-  /// Afficher les conditions d'utilisation
-  void showTermsOfService() {
-    if (termsUrl.value.isNotEmpty) {
-      openUrl(termsUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'Les conditions d\'utilisation ne sont pas encore disponibles',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
-  }
-
-  /// Afficher la politique de confidentialité
-  void showPrivacyPolicy() {
-    if (privacyUrl.value.isNotEmpty) {
-      openUrl(privacyUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'La politique de confidentialité n\'est pas encore disponible',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
-  }
-
-  /// Afficher les licences
-  void showLicenses() {
-    if (licensesUrl.value.isNotEmpty) {
-      openUrl(licensesUrl.value);
-    } else {
-      Get.snackbar(
-        'Non disponible',
-        'Les licences ne sont pas encore disponibles',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
-    }
-  }
-
   /// Contacter le support
   void contactSupport() {
     if (contactEmail.value.isNotEmpty) {
       openUrl('mailto:${contactEmail.value}');
     } else {
       Get.snackbar(
-        'Non disponible',
-        'Email de contact non disponible',
+        'about.unavailable'.tr,
+        'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,
@@ -253,8 +206,8 @@ class AboutController extends GetxController {
       openUrl('mailto:${contactEmail.value}?subject=Feedback%20ASSO%20Market');
     } else {
       Get.snackbar(
-        'Non disponible',
-        'Email de contact non disponible',
+        'about.unavailable'.tr,
+        'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.accent,
         colorText: Colors.white,

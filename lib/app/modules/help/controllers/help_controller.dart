@@ -14,210 +14,187 @@ class HelpController extends GetxController {
   final searchController = TextEditingController();
   final searchQuery = ''.obs;
 
-  // Sujets d'aide
-  final supportTopics = <SupportTopic>[
+  // Sujets d'aide (getter : les textes suivent la langue courante)
+  List<SupportTopic> get supportTopics => [
     SupportTopic(
       icon: Icons.shopping_cart_outlined,
-      title: 'Commandes',
-      description: 'Aide sur vos commandes et livraisons',
+      title: 'help.categories.orders'.tr,
+      description: 'help.topics.orders.description'.tr,
       items: [
-        'Comment passer une commande ?',
-        'Suivre ma commande',
-        'Annuler une commande',
-        'Retourner un produit',
+        'help.topics.orders.place_order'.tr,
+        'help.topics.orders.track_order'.tr,
+        'help.topics.orders.cancel_order'.tr,
+        'help.topics.orders.return_product'.tr,
       ],
     ),
     SupportTopic(
       icon: Icons.payment_outlined,
-      title: 'Paiements',
-      description: 'Informations sur les paiements',
+      title: 'help.categories.payments'.tr,
+      description: 'help.topics.payments.description'.tr,
       items: [
-        'Méthodes de paiement acceptées',
-        'Sécurité des paiements',
-        'Problèmes de paiement',
-        'Remboursements',
+        'help.topics.payments.accepted_methods'.tr,
+        'help.topics.payments.security'.tr,
+        'help.topics.payments.issues'.tr,
+        'help.topics.payments.refunds'.tr,
       ],
     ),
     SupportTopic(
       icon: Icons.person_outline,
-      title: 'Compte',
-      description: 'Gérer votre compte',
+      title: 'help.categories.account'.tr,
+      description: 'help.topics.account.description'.tr,
       items: [
-        'Créer un compte',
-        'Modifier mes informations',
-        'Mot de passe oublié',
-        'Supprimer mon compte',
+        'help.topics.account.create'.tr,
+        'help.topics.account.edit_info'.tr,
+        'help.topics.account.forgot_password'.tr,
+        'help.topics.account.delete'.tr,
       ],
     ),
     SupportTopic(
       icon: Icons.local_shipping_outlined,
-      title: 'Livraison',
-      description: 'Questions sur la livraison',
+      title: 'help.categories.delivery'.tr,
+      description: 'help.topics.delivery.description'.tr,
       items: [
-        'Zones de livraison',
-        'Frais de livraison',
-        'Délais de livraison',
-        'Problèmes de livraison',
+        'help.topics.delivery.zones'.tr,
+        'help.topics.delivery.fees'.tr,
+        'help.topics.delivery.times'.tr,
+        'help.topics.delivery.issues'.tr,
       ],
     ),
   ];
 
-  // FAQ
-  final allFaqs = <FaqItem>[
+  // FAQ (getter : les textes suivent la langue courante). `category` est
+  // une clé de traduction, qui sert aussi d'identifiant de catégorie.
+  List<FaqItem> get allFaqs => [
     // Commandes
     FaqItem(
-      category: 'Commandes',
-      question: 'Comment passer une commande sur Asso ?',
-      answer:
-          'Pour passer une commande, parcourez les produits disponibles, ajoutez-les à votre panier en cliquant sur le bouton "Ajouter au panier", puis accédez à votre panier et suivez les étapes de paiement. Vous recevrez une confirmation par email une fois la commande validée.',
+      category: 'help.categories.orders',
+      question: 'help.faqs.place_order.question'.tr,
+      answer: 'help.faqs.place_order.answer'.tr,
     ),
     FaqItem(
-      category: 'Commandes',
-      question: 'Comment suivre ma commande ?',
-      answer:
-          'Vous pouvez suivre votre commande en temps réel depuis la section "Mes Commandes" dans votre profil. Vous recevrez également des notifications à chaque étape de livraison (préparation, expédition, en route, livrée).',
+      category: 'help.categories.orders',
+      question: 'help.faqs.track_order.question'.tr,
+      answer: 'help.faqs.track_order.answer'.tr,
     ),
     FaqItem(
-      category: 'Commandes',
-      question: 'Puis-je annuler ma commande ?',
-      answer:
-          'Oui, vous pouvez annuler une commande tant qu\'elle n\'a pas été expédiée. Rendez-vous dans "Mes Commandes", sélectionnez la commande concernée et cliquez sur "Annuler". Le remboursement sera effectué dans un délai de 5 à 7 jours ouvrables.',
+      category: 'help.categories.orders',
+      question: 'help.faqs.cancel_order.question'.tr,
+      answer: 'help.faqs.cancel_order.answer'.tr,
     ),
     FaqItem(
-      category: 'Commandes',
-      question: 'Que faire si je reçois un produit endommagé ?',
-      answer:
-          'Contactez immédiatement notre service client via l\'application avec des photos du produit endommagé. Nous organiserons un retour gratuit et un remplacement ou remboursement selon votre préférence.',
+      category: 'help.categories.orders',
+      question: 'help.faqs.damaged_product.question'.tr,
+      answer: 'help.faqs.damaged_product.answer'.tr,
     ),
 
     // Paiements
     FaqItem(
-      category: 'Paiements',
-      question: 'Quels modes de paiement sont acceptés ?',
-      answer:
-          'Nous acceptons Mobile Money (MTN Mobile Money, Orange Money), le paiement à la livraison, et les virements bancaires. Tous les paiements en ligne sont sécurisés et cryptés.',
+      category: 'help.categories.payments',
+      question: 'help.faqs.payment_methods.question'.tr,
+      answer: 'help.faqs.payment_methods.answer'.tr,
     ),
     FaqItem(
-      category: 'Paiements',
-      question: 'Le paiement en ligne est-il sécurisé ?',
-      answer:
-          'Absolument. Nous utilisons un système de cryptage SSL pour protéger vos informations de paiement. Vos données bancaires ne sont jamais stockées sur nos serveurs et sont transmises directement aux fournisseurs de paiement certifiés.',
+      category: 'help.categories.payments',
+      question: 'help.faqs.payment_security.question'.tr,
+      answer: 'help.faqs.payment_security.answer'.tr,
     ),
     FaqItem(
-      category: 'Paiements',
-      question: 'Comment fonctionne le paiement à la livraison ?',
-      answer:
-          'Sélectionnez "Paiement à la livraison" lors du checkout. Vous paierez en espèces au livreur lors de la réception de votre commande. Cette option peut nécessiter une vérification supplémentaire.',
+      category: 'help.categories.payments',
+      question: 'help.faqs.cash_on_delivery.question'.tr,
+      answer: 'help.faqs.cash_on_delivery.answer'.tr,
     ),
     FaqItem(
-      category: 'Paiements',
-      question: 'Combien de temps prend un remboursement ?',
-      answer:
-          'Les remboursements sont traités dans un délai de 5 à 7 jours ouvrables après validation de votre demande. Le délai peut varier selon votre mode de paiement initial.',
+      category: 'help.categories.payments',
+      question: 'help.faqs.refund_time.question'.tr,
+      answer: 'help.faqs.refund_time.answer'.tr,
     ),
 
     // Compte
     FaqItem(
-      category: 'Compte',
-      question: 'Comment créer un compte ?',
-      answer:
-          'Cliquez sur "S\'inscrire" sur l\'écran d\'accueil, renseignez vos informations (nom, email, téléphone) et créez un mot de passe. Vous recevrez un code de vérification par SMS pour activer votre compte.',
+      category: 'help.categories.account',
+      question: 'help.faqs.create_account.question'.tr,
+      answer: 'help.faqs.create_account.answer'.tr,
     ),
     FaqItem(
-      category: 'Compte',
-      question: 'J\'ai oublié mon mot de passe, que faire ?',
-      answer:
-          'Cliquez sur "Mot de passe oublié" sur l\'écran de connexion. Entrez votre email ou numéro de téléphone et suivez les instructions pour réinitialiser votre mot de passe.',
+      category: 'help.categories.account',
+      question: 'help.faqs.forgot_password.question'.tr,
+      answer: 'help.faqs.forgot_password.answer'.tr,
     ),
     FaqItem(
-      category: 'Compte',
-      question: 'Comment modifier mes informations personnelles ?',
-      answer:
-          'Accédez à votre profil, cliquez sur "Modifier le profil" et mettez à jour vos informations (nom, email, téléphone, adresse). N\'oubliez pas de sauvegarder vos modifications.',
+      category: 'help.categories.account',
+      question: 'help.faqs.edit_info.question'.tr,
+      answer: 'help.faqs.edit_info.answer'.tr,
     ),
     FaqItem(
-      category: 'Compte',
-      question: 'Puis-je supprimer mon compte ?',
-      answer:
-          'Oui, vous pouvez supprimer votre compte depuis les paramètres. Attention : cette action est irréversible et toutes vos données seront définitivement supprimées.',
+      category: 'help.categories.account',
+      question: 'help.faqs.delete_account.question'.tr,
+      answer: 'help.faqs.delete_account.answer'.tr,
     ),
 
     // Livraison
     FaqItem(
-      category: 'Livraison',
-      question: 'Quelles sont les zones de livraison ?',
-      answer:
-          'Nous livrons dans toutes les grandes villes du Cameroun : Douala, Yaoundé, Bafoussam, Bamenda, Garoua, Maroua, Ngaoundéré, et bien d\'autres. Les délais peuvent varier selon votre localisation.',
+      category: 'help.categories.delivery',
+      question: 'help.faqs.delivery_zones.question'.tr,
+      answer: 'help.faqs.delivery_zones.answer'.tr,
     ),
     FaqItem(
-      category: 'Livraison',
-      question: 'Quels sont les frais de livraison ?',
-      answer:
-          'Les frais de livraison varient selon votre zone géographique et le poids de votre commande. Ils sont calculés automatiquement lors du checkout. La livraison est gratuite pour les commandes supérieures à 50 000 FCFA dans certaines zones.',
+      category: 'help.categories.delivery',
+      question: 'help.faqs.delivery_fees.question'.tr,
+      answer: 'help.faqs.delivery_fees.answer'.tr,
     ),
     FaqItem(
-      category: 'Livraison',
-      question: 'Quel est le délai de livraison ?',
-      answer:
-          'Le délai standard est de 24-48h pour Douala et Yaoundé, et de 3-5 jours pour les autres villes. Vous serez informé du délai précis lors de votre commande.',
+      category: 'help.categories.delivery',
+      question: 'help.faqs.delivery_time.question'.tr,
+      answer: 'help.faqs.delivery_time.answer'.tr,
     ),
     FaqItem(
-      category: 'Livraison',
-      question: 'Puis-je modifier l\'adresse de livraison ?',
-      answer:
-          'Oui, vous pouvez modifier l\'adresse de livraison avant l\'expédition de votre commande. Contactez notre service client dès que possible pour effectuer la modification.',
+      category: 'help.categories.delivery',
+      question: 'help.faqs.change_address.question'.tr,
+      answer: 'help.faqs.change_address.answer'.tr,
     ),
 
     // Vendeurs
     FaqItem(
-      category: 'Vendeurs',
-      question: 'Comment devenir vendeur sur Asso ?',
-      answer:
-          'Accédez à la section "Devenir Vendeur" dans votre profil. Remplissez le formulaire avec vos informations professionnelles, téléchargez les documents requis, et notre équipe validera votre demande sous 48-72h.',
+      category: 'help.categories.vendors',
+      question: 'help.faqs.become_vendor.question'.tr,
+      answer: 'help.faqs.become_vendor.answer'.tr,
     ),
     FaqItem(
-      category: 'Vendeurs',
-      question: 'Quels sont les frais pour vendre sur Asso ?',
-      answer:
-          'Nous proposons différents forfaits : Gratuit (commission de 15%), Basique (5000 FCFA/mois, 10% commission), Pro (15000 FCFA/mois, 5% commission). Choisissez le forfait adapté à votre volume de ventes.',
+      category: 'help.categories.vendors',
+      question: 'help.faqs.vendor_fees.question'.tr,
+      answer: 'help.faqs.vendor_fees.answer'.tr,
     ),
     FaqItem(
-      category: 'Vendeurs',
-      question: 'Comment ajouter un produit à vendre ?',
-      answer:
-          'Dans votre tableau de bord vendeur, cliquez sur "Ajouter un produit", remplissez les informations (titre, description, prix, photos, catégorie), et publiez. Vos produits seront visibles après validation.',
+      category: 'help.categories.vendors',
+      question: 'help.faqs.add_product.question'.tr,
+      answer: 'help.faqs.add_product.answer'.tr,
     ),
     FaqItem(
-      category: 'Vendeurs',
-      question: 'Comment gérer mes stocks ?',
-      answer:
-          'Utilisez la section "Gestion des stocks" dans votre tableau de bord pour suivre vos inventaires en temps réel, recevoir des alertes de stock faible, et mettre à jour les quantités disponibles.',
+      category: 'help.categories.vendors',
+      question: 'help.faqs.manage_stock.question'.tr,
+      answer: 'help.faqs.manage_stock.answer'.tr,
     ),
 
     // Général
     FaqItem(
-      category: 'Général',
-      question: 'Qu\'est-ce que Asso ?',
-      answer:
-          'Asso est une marketplace camerounaise qui connecte vendeurs et acheteurs. Nous facilitons l\'achat et la vente de produits variés (mode, électronique, maison, alimentation) avec un système de paiement sécurisé et livraison fiable.',
+      category: 'help.categories.general',
+      question: 'help.faqs.what_is_asso.question'.tr,
+      answer: 'help.faqs.what_is_asso.answer'.tr,
     ),
     FaqItem(
-      category: 'Général',
-      question: 'Comment contacter le service client ?',
-      answer:
-          'Vous pouvez nous contacter par email (support@asso-corporation.com), téléphone (658895572 / 651826475), ou WhatsApp. Notre équipe est disponible 24h/24 et 7j/7 pour vous assister.',
+      category: 'help.categories.general',
+      question: 'help.faqs.contact_support.question'.tr,
+      answer: 'help.faqs.contact_support.answer'.tr,
     ),
     FaqItem(
-      category: 'Général',
-      question: 'L\'application est-elle gratuite ?',
-      answer:
-          'Oui, l\'application Asso est entièrement gratuite à télécharger et à utiliser pour les acheteurs. Les vendeurs peuvent choisir entre un compte gratuit avec commission ou des forfaits payants.',
+      category: 'help.categories.general',
+      question: 'help.faqs.app_free.question'.tr,
+      answer: 'help.faqs.app_free.answer'.tr,
     ),
     FaqItem(
-      category: 'Général',
-      question: 'Comment signaler un problème ou un produit frauduleux ?',
-      answer:
-          'Utilisez le bouton "Signaler" sur la page du produit ou contactez directement notre service client. Nous prenons très au sérieux la sécurité de notre communauté et enquêterons rapidement.',
+      category: 'help.categories.general',
+      question: 'help.faqs.report_issue.question'.tr,
+      answer: 'help.faqs.report_issue.answer'.tr,
     ),
   ];
 
@@ -233,7 +210,7 @@ class HelpController extends GetxController {
           (faq) =>
               faq.question.toLowerCase().contains(query) ||
               faq.answer.toLowerCase().contains(query) ||
-              faq.category.toLowerCase().contains(query),
+              faq.category.tr.toLowerCase().contains(query),
         )
         .toList()
         .obs;
@@ -277,8 +254,8 @@ class HelpController extends GetxController {
         await launchUrl(emailUri);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le client email',
+          'common.error'.tr,
+          'help.errors.email_client'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -286,8 +263,8 @@ class HelpController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'common.error'.tr,
+        'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -304,8 +281,8 @@ class HelpController extends GetxController {
         await launchUrl(phoneUri);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir le dialer',
+          'common.error'.tr,
+          'help.errors.dialer'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -313,8 +290,8 @@ class HelpController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'common.error'.tr,
+        'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -333,8 +310,8 @@ class HelpController extends GetxController {
         await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir WhatsApp',
+          'common.error'.tr,
+          'help.errors.whatsapp'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -342,8 +319,8 @@ class HelpController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'common.error'.tr,
+        'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -360,7 +337,7 @@ class HelpController extends GetxController {
         title: topic.title,
         subtitle: topic.description,
         footer: AppButton(
-          label: 'Contacter le support',
+          label: 'help.contact_support'.tr,
           onPressed: () {
             Get.back();
             contactByEmail();

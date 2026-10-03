@@ -11,11 +11,12 @@ class ProductManagementView extends GetView<ProductManagementController> {
   const ProductManagementView({super.key});
 
   /// Statuts proposés en filtre rapide, dans l'ordre d'affichage.
-  static const _statusFilters = <({String? value, String label})>[
-    (value: null, label: 'Tous'),
-    (value: 'active', label: 'Actifs'),
-    (value: 'inactive', label: 'Inactifs'),
-    (value: 'pending', label: 'En attente'),
+  /// Getter : les libellés sont traduits à l'affichage.
+  static List<({String? value, String label})> get _statusFilters => [
+    (value: null, label: 'product_management.filter.all'.tr),
+    (value: 'active', label: 'product_management.filter.active'.tr),
+    (value: 'inactive', label: 'product_management.filter.inactive'.tr),
+    (value: 'pending', label: 'product_management.filter.pending'.tr),
   ];
 
   @override
@@ -39,7 +40,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
           },
         ),
         title: Text(
-          'Mes Produits',
+          'product_management.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -75,7 +76,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
         backgroundColor: AppThemeSystem.primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          'Ajouter',
+          'product_management.add'.tr,
           style: context.button.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -109,7 +110,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
               textInputAction: TextInputAction.search,
               style: context.textStyle(FontSizeType.body1),
               decoration: InputDecoration(
-                hintText: 'Rechercher dans mes produits…',
+                hintText: 'product_management.search_hint'.tr,
                 hintStyle: context.body2.copyWith(
                   color: context.ds.textTertiary,
                 ),
@@ -123,7 +124,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
                   () => controller.searchQuery.value.isEmpty
                       ? const SizedBox.shrink()
                       : IconButton(
-                          tooltip: 'Effacer la recherche',
+                          tooltip: 'product_management.clear_search'.tr,
                           icon: Icon(
                             Icons.close_rounded,
                             color: context.ds.textSecondary,
@@ -178,9 +179,15 @@ class ProductManagementView extends GetView<ProductManagementController> {
 
       final total = controller.totalProducts.value;
       final loaded = controller.products.length;
-      final label = total == 1 ? 'produit' : 'produits';
+      final label = total == 1
+          ? 'product_management.product_singular'.tr
+          : 'product_management.product_plural'.tr;
       final text = loaded < total
-          ? '$loaded sur $total $label'
+          ? 'product_management.count_partial'.trParams({
+              'loaded': '$loaded',
+              'total': '$total',
+              'label': label,
+            })
           : '$total $label';
 
       return Padding(
@@ -202,7 +209,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
                     vertical: 2,
                   ),
                   child: Text(
-                    'Réinitialiser',
+                    'product_management.reset'.tr,
                     style: context.caption.copyWith(
                       color: AppThemeSystem.primaryColor,
                       fontWeight: FontWeight.w600,
@@ -285,7 +292,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
           padding: EdgeInsets.symmetric(vertical: AppDesign.space4),
           child: Center(
             child: Text(
-              'Fin de la liste',
+              'product_management.end_of_list'.tr,
               style: context.caption.copyWith(color: context.ds.textTertiary),
             ),
           ),
@@ -405,7 +412,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
 
     final outOfStock = stock <= 0;
     return Text(
-      outOfStock ? 'Rupture de stock' : 'Stock : $stock',
+      outOfStock
+          ? 'product_management.out_of_stock'.tr
+          : 'product_management.stock'.trParams({'stock': '$stock'}),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: context.caption.copyWith(
@@ -431,7 +440,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
         if (isActive) ...[
           _CardAction(
             icon: Icons.campaign_outlined,
-            label: 'Booster cet article',
+            label: 'product_management.boost'.tr,
             color: AppDesign.accent,
             onTap: () => Get.toNamed(
               Routes.BOOST,
@@ -445,7 +454,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
             Expanded(
               child: _CardAction(
                 icon: Icons.edit_outlined,
-                label: 'Modifier',
+                label: 'product_management.edit'.tr,
                 onTap: () => controller.editProduct(product),
               ),
             ),
@@ -455,7 +464,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
                 icon: isActive
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                label: isActive ? 'Désactiver' : 'Réactiver',
+                label: isActive
+                    ? 'product_management.deactivate'.tr
+                    : 'product_management.reactivate'.tr,
                 onTap: () => controller.toggleProductStatus(product),
               ),
             ),
@@ -463,12 +474,12 @@ class ProductManagementView extends GetView<ProductManagementController> {
             Expanded(
               child: _CardAction(
                 icon: Icons.delete_outline,
-                label: 'Supprimer',
+                label: 'product_management.delete'.tr,
                 // Seule action irréversible : elle garde une couleur d'alerte.
                 color: AppThemeSystem.errorColor,
                 onTap: () => controller.deleteProduct(
                   product['id'] as int,
-                  product['name']?.toString() ?? 'ce produit',
+                  product['name']?.toString() ?? 'product_management.this_product'.tr,
                 ),
               ),
             ),
@@ -513,9 +524,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
   Widget _buildEmptyState(BuildContext context) {
     return _CenteredState(
       icon: Icons.shopping_basket_outlined,
-      title: 'Aucun produit publié',
-      message: 'Commencez à vendre en ajoutant votre premier produit.',
-      actionLabel: 'Ajouter mon premier produit',
+      title: 'product_management.empty.title'.tr,
+      message: 'product_management.empty.message'.tr,
+      actionLabel: 'product_management.empty.action'.tr,
       actionIcon: Icons.add,
       onAction: controller.navigateToAddProduct,
     );
@@ -525,11 +536,13 @@ class ProductManagementView extends GetView<ProductManagementController> {
     final query = controller.searchQuery.value;
     return _CenteredState(
       icon: Icons.search_off_rounded,
-      title: 'Aucun résultat',
+      title: 'product_management.no_results.title'.tr,
       message: query.isEmpty
-          ? 'Aucun produit ne correspond à ce filtre.'
-          : 'Aucun produit ne correspond à « $query ».',
-      actionLabel: 'Réinitialiser les filtres',
+          ? 'product_management.no_results.message_filter'.tr
+          : 'product_management.no_results.message_query'.trParams({
+              'query': query,
+            }),
+      actionLabel: 'product_management.no_results.action'.tr,
       actionIcon: Icons.refresh_rounded,
       onAction: controller.clearFilters,
       outlined: true,
@@ -539,9 +552,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
   Widget _buildErrorState(BuildContext context) {
     return _CenteredState(
       icon: Icons.cloud_off_rounded,
-      title: 'Chargement impossible',
-      message: controller.errorMessage.value ?? 'Une erreur est survenue.',
-      actionLabel: 'Réessayer',
+      title: 'product_management.error.title'.tr,
+      message: controller.errorMessage.value ?? 'product_management.error.message'.tr,
+      actionLabel: 'product_management.error.retry'.tr,
       actionIcon: Icons.refresh_rounded,
       onAction: controller.refreshProducts,
     );
@@ -630,9 +643,9 @@ class _StatusBadge extends StatelessWidget {
       _ => AppThemeSystem.grey500,
     };
     final label = switch (status.toLowerCase()) {
-      'active' => 'Actif',
-      'pending' => 'En attente',
-      _ => 'Inactif',
+      'active' => 'product_management.status.active'.tr,
+      'pending' => 'product_management.status.pending'.tr,
+      _ => 'product_management.status.inactive'.tr,
     };
 
     return Container(

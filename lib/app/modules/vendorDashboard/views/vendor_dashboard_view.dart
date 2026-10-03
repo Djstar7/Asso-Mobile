@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -49,7 +49,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           leading: const AppBackButton(),
           centerTitle: false,
           title: Text(
-            'Tableau de bord',
+            'vendor_dashboard.title'.tr,
             style: context.h5.copyWith(
               fontWeight: FontWeight.w700,
               color: ds.textPrimary,
@@ -261,13 +261,13 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         background = AppDesign.successSubtle;
         foreground = AppDesign.successText;
         badgeIcon = Icons.check_circle_outline_rounded;
-        statusText = 'Boutique vérifiée';
+        statusText = 'vendor_dashboard.verification.verified'.tr;
         break;
       case 'rejected':
         background = AppDesign.dangerSubtle;
         foreground = AppDesign.dangerText;
         badgeIcon = Icons.cancel_outlined;
-        statusText = 'Vérification refusée';
+        statusText = 'vendor_dashboard.verification.rejected'.tr;
         break;
       case 'pending':
       case 'inactive':
@@ -275,7 +275,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         background = AppDesign.warningSubtle;
         foreground = AppDesign.warningText;
         badgeIcon = Icons.schedule_outlined;
-        statusText = 'Vérification en attente';
+        statusText = 'vendor_dashboard.verification.pending'.tr;
         break;
     }
 
@@ -317,15 +317,15 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   /// occupent une carte pleine largeur, le reste passe en grille secondaire.
   /// L'ancienne grille de six cartes identiques ne disait pas où regarder.
   Widget _buildStatsSection(BuildContext context) {
-    final formatter = NumberFormat('#,###', 'fr_FR');
+    final formatter = NumberFormat('#,###');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(
           context,
-          'Activité',
-          action: 'Voir le détail',
+          'vendor_dashboard.stats.activity'.tr,
+          action: 'vendor_dashboard.stats.see_details'.tr,
           onAction: controller.navigateToStatistics,
         ),
         SizedBox(height: AppDesign.space3),
@@ -333,10 +333,12 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         // Chiffre d'affaires : la donnée maîtresse de l'écran.
         Obx(() => _buildPrimaryStat(
               context,
-              label: 'Ventes encaissées',
+              label: 'vendor_dashboard.stats.sales_collected'.tr,
               value: controller.formatPrice(controller.totalSales.value),
-              caption: '${controller.totalOrders.value} commande'
-                  '${controller.totalOrders.value > 1 ? 's' : ''} au total',
+              caption: (controller.totalOrders.value > 1
+                      ? 'vendor_dashboard.stats.orders_total_plural'
+                      : 'vendor_dashboard.stats.orders_total_singular')
+                  .trParams({'count': '${controller.totalOrders.value}'}),
               onTap: controller.onlineOnly(
                 () => Get.to(() => const WalletView(), binding: WalletBinding()),
               ),
@@ -353,9 +355,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 child: Obx(() => _buildStatCard(
                       context,
                       icon: Icons.storefront_outlined,
-                      label: 'Visites boutique',
+                      label: 'vendor_dashboard.stats.shop_visits'.tr,
                       value: formatter.format(controller.totalVisits.value),
-                      caption: '${formatter.format(controller.visitsLast7Days.value)} sur 7 jours',
+                      caption: 'vendor_dashboard.stats.last_7_days'.trParams({'count': formatter.format(controller.visitsLast7Days.value)}),
                       onTap: controller.navigateToStatistics,
                     )),
               ),
@@ -364,7 +366,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 child: Obx(() => _buildStatCard(
                       context,
                       icon: Icons.visibility_outlined,
-                      label: 'Produits consultés',
+                      label: 'vendor_dashboard.stats.product_views'.tr,
                       value: formatter.format(controller.totalProductViews.value),
                       onTap: controller.navigateToStatistics,
                     )),
@@ -381,7 +383,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 child: Obx(() => _buildStatCard(
                       context,
                       icon: Icons.inventory_2_outlined,
-                      label: 'Produits en ligne',
+                      label: 'vendor_dashboard.stats.products_online'.tr,
                       value: '${controller.totalProducts.value}',
                       onTap: controller.navigateToProductManagement,
                     )),
@@ -391,7 +393,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 child: Obx(() => _buildStatCard(
                       context,
                       icon: Icons.star_outline_rounded,
-                      label: 'Note moyenne',
+                      label: 'vendor_dashboard.stats.average_rating'.tr,
                       value: controller.rating.value > 0
                           ? controller.rating.value.toStringAsFixed(1)
                           : '—',
@@ -558,7 +560,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               SizedBox(width: AppDesign.space2),
               Expanded(
                 child: Text(
-                  'Aucun forfait actif',
+                  'vendor_dashboard.package.none_title'.tr,
                   style: context.subtitle1.copyWith(
                     fontWeight: FontWeight.w700,
                     color: ds.textPrimary,
@@ -569,7 +571,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           ),
           SizedBox(height: AppDesign.space2),
           Text(
-            'Souscrivez à un forfait de stockage pour publier vos produits.',
+            'vendor_dashboard.package.none_message'.tr,
             style: context.body2.copyWith(color: ds.textSecondary),
           ),
           SizedBox(height: AppDesign.space4),
@@ -587,7 +589,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 ),
               ),
               child: Text(
-                'Voir les forfaits',
+                'vendor_dashboard.package.see_plans'.tr,
                 style: context.button.copyWith(
                   color: AppDesign.neutral0,
                   fontWeight: FontWeight.w600,
@@ -603,7 +605,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   Widget _buildActivePackageCard(BuildContext context) {
     final ds = context.ds;
     final packageData = controller.packageInfo.value;
-    final packageName = packageData?['package']?['name'] ?? 'Forfait';
+    final packageName = packageData?['package']?['name'] ?? 'vendor_dashboard.package.default_name'.tr;
     final packagePriceRaw =
         double.tryParse(packageData?['package']?['price']?.toString() ?? '0') ?? 0.0;
     final packagePrice = packagePriceRaw > 0
@@ -625,8 +627,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
       children: [
         _buildSectionHeader(
           context,
-          'Mon forfait',
-          action: 'Changer',
+          'vendor_dashboard.package.my_plan'.tr,
+          action: 'vendor_dashboard.package.change'.tr,
           onAction: controller.onlineOnly(() => Get.toNamed('/package-subscription')),
         ),
         SizedBox(height: AppDesign.space3),
@@ -675,7 +677,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                       borderRadius: BorderRadius.circular(AppDesign.radiusPill),
                     ),
                     child: Text(
-                      'Actif',
+                      'vendor_dashboard.package.active'.tr,
                       style: context.caption.copyWith(
                         color: AppDesign.successText,
                         fontWeight: FontWeight.w600,
@@ -694,19 +696,19 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Stockage',
+                      'vendor_dashboard.package.storage'.tr,
                       style: context.body2.copyWith(color: ds.textSecondary),
                     ),
                   ),
                   Text(
-                    '${controller.storageUsedMb.value.toStringAsFixed(1)} Mo',
+                    'vendor_dashboard.package.storage_used'.trParams({'used': controller.storageUsedMb.value.toStringAsFixed(1)}),
                     style: context.body2.copyWith(
                       color: ds.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    ' / ${controller.storageTotalMb.value.toStringAsFixed(0)} Mo',
+                    'vendor_dashboard.package.storage_total'.trParams({'total': controller.storageTotalMb.value.toStringAsFixed(0)}),
                     style: context.body2.copyWith(color: ds.textTertiary),
                   ),
                 ],
@@ -723,8 +725,10 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               ),
               SizedBox(height: AppDesign.space2),
               Text(
-                '${percentUsed.toStringAsFixed(0)} % utilisé · '
-                '${controller.storageRemainingMb.value.toStringAsFixed(1)} Mo disponibles',
+                'vendor_dashboard.package.storage_usage'.trParams({
+                  'percent': percentUsed.toStringAsFixed(0),
+                  'remaining': controller.storageRemainingMb.value.toStringAsFixed(1),
+                }),
                 style: context.caption.copyWith(color: ds.textTertiary),
               ),
 
@@ -740,8 +744,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   Expanded(
                     child: Text(
                       expiresAt != null
-                          ? 'Valide jusqu\'au ${DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.parse(expiresAt))}'
-                          : 'Échéance inconnue',
+                          ? 'vendor_dashboard.package.valid_until'.trParams({'date': DateFormat('d MMMM yyyy').format(DateTime.parse(expiresAt))})
+                          : 'vendor_dashboard.package.unknown_expiry'.tr,
                       style: context.body2.copyWith(color: ds.textSecondary),
                     ),
                   ),
@@ -772,8 +776,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                       Expanded(
                         child: Text(
                           daysRemaining <= 0
-                              ? 'Votre forfait a expiré.'
-                              : 'Expire dans $daysRemaining jour${daysRemaining > 1 ? "s" : ""}.',
+                              ? 'vendor_dashboard.package.expired'.tr
+                              : (daysRemaining > 1
+                                      ? 'vendor_dashboard.package.expires_in_days'
+                                      : 'vendor_dashboard.package.expires_in_day')
+                                  .trParams({'days': '$daysRemaining'}),
                           style: context.body2.copyWith(
                             color: daysRemaining <= 3
                                 ? AppDesign.dangerText
@@ -805,7 +812,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Gestion'),
+        _buildSectionHeader(context, 'vendor_dashboard.actions.management'.tr),
         SizedBox(height: AppDesign.space3),
         Container(
           decoration: BoxDecoration(
@@ -823,10 +830,10 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   return _buildActionRow(
                     context,
                     icon: Icons.add_box_outlined,
-                    title: 'Ajouter un produit',
+                    title: 'vendor_dashboard.actions.add_product'.tr,
                     subtitle: !controller.isOnline.value
-                        ? 'Gardé sur le téléphone, publié au retour du réseau'
-                        : 'Créez votre premier produit',
+                        ? 'vendor_dashboard.actions.add_product_offline'.tr
+                        : 'vendor_dashboard.actions.add_first_product'.tr,
                     onTap: controller.navigateToAddProduct,
                     isFirst: true,
                   );
@@ -834,8 +841,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 return _buildActionRow(
                   context,
                   icon: Icons.inventory_2_outlined,
-                  title: 'Mes produits',
-                  subtitle: 'Modifier ou retirer vos produits',
+                  title: 'vendor_dashboard.actions.my_products'.tr,
+                  subtitle: 'vendor_dashboard.actions.my_products_subtitle'.tr,
                   badge: controller.totalProducts.value,
                   onTap: controller.navigateToProductManagement,
                   isFirst: true,
@@ -854,10 +861,15 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 return _buildActionRow(
                   context,
                   icon: Icons.campaign_outlined,
-                  title: running > 0 ? 'Sponsoring en cours' : 'Booster un article',
+                  title: running > 0
+                      ? 'vendor_dashboard.actions.boost_running'.tr
+                      : 'vendor_dashboard.actions.boost_item'.tr,
                   subtitle: running > 0
-                      ? '${_compact(served)} / ${_compact(quota)} personnes touchées'
-                      : 'Faites voir votre article à plus de monde',
+                      ? 'vendor_dashboard.actions.boost_reach'.trParams({
+                          'served': _compact(served),
+                          'quota': _compact(quota),
+                        })
+                      : 'vendor_dashboard.actions.boost_subtitle'.tr,
                   badge: running > 0 ? running : null,
                   onTap: controller.onlineOnly(() async {
                     await Get.toNamed(Routes.BOOST);
@@ -869,10 +881,10 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               Obx(() => _buildActionRow(
                     context,
                     icon: Icons.receipt_long_outlined,
-                    title: 'Commandes',
+                    title: 'vendor_dashboard.actions.orders'.tr,
                     subtitle: controller.pendingOrders.value > 0
-                        ? '${controller.pendingOrders.value} en attente de traitement'
-                        : 'Suivez vos commandes',
+                        ? 'vendor_dashboard.actions.orders_pending'.trParams({'count': '${controller.pendingOrders.value}'})
+                        : 'vendor_dashboard.actions.orders_subtitle'.tr,
                     badge: controller.pendingOrders.value,
                     isUrgent: true,
                     onTap: controller.onlineOnly(() async {
@@ -887,8 +899,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               _buildActionRow(
                 context,
                 icon: Icons.storefront_outlined,
-                title: 'Ma boutique',
-                subtitle: 'Personnalisez votre vitrine',
+                title: 'vendor_dashboard.my_shop'.tr,
+                subtitle: 'vendor_dashboard.actions.my_shop_subtitle'.tr,
                 onTap: controller.onlineOnly(() async {
                   await Get.to(
                     () => const StoreManagementView(),
@@ -903,16 +915,16 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               _buildActionRow(
                 context,
                 icon: Icons.account_balance_wallet_outlined,
-                title: 'Portefeuille',
-                subtitle: 'Solde et remboursements',
+                title: 'vendor_dashboard.actions.wallet'.tr,
+                subtitle: 'vendor_dashboard.actions.wallet_subtitle'.tr,
                 onTap: controller.onlineOnly(() => Get.toNamed('/wallet')),
               ),
               _buildRowDivider(context),
               _buildActionRow(
                 context,
                 icon: Icons.account_balance_outlined,
-                title: 'Compte de virement',
-                subtitle: 'Enregistrez votre IBAN pour être payé',
+                title: 'vendor_dashboard.actions.payout_account'.tr,
+                subtitle: 'vendor_dashboard.actions.payout_account_subtitle'.tr,
                 onTap: controller.onlineOnly(() => Get.toNamed('/stripe-connect')),
                 isLast: true,
               ),
@@ -1069,9 +1081,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           SizedBox(width: AppDesign.space2),
           Expanded(
             child: Text(
-              'Vous êtes hors ligne. Les chiffres affichés sont les derniers '
-              'connus. Vos nouveaux produits sont gardés sur le téléphone et '
-              'publiés dès le retour de la connexion.',
+              'vendor_dashboard.offline.notice'.tr,
               style: context.caption.copyWith(color: AppDesign.warningText),
             ),
           ),
@@ -1088,15 +1098,15 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
 
     final String subtitle;
     if (sync.isSyncing.value) {
-      subtitle = 'Envoi en cours…';
+      subtitle = 'vendor_dashboard.pending.sending'.tr;
     } else if (failed > 0) {
       subtitle = failed == 1
-          ? '1 produit refusé par le serveur, à vérifier'
-          : '$failed produits refusés par le serveur, à vérifier';
+          ? 'vendor_dashboard.pending.rejected_one'.tr
+          : 'vendor_dashboard.pending.rejected_many'.trParams({'count': '$failed'});
     } else if (!controller.isOnline.value) {
-      subtitle = 'Publication au retour de la connexion';
+      subtitle = 'vendor_dashboard.pending.publish_when_online'.tr;
     } else {
-      subtitle = 'Publication imminente';
+      subtitle = 'vendor_dashboard.pending.publish_imminent'.tr;
     }
 
     return Material(
@@ -1138,8 +1148,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   children: [
                     Text(
                       waiting + failed == 1
-                          ? '1 produit en attente d\'envoi'
-                          : '${waiting + failed} produits en attente d\'envoi',
+                          ? 'vendor_dashboard.pending.waiting_one'.tr
+                          : 'vendor_dashboard.pending.waiting_many'.trParams({'count': '${waiting + failed}'}),
                       style: context.body1.copyWith(
                         fontWeight: FontWeight.w600,
                         color: ds.textPrimary,
@@ -1248,15 +1258,15 @@ class _PendingProductsSheet extends StatelessWidget {
     final ds = context.ds;
 
     return AppSheet(
-      title: 'Produits en attente',
-      subtitle: 'Enregistrés sur le téléphone sans connexion',
+      title: 'vendor_dashboard.pending.sheet_title'.tr,
+      subtitle: 'vendor_dashboard.pending.sheet_subtitle'.tr,
       child: Obx(() {
         final items = sync.pending.toList();
         if (items.isEmpty) {
           return Padding(
             padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
             child: Text(
-              'Tous vos produits ont été publiés.',
+              'vendor_dashboard.pending.all_published'.tr,
               textAlign: TextAlign.center,
               style: context.body2.copyWith(color: ds.textSecondary),
             ),
@@ -1299,16 +1309,25 @@ class _PendingProductsSheet extends StatelessWidget {
               child: SizedBox(
                 width: 48,
                 height: 48,
-                child: thumbnail != null && File(thumbnail).existsSync()
-                    ? Image.file(
-                        File(thumbnail),
+                child: FutureBuilder<Uint8List?>(
+                  future: thumbnail == null
+                      ? null
+                      : sync.imageBytes(thumbnail),
+                  builder: (context, snapshot) {
+                    final bytes = snapshot.data;
+                    if (bytes != null && bytes.isNotEmpty) {
+                      return Image.memory(
+                        bytes,
                         fit: BoxFit.cover,
                         cacheWidth: 144,
-                      )
-                    : ColoredBox(
-                        color: ds.surfaceMuted,
-                        child: Icon(Icons.image_outlined, color: ds.textTertiary),
-                      ),
+                      );
+                    }
+                    return ColoredBox(
+                      color: ds.surfaceMuted,
+                      child: Icon(Icons.image_outlined, color: ds.textTertiary),
+                    );
+                  },
+                ),
               ),
             ),
             SizedBox(width: AppDesign.space3),
@@ -1328,10 +1347,13 @@ class _PendingProductsSheet extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     item.isFailed
-                        ? (item.error ?? 'Refusé par le serveur')
+                        ? (item.error ?? 'vendor_dashboard.pending.rejected_by_server'.tr)
                         : syncing
-                            ? 'Envoi en cours…'
-                            : 'Saisi le ${DateFormat('dd/MM à HH:mm', 'fr_FR').format(item.createdAt)}',
+                            ? 'vendor_dashboard.pending.sending'.tr
+                            : 'vendor_dashboard.pending.entered_on'.trParams({
+                                'date': DateFormat('dd/MM').format(item.createdAt),
+                                'time': DateFormat('HH:mm').format(item.createdAt),
+                              }),
                     style: context.caption.copyWith(
                       color: item.isFailed ? AppDesign.dangerText : ds.textTertiary,
                     ),
@@ -1342,14 +1364,14 @@ class _PendingProductsSheet extends StatelessWidget {
                         if (item.isFailed)
                           TextButton(
                             onPressed: () => sync.retry(item.id),
-                            child: const Text('Réessayer'),
+                            child: Text('vendor_dashboard.pending.retry'.tr),
                           ),
                         TextButton(
                           onPressed: () => _confirmRemove(context, sync, item),
                           style: TextButton.styleFrom(
                             foregroundColor: AppDesign.danger,
                           ),
-                          child: const Text('Retirer'),
+                          child: Text('vendor_dashboard.pending.remove'.tr),
                         ),
                       ],
                     ),
@@ -1369,19 +1391,19 @@ class _PendingProductsSheet extends StatelessWidget {
   ) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Retirer ce produit ?'),
+        title: Text('vendor_dashboard.pending.remove_title'.tr),
         content: Text(
-          '« ${item.name} » ne sera pas publié et sa saisie sera effacée du téléphone.',
+          'vendor_dashboard.pending.remove_message'.trParams({'name': item.name}),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('vendor_dashboard.cancel'.tr),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
             style: TextButton.styleFrom(foregroundColor: AppDesign.danger),
-            child: const Text('Retirer'),
+            child: Text('vendor_dashboard.pending.remove'.tr),
           ),
         ],
       ),

@@ -81,7 +81,7 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       _addLocalNotification(NotificationModel(
         id: realId,
         userId: 0,
-        title: notification?.title ?? 'Notification',
+        title: notification?.title ?? 'notification.default_title'.tr,
         body: notification?.body ?? '',
         type: data['type'] as String?,
         data: data,

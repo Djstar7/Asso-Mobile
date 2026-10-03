@@ -25,7 +25,7 @@ class FavoritesView extends GetView<FavoritesController> {
         centerTitle: true,
         leading: const AppBackButton(),
         title: Text(
-          'Mes Favoris',
+          'favorites.title'.tr,
           style: context.textStyle(
             deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
             fontWeight: FontWeight.bold,
@@ -41,7 +41,7 @@ class FavoritesView extends GetView<FavoritesController> {
                 Icons.delete_sweep_rounded,
                 color: AppThemeSystem.errorColor,
               ),
-              tooltip: 'Supprimer tout',
+              tooltip: 'favorites.remove_all'.tr,
               onPressed: controller.removeAllFavorites,
             );
           }),
@@ -128,7 +128,7 @@ class FavoritesView extends GetView<FavoritesController> {
             SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 1.5),
 
             Text(
-              'Aucun favori',
+              'favorites.empty_title'.tr,
               style: context.textStyle(
                 deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
                 fontWeight: FontWeight.bold,
@@ -140,7 +140,7 @@ class FavoritesView extends GetView<FavoritesController> {
             SizedBox(height: AppThemeSystem.getElementSpacing(context)),
 
             Text(
-              'Vous n\'avez pas encore ajouté de produits à vos favoris.\nCommencez à explorer pour trouver des produits qui vous plaisent!',
+              'favorites.empty_message'.tr,
               style: context.textStyle(
                 FontSizeType.body1,
                 color: isDark ? AppThemeSystem.grey400 : AppThemeSystem.grey600,
@@ -156,7 +156,7 @@ class FavoritesView extends GetView<FavoritesController> {
               onPressed: () => AppNavigation.back(context),
               icon: Icon(Icons.explore_rounded, color: Colors.white),
               label: Text(
-                'Explorer les produits',
+                'favorites.explore_products'.tr,
                 style: context.textStyle(
                   FontSizeType.body1,
                   fontWeight: FontWeight.bold,
@@ -188,7 +188,7 @@ class FavoritesView extends GetView<FavoritesController> {
     final shop = product['shop'] as Map<String, dynamic>?;
 
     return ProductCard(
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'favorites.product_fallback'.tr,
       price: _formatPrice(product),
       location: _getLocation(product),
       isFavorite: true,
@@ -259,7 +259,7 @@ class FavoritesView extends GetView<FavoritesController> {
       }
       return '$price ${controller.currencySymbol}';
     }
-    return 'Prix non défini';
+    return 'favorites.price_undefined'.tr;
   }
 
   String _getLocation(Map<String, dynamic> product) {

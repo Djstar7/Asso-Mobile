@@ -1,111 +1,81 @@
 import 'package:get/get.dart';
 
 class FaqController extends GetxController {
-  // Catégories de FAQ
-  final faqCategories = <FaqCategory>[
+  // Catégories de FAQ (getter : les textes suivent la langue courante)
+  List<FaqCategory> get faqCategories => [
     FaqCategory(
-      title: 'Commandes et livraisons',
+      title: 'faq.categories.orders_delivery'.tr,
       faqs: [
         Faq(
-          question: 'Comment passer une commande ?',
-          answer: 'Pour passer une commande, parcourez notre catalogue de produits, '
-              'ajoutez les articles souhaités à votre panier, puis cliquez sur "Commander". '
-              'Remplissez vos informations de livraison et choisissez votre mode de paiement '
-              'pour finaliser la commande.',
+          question: 'faq.items.place_order.question'.tr,
+          answer: 'faq.items.place_order.answer'.tr,
         ),
         Faq(
-          question: 'Comment suivre ma commande ?',
-          answer: 'Vous pouvez suivre votre commande en allant dans "Mes commandes" '
-              'depuis le menu principal. Cliquez sur la commande que vous souhaitez suivre '
-              'pour voir son statut en temps réel et la position du livreur.',
+          question: 'faq.items.track_order.question'.tr,
+          answer: 'faq.items.track_order.answer'.tr,
         ),
         Faq(
-          question: 'Puis-je annuler ma commande ?',
-          answer: 'Oui, vous pouvez annuler votre commande tant qu\'elle n\'est pas '
-              'en cours de livraison. Allez dans "Mes commandes", sélectionnez la commande '
-              'et cliquez sur "Annuler". Un remboursement sera effectué si le paiement a déjà été traité.',
+          question: 'faq.items.cancel_order.question'.tr,
+          answer: 'faq.items.cancel_order.answer'.tr,
         ),
         Faq(
-          question: 'Quels sont les délais de livraison ?',
-          answer: 'Les délais de livraison varient selon votre localisation :\n'
-              '• Zone urbaine : 1-2 heures\n'
-              '• Zone périurbaine : 2-4 heures\n'
-              '• Zone rurale : 24-48 heures',
+          question: 'faq.items.delivery_times.question'.tr,
+          answer: 'faq.items.delivery_times.answer'.tr,
         ),
       ],
     ),
     FaqCategory(
-      title: 'Paiements',
+      title: 'faq.categories.payments'.tr,
       faqs: [
         Faq(
-          question: 'Quels modes de paiement acceptez-vous ?',
-          answer: 'Nous acceptons plusieurs modes de paiement :\n'
-              '• Paiement mobile (Mobile Money, Orange Money)\n'
-              '• Carte bancaire (Visa, Mastercard)\n'
-              '• Paiement à la livraison (espèces)\n'
-              '• Virement bancaire',
+          question: 'faq.items.payment_methods.question'.tr,
+          answer: 'faq.items.payment_methods.answer'.tr,
         ),
         Faq(
-          question: 'Mes informations de paiement sont-elles sécurisées ?',
-          answer: 'Oui, toutes les transactions sont sécurisées par cryptage SSL. '
-              'Nous ne stockons pas vos informations de carte bancaire sur nos serveurs. '
-              'Tous les paiements sont traités par des passerelles de paiement certifiées PCI-DSS.',
+          question: 'faq.items.payment_security.question'.tr,
+          answer: 'faq.items.payment_security.answer'.tr,
         ),
         Faq(
-          question: 'Comment obtenir un remboursement ?',
-          answer: 'Pour demander un remboursement, contactez notre service client '
-              'avec votre numéro de commande. Les remboursements sont traités sous 5-7 jours '
-              'ouvrables et sont crédités sur le mode de paiement original.',
+          question: 'faq.items.get_refund.question'.tr,
+          answer: 'faq.items.get_refund.answer'.tr,
         ),
       ],
     ),
     FaqCategory(
-      title: 'Compte et sécurité',
+      title: 'faq.categories.account_security'.tr,
       faqs: [
         Faq(
-          question: 'Comment créer un compte ?',
-          answer: 'Cliquez sur "S\'inscrire" sur la page d\'accueil, remplissez vos '
-              'informations (nom, email, téléphone, mot de passe), puis validez votre compte '
-              'via le code envoyé par SMS ou email.',
+          question: 'faq.items.create_account.question'.tr,
+          answer: 'faq.items.create_account.answer'.tr,
         ),
         Faq(
-          question: 'J\'ai oublié mon mot de passe, que faire ?',
-          answer: 'Cliquez sur "Mot de passe oublié" sur la page de connexion, '
-              'entrez votre email ou numéro de téléphone, et suivez les instructions '
-              'pour réinitialiser votre mot de passe.',
+          question: 'faq.items.forgot_password.question'.tr,
+          answer: 'faq.items.forgot_password.answer'.tr,
         ),
         Faq(
-          question: 'Comment modifier mes informations personnelles ?',
-          answer: 'Allez dans "Paramètres" > "Modifier le profil" depuis le menu. '
-              'Vous pourrez y modifier votre nom, photo, numéro de téléphone, adresse de livraison, etc.',
+          question: 'faq.items.edit_info.question'.tr,
+          answer: 'faq.items.edit_info.answer'.tr,
         ),
         Faq(
-          question: 'Comment supprimer mon compte ?',
-          answer: 'Pour supprimer votre compte, allez dans "Paramètres" > "Données et confidentialité" '
-              '> "Supprimer mon compte". Cette action est irréversible et toutes vos données seront supprimées.',
+          question: 'faq.items.delete_account.question'.tr,
+          answer: 'faq.items.delete_account.answer'.tr,
         ),
       ],
     ),
     FaqCategory(
-      title: 'Retours et remboursements',
+      title: 'faq.categories.returns_refunds'.tr,
       faqs: [
         Faq(
-          question: 'Puis-je retourner un produit ?',
-          answer: 'Oui, vous avez 7 jours à compter de la réception pour retourner '
-              'un produit non utilisé dans son emballage d\'origine. Contactez le service client '
-              'pour initier un retour.',
+          question: 'faq.items.return_product.question'.tr,
+          answer: 'faq.items.return_product.answer'.tr,
         ),
         Faq(
-          question: 'Que faire si je reçois un produit endommagé ?',
-          answer: 'Si vous recevez un produit endommagé, refusez la livraison et '
-              'contactez immédiatement notre service client avec des photos. '
-              'Nous organiserons un remplacement ou un remboursement.',
+          question: 'faq.items.damaged_product.question'.tr,
+          answer: 'faq.items.damaged_product.answer'.tr,
         ),
         Faq(
-          question: 'Combien de temps prend un remboursement ?',
-          answer: 'Les remboursements sont traités sous 5-7 jours ouvrables après '
-              'réception et validation du retour. Le montant sera crédité sur votre mode '
-              'de paiement original.',
+          question: 'faq.items.refund_time.question'.tr,
+          answer: 'faq.items.refund_time.answer'.tr,
         ),
       ],
     ),

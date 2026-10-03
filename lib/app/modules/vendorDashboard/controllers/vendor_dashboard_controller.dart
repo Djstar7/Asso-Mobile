@@ -23,7 +23,7 @@ class VendorDashboardController extends GetxController {
 
   // Statut de vérification
   final verificationStatus = 'pending'.obs; // pending, approved, rejected
-  final verificationMessage = 'Votre demande est en cours de vérification'.obs;
+  final verificationMessage = 'vendor_dashboard.verification.pending_message'.tr.obs;
 
   // Données du vendeur
   final shopName = ''.obs;
@@ -98,9 +98,8 @@ class VendorDashboardController extends GetxController {
     return () {
       if (ConnectivityService.isOffline) {
         Get.snackbar(
-          'Hors ligne',
-          'Cette section demande une connexion. Hors ligne, vous pouvez '
-              'ajouter des produits : ils seront publiés au retour du réseau.',
+          'vendor_dashboard.offline.title'.tr,
+          'vendor_dashboard.offline.section_requires_connection'.tr,
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 3),
@@ -261,7 +260,7 @@ class VendorDashboardController extends GetxController {
   /// Premier passage hors ligne, sans rien en mémoire : pas de fausse
   /// boutique, juste de quoi ajouter un produit.
   void _loadOfflineIdentity() {
-    shopName.value = 'Ma boutique';
+    shopName.value = 'vendor_dashboard.my_shop'.tr;
     isShowingSnapshot.value = true;
   }
 
@@ -311,7 +310,7 @@ class VendorDashboardController extends GetxController {
     if (data['verification'] != null) {
       final verification = data['verification'];
       verificationStatus.value = verification['status'] ?? 'pending';
-      verificationMessage.value = verification['message'] ?? 'Votre demande est en cours de vérification';
+      verificationMessage.value = verification['message'] ?? 'vendor_dashboard.verification.pending_message'.tr;
       print('  └─ Verification Status: ${verificationStatus.value}');
       print('  └─ Verification Message: ${verificationMessage.value}');
     } else {
@@ -438,14 +437,14 @@ class VendorDashboardController extends GetxController {
         // Show dialog explaining they need a package
         Get.dialog(
           AlertDialog(
-            title: Text('Package requis'),
+            title: Text('vendor_dashboard.package_required.title'.tr),
             content: Text(
-              'Vous devez souscrire à un package de stockage pour ajouter des produits.',
+              'vendor_dashboard.package_required.message'.tr,
             ),
             actions: [
               TextButton(
                 onPressed: () => Get.back(),
-                child: Text('Annuler'),
+                child: Text('vendor_dashboard.cancel'.tr),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -456,7 +455,7 @@ class VendorDashboardController extends GetxController {
                   backgroundColor: AppThemeSystem.primaryColor,
                 ),
                 child: Text(
-                  'Voir les packages',
+                  'vendor_dashboard.package_required.see_packages'.tr,
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -469,9 +468,8 @@ class VendorDashboardController extends GetxController {
       // connu, on ignore s'il y a un forfait : le serveur tranchera à l'envoi.
       if (_hasDashboardData) {
         Get.snackbar(
-          'Forfait requis',
-          'Un forfait de stockage est nécessaire pour ajouter des produits. '
-              'Reconnectez-vous pour en souscrire un.',
+          'vendor_dashboard.offline.package_required_title'.tr,
+          'vendor_dashboard.offline.package_required_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
         );

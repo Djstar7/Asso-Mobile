@@ -69,12 +69,11 @@ class WholesaleDelivery extends ChangeNotifier {
 
   /// Ce qui manque avant de payer ; null quand la livraison est prête.
   String? get missingStep {
-    if (!hasLocation) return 'Indiquez votre adresse de livraison.';
-    if (!hasValidPhone) return 'Renseignez un numéro à contacter valide.';
-    if (loading) return 'Calcul de la livraison en cours…';
+    if (!hasLocation) return 'import.delivery.missing_address'.tr;
+    if (!hasValidPhone) return 'import.delivery.missing_phone'.tr;
+    if (loading) return 'import.delivery.computing'.tr;
     if (selected == null) {
-      return quote?['message']?.toString() ??
-          'Choisissez la livraison depuis Douala.';
+      return quote?['message']?.toString() ?? 'import.delivery.choose_offer'.tr;
     }
     return null;
   }
@@ -144,7 +143,10 @@ class WholesaleDelivery extends ChangeNotifier {
         label?.address ??
         (fallback?.trim().isNotEmpty == true
             ? fallback!.trim()
-            : 'Position GPS (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})');
+            : 'import.delivery.gps_position'.trParams({
+                'lat': lat.toStringAsFixed(4),
+                'lng': lng.toStringAsFixed(4),
+              }));
   }
 
   /// Recalcule les offres si les quantités ont changé depuis le dernier devis.
@@ -198,7 +200,7 @@ class WholesaleDelivery extends ChangeNotifier {
       if (request != _request) return;
       offers = const [];
       _selected = null;
-      quote = {'message': 'Impossible de calculer la livraison. Réessayez.'};
+      quote = {'message': 'import.delivery.quote_failed'.tr};
     } finally {
       if (request == _request) {
         loading = false;
@@ -260,15 +262,15 @@ class WholesaleDeliverySection extends StatelessWidget {
           const SizedBox(height: AppDesign.space3),
           AppTextField(
             controller: delivery.detailsController,
-            label: 'Précisions (facultatif)',
-            hint: 'Repère, immeuble, portail…',
+            label: 'import.delivery.details_label'.tr,
+            hint: 'import.delivery.details_hint'.tr,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: AppDesign.space3),
           AppTextField(
             controller: delivery.phoneController,
-            label: 'Numéro à contacter',
-            hint: 'Ex. 6 90 00 00 00',
+            label: 'import.delivery.phone_label'.tr,
+            hint: 'import.delivery.phone_hint'.tr,
             keyboardType: TextInputType.phone,
             autofillHints: const [AutofillHints.telephoneNumber],
           ),
@@ -308,10 +310,10 @@ class WholesaleDeliverySection extends StatelessWidget {
               Expanded(
                 child: Text(
                   delivery.locating
-                      ? 'Détection de votre position…'
+                      ? 'import.delivery.locating'.tr
                       : delivery.hasLocation
                       ? delivery.address
-                      : 'Où livrer votre commande ?',
+                      : 'import.delivery.where_to_deliver'.tr,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.textStyle(
@@ -339,8 +341,8 @@ class WholesaleDeliverySection extends StatelessWidget {
               Expanded(
                 child: AppButton(
                   label: failure?.needsSettings == true
-                      ? 'Réglages'
-                      : 'Ma position',
+                      ? 'import.delivery.settings'.tr
+                      : 'import.delivery.my_position'.tr,
                   icon: Icons.my_location_rounded,
                   variant: AppButtonVariant.secondary,
                   size: AppButtonSize.small,
@@ -354,7 +356,9 @@ class WholesaleDeliverySection extends StatelessWidget {
               const SizedBox(width: AppDesign.space2),
               Expanded(
                 child: AppButton(
-                  label: delivery.hasLocation ? 'Modifier' : 'Sur la carte',
+                  label: delivery.hasLocation
+                      ? 'import.delivery.edit'.tr
+                      : 'import.delivery.on_map'.tr,
                   icon: Icons.edit_location_alt_rounded,
                   variant: AppButtonVariant.secondary,
                   size: AppButtonSize.small,
@@ -370,8 +374,8 @@ class WholesaleDeliverySection extends StatelessWidget {
 
   Widget _offers(BuildContext context) {
     if (!delivery.hasLocation) {
-      return const DeliveryNotice(
-        'Indiquez votre adresse pour calculer la livraison depuis Douala.',
+      return DeliveryNotice(
+        'import.delivery.address_needed'.tr,
         icon: Icons.local_shipping_outlined,
       );
     }
@@ -389,16 +393,18 @@ class WholesaleDeliverySection extends StatelessWidget {
         children: [
           DeliveryNotice(
             outOfZone
-                ? 'Aucune zone de livraison à ${grid['city']} ne couvre cette position. Placez le repère au plus près de chez vous, dans une zone colorée.'
+                ? 'import.delivery.out_of_zone'.trParams({
+                    'city': '${grid['city']}',
+                  })
                 : delivery.quote?['message']?.toString() ??
-                      'Aucune livraison disponible depuis Douala vers cette adresse.',
+                      'import.delivery.no_offer'.tr,
             icon: Icons.info_outline_rounded,
             color: AppThemeSystem.warningColor,
           ),
           if (outOfZone) ...[
             const SizedBox(height: AppDesign.space2),
             AppButton(
-              label: 'Voir les zones sur la carte',
+              label: 'import.delivery.see_zones'.tr,
               icon: Icons.map_rounded,
               variant: AppButtonVariant.secondary,
               onPressed: delivery.pickOnMap,
@@ -416,7 +422,9 @@ class WholesaleDeliverySection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: AppDesign.space2),
             child: Text(
-              'Poids du colis : ${formatKg(weight)}',
+              'import.delivery.parcel_weight'.trParams({
+                'weight': formatKg(weight),
+              }),
               style: context.textStyle(
                 FontSizeType.caption,
                 color: context.ds.textSecondary,
@@ -433,7 +441,8 @@ class WholesaleDeliverySection extends StatelessWidget {
     final isSelected = delivery.selected?.key == offer.key;
     final lines = [
       ?offer.routeOrZone,
-      if (offer.leadTime != null) 'Délai : ${offer.leadTime}',
+      if (offer.leadTime != null)
+        'import.delivery.lead_time'.trParams({'time': '${offer.leadTime}'}),
     ];
 
     return Padding(
@@ -527,7 +536,7 @@ class WholesaleDeliverySection extends StatelessWidget {
                       onChoose: () => delivery.select(offer.raw),
                     ),
                     icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: const Text('Détails'),
+                    label: Text('import.delivery.details'.tr),
                     style: TextButton.styleFrom(
                       foregroundColor: AppDesign.accent,
                       visualDensity: VisualDensity.compact,

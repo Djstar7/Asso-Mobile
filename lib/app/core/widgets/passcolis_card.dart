@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../data/models/diaspo_offer.dart';
 import '../utils/app_design.dart';
@@ -258,8 +259,8 @@ class PasscolisCard extends StatelessWidget {
         // Sur une liste large, l'avertissement tient à côté de la date ;
         // en compact il ferait passer la carte à la ligne.
         if (!compact && !offer.profileVerified)
-          const AppBadge(
-            label: 'Profil non vérifié',
+          AppBadge(
+            label: 'core.passcolis.unverified_profile'.tr,
             tone: AppBadgeTone.warning,
           ),
       ],
@@ -275,7 +276,7 @@ class PasscolisCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Prix par kilo',
+                'core.passcolis.price_per_kg'.tr,
                 style: context.textStyle(
                   FontSizeType.caption,
                   color: context.ds.textTertiary,
@@ -297,7 +298,7 @@ class PasscolisCard extends StatelessWidget {
         ),
         SizedBox(width: AppDesign.space2),
         AppBadge(
-          label: '${_formatKg(offer.remainingKg)} kg dispo',
+          label: 'core.passcolis.kg_available'.trParams({'kg': _formatKg(offer.remainingKg)}),
           tone: offer.remainingKg > 0
               ? AppBadgeTone.success
               : AppBadgeTone.neutral,
@@ -310,27 +311,14 @@ class PasscolisCard extends StatelessWidget {
   /// L'année n'apparaît que si le voyage déborde sur la suivante.
   static String _formatShortDate(DateTime date) {
     final now = DateTime.now();
-    final short = '${date.day} ${_months[date.month - 1]}';
-    return date.year == now.year ? short : '$short ${date.year}';
+    // Mois abrégés dans la langue de l'application (« 12 mars », « Mar 12 »).
+    return date.year == now.year
+        ? DateFormat('d MMM').format(date)
+        : DateFormat('d MMM y').format(date);
   }
 
-  static const _months = [
-    'janv.',
-    'févr.',
-    'mars',
-    'avr.',
-    'mai',
-    'juin',
-    'juil.',
-    'août',
-    'sept.',
-    'oct.',
-    'nov.',
-    'déc.',
-  ];
-
   static String _formatDate(DateTime date) {
-    return '${date.day} ${_months[date.month - 1]} ${date.year}';
+    return DateFormat('d MMM y').format(date);
   }
 
   /// Les décimales n'ont de sens que si le voyageur en a saisi.

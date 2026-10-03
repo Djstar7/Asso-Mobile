@@ -6,6 +6,7 @@ import '../controllers/my_voice_controller.dart';
 import '../../../data/models/post.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../core/widgets/app_ui.dart';
 
 /// Limite acceptée par l'API (PostController::MAX_CONTENT_LENGTH).
@@ -27,7 +28,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
         shape: Border(bottom: BorderSide(color: context.ds.border)),
         leading: const AppBackButton(),
         title: Text(
-          'Ma voix',
+          'my_voice.title'.tr,
           style: context.textStyle(
             FontSizeType.h6,
             fontWeight: FontWeight.w700,
@@ -88,7 +89,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
       ),
       child: Row(
         children: [
-          _Avatar(name: controller.currentUserInitials, size: 40),
+          const UserAvatar(size: 40),
           SizedBox(width: AppDesign.space3),
           Expanded(
             child: Material(
@@ -102,7 +103,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                   alignment: Alignment.centerLeft,
                   padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
                   child: Text(
-                    'Partagez votre avis sur ASSO…',
+                    'my_voice.composer_hint'.tr,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textStyle(
@@ -121,7 +122,10 @@ class MyVoiceView extends GetView<MyVoiceController> {
 
   /// Bascule entre fil chronologique et fil populaire.
   Widget _buildSortBar(BuildContext context) {
-    const options = {'recent': 'Récents', 'popular': 'Populaires'};
+    final options = {
+      'recent': 'my_voice.sort_recent'.tr,
+      'popular': 'my_voice.sort_popular'.tr,
+    };
 
     return Container(
       color: context.ds.surface,
@@ -153,12 +157,12 @@ class MyVoiceView extends GetView<MyVoiceController> {
     return AppEmptyState(
       icon: error != null ? Icons.cloud_off_outlined : Icons.forum_outlined,
       title: error != null
-          ? 'Fil indisponible'
-          : 'Personne n’a encore pris la parole',
+          ? 'my_voice.feed_unavailable'.tr
+          : 'my_voice.empty_title'.tr,
       message:
           error ??
-          'Posez une question, signalez un problème ou partagez une bonne expérience.',
-      actionLabel: error != null ? 'Réessayer' : 'Écrire un message',
+          'my_voice.empty_message'.tr,
+      actionLabel: error != null ? 'my_voice.retry'.tr : 'my_voice.write_message'.tr,
       onAction: error != null
           ? controller.refresh
           : () => _showCreatePostDialog(context),
@@ -178,7 +182,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
           padding: EdgeInsets.symmetric(vertical: AppDesign.space6),
           child: Center(
             child: Text(
-              'Vous avez tout lu.',
+              'my_voice.all_read'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: context.ds.textTertiary,
@@ -202,9 +206,9 @@ class MyVoiceView extends GetView<MyVoiceController> {
     // est public. Le badge « Vous » suffit à s'y reconnaître.
     final anonymous = post.isAnonymous;
     final author = anonymous
-        ? 'Membre anonyme'
+        ? 'my_voice.anonymous_member'.tr
         : (post.user == null
-              ? 'Membre ASSO'
+              ? 'my_voice.asso_member'.tr
               : '${post.user!.firstName} ${post.user!.lastName}'.trim());
 
     return Container(
@@ -246,22 +250,22 @@ class MyVoiceView extends GetView<MyVoiceController> {
                         // complètent.
                         if (anonymous) ...[
                           SizedBox(width: AppDesign.space2),
-                          const AppBadge(
-                            label: 'ANONYME',
+                          AppBadge(
+                            label: 'my_voice.badge_anonymous'.tr,
                             tone: AppBadgeTone.neutral,
                           ),
                         ],
                         if (post.isMyPost) ...[
                           SizedBox(width: AppDesign.space2),
-                          const AppBadge(
-                            label: 'VOUS',
+                          AppBadge(
+                            label: 'my_voice.badge_you'.tr,
                             tone: AppBadgeTone.accent,
                           ),
                         ],
                       ],
                     ),
                     Text(
-                      timeago.format(post.createdAt, locale: 'fr'),
+                      timeago.format(post.createdAt),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.textStyle(
@@ -321,7 +325,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                 icon: Icons.mode_comment_outlined,
                 count: post.commentsCount,
                 // Un fil sans commentaire doit inviter à en écrire le premier.
-                label: post.commentsCount == 0 ? 'Commenter' : null,
+                label: post.commentsCount == 0 ? 'my_voice.comment'.tr : null,
                 onTap: () => _openDetail(post),
               ),
             ],
@@ -360,12 +364,12 @@ class MyVoiceView extends GetView<MyVoiceController> {
     // formulaire, il passait dessous pendant la saisie.
     AppSheet.show(
       AppSheet(
-        title: isEditing ? 'Modifier le message' : 'Nouveau message',
+        title: isEditing ? 'my_voice.edit_message_title'.tr : 'my_voice.new_message_title'.tr,
         footer: Obx(() {
           final length = charCount.value;
           final valid = length >= 2 && length <= _maxPostLength;
           return AppButton(
-            label: isEditing ? 'Enregistrer' : 'Publier',
+            label: isEditing ? 'my_voice.save'.tr : 'my_voice.publish'.tr,
             isLoading: controller.isSubmitting.value,
             // Bouton inerte tant que le message est invalide :
             // plus clair qu'un refus après coup.
@@ -396,12 +400,9 @@ class MyVoiceView extends GetView<MyVoiceController> {
             Obx(
               () => Row(
                 children: [
-                  _Avatar(
-                    name: isAnonymous.value
-                        ? '?'
-                        : controller.currentUserInitials,
-                    size: 36,
-                  ),
+                  isAnonymous.value
+                      ? const _Avatar(name: '?', size: 36)
+                      : const UserAvatar(size: 36),
                   SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: Column(
@@ -410,7 +411,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
                       children: [
                         Text(
                           isAnonymous.value
-                              ? 'Membre anonyme'
+                              ? 'my_voice.anonymous_member'.tr
                               : controller.currentUserInitials,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -422,8 +423,8 @@ class MyVoiceView extends GetView<MyVoiceController> {
                         ),
                         Text(
                           isAnonymous.value
-                              ? 'Votre nom restera masqué'
-                              : 'Publié sous votre nom',
+                              ? 'my_voice.name_hidden'.tr
+                              : 'my_voice.published_under_name'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.textStyle(
@@ -435,8 +436,8 @@ class MyVoiceView extends GetView<MyVoiceController> {
                     ),
                   ),
                   if (isAnonymous.value)
-                    const AppBadge(
-                      label: 'ANONYME',
+                    AppBadge(
+                      label: 'my_voice.badge_anonymous'.tr,
                       tone: AppBadgeTone.neutral,
                     ),
                 ],
@@ -446,7 +447,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
 
             AppTextField(
               controller: contentController,
-              hint: 'Partagez votre avis sur ASSO…',
+              hint: 'my_voice.composer_hint'.tr,
               maxLines: 6,
               onChanged: (value) => charCount.value = value.length,
             ),
@@ -650,13 +651,13 @@ class _PostMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_horiz_rounded, color: context.ds.textTertiary),
-      tooltip: 'Options',
+      tooltip: 'my_voice.options'.tr,
       onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
       itemBuilder: (context) => [
-        const PopupMenuItem(value: 'edit', child: Text('Modifier')),
+        PopupMenuItem(value: 'edit', child: Text('my_voice.edit'.tr)),
         PopupMenuItem(
           value: 'delete',
-          child: Text('Supprimer', style: TextStyle(color: AppDesign.danger)),
+          child: Text('my_voice.delete'.tr, style: TextStyle(color: AppDesign.danger)),
         ),
       ],
     );
@@ -703,7 +704,7 @@ class _AnonymousToggle extends StatelessWidget {
               SizedBox(width: AppDesign.space3),
               Expanded(
                 child: Text(
-                  'Publier en mode anonyme',
+                  'my_voice.publish_anonymously'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     fontWeight: FontWeight.w600,

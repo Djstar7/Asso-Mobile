@@ -15,7 +15,7 @@ import '../controllers/shop_statistics_controller.dart';
 class ShopStatisticsView extends GetView<ShopStatisticsController> {
   const ShopStatisticsView({super.key});
 
-  static final _count = NumberFormat.decimalPattern('fr_FR');
+  static NumberFormat get _count => NumberFormat.decimalPattern();
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
         centerTitle: false,
         titleSpacing: 0,
         title: Text(
-          'Statistiques',
+          'shop_statistics.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w700,
             color: ds.textPrimary,
@@ -54,14 +54,14 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
                       )
                     : Icon(Icons.ios_share_rounded,
                         color: ds.textSecondary, size: 20),
-                tooltip: 'Exporter le rapport',
+                tooltip: 'shop_statistics.export.title'.tr,
                 onPressed: controller.isExporting.value
                     ? null
                     : () => _openExportSheet(context),
               )),
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: ds.textSecondary, size: 20),
-            tooltip: 'Actualiser',
+            tooltip: 'shop_statistics.refresh'.tr,
             onPressed: controller.load,
           ),
           SizedBox(width: AppDesign.space1),
@@ -139,7 +139,7 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Exporter le rapport',
+                    'shop_statistics.export.title'.tr,
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.w700,
                       color: ds.textPrimary,
@@ -147,7 +147,9 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
                   ),
                   SizedBox(height: AppDesign.space1),
                   Obx(() => Text(
-                        'Période : ${ShopStatisticsController.periods[controller.period.value] ?? ''}',
+                        'shop_statistics.export.period'.trParams({
+                          'period': ShopStatisticsController.periods[controller.period.value] ?? '',
+                        }),
                         style: context.body2.copyWith(color: ds.textSecondary),
                       )),
                 ],
@@ -155,8 +157,8 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
             ),
             _ExportOption(
               icon: Icons.picture_as_pdf_outlined,
-              title: 'Document PDF',
-              subtitle: 'Présentable : à imprimer ou à transmettre',
+              title: 'shop_statistics.export.pdf_title'.tr,
+              subtitle: 'shop_statistics.export.pdf_subtitle'.tr,
               onTap: () {
                 Get.back();
                 controller.exportReport('pdf');
@@ -165,8 +167,8 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
             Divider(height: 1, color: ds.border, indent: AppDesign.space5),
             _ExportOption(
               icon: Icons.table_chart_outlined,
-              title: 'Tableur CSV',
-              subtitle: 'Exploitable dans Excel ou Google Sheets',
+              title: 'shop_statistics.export.csv_title'.tr,
+              subtitle: 'shop_statistics.export.csv_subtitle'.tr,
               onTap: () {
                 Get.back();
                 controller.exportReport('csv');
@@ -189,54 +191,56 @@ class ShopStatisticsView extends GetView<ShopStatisticsController> {
     final cards = <Widget>[
       _KpiCard(
         icon: Icons.storefront_outlined,
-        label: 'Visites de la boutique',
+        label: 'shop_statistics.kpi.shop_visits'.tr,
         value: _count.format(controller.intOf(t, 'visits')),
         trendKey: 'visits',
       ),
       _KpiCard(
         icon: Icons.people_outline,
-        label: 'Visiteurs uniques',
+        label: 'shop_statistics.kpi.unique_visitors'.tr,
         value: _count.format(controller.intOf(t, 'unique_visitors')),
         trendKey: 'unique_visitors',
       ),
       _KpiCard(
         icon: Icons.visibility_outlined,
-        label: 'Produits consultés',
+        label: 'shop_statistics.metric.product_views'.tr,
         value: _count.format(controller.intOf(t, 'product_views')),
         trendKey: 'product_views',
       ),
       _KpiCard(
         icon: Icons.chat_bubble_outline,
-        label: 'Contacts reçus',
+        label: 'shop_statistics.kpi.contacts'.tr,
         value: _count.format(controller.intOf(t, 'contacts')),
         trendKey: 'contacts',
       ),
       _KpiCard(
         icon: Icons.shopping_cart_outlined,
-        label: 'Commandes',
+        label: 'shop_statistics.metric.orders'.tr,
         value: _count.format(controller.intOf(t, 'orders')),
         trendKey: 'orders',
-        hint: '${controller.intOf(t, 'pending_orders')} en attente',
+        hint: 'shop_statistics.kpi.pending'.trParams({'count': '${controller.intOf(t, 'pending_orders')}'}),
       ),
       _KpiCard(
         icon: Icons.check_circle_outline,
-        label: 'Ventes validées',
+        label: 'shop_statistics.kpi.validated_sales'.tr,
         value: _count.format(controller.intOf(t, 'validated_orders')),
         trendKey: 'validated_orders',
-        hint: '${_count.format(controller.intOf(t, 'items_sold'))} article(s)',
+        hint: 'shop_statistics.kpi.items'.trParams({'count': _count.format(controller.intOf(t, 'items_sold'))}),
       ),
       _KpiCard(
         icon: Icons.payments_outlined,
-        label: 'Chiffre d\'affaires',
+        label: 'shop_statistics.metric.revenue'.tr,
         value: controller.formatPrice(controller.doubleOf(t, 'revenue')),
         trendKey: 'revenue',
-        hint: 'Panier moyen ${controller.formatPrice(controller.doubleOf(t, 'average_basket'))}',
+        hint: 'shop_statistics.kpi.average_basket'.trParams({
+          'amount': controller.formatPrice(controller.doubleOf(t, 'average_basket')),
+        }),
       ),
       _KpiCard(
         icon: Icons.percent,
-        label: 'Taux de conversion',
+        label: 'shop_statistics.kpi.conversion_rate'.tr,
         value: '${controller.doubleOf(t, 'conversion_rate').toStringAsFixed(1)} %',
-        hint: 'Ventes / visiteurs',
+        hint: 'shop_statistics.kpi.conversion_hint'.tr,
       ),
     ];
 
@@ -355,7 +359,7 @@ class _KpiCard extends GetView<ShopStatisticsController> {
   /// information (hausse, baisse, stabilité) et non une décoration.
   Widget _trendBadge(double? trend) {
     if (trend == null) {
-      return const AppBadge(label: 'nouveau', tone: AppBadgeTone.info);
+      return AppBadge(label: 'shop_statistics.trend.new'.tr, tone: AppBadgeTone.info);
     }
     if (trend > 0) {
       return AppBadge(
@@ -369,7 +373,7 @@ class _KpiCard extends GetView<ShopStatisticsController> {
         tone: AppBadgeTone.danger,
       );
     }
-    return const AppBadge(label: 'stable');
+    return AppBadge(label: 'shop_statistics.trend.stable'.tr);
   }
 }
 
@@ -378,7 +382,7 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
   Widget build(BuildContext context) {
     return _Section(
       icon: Icons.bar_chart,
-      title: 'Évolution',
+      title: 'shop_statistics.evolution.title'.tr,
       child: Obx(() {
         final metric = controller.metric.value;
         final points = controller.series;
@@ -407,7 +411,7 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
               child: values.every((v) => v == 0)
                   ? Center(
                       child: Text(
-                        'Aucune donnée sur la période',
+                        'shop_statistics.evolution.empty'.tr,
                         style: context.body2.copyWith(color: context.secondaryTextColor),
                       ),
                     )
@@ -631,13 +635,13 @@ class _TopProductsCard extends GetView<ShopStatisticsController> {
   Widget build(BuildContext context) {
     return _Section(
       icon: Icons.local_fire_department_outlined,
-      title: 'Produits les plus consultés',
+      title: 'shop_statistics.top_products.title'.tr,
       child: Obx(() {
         if (controller.topProducts.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
-              'Aucune consultation ni vente sur la période.',
+              'shop_statistics.top_products.empty'.tr,
               style: context.body2.copyWith(color: context.secondaryTextColor),
             ),
           );
@@ -654,7 +658,10 @@ class _TopProductsCard extends GetView<ShopStatisticsController> {
                 style: context.body1.copyWith(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
-                '${controller.intOf(p, 'views')} vue(s) · ${controller.intOf(p, 'items_sold')} vendu(s)',
+                'shop_statistics.top_products.views_sold'.trParams({
+                  'views': '${controller.intOf(p, 'views')}',
+                  'sold': '${controller.intOf(p, 'items_sold')}',
+                }),
                 style: context.caption,
               ),
               trailing: Text(
@@ -677,18 +684,18 @@ class _AllTimeCard extends GetView<ShopStatisticsController> {
     final count = ShopStatisticsView._count;
     return _Section(
       icon: Icons.history,
-      title: 'Depuis l\'ouverture',
+      title: 'shop_statistics.all_time.title'.tr,
       child: Obx(() {
         final a = controller.allTime;
         final rows = <List<String>>[
-          ['Visites', count.format(controller.intOf(a, 'visits'))],
-          ['Visites (7 derniers jours)', count.format(controller.intOf(a, 'visits_last_7_days'))],
-          ['Produits consultés', count.format(controller.intOf(a, 'product_views'))],
-          ['Contacts reçus', count.format(controller.intOf(a, 'contacts'))],
-          ['Commandes', count.format(controller.intOf(a, 'orders'))],
-          ['Ventes validées', count.format(controller.intOf(a, 'sales_count'))],
-          ['Articles vendus', count.format(controller.intOf(a, 'items_sold'))],
-          ['Chiffre d\'affaires', controller.formatPrice(controller.doubleOf(a, 'revenue'))],
+          ['shop_statistics.metric.visits'.tr, count.format(controller.intOf(a, 'visits'))],
+          ['shop_statistics.all_time.visits_7_days'.tr, count.format(controller.intOf(a, 'visits_last_7_days'))],
+          ['shop_statistics.metric.product_views'.tr, count.format(controller.intOf(a, 'product_views'))],
+          ['shop_statistics.kpi.contacts'.tr, count.format(controller.intOf(a, 'contacts'))],
+          ['shop_statistics.metric.orders'.tr, count.format(controller.intOf(a, 'orders'))],
+          ['shop_statistics.kpi.validated_sales'.tr, count.format(controller.intOf(a, 'sales_count'))],
+          ['shop_statistics.all_time.items_sold'.tr, count.format(controller.intOf(a, 'items_sold'))],
+          ['shop_statistics.metric.revenue'.tr, controller.formatPrice(controller.doubleOf(a, 'revenue'))],
         ];
         return Column(
           children: rows
@@ -764,7 +771,7 @@ class _ErrorState extends GetView<ShopStatisticsController> {
           OutlinedButton.icon(
             onPressed: controller.load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
+            label: Text('shop_statistics.retry'.tr),
           ),
         ],
       ),

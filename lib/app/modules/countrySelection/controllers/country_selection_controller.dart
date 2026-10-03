@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/services/locale_service.dart';
 import '../../../core/values/country_catalog.dart';
 import '../../../data/models/currency_model.dart';
 import '../../../data/providers/api_provider.dart';
@@ -176,8 +177,8 @@ class CountrySelectionController extends GetxController {
     } catch (e) {
       hasError.value = true;
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger la liste des pays',
+        'common.error'.tr,
+        'country_selection.load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -242,11 +243,17 @@ class CountrySelectionController extends GetxController {
         option.country,
         option.currency,
       );
+      // La langue suit le pays (langue professionnelle), sauf si
+      // l'utilisateur l'a déjà fixée dans les réglages.
+      await LocaleService.to.applyCountry(
+        isoCode: option.isoCode,
+        country: option.country,
+      );
       Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de définir le pays sélectionné',
+        'common.error'.tr,
+        'country_selection.select_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

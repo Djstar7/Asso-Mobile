@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 /// Modèle de statistiques de stockage
 class StorageStats {
@@ -122,17 +123,17 @@ extension CertificationStatusExtension on CertificationStatus {
   String get label {
     switch (this) {
       case CertificationStatus.notCertified:
-        return 'Non certifié';
+        return 'store_management.certification_status.not_certified'.tr;
       case CertificationStatus.pending:
-        return 'En attente';
+        return 'store_management.certification_status.pending'.tr;
       case CertificationStatus.certified:
-        return 'Certifié';
+        return 'store_management.certification_status.certified'.tr;
       case CertificationStatus.expiringSoon:
-        return 'Expire bientôt';
+        return 'store_management.certification_status.expiring_soon'.tr;
       case CertificationStatus.expired:
-        return 'Expiré';
+        return 'store_management.certification_status.expired'.tr;
       case CertificationStatus.rejected:
-        return 'Rejeté';
+        return 'store_management.certification_status.rejected'.tr;
     }
   }
 }
@@ -199,11 +200,11 @@ extension InventoryTypeExtension on InventoryType {
   String get label {
     switch (this) {
       case InventoryType.entry:
-        return 'Entrée';
+        return 'store_management.inventory_type.entry'.tr;
       case InventoryType.exit:
-        return 'Sortie';
+        return 'store_management.inventory_type.exit'.tr;
       case InventoryType.adjustment:
-        return 'Ajustement';
+        return 'store_management.inventory_type.adjustment'.tr;
     }
   }
 }

@@ -1,8 +1,11 @@
+import 'package:get/get.dart';
+
 /// Produit créé hors ligne, en attente d'envoi au serveur.
 ///
 /// Il garde exactement ce que le formulaire aurait envoyé (champs du
-/// multipart `POST /v1/products`) et les chemins de ses photos, copiées dans
-/// le dossier de l'application pour survivre au nettoyage du cache système.
+/// multipart `POST /v1/products`) et les références de ses photos, copiées
+/// en octets dans Hive (ou, pour les fiches plus anciennes, chemins de
+/// fichiers dans le dossier de l'application).
 class PendingProduct {
   PendingProduct({
     required this.id,
@@ -10,6 +13,7 @@ class PendingProduct {
     required this.createdAt,
     required this.fields,
     required this.imagePaths,
+    this.labels = const {},
     this.status = PendingProductStatus.pending,
     this.error,
     this.attempts = 0,
@@ -23,6 +27,11 @@ class PendingProduct {
   final Map<String, String> fields;
   final List<String> imagePaths;
 
+  /// Libellés de la catégorie choisie (`category_name`, `subcategory_name`).
+  /// Jamais envoyés : ils servent à retrouver les bons identifiants si la
+  /// liste des catégories a changé entre la saisie et l'envoi.
+  final Map<String, String> labels;
+
   String status;
 
   /// Motif du refus par le serveur, affiché au vendeur.
@@ -31,7 +40,7 @@ class PendingProduct {
 
   String get name {
     final value = fields['name']?.trim() ?? '';
-    return value.isNotEmpty ? value : 'Produit sans nom';
+    return value.isNotEmpty ? value : 'data.pending_product.unnamed'.tr;
   }
 
   bool get isFailed => status == PendingProductStatus.failed;
@@ -42,6 +51,7 @@ class PendingProduct {
         'created_at': createdAt.toIso8601String(),
         'fields': fields,
         'image_paths': imagePaths,
+        'labels': labels,
         'status': status,
         'error': error,
         'attempts': attempts,
@@ -70,6 +80,10 @@ class PendingProduct {
       imagePaths: (json['image_paths'] as List? ?? const [])
           .map((e) => '$e')
           .toList(),
+      labels: Map<String, String>.from(
+        (json['labels'] as Map? ?? const {})
+            .map((key, value) => MapEntry('$key', '${value ?? ''}')),
+      ),
       status: status,
       error: json['error']?.toString(),
       attempts: (json['attempts'] as num?)?.toInt() ?? 0,

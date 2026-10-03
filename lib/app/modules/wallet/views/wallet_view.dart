@@ -29,7 +29,7 @@ import '../../../core/widgets/app_ui.dart';
     appBar: AppBar(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
       leading: const AppBackButton(),
-      title: const Text('Mon Portefeuille'),
+      title: Text('wallet.title'.tr),
     ),
     body: SafeArea(
       child: Stack(
@@ -70,7 +70,7 @@ import '../../../core/widgets/app_ui.dart';
                             foregroundColor: AppThemeSystem.whiteColor,
                             minimumSize: const Size(double.infinity, 48),
                           ),
-                          child: const Text('Réessayer'),
+                          child: Text('wallet.retry'.tr),
                         ),
                       ],
                     ),
@@ -150,10 +150,12 @@ import '../../../core/widgets/app_ui.dart';
         final Color bg = AppDesign.dangerSubtle;
 
         final String title =
-            rejected ? 'IBAN refusé - à corriger' : 'IBAN non configuré';
+            rejected
+                ? 'wallet.iban_banner.rejected_title'.tr
+                : 'wallet.iban_banner.missing_title'.tr;
         final String subtitle = rejected
-            ? 'Vos informations bancaires ont été refusées. Configurez votre IBAN dans les paramètres vendeur pour être payé.'
-            : 'Votre IBAN se configure dans les paramètres vendeur. Appuyez pour l\'ajouter et recevoir vos paiements.';
+            ? 'wallet.iban_banner.rejected_subtitle'.tr
+            : 'wallet.iban_banner.missing_subtitle'.tr;
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -347,7 +349,7 @@ import '../../../core/widgets/app_ui.dart';
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Solde',
+                                  'wallet.card.balance'.tr,
                                   style: TextStyle(
                                     fontSize: balanceFontSize * 0.35,
                                     color: Colors.white.withValues(alpha: 0.7),
@@ -564,7 +566,7 @@ import '../../../core/widgets/app_ui.dart';
               child: _buildActionButton(
                 context: context,
                 icon: Icons.add_circle_outline_rounded,
-                label: 'Recharger',
+                label: 'wallet.actions.recharge'.tr,
                 isPrimary: true,
                 onTap: () => RechargeBottomSheet.show(context),
               ),
@@ -574,7 +576,7 @@ import '../../../core/widgets/app_ui.dart';
               child: _buildActionButton(
                 context: context,
                 icon: Icons.arrow_circle_up_outlined,
-                label: 'Retirer',
+                label: 'wallet.actions.withdraw'.tr,
                 onTap: () => _showWithdrawalOptions(context),
               ),
             ),
@@ -584,7 +586,7 @@ import '../../../core/widgets/app_ui.dart';
                 () => _buildActionButton(
                   context: context,
                   icon: Icons.history_rounded,
-                  label: 'Historique',
+                  label: 'wallet.actions.history'.tr,
                   onTap: () => Get.toNamed('/wallet/history'),
                   badgeCount: controller.pendingTransactionsCount,
                 ),
@@ -695,7 +697,7 @@ import '../../../core/widgets/app_ui.dart';
                   const Icon(Icons.lock_clock, size: 20, color: AppDesign.accent),
                   const SizedBox(width: 8),
                   Text(
-                    'Fonds en Attente',
+                    'wallet.locked.title'.tr,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -754,7 +756,7 @@ import '../../../core/widgets/app_ui.dart';
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Vous avez des fonds bloqués qui seront débloqués après confirmation de livraison',
+                              'wallet.locked.info'.tr,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppDesign.accent,
@@ -770,7 +772,7 @@ import '../../../core/widgets/app_ui.dart';
                         child: ElevatedButton.icon(
                           onPressed: () => _showEnterCodeForUnlock(context),
                           icon: const Icon(Icons.lock_open, size: 20),
-                          label: const Text('Débloquer avec code'),
+                          label: Text('wallet.locked.unlock_with_code'.tr),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppThemeSystem.primaryColor,
                             foregroundColor: AppThemeSystem.whiteColor,
@@ -807,7 +809,7 @@ import '../../../core/widgets/app_ui.dart';
     Widget _buildLockedBookingCard(BuildContext context, Map<String, dynamic> booking) {
       final subtotal = booking['subtotal'] as double;
       final kgBooked = booking['kg_booked'] as double;
-      final buyerName = booking['buyer_name'] ?? 'Client';
+      final buyerName = booking['buyer_name'] ?? 'wallet.default_client'.tr;
 
       return Container(
         width: 280,
@@ -891,7 +893,7 @@ import '../../../core/widgets/app_ui.dart';
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Montant',
+                    'wallet.locked.amount'.tr,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppDesign.accent,
@@ -914,9 +916,9 @@ import '../../../core/widgets/app_ui.dart';
               child: ElevatedButton.icon(
                 onPressed: () => _showEnterCodeForUnlock(context),
                 icon: const Icon(Icons.lock_open, size: 16),
-                label: const Text(
-                  'Débloquer',
-                  style: TextStyle(fontSize: 12),
+                label: Text(
+                  'wallet.locked.unlock'.tr,
+                  style: const TextStyle(fontSize: 12),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
@@ -954,7 +956,7 @@ import '../../../core/widgets/app_ui.dart';
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Soldes par Méthode',
+              'wallet.balances.title'.tr,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -989,10 +991,10 @@ import '../../../core/widgets/app_ui.dart';
               final available = controller.stripeWithdrawAvailable.value;
 
               final subtitle = switch (status) {
-                'approved' => last4 != null ? 'IBAN ••••$last4' : 'Vers votre compte bancaire',
-                'pending' => 'IBAN en cours de vérification',
-                'rejected' => 'IBAN refusé — à renvoyer',
-                _ => 'Aucun IBAN enregistré',
+                'approved' => last4 != null ? 'IBAN ••••$last4' : 'wallet.balances.to_bank_account'.tr,
+                'pending' => 'wallet.balances.iban_pending'.tr,
+                'rejected' => 'wallet.balances.iban_rejected_resend'.tr,
+                _ => 'wallet.balances.no_iban'.tr,
               };
 
               return Column(
@@ -1002,7 +1004,7 @@ import '../../../core/widgets/app_ui.dart';
                     context: context,
                     iconData: Icons.account_balance_rounded,
                     emoji: '🏦',
-                    title: 'Virement bancaire (IBAN)',
+                    title: 'wallet.balances.bank_transfer_iban'.tr,
                     subtitle: subtitle,
                     balance: available,
                     color: AppThemeSystem.bankColor,
@@ -1026,7 +1028,7 @@ import '../../../core/widgets/app_ui.dart';
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Coordonnées de retrait',
+              'wallet.payout.title'.tr,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1039,14 +1041,14 @@ import '../../../core/widgets/app_ui.dart';
               final hasAccount = account != null;
               final title = hasAccount
                   ? KPayCatalog.labelFor(account['provider']?.toString())
-                  : 'Aucun numéro Mobile Money enregistré';
+                  : 'wallet.payout.none'.tr;
               final subtitle = hasAccount
                   ? [
                       '+${account['masked_phone'] ?? account['phone_number']}',
                       if ((account['account_holder'] ?? '').toString().isNotEmpty)
                         account['account_holder'].toString(),
                     ].join(' · ')
-                  : 'Enregistrez-le une fois, vos retraits seront pré-remplis.';
+                  : 'wallet.payout.none_hint'.tr;
 
               return InkWell(
                 onTap: () => PayoutAccountSheet.show(),
@@ -1101,7 +1103,7 @@ import '../../../core/widgets/app_ui.dart';
                         ),
                       ),
                       Text(
-                        hasAccount ? 'Modifier' : 'Ajouter',
+                        hasAccount ? 'wallet.payout.edit'.tr : 'wallet.payout.add'.tr,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -1130,7 +1132,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
       child: InkWell(
         onTap: () {
           if (AuthGuard.isGuest) {
-            AppDialogs.showLoginRequiredDialog(context, featureName: 'le mode vendeur');
+            AppDialogs.showLoginRequiredDialog(context, featureName: 'wallet.iban_link.vendor_mode_feature'.tr);
           } else {
             controller.handleVendorModeNavigation();
           }
@@ -1142,7 +1144,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
             Icon(Icons.store_rounded, size: 13, color: AppThemeSystem.primaryColor),
             const SizedBox(width: 4),
             Text(
-              'Devenez vendeur pour recevoir des paiements',
+              'wallet.iban_link.become_vendor'.tr,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -1165,9 +1167,9 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
       : AppThemeSystem.primaryColor;
 
   final label = switch (status) {
-    'pending' => 'IBAN en cours de vérification',
-    'rejected' => 'IBAN refusé — appuyez pour corriger',
-    _ => 'Configurer votre IBAN pour retirer',
+    'pending' => 'wallet.balances.iban_pending'.tr,
+    'rejected' => 'wallet.iban_link.rejected'.tr,
+    _ => 'wallet.iban_link.configure'.tr,
   };
 
   return Padding(
@@ -1330,17 +1332,18 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
           minCurrency: 'XAF',
           unavailableReason: (kpayConfigured && kpayBal > 0) ? null : 'disabled',
           hint: !kpayConfigured
-              ? 'Momentanément indisponible'
+              ? 'wallet.withdraw_options.temporarily_unavailable'.tr
               : (kpayBal > 0
-                  ? '${controller.formatPrice(kpayBal)} disponible'
-                  : 'Aucun solde à retirer'),
+                  ? 'wallet.withdraw_options.amount_available'
+                      .trParams({'amount': controller.formatPrice(kpayBal)})
+                  : 'wallet.withdraw_options.no_balance'.tr),
         ),
         PaymentMethodOption(
           code: 'stripe',
-          label: 'Virement bancaire (IBAN)',
+          label: 'wallet.balances.bank_transfer_iban'.tr,
           subtitle: stripeLast4 != null
               ? 'IBAN ••••$stripeLast4'
-              : 'Vers votre compte bancaire',
+              : 'wallet.balances.to_bank_account'.tr,
           flow: 'redirect',
           enabled: stripeConfigured,
           available: stripeConfigured && stripeEligible && stripeBal > 0,
@@ -1348,20 +1351,23 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
           unavailableReason:
               (stripeConfigured && stripeEligible && stripeBal > 0) ? null : 'disabled',
           hint: !stripeConfigured
-              ? 'Momentanément indisponible'
+              ? 'wallet.withdraw_options.temporarily_unavailable'.tr
               : (!stripeEligible
-                  ? 'IBAN non validé'
+                  ? 'wallet.withdraw_options.iban_not_validated'.tr
                   : (stripeBal > 0
-                      ? '${stripeBal.toStringAsFixed(2)} $stripeCurrency disponible'
-                      : 'Aucun solde à retirer')),
+                      ? 'wallet.withdraw_options.amount_available'.trParams({
+                          'amount':
+                              '${stripeBal.toStringAsFixed(2)} $stripeCurrency'
+                        })
+                      : 'wallet.withdraw_options.no_balance'.tr)),
         ),
       ];
 
       final selected = await PaymentMethodSelector.show(
         amount: kpayBal,
         currency: 'FCFA',
-        amountLabel: 'Solde disponible',
-        title: 'Choisir une méthode de retrait',
+        amountLabel: 'wallet.withdraw_options.available_balance'.tr,
+        title: 'wallet.withdraw_options.title'.tr,
         options: options,
       );
       if (selected == null || !context.mounted) return;
@@ -1433,7 +1439,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Virement bancaire',
+                  'wallet.stripe_dialog.title'.tr,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppThemeSystem.getPrimaryTextColor(context),
@@ -1448,15 +1454,18 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
             children: [
               if (last4 != null)
                 Text(
-                  'Vers votre IBAN ••••$last4',
+                  'wallet.stripe_dialog.to_iban'.trParams({'last4': last4}),
                   style: TextStyle(color: AppThemeSystem.getSecondaryTextColor(context)),
                 ),
               const SizedBox(height: 4),
               Text(
                 converts
-                    ? 'Disponible : ${money(available, sourceCurrency)} '
-                        '(≈ ${money(payoutAvailable, payoutCurrency)})'
-                    : 'Disponible : ${money(available, payoutCurrency)}',
+                    ? 'wallet.stripe_dialog.available_converted'.trParams({
+                        'amount': money(available, sourceCurrency),
+                        'converted': money(payoutAvailable, payoutCurrency),
+                      })
+                    : 'wallet.stripe_dialog.available'
+                        .trParams({'amount': money(available, payoutCurrency)}),
                 style: TextStyle(
                   color: AppThemeSystem.getSecondaryTextColor(context),
                   fontSize: 13,
@@ -1468,7 +1477,8 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: 'Montant ($sourceCurrency)',
+                  labelText: 'wallet.stripe_dialog.amount_label'
+                      .trParams({'currency': sourceCurrency}),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: Icon(
                     converts ? Icons.account_balance_wallet_outlined : Icons.euro_rounded,
@@ -1487,7 +1497,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                             height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                         const SizedBox(width: 8),
                         Text(
-                          'Conversion en cours…',
+                          'wallet.stripe_dialog.converting'.tr,
                           style: TextStyle(
                             fontSize: 12.5,
                             color: AppThemeSystem.getSecondaryTextColor(context),
@@ -1502,7 +1512,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
 
                   if (quote <= 0 && warning == null) {
                     return Text(
-                      'Saisissez un montant pour voir le total converti.',
+                      'wallet.stripe_dialog.enter_amount_hint'.tr,
                       style: TextStyle(
                         fontSize: 12.5,
                         color: AppThemeSystem.getSecondaryTextColor(context),
@@ -1525,7 +1535,8 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Vous recevrez ${money(quote, payoutCurrency)}',
+                                'wallet.stripe_dialog.you_will_receive'
+                                    .trParams({'amount': money(quote, payoutCurrency)}),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: AppThemeSystem.primaryColor,
@@ -1556,7 +1567,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
               ],
               const SizedBox(height: 8),
               Text(
-                'Les fonds arrivent sous 1 à 3 jours ouvrés.',
+                'wallet.stripe_dialog.delay_info'.tr,
                 style: TextStyle(
                   color: AppThemeSystem.getSecondaryTextColor(context),
                   fontSize: 12,
@@ -1567,7 +1578,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: const Text('Annuler'),
+              child: Text('wallet.stripe_dialog.cancel'.tr),
             ),
             Obx(() => ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -1580,14 +1591,18 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                           final amount =
                               double.tryParse(amountController.text.trim().replaceAll(',', '.')) ?? 0;
                           if (amount <= 0) {
-                            Get.snackbar('Montant invalide', 'Saisissez un montant valide',
+                            Get.snackbar('wallet.stripe_dialog.invalid_amount_title'.tr,
+                                'wallet.stripe_dialog.invalid_amount_message'.tr,
                                 snackPosition: SnackPosition.BOTTOM);
                             return;
                           }
                           if (amount > available) {
                             Get.snackbar(
-                                'Solde insuffisant',
-                                'Disponible : ${money(available, converts ? sourceCurrency : payoutCurrency)}',
+                                'wallet.stripe_dialog.insufficient_balance'.tr,
+                                'wallet.stripe_dialog.available'.trParams({
+                                  'amount': money(available,
+                                      converts ? sourceCurrency : payoutCurrency)
+                                }),
                                 snackPosition: SnackPosition.BOTTOM);
                             return;
                           }
@@ -1598,7 +1613,9 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                           );
                           Get.back();
                           Get.snackbar(
-                            result['success'] == true ? 'Virement en cours' : 'Erreur',
+                            result['success'] == true
+                                ? 'wallet.stripe_dialog.transfer_in_progress'.tr
+                                : 'wallet.stripe_dialog.error'.tr,
                             result['message']?.toString() ?? '',
                             snackPosition: SnackPosition.BOTTOM,
                             backgroundColor: result['success'] == true
@@ -1615,7 +1632,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                         )
-                      : const Text('Retirer'),
+                      : Text('wallet.actions.withdraw'.tr),
                 )),
           ],
         ),

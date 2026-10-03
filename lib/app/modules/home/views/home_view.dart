@@ -23,6 +23,7 @@ import '../../import/views/import_view.dart';
 import '../../search/views/search_view.dart';
 import '../../notification/controllers/notification_controller.dart';
 import '../../../core/widgets/offline_badge.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -101,27 +102,27 @@ class HomeView extends GetView<HomeController> {
   /// marché.
   static const List<_NavDestination> _destinations = [
     _NavDestination(
-      label: 'Accueil',
+      label: 'home.nav.home',
       icon: Icons.storefront_outlined,
       activeIcon: Icons.storefront_rounded,
     ),
     _NavDestination(
-      label: 'Recherche',
+      label: 'home.nav.search',
       icon: Icons.search_outlined,
       activeIcon: Icons.search_rounded,
     ),
     _NavDestination(
-      label: 'Grossiste',
+      label: 'home.nav.wholesale',
       icon: Icons.inventory_2_outlined,
       activeIcon: Icons.inventory_2_rounded,
     ),
     _NavDestination(
-      label: 'Suivi',
+      label: 'home.nav.tracking',
       icon: Icons.local_shipping_outlined,
       activeIcon: Icons.local_shipping_rounded,
     ),
     _NavDestination(
-      label: 'Compte',
+      label: 'home.nav.account',
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
     ),
@@ -204,7 +205,7 @@ class HomeView extends GetView<HomeController> {
                   Builder(
                     builder: (scaffoldContext) => AppIconButton(
                       icon: Icons.menu_rounded,
-                      tooltip: 'Menu',
+                      tooltip: 'home.tooltip.menu'.tr,
                       onPressed: () =>
                           Scaffold.of(scaffoldContext).openDrawer(),
                     ),
@@ -216,7 +217,7 @@ class HomeView extends GetView<HomeController> {
                     child: tab == 0
                         ? _buildGreeting(context)
                         : Text(
-                            _destinations[tab].label,
+                            _destinations[tab].label.tr,
                             style: context.textStyle(
                               FontSizeType.h6,
                               fontWeight: FontWeight.w700,
@@ -232,36 +233,36 @@ class HomeView extends GetView<HomeController> {
                   GetX<ChatController>(
                     builder: (chatController) => AppIconButton(
                       icon: Icons.chat_bubble_outline_rounded,
-                      tooltip: 'Messages',
+                      tooltip: 'home.tooltip.messages'.tr,
                       badgeCount: chatController.totalUnreadCount,
                       onPressed: () => AuthGuard.navigateIfAuthenticated(
                         context,
                         '/chat',
-                        featureName: 'la messagerie',
+                        featureName: 'home.feature.messaging'.tr,
                         useDialog: false,
                       ),
                     ),
                   ),
                   AppIconButton(
                     icon: Icons.favorite_border_rounded,
-                    tooltip: 'Favoris',
+                    tooltip: 'home.tooltip.favorites'.tr,
                     badgeCount: controller.favoritesCount.value,
                     onPressed: () => AuthGuard.navigateIfAuthenticated(
                       context,
                       '/favorites',
-                      featureName: 'vos favoris',
+                      featureName: 'home.feature.your_favorites'.tr,
                       useDialog: false,
                     ),
                   ),
                   GetX<NotificationController>(
                     builder: (notifController) => AppIconButton(
                       icon: Icons.notifications_none_rounded,
-                      tooltip: 'Notifications',
+                      tooltip: 'home.tooltip.notifications'.tr,
                       badgeCount: notifController.unreadCount.value,
                       onPressed: () => AuthGuard.navigateIfAuthenticated(
                         context,
                         '/notification',
-                        featureName: 'les notifications',
+                        featureName: 'home.feature.notifications'.tr,
                         useDialog: false,
                       ),
                     ),
@@ -298,7 +299,7 @@ class HomeView extends GetView<HomeController> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Bienvenue',
+            'home.header.welcome'.tr,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.textStyle(
@@ -307,7 +308,7 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
           Text(
-            isGuest ? 'Invité' : firstName,
+            isGuest ? 'home.header.guest'.tr : firstName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.textStyle(
@@ -348,7 +349,7 @@ class HomeView extends GetView<HomeController> {
               SizedBox(width: AppDesign.space2),
               Expanded(
                 child: Text(
-                  'Rechercher un produit, une boutique…',
+                  'home.search_hint'.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.textStyle(
@@ -406,19 +407,7 @@ class HomeView extends GetView<HomeController> {
 
                     return Row(
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: AppDesign.accentSubtle,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            color: AppDesign.accentText,
-                            size: 24,
-                          ),
-                        ),
+                        const UserAvatar(size: 48),
                         SizedBox(width: AppDesign.space3),
                         Expanded(
                           child: Column(
@@ -426,7 +415,7 @@ class HomeView extends GetView<HomeController> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                hasAccount ? 'Mon compte' : 'Mode invité',
+                                hasAccount ? 'home.drawer.my_account'.tr : 'home.drawer.guest_mode'.tr,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: context.textStyle(
@@ -439,7 +428,7 @@ class HomeView extends GetView<HomeController> {
                               Text(
                                 hasAccount
                                     ? user.email
-                                    : 'Connectez-vous pour commander',
+                                    : 'home.drawer.sign_in_to_order'.tr,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: context.textStyle(
@@ -466,27 +455,27 @@ class HomeView extends GetView<HomeController> {
               ),
               children: [
                 // SECTION: MON COMPTE
-                _buildSectionHeader(context, 'Mon Compte'),
+                _buildSectionHeader(context, 'home.drawer.section_account'.tr),
                 // « Ma voix » a quitté la barre du bas : le fil communautaire
                 // se consulte ponctuellement, il ne fait pas partie des cinq
                 // gestes quotidiens.
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.forum_rounded,
-                  title: 'Ma voix',
+                  title: 'home.drawer.my_voice'.tr,
                   onTap: () {
                     Get.back();
                     AuthGuard.navigateIfAuthenticated(
                       context,
                       Routes.MY_VOICE,
-                      featureName: 'la rubrique Ma voix',
+                      featureName: 'home.feature.my_voice'.tr,
                     );
                   },
                 ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.favorite_rounded,
-                  title: 'Mes préférences',
+                  title: 'home.drawer.my_preferences'.tr,
                   onTap: () {
                     Get.back();
                     Get.toNamed(
@@ -498,13 +487,13 @@ class HomeView extends GetView<HomeController> {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.shopping_bag_rounded,
-                  title: 'Mes commandes',
+                  title: 'home.drawer.my_orders'.tr,
                   onTap: () {
                     Get.back();
                     AuthGuard.navigateIfAuthenticated(
                       context,
                       '/shipment',
-                      featureName: 'vos commandes',
+                      featureName: 'home.feature.your_orders'.tr,
                     );
                   },
                 ),
@@ -517,18 +506,18 @@ class HomeView extends GetView<HomeController> {
                 ),
 
                 // SECTION: MODES
-                _buildSectionHeader(context, 'Modes'),
+                _buildSectionHeader(context, 'home.drawer.section_modes'.tr),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.flight_takeoff_rounded,
-                  title: 'Mode Diaspora',
-                  badge: 'Nouveau',
+                  title: 'home.drawer.diaspora_mode'.tr,
+                  badge: 'home.drawer.badge_new'.tr,
                   onTap: () {
                     Get.back();
                     if (AuthGuard.isGuest) {
                       AppDialogs.showLoginRequiredDialog(
                         context,
-                        featureName: 'le mode Diaspora',
+                        featureName: 'home.feature.diaspora_mode'.tr,
                       );
                     } else {
                       Get.toNamed('/diaspo');
@@ -538,13 +527,13 @@ class HomeView extends GetView<HomeController> {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.delivery_dining_rounded,
-                  title: 'Mode Livreur',
+                  title: 'home.drawer.delivery_mode'.tr,
                   onTap: () {
                     Get.back();
                     AuthGuard.navigateIfAuthenticated(
                       context,
                       '/delivery-check',
-                      featureName: 'le mode livreur',
+                      featureName: 'home.feature.delivery_mode'.tr,
                     );
                   },
                 ),
@@ -558,15 +547,15 @@ class HomeView extends GetView<HomeController> {
                     return _buildDrawerItem(
                       context: context,
                       icon: Icons.storefront_rounded,
-                      title: 'Mode Vendeur',
+                      title: 'home.drawer.vendor_mode'.tr,
                       isActive: isVendor,
-                      badge: isVendor ? null : 'Devenir',
+                      badge: isVendor ? null : 'home.drawer.badge_become'.tr,
                       onTap: () {
                         Get.back();
                         if (AuthGuard.isGuest) {
                           AppDialogs.showLoginRequiredDialog(
                             context,
-                            featureName: 'le mode vendeur',
+                            featureName: 'home.feature.vendor_mode'.tr,
                           );
                           return;
                         }
@@ -585,29 +574,29 @@ class HomeView extends GetView<HomeController> {
                 ),
 
                 // SECTION: PARAMÈTRES
-                _buildSectionHeader(context, 'Paramètres'),
+                _buildSectionHeader(context, 'home.drawer.settings'.tr),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.settings_rounded,
-                  title: 'Paramètres',
+                  title: 'home.drawer.settings'.tr,
                   onTap: () {
                     Get.back();
                     AuthGuard.navigateIfAuthenticated(
                       context,
                       '/settings',
-                      featureName: 'les paramètres',
+                      featureName: 'home.feature.settings'.tr,
                     );
                   },
                 ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.share_rounded,
-                  title: 'Inviter un ami(e)',
+                  title: 'home.drawer.invite_friend'.tr,
                   onTap: () {
                     Get.back();
                     Get.snackbar(
-                      'Partager',
-                      'Partagez Asso avec vos amis et gagnez des récompenses!',
+                      'home.drawer.share_title'.tr,
+                      'home.drawer.share_message'.tr,
                       snackPosition: SnackPosition.BOTTOM,
                       duration: const Duration(seconds: 3),
                       backgroundColor: AppThemeSystem.primaryColor,
@@ -627,55 +616,42 @@ class HomeView extends GetView<HomeController> {
                 ),
 
                 // SECTION: AIDE & SUPPORT
-                _buildSectionHeader(context, 'Aide & Support'),
+                // Mêmes destinations que les entrées homonymes des paramètres.
+                _buildSectionHeader(context, 'home.drawer.help_support'.tr),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.help_outline_rounded,
-                  title: 'Aide & Support',
+                  title: 'home.drawer.help_support'.tr,
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'Support',
-                      'Contactez-nous à support@asso.cm ou appelez le 1234',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 3),
-                      backgroundColor: AppThemeSystem.infoColor,
-                      colorText: Colors.white,
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.HELP);
                   },
                 ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.quiz_rounded,
-                  title: 'FAQ',
+                  title: 'home.drawer.faq'.tr,
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'FAQ',
-                      'Questions fréquemment posées - En cours de développement',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.FAQ);
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.gavel_rounded,
+                  title: 'home.drawer.terms_policies'.tr,
+                  onTap: () {
+                    Get.back();
+                    Get.toNamed(Routes.LEGAL);
                   },
                 ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.info_outline_rounded,
-                  title: 'À Propos',
+                  title: 'home.drawer.about'.tr,
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
-                      'À Propos',
-                      'Asso v1.0.0 - Votre marketplace au Cameroun',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
+                    Get.toNamed(Routes.ABOUT);
                   },
                 ),
 
@@ -707,21 +683,21 @@ class HomeView extends GetView<HomeController> {
                     Get.dialog(
                       AlertDialog(
                         title: Text(
-                          'Déconnexion',
+                          'home.logout.title'.tr,
                           style: context.textStyle(
                             FontSizeType.h5,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         content: Text(
-                          'Êtes-vous sûr de vouloir vous déconnecter ?',
+                          'home.logout.confirm'.tr,
                           style: context.textStyle(FontSizeType.body2),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(),
                             child: Text(
-                              'Annuler',
+                              'home.logout.cancel'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 color: context.secondaryTextColor,
@@ -739,7 +715,7 @@ class HomeView extends GetView<HomeController> {
                               foregroundColor: Colors.white,
                             ),
                             child: Text(
-                              'Déconnexion',
+                              'home.logout.title'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 color: Colors.white,
@@ -785,7 +761,7 @@ class HomeView extends GetView<HomeController> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        AuthGuard.isGuest ? 'Se connecter' : 'Déconnexion',
+                        AuthGuard.isGuest ? 'home.logout.sign_in'.tr : 'home.logout.title'.tr,
                         style: context.textStyle(
                           FontSizeType.body1,
                           color: AuthGuard.isGuest
@@ -955,7 +931,7 @@ class HomeItemView extends GetView<HomeController> {
                   SliverToBoxAdapter(
                     child: _buildSectionTitle(
                       context,
-                      'Proche de vous',
+                      'home.sections.nearby'.tr,
                       Icons.location_on_rounded,
                       onSeeAll: controller.nearbyProducts.isNotEmpty
                           ? controller.onSeeAllNearby
@@ -985,7 +961,7 @@ class HomeItemView extends GetView<HomeController> {
                   SliverToBoxAdapter(
                     child: _buildSectionTitle(
                       context,
-                      'Récemment postés',
+                      'home.sections.recent'.tr,
                       Icons.schedule_rounded,
                       onSeeAll: controller.recentProducts.isNotEmpty
                           ? controller.onSeeAllRecent
@@ -1053,7 +1029,7 @@ class HomeItemView extends GetView<HomeController> {
               SliverToBoxAdapter(
                 child: _buildSectionTitle(
                   context,
-                  controller.selectedCategory.value,
+                  _categoryLabel(controller.selectedCategory.value),
                   Icons.category_rounded,
                 ),
               ),
@@ -1075,7 +1051,7 @@ class HomeItemView extends GetView<HomeController> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Aucun produit dans cette catégorie',
+                                'home.empty_category'.tr,
                                 style: context.textStyle(
                                   FontSizeType.body1,
                                   color: AppThemeSystem.grey600,
@@ -1259,7 +1235,7 @@ class HomeItemView extends GetView<HomeController> {
                           ),
                         ),
                       Text(
-                        category,
+                        _categoryLabel(category),
                         style: context.textStyle(
                           FontSizeType.caption,
                           fontWeight: isSelected
@@ -1317,7 +1293,7 @@ class HomeItemView extends GetView<HomeController> {
           if (AuthGuard.isGuest) {
             AppDialogs.showLoginRequiredDialog(
               context,
-              featureName: 'le mode Diaspora',
+              featureName: 'home.feature.diaspora_mode'.tr,
             );
           } else {
             Get.toNamed('/diaspo');
@@ -1348,7 +1324,7 @@ class HomeItemView extends GetView<HomeController> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Diaspo Exchange',
+                          'home.diaspo.title'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.textStyle(
@@ -1359,15 +1335,15 @@ class HomeItemView extends GetView<HomeController> {
                         ),
                       ),
                       SizedBox(width: AppDesign.space2),
-                      const AppBadge(
-                        label: 'NOUVEAU',
+                      AppBadge(
+                        label: 'home.diaspo.badge_new'.tr,
                         tone: AppBadgeTone.accent,
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Achetez ou vendez des kilos de bagage',
+                    'home.diaspo.subtitle'.tr,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: context.textStyle(
@@ -1399,7 +1375,7 @@ class HomeItemView extends GetView<HomeController> {
   Widget _buildQuickAccess(BuildContext context) {
     final entries = <_QuickLink>[
       _QuickLink(
-        label: 'Diaspo',
+        label: 'home.quick.diaspo'.tr,
         icon: Icons.flight_takeoff_rounded,
         isNew: true,
         // Trajets encore réservables : le chiffre dit qu'il y a de la place
@@ -1408,12 +1384,12 @@ class HomeItemView extends GetView<HomeController> {
         onTap: () => AuthGuard.navigateIfAuthenticated(
           context,
           Routes.DIASPO,
-          featureName: 'le mode Diaspora',
+          featureName: 'home.feature.diaspora_mode'.tr,
           useDialog: true,
         ),
       ),
       _QuickLink(
-        label: 'Grossiste',
+        label: 'home.quick.wholesale'.tr,
         icon: Icons.inventory_2_rounded,
         onTap: () {
           controller.handleTabTap(2);
@@ -1421,23 +1397,23 @@ class HomeItemView extends GetView<HomeController> {
         },
       ),
       _QuickLink(
-        label: 'Commandes',
+        label: 'home.quick.orders'.tr,
         icon: Icons.receipt_long_rounded,
         onTap: () => AuthGuard.navigateIfAuthenticated(
           context,
           Routes.MY_ORDER,
-          featureName: 'vos commandes',
+          featureName: 'home.feature.your_orders'.tr,
           useDialog: true,
         ),
       ),
       _QuickLink(
-        label: 'Favoris',
+        label: 'home.tooltip.favorites'.tr,
         icon: Icons.favorite_rounded,
         count: controller.favoritesCount.value,
         onTap: () => AuthGuard.navigateIfAuthenticated(
           context,
           Routes.FAVORITES,
-          featureName: 'vos favoris',
+          featureName: 'home.feature.your_favorites'.tr,
           useDialog: true,
         ),
       ),
@@ -1466,16 +1442,16 @@ class HomeItemView extends GetView<HomeController> {
 
     final bannerData = [
       {
-        'title': 'Bienvenue sur Asso',
-        'subtitle': 'Découvrez les meilleures offres près de chez vous',
+        'title': 'home.banner.welcome_title'.tr,
+        'subtitle': 'home.banner.welcome_subtitle'.tr,
       },
       {
-        'title': 'Livraison Rapide',
-        'subtitle': 'Recevez vos commandes en moins de 24h',
+        'title': 'home.banner.delivery_title'.tr,
+        'subtitle': 'home.banner.delivery_subtitle'.tr,
       },
       {
-        'title': 'Prix Imbattables',
-        'subtitle': 'Les meilleurs prix du marché camerounais',
+        'title': 'home.banner.prices_title'.tr,
+        'subtitle': 'home.banner.prices_subtitle'.tr,
       },
     ];
 
@@ -1591,7 +1567,7 @@ class HomeItemView extends GetView<HomeController> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            'Découvrir',
+                                            'home.banner.discover'.tr,
                                             style: context.textStyle(
                                               FontSizeType.caption,
                                               fontWeight: FontWeight.w700,
@@ -1722,6 +1698,23 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
+  /// Libellé affiché d'une catégorie : « Tous » et les catégories de repli
+  /// restent des valeurs internes, traduites seulement à l'affichage.
+  String _categoryLabel(String category) {
+    switch (category) {
+      case 'Tous':
+        return 'home.categories.all'.tr;
+      case 'Vêtements':
+        return 'home.categories.clothing'.tr;
+      case 'Électronique':
+        return 'home.categories.electronics'.tr;
+      case 'Accessoires':
+        return 'home.categories.accessories'.tr;
+      default:
+        return category;
+    }
+  }
+
   /// Format price for display (with currency conversion)
   String _formatPrice(Map<String, dynamic> product) {
     final price = product['price_xaf'] ?? product['price'];
@@ -1747,7 +1740,7 @@ class HomeItemView extends GetView<HomeController> {
       return '${priceValue.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
     }
 
-    return 'Prix non défini';
+    return 'home.price_undefined'.tr;
   }
 
   /// Get product location
@@ -1766,7 +1759,7 @@ class HomeItemView extends GetView<HomeController> {
   }) {
     return AppSectionHeader(
       title: title,
-      actionLabel: onSeeAll != null ? 'Voir tout' : null,
+      actionLabel: onSeeAll != null ? 'home.sections.see_all'.tr : null,
       onAction: onSeeAll,
     );
   }
@@ -1817,7 +1810,7 @@ class HomeItemView extends GetView<HomeController> {
         AppDesign.space2,
       ),
       child: AppButton(
-        label: 'Découvrir plus',
+        label: 'home.discover_more'.tr,
         icon: Icons.search_rounded,
         variant: AppButtonVariant.secondary,
         onPressed: controller.goToSearchTab,
@@ -1871,7 +1864,7 @@ class HomeItemView extends GetView<HomeController> {
               Icon(Icons.campaign, size: 16, color: AppDesign.info),
               const SizedBox(width: 6),
               Text(
-                'Asso Ads',
+                'home.ads.title'.tr,
                 style: context.textStyle(
                   FontSizeType.caption,
                   fontWeight: FontWeight.w700,
@@ -1881,7 +1874,7 @@ class HomeItemView extends GetView<HomeController> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Annonces de nos vendeurs',
+                  'home.ads.subtitle'.tr,
                   style: context.textStyle(
                     FontSizeType.overline,
                     color: context.ds.textTertiary,
@@ -1993,7 +1986,7 @@ class HomeItemView extends GetView<HomeController> {
   /// Bandeau Asso Ads pleine largeur, intercalé dans le défilement.
   Widget _buildAdsBanner(BuildContext context, Map<String, dynamic> product) {
     return AssoAdsBanner(
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'product.fallback_name'.tr,
       price: _formatPrice(product),
       shopName: product['shop']?['name']?.toString(),
       location: _getLocation(product),
@@ -2020,7 +2013,7 @@ class HomeItemView extends GetView<HomeController> {
     final isSponsored = product['is_sponsored'] == true;
 
     return ProductCard(
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'product.fallback_name'.tr,
       price: _formatPrice(product),
       location: _getLocation(product),
       isFavorite: product['is_favorite'] == true,
@@ -2041,10 +2034,10 @@ class HomeItemView extends GetView<HomeController> {
   Widget _buildEmptyState(BuildContext context) {
     return AppEmptyState(
       icon: Icons.storefront_outlined,
-      title: 'Aucun produit disponible',
+      title: 'home.empty.title'.tr,
       message:
-          "Il n'y a pas encore de produits dans votre région. Revenez bientôt ou explorez une autre catégorie.",
-      actionLabel: 'Actualiser',
+          'home.empty.message'.tr,
+      actionLabel: 'home.empty.refresh'.tr,
       onAction: controller.refreshProducts,
     );
   }
@@ -2088,8 +2081,6 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
 
   @override
   Widget build(BuildContext context) {
-    final plural = widget.openCount > 1 ? 's' : '';
-
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.ds.gutter,
@@ -2150,7 +2141,7 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Envoyez vos colis par un voyageur',
+                              'home.diaspo.banner_title'.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -2161,7 +2152,10 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              '${widget.openCount} trajet$plural ouvert$plural · achetez des kilos de bagage',
+                              (widget.openCount > 1
+                                      ? 'home.diaspo.open_trips_other'
+                                      : 'home.diaspo.open_trips_one')
+                                  .trParams({'count': '${widget.openCount}'}),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -2494,7 +2488,7 @@ class _NavItem extends StatelessWidget {
           // Le libellé passe par l'échelle typographique : en `TextStyle` brut
           // il ignorait les réglages d'accessibilité de l'appareil.
           Text(
-            destination.label,
+            destination.label.tr,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.textStyle(

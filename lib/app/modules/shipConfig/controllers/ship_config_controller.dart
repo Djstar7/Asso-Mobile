@@ -212,16 +212,16 @@ class ShipConfigController extends GetxController {
 
     if (code.isEmpty) {
       _showErrorSnackbar(
-        'Champ requis',
-        'Veuillez entrer votre code de synchronisation',
+        'ship_config.errors.required_title'.tr,
+        'ship_config.errors.required_message'.tr,
       );
       return;
     }
 
     if (!validateSyncCode(code)) {
       _showErrorSnackbar(
-        'Format invalide',
-        'Le code doit être au format: XXXX-XXXX-XXXX',
+        'ship_config.errors.format_title'.tr,
+        'ship_config.errors.format_message'.tr,
       );
       return;
     }
@@ -240,33 +240,33 @@ class ShipConfigController extends GetxController {
         if (!isValid) {
           if (isUsed) {
             _showErrorSnackbar(
-              'Code déjà utilisé',
-              'Ce code de synchronisation a déjà été utilisé par un autre utilisateur',
+              'ship_config.errors.used_title'.tr,
+              'ship_config.errors.used_message'.tr,
             );
           } else if (isExpired) {
             _showErrorSnackbar(
-              'Code expiré',
-              'Ce code de synchronisation a expiré. Veuillez contacter le support',
+              'ship_config.errors.expired_title'.tr,
+              'ship_config.errors.expired_message'.tr,
             );
           } else {
             _showErrorSnackbar(
-              'Code invalide',
-              'Ce code de synchronisation n\'existe pas ou est invalide',
+              'ship_config.errors.invalid_title'.tr,
+              'ship_config.errors.invalid_message'.tr,
             );
           }
         } else {
           _showSuccessSnackbar(
-            'Code valide',
-            'Le code est valide ! Vous pouvez synchroniser votre profil',
+            'ship_config.valid_title'.tr,
+            'ship_config.valid_message'.tr,
           );
         }
       } else {
-        _showErrorSnackbar('Erreur', response.message);
+        _showErrorSnackbar('ship_config.errors.error'.tr, response.message);
       }
     } catch (e) {
       _showErrorSnackbar(
-        'Erreur',
-        'Une erreur est survenue lors de la vérification',
+        'ship_config.errors.error'.tr,
+        'ship_config.errors.verify_failed'.tr,
       );
     } finally {
       isVerifying.value = false;
@@ -280,16 +280,16 @@ class ShipConfigController extends GetxController {
     // Valider le code de synchronisation
     if (code.isEmpty) {
       _showErrorSnackbar(
-        'Champ requis',
-        'Veuillez entrer votre code de synchronisation',
+        'ship_config.errors.required_title'.tr,
+        'ship_config.errors.required_message'.tr,
       );
       return;
     }
 
     if (!validateSyncCode(code)) {
       _showErrorSnackbar(
-        'Format invalide',
-        'Le code doit être au format: XXXX-XXXX-XXXX',
+        'ship_config.errors.format_title'.tr,
+        'ship_config.errors.format_message'.tr,
       );
       return;
     }
@@ -315,8 +315,8 @@ class ShipConfigController extends GetxController {
         }
 
         _showSuccessSnackbar(
-          'Synchronisation réussie',
-          'Votre profil a été synchronisé avec ${response.company!.name} !',
+          'ship_config.sync_success_title'.tr,
+          'ship_config.sync_success_message'.trParams({'company': response.company!.name}),
         );
 
         // Rafraîchir le profil utilisateur pour mettre à jour le rôle
@@ -326,19 +326,21 @@ class ShipConfigController extends GetxController {
         await Future.delayed(const Duration(seconds: 1));
         navigateToDeliveryDashboard();
       } else {
-        // Gérer le cas où le code est déjà utilisé
-        if (response.message.toLowerCase().contains('déjà été utilisé') ||
+        // Gérer le cas où le code est déjà utilisé : le serveur renvoie un
+        // code stable, son message suivant la langue de l'utilisateur.
+        if (response.code == 'already_synced' ||
+            response.message.toLowerCase().contains('déjà été utilisé') ||
             response.message.toLowerCase().contains('already used')) {
           // Vérifier si l'utilisateur actuel est déjà livreur
           await _checkIfCurrentUserIsDeliverer();
         } else {
-          _showErrorSnackbar('Erreur', response.message);
+          _showErrorSnackbar('ship_config.errors.error'.tr, response.message);
         }
       }
     } catch (e) {
       _showErrorSnackbar(
-        'Erreur',
-        'Une erreur est survenue lors de la synchronisation: $e',
+        'ship_config.errors.error'.tr,
+        'ship_config.errors.sync_failed'.trParams({'error': '$e'}),
       );
     } finally {
       isSyncing.value = false;
@@ -360,8 +362,8 @@ class ShipConfigController extends GetxController {
       await refreshDeliveryInfo();
 
       _showSuccessSnackbar(
-        'Déjà synchronisé',
-        'Vous êtes déjà configuré comme livreur. Redirection...',
+        'ship_config.already_synced_title'.tr,
+        'ship_config.already_synced_message'.tr,
       );
 
       await Future.delayed(const Duration(seconds: 1));
@@ -369,8 +371,8 @@ class ShipConfigController extends GetxController {
     } else {
       print('❌ L\'utilisateur n\'est pas livreur');
       _showErrorSnackbar(
-        'Code déjà utilisé',
-        'Ce code de synchronisation a déjà été utilisé par un autre utilisateur.',
+        'ship_config.errors.used_title'.tr,
+        'ship_config.errors.used_message_dot'.tr,
       );
     }
   }
@@ -385,10 +387,10 @@ class ShipConfigController extends GetxController {
       if (await canLaunchUrl(supportUri)) {
         await launchUrl(supportUri);
       } else {
-        _showErrorSnackbar('Erreur', 'Impossible d\'ouvrir le client mail');
+        _showErrorSnackbar('ship_config.errors.error'.tr, 'ship_config.errors.mail_client'.tr);
       }
     } catch (e) {
-      _showErrorSnackbar('Erreur', 'Une erreur est survenue');
+      _showErrorSnackbar('ship_config.errors.error'.tr, 'ship_config.errors.generic'.tr);
     }
   }
 

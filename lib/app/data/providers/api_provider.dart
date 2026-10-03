@@ -9,6 +9,7 @@ import '../../core/values/constants.dart';
 import '../services/connectivity_service.dart';
 import '../services/websocket_service.dart';
 import 'storage_service.dart';
+import '../../core/services/locale_service.dart';
 
 class ApiProvider {
   static http.Client _client = http.Client();
@@ -24,6 +25,7 @@ class ApiProvider {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Accept-Language': LocaleService.currentLanguage,
     };
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
@@ -65,14 +67,14 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'Erreur serveur', statusCode: 500);
+      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
     } catch (e, stackTrace) {
       developer.log('GET error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -100,14 +102,14 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'Erreur serveur', statusCode: 500);
+      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
     } catch (e, stackTrace) {
       developer.log('POST error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -135,11 +137,11 @@ class ApiProvider {
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Pas de connexion internet', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
     } catch (e, stackTrace) {
       developer.log('PUT error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -171,7 +173,7 @@ class ApiProvider {
     } catch (e, stackTrace) {
       developer.log('DELETE error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -252,7 +254,7 @@ class ApiProvider {
     } catch (e, stackTrace) {
       developer.log('MULTIPART error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'Erreur: ${e.toString()}', statusCode: 0);
+      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
     }
   }
 
@@ -271,17 +273,18 @@ class ApiProvider {
 
   /// Handle response
   static ApiResponse _handleResponse(http.Response response) {
-    // Toute réponse, même en erreur, prouve que le serveur est joignable.
-    ConnectivityService.reportReachable();
     try {
       final body = jsonDecode(response.body);
+      // Une réponse JSON sous 500, même en erreur, prouve que le backend
+      // traite les requêtes ; une 5xx fait re-sonder le serveur.
+      ConnectivityService.reportResponse(response.statusCode);
       final success = body['success'] == true && response.statusCode >= 200 && response.statusCode < 300;
 
       // Extract message - can be either String or Map
       final messageField = body['message'];
       final messageString = messageField is String
           ? messageField
-          : (success ? 'Succès' : 'Erreur');
+          : (success ? 'common.success'.tr : 'common.error'.tr);
 
       developer.log(
         'Response parsed',
@@ -298,7 +301,7 @@ class ApiProvider {
         _handleUnauthorized();
         return ApiResponse(
           success: false,
-          message: 'Session expirée. Veuillez vous reconnecter.',
+          message: 'network.session_expired'.tr,
           statusCode: 401,
           data: body,
         );
@@ -317,9 +320,12 @@ class ApiProvider {
         error: e,
         stackTrace: stackTrace,
       );
+      // Pas du JSON : page d'erreur d'une passerelle ou d'un portail captif,
+      // pas le backend. On vérifie qu'il est toujours joignable.
+      ConnectivityService.reportResponse(503);
       return ApiResponse(
         success: false,
-        message: 'Erreur de parsing: ${response.body}',
+        message: 'network.parsing_error'.trParams({'body': response.body}),
         statusCode: response.statusCode,
       );
     }

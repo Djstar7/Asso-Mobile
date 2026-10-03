@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:image_picker/image_picker.dart';
 import '../../core/values/constants.dart';
 import '../models/user_model.dart';
 import 'api_provider.dart';
@@ -489,14 +490,31 @@ class AuthService {
   }
 
   /// Update user profile
-  static Future<ApiResponse> updateProfile(Map<String, dynamic> data) async {
+  ///
+  /// Avec [avatar], l'envoi passe en multipart. PHP ne lit pas le corps
+  /// multipart d'une requête PUT : on poste avec `_method=PUT`, que Laravel
+  /// route vers la même action.
+  static Future<ApiResponse> updateProfile(
+    Map<String, dynamic> data, {
+    XFile? avatar,
+  }) async {
     developer.log(
       '========== UPDATE PROFILE ==========',
       name: 'AuthService',
-      error: 'Data: $data',
+      error: 'Data: $data, Avatar: ${avatar?.name}',
     );
 
-    final response = await ApiProvider.put(AppConstants.profileUrl, body: data);
+    final response = avatar == null
+        ? await ApiProvider.put(AppConstants.profileUrl, body: data)
+        : await ApiProvider.multipart(
+            AppConstants.profileUrl,
+            fields: {
+              for (final entry in data.entries)
+                if (entry.value != null) entry.key: entry.value.toString(),
+              '_method': 'PUT',
+            },
+            mediaFiles: {'avatar': avatar},
+          );
 
     developer.log(
       'Profile update response',

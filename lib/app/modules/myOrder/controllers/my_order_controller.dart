@@ -53,7 +53,7 @@ class MyOrderController extends GetxController {
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de charger les commandes',
+      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.load_orders'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -74,7 +74,7 @@ class MyOrderController extends GetxController {
     try {
       final response = await OrderService.cancelOrder(int.parse(orderId), reason: reason);
       if (response.success) {
-        Get.snackbar('Succès', 'Commande annulée',
+        Get.snackbar('my_order.success_title'.tr, 'my_order.cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -83,7 +83,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('Erreur', response.message,
+        Get.snackbar('my_order.errors.title'.tr, response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -92,7 +92,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible d\'annuler la commande',
+      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.cancel_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -106,7 +106,7 @@ class MyOrderController extends GetxController {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        Get.snackbar('Erreur', 'Impossible d\'appeler ce numéro',
+        Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.call_number'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -115,7 +115,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de contacter le livreur',
+      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.contact_deliverer'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -133,7 +133,7 @@ class MyOrderController extends GetxController {
     try {
       final response = await WalletService.confirmDelivery(int.parse(orderId));
       if (response.success) {
-        Get.snackbar('Succès', 'Livraison confirmée ! Merci.',
+        Get.snackbar('my_order.success_title'.tr, 'my_order.delivery_confirmed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -142,7 +142,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('Erreur', response.message,
+        Get.snackbar('my_order.errors.title'.tr, response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -151,7 +151,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible de confirmer la livraison',
+      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.confirm_delivery'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -163,22 +163,19 @@ class MyOrderController extends GetxController {
   Future<void> confirmReception(CustomerOrder order) async {
     final ok = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Colis reçu ?'),
-        content: const Text(
-          'Confirmez uniquement si vous avez bien récupéré votre colis. '
-          'Le vendeur sera alors payé et la commande sera marquée comme livrée.',
-        ),
+        title: Text('my_order.reception_dialog.title'.tr),
+        content: Text('my_order.reception_dialog.message'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Pas encore'),
+            child: Text('my_order.reception_dialog.not_yet'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text(
-              'Oui, j’ai reçu mon colis',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              'my_order.reception_dialog.confirm'.tr,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -190,9 +187,9 @@ class MyOrderController extends GetxController {
     if (id == null) return;
     final response = await OrderService.confirmReception(id);
     if (response.success) {
-      Get.snackbar('Merci !', response.message.isNotEmpty && response.message != 'Succès'
+      Get.snackbar('my_order.thanks_title'.tr, response.message.isNotEmpty && response.message != 'Succès'
               ? response.message
-              : 'Réception confirmée.',
+              : 'my_order.reception_confirmed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
@@ -201,7 +198,7 @@ class MyOrderController extends GetxController {
       );
       await loadOrders(refresh: true);
     } else {
-      Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de confirmer la réception',
+      Get.snackbar('my_order.errors.title'.tr, response.message.isNotEmpty ? response.message : 'my_order.errors.confirm_reception'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -221,7 +218,7 @@ class MyOrderController extends GetxController {
       );
 
       if (response.success) {
-        Get.snackbar('Merci !', 'Votre avis a été envoyé au vendeur.',
+        Get.snackbar('my_order.thanks_title'.tr, 'my_order.rating_dialog.sent'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
@@ -230,7 +227,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('Erreur', response.message.isNotEmpty ? response.message : 'Impossible de noter',
+        Get.snackbar('my_order.errors.title'.tr, response.message.isNotEmpty ? response.message : 'my_order.errors.rate'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -239,7 +236,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Erreur', 'Impossible d\'envoyer la note',
+      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.send_rating'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -258,11 +255,15 @@ class MyOrderController extends GetxController {
         // tiennent plus sur un petit écran : le contenu défile au lieu de
         // déborder.
         scrollable: true,
-        title: const Text('Noter votre expérience'),
+        title: Text('my_order.rating_dialog.title'.tr),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Commande #${order.orderNumber ?? order.id}'),
+            Text(
+              'my_order.rating_dialog.order'.trParams({
+                'number': order.orderNumber ?? order.id,
+              }),
+            ),
             const SizedBox(height: 16),
             Obx(() => Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -281,8 +282,8 @@ class MyOrderController extends GetxController {
             const SizedBox(height: 16),
             TextField(
               controller: commentController,
-              decoration: const InputDecoration(
-                hintText: 'Commentaire (optionnel)',
+              decoration: InputDecoration(
+                hintText: 'my_order.rating_dialog.comment_hint'.tr,
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -292,7 +293,7 @@ class MyOrderController extends GetxController {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Plus tard'),
+            child: Text('my_order.rating_dialog.later'.tr),
           ),
           Obx(() => ElevatedButton(
             onPressed: selectedRating.value > 0
@@ -305,7 +306,7 @@ class MyOrderController extends GetxController {
                     );
                   }
                 : null,
-            child: const Text('Envoyer'),
+            child: Text('my_order.rating_dialog.send'.tr),
           )),
         ],
       ),

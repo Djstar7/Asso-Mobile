@@ -22,7 +22,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
         leading: const AppBackButton(),
         centerTitle: false,
         title: Text(
-          'Forfaits de stockage',
+          'package_subscription.view.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w700,
             color: ds.textPrimary,
@@ -68,7 +68,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                         ],
 
                         Text(
-                          'Choisissez un forfait',
+                          'package_subscription.view.choose'.tr,
                           style: context.subtitle1.copyWith(
                             fontWeight: FontWeight.w700,
                             color: ds.textPrimary,
@@ -76,7 +76,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                         ),
                         SizedBox(height: AppDesign.space1),
                         Text(
-                          "L'espace de stockage sert aux photos et vidéos de vos produits.",
+                          'package_subscription.view.storage_info'.tr,
                           style: context.body2.copyWith(color: ds.textSecondary),
                         ),
                         SizedBox(height: AppDesign.space4),
@@ -145,12 +145,12 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Forfait en cours',
+                      'package_subscription.view.current'.tr,
                       style: context.caption.copyWith(color: ds.textTertiary),
                     ),
                     SizedBox(height: AppDesign.space1),
                     Text(
-                      packageData?['name'] ?? 'Forfait actuel',
+                      packageData?['name'] ?? 'package_subscription.view.current_fallback'.tr,
                       style: context.h6.copyWith(
                         fontWeight: FontWeight.w700,
                         color: ds.textPrimary,
@@ -170,7 +170,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                   borderRadius: BorderRadius.circular(AppDesign.radiusPill),
                 ),
                 child: Text(
-                  'Actif',
+                  'package_subscription.view.active'.tr,
                   style: context.caption.copyWith(
                     color: AppDesign.successText,
                     fontWeight: FontWeight.w600,
@@ -189,19 +189,19 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
             children: [
               Expanded(
                 child: Text(
-                  'Stockage',
+                  'package_subscription.view.storage'.tr,
                   style: context.body2.copyWith(color: ds.textSecondary),
                 ),
               ),
               Text(
-                '${storageUsedMb.toStringAsFixed(1)} Mo',
+                'package_subscription.view.mb'.trParams({'size': storageUsedMb.toStringAsFixed(1)}),
                 style: context.body2.copyWith(
                   color: ds.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
-                ' / ${storageTotalMb.toStringAsFixed(0)} Mo',
+                ' / ${'package_subscription.view.mb'.trParams({'size': storageTotalMb.toStringAsFixed(0)})}',
                 style: context.body2.copyWith(color: ds.textTertiary),
               ),
             ],
@@ -236,8 +236,9 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                   Expanded(
                     child: Text(
                       daysRemaining <= 0
-                          ? 'Votre forfait a expiré.'
-                          : 'Expire dans $daysRemaining jour${daysRemaining > 1 ? "s" : ""}.',
+                          ? 'package_subscription.view.expired'.tr
+                          : (daysRemaining > 1 ? 'package_subscription.view.expires_in_days' : 'package_subscription.view.expires_in_day')
+                              .trParams({'days': '$daysRemaining'}),
                       style: context.body2.copyWith(
                         color: AppDesign.warningText,
                         fontWeight: FontWeight.w500,
@@ -272,7 +273,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
           Icon(Icons.inventory_2_outlined, size: 28, color: ds.textTertiary),
           SizedBox(height: AppDesign.space3),
           Text(
-            'Aucun forfait disponible pour le moment.',
+            'package_subscription.view.empty'.tr,
             textAlign: TextAlign.center,
             style: context.body2.copyWith(color: ds.textSecondary),
           ),
@@ -280,7 +281,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
           TextButton(
             onPressed: controller.refreshPackages,
             style: TextButton.styleFrom(foregroundColor: AppDesign.accent),
-            child: const Text('Réessayer'),
+            child: Text('wallet.retry'.tr),
           ),
         ],
       ),
@@ -368,7 +369,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                           borderRadius: BorderRadius.circular(AppDesign.radiusPill),
                         ),
                         child: Text(
-                          'Recommandé',
+                          'package_subscription.view.recommended'.tr,
                           style: context.caption.copyWith(
                             color: AppDesign.accentText,
                             fontWeight: FontWeight.w600,
@@ -413,7 +414,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                     SizedBox(width: AppDesign.space2),
                     Expanded(
                       child: Text(
-                        '$storage de stockage',
+                        'package_subscription.view.storage_amount'.trParams({'storage': '$storage'}),
                         style: context.body2.copyWith(color: ds.textSecondary),
                       ),
                     ),
@@ -484,7 +485,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Choisir ce plan',
+                                  'package_subscription.view.choose_plan'.tr,
                                   style: context.button.copyWith(
                                     color: controller.isSubscribing.value
                                         ? context.ds.textTertiary

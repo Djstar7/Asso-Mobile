@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/user_avatar.dart';
+import '../../../data/providers/storage_service.dart';
 import '../controllers/complete_profile_controller.dart';
 
 class CompleteProfileView extends GetView<CompleteProfileController> {
@@ -18,7 +20,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
         elevation: 0,
         backgroundColor: context.backgroundColor,
         title: Text(
-          'Compléter votre profil',
+          'complete_profile.title'.tr,
           style: context.textStyle(
             deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
             fontWeight: FontWeight.w600,
@@ -31,7 +33,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
         leading: AppBackButton(onPressed: controller.navigateBack),
         actions: [
           IconButton(
-            tooltip: 'Menu principal',
+            tooltip: 'complete_profile.main_menu'.tr,
             icon: const Icon(Icons.home_outlined),
             onPressed: controller.goToMainDestination,
           ),
@@ -57,59 +59,62 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildAvatarPicker(context),
+                  SizedBox(height: context.sectionSpacing),
+
                   // First Name Field
-                  _buildTextFieldLabel(context, 'Prénom', true),
+                  _buildTextFieldLabel(context, 'complete_profile.first_name'.tr, true),
                   SizedBox(height: context.elementSpacing),
                   _buildTextField(
                     context,
                     controller.firstNameController,
-                    'Entrez votre prénom',
+                    'complete_profile.first_name_hint'.tr,
                     Icons.person_outline,
                   ),
                   SizedBox(height: context.sectionSpacing),
 
                   // Last Name Field
-                  _buildTextFieldLabel(context, 'Nom', true),
+                  _buildTextFieldLabel(context, 'complete_profile.last_name'.tr, true),
                   SizedBox(height: context.elementSpacing),
                   _buildTextField(
                     context,
                     controller.lastNameController,
-                    'Entrez votre nom',
+                    'complete_profile.last_name_hint'.tr,
                     Icons.person_outline,
                   ),
                   SizedBox(height: context.sectionSpacing),
 
                   // Email Field (Optional)
-                  _buildTextFieldLabel(context, 'Email', false),
+                  _buildTextFieldLabel(context, 'complete_profile.email'.tr, false),
                   SizedBox(height: context.elementSpacing),
                   _buildTextField(
                     context,
                     controller.emailController,
-                    'Entrez votre email (optionnel)',
+                    'complete_profile.email_hint'.tr,
                     Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                   ),
                   SizedBox(height: context.sectionSpacing),
 
                   // Gender Selection
-                  _buildTextFieldLabel(context, 'Genre', false),
+                  _buildTextFieldLabel(context, 'complete_profile.gender'.tr, false),
                   SizedBox(height: context.elementSpacing),
                   _buildGenderSelection(context),
                   SizedBox(height: context.sectionSpacing),
 
                   // Birth Date Picker
-                  _buildTextFieldLabel(context, 'Date de naissance', false),
+                  _buildTextFieldLabel(context, 'complete_profile.birth_date'.tr, false),
                   SizedBox(height: context.elementSpacing),
                   _buildBirthDatePicker(context),
                   SizedBox(height: context.sectionSpacing),
 
                   // Address Field
-                  _buildTextFieldLabel(context, 'Adresse', false),
+                  _buildTextFieldLabel(context, 'complete_profile.address'.tr, false),
                   SizedBox(height: context.elementSpacing),
                   _buildTextField(
                     context,
                     TextEditingController()..text = controller.address.value,
-                    'Entrez votre adresse (optionnelle)',
+                    'complete_profile.address_hint'.tr,
                     Icons.location_on_outlined,
                     maxLines: 3,
                     onChanged: (value) => controller.address.value = value,
@@ -166,7 +171,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Finalisez votre profil',
+                      'complete_profile.header_title'.tr,
                       style: context.textStyle(
                         deviceType == DeviceType.mobile
                             ? FontSizeType.h5
@@ -177,7 +182,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                     ),
                     SizedBox(height: context.elementSpacing * 0.5),
                     Text(
-                      'Complétez vos informations pour continuer',
+                      'complete_profile.header_subtitle'.tr,
                       style: context.textStyle(
                         deviceType == DeviceType.mobile
                             ? FontSizeType.body2
@@ -192,6 +197,74 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Photo de profil : la pastille montre la photo en place ou celle qui
+  /// vient d'être choisie, et un toucher rouvre le choix de la source.
+  Widget _buildAvatarPicker(BuildContext context) {
+    return Center(
+      child: Obx(() {
+        final picked = controller.avatarImage.value;
+        StorageService.userRevision.value;
+        final hasPhoto =
+            picked != null ||
+            (StorageService.getUser()?.avatar?.trim().isNotEmpty ?? false);
+
+        return Column(
+          children: [
+            Semantics(
+              button: true,
+              label: hasPhoto
+                  ? 'complete_profile.change_profile_photo'.tr
+                  : 'complete_profile.add_profile_photo'.tr,
+              child: GestureDetector(
+                onTap: () => controller.pickAvatar(context),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    UserAvatar(size: 96, localImage: picked),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppThemeSystem.primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: context.backgroundColor,
+                            width: 3,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.photo_camera_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: context.elementSpacing),
+            TextButton(
+              onPressed: () => controller.pickAvatar(context),
+              child: Text(
+                hasPhoto
+                    ? 'complete_profile.change_photo'.tr
+                    : 'complete_profile.add_photo'.tr,
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w600,
+                  color: AppThemeSystem.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -299,7 +372,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           Expanded(
             child: _buildGenderChip(
               context,
-              'Homme',
+              'complete_profile.male'.tr,
               'H',
               controller.selectedGender.value == 'H',
               () => controller.selectGender('H'),
@@ -309,7 +382,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
           Expanded(
             child: _buildGenderChip(
               context,
-              'Femme',
+              'complete_profile.female'.tr,
               'F',
               controller.selectedGender.value == 'F',
               () => controller.selectGender('F'),
@@ -446,7 +519,7 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                 child: Text(
                   controller.birthDate.value != null
                       ? '${controller.birthDate.value!.day.toString().padLeft(2, '0')}/${controller.birthDate.value!.month.toString().padLeft(2, '0')}/${controller.birthDate.value!.year}'
-                      : 'Sélectionnez une date',
+                      : 'complete_profile.select_date'.tr,
                   style: context.textStyle(
                     deviceType == DeviceType.mobile
                         ? FontSizeType.body1
@@ -497,8 +570,8 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
                 ),
           label: Text(
             controller.isLoading.value
-                ? 'Enregistrement...'
-                : 'Enregistrer le profil',
+                ? 'complete_profile.saving'.tr
+                : 'complete_profile.save_profile'.tr,
             style: context.textStyle(
               deviceType == DeviceType.mobile
                   ? FontSizeType.button

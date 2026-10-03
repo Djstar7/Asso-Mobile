@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:upgrader/upgrader.dart';
 
 import '../../routes/app_pages.dart';
+import '../services/locale_service.dart';
 
 /// Prévient l'utilisateur qu'une version plus récente est publiée sur les
 /// stores, et l'y renvoie pour l'installer.
@@ -28,7 +29,7 @@ class AppUpdateGate extends StatelessWidget {
   /// reconstruction un vérificateur et son flux jamais fermés.
   static final Upgrader _upgrader = _AppUpgrader(
     durationUntilAlertAgain: _rappel,
-    messages: UpgraderMessages(code: 'fr'),
+    messages: UpgraderMessages(code: LocaleService.currentLanguage),
     // En débogage la version installée ne correspond pas à celle publiée :
     // sans cela, la fenêtre s'ouvrirait à chaque démarrage.
     debugDisplayAlways: false,

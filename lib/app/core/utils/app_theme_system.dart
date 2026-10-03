@@ -1223,11 +1223,12 @@ class AppDialogs {
     String? featureName,
     VoidCallback? onLoginPressed,
   }) {
-    final defaultTitle = title ?? 'Connexion requise';
+    final defaultTitle = title ?? 'core.login_required.title'.tr;
     final defaultMessage = message ??
         (featureName != null
-            ? 'Pour accéder à $featureName, vous devez d\'abord vous connecter à votre compte.'
-            : 'Cette fonctionnalité nécessite une connexion. Veuillez vous connecter pour continuer.');
+            ? 'core.login_required.dialog_feature'
+                .trParams({'feature': featureName})
+            : 'core.login_required.dialog_generic'.tr);
 
     Get.dialog(
       Dialog(
@@ -1333,7 +1334,7 @@ class AppDialogs {
                             const Icon(Icons.login_rounded, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Se connecter',
+                              'core.login_required.sign_in'.tr,
                               style: context.textStyle(
                                 FontSizeType.button,
                                 fontWeight: FontWeight.w600,
@@ -1363,11 +1364,12 @@ class AppDialogs {
   }) {
     final defaultMessage = message ??
         (featureName != null
-            ? 'Connectez-vous pour accéder à $featureName'
-            : 'Connexion requise pour cette fonctionnalité');
+            ? 'core.login_required.snackbar_feature'
+                .trParams({'feature': featureName})
+            : 'core.login_required.snackbar_generic'.tr);
 
     Get.snackbar(
-      'Connexion requise',
+      'core.login_required.title'.tr,
       defaultMessage,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.primaryColor,
@@ -1386,7 +1388,7 @@ class AppDialogs {
               Get.toNamed('/login');
             },
         child: Text(
-          'Se connecter',
+          'core.login_required.sign_in'.tr,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

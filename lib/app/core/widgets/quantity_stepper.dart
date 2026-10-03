@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -88,6 +89,8 @@ class _QuantityStepperState extends State<QuantityStepper> {
   }
 
   void _onFocusChange() {
+    // Le contour passe à la couleur d'accent pendant la saisie.
+    if (mounted) setState(() {});
     if (_focus.hasFocus) return;
     final typed = int.tryParse(_controller.text.trim());
     if (typed == null || typed < widget.min) {
@@ -131,83 +134,98 @@ class _QuantityStepperState extends State<QuantityStepper> {
     final max = widget.max;
     final canDecrease = widget.enabled && widget.value > widget.min;
     final canIncrease = widget.enabled && (max == null || widget.value < max);
-    final buttonSize = widget.compact ? 40.0 : AppDesign.minTapTarget;
-    final radius = BorderRadius.circular(AppDesign.radiusSm);
-
-    OutlineInputBorder outline(Color color, {double width = 1}) =>
-        OutlineInputBorder(
-          borderRadius: radius,
-          borderSide: BorderSide(color: color, width: width),
-        );
+    // Un seul bloc bordé [ − | nombre | + ] : boutons et champ partagent la
+    // même hauteur et le même contour, au lieu de trois pièces détachées.
+    final height = widget.compact ? 34.0 : 40.0;
+    final fieldWidth = widget.compact ? 52.0 : 72.0;
+    final borderColor = widget.hasError
+        ? AppDesign.danger
+        : (_focus.hasFocus ? AppDesign.accent : context.ds.borderStrong);
+    final divider = SizedBox(
+      height: height,
+      child: VerticalDivider(width: 1, thickness: 1, color: context.ds.border),
+    );
 
     return Row(
-      mainAxisSize: widget.compact ? MainAxisSize.min : MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _StepButton(
-          icon: Icons.remove_rounded,
-          tooltip: 'Diminuer',
-          size: buttonSize,
-          onTap: canDecrease ? () => _step(-1) : null,
-        ),
-        SizedBox(width: widget.compact ? AppDesign.space2 : AppDesign.space3),
-        _flexible(
-          SizedBox(
-            height: buttonSize,
-            child: TextField(
-              controller: _controller,
-              focusNode: _focus,
-              enabled: widget.enabled,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              textAlign: TextAlign.center,
-              textAlignVertical: TextAlignVertical.center,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(7),
-              ],
-              onChanged: _onTyped,
-              onSubmitted: (_) => _focus.unfocus(),
-              style: context.textStyle(
-                widget.compact ? FontSizeType.body1 : FontSizeType.h6,
-                fontWeight: FontWeight.w700,
-                color: context.ds.textPrimary,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppDesign.space1,
-                ),
-                hintText: '${widget.min}',
-                enabledBorder: outline(
-                  widget.hasError ? AppDesign.danger : context.ds.borderStrong,
-                ),
-                focusedBorder: outline(
-                  widget.hasError ? AppDesign.danger : AppDesign.accent,
-                  width: 1.5,
-                ),
-              ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: height,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: widget.enabled
+                ? context.ds.surface
+                : context.ds.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+            border: Border.all(
+              color: borderColor,
+              width: _focus.hasFocus || widget.hasError ? 1.5 : 1,
             ),
           ),
-        ),
-        SizedBox(width: widget.compact ? AppDesign.space2 : AppDesign.space3),
-        _StepButton(
-          icon: Icons.add_rounded,
-          tooltip: 'Augmenter',
-          size: buttonSize,
-          onTap: canIncrease
-              ? () => _step(1)
-              : (widget.enabled && max != null ? widget.onMaxReached : null),
-          dimmed: !canIncrease,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _StepButton(
+                icon: Icons.remove_rounded,
+                tooltip: 'core.quantity.decrease'.tr,
+                size: height,
+                onTap: canDecrease ? () => _step(-1) : null,
+              ),
+              divider,
+              SizedBox(
+                width: fieldWidth,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focus,
+                  enabled: widget.enabled,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  textAlign: TextAlign.center,
+                  textAlignVertical: TextAlignVertical.center,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(7),
+                  ],
+                  onChanged: _onTyped,
+                  onSubmitted: (_) => _focus.unfocus(),
+                  style: context.textStyle(
+                    widget.compact ? FontSizeType.body2 : FontSizeType.body1,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppDesign.space1,
+                    ),
+                    hintText: '${widget.min}',
+                  ),
+                ),
+              ),
+              divider,
+              _StepButton(
+                icon: Icons.add_rounded,
+                tooltip: 'core.quantity.increase'.tr,
+                size: height,
+                onTap: canIncrease
+                    ? () => _step(1)
+                    : (widget.enabled && max != null
+                          ? widget.onMaxReached
+                          : null),
+                dimmed: !canIncrease,
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
-
-  /// En version compacte le champ a une largeur fixe ; sinon il prend la
-  /// place restante.
-  Widget _flexible(Widget child) => widget.compact
-      ? SizedBox(width: 64, child: child)
-      : Expanded(child: child);
 }
 
 class _StepButton extends StatelessWidget {
@@ -233,20 +251,15 @@ class _StepButton extends StatelessWidget {
     final active = onTap != null && !dimmed;
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: active ? AppDesign.accent : context.ds.surfaceMuted,
-        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(
-              icon,
-              size: 20,
-              color: active ? Colors.white : context.ds.textTertiary,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(
+            icon,
+            size: 18,
+            color: active ? AppDesign.accent : context.ds.textTertiary,
           ),
         ),
       ),

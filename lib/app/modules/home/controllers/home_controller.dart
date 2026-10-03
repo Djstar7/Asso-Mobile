@@ -36,12 +36,12 @@ class HomeController extends GetxController
   /// depuis la barre du haut, la seconde depuis le menu latéral. Cela laisse
   /// cinq onglets — au-delà, les libellés deviennent illisibles sur un
   /// téléphone étroit.
-  final List<String> tabNames = [
-    'Accueil',
-    'Recherche',
-    'Grossiste',
-    'Suivi',
-    'Compte',
+  List<String> get tabNames => [
+    'home.nav.home'.tr,
+    'home.nav.search'.tr,
+    'home.nav.wholesale'.tr,
+    'home.nav.tracking'.tr,
+    'home.nav.account'.tr,
   ];
 
   // Banner
@@ -676,7 +676,10 @@ class HomeController extends GetxController
     // compte : ce sont les vitrines. Le suivi et le compte supposent une
     // identité.
     const protectedTabs = [3, 4];
-    const tabFeatureNames = {3: 'le suivi de commandes', 4: 'votre compte'};
+    final tabFeatureNames = {
+      3: 'home.feature.order_tracking'.tr,
+      4: 'home.feature.your_account'.tr,
+    };
 
     if (protectedTabs.contains(index) && AuthGuard.isGuest) {
       // L'utilisateur n'est pas connecté et essaie d'accéder à un tab protégé
@@ -813,7 +816,7 @@ class HomeController extends GetxController
         AuthGuard.navigateIfAuthenticated(
           Get.context!,
           '/favorites',
-          featureName: 'les favoris',
+          featureName: 'home.feature.favorites'.tr,
           useDialog: true,
         );
         return;
@@ -825,7 +828,7 @@ class HomeController extends GetxController
         final isFavorite = response.data?['is_favorite'] ?? false;
         final message =
             response.data?['message'] ??
-            (isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+            (isFavorite ? 'home.favorite.added'.tr : 'home.favorite.removed'.tr);
 
         // Update the is_favorite status in all product lists
         updateProductFavoriteStatus(productId, isFavorite);
@@ -836,7 +839,7 @@ class HomeController extends GetxController
             .clamp(0, 9999);
 
         Get.snackbar(
-          'Succès',
+          'home.success'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2),
@@ -846,8 +849,8 @@ class HomeController extends GetxController
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de modifier le favori',
+        'home.error'.tr,
+        'home.favorite.error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -897,8 +900,8 @@ class HomeController extends GetxController
     if (user == null) {
       print('❌ HOME: No user found in storage');
       Get.snackbar(
-        'Connexion requise',
-        'Veuillez vous connecter pour accéder au mode vendeur',
+        'home.login_required'.tr,
+        'home.vendor_login_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       print('========================================');

@@ -17,7 +17,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Devenir Vendeur',
+          'vendor_config.view.title'.tr,
           style: context.h5.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -121,7 +121,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Titre
           Text(
-            'Informations personnelles',
+            'vendor_config.view.personal_info'.tr,
             style: context.h3.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -130,7 +130,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
           SizedBox(height: context.elementSpacing * 0.5),
 
           Text(
-            'Complétez votre profil pour devenir vendeur',
+            'vendor_config.view.personal_info_subtitle'.tr,
             style: context.body2.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -143,7 +143,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
             child: Column(
               children: [
                 Text(
-                  'Photo de profil *',
+                  'vendor_config.view.profile_photo_label'.tr,
                   style: context.subtitle1.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -185,7 +185,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    'Chargement...',
+                                    'vendor_config.view.loading'.tr,
                                     style: context.caption.copyWith(
                                       color: AppThemeSystem.primaryColor,
                                       fontWeight: FontWeight.w500,
@@ -211,7 +211,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                 }),
                 SizedBox(height: context.elementSpacing * 0.5),
                 Text(
-                  'Appuyez pour ajouter une photo',
+                  'vendor_config.view.tap_add_photo'.tr,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -224,7 +224,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Type de compte - EN DEUXIEME
           Text(
-            'Type de compte *',
+            'vendor_config.view.account_type_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -269,7 +269,9 @@ class VendorConfigView extends GetView<VendorConfigController> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              type,
+                              type == 'Entreprise'
+                                  ? 'vendor_config.view.company'.tr
+                                  : 'vendor_config.view.individual'.tr,
                               style: context.body1.copyWith(
                                 color: isSelected
                                     ? AppThemeSystem.primaryColor
@@ -291,7 +293,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Genre - EN TROISIEME horizontalement
           Text(
-            'Genre *',
+            'vendor_config.view.gender_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -336,7 +338,9 @@ class VendorConfigView extends GetView<VendorConfigController> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              gender,
+                              gender == 'Homme'
+                                  ? 'vendor_config.view.male'.tr
+                                  : 'vendor_config.view.female'.tr,
                               style: context.body1.copyWith(
                                 color: isSelected
                                     ? AppThemeSystem.primaryColor
@@ -358,7 +362,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Prénom
           Text(
-            'Prénom *',
+            'vendor_config.view.first_name_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -370,7 +374,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              hintText: 'Votre prénom',
+              hintText: 'vendor_config.view.first_name_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.person_outline),
@@ -396,7 +400,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Nom
           Text(
-            'Nom *',
+            'vendor_config.view.last_name_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -408,7 +412,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              hintText: 'Votre nom',
+              hintText: 'vendor_config.view.last_name_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.badge_outlined),
@@ -434,7 +438,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Email (optionnel)
           Text(
-            'Email (optionnel)',
+            'vendor_config.view.email_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -447,7 +451,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              hintText: 'votre.email@exemple.com',
+              hintText: 'vendor_config.view.email_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.email_outlined),
@@ -490,7 +494,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Titre
           Text(
-            'Configuration de votre boutique',
+            'vendor_config.view.shop_setup'.tr,
             style: context.h3.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -499,7 +503,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
           SizedBox(height: context.elementSpacing * 0.5),
 
           Text(
-            'Configurez votre espace de vente',
+            'vendor_config.view.shop_setup_subtitle'.tr,
             style: context.body2.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -512,7 +516,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
             child: Column(
               children: [
                 Text(
-                  'Logo de la boutique *',
+                  'vendor_config.view.shop_logo_label'.tr,
                   style: context.subtitle1.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -554,7 +558,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    'Chargement...',
+                                    'vendor_config.view.loading'.tr,
                                     style: context.caption.copyWith(
                                       color: AppThemeSystem.primaryColor,
                                       fontWeight: FontWeight.w500,
@@ -581,7 +585,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                 }),
                 SizedBox(height: context.elementSpacing * 0.5),
                 Text(
-                  'Appuyez pour ajouter un logo',
+                  'vendor_config.view.tap_add_logo'.tr,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -594,7 +598,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Nom de la boutique
           Text(
-            'Nom de la boutique *',
+            'vendor_config.view.shop_name_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -606,7 +610,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              hintText: 'Ex: Boutique Kira',
+              hintText: 'vendor_config.view.shop_name_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: Icon(Icons.store_outlined),
@@ -632,7 +636,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Description
           Text(
-            'Description de votre activité *',
+            'vendor_config.view.description_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -645,7 +649,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               color: AppThemeSystem.getPrimaryTextColor(context),
             ),
             decoration: InputDecoration(
-              hintText: 'Décrivez votre activité et vos produits...',
+              hintText: 'vendor_config.view.description_hint'.tr,
               filled: true,
               fillColor: context.inputFieldColor,
               prefixIcon: Padding(
@@ -674,7 +678,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
           // Emplacement (carte OpenStreetMap)
           Text(
-            'Emplacement de la boutique *',
+            'vendor_config.view.location_label'.tr,
             style: context.subtitle1.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -707,7 +711,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                           ),
                           SizedBox(height: 10),
                           Text(
-                            'Appuyez pour ouvrir la carte',
+                            'vendor_config.view.tap_open_map'.tr,
                             style: context.body1.copyWith(
                               color: context.secondaryTextColor,
                               fontWeight: FontWeight.w500,
@@ -715,7 +719,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Sélectionnez votre position',
+                            'vendor_config.view.select_position'.tr,
                             style: context.caption.copyWith(
                               color: context.secondaryTextColor,
                             ),
@@ -752,7 +756,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                           onPressed: controller.openMapPicker,
                           icon: Icon(Icons.edit_location, size: 16),
                           label: Text(
-                            'Modifier',
+                            'vendor_config.view.edit'.tr,
                             style: TextStyle(fontSize: 12),
                           ),
                           style: TextButton.styleFrom(
@@ -800,7 +804,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                     SizedBox(width: context.elementSpacing),
                     Expanded(
                       child: Text(
-                        'Vérification de la zone de livraison...',
+                        'vendor_config.checking_zone'.tr,
                         style: context.body2.copyWith(
                           color: AppThemeSystem.primaryColor,
                         ),
@@ -830,7 +834,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Zone de livraison disponible',
+                          'vendor_config.view.zone_available'.tr,
                           style: context.body2.copyWith(
                             color: AppThemeSystem.successColor,
                             fontWeight: FontWeight.w600,
@@ -860,7 +864,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Hors zone de livraison - Veuillez choisir un autre emplacement',
+                          'vendor_config.view.zone_unavailable'.tr,
                           style: context.body2.copyWith(
                             color: AppThemeSystem.errorColor,
                             fontWeight: FontWeight.w600,
@@ -882,7 +886,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
             children: [
               Expanded(
                 child: Text(
-                  'Secteurs d\'activité *',
+                  'vendor_config.view.sectors_label'.tr,
                   style: context.subtitle1.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -894,7 +898,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                   return IconButton(
                     icon: Icon(Icons.refresh, size: 20),
                     onPressed: controller.refreshCategories,
-                    tooltip: 'Recharger les catégories',
+                    tooltip: 'vendor_config.view.reload_categories'.tr,
                   );
                 }
                 return SizedBox.shrink();
@@ -903,7 +907,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
           ),
           SizedBox(height: context.elementSpacing * 0.5),
           Text(
-            'Sélectionnez une ou plusieurs catégories',
+            'vendor_config.view.select_categories'.tr,
             style: context.caption.copyWith(
               color: context.secondaryTextColor,
             ),
@@ -923,7 +927,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                       CircularProgressIndicator(),
                       SizedBox(height: context.elementSpacing),
                       Text(
-                        'Chargement des catégories...',
+                        'vendor_config.view.loading_categories'.tr,
                         style: context.caption.copyWith(
                           color: context.secondaryTextColor,
                         ),
@@ -964,7 +968,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                     ElevatedButton.icon(
                       onPressed: controller.refreshCategories,
                       icon: Icon(Icons.refresh, size: 18),
-                      label: Text('Réessayer'),
+                      label: Text('vendor_config.view.retry'.tr),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppThemeSystem.errorColor,
                         foregroundColor: Colors.white,
@@ -980,7 +984,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
               return Container(
                 padding: EdgeInsets.all(context.verticalPadding),
                 child: Text(
-                  'Aucune catégorie disponible',
+                  'vendor_config.view.no_category'.tr,
                   style: context.body2.copyWith(
                     color: context.secondaryTextColor,
                   ),
@@ -1073,7 +1077,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
             // Titre de félicitations
             Text(
-              'Félicitations !',
+              'vendor_config.view.congrats'.tr,
               style: context.h2.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppThemeSystem.successColor,
@@ -1083,7 +1087,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
             SizedBox(height: context.elementSpacing),
 
             Text(
-              'Votre demande a été envoyée',
+              'vendor_config.view.request_sent'.tr,
               style: context.h4.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -1108,7 +1112,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                 ),
                 icon: Icon(Icons.store, size: 24),
                 label: Text(
-                  'Accéder à ma boutique',
+                  'vendor_config.view.go_to_shop'.tr,
                   style: context.button.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1122,7 +1126,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
 
             // Texte d'information supplémentaire
             Text(
-              'Vous pourrez commencer vos premières configurations',
+              'vendor_config.view.first_setup'.tr,
               textAlign: TextAlign.center,
               style: context.caption.copyWith(
                 color: context.secondaryTextColor,
@@ -1192,7 +1196,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                       ),
                     ),
                     child: Text(
-                      'Précédent',
+                      'vendor_config.view.previous'.tr,
                       style: context.button.copyWith(
                         color: context.primaryTextColor,
                       ),
@@ -1231,7 +1235,7 @@ class VendorConfigView extends GetView<VendorConfigController> {
                           ),
                         )
                       : Text(
-                          isFirstStep ? 'Suivant' : 'Finaliser',
+                          isFirstStep ? 'vendor_config.view.next'.tr : 'vendor_config.view.finish'.tr,
                           style: context.button.copyWith(
                             color: isButtonEnabled ? Colors.white : context.secondaryTextColor,
                             fontWeight: FontWeight.w600,

@@ -5,6 +5,8 @@ import 'package:http_parser/http_parser.dart';
 import '../providers/api_provider.dart';
 import '../../core/values/constants.dart';
 import '../providers/storage_service.dart';
+import '../../core/services/locale_service.dart';
+import 'package:get/get.dart';
 
 class ConversationService {
   /// Get user's conversations
@@ -87,7 +89,7 @@ class ConversationService {
       if (token == null) {
         return ApiResponse(
           success: false,
-          message: 'Non authentifié',
+          message: 'network.not_authenticated'.tr,
           statusCode: 401,
         );
       }
@@ -97,6 +99,7 @@ class ConversationService {
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
+      request.headers['Accept-Language'] = LocaleService.currentLanguage;
 
       // Ajouter le message texte si fourni
       if (message != null && message.isNotEmpty) {
@@ -141,9 +144,9 @@ class ConversationService {
       if (data['message'] is String) {
         successMessage = data['message'] as String;
       } else if (data['success'] == true) {
-        successMessage = 'Message envoyé avec succès';
+        successMessage = 'data.conversation.message_sent'.tr;
       } else {
-        successMessage = 'Erreur lors de l\'envoi';
+        successMessage = 'data.conversation.send_error'.tr;
       }
 
       return ApiResponse(
@@ -156,7 +159,7 @@ class ConversationService {
       print('Erreur lors de l\'envoi du message avec image: $e');
       return ApiResponse(
         success: false,
-        message: 'Erreur lors de l\'envoi: $e',
+        message: 'data.conversation.send_error_detail'.trParams({'error': '$e'}),
         statusCode: 500,
       );
     }

@@ -132,12 +132,16 @@ class ProductManagementController extends GetxController {
       } else {
         final message = response.message.isNotEmpty
             ? response.message
-            : 'Impossible de charger les produits';
+            : 'product_management.controller.load_failed'.tr;
         print('❌ Échec du chargement : $message');
         // L'erreur reste affichée dans la liste ; la snackbar ne sert qu'au
         // chargement d'une page supplémentaire, où la liste reste visible.
         if (loadMore) {
-          Get.snackbar('Erreur', message, snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar(
+            'product_management.controller.error_title'.tr,
+            message,
+            snackPosition: SnackPosition.BOTTOM,
+          );
         } else {
           errorMessage.value = message;
         }
@@ -145,9 +149,13 @@ class ProductManagementController extends GetxController {
     } catch (e) {
       if (requestId != _requestId) return;
       print('💥 Exception loading products: $e');
-      const message = 'Vérifiez votre connexion et réessayez.';
+      final message = 'product_management.controller.check_connection'.tr;
       if (loadMore) {
-        Get.snackbar('Erreur', message, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar(
+            'product_management.controller.error_title'.tr,
+            message,
+            snackPosition: SnackPosition.BOTTOM,
+          );
       } else {
         errorMessage.value = message;
       }
@@ -218,23 +226,23 @@ class ProductManagementController extends GetxController {
     // Show confirmation dialog
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Confirmer la suppression'),
+        title: Text('product_management.controller.delete_title'.tr),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer "$productName" ?\n\nCette action est irréversible.',
+          'product_management.controller.delete_message'.trParams({'name': productName}),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('product_management.controller.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppDesign.danger,
             ),
-            child: const Text(
-              'Supprimer',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              'product_management.controller.delete'.tr,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -259,14 +267,15 @@ class ProductManagementController extends GetxController {
         totalProducts.value = totalProducts.value - 1;
 
         // Show success message with storage info
-        String message = 'Produit supprimé avec succès';
+        String message = 'product_management.controller.delete_success'.tr;
         if (response.data?['storage_freed_mb'] != null) {
           final freedMb = response.data!['storage_freed_mb'];
-          message += '\n${freedMb.toStringAsFixed(2)} MB libérés';
+          message +=
+              '\n${'product_management.controller.storage_freed'.trParams({'mb': freedMb.toStringAsFixed(2)})}';
         }
 
         Get.snackbar(
-          'Succès',
+          'product_management.controller.success_title'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
@@ -276,10 +285,10 @@ class ProductManagementController extends GetxController {
       } else {
         print('❌ Failed to delete product: ${response.message}');
         Get.snackbar(
-          'Erreur',
+          'product_management.controller.error_title'.tr,
           response.message.isNotEmpty
               ? response.message
-              : 'Impossible de supprimer le produit',
+              : 'product_management.controller.delete_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -288,8 +297,8 @@ class ProductManagementController extends GetxController {
     } catch (e) {
       print('💥 Exception deleting product: $e');
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue: $e',
+        'product_management.controller.error_title'.tr,
+        'product_management.controller.error_with_detail'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -300,23 +309,27 @@ class ProductManagementController extends GetxController {
   Future<void> toggleProductStatus(Map<String, dynamic> product) async {
     final currentStatus = product['status']?.toString() ?? 'inactive';
     final nextStatus = currentStatus == 'active' ? 'inactive' : 'active';
-    final verb = nextStatus == 'active' ? 'réactiver' : 'désactiver';
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         title: Text(
           nextStatus == 'active'
-              ? 'Réactiver le produit'
-              : 'Désactiver le produit',
+              ? 'product_management.controller.reactivate_title'.tr
+              : 'product_management.controller.deactivate_title'.tr,
         ),
-        content: Text('Voulez-vous $verb « ${product['name']} » ?'),
+        content: Text(
+          (nextStatus == 'active'
+                  ? 'product_management.controller.reactivate_message'
+                  : 'product_management.controller.deactivate_message')
+              .trParams({'name': '${product['name']}'}),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Annuler'),
+            child: Text('product_management.controller.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Confirmer'),
+            child: Text('product_management.controller.confirm'.tr),
           ),
         ],
       ),
@@ -336,16 +349,18 @@ class ProductManagementController extends GetxController {
       }
       products.refresh();
       Get.snackbar(
-        'Succès',
-        response.message.isNotEmpty ? response.message : 'Statut mis à jour',
+        'product_management.controller.success_title'.tr,
+        response.message.isNotEmpty
+            ? response.message
+            : 'product_management.controller.status_updated'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
       Get.snackbar(
-        'Erreur',
+        'product_management.controller.error_title'.tr,
         response.message.isNotEmpty
             ? response.message
-            : 'Impossible de modifier le statut',
+            : 'product_management.controller.status_update_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }

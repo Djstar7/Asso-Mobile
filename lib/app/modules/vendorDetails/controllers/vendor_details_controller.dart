@@ -5,14 +5,18 @@ import '../../../data/providers/currency_service.dart';
 
 /// Critères de tri du catalogue d'une boutique.
 enum ShopProductSort {
-  recent('Nouveautés'),
-  priceAsc('Prix croissant'),
-  priceDesc('Prix décroissant'),
-  nameAsc('A → Z');
+  recent('vendor_details.sort.recent'),
+  priceAsc('vendor_details.sort.price_asc'),
+  priceDesc('vendor_details.sort.price_desc'),
+  nameAsc('vendor_details.sort.name_asc');
 
-  const ShopProductSort(this.label);
+  const ShopProductSort(this.labelKey);
 
-  final String label;
+  /// Clé de traduction du libellé.
+  final String labelKey;
+
+  /// Libellé traduit, évalué à l'affichage.
+  String get label => labelKey.tr;
 }
 
 class VendorDetailsController extends GetxController {
@@ -126,7 +130,7 @@ class VendorDetailsController extends GetxController {
       fetchShopDetails();
     } else {
       hasError.value = true;
-      errorMessage.value = 'ID de boutique invalide';
+      errorMessage.value = 'vendor_details.errors.invalid_shop_id'.tr;
       isLoading.value = false;
     }
   }
@@ -160,12 +164,12 @@ class VendorDetailsController extends GetxController {
         hasError.value = true;
         errorMessage.value = response.message.isNotEmpty
             ? response.message
-            : 'Impossible de charger les détails de la boutique';
+            : 'vendor_details.errors.load_failed'.tr;
       }
     } catch (e) {
       print('❌ Error fetching shop details: $e');
       hasError.value = true;
-      errorMessage.value = 'Une erreur est survenue lors du chargement';
+      errorMessage.value = 'vendor_details.errors.loading_error'.tr;
     } finally {
       isLoading.value = false;
     }

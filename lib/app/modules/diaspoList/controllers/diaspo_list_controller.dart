@@ -136,8 +136,8 @@ class DiaspoListController extends GetxController {
     } catch (e) {
       print('Error loading offers: $e');
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les offres',
+        'diaspo_list.error'.tr,
+        'diaspo_list.load_offers_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -217,8 +217,8 @@ class DiaspoListController extends GetxController {
       );
       Get.back(); // fermer le dialogue
       Get.snackbar(
-        'Code validé',
-        'La livraison est confirmée. L\'acheteur doit maintenant confirmer la réception.',
+        'diaspo_list.code_validated_title'.tr,
+        'diaspo_list.code_validated_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.successColor,
         colorText: Colors.white,
@@ -226,7 +226,7 @@ class DiaspoListController extends GetxController {
       await loadMyBookingsAsSeller();
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'diaspo_list.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
@@ -251,7 +251,7 @@ class DiaspoListController extends GetxController {
       _showReceiptConfirmedDialog();
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'diaspo_list.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
@@ -282,22 +282,19 @@ class DiaspoListController extends GetxController {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(child: Text('Réception confirmée')),
+            Expanded(child: Text('diaspo_list.receipt_confirmed.title'.tr)),
           ],
         ),
-        content: const Text(
-          'Merci ! Les fonds ont été débloqués et versés au voyageur. '
-          'Vous retrouvez le détail de l\'opération dans votre portefeuille.',
-        ),
+        content: Text('diaspo_list.receipt_confirmed.message'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Fermer')),
+          TextButton(onPressed: () => Get.back(), child: Text('diaspo_list.close'.tr)),
           ElevatedButton.icon(
             onPressed: () {
               Get.back();
               Get.toNamed(Routes.WALLET);
             },
             icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-            label: const Text('Voir mon portefeuille'),
+            label: Text('diaspo_list.receipt_confirmed.view_wallet'.tr),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppThemeSystem.primaryColor,
               foregroundColor: Colors.white,
@@ -379,8 +376,8 @@ class DiaspoListController extends GetxController {
   void handleVerification() {
     if (verificationStatus.value == 'verified') {
       Get.snackbar(
-        'Identité validée',
-        'Votre compte DIASPO est déjà vérifié.',
+        'diaspo_list.identity_verified_title'.tr,
+        'diaspo_list.identity_verified_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -400,21 +397,17 @@ class DiaspoListController extends GetxController {
               children: [
                 const Icon(Icons.hourglass_empty, color: AppDesign.accent),
                 const SizedBox(width: 12),
-                const Flexible(
+                Flexible(
                   child: Text(
-                    'Vérification en cours',
+                    'diaspo_list.verification.pending_title'.tr,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            content: const Text(
-              'Votre pièce d\'identité est en cours de vérification par notre équipe.\n\n'
-              'En attendant, vos offres restent visibles avec la mention « Profil non vérifié ». '
-              'Vous recevrez une notification dès que votre profil sera validé (généralement sous 24-48h).',
-            ),
+            content: Text('diaspo_list.verification.pending_message'.tr),
             actions: [
-              TextButton(onPressed: () => Get.back(), child: const Text('OK')),
+              TextButton(onPressed: () => Get.back(), child: Text('diaspo_list.ok'.tr)),
             ],
           ),
         );
@@ -429,28 +422,28 @@ class DiaspoListController extends GetxController {
                 const SizedBox(width: 12),
                 Flexible(
                   child: Text(
-                    'Vérification refusée',
+                    'diaspo_list.verification.rejected_title'.tr,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
             content: Text(
-              'Votre vérification a été refusée.\n\n'
-              '${formattedNextDeadline != null ? 'Envoyez des pièces conformes avant le $formattedNextDeadline, sinon vos offres seront retirées.\n\n' : ''}'
-              'Voulez-vous soumettre à nouveau votre pièce d\'identité ?',
+              '${'diaspo_list.verification.rejected_intro'.tr}\n\n'
+              '${formattedNextDeadline != null ? '${'diaspo_list.verification.rejected_deadline'.trParams({'date': formattedNextDeadline!})}\n\n' : ''}'
+              '${'diaspo_list.verification.rejected_question'.tr}',
             ),
             actions: [
               TextButton(
                 onPressed: () => Get.back(),
-                child: const Text('Annuler'),
+                child: Text('diaspo_list.cancel'.tr),
               ),
               ElevatedButton(
                 onPressed: () {
                   Get.back();
                   _showUploadVerificationBottomSheet();
                 },
-                child: const Text('Soumettre à nouveau'),
+                child: Text('diaspo_list.verification.resubmit'.tr),
               ),
             ],
           ),
@@ -466,31 +459,24 @@ class DiaspoListController extends GetxController {
                 const SizedBox(width: 12),
                 Flexible(
                   child: Text(
-                    'Vérification requise',
+                    'diaspo_list.verification.required_title'.tr,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            content: const Text(
-              'Vous pouvez publier votre offre dès maintenant : elle s\'affichera avec la mention « Profil non vérifié » '
-              'et ne pourra pas être réservée tant que votre identité n\'est pas validée. '
-              'Sans pièces conformes dans le délai fixé par ASSO, elle sera retirée.\n\n'
-              'Document requis (au choix):\n'
-              '• Carte Nationale d\'Identité (CNI)\n'
-              '• Passeport',
-            ),
+            content: Text('diaspo_list.verification.required_message'.tr),
             actions: [
               TextButton(
                 onPressed: () => Get.back(),
-                child: const Text('Plus tard'),
+                child: Text('diaspo_list.verification.later'.tr),
               ),
               ElevatedButton(
                 onPressed: () {
                   Get.back();
                   _showUploadVerificationBottomSheet();
                 },
-                child: const Text('Vérifier maintenant'),
+                child: Text('diaspo_list.verification.verify_now'.tr),
               ),
             ],
           ),
@@ -510,7 +496,7 @@ class DiaspoListController extends GetxController {
     // d'état. Le bouton d'envoi reste épinglé en bas, toujours visible.
     AppSheet.show(
       AppSheet(
-        title: 'Vérification d\'identité',
+        title: 'diaspo_list.verification.sheet_title'.tr,
         footer: Obx(
           () => SizedBox(
             width: double.infinity,
@@ -540,9 +526,9 @@ class DiaspoListController extends GetxController {
                         ),
                       ),
                     )
-                  : const Text(
-                      'Soumettre pour vérification',
-                      style: TextStyle(
+                  : Text(
+                      'diaspo_list.verification.submit'.tr,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -555,15 +541,15 @@ class DiaspoListController extends GetxController {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sélectionnez votre type de document et téléchargez les photos recto/verso',
+              'diaspo_list.verification.sheet_intro'.tr,
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
 
             // Document type selection
-            const Text(
-              'Type de document',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              'diaspo_list.verification.document_type'.tr,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Obx(
@@ -600,7 +586,7 @@ class DiaspoListController extends GetxController {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'CNI',
+                              'diaspo_list.verification.id_card'.tr,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -611,7 +597,7 @@ class DiaspoListController extends GetxController {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Carte Nationale',
+                              'diaspo_list.verification.id_card_subtitle'.tr,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 11,
@@ -656,7 +642,7 @@ class DiaspoListController extends GetxController {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Passeport',
+                              'diaspo_list.verification.passport'.tr,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -668,7 +654,7 @@ class DiaspoListController extends GetxController {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Passport',
+                              'diaspo_list.verification.passport_subtitle'.tr,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 11,
@@ -691,9 +677,9 @@ class DiaspoListController extends GetxController {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Photos du document',
-                          style: TextStyle(
+                        Text(
+                          'diaspo_list.verification.document_photos'.tr,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -702,7 +688,7 @@ class DiaspoListController extends GetxController {
 
                         // Recto
                         _buildDocumentUploadCard(
-                          title: 'Recto',
+                          title: 'diaspo_list.verification.front'.tr,
                           icon: Icons.badge,
                           image: documentFrontImage.value,
                           onUpload: () => _pickDocumentImage(isBack: false),
@@ -712,7 +698,7 @@ class DiaspoListController extends GetxController {
 
                         // Verso
                         _buildDocumentUploadCard(
-                          title: 'Verso',
+                          title: 'diaspo_list.verification.back'.tr,
                           icon: Icons.badge_outlined,
                           image: documentBackImage.value,
                           onUpload: () => _pickDocumentImage(isBack: true),
@@ -762,7 +748,7 @@ class DiaspoListController extends GetxController {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Appuyez pour ajouter',
+                    'diaspo_list.verification.tap_to_add'.tr,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -822,8 +808,10 @@ class DiaspoListController extends GetxController {
   /// partagé (appareil photo / galerie aux couleurs Asso), compatible web + mobile.
   Future<void> _pickDocumentImage({required bool isBack}) async {
     final XFile? image = await MediaHelper.pickBrandedImage(
-      title: isBack ? 'Verso du document' : 'Recto du document',
-      subtitle: 'Photo nette, lisible et sans reflet',
+      title: isBack
+          ? 'diaspo_list.verification.document_back'.tr
+          : 'diaspo_list.verification.document_front'.tr,
+      subtitle: 'diaspo_list.verification.photo_hint'.tr,
       imageQuality: 85,
     );
 
@@ -857,11 +845,13 @@ class DiaspoListController extends GetxController {
       Get.back(); // Close bottom sheet
 
       final docTypeName = selectedDocumentType.value == 'cni'
-          ? 'CNI'
-          : 'Passeport';
+          ? 'diaspo_list.verification.id_card'.tr
+          : 'diaspo_list.verification.passport'.tr;
       Get.snackbar(
-        'Succès',
-        'Votre $docTypeName a été soumis pour vérification. Vous recevrez une notification dans 24-48h.',
+        'diaspo_list.success'.tr,
+        'diaspo_list.verification.submitted_message'.trParams({
+          'document': docTypeName,
+        }),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
@@ -873,7 +863,7 @@ class DiaspoListController extends GetxController {
     } catch (e) {
       isUploadingDocument.value = false;
       Get.snackbar(
-        'Erreur',
+        'diaspo_list.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,

@@ -101,7 +101,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
   Widget _buildSheet(BuildContext context, bool keyboardOpen) {
     return AppSheet(
-      title: _currentStep == 1 ? 'Recharger mon wallet' : 'Montant à recharger',
+      title: _currentStep == 1
+          ? 'wallet.recharge.title'.tr
+          : 'wallet.recharge.amount_title'.tr,
       // La flèche ramène au choix de la méthode, la croix referme la feuille.
       onBack: _currentStep == 2 ? _backToMethodChoice : null,
       // `pop` et non `maybePop` : la garde ci-dessus renverrait la croix à
@@ -182,7 +184,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Méthode',
+                'wallet.recharge.step_method'.tr,
                 style: TextStyle(
                   fontSize: 12,
                   color: _currentStep >= 1
@@ -224,7 +226,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Montant',
+              'wallet.recharge.step_amount'.tr,
               style: TextStyle(
                 fontSize: 12,
                 color: _currentStep >= 2
@@ -261,15 +263,15 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         _buildMethodOption(
           context: context,
           logoPath: 'assets/images/visa.png',
-          title: 'Carte bancaire',
+          title: 'wallet.recharge.bank_card'.tr,
           subtitle: 'VISA, MasterCard',
           color: const Color(0xFF1A1F71),
           onTap: () {
             // Carte désactivée côté plateforme : on l'explique au lieu d'échouer plus loin.
             if (!walletController.stripeConfigured.value) {
               Get.snackbar(
-                'Carte indisponible',
-                'La recharge par carte est momentanément indisponible. Utilisez le Mobile Money.',
+                'wallet.recharge.card_unavailable_title'.tr,
+                'wallet.recharge.card_unavailable_message'.tr,
                 backgroundColor: AppThemeSystem.warningColor,
                 colorText: AppThemeSystem.whiteColor,
               );
@@ -377,9 +379,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                   color: AppThemeSystem.infoColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Bientôt',
-                  style: TextStyle(
+                child: Text(
+                  'wallet.recharge.coming_soon'.tr,
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppThemeSystem.infoColor,
@@ -407,11 +409,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   String _getPaymentButtonText() {
     switch (_selectedMethod) {
       case 'kpay':
-        return 'Confirmer la recharge';
+        return 'wallet.recharge.confirm_recharge'.tr;
       case 'card':
-        return 'Payer par carte';
+        return 'wallet.recharge.pay_by_card'.tr;
       default:
-        return 'Confirmer le paiement';
+        return 'wallet.recharge.confirm_payment'.tr;
     }
   }
 
@@ -432,13 +434,14 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             ),
             decoration: InputDecoration(
               labelText: _selectedMethod == 'kpay'
-                  ? 'Montant (${_currencyLabel(_kpayCurrency)})'
-                  : 'Montant (FCFA)',
+                  ? 'wallet.recharge.amount_label'
+                      .trParams({'currency': _currencyLabel(_kpayCurrency)})
+                  : 'wallet.recharge.amount_label'.trParams({'currency': 'FCFA'}),
               // Le libellé reste au-dessus du champ, même vide : en
               // placeholder, il disparaissait à la première frappe et on ne
               // savait plus dans quelle devise on saisissait.
               floatingLabelBehavior: FloatingLabelBehavior.always,
-              hintText: 'Ex. 10 000',
+              hintText: 'wallet.recharge.amount_hint'.tr,
               prefixIcon: const Icon(Icons.attach_money),
               filled: true,
               fillColor: AppThemeSystem.getSurfaceColor(context),
@@ -451,11 +454,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer un montant';
+                return 'wallet.recharge.amount_required'.tr;
               }
               final amount = double.tryParse(value);
               if (amount == null || amount <= 0) {
-                return 'Montant invalide';
+                return 'wallet.recharge.amount_invalid'.tr;
               }
               return null;
             },
@@ -539,8 +542,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         // Mobile Money via KPay (pays + opérateur choisis dans le sélecteur)
         if (!_kpayValid || _kpayProvider == null || _kpayPhone == null) {
           Get.snackbar(
-            'Champs requis',
-            'Sélectionnez votre opérateur et saisissez un numéro valide.',
+            'wallet.recharge.fields_required_title'.tr,
+            'wallet.recharge.fields_required_message'.tr,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -581,8 +584,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           Get.toNamed(Routes.WALLET_HISTORY);
         } else {
           Get.snackbar(
-            'Erreur',
-            result['message'] ?? 'Échec de la recharge',
+            'wallet.recharge.error'.tr,
+            result['message'] ?? 'wallet.recharge.failed'.tr,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -591,8 +594,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         // Carte bancaire — recharge via Stripe natif (Payment Sheet).
         if (!StripeNativeService.isSupported) {
           Get.snackbar(
-            'Indisponible',
-            "Le paiement par carte est disponible sur l'application mobile.",
+            'wallet.recharge.unavailable_title'.tr,
+            'wallet.recharge.card_mobile_only'.tr,
             backgroundColor: AppThemeSystem.warningColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -609,8 +612,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
         if (result['success'] != true) {
           Get.snackbar(
-            'Erreur',
-            result['message'] ?? 'Échec de la recharge',
+            'wallet.recharge.error'.tr,
+            result['message'] ?? 'wallet.recharge.failed'.tr,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -626,8 +629,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             clientSecret == null || clientSecret.isEmpty ||
             publishableKey == null || publishableKey.isEmpty) {
           Get.snackbar(
-            'Erreur',
-            'Données de paiement carte indisponibles',
+            'wallet.recharge.error'.tr,
+            'wallet.recharge.card_data_unavailable'.tr,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -644,8 +647,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
         if (!ok) {
           Get.snackbar(
-            'Annulé',
-            'Paiement par carte annulé',
+            'wallet.recharge.cancelled_title'.tr,
+            'wallet.recharge.card_cancelled'.tr,
             backgroundColor: AppThemeSystem.warningColor,
             colorText: AppThemeSystem.whiteColor,
           );
@@ -660,8 +663,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         // Fermer le bottom sheet et informer.
         Navigator.of(context).pop();
         Get.snackbar(
-          'Paiement en cours',
-          'Votre recharge est en cours de confirmation. Vous serez notifié.',
+          'wallet.recharge.pending_title'.tr,
+          'wallet.recharge.pending_message'.tr,
           backgroundColor: AppThemeSystem.successColor,
           colorText: AppThemeSystem.whiteColor,
           duration: const Duration(seconds: 5),
@@ -673,8 +676,8 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     } catch (e) {
       print('[RechargeBottomSheet] Error: $e');
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'wallet.recharge.error'.tr,
+        'wallet.recharge.generic_error'.tr,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: AppThemeSystem.whiteColor,
       );
@@ -708,10 +711,10 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           children: [
             Text(providerEmoji, style: const TextStyle(fontSize: 24)),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Paiement initié',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                'wallet.recharge.ussd_title'.tr,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -722,7 +725,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Un code USSD a été envoyé sur le numéro :',
+                'wallet.recharge.ussd_sent_to'.tr,
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
               const SizedBox(height: 8),
@@ -757,17 +760,17 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           color: AppThemeSystem.infoColor,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Instructions',
-                          style: TextStyle(
+                          'wallet.ussd.instructions_title'.tr,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: AppThemeSystem.infoColor,
@@ -778,17 +781,18 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                     const SizedBox(height: 12),
                     _buildInstructionStep(
                       '1',
-                      'Composez le code USSD reçu sur votre téléphone',
+                      'wallet.recharge.ussd_step1'.tr,
                     ),
                     const SizedBox(height: 8),
                     _buildInstructionStep(
                       '2',
-                      'Entrez votre code PIN $providerName',
+                      'wallet.recharge.ussd_step2'.trParams({'provider': providerName}),
                     ),
                     const SizedBox(height: 8),
                     _buildInstructionStep(
                       '3',
-                      'Confirmez le paiement de ${amount.toStringAsFixed(0)} FCFA',
+                      'wallet.recharge.ussd_step3'
+                          .trParams({'amount': amount.toStringAsFixed(0)}),
                     ),
                   ],
                 ),
@@ -800,18 +804,18 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                   color: AppThemeSystem.successColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.notifications_active_outlined,
                       color: AppThemeSystem.successColor,
                       size: 20,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Vous recevrez une notification dès que le paiement sera confirmé.',
-                        style: TextStyle(
+                        'wallet.recharge.ussd_notify'.tr,
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppThemeSystem.successColor,
                         ),
@@ -838,9 +842,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Compris',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                'wallet.recharge.understood'.tr,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

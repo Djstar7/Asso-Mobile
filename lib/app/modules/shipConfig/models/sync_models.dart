@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -56,11 +57,11 @@ extension PricingTypeExtension on PricingType {
   String get label {
     switch (this) {
       case PricingType.fixed:
-        return 'Prix fixe';
+        return 'ship_config.pricing.fixed'.tr;
       case PricingType.weightCategory:
-        return 'Par catégorie de poids';
+        return 'ship_config.pricing.weight_category'.tr;
       case PricingType.volumetricWeight:
-        return 'Poids volumétrique';
+        return 'ship_config.pricing.volumetric'.tr;
     }
   }
 }
@@ -210,16 +211,16 @@ class DeliveryPricelist {
     switch (pricingType) {
       case PricingType.fixed:
         final price = pricingData['price'] ?? 0;
-        return 'Prix fixe: ${price} FCFA';
+        return 'ship_config.pricing.fixed_desc'.trParams({'price': '$price'});
 
       case PricingType.weightCategory:
         final categories = pricingData.entries
             .map((e) => '${e.key}: ${e.value} FCFA')
             .join(', ');
-        return 'Par catégorie: $categories';
+        return 'ship_config.pricing.category_desc'.trParams({'categories': categories});
 
       case PricingType.volumetricWeight:
-        return 'Poids volumétrique (L × l × h) / 139';
+        return 'ship_config.pricing.volumetric_desc'.tr;
     }
   }
 }
@@ -320,12 +321,17 @@ class DeliveryZone {
 class SyncProfileResponse {
   final bool success;
   final String message;
+
+  /// Code stable d'un refus (`already_synced`…) : le message, lui, suit la
+  /// langue de l'utilisateur.
+  final String? code;
   final DelivererCompany? company;
   final List<DeliveryZone>? zones;
 
   SyncProfileResponse({
     required this.success,
     required this.message,
+    this.code,
     this.company,
     this.zones,
   });
@@ -337,6 +343,7 @@ class SyncProfileResponse {
     return SyncProfileResponse(
       success: json['success'] as bool? ?? false,
       message: json['message'] as String? ?? '',
+      code: json['code'] as String?,
       company: data?['company'] != null
           ? DelivererCompany.fromJson(data!['company'] as Map<String, dynamic>)
           : null,

@@ -17,7 +17,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text("Modifier l'offre"),
+        title: Text('diaspo_edit.title'.tr),
         centerTitle: true,
       ),
       body: Column(
@@ -102,7 +102,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Étape 1/3: Itinéraire',
+              'diaspo_edit.step1_title'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.h4,
@@ -111,7 +111,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             ),
             SizedBox(height: elementSpacing * 0.5),
             Text(
-              'Indiquez votre trajet de voyage',
+              'diaspo_edit.step1_subtitle'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.body2,
@@ -126,7 +126,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                 const Icon(Icons.flight_takeoff, color: AppDesign.success),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
-                  'Départ',
+                  'diaspo_edit.departure'.tr,
                   style: AppThemeSystem.getTextStyle(
                     context,
                     FontSizeType.subtitle1,
@@ -139,14 +139,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             TextFormField(
               controller: controller.departureCountryController,
               decoration: InputDecoration(
-                labelText: 'Pays de départ',
-                hintText: 'Ex: France',
+                labelText: 'diaspo_edit.departure_country'.tr,
+                hintText: 'diaspo_edit.departure_country_hint'.tr,
                 prefixIcon: const Icon(Icons.flag),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le pays de départ';
+                  return 'diaspo_edit.departure_country_required'.tr;
                 }
                 return null;
               },
@@ -155,14 +155,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             TextFormField(
               controller: controller.departureCityController,
               decoration: InputDecoration(
-                labelText: 'Ville de départ',
-                hintText: 'Ex: Paris',
+                labelText: 'diaspo_edit.departure_city'.tr,
+                hintText: 'diaspo_edit.departure_city_hint'.tr,
                 prefixIcon: const Icon(Icons.location_city),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir la ville de départ';
+                  return 'diaspo_edit.departure_city_required'.tr;
                 }
                 return null;
               },
@@ -172,7 +172,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   onTap: () => controller.pickDepartureDate(context),
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Date et heure de départ',
+                      labelText: 'diaspo_edit.departure_datetime'.tr,
                       prefixIcon: const Icon(Icons.calendar_today),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
                     ),
@@ -195,7 +195,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                 const Icon(Icons.flight_land, color: AppDesign.danger),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
-                  'Arrivée',
+                  'diaspo_edit.arrival'.tr,
                   style: AppThemeSystem.getTextStyle(
                     context,
                     FontSizeType.subtitle1,
@@ -208,14 +208,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             TextFormField(
               controller: controller.arrivalCountryController,
               decoration: InputDecoration(
-                labelText: 'Pays d\'arrivée',
-                hintText: 'Ex: Cameroun',
+                labelText: 'diaspo_edit.arrival_country'.tr,
+                hintText: 'diaspo_edit.arrival_country_hint'.tr,
                 prefixIcon: const Icon(Icons.flag),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le pays d\'arrivée';
+                  return 'diaspo_edit.arrival_country_required'.tr;
                 }
                 return null;
               },
@@ -224,14 +224,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             TextFormField(
               controller: controller.arrivalCityController,
               decoration: InputDecoration(
-                labelText: 'Ville d\'arrivée',
-                hintText: 'Ex: Douala',
+                labelText: 'diaspo_edit.arrival_city'.tr,
+                hintText: 'diaspo_edit.arrival_city_hint'.tr,
                 prefixIcon: const Icon(Icons.location_city),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir la ville d\'arrivée';
+                  return 'diaspo_edit.arrival_city_required'.tr;
                 }
                 return null;
               },
@@ -241,8 +241,8 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   onTap: () {
                     if (controller.departureDateTime.value == null) {
                       Get.snackbar(
-                        'Attention',
-                        'Veuillez d\'abord sélectionner la date de départ',
+                        'diaspo_edit.warning'.tr,
+                        'diaspo_edit.select_departure_first'.tr,
                         snackPosition: SnackPosition.BOTTOM,
                       );
                       return;
@@ -251,7 +251,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   },
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Date et heure d\'arrivée',
+                      labelText: 'diaspo_edit.arrival_datetime'.tr,
                       prefixIcon: const Icon(Icons.calendar_today),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
                     ),
@@ -289,7 +289,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Étape 2/3: Tarification',
+              'diaspo_edit.step2_title'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.h4,
@@ -298,7 +298,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             ),
             SizedBox(height: elementSpacing * 0.5),
             Text(
-              'Définissez votre prix et la quantité disponible',
+              'diaspo_edit.step2_subtitle'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.body2,
@@ -312,8 +312,8 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Prix par kilo (${controller.currencySymbol})',
-                hintText: 'Ex: 13.00',
+                labelText: 'diaspo_edit.price_per_kg_label'.trParams({'symbol': controller.currencySymbol}),
+                hintText: 'diaspo_edit.price_hint'.tr,
                 prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: '${controller.currencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
@@ -323,11 +323,11 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le prix par kilo';
+                  return 'diaspo_edit.price_required'.tr;
                 }
                 final price = double.tryParse(value);
                 if (price == null || price <= 0) {
-                  return 'Veuillez saisir un prix valide';
+                  return 'diaspo_edit.price_invalid'.tr;
                 }
                 return null;
               },
@@ -338,8 +338,8 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Nombre de kilos disponibles',
-                hintText: 'Ex: 23',
+                labelText: 'diaspo_edit.available_kg_label'.tr,
+                hintText: 'diaspo_edit.kg_hint'.tr,
                 prefixIcon: const Icon(Icons.luggage),
                 suffixText: 'kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
@@ -349,11 +349,11 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
               },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le nombre de kilos';
+                  return 'diaspo_edit.kg_required'.tr;
                 }
                 final kg = double.tryParse(value);
                 if (kg == null || kg <= 0) {
-                  return 'Veuillez saisir une quantité valide';
+                  return 'diaspo_edit.kg_invalid'.tr;
                 }
                 return null;
               },
@@ -372,7 +372,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Revenus potentiels:',
+                      'diaspo_edit.potential_revenue'.tr,
                       style: AppThemeSystem.getTextStyle(
                         context,
                         FontSizeType.subtitle1,
@@ -420,7 +420,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Étape 3/3: Confirmation',
+            'diaspo_edit.step3_title'.tr,
             style: AppThemeSystem.getTextStyle(
               context,
               FontSizeType.h4,
@@ -429,7 +429,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
           ),
           SizedBox(height: elementSpacing * 0.5),
           Text(
-            'Vérifiez votre offre avant de publier',
+            'diaspo_edit.step3_subtitle'.tr,
             style: AppThemeSystem.getTextStyle(
               context,
               FontSizeType.body2,
@@ -486,14 +486,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   // Dates
                   _buildSummaryRow(
                     context,
-                    'Départ',
+                    'diaspo_edit.departure'.tr,
                     controller.formatDateTime(controller.departureDateTime.value),
                     Icons.calendar_today,
                   ),
                   SizedBox(height: elementSpacing * 0.5),
                   _buildSummaryRow(
                     context,
-                    'Arrivée',
+                    'diaspo_edit.arrival'.tr,
                     controller.formatDateTime(controller.arrivalDateTime.value),
                     Icons.calendar_today,
                   ),
@@ -502,14 +502,14 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                   // Pricing
                   _buildSummaryRow(
                     context,
-                    'Prix par kilo',
+                    'diaspo_edit.price_per_kg'.tr,
                     '${controller.pricePerKgController.text} ${controller.currencySymbol}/kg',
                     Icons.payments_outlined,
                   ),
                   SizedBox(height: elementSpacing * 0.5),
                   _buildSummaryRow(
                     context,
-                    'Kilos disponibles',
+                    'diaspo_edit.available_kg'.tr,
                     '${controller.availableKgController.text} kg',
                     Icons.luggage,
                   ),
@@ -533,7 +533,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                 SizedBox(width: elementSpacing),
                 Expanded(
                   child: Text(
-                    'Les modifications seront appliquées immédiatement',
+                    'diaspo_edit.changes_immediate'.tr,
                     style: AppThemeSystem.getTextStyle(
                       context,
                       FontSizeType.body2,
@@ -619,7 +619,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                     ),
                   ),
                   child: Text(
-                    'Précédent',
+                    'diaspo_edit.previous'.tr,
                     style: AppThemeSystem.getTextStyle(
                       context,
                       FontSizeType.button,
@@ -661,8 +661,8 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
                       )
                     : Text(
                         controller.currentStep.value < controller.totalSteps - 1
-                            ? 'Suivant'
-                            : 'Mettre à jour',
+                            ? 'diaspo_edit.next'.tr
+                            : 'diaspo_edit.update'.tr,
                         style: AppThemeSystem.getTextStyle(
                           context,
                           FontSizeType.button,

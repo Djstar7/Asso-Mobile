@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import '../services/locale_service.dart';
 
 /// La recherche d'adresse n'a pas pu joindre de service (réseau, blocage).
 class AddressSearchException implements Exception {
@@ -27,10 +28,10 @@ class AddressSearch {
   static http.Client Function() newClient = http.Client.new;
 
   static const _timeout = Duration(seconds: 10);
-  static const _headers = {
+  static Map<String, String> get _headers => {
     // Nominatim bloque les User-Agent génériques des bibliothèques HTTP.
     'User-Agent': 'AssoApp/1.0 (com.asso.asso)',
-    'Accept-Language': 'fr',
+    'Accept-Language': LocaleService.currentLanguage,
   };
 
   /// Adresses correspondant à [query], les plus proches de
@@ -54,7 +55,7 @@ class AddressSearch {
         Uri.https('photon.komoot.io', '/api/', {
           'q': q,
           'limit': '$limit',
-          'lang': 'fr',
+          'lang': LocaleService.currentLanguage,
           if (nearLatitude != null && nearLongitude != null) ...{
             'lat': '$nearLatitude',
             'lon': '$nearLongitude',
@@ -81,7 +82,7 @@ class AddressSearch {
           'format': 'json',
           'addressdetails': '1',
           'limit': '$limit',
-          'accept-language': 'fr',
+          'accept-language': LocaleService.currentLanguage,
         }),
       );
       return (data as List)
@@ -107,7 +108,7 @@ class AddressSearch {
           'lon': '$longitude',
           'zoom': '18',
           'addressdetails': '1',
-          'accept-language': 'fr',
+          'accept-language': LocaleService.currentLanguage,
         }),
       );
       final result = fromNominatim(data as Map);
@@ -119,7 +120,7 @@ class AddressSearch {
         Uri.https('photon.komoot.io', '/reverse', {
           'lat': '$latitude',
           'lon': '$longitude',
-          'lang': 'fr',
+          'lang': LocaleService.currentLanguage,
           'limit': '1',
         }),
       );

@@ -104,7 +104,7 @@ class StripeConnectController extends GetxController {
       // utilisées en environnement de test (01/01/1901).
       firstDate: DateTime(1900),
       lastDate: majority,
-      helpText: 'Date de naissance',
+      helpText: 'stripe_connect.birth_date'.tr,
     );
 
     if (picked != null) birthDate.value = picked;
@@ -120,10 +120,10 @@ class StripeConnectController extends GetxController {
       } else {
         loadError.value = res.message.isNotEmpty
             ? res.message
-            : "Impossible de récupérer l'état de votre compte de virement.";
+            : 'stripe_connect.errors.status_load_failed'.tr;
       }
     } catch (_) {
-      loadError.value = "Connexion au serveur impossible. Vérifiez votre réseau puis réessayez.";
+      loadError.value = 'stripe_connect.errors.server_unreachable'.tr;
     } finally {
       isLoading.value = false;
     }
@@ -169,8 +169,8 @@ class StripeConnectController extends GetxController {
 
     if (birthDate.value == null) {
       Get.snackbar(
-        'Date de naissance requise',
-        'Notre partenaire bancaire exige votre date de naissance pour activer les virements.',
+        'stripe_connect.birth_date_required_title'.tr,
+        'stripe_connect.birth_date_required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -195,17 +195,17 @@ class StripeConnectController extends GetxController {
         if (res.data != null) _applyStatus(res.data!);
         ibanController.clear();
         Get.snackbar(
-          'Informations envoyées',
+          'stripe_connect.submitted_title'.tr,
           res.message.isNotEmpty
               ? res.message
-              : 'Votre compte de virement sera vérifié sous 24-48h.',
+              : 'stripe_connect.submitted_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
         Get.snackbar(
-          'Erreur',
+          'stripe_connect.error'.tr,
           _friendlyError(res.message),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
@@ -214,8 +214,8 @@ class StripeConnectController extends GetxController {
       }
     } catch (_) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue. Réessayez.',
+        'stripe_connect.error'.tr,
+        'stripe_connect.errors.generic_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -230,7 +230,7 @@ class StripeConnectController extends GetxController {
   /// message clair. Filet de sécurité pour les backends pas encore à jour.
   String _friendlyError(String message) {
     final raw = message.trim();
-    if (raw.isEmpty) return "Impossible d'enregistrer vos informations bancaires. Réessayez.";
+    if (raw.isEmpty) return 'stripe_connect.errors.save_failed'.tr;
 
     final low = raw.toLowerCase();
     const technicalMarkers = [
@@ -254,13 +254,12 @@ class StripeConnectController extends GetxController {
           low.contains('network') ||
           low.contains('timeout') ||
           low.contains('connection')) {
-        return "Le service de virement bancaire est momentanément indisponible. "
-            "Vérifiez votre connexion et réessayez dans quelques instants.";
+        return 'stripe_connect.errors.service_unavailable'.tr;
       }
       if (low.contains('iban') || low.contains('bank') || low.contains('account_number')) {
-        return "L'IBAN saisi semble invalide. Vérifiez-le puis réessayez.";
+        return 'stripe_connect.errors.iban_seems_invalid'.tr;
       }
-      return "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer plus tard.";
+      return 'stripe_connect.errors.save_error_later'.tr;
     }
 
     // Message déjà propre (renvoyé par le backend à jour) : on l'affiche tel quel.
@@ -269,43 +268,43 @@ class StripeConnectController extends GetxController {
 
   // ---- Validateurs ----
   String? validateCountry(String? v) {
-    if (v == null || v.trim().length != 2) return 'Code pays à 2 lettres (ex. FR)';
+    if (v == null || v.trim().length != 2) return 'stripe_connect.validation.country_code'.tr;
     return null;
   }
 
   String? validateIban(String? v) {
     final iban = (v ?? '').replaceAll(' ', '').toUpperCase();
-    if (iban.isEmpty) return 'IBAN requis';
+    if (iban.isEmpty) return 'stripe_connect.validation.iban_required'.tr;
     if (!RegExp(r'^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$').hasMatch(iban)) {
-      return 'IBAN invalide';
+      return 'stripe_connect.validation.iban_invalid'.tr;
     }
     return null;
   }
 
   String? validateHolder(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Nom du titulaire requis';
+    if (v == null || v.trim().isEmpty) return 'stripe_connect.validation.holder_required'.tr;
     return null;
   }
 
   String? validatePhone(String? v) {
     final phone = (v ?? '').trim();
-    if (phone.isEmpty) return 'Téléphone requis';
-    if (phone.replaceAll(RegExp(r'[^0-9]'), '').length < 8) return 'Numéro incomplet';
+    if (phone.isEmpty) return 'stripe_connect.validation.phone_required'.tr;
+    if (phone.replaceAll(RegExp(r'[^0-9]'), '').length < 8) return 'stripe_connect.validation.phone_incomplete'.tr;
     return null;
   }
 
   String? validateAddressLine(String? v) {
-    if (v == null || v.trim().length < 4) return 'Adresse requise';
+    if (v == null || v.trim().length < 4) return 'stripe_connect.validation.address_required'.tr;
     return null;
   }
 
   String? validateCity(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Ville requise';
+    if (v == null || v.trim().isEmpty) return 'stripe_connect.validation.city_required'.tr;
     return null;
   }
 
   String? validatePostalCode(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Code postal requis';
+    if (v == null || v.trim().isEmpty) return 'stripe_connect.validation.postal_required'.tr;
     return null;
   }
 }

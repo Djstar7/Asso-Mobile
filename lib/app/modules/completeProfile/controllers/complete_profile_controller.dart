@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/widgets/image_source_sheet.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../profile/controllers/profile_controller.dart';
@@ -14,6 +16,15 @@ class CompleteProfileController extends GetxController {
   final Rx<DateTime?> birthDate = Rx<DateTime?>(null);
   final RxString address = ''.obs;
   final RxBool isLoading = false.obs;
+
+  /// Photo de profil choisie, envoyée avec le reste du formulaire.
+  final Rx<XFile?> avatarImage = Rx<XFile?>(null);
+  final ImagePicker _picker = ImagePicker();
+
+  /// Une pastille de profil n'est jamais affichée au-delà de quelques
+  /// centaines de pixels ; 1024 px garde de la marge pour les écrans denses
+  /// et reste sous la limite de 2 Mo du serveur.
+  static const double avatarMaxSide = 1024;
   late final String returnRoute;
 
   @override
@@ -62,8 +73,8 @@ class CompleteProfileController extends GetxController {
   Future<void> saveProfile() async {
     if (firstNameController.text.isEmpty || lastNameController.text.isEmpty) {
       Get.snackbar(
-        'Champs requis',
-        'Veuillez remplir votre prénom et nom',
+        'complete_profile.required_title'.tr,
+        'complete_profile.required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -97,15 +108,18 @@ class CompleteProfileController extends GetxController {
         data['address'] = address.value;
       }
 
-      final response = await AuthService.updateProfile(data);
+      final response = await AuthService.updateProfile(
+        data,
+        avatar: avatarImage.value,
+      );
 
       if (response.success) {
         // Le cache est déjà mis à jour dans AuthService.updateProfile
         // Mais on va forcer un refresh du profil si on revient en arrière
 
         Get.snackbar(
-          'Profil complété',
-          'Votre profil a été mis à jour avec succès',
+          'complete_profile.completed_title'.tr,
+          'complete_profile.completed_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -130,7 +144,7 @@ class CompleteProfileController extends GetxController {
         navigateBack();
       } else {
         Get.snackbar(
-          'Erreur',
+          'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
@@ -141,8 +155,8 @@ class CompleteProfileController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue',
+        'common.error'.tr,
+        'complete_profile.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -151,6 +165,35 @@ class CompleteProfileController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Choisit la photo de profil avec la même feuille que les photos produit.
+  Future<void> pickAvatar(BuildContext context) async {
+    final source = await showImageSourceSheet(
+      context,
+      title: 'complete_profile.photo_sheet_title'.tr,
+      gallerySubtitle: 'complete_profile.photo_gallery_subtitle'.tr,
+    );
+    if (source == null) return;
+
+    try {
+      final image = await _picker.pickImage(
+        source: source,
+        maxWidth: avatarMaxSide,
+        maxHeight: avatarMaxSide,
+        imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front,
+      );
+      if (image != null) avatarImage.value = image;
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        source == ImageSource.camera
+            ? 'complete_profile.photo_camera_failed'.tr
+            : 'complete_profile.photo_pick_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

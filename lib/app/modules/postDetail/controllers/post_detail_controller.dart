@@ -41,8 +41,8 @@ class PostDetailController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger le post',
+        'post_detail.error'.tr,
+        'post_detail.load_post_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -64,8 +64,8 @@ class PostDetailController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de charger les commentaires',
+        'post_detail.error'.tr,
+        'post_detail.load_comments_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -89,7 +89,7 @@ class PostDetailController extends GetxController {
 
   void _showError(String message) {
     Get.snackbar(
-      'Erreur',
+      'post_detail.error'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppDesign.danger,
@@ -118,7 +118,7 @@ class PostDetailController extends GetxController {
       if (!response.success) {
         _showError(response.message.isNotEmpty
             ? response.message
-            : 'Impossible d\'ajouter le commentaire');
+            : 'post_detail.add_comment_error'.tr);
         return false;
       }
 
@@ -126,15 +126,15 @@ class PostDetailController extends GetxController {
       await fetchComments();
 
       Get.snackbar(
-        'Succès',
-        parentId == null ? 'Commentaire ajouté' : 'Réponse ajoutée',
+        'post_detail.success'.tr,
+        parentId == null ? 'post_detail.comment_added'.tr : 'post_detail.reply_added'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
       );
       return true;
     } catch (e) {
-      _showError('Impossible d\'ajouter le commentaire');
+      _showError('post_detail.add_comment_error'.tr);
       return false;
     } finally {
       isSubmitting.value = false;
@@ -145,13 +145,13 @@ class PostDetailController extends GetxController {
   Future<void> deleteComment(PostComment comment) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Supprimer le commentaire ?'),
-        content: const Text('Cette action est définitive.'),
+        title: Text('post_detail.delete_comment_title'.tr),
+        content: Text('post_detail.delete_comment_message'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Get.back(result: false), child: Text('post_detail.cancel'.tr)),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Supprimer', style: TextStyle(color: AppDesign.danger)),
+            child: Text('post_detail.delete'.tr, style: const TextStyle(color: AppDesign.danger)),
           ),
         ],
       ),
@@ -161,7 +161,7 @@ class PostDetailController extends GetxController {
     try {
       final response = await PostService.deleteComment(postId: postId, commentId: comment.id);
       if (!response.success) {
-        _showError(response.message.isNotEmpty ? response.message : 'Suppression impossible');
+        _showError(response.message.isNotEmpty ? response.message : 'post_detail.delete_error'.tr);
         return;
       }
       _applyCommentsCount(
@@ -170,7 +170,7 @@ class PostDetailController extends GetxController {
       );
       await fetchComments();
     } catch (_) {
-      _showError('Suppression impossible');
+      _showError('post_detail.delete_error'.tr);
     }
   }
 
@@ -196,8 +196,8 @@ class PostDetailController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de réagir au commentaire',
+        'post_detail.error'.tr,
+        'post_detail.react_comment_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -221,8 +221,8 @@ class PostDetailController extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Impossible de réagir au post',
+        'post_detail.error'.tr,
+        'post_detail.react_post_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,

@@ -64,11 +64,11 @@ class _PaymentWebViewState extends State<PaymentWebView> {
               return NavigationDecision.prevent;
             } else if (request.url.startsWith('flutter://payment-cancelled')) {
               print('[PaymentWebView] Payment cancelled via Flutter URL');
-              _handlePaymentFailure('Paiement annulé');
+              _handlePaymentFailure('wallet.webview.cancelled'.tr);
               return NavigationDecision.prevent;
             } else if (request.url.startsWith('flutter://payment-error')) {
               print('[PaymentWebView] Payment error via Flutter URL');
-              _handlePaymentFailure('Une erreur s\'est produite');
+              _handlePaymentFailure('wallet.webview.error_occurred'.tr);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
@@ -100,12 +100,12 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     // paiement se fait côté serveur (webhook + polling) ; ici on ne fait que
     // clôturer la WebView au bon moment.
     if (url.contains('/payment/success') || url.contains('status=success')) {
-      _handlePaymentSuccess('Paiement effectué');
+      _handlePaymentSuccess('wallet.webview.payment_done'.tr);
     } else if (url.contains('/payment/cancel') ||
         url.contains('/payment/failed') ||
         url.contains('status=failed') ||
         url.contains('status=cancel')) {
-      _handlePaymentFailure('Paiement annulé ou échoué');
+      _handlePaymentFailure('wallet.webview.cancelled_or_failed'.tr);
     }
   }
 
@@ -130,11 +130,12 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
       if (success) {
         final amount = data['amount']?.toString() ?? '';
-        _handlePaymentSuccess('Paiement réussi! +$amount FCFA crédités');
+        _handlePaymentSuccess(
+            'wallet.webview.success_credited'.trParams({'amount': '$amount'}));
       } else if (cancelled) {
-        _handlePaymentFailure('Paiement annulé');
+        _handlePaymentFailure('wallet.webview.cancelled'.tr);
       } else if (error) {
-        final errorMessage = data['message']?.toString() ?? 'Une erreur s\'est produite';
+        final errorMessage = data['message']?.toString() ?? 'wallet.webview.error_occurred'.tr;
         _handlePaymentFailure(errorMessage);
       }
     } catch (e) {
@@ -199,7 +200,8 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         final amount = uri.queryParameters['amount'];
 
         print('[PaymentWebView] Payment success: ID=$paymentId, Amount=$amount');
-        _handlePaymentSuccess('Paiement réussi! +$amount FCFA crédités');
+        _handlePaymentSuccess(
+            'wallet.webview.success_credited'.trParams({'amount': '$amount'}));
       }
     } catch (e) {
       print('[PaymentWebView] Error handling Flutter URL: $e');
@@ -212,7 +214,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     } else {
       _close({'success': true, 'message': message});
       Get.snackbar(
-        'Succès',
+        'wallet.webview.success_title'.tr,
         message,
         backgroundColor: AppThemeSystem.successColor,
         colorText: AppThemeSystem.whiteColor,
@@ -227,7 +229,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     } else {
       _close({'success': false, 'message': message});
       Get.snackbar(
-        'Échec',
+        'wallet.webview.failure_title'.tr,
         message,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: AppThemeSystem.whiteColor,
@@ -242,10 +244,10 @@ class _PaymentWebViewState extends State<PaymentWebView> {
       appBar: AppBar(
         title: Text(
           widget.paymentMethod == 'paypal'
-              ? 'Paiement PayPal'
+              ? 'wallet.webview.title_paypal'.tr
               : widget.paymentMethod == 'stripe'
-                  ? 'Paiement par carte'
-                  : 'Paiement Mobile Money',
+                  ? 'wallet.webview.title_card'.tr
+                  : 'wallet.webview.title_mobile_money'.tr,
         ),
         centerTitle: true,
         backgroundColor: AppThemeSystem.primaryColor,
@@ -275,7 +277,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Chargement du paiement...',
+                          'wallet.webview.loading'.tr,
                           style: TextStyle(
                             fontSize: 16,
                             color: context.secondaryTextColor,
@@ -314,17 +316,17 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     final cancel = await Get.dialog<bool>(
       Builder(
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Annuler le paiement ?'),
-          content: const Text('Êtes-vous sûr de vouloir annuler ce paiement ?'),
+          title: Text('wallet.webview.cancel_title'.tr),
+          content: Text('wallet.webview.cancel_message'.tr),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Non'),
+              child: Text('wallet.webview.no'.tr),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: Text(
-                'Oui, annuler',
+                'wallet.webview.yes_cancel'.tr,
                 style: TextStyle(color: AppThemeSystem.errorColor),
               ),
             ),
@@ -333,7 +335,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
       ),
     );
     if (cancel == true) {
-      _close({'success': false, 'message': 'Paiement annulé par l\'utilisateur'});
+      _close({'success': false, 'message': 'wallet.webview.cancelled_by_user'.tr});
     }
   }
 }

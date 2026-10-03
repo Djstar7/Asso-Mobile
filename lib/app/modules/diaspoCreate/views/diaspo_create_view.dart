@@ -17,7 +17,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Créer une offre'),
+        title: Text('diaspo_create.title'.tr),
         centerTitle: true,
       ),
       body: Column(
@@ -102,7 +102,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Étape 1/3: Itinéraire',
+              'diaspo_create.step1_title'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.h4,
@@ -111,7 +111,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             ),
             SizedBox(height: elementSpacing * 0.5),
             Text(
-              'Indiquez votre trajet de voyage',
+              'diaspo_create.step1_subtitle'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.body2,
@@ -126,7 +126,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                 const Icon(Icons.flight_takeoff, color: AppDesign.success),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
-                  'Départ',
+                  'diaspo_create.departure'.tr,
                   style: AppThemeSystem.getTextStyle(
                     context,
                     FontSizeType.subtitle1,
@@ -141,17 +141,20 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   readOnly: true,
                   onTap: () => controller.pickCountry(isDeparture: true),
                   decoration: InputDecoration(
-                    labelText: 'Pays de départ',
-                    hintText: 'Sélectionnez un pays',
+                    labelText: 'diaspo_create.departure_country'.tr,
+                    hintText: 'diaspo_create.select_country_hint'.tr,
                     prefixIcon: const Icon(Icons.flag),
                     suffixIcon: const Icon(Icons.arrow_drop_down),
                     helperText:
-                        'Devise de l\'offre : ${controller.selectedCurrencyCode.value} (${controller.selectedCurrencySymbol.value})',
+                        'diaspo_create.offer_currency'.trParams({
+                      'code': controller.selectedCurrencyCode.value,
+                      'symbol': controller.selectedCurrencySymbol.value,
+                    }),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Veuillez sélectionner le pays de départ';
+                      return 'diaspo_create.departure_country_required'.tr;
                     }
                     return null;
                   },
@@ -160,14 +163,14 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             TextFormField(
               controller: controller.departureCityController,
               decoration: InputDecoration(
-                labelText: 'Ville de départ',
-                hintText: 'Ex: Paris',
+                labelText: 'diaspo_create.departure_city'.tr,
+                hintText: 'diaspo_create.departure_city_hint'.tr,
                 prefixIcon: const Icon(Icons.location_city),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir la ville de départ';
+                  return 'diaspo_create.departure_city_required'.tr;
                 }
                 return null;
               },
@@ -177,7 +180,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   onTap: () => controller.pickDepartureDate(context),
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Date et heure de départ',
+                      labelText: 'diaspo_create.departure_datetime'.tr,
                       prefixIcon: const Icon(Icons.calendar_today),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
                     ),
@@ -200,7 +203,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                 const Icon(Icons.flight_land, color: AppDesign.danger),
                 SizedBox(width: elementSpacing * 0.5),
                 Text(
-                  'Arrivée',
+                  'diaspo_create.arrival'.tr,
                   style: AppThemeSystem.getTextStyle(
                     context,
                     FontSizeType.subtitle1,
@@ -215,15 +218,15 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               readOnly: true,
               onTap: () => controller.pickCountry(isDeparture: false),
               decoration: InputDecoration(
-                labelText: 'Pays d\'arrivée',
-                hintText: 'Sélectionnez un pays',
+                labelText: 'diaspo_create.arrival_country'.tr,
+                hintText: 'diaspo_create.select_country_hint'.tr,
                 prefixIcon: const Icon(Icons.flag),
                 suffixIcon: const Icon(Icons.arrow_drop_down),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le pays d\'arrivée';
+                  return 'diaspo_create.arrival_country_required'.tr;
                 }
                 return null;
               },
@@ -232,14 +235,14 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             TextFormField(
               controller: controller.arrivalCityController,
               decoration: InputDecoration(
-                labelText: 'Ville d\'arrivée',
-                hintText: 'Ex: Douala',
+                labelText: 'diaspo_create.arrival_city'.tr,
+                hintText: 'diaspo_create.arrival_city_hint'.tr,
                 prefixIcon: const Icon(Icons.location_city),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir la ville d\'arrivée';
+                  return 'diaspo_create.arrival_city_required'.tr;
                 }
                 return null;
               },
@@ -249,8 +252,8 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   onTap: () {
                     if (controller.departureDateTime.value == null) {
                       Get.snackbar(
-                        'Attention',
-                        'Veuillez d\'abord sélectionner la date de départ',
+                        'diaspo_create.warning'.tr,
+                        'diaspo_create.select_departure_first'.tr,
                         snackPosition: SnackPosition.BOTTOM,
                       );
                       return;
@@ -259,7 +262,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   },
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Date et heure d\'arrivée',
+                      labelText: 'diaspo_create.arrival_datetime'.tr,
                       prefixIcon: const Icon(Icons.calendar_today),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
                     ),
@@ -297,7 +300,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Étape 2/3: Tarification',
+              'diaspo_create.step2_title'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.h4,
@@ -306,7 +309,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
             ),
             SizedBox(height: elementSpacing * 0.5),
             Text(
-              'Définissez votre prix et la quantité disponible',
+              'diaspo_create.step2_subtitle'.tr,
               style: AppThemeSystem.getTextStyle(
                 context,
                 FontSizeType.body2,
@@ -320,8 +323,8 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Prix par kilo (${controller.offerCurrencySymbol})',
-                hintText: 'Ex: 13.00',
+                labelText: 'diaspo_create.price_per_kg_label'.trParams({'symbol': controller.offerCurrencySymbol}),
+                hintText: 'diaspo_create.price_hint'.tr,
                 prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: '${controller.offerCurrencySymbol}/kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
@@ -331,11 +334,11 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le prix par kilo';
+                  return 'diaspo_create.price_required'.tr;
                 }
                 final price = double.tryParse(value);
                 if (price == null || price <= 0) {
-                  return 'Veuillez saisir un prix valide';
+                  return 'diaspo_create.price_invalid'.tr;
                 }
                 return null;
               },
@@ -346,8 +349,8 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
               decoration: InputDecoration(
-                labelText: 'Nombre de kilos disponibles',
-                hintText: 'Ex: 23',
+                labelText: 'diaspo_create.available_kg_label'.tr,
+                hintText: 'diaspo_create.kg_hint'.tr,
                 prefixIcon: const Icon(Icons.luggage),
                 suffixText: 'kg',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius)),
@@ -357,11 +360,11 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez saisir le nombre de kilos';
+                  return 'diaspo_create.kg_required'.tr;
                 }
                 final kg = double.tryParse(value);
                 if (kg == null || kg <= 0) {
-                  return 'Veuillez saisir une quantité valide';
+                  return 'diaspo_create.kg_invalid'.tr;
                 }
                 return null;
               },
@@ -380,7 +383,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Revenus potentiels:',
+                      'diaspo_create.potential_revenue'.tr,
                       style: AppThemeSystem.getTextStyle(
                         context,
                         FontSizeType.subtitle1,
@@ -428,7 +431,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Étape 3/3: Confirmation',
+            'diaspo_create.step3_title'.tr,
             style: AppThemeSystem.getTextStyle(
               context,
               FontSizeType.h4,
@@ -437,7 +440,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
           ),
           SizedBox(height: elementSpacing * 0.5),
           Text(
-            'Vérifiez votre offre avant de publier',
+            'diaspo_create.step3_subtitle'.tr,
             style: AppThemeSystem.getTextStyle(
               context,
               FontSizeType.body2,
@@ -494,14 +497,14 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   // Dates
                   _buildSummaryRow(
                     context,
-                    'Départ',
+                    'diaspo_create.departure'.tr,
                     controller.formatDateTime(controller.departureDateTime.value),
                     Icons.calendar_today,
                   ),
                   SizedBox(height: elementSpacing * 0.5),
                   _buildSummaryRow(
                     context,
-                    'Arrivée',
+                    'diaspo_create.arrival'.tr,
                     controller.formatDateTime(controller.arrivalDateTime.value),
                     Icons.calendar_today,
                   ),
@@ -510,14 +513,14 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                   // Pricing
                   _buildSummaryRow(
                     context,
-                    'Prix par kilo',
+                    'diaspo_create.price_per_kg'.tr,
                     '${controller.pricePerKgController.text} ${controller.offerCurrencySymbol}/kg',
                     Icons.euro,
                   ),
                   SizedBox(height: elementSpacing * 0.5),
                   _buildSummaryRow(
                     context,
-                    'Kilos disponibles',
+                    'diaspo_create.available_kg'.tr,
                     '${controller.availableKgController.text} kg',
                     Icons.luggage,
                   ),
@@ -601,7 +604,7 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                     ),
                   ),
                   child: Text(
-                    'Précédent',
+                    'diaspo_create.previous'.tr,
                     style: AppThemeSystem.getTextStyle(
                       context,
                       FontSizeType.button,
@@ -643,8 +646,8 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
                       )
                     : Text(
                         controller.currentStep.value < controller.totalSteps - 1
-                            ? 'Suivant'
-                            : 'Publier',
+                            ? 'diaspo_create.next'.tr
+                            : 'diaspo_create.publish'.tr,
                         style: AppThemeSystem.getTextStyle(
                           context,
                           FontSizeType.button,

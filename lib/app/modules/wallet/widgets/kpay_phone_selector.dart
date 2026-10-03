@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/values/kpay_catalog.dart';
@@ -99,7 +100,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
     // haut de l'écran sans autre sortie que le bouton système.
     final selected = await AppSheet.show<KPayCountry>(
       AppSheet(
-        title: 'Sélectionnez votre pays',
+        title: 'wallet.kpay.select_country'.tr,
         scrollable: false,
         bodyPadding: EdgeInsets.zero,
         child: ListView.builder(
@@ -140,7 +141,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --- Pays ---
-        const Text('Pays', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text('wallet.kpay.country'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         InkWell(
           onTap: _pickCountry,
@@ -176,7 +177,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         const SizedBox(height: 16),
 
         // --- Opérateur ---
-        const Text('Opérateur', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text('wallet.kpay.operator'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
@@ -201,9 +202,9 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         const SizedBox(height: 16),
 
         // --- Numéro ---
-        const Text(
-          'Numéro Mobile Money',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        Text(
+          'wallet.kpay.phone_label'.tr,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -222,7 +223,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
               minWidth: 0,
               minHeight: 0,
             ),
-            hintText: 'Ex. 670000001',
+            hintText: 'wallet.kpay.phone_hint'.tr,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -235,8 +236,8 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
             padding: EdgeInsets.only(top: 6),
             child: Text(
               _country.iso3 == 'CMR'
-                  ? 'Saisissez les 9 chiffres du numéro'
-                  : 'Numéro incomplet ou invalide',
+                  ? 'wallet.kpay.phone_9_digits'.tr
+                  : 'wallet.kpay.phone_invalid'.tr,
               style: const TextStyle(color: AppDesign.danger, fontSize: 12),
             ),
           ),

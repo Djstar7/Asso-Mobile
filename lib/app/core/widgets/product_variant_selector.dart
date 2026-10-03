@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_theme_system.dart';
 import '../../core/utils/app_design.dart';
@@ -418,7 +419,7 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
             child: TextButton.icon(
               onPressed: _reset,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Voir tous les choix'),
+              label: Text('core.variant.show_all_choices'.tr),
               style: TextButton.styleFrom(
                 foregroundColor: context.secondaryTextColor,
                 visualDensity: VisualDensity.compact,
@@ -438,18 +439,18 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
         color: AppThemeSystem.errorColor.withValues(alpha: 0.3),
       ),
     ),
-    child: const Row(
+    child: Row(
       children: [
-        Icon(
+        const Icon(
           Icons.remove_shopping_cart_outlined,
           size: 20,
           color: AppThemeSystem.errorColor,
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
-            'Ce produit est actuellement épuisé',
-            style: TextStyle(
+            'core.variant.product_sold_out'.tr,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppThemeSystem.errorColor,
@@ -477,7 +478,7 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
-              selected ?? 'Choisissez',
+              selected ?? 'core.variant.choose'.tr,
               key: ValueKey(selected),
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -652,20 +653,21 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
     if (missing.isNotEmpty) {
       icon = Icons.touch_app_outlined;
       color = AppThemeSystem.infoColor;
-      text = 'Sélectionnez : ${missing.join(', ')}';
+      text = 'core.variant.select_missing'.trParams({'options': missing.join(', ')});
     } else if (variant == null || VariantCatalog.stockOf(variant) <= 0) {
       icon = Icons.block;
       color = AppThemeSystem.errorColor;
-      text = "Cette combinaison n'est pas disponible";
+      text = 'core.variant.combination_unavailable'.tr;
     } else {
       final stock = VariantCatalog.stockOf(variant);
       icon = Icons.check_circle_rounded;
       color = AppThemeSystem.successColor;
       text = widget.showStock
           ? (stock <= 5
-                ? 'Plus que $stock en stock'
-                : 'En stock ($stock disponibles)')
-          : 'Disponible';
+                ? 'core.variant.only_left'.trParams({'count': '$stock'})
+                : 'core.variant.in_stock_available'
+                    .trParams({'count': '$stock'}))
+          : 'core.variant.available'.tr;
       final adjustment =
           (variant['price_adjustment_xaf'] as num?)?.toDouble() ??
           (variant['price_adjustment'] as num?)?.toDouble() ??
@@ -718,4 +720,118 @@ class _ProductVariantSelectorState extends State<ProductVariantSelector> {
       ),
     );
   }
+}
+
+/// Aperçu des options d'un produit, en lecture seule : l'acheteur voit les
+/// couleurs et tailles proposées sur la fiche et ne les choisit qu'au moment
+/// de commander.
+class VariantOptionsPreview extends StatelessWidget {
+  final VariantCatalog catalog;
+
+  /// Vente au détail : une valeur sans aucune variante en stock est grisée.
+  /// En gros, le stock des variantes est sans objet.
+  final bool dimOutOfStock;
+
+  const VariantOptionsPreview({
+    super.key,
+    required this.catalog,
+    this.dimOutOfStock = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (catalog.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (index, group) in catalog.groups.indexed) ...[
+          if (index > 0) const SizedBox(height: 16),
+          Text(
+            '${group.name} (${group.values.length})',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Une ligne par groupe, qui défile de côté quand les valeurs
+          // dépassent la largeur de l'écran.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (i, option) in group.values.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: i == 0 ? 0 : (group.isColor ? 12 : 8),
+                    ),
+                    child: Opacity(
+                      opacity:
+                          !dimOutOfStock ||
+                              catalog.isAvailable(
+                                group.name,
+                                option.value,
+                                const {},
+                              )
+                          ? 1
+                          : 0.4,
+                      child: group.isColor
+                          ? _colorSwatch(context, option)
+                          : _chip(context, option),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _colorSwatch(BuildContext context, VariantOptionValue option) {
+    final color = option.color ?? VariantPalette.guess(option.value);
+    return SizedBox(
+      width: 52,
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black.withValues(alpha: 0.12)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            option.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: context.secondaryTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, VariantOptionValue option) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: context.ds.surfaceMuted,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      option.value,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: context.primaryTextColor,
+      ),
+    ),
+  );
 }

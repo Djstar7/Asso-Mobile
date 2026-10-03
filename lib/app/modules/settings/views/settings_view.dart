@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/settings_controller.dart';
+import '../../../routes/app_pages.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/user_avatar.dart';
 
 class SettingsView extends GetView<SettingsController> {
   const SettingsView({super.key});
@@ -17,7 +19,7 @@ class SettingsView extends GetView<SettingsController> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Paramètres',
+          'settings.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -48,7 +50,7 @@ class SettingsView extends GetView<SettingsController> {
             // SizedBox(height: context.sectionSpacing),
 
             // Section Application
-            _buildSectionTitle(context, 'Application'),
+            _buildSectionTitle(context, 'settings.sections.application'.tr),
             SizedBox(height: context.elementSpacing),
             _buildSettingsCard(
               context,
@@ -56,16 +58,16 @@ class SettingsView extends GetView<SettingsController> {
                 _buildSettingsTile(
                   context,
                   icon: Icons.storage,
-                  title: 'Effacer le cache',
-                  subtitle: 'Libérer de l\'espace de stockage',
+                  title: 'settings.cache.title'.tr,
+                  subtitle: 'settings.menu.clear_cache_subtitle'.tr,
                   onTap: controller.clearCache,
                 ),
                 Divider(color: context.borderColor, height: 1),
                 _buildSettingsTile(
                   context,
                   icon: Icons.tune,
-                  title: 'Préférences',
-                  subtitle: 'Notifications, thème, langue',
+                  title: 'settings.preferences.title'.tr,
+                  subtitle: 'settings.menu.preferences_subtitle'.tr,
                   onTap: controller.goToPreferences,
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
@@ -75,7 +77,7 @@ class SettingsView extends GetView<SettingsController> {
             SizedBox(height: context.sectionSpacing),
 
             // Section Données et confidentialité
-            _buildSectionTitle(context, 'Données et confidentialité'),
+            _buildSectionTitle(context, 'settings.sections.data_privacy'.tr),
             SizedBox(height: context.elementSpacing),
             _buildSettingsCard(
               context,
@@ -83,8 +85,8 @@ class SettingsView extends GetView<SettingsController> {
                 _buildSettingsTile(
                   context,
                   icon: Icons.receipt_long_outlined,
-                  title: 'Factures',
-                  subtitle: 'Consulter l\'historique de vos factures',
+                  title: 'settings.menu.invoices'.tr,
+                  subtitle: 'settings.menu.invoices_subtitle'.tr,
                   onTap: controller.goToInvoices,
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
@@ -92,8 +94,8 @@ class SettingsView extends GetView<SettingsController> {
                 _buildSettingsTile(
                   context,
                   icon: Icons.delete_forever_outlined,
-                  title: 'Supprimer mon compte',
-                  subtitle: 'Supprimer définitivement votre compte',
+                  title: 'settings.menu.delete_account'.tr,
+                  subtitle: 'settings.menu.delete_account_subtitle'.tr,
                   onTap: controller.deleteAccount,
                   textColor: AppDesign.danger,
                 ),
@@ -103,16 +105,43 @@ class SettingsView extends GetView<SettingsController> {
             SizedBox(height: context.sectionSpacing),
 
             // Section À propos
-            _buildSectionTitle(context, 'À propos'),
+            _buildSectionTitle(context, 'settings.sections.about'.tr),
             SizedBox(height: context.elementSpacing),
             _buildSettingsCard(
               context,
               children: [
                 _buildSettingsTile(
                   context,
+                  icon: Icons.help_outline,
+                  title: 'settings.menu.help'.tr,
+                  subtitle: 'settings.menu.help_subtitle'.tr,
+                  onTap: () => Get.toNamed(Routes.HELP),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.quiz_outlined,
+                  title: 'settings.menu.faq'.tr,
+                  subtitle: 'settings.menu.faq_subtitle'.tr,
+                  onTap: () => Get.toNamed(Routes.FAQ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.gavel_outlined,
+                  title: 'settings.menu.legal'.tr,
+                  subtitle: 'settings.menu.legal_subtitle'.tr,
+                  onTap: () => Get.toNamed(Routes.LEGAL),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+                Divider(color: context.borderColor, height: 1),
+                _buildSettingsTile(
+                  context,
                   icon: Icons.info_outline,
-                  title: 'À propos',
-                  subtitle: 'Version, conditions d\'utilisation',
+                  title: 'settings.menu.about'.tr,
+                  subtitle: 'settings.menu.about_subtitle'.tr,
                   onTap: controller.goToAbout,
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
@@ -129,7 +158,7 @@ class SettingsView extends GetView<SettingsController> {
                 child: OutlinedButton.icon(
                   onPressed: controller.logout,
                   icon: const Icon(Icons.logout),
-                  label: const Text('Se déconnecter'),
+                  label: Text('settings.logout.button'.tr),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppDesign.danger,
                     side: const BorderSide(color: AppDesign.danger),
@@ -143,7 +172,7 @@ class SettingsView extends GetView<SettingsController> {
 
             // Version de l'app
             Text(
-              'Version 1.0.0',
+              'settings.version'.trParams({'version': '1.0.0'}),
               style: context.caption.copyWith(color: context.secondaryTextColor),
             ),
 
@@ -168,19 +197,7 @@ class SettingsView extends GetView<SettingsController> {
               Row(
                 children: [
                   // Avatar
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      color: AppDesign.accentSubtle,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 28,
-                      color: AppDesign.accentText,
-                    ),
-                  ),
+                  const UserAvatar(size: 56),
                   const SizedBox(width: 16),
 
                   // Informations
@@ -230,7 +247,7 @@ class SettingsView extends GetView<SettingsController> {
                 child: AppIconButton(
                   icon: Icons.edit_outlined,
                   onPressed: controller.editProfile,
-                  tooltip: 'Modifier le profil',
+                  tooltip: 'settings.edit_profile'.tr,
                 ),
               ),
             ],

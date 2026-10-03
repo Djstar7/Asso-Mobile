@@ -290,7 +290,7 @@ class SellerModel {
   factory SellerModel.defaultSeller() {
     return SellerModel(
       id: 'default',
-      name: 'Vendeur',
+      name: 'data.default_seller_name'.tr,
       rating: 0.0,
       reviewsCount: 0,
     );
@@ -310,13 +310,13 @@ extension ProductConditionExtension on ProductCondition {
   String get label {
     switch (this) {
       case ProductCondition.nouveau:
-        return 'Nouveau';
+        return 'data.product_condition.new'.tr;
       case ProductCondition.commeNeuf:
-        return 'Comme neuf';
+        return 'data.product_condition.like_new'.tr;
       case ProductCondition.tresBonEtat:
-        return 'Très bon état';
+        return 'data.product_condition.very_good'.tr;
       case ProductCondition.bonEtat:
-        return 'Bon état';
+        return 'data.product_condition.good'.tr;
     }
   }
 }

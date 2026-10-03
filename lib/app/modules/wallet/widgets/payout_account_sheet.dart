@@ -47,8 +47,8 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
   Future<void> _save() async {
     if (!_valid || _provider == null || _phone == null) {
       Get.snackbar(
-        'Numéro incomplet',
-        'Choisissez votre opérateur et saisissez un numéro valide.',
+        'wallet.payout_sheet.incomplete_title'.tr,
+        'wallet.payout_sheet.incomplete_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -64,7 +64,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     if (!mounted) return;
 
     if (error != null) {
-      Get.snackbar('Erreur', error,
+      Get.snackbar('wallet.payout_sheet.error'.tr, error,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white);
@@ -73,8 +73,8 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
 
     Get.back(result: true);
     Get.snackbar(
-      'Compte enregistré',
-      'Vos prochains retraits seront pré-remplis avec ce numéro.',
+      'wallet.payout_sheet.saved_title'.tr,
+      'wallet.payout_sheet.saved_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.successColor,
       colorText: Colors.white,
@@ -86,7 +86,8 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     if (!mounted) return;
     Get.back(result: ok);
     if (ok) {
-      Get.snackbar('Compte supprimé', 'Vos coordonnées de retrait ont été effacées.',
+      Get.snackbar('wallet.payout_sheet.deleted_title'.tr,
+          'wallet.payout_sheet.deleted_message'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -96,8 +97,8 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     final existing = _existing;
 
     return AppSheet(
-      title: 'Compte de retrait Mobile Money',
-      subtitle: "Là où vous recevez l'argent de votre Wallet ASSO.",
+      title: 'wallet.payout_sheet.title'.tr,
+      subtitle: 'wallet.payout_sheet.subtitle'.tr,
       color: AppThemeSystem.getBackgroundColor(context),
       // Bouton épinglé au-dessus du clavier : sous le champ du titulaire, il
       // passait dessous pendant la saisie.
@@ -115,7 +116,9 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.check_rounded),
-            label: Text(existing == null ? 'Enregistrer ce compte' : 'Mettre à jour'),
+            label: Text(existing == null
+                ? 'wallet.payout_sheet.save'.tr
+                : 'wallet.payout_sheet.update'.tr),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppThemeSystem.primaryColor,
               foregroundColor: Colors.white,
@@ -149,8 +152,8 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
           controller: _holderController,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            labelText: 'Nom du titulaire (facultatif)',
-            helperText: 'Tel qu\'enregistré chez votre opérateur',
+            labelText: 'wallet.payout_sheet.holder_label'.tr,
+            helperText: 'wallet.payout_sheet.holder_helper'.tr,
             prefixIcon: const Icon(Icons.person_outline_rounded),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -163,7 +166,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
               onPressed: _delete,
               icon: Icon(Icons.delete_outline_rounded, color: AppThemeSystem.errorColor),
               label: Text(
-                'Supprimer ce compte',
+                'wallet.payout_sheet.delete'.tr,
                 style: TextStyle(color: AppThemeSystem.errorColor),
               ),
             ),

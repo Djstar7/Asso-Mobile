@@ -66,7 +66,10 @@ class DiaspoBookingController extends GetxController {
     if (args != null && args['offer'] != null) {
       offer.value = args['offer'] as DiaspoOffer;
     } else {
-      Get.snackbar('Erreur', 'Offre introuvable');
+      Get.snackbar(
+        'diaspo_booking.error'.tr,
+        'diaspo_booking.offer_not_found'.tr,
+      );
       // Pas `Get.back()` : il refermerait seulement ce snackbar. Après
       // l'image en cours : on est ici pendant la construction de la page.
       WidgetsBinding.instance.addPostFrameCallback((_) => AppNavigation.pop());
@@ -100,12 +103,20 @@ class DiaspoBookingController extends GetxController {
 
     // Validation
     if (kgBooked.value < minKg) {
-      Get.snackbar('Erreur', 'Le minimum est ${minKg.toStringAsFixed(1)} kg');
+      Get.snackbar(
+        'diaspo_booking.error'.tr,
+        'diaspo_booking.min_kg'.trParams({'kg': minKg.toStringAsFixed(1)}),
+      );
       return;
     }
 
     if (kgBooked.value > remainingKg) {
-      Get.snackbar('Erreur', 'Seulement ${remainingKg.toStringAsFixed(1)} kg disponibles');
+      Get.snackbar(
+        'diaspo_booking.error'.tr,
+        'diaspo_booking.only_kg_available'.trParams({
+          'kg': remainingKg.toStringAsFixed(1),
+        }),
+      );
       return;
     }
 
@@ -114,7 +125,7 @@ class DiaspoBookingController extends GetxController {
     final method = await PaymentMethodSelector.show(
       amount: totalPrice.value,
       currency: currency,
-      amountLabel: 'Total à payer',
+      amountLabel: 'diaspo_booking.total_to_pay'.tr,
     );
     if (method == null) return; // annulé
 
@@ -123,7 +134,7 @@ class DiaspoBookingController extends GetxController {
       // Mobile Money : sélecteur pays → opérateur → numéro.
       final selection = await KpayDirectPaymentSheet.show(
         amount: totalPrice.value,
-        amountLabel: 'Total à payer',
+        amountLabel: 'diaspo_booking.total_to_pay'.tr,
       );
       if (selection == null) return; // annulé
       await _processKpayBooking(selection['provider']!, selection['phone']!);
@@ -139,8 +150,8 @@ class DiaspoBookingController extends GetxController {
   /// Réservation payée par CARTE (Payment Sheet Stripe native).
   Future<void> _processCardBooking() async {
     if (!StripeNativeService.isSupported) {
-      Get.snackbar('Indisponible',
-          "Le paiement par carte est disponible sur l'application mobile.");
+      Get.snackbar('diaspo_booking.unavailable'.tr,
+          'diaspo_booking.card_mobile_only'.tr);
       return;
     }
     isSubmitting.value = true;
@@ -159,7 +170,7 @@ class DiaspoBookingController extends GetxController {
 
       if (clientSecret == null || clientSecret.isEmpty ||
           publishableKey == null || publishableKey.isEmpty) {
-        _showError(Exception('Données de paiement carte indisponibles. Réessayez.'));
+        _showError(Exception('diaspo_booking.card_data_unavailable'.tr));
         return;
       }
 
@@ -168,7 +179,8 @@ class DiaspoBookingController extends GetxController {
         clientSecret: clientSecret,
       );
       if (!ok) {
-        Get.snackbar('Paiement annulé', "Le paiement n'a pas été finalisé.",
+        Get.snackbar('diaspo_booking.payment_cancelled_title'.tr,
+            'diaspo_booking.payment_cancelled_message'.tr,
             backgroundColor: AppDesign.accent, colorText: Colors.white,
             duration: const Duration(seconds: 4));
         return;
@@ -200,8 +212,8 @@ class DiaspoBookingController extends GetxController {
       // validé sur le téléphone. On informe, puis on n'affiche le succès (+ code) qu'au
       // statut « payé » (voir _pollBookingPayment).
       Get.snackbar(
-        'Paiement en attente',
-        'Validez le paiement sur votre téléphone (USSD). La réservation sera confirmée ensuite.',
+        'diaspo_booking.payment_pending_title'.tr,
+        'diaspo_booking.payment_pending_ussd'.tr,
         backgroundColor: AppDesign.accent, colorText: Colors.white,
         duration: const Duration(seconds: 5),
       );
@@ -228,7 +240,7 @@ class DiaspoBookingController extends GetxController {
       isSubmitting.value = false;
 
       if (approvalUrl == null || approvalUrl.isEmpty) {
-        _showError(Exception('Lien de paiement indisponible. Réessayez.'));
+        _showError(Exception('diaspo_booking.payment_link_unavailable'.tr));
         return;
       }
 
@@ -250,7 +262,7 @@ class DiaspoBookingController extends GetxController {
 
   void _showError(Object e) {
     Get.snackbar(
-      'Erreur',
+      'diaspo_booking.error'.tr,
       e.toString().replaceAll('Exception: ', ''),
       backgroundColor: AppDesign.danger,
       colorText: Colors.white,
@@ -267,15 +279,16 @@ class DiaspoBookingController extends GetxController {
         _showSuccessDialog(booking); // réservation réellement confirmée → on révèle le code
         return;
       } else if (status == 'failed') {
-        Get.snackbar('Paiement échoué', 'Le paiement de la réservation n\'a pas abouti.',
+        Get.snackbar('diaspo_booking.payment_failed_title'.tr,
+            'diaspo_booking.payment_failed_message'.tr,
             backgroundColor: AppDesign.danger, colorText: Colors.white,
             duration: const Duration(seconds: 5));
         return;
       }
     }
     // Délai dépassé sans confirmation : on reste prudent, pas de « confirmée ».
-    Get.snackbar('Paiement en attente',
-        "La confirmation n'est pas encore arrivée. Vérifiez dans « Mes Achats ».",
+    Get.snackbar('diaspo_booking.payment_pending_title'.tr,
+        'diaspo_booking.payment_pending_timeout'.tr,
         backgroundColor: AppDesign.accent, colorText: Colors.white,
         duration: const Duration(seconds: 5));
   }
@@ -319,16 +332,18 @@ class DiaspoBookingController extends GetxController {
                 size: 64,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Réservation confirmée!',
-                style: TextStyle(
+              Text(
+                'diaspo_booking.success.title'.tr,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Votre réservation de ${booking.kgBooked.toStringAsFixed(1)} kg a été confirmée.',
+                'diaspo_booking.success.message'.trParams({
+                  'kg': booking.kgBooked.toStringAsFixed(1),
+                }),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14),
               ),
@@ -341,9 +356,9 @@ class DiaspoBookingController extends GetxController {
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'Code de confirmation',
-                      style: TextStyle(
+                    Text(
+                      'diaspo_booking.success.code_label'.tr,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
@@ -358,10 +373,10 @@ class DiaspoBookingController extends GetxController {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Donnez ce code au vendeur pour confirmer la réception',
+                    Text(
+                      'diaspo_booking.success.code_hint'.tr,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         color: Colors.grey,
                       ),
@@ -380,7 +395,7 @@ class DiaspoBookingController extends GetxController {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Terminer'),
+                  child: Text('diaspo_booking.success.finish'.tr),
                 ),
               ),
             ],

@@ -75,10 +75,10 @@ class ProductView extends GetView<ProductController> {
       return Scaffold(
         backgroundColor: AppThemeSystem.getBackgroundColor(context),
         appBar: AppBar(leading: const AppBackButton()),
-        body: const AppEmptyState(
+        body: AppEmptyState(
           icon: Icons.inventory_2_outlined,
-          title: 'Produit introuvable',
-          message: 'Ce produit n’est plus disponible ou le lien est incomplet.',
+          title: 'product.not_found.title'.tr,
+          message: 'product.not_found.message'.tr,
         ),
       );
     }
@@ -119,7 +119,7 @@ class ProductView extends GetView<ProductController> {
                   size: 20,
                 ),
               ),
-              tooltip: 'Retour',
+              tooltip: 'product.back'.tr,
               // Ouverte depuis une notification, la fiche n'a pas de page
               // précédente : le retour ramène alors à l'accueil.
               onPressed: () => AppNavigation.back(context),
@@ -195,7 +195,7 @@ class ProductView extends GetView<ProductController> {
                         context,
                         onAuthenticated: () =>
                             controller.toggleFavorite(productId),
-                        featureName: 'les favoris',
+                        featureName: 'product.feature.favorites'.tr,
                         useDialog: false,
                       );
                     }
@@ -426,7 +426,7 @@ class ProductView extends GetView<ProductController> {
           ],
           SizedBox(height: AppDesign.space2),
           Text(
-            product['name']?.toString() ?? 'Produit',
+            product['name']?.toString() ?? 'product.fallback_name'.tr,
             style: context.textStyle(
               FontSizeType.body1,
               fontWeight: FontWeight.w600,
@@ -458,8 +458,8 @@ class ProductView extends GetView<ProductController> {
                 ),
                 if (ProductCard.isShopCertified(product)) ...[
                   SizedBox(width: AppDesign.space2),
-                  const AppBadge(
-                    label: 'Vérifié',
+                  AppBadge(
+                    label: 'product.verified'.tr,
                     tone: AppBadgeTone.info,
                     icon: Icons.verified_rounded,
                   ),
@@ -551,11 +551,11 @@ class ProductView extends GetView<ProductController> {
 
     final rows = <Widget>[
       if (characteristics?.isNotEmpty == true)
-        _specRow(context, label: 'Caractéristiques', value: characteristics!),
+        _specRow(context, label: 'product.specs.characteristics'.tr, value: characteristics!),
       if (commercialInformation?.isNotEmpty == true)
-        _specRow(context, label: 'Informations', value: commercialInformation!),
+        _specRow(context, label: 'product.specs.information'.tr, value: commercialInformation!),
       if (sizes.isNotEmpty)
-        _specRow(context, label: 'Tailles', value: sizes.join(' · ')),
+        _specRow(context, label: 'product.specs.sizes'.tr, value: sizes.join(' · ')),
     ];
 
     if (rows.isEmpty) return const SizedBox.shrink();
@@ -588,7 +588,7 @@ class ProductView extends GetView<ProductController> {
     final fullLocation =
         product['location']?.toString() ??
         product['shop']?['address']?.toString() ??
-        'Non spécifiée';
+        'product.location.unspecified'.tr;
     final shopLabel = product['shop'] is Map
         ? LocationLabel.fromApi(
             Map<String, dynamic>.from(product['shop'] as Map),
@@ -612,7 +612,7 @@ class ProductView extends GetView<ProductController> {
         children: [
           _specRow(
             context,
-            label: 'Livraison depuis',
+            label: 'product.specs.ships_from'.tr,
             value: shortLocation,
             onTap: () => _openMapOptions(context, product),
           ),
@@ -620,19 +620,22 @@ class ProductView extends GetView<ProductController> {
             AppDivider(),
             _specRow(
               context,
-              label: 'Stock',
+              label: 'product.specs.stock'.tr,
               value: stockValue > 0
-                  ? '$stockValue unité${stockValue > 1 ? 's' : ''}'
-                  : 'Épuisé',
+                  ? (stockValue > 1
+                            ? 'product.specs.units_plural'
+                            : 'product.specs.units_singular')
+                        .trParams({'count': '$stockValue'})
+                  : 'product.out_of_stock'.tr,
             ),
           ],
           if (weight != null) ...[
             AppDivider(),
-            _specRow(context, label: 'Poids', value: weight),
+            _specRow(context, label: 'product.specs.weight'.tr, value: weight),
           ],
           if (origin.isNotEmpty) ...[
             AppDivider(),
-            _specRow(context, label: 'Provenance', value: origin),
+            _specRow(context, label: 'product.specs.origin'.tr, value: origin),
           ],
         ],
       ),
@@ -641,11 +644,13 @@ class ProductView extends GetView<ProductController> {
 
   /// Pays d'origine en clair. Absent, l'article est considéré local.
   String _originLabel(String? code) {
-    if (code == null || code.isEmpty || code == 'NULL') return 'Produit local';
-    const countries = {
-      'CN': 'Chine',
-      'AE': 'Dubaï / Émirats arabes unis',
-      'TR': 'Turquie',
+    if (code == null || code.isEmpty || code == 'NULL') {
+      return 'product.origin.local'.tr;
+    }
+    final countries = {
+      'CN': 'product.origin.china'.tr,
+      'AE': 'product.origin.uae'.tr,
+      'TR': 'product.origin.turkey'.tr,
     };
     return countries[code] ?? code;
   }
@@ -694,7 +699,7 @@ class ProductView extends GetView<ProductController> {
           // Titre seul, sans icône : la section se nomme déjà, et l'icône
           // ajoutait une couleur de plus sans rien apprendre.
           Text(
-            'Description',
+            'product.description.title'.tr,
             style: context.textStyle(
               FontSizeType.body1,
               fontWeight: FontWeight.w700,
@@ -704,7 +709,7 @@ class ProductView extends GetView<ProductController> {
           SizedBox(height: AppDesign.space3),
           Text(
             product['description'] ??
-                'Aucune description disponible pour ce produit.',
+                'product.description.empty'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -746,7 +751,7 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Choisissez vos options',
+                'product.variants.title'.tr,
                 style: context.textStyle(
                   FontSizeType.subtitle1,
                   fontWeight: FontWeight.bold,
@@ -754,20 +759,18 @@ class ProductView extends GetView<ProductController> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Obx(
-            () => ProductVariantSelector(
-              key: ValueKey(
-                'page-variants-${controller.variantSelectorEpoch.value}',
-              ),
-              catalog: catalog,
-              selectedVariantId:
-                  controller.selectedVariant.value?['id'] as int?,
-              onChanged: (variant) =>
-                  controller.onVariantChanged(product, variant),
-              formatAdjustment: controller.formatPrice,
+          const SizedBox(height: 4),
+          // Le choix se fait dans la feuille de commande, où plusieurs
+          // combinaisons peuvent être prises à la fois.
+          Text(
+            'product.variants.hint'.tr,
+            style: context.textStyle(
+              FontSizeType.caption,
+              color: context.ds.textSecondary,
             ),
           ),
+          const SizedBox(height: 16),
+          VariantOptionsPreview(catalog: catalog),
         ],
       ),
     );
@@ -781,7 +784,9 @@ class ProductView extends GetView<ProductController> {
     final seller = product['seller'];
 
     final shopName =
-        shop?['name']?.toString() ?? seller?['name']?.toString() ?? 'Vendeur';
+        shop?['name']?.toString() ??
+        seller?['name']?.toString() ??
+        'product.seller'.tr;
     final shopImage = shop?['image']?.toString() ?? shop?['logo']?.toString();
     final ownerImage = seller?['avatar']
         ?.toString(); // Get seller avatar from seller object
@@ -808,7 +813,7 @@ class ProductView extends GetView<ProductController> {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Vendeur',
+                  'product.seller'.tr,
                   style: context.textStyle(
                     FontSizeType.h5,
                     fontWeight: FontWeight.bold,
@@ -836,7 +841,7 @@ class ProductView extends GetView<ProductController> {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          'Certifié',
+                          'product.certified'.tr,
                           style: context.textStyle(
                             FontSizeType.overline,
                             color: AppDesign.info,
@@ -1035,7 +1040,9 @@ class ProductView extends GetView<ProductController> {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            '($reviewCount avis)',
+                            'product.reviews_count'.trParams({
+                              'count': '$reviewCount',
+                            }),
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.grey600,
@@ -1062,8 +1069,8 @@ class ProductView extends GetView<ProductController> {
                     );
                   } else {
                     Get.snackbar(
-                      'Erreur',
-                      'Impossible d\'accéder à la boutique',
+                      'product.error'.tr,
+                      'product.shop_access_error'.tr,
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: AppThemeSystem.errorColor,
                       colorText: Colors.white,
@@ -1071,7 +1078,7 @@ class ProductView extends GetView<ProductController> {
                   }
                 },
                 icon: Icon(Icons.storefront_rounded, size: 18),
-                label: Text('Voir la boutique'),
+                label: Text('product.view_shop'.tr),
                 // Contour neutre : en orange, ce bouton faisait un second
                 // appel coloré à quelques pixels de « Commander », alors
                 // qu'il mène seulement à la boutique.
@@ -1121,7 +1128,7 @@ class ProductView extends GetView<ProductController> {
         top: false,
         child: isMyProduct
             ? AppButton(
-                label: 'Gérer mes produits',
+                label: 'product.manage_products'.tr,
                 size: AppButtonSize.large,
                 icon: Icons.edit_rounded,
                 onPressed: () => Get.toNamed(Routes.PRODUCT_MANAGEMENT),
@@ -1133,8 +1140,8 @@ class ProductView extends GetView<ProductController> {
                     () => _SecondaryAction(
                       icon: Icons.chat_bubble_outline_rounded,
                       label: controller.isStartingConversation.value
-                          ? 'Ouverture…'
-                          : 'Message',
+                          ? 'product.opening'.tr
+                          : 'product.message'.tr,
                       busy: controller.isStartingConversation.value,
                       onPressed: controller.isStartingConversation.value
                           ? null
@@ -1142,7 +1149,7 @@ class ProductView extends GetView<ProductController> {
                               context,
                               onAuthenticated: () => controller
                                   .openConversationWithSeller(product: product),
-                              featureName: 'la messagerie',
+                              featureName: 'product.feature.messaging'.tr,
                             ),
                     ),
                   ),
@@ -1156,7 +1163,7 @@ class ProductView extends GetView<ProductController> {
                         context,
                         onAuthenticated: () =>
                             _showOrderDialog(context, product),
-                        featureName: 'passer une commande',
+                        featureName: 'product.feature.order'.tr,
                       ),
                     ),
                   ),
@@ -1168,7 +1175,7 @@ class ProductView extends GetView<ProductController> {
 
   /// Extract short location (city name) from full address
   String _getShortLocation(String fullLocation) {
-    if (fullLocation.isEmpty || fullLocation == 'Non spécifiée') {
+    if (fullLocation.isEmpty || fullLocation == 'product.location.unspecified'.tr) {
       return fullLocation;
     }
 
@@ -1229,7 +1236,7 @@ class ProductView extends GetView<ProductController> {
     final location =
         product['location']?.toString() ??
         product['shop']?['address']?.toString() ??
-        'Non spécifiée';
+        'product.location.unspecified'.tr;
 
     final latitude = product['latitude'] ?? product['shop']?['latitude'];
     final longitude = product['longitude'] ?? product['shop']?['longitude'];
@@ -1299,7 +1306,7 @@ class ProductView extends GetView<ProductController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Voir la localisation',
+                        'product.map_options.title'.tr,
                         style: context.textStyle(
                           FontSizeType.h5,
                           fontWeight: FontWeight.bold,
@@ -1361,7 +1368,7 @@ class ProductView extends GetView<ProductController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Carte Asso',
+                            'product.map_options.asso_map'.tr,
                             style: context.textStyle(
                               FontSizeType.body1,
                               fontWeight: FontWeight.w600,
@@ -1369,7 +1376,7 @@ class ProductView extends GetView<ProductController> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Voir sur la carte interactive Asso',
+                            'product.map_options.asso_map_hint'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.grey600,
@@ -1433,7 +1440,7 @@ class ProductView extends GetView<ProductController> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Ouvrir dans Google Maps',
+                            'product.map_options.google_maps_hint'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppThemeSystem.grey600,
@@ -1464,7 +1471,7 @@ class ProductView extends GetView<ProductController> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('Annuler'),
+                child: Text('product.cancel'.tr),
               ),
             ),
 
@@ -1510,8 +1517,8 @@ class ProductView extends GetView<ProductController> {
     } else {
       // Pas de coordonnées disponibles
       Get.snackbar(
-        'Position non disponible',
-        'Les coordonnées GPS ne sont pas disponibles pour ce produit',
+        'product.map_options.position_unavailable_title'.tr,
+        'product.map_options.position_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -1538,8 +1545,8 @@ class ProductView extends GetView<ProductController> {
 
     if (lat == null || lng == null) {
       Get.snackbar(
-        'Position non disponible',
-        'Les coordonnées GPS ne sont pas disponibles pour ce produit',
+        'product.map_options.position_unavailable_title'.tr,
+        'product.map_options.position_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -1559,8 +1566,8 @@ class ProductView extends GetView<ProductController> {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Erreur',
-          'Impossible d\'ouvrir Google Maps',
+          'product.error'.tr,
+          'product.map_options.google_maps_open_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white,
@@ -1569,8 +1576,8 @@ class ProductView extends GetView<ProductController> {
       }
     } catch (e) {
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue lors de l\'ouverture de Google Maps',
+        'product.error'.tr,
+        'product.map_options.google_maps_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: Colors.white,
@@ -1607,7 +1614,7 @@ class ProductView extends GetView<ProductController> {
 
     AppSheet.show(
       AppSheet(
-        title: 'Passer commande',
+        title: 'product.order.sheet_title'.tr,
         // Le contenu est fait de cartes : elles se détachent mieux sur le fond
         // d'écran que sur une surface blanche.
         color: context.ds.canvas,
@@ -1640,7 +1647,9 @@ class ProductView extends GetView<ProductController> {
                       const SizedBox(width: AppDesign.space2),
                       Expanded(
                         child: Text(
-                          'Pour continuer : ${missing.first}',
+                          'product.order.to_continue'.trParams({
+                            'step': missing.first,
+                          }),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: context.textStyle(
@@ -1670,7 +1679,7 @@ class ProductView extends GetView<ProductController> {
                         color: Colors.white,
                       ),
                 label: Text(
-                  'Vérifier ma commande',
+                  'product.order.review'.tr,
                   style: context.textStyle(
                     FontSizeType.body1,
                     fontWeight: FontWeight.bold,
@@ -1722,9 +1731,8 @@ class ProductView extends GetView<ProductController> {
               maxLength: 500,
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
-                labelText: 'Complément d’adresse (facultatif)',
-                hintText:
-                    'Quartier, rue, portail, étage, point de repère…',
+                labelText: 'product.order.address_details_label'.tr,
+                hintText: 'product.order.address_details_hint'.tr,
                 prefixIcon: Icon(Icons.signpost_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1740,9 +1748,9 @@ class ProductView extends GetView<ProductController> {
               textInputAction: TextInputAction.done,
               maxLength: 30,
               decoration: InputDecoration(
-                labelText: 'Numéro à contacter *',
-                hintText: 'Ex. 6XXXXXXXX',
-                helperText: 'Le livreur appellera ce numéro',
+                labelText: 'product.order.contact_phone_label'.tr,
+                hintText: 'product.order.contact_phone_hint'.tr,
+                helperText: 'product.order.contact_phone_helper'.tr,
                 prefixIcon: Icon(Icons.phone_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1754,7 +1762,7 @@ class ProductView extends GetView<ProductController> {
 
             // Section partenaires de livraison
             Text(
-              'Choisir un partenaire de livraison',
+              'product.order.step_partner'.tr,
               style: context.textStyle(
                 FontSizeType.body1,
                 fontWeight: FontWeight.bold,
@@ -1789,7 +1797,7 @@ class ProductView extends GetView<ProductController> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Quantité',
+                            'product.order.quantity'.tr,
                             style: context.textStyle(
                               FontSizeType.body2,
                               color: AppThemeSystem.grey600,
@@ -1814,7 +1822,9 @@ class ProductView extends GetView<ProductController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Articles (${controller.orderQuantity.value})',
+                          'product.order.items_count'.trParams({
+                            'count': '${controller.orderQuantity.value}',
+                          }),
                           style: context.textStyle(
                             FontSizeType.body2,
                             color: AppThemeSystem.grey600,
@@ -1840,7 +1850,10 @@ class ProductView extends GetView<ProductController> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Livraison (${controller.selectedPartner.value!['company_name']})',
+                              'product.order.delivery_with'.trParams({
+                                'company':
+                                    '${controller.selectedPartner.value!['company_name']}',
+                              }),
                               style: context.textStyle(
                                 FontSizeType.body2,
                                 color: AppThemeSystem.grey600,
@@ -1865,7 +1878,9 @@ class ProductView extends GetView<ProductController> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Poids total : ${formatKg(controller.deliveryWeightKg)}',
+                            'product.order.total_weight'.trParams({
+                              'weight': formatKg(controller.deliveryWeightKg),
+                            }),
                             style: context.caption,
                           ),
                         ),
@@ -1875,7 +1890,7 @@ class ProductView extends GetView<ProductController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Total',
+                          'product.order.total'.tr,
                           style: context.textStyle(
                             FontSizeType.h5,
                             fontWeight: FontWeight.bold,
@@ -1926,7 +1941,9 @@ class ProductView extends GetView<ProductController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Aucun livreur ne couvre encore cette position à ${grid['city']}',
+            'product.delivery.no_courier_in_city'.trParams({
+              'city': '${grid['city']}',
+            }),
             style: context.textStyle(
               FontSizeType.body2,
               fontWeight: FontWeight.bold,
@@ -1934,7 +1951,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Placez le repère au plus près de chez vous, dans une zone de livraison colorée.',
+            'product.delivery.place_pin_hint'.tr,
             style: context.caption,
           ),
           const SizedBox(height: 10),
@@ -1943,8 +1960,8 @@ class ProductView extends GetView<ProductController> {
             child: ElevatedButton.icon(
               onPressed: () => _showChangeAddressDialog(context),
               icon: const Icon(Icons.map_rounded, color: Colors.white),
-              label: const Text(
-                'Voir les zones sur la carte',
+              label: Text(
+                'product.delivery.view_zones'.tr,
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
@@ -1972,7 +1989,7 @@ class ProductView extends GetView<ProductController> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Calcul des tarifs de livraison...',
+                  'product.delivery.computing_rates'.tr,
                   style: context.textStyle(
                     FontSizeType.caption,
                     color: AppThemeSystem.grey600,
@@ -1996,7 +2013,7 @@ class ProductView extends GetView<ProductController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'La commande avec livraison n’est pas possible tant que le vendeur n’a pas indiqué le poids réel du produit. Vous pouvez lui écrire pour le lui demander.',
+              'product.delivery.weight_required_explanation'.tr,
               style: context.caption,
             ),
           ],
@@ -2019,7 +2036,7 @@ class ProductView extends GetView<ProductController> {
               if (!quarterRequired) ...[
                 const SizedBox(height: 12),
                 Text(
-                  message ?? 'Aucun partenaire de livraison disponible.',
+                  message ?? 'product.delivery.no_partner'.tr,
                   style: context.caption,
                 ),
               ],
@@ -2048,7 +2065,9 @@ class ProductView extends GetView<ProductController> {
                 child: Text(
                   message?.isNotEmpty == true
                       ? message!
-                      : 'Aucun partenaire de livraison ne dessert encore ${controller.currentLocation.value}.',
+                      : 'product.delivery.no_partner_at'.trParams({
+                          'location': controller.currentLocation.value,
+                        }),
                   style: context.textStyle(
                     FontSizeType.caption,
                     color: context.ds.textSecondary,
@@ -2079,7 +2098,13 @@ class ProductView extends GetView<ProductController> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Poids total du colis : ${formatKg(weight)} (${controller.orderQuantity.value} article${controller.orderQuantity.value > 1 ? 's' : ''})',
+                      (controller.orderQuantity.value > 1
+                              ? 'product.delivery.parcel_weight_plural'
+                              : 'product.delivery.parcel_weight_singular')
+                          .trParams({
+                            'weight': formatKg(weight),
+                            'count': '${controller.orderQuantity.value}',
+                          }),
                       style: context.caption,
                     ),
                   ),
@@ -2187,8 +2212,8 @@ class ProductView extends GetView<ProductController> {
                               ),
                             DeliveryChip(
                               partner.isAgencyToAgency
-                                  ? 'Agence → agence'
-                                  : 'À domicile',
+                                  ? 'product.delivery.agency_to_agency'.tr
+                                  : 'product.delivery.home'.tr,
                               color: AppThemeSystem.grey700,
                               icon: partner.isAgencyToAgency
                                   ? Icons.store_mall_directory_outlined
@@ -2228,7 +2253,9 @@ class ProductView extends GetView<ProductController> {
                 _partnerInfoRow(
                   context,
                   Icons.schedule_rounded,
-                  'Livraison estimée : ${partner.leadTime}',
+                  'product.delivery.estimated'.trParams({
+                    'time': '${partner.leadTime}',
+                  }),
                 ),
               if (partner.distanceKm != null)
                 _partnerInfoRow(
@@ -2261,7 +2288,7 @@ class ProductView extends GetView<ProductController> {
                     onChoose: () => controller.selectPartner(partner.raw),
                   ),
                   icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                  label: const Text('Détails'),
+                  label: Text('product.details'.tr),
                   style: TextButton.styleFrom(
                     foregroundColor: AppThemeSystem.primaryColor,
                     visualDensity: VisualDensity.compact,
@@ -2321,7 +2348,7 @@ class ProductView extends GetView<ProductController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Vos options et quantités',
+                'product.variants.order_title'.tr,
                 style: context.textStyle(
                   FontSizeType.body1,
                   fontWeight: FontWeight.bold,
@@ -2331,7 +2358,7 @@ class ProductView extends GetView<ProductController> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante : plusieurs couleurs et tailles dans la même commande.',
+            'product.variants.order_hint'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textSecondary,
@@ -2363,12 +2390,12 @@ class ProductView extends GetView<ProductController> {
 
       final issueText = switch (issue) {
         LocationIssue.serviceDisabled =>
-          'La localisation de votre téléphone est désactivée.',
+          'product.location.service_disabled'.tr,
         LocationIssue.permissionDenied =>
-          'Autorisez l’accès à votre position pour la détecter automatiquement.',
+          'product.location.permission_denied'.tr,
         LocationIssue.deniedForever =>
-          'L’accès à la position est bloqué. Activez-le dans les réglages de l’application.',
-        LocationIssue.failed => 'Votre position n’a pas pu être détectée.',
+          'product.location.denied_forever'.tr,
+        LocationIssue.failed => 'product.location.failed'.tr,
         LocationIssue.none => null,
       };
 
@@ -2417,7 +2444,7 @@ class ProductView extends GetView<ProductController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Adresse de livraison',
+                        'product.location.delivery_address'.tr,
                         style: context.textStyle(
                           FontSizeType.caption,
                           color: AppThemeSystem.grey600,
@@ -2426,10 +2453,10 @@ class ProductView extends GetView<ProductController> {
                       const SizedBox(height: 4),
                       Text(
                         isLocating
-                            ? 'Détection de votre position…'
+                            ? 'product.map.detecting_position'.tr
                             : hasAddress
                             ? controller.currentLocation.value
-                            : 'Aucune adresse sélectionnée',
+                            : 'product.location.no_address'.tr,
                         style: context.textStyle(
                           FontSizeType.body2,
                           fontWeight: FontWeight.w600,
@@ -2474,8 +2501,8 @@ class ProductView extends GetView<ProductController> {
                     label: Text(
                       issue == LocationIssue.serviceDisabled ||
                               issue == LocationIssue.deniedForever
-                          ? 'Réglages'
-                          : 'Ma position',
+                          ? 'product.location.settings'.tr
+                          : 'product.location.my_position'.tr,
                       overflow: TextOverflow.ellipsis,
                     ),
                     style: OutlinedButton.styleFrom(
@@ -2496,7 +2523,9 @@ class ProductView extends GetView<ProductController> {
                       color: context.ds.textPrimary,
                     ),
                     label: Text(
-                      hasAddress ? 'Modifier' : 'Choisir sur la carte',
+                      hasAddress
+                          ? 'product.edit'.tr
+                          : 'product.location.pick_on_map'.tr,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: context.ds.textPrimary),
                     ),
@@ -2590,7 +2619,7 @@ class ProductView extends GetView<ProductController> {
 
     final confirmed = await AppSheet.show<bool>(
       AppSheet(
-        title: 'Résumé de la commande',
+        title: 'product.summary.title'.tr,
         color: context.ds.canvas,
         // La flèche ramène à la feuille de commande, restée ouverte dessous :
         // c'est une étape du parcours, pas une sortie. Une croix en plus
@@ -2608,7 +2637,7 @@ class ProductView extends GetView<ProductController> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Modifier'),
+              child: Text('product.edit'.tr),
             ),
           ),
           const SizedBox(width: 12),
@@ -2622,7 +2651,7 @@ class ProductView extends GetView<ProductController> {
                 size: 18,
               ),
               label: Text(
-                'Confirmer et payer',
+                'product.summary.confirm_and_pay'.tr,
                 style: context.textStyle(
                   FontSizeType.body1,
                   fontWeight: FontWeight.bold,
@@ -2642,7 +2671,7 @@ class ProductView extends GetView<ProductController> {
         ),
         child: Column(
           children: [
-            section(Icons.shopping_bag_rounded, 'Article', [
+            section(Icons.shopping_bag_rounded, 'product.summary.item'.tr, [
               Row(
                 children: [
                   ClipRRect(
@@ -2661,7 +2690,7 @@ class ProductView extends GetView<ProductController> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      product['name']?.toString() ?? 'Produit',
+                      product['name']?.toString() ?? 'product.fallback_name'.tr,
                       style: context.textStyle(
                         FontSizeType.body1,
                         fontWeight: FontWeight.w600,
@@ -2676,27 +2705,29 @@ class ProductView extends GetView<ProductController> {
               // Une ligne par option commandée : « Rouge · 42 — 3 × 12 000 ».
               for (final orderLine in orderLines)
                 line(
-                  orderLine.label.isEmpty ? 'Quantité' : orderLine.label,
+                  orderLine.label.isEmpty
+                      ? 'product.order.quantity'.tr
+                      : orderLine.label,
                   '${orderLine.quantity} × ${controller.formatPrice(orderLine.unitPriceXaf)}',
                 ),
             ]),
-            section(Icons.local_shipping_rounded, 'Livraison', [
-              line('Adresse', controller.currentLocation.value),
-              if (details.isNotEmpty) line('Complément', details),
+            section(Icons.local_shipping_rounded, 'product.summary.delivery'.tr, [
+              line('product.summary.address'.tr, controller.currentLocation.value),
+              if (details.isNotEmpty) line('product.summary.address_details'.tr, details),
               line(
-                'Numéro à contacter',
+                'product.summary.contact_phone'.tr,
                 controller.customerPhone.value,
               ),
               if (quote != null) ...[
                 line(
-                  'Livreur',
+                  'product.summary.courier'.tr,
                   quote.vehicleLabel != null
                       ? '${quote.companyName} · ${quote.vehicleLabel}'
                       : quote.companyName,
                 ),
-                line('Mode', quote.deliveryOptionLabel),
+                line('product.summary.mode'.tr, quote.deliveryOptionLabel),
                 if (quote.leadTime != null)
-                  line('Délai', quote.leadTime!),
+                  line('product.summary.lead_time'.tr, quote.leadTime!),
                 if (quote.pickupNotice != null) ...[
                   const SizedBox(height: 6),
                   DeliveryNotice(
@@ -2706,9 +2737,9 @@ class ProductView extends GetView<ProductController> {
                 ],
               ],
             ]),
-            section(Icons.receipt_long_rounded, 'Montant', [
+            section(Icons.receipt_long_rounded, 'product.summary.amount'.tr, [
               line(
-                'Sous-total',
+                'product.summary.subtotal'.tr,
                 controller.formatPrice(
                   controller.orderSubtotal(product),
                 ),
@@ -2720,7 +2751,7 @@ class ProductView extends GetView<ProductController> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Livraison',
+                          'product.summary.delivery'.tr,
                           style: context.textStyle(
                             FontSizeType.body2,
                             color: AppThemeSystem.grey600,
@@ -2742,14 +2773,14 @@ class ProductView extends GetView<ProductController> {
                 )
               else
                 line(
-                  'Livraison',
+                  'product.summary.delivery'.tr,
                   controller.formatPrice(
                     controller.deliveryPrice.value,
                   ),
                 ),
               const Divider(height: 16),
               line(
-                'Total à payer',
+                'product.summary.total_to_pay'.tr,
                 controller.formatPrice(total),
                 strong: true,
               ),
@@ -2774,7 +2805,7 @@ class ProductView extends GetView<ProductController> {
     final method = await PaymentMethodSelector.show(
       amount: total,
       currency: 'XAF',
-      amountLabel: 'Total à payer',
+      amountLabel: 'product.summary.total_to_pay'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -2792,8 +2823,8 @@ class ProductView extends GetView<ProductController> {
         break;
       default:
         Get.snackbar(
-          'Indisponible',
-          "Ce moyen de paiement n'est pas encore disponible pour les commandes.",
+          'product.payment.unavailable_title'.tr,
+          'product.payment.method_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
     }
@@ -2807,7 +2838,7 @@ class ProductView extends GetView<ProductController> {
     PaymentMethodOption method,
   ) async {
     final confirmed = await WalletPaymentConfirmDialog.show(
-      itemLabel: product['name']?.toString() ?? 'Commande',
+      itemLabel: product['name']?.toString() ?? 'product.payment.order_fallback'.tr,
       amount: total,
       balance: method.balance ?? 0,
     );
@@ -2821,7 +2852,7 @@ class ProductView extends GetView<ProductController> {
 
     _showOrderConfirmation(
       data,
-      'Payée avec votre Wallet ASSO. En cas de refus ou d\'annulation, le montant vous est rendu immédiatement.',
+      'product.payment.wallet_paid'.tr,
     );
   }
 
@@ -2832,7 +2863,7 @@ class ProductView extends GetView<ProductController> {
   ) async {
     final selection = await KpayDirectPaymentSheet.show(
       amount: total,
-      amountLabel: 'Total à payer',
+      amountLabel: 'product.summary.total_to_pay'.tr,
     );
     if (selection == null) return; // paiement annulé
 
@@ -2847,7 +2878,7 @@ class ProductView extends GetView<ProductController> {
     controller.pollOrderPayment(_orderIdOf(data));
     _showOrderConfirmation(
       data,
-      'Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès sa confirmation.',
+      'product.payment.mobile_money_pending'.tr,
     );
   }
 
@@ -2855,8 +2886,8 @@ class ProductView extends GetView<ProductController> {
   Future<void> _payViaCard(Map<String, dynamic> product) async {
     if (!StripeNativeService.isSupported) {
       Get.snackbar(
-        'Indisponible',
-        "Le paiement par carte est disponible sur l'application mobile.",
+        'product.payment.unavailable_title'.tr,
+        'product.payment.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -2873,8 +2904,8 @@ class ProductView extends GetView<ProductController> {
     final publishableKey = data['publishable_key']?.toString() ?? '';
     if (clientSecret.isEmpty || publishableKey.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Données de paiement carte indisponibles. Votre commande reste en attente.',
+        'product.error'.tr,
+        'product.payment.card_data_missing'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -2887,8 +2918,8 @@ class ProductView extends GetView<ProductController> {
       );
       if (!ok) {
         Get.snackbar(
-          'Paiement annulé',
-          "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
+          'product.payment.cancelled_title'.tr,
+          'product.payment.cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
@@ -2898,11 +2929,11 @@ class ProductView extends GetView<ProductController> {
       controller.pollOrderPayment(orderId);
       _showOrderConfirmation(
         data,
-        'Votre paiement par carte est en cours de confirmation. Vous serez notifié.',
+        'product.payment.card_pending'.tr,
       );
     } catch (e) {
       Get.snackbar(
-        'Erreur',
+        'product.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
@@ -2954,18 +2985,23 @@ class ProductView extends GetView<ProductController> {
             ),
             AppIconButton(
               icon: Icons.close_rounded,
-              tooltip: 'Fermer',
+              tooltip: 'product.close'.tr,
               onPressed: () => AppNavigation.pop(),
             ),
           ],
         ),
-        title: const Text('Commande enregistrée', textAlign: TextAlign.center),
+        title: Text(
+          'product.confirmation.title'.tr,
+          textAlign: TextAlign.center,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (orderNumber != null)
               Text(
-                'N° $orderNumber',
+                'product.confirmation.order_number'.trParams({
+                  'number': orderNumber,
+                }),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             if (total != null) ...[
@@ -2980,15 +3016,15 @@ class ProductView extends GetView<ProductController> {
         actions: [
           TextButton(
             onPressed: () => leaveTo(null),
-            child: const Text('Retour à l’accueil'),
+            child: Text('product.confirmation.back_home'.tr),
           ),
           ElevatedButton(
             onPressed: () => leaveTo(Routes.SHIPMENT),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppThemeSystem.primaryColor,
             ),
-            child: const Text(
-              'Suivre ma commande',
+            child: Text(
+              'product.confirmation.track_order'.tr,
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -3034,8 +3070,8 @@ class ProductView extends GetView<ProductController> {
     }
 
     Get.snackbar(
-      'Adresse mise à jour',
-      'Votre adresse de livraison a été modifiée',
+      'product.location.updated_title'.tr,
+      'product.location.updated_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
       icon: const Icon(Icons.check_circle_rounded, color: AppDesign.success),
     );
@@ -3145,7 +3181,7 @@ class ProductView extends GetView<ProductController> {
     Map<String, dynamic> product,
   ) {
     final categoryName =
-        product['category']?['name']?.toString() ?? 'cette catégorie';
+        product['category']?['name']?.toString() ?? 'product.similar.this_category'.tr;
     final categoryId = product['category']?['id'];
 
     return Obx(() {
@@ -3176,7 +3212,7 @@ class ProductView extends GetView<ProductController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Produits similaires',
+                'product.similar.title'.tr,
                 style: context.textStyle(
                   FontSizeType.h5,
                   fontWeight: FontWeight.bold,
@@ -3195,7 +3231,7 @@ class ProductView extends GetView<ProductController> {
                   }
                 },
                 child: Text(
-                  'Voir plus',
+                  'product.similar.see_more'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,
                     color: AppThemeSystem.primaryColor,
@@ -3273,13 +3309,13 @@ class ProductView extends GetView<ProductController> {
     );
 
     return ProductCard(
-      name: product['name']?.toString() ?? 'Produit',
+      name: product['name']?.toString() ?? 'product.fallback_name'.tr,
       price: price,
       location:
           product['location']?.toString() ??
           product['shop']?['address']?.toString(),
       isCertified: ProductCard.isShopCertified(product),
-      badgeLabel: isOutOfStock ? 'Épuisé' : null,
+      badgeLabel: isOutOfStock ? 'product.out_of_stock'.tr : null,
       badgeTone: AppBadgeTone.danger,
       imageBuilder: (context) {
         if (productImage == null) {
@@ -3352,7 +3388,7 @@ class _ImagePlaceholder extends StatelessWidget {
                 if (!compact) ...[
                   SizedBox(height: AppDesign.space2),
                   Text(
-                    'Image non disponible',
+                    'product.image_unavailable'.tr,
                     style: context.textStyle(
                       FontSizeType.caption,
                       color: context.ds.textTertiary,
@@ -3462,7 +3498,7 @@ class _OrderButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Commander',
+                      'product.order_button'.tr,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.textStyle(

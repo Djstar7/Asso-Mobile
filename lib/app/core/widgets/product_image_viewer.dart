@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
@@ -141,7 +142,7 @@ class _ProductImageViewerState extends State<ProductImageViewer> {
                       child: Row(
                         children: [
                           IconButton(
-                            tooltip: 'Fermer',
+                            tooltip: 'common.close'.tr,
                             onPressed: _close,
                             icon: const Icon(
                               Icons.close_rounded,
@@ -250,8 +251,8 @@ class _ProductImageViewerState extends State<ProductImageViewer> {
                             padding: const EdgeInsets.only(top: 8, bottom: 12),
                             child: Text(
                               _zoomed
-                                  ? 'Double-tapez pour revenir à la taille normale'
-                                  : 'Pincez ou double-tapez pour zoomer',
+                                  ? 'core.image_viewer.zoom_reset_hint'.tr
+                                  : 'core.image_viewer.zoom_hint'.tr,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,

@@ -17,7 +17,7 @@ class ShipConfigView extends GetView<ShipConfigController> {
           // Sans page précédente, le bouton ramène à l'accueil.
           leading: const AppBackButton(),
         title: Text(
-          'Devenir Livreur',
+          'ship_config.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -49,7 +49,7 @@ class ShipConfigView extends GetView<ShipConfigController> {
 
             // Titre
             Text(
-              'Devenez Livreur Partenaire',
+              'ship_config.headline'.tr,
               style: context.h3.copyWith(
                 fontWeight: FontWeight.bold,
                 color: context.primaryTextColor,
@@ -61,7 +61,7 @@ class ShipConfigView extends GetView<ShipConfigController> {
 
             // Description
             Text(
-              'Synchronisez votre profil avec votre entreprise de livraison pour commencer à recevoir des demandes.',
+              'ship_config.intro'.tr,
               style: context.body1.copyWith(
                 color: context.secondaryTextColor,
                 height: 1.5,
@@ -99,7 +99,7 @@ class ShipConfigView extends GetView<ShipConfigController> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Code de synchronisation',
+                          'ship_config.sync_code'.tr,
                           style: context.h6.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -109,7 +109,7 @@ class ShipConfigView extends GetView<ShipConfigController> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Entrez le code reçu de votre entreprise de livraison',
+                    'ship_config.sync_code_hint'.tr,
                     style: context.body2.copyWith(
                       color: context.secondaryTextColor,
                       fontWeight: FontWeight.w600,
@@ -193,8 +193,8 @@ class ShipConfigView extends GetView<ShipConfigController> {
                         : const Icon(Icons.sync, size: 22),
                     label: Text(
                       controller.isSyncing.value
-                          ? 'Synchronisation en cours...'
-                          : 'Activer mon profil livreur',
+                          ? 'ship_config.syncing'.tr
+                          : 'ship_config.activate'.tr,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

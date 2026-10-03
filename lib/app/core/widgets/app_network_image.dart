@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../utils/cover_resize_image.dart';
@@ -65,44 +66,73 @@ class AppNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sur le web, le navigateur refuse de lire en JavaScript une image
+    // servie par un autre hôte sans en-tête CORS : c'est le cas des fichiers
+    // `/storage/…` (servis tels quels, hors de Laravel). L'image passe alors
+    // par un élément `<img>`, qui n'en a pas besoin ; le décodage réduit
+    // ci-dessous n'a de sens que sur téléphone.
+    if (kIsWeb) {
+      return Image.network(
+        url,
+        fit: fit,
+        width: width,
+        height: height,
+        gaplessPlayback: true,
+        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+        loadingBuilder: _buildLoading,
+        errorBuilder: _buildError,
+      );
+    }
+
     return Image(
       image: provider(context, url, decodeSize),
       fit: fit,
       width: width,
       height: height,
       gaplessPlayback: true,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        final background =
-            placeholder?.call(context) ??
-            ColoredBox(color: Theme.of(context).colorScheme.surfaceContainerHighest);
-        if (!showProgress) return background;
-        final expected = progress.expectedTotalBytes;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            background,
-            Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: expected != null && expected > 0
-                      ? progress.cumulativeBytesLoaded / expected
-                      : null,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-      errorBuilder: (context, _, _) =>
-          errorBuilder?.call(context) ??
-          ColoredBox(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: const Center(child: Icon(Icons.image_outlined)),
-          ),
+      loadingBuilder: _buildLoading,
+      errorBuilder: _buildError,
     );
+  }
+
+  Widget _buildLoading(
+    BuildContext context,
+    Widget child,
+    ImageChunkEvent? progress,
+  ) {
+    if (progress == null) return child;
+    final background =
+        placeholder?.call(context) ??
+        ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        );
+    if (!showProgress) return background;
+    final expected = progress.expectedTotalBytes;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        background,
+        Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: expected != null && expected > 0
+                  ? progress.cumulativeBytesLoaded / expected
+                  : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(BuildContext context, Object error, StackTrace? stack) {
+    return errorBuilder?.call(context) ??
+        ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: const Center(child: Icon(Icons.image_outlined)),
+        );
   }
 }

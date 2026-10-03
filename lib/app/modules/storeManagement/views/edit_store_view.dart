@@ -280,7 +280,7 @@ class _EditStoreViewState extends State<EditStoreView> {
     if (position == null) {
       DeviceLocation.showFailure(
         result,
-        hint: 'Touchez la carte pour placer votre boutique.',
+        hint: 'store_management.edit.tap_map_hint'.tr,
       );
       return;
     }
@@ -298,7 +298,7 @@ class _EditStoreViewState extends State<EditStoreView> {
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
-          'Modifier la boutique',
+          'store_management.edit.title'.tr,
           style: context.h5.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -315,7 +315,7 @@ class _EditStoreViewState extends State<EditStoreView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ========== SECTION LOGO ==========
-            _buildSectionTitle(context, 'Logo de la boutique'),
+            _buildSectionTitle(context, 'store_management.edit.logo_section'.tr),
             const SizedBox(height: 12),
             Center(
               child: Obx(() {
@@ -393,15 +393,15 @@ class _EditStoreViewState extends State<EditStoreView> {
             SizedBox(height: context.sectionSpacing),
 
             // ========== SECTION INFORMATIONS ==========
-            _buildSectionTitle(context, 'Informations générales'),
+            _buildSectionTitle(context, 'store_management.edit.general_section'.tr),
             const SizedBox(height: 12),
 
             // Nom de la boutique
             _buildTextFieldWithController(
               context,
               controller: nameController,
-              label: 'Nom de la boutique *',
-              hint: 'Ex: Ma Super Boutique',
+              label: 'store_management.edit.name_label'.tr,
+              hint: 'store_management.edit.name_hint'.tr,
               icon: Icons.store,
             ),
 
@@ -411,8 +411,8 @@ class _EditStoreViewState extends State<EditStoreView> {
             _buildTextFieldWithController(
               context,
               controller: descriptionController,
-              label: 'Description',
-              hint: 'Décrivez votre boutique...',
+              label: 'store_management.edit.description_label'.tr,
+              hint: 'store_management.edit.description_hint'.tr,
               icon: Icons.description,
               maxLines: 3,
             ),
@@ -423,8 +423,8 @@ class _EditStoreViewState extends State<EditStoreView> {
             _buildTextFieldWithController(
               context,
               controller: phoneController,
-              label: 'Téléphone *',
-              hint: 'Ex: +237 690000000',
+              label: 'store_management.edit.phone_label'.tr,
+              hint: 'store_management.edit.phone_hint'.tr,
               icon: Icons.phone,
               keyboardType: TextInputType.phone,
             ),
@@ -432,7 +432,7 @@ class _EditStoreViewState extends State<EditStoreView> {
             SizedBox(height: context.sectionSpacing),
 
             // ========== SECTION CATÉGORIES ==========
-            _buildSectionTitle(context, 'Catégories'),
+            _buildSectionTitle(context, 'store_management.edit.categories_section'.tr),
             const SizedBox(height: 12),
             Obx(
               () => Wrap(
@@ -473,7 +473,7 @@ class _EditStoreViewState extends State<EditStoreView> {
             SizedBox(height: context.sectionSpacing),
 
             // ========== SECTION LOCALISATION ==========
-            _buildSectionTitle(context, 'Localisation'),
+            _buildSectionTitle(context, 'store_management.edit.location_section'.tr),
             const SizedBox(height: 12),
 
             // Boutique placée : emplacement en lecture seule, il change par une
@@ -512,7 +512,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Vérification de la zone de livraison...',
+                          'store_management.edit.checking_zone'.tr,
                           style: context.body2.copyWith(
                             color: AppThemeSystem.primaryColor,
                           ),
@@ -541,7 +541,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Zone de livraison disponible',
+                          'store_management.edit.zone_available'.tr,
                           style: context.body2.copyWith(
                             color: AppThemeSystem.successColor,
                             fontWeight: FontWeight.w600,
@@ -574,7 +574,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                       SizedBox(width: context.elementSpacing),
                       Expanded(
                         child: Text(
-                          'Hors zone de livraison - Veuillez choisir un autre emplacement',
+                          'store_management.edit.zone_unavailable'.tr,
                           style: context.body2.copyWith(
                             color: AppThemeSystem.errorColor,
                             fontWeight: FontWeight.w600,
@@ -599,7 +599,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Annuler'),
+                    child: Text('store_management.edit.cancel'.tr),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -626,7 +626,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Enregistrer les modifications'),
+                          : Text('store_management.edit.save'.tr),
                     );
                   }),
                 ),
@@ -648,8 +648,8 @@ class _EditStoreViewState extends State<EditStoreView> {
         _buildTextFieldWithController(
           context,
           controller: addressController,
-          label: 'Adresse complète *',
-          hint: 'Quartier, rue, ville…',
+          label: 'store_management.edit.address_label'.tr,
+          hint: 'store_management.edit.address_hint'.tr,
           icon: Icons.location_on,
           focusNode: addressFocus,
           onChanged: _onAddressChanged,
@@ -752,11 +752,11 @@ class _EditStoreViewState extends State<EditStoreView> {
               Expanded(
                 child: Text(
                   isResolvingLocation.value
-                      ? 'Recherche de la ville…'
+                      ? 'store_management.edit.searching_city'.tr
                       : locationFailed.value
-                      ? 'Ville introuvable pour ce point : précisez l’adresse'
+                      ? 'store_management.edit.city_not_found_point'.tr
                       : (locationLabel.value ??
-                            'Touchez la carte pour placer votre boutique'),
+                            'store_management.edit.tap_map'.tr),
                   style: context.body1.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -765,7 +765,7 @@ class _EditStoreViewState extends State<EditStoreView> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Tapez l’adresse et choisissez une proposition, ou touchez la carte : le repère, l’adresse et la ville se mettent à jour ensemble.',
+          'store_management.edit.address_help'.tr,
           style: context.caption.copyWith(color: context.secondaryTextColor),
         ),
       ],
@@ -839,7 +839,7 @@ class _EditStoreViewState extends State<EditStoreView> {
                           Text(
                             store.address.isNotEmpty
                                 ? store.address
-                                : 'Adresse non renseignée',
+                                : 'store_management.edit.address_missing'.tr,
                             style: context.body1.copyWith(
                               fontWeight: FontWeight.w600,
                               color: ds.textPrimary,
@@ -865,16 +865,19 @@ class _EditStoreViewState extends State<EditStoreView> {
         ),
         SizedBox(height: AppDesign.space2),
         Text(
-          'L’emplacement est vérifié par ASSO : pour déménager, envoyez une demande. La boutique change d’adresse une fois la demande validée.',
+          'store_management.edit.location_locked_help'.tr,
           style: context.caption.copyWith(color: ds.textSecondary),
         ),
         if (pending != null) ...[
           SizedBox(height: AppDesign.space3),
           _RequestNotice(
             icon: Icons.schedule_outlined,
-            title: 'Demande en attente de validation',
+            title: 'store_management.edit.request_pending'.tr,
             message:
-                '${pending['address'] ?? 'Nouvel emplacement'} · envoyée le ${_formatDate(pending['created_at'])}',
+                'store_management.edit.request_pending_message'.trParams({
+              'address': '${pending['address'] ?? 'store_management.edit.new_location'.tr}',
+              'date': _formatDate(pending['created_at']),
+            }),
             background: AppDesign.warningSubtle,
             foreground: AppDesign.warningText,
           ),
@@ -882,10 +885,10 @@ class _EditStoreViewState extends State<EditStoreView> {
           SizedBox(height: AppDesign.space3),
           _RequestNotice(
             icon: Icons.block_outlined,
-            title: 'Dernière demande refusée',
+            title: 'store_management.edit.request_rejected'.tr,
             message: rejected['rejection_reason']?.toString().isNotEmpty == true
                 ? rejected['rejection_reason'].toString()
-                : 'Contactez le support pour en savoir plus.',
+                : 'store_management.edit.contact_support'.tr,
             background: AppDesign.dangerSubtle,
             foreground: AppDesign.dangerText,
           ),
@@ -893,8 +896,8 @@ class _EditStoreViewState extends State<EditStoreView> {
         SizedBox(height: AppDesign.space3),
         AppButton(
           label: pending != null
-              ? 'Modifier ma demande'
-              : 'Demander un changement d’emplacement',
+              ? 'store_management.edit.edit_request'.tr
+              : 'store_management.edit.request_change'.tr,
           icon: Icons.edit_location_alt_outlined,
           variant: AppButtonVariant.secondary,
           isLoading: controller.isRequestingLocation.value,
@@ -945,8 +948,8 @@ class _EditStoreViewState extends State<EditStoreView> {
     );
     if (sent == true) {
       Get.snackbar(
-        'Demande envoyée',
-        'ASSO vérifie le nouvel emplacement. Vous serez prévenu de la décision.',
+        'store_management.edit.request_sent_title'.tr,
+        'store_management.edit.request_sent_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 4),
       );
@@ -977,8 +980,8 @@ class _EditStoreViewState extends State<EditStoreView> {
 
     if (name.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Le nom de la boutique est requis',
+        'store_management.error'.tr,
+        'store_management.edit.name_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -988,8 +991,8 @@ class _EditStoreViewState extends State<EditStoreView> {
 
     if (!controller.isShopPlaced && address.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'L\'adresse est requise',
+        'store_management.error'.tr,
+        'store_management.edit.address_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -999,8 +1002,8 @@ class _EditStoreViewState extends State<EditStoreView> {
 
     if (phone.isEmpty) {
       Get.snackbar(
-        'Erreur',
-        'Le téléphone est requis',
+        'store_management.error'.tr,
+        'store_management.edit.phone_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -1011,8 +1014,8 @@ class _EditStoreViewState extends State<EditStoreView> {
     // Limite du serveur : au-delà, il refusait tout l'enregistrement.
     if (phone.length > 20) {
       Get.snackbar(
-        'Erreur',
-        'Le téléphone ne doit pas dépasser 20 caractères',
+        'store_management.error'.tr,
+        'store_management.edit.phone_too_long'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -1219,8 +1222,8 @@ class _LocationRequestSheetState extends State<_LocationRequestSheet> {
     final address = addressController.text.trim();
     if (address.isEmpty) {
       Get.snackbar(
-        'Adresse manquante',
-        'Indiquez l’adresse du nouvel emplacement.',
+        'store_management.edit.address_missing_title'.tr,
+        'store_management.edit.address_missing_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -1241,11 +1244,11 @@ class _LocationRequestSheetState extends State<_LocationRequestSheet> {
   Widget build(BuildContext context) {
     final ds = context.ds;
     return AppSheet(
-      title: 'Nouvel emplacement',
-      subtitle: 'ASSO vérifie la demande avant de déplacer votre boutique.',
+      title: 'store_management.edit.new_location'.tr,
+      subtitle: 'store_management.edit.sheet_subtitle'.tr,
       footer: Obx(
         () => AppButton(
-          label: 'Envoyer la demande',
+          label: 'store_management.edit.send_request'.tr,
           icon: Icons.send_rounded,
           size: AppButtonSize.large,
           isLoading: controller.isRequestingLocation.value,
@@ -1263,9 +1266,9 @@ class _LocationRequestSheetState extends State<_LocationRequestSheet> {
               Expanded(
                 child: Text(
                   _resolving
-                      ? 'Recherche de la ville…'
+                      ? 'store_management.edit.searching_city'.tr
                       : (_location?.label ??
-                            'Ville introuvable : précisez l’adresse'),
+                            'store_management.edit.city_not_found'.tr),
                   style: context.body2.copyWith(color: ds.textSecondary),
                 ),
               ),
@@ -1274,15 +1277,15 @@ class _LocationRequestSheetState extends State<_LocationRequestSheet> {
           SizedBox(height: AppDesign.space3),
           AppTextField(
             controller: addressController,
-            label: 'Adresse',
-            hint: 'Quartier, rue, repère…',
+            label: 'store_management.edit.sheet_address_label'.tr,
+            hint: 'store_management.edit.sheet_address_hint'.tr,
             textInputAction: TextInputAction.next,
           ),
           SizedBox(height: AppDesign.space3),
           AppTextField(
             controller: reasonController,
-            label: 'Motif (facultatif)',
-            hint: 'Ex. nouveau local, repère mal placé…',
+            label: 'store_management.edit.reason_label'.tr,
+            hint: 'store_management.edit.reason_hint'.tr,
             maxLines: 3,
           ),
         ],

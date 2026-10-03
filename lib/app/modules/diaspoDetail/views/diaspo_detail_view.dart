@@ -37,7 +37,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
       backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Détails de l\'offre'),
+        title: Text('diaspo_detail.title'.tr),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -50,7 +50,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
 
         final offer = controller.offer.value;
         if (offer == null) {
-          return const Center(child: Text('Offre introuvable'));
+          return Center(child: Text('diaspo_detail.not_found'.tr));
         }
 
         return Column(
@@ -138,7 +138,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                   children: [
                     Flexible(
                       child: Text(
-                        offer.user?.fullName ?? 'Anonyme',
+                        offer.user?.fullName ?? 'diaspo_detail.anonymous'.tr,
                         style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: _titleColor(isDark)),
                       ),
                     ),
@@ -156,7 +156,9 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    verified ? 'Voyageur vérifié' : 'Profil non vérifié',
+                    verified
+                        ? 'diaspo_detail.verified_traveler'.tr
+                        : 'diaspo_detail.unverified_profile'.tr,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -177,10 +179,9 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
     const color = AppDesign.accent;
     final deadline = offer.formattedVerificationDeadline;
     final text = controller.isMyOffer.value
-        ? 'Votre offre est en ligne avec la mention « Profil non vérifié » et ne peut pas encore être réservée. '
-            '${deadline != null ? 'Faites valider votre identité avant le $deadline, sinon elle sera retirée.' : 'Faites valider votre identité depuis l\'espace DIASPO.'}'
-        : 'L\'identité de ce voyageur n\'a pas encore été vérifiée par ASSO. '
-            'Vous pouvez lui écrire ; la réservation ouvrira dès la validation de son profil.';
+        ? '${'diaspo_detail.notice.owner'.tr} '
+            '${deadline != null ? 'diaspo_detail.notice.owner_deadline'.trParams({'date': '$deadline'}) : 'diaspo_detail.notice.owner_no_deadline'.tr}'
+        : 'diaspo_detail.notice.buyer'.tr;
 
     return Container(
       width: double.infinity,
@@ -199,7 +200,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Profil non vérifié', style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+                Text('diaspo_detail.unverified_profile'.tr, style: const TextStyle(fontWeight: FontWeight.bold, color: color)),
                 const SizedBox(height: 4),
                 Text(text, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87)),
               ],
@@ -218,7 +219,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Itinéraire', isDark),
+          _sectionTitle('diaspo_detail.route'.tr, isDark),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,12 +241,12 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Départ', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text('diaspo_detail.departure'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
                     const SizedBox(height: 2),
                     Text('${offer.departureCity}, ${offer.departureCountry}',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _titleColor(isDark))),
                     const SizedBox(height: 18),
-                    Text('Arrivée', style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text('diaspo_detail.arrival'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
                     const SizedBox(height: 2),
                     Text('${offer.arrivalCity}, ${offer.arrivalCountry}',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _titleColor(isDark))),
@@ -267,14 +268,14 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Dates et horaires', isDark),
+          _sectionTitle('diaspo_detail.dates'.tr, isDark),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.calendar_today_outlined, 'Départ', _formatDateTime(offer.departureDateTime), isDark),
+          _buildInfoRow(Icons.calendar_today_outlined, 'diaspo_detail.departure'.tr, _formatDateTime(offer.departureDateTime), isDark),
           const SizedBox(height: 14),
-          _buildInfoRow(Icons.event_available_outlined, 'Arrivée', _formatDateTime(offer.arrivalDateTime), isDark),
+          _buildInfoRow(Icons.event_available_outlined, 'diaspo_detail.arrival'.tr, _formatDateTime(offer.arrivalDateTime), isDark),
           if (offer.tripDurationHours != null) ...[
             const SizedBox(height: 14),
-            _buildInfoRow(Icons.schedule, 'Durée du voyage', '${offer.tripDurationHours?.toStringAsFixed(1)} heures', isDark),
+            _buildInfoRow(Icons.schedule, 'diaspo_detail.trip_duration'.tr, 'diaspo_detail.hours'.trParams({'hours': '${offer.tripDurationHours?.toStringAsFixed(1)}'}), isDark),
           ],
         ],
       ),
@@ -289,12 +290,12 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Tarification', isDark),
+          _sectionTitle('diaspo_detail.pricing'.tr, isDark),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Prix par kilo', style: TextStyle(fontSize: 14, color: _muted(isDark))),
+              Text('diaspo_detail.price_per_kg'.tr, style: TextStyle(fontSize: 14, color: _muted(isDark))),
               Text(
                 '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor),
@@ -315,7 +316,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                   children: [
                     const Icon(Icons.inventory_2_outlined, size: 18, color: AppDesign.success),
                     const SizedBox(width: 8),
-                    Text('Disponibilité', style: TextStyle(fontWeight: FontWeight.w600, color: _titleColor(isDark))),
+                    Text('diaspo_detail.availability'.tr, style: TextStyle(fontWeight: FontWeight.w600, color: _titleColor(isDark))),
                   ],
                 ),
                 Text('${offer.remainingKg.toStringAsFixed(1)} kg',
@@ -389,7 +390,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     icon: controller.isDeleting.value
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.delete_outline, color: AppDesign.danger),
-                    label: Text('Supprimer',
+                    label: Text('diaspo_detail.delete'.tr,
                         style: TextStyle(color: controller.isDeleting.value ? Colors.grey : AppDesign.danger)),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: controller.isDeleting.value ? Colors.grey : AppDesign.danger),
@@ -407,7 +408,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                 child: ElevatedButton.icon(
                   onPressed: controller.isDeleting.value ? null : controller.editOffer,
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Modifier'),
+                  label: Text('diaspo_detail.edit'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.primaryColor,
                     foregroundColor: Colors.white,
@@ -429,7 +430,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
               child: OutlinedButton.icon(
                 onPressed: controller.openChat,
                 icon: const Icon(Icons.chat_bubble_outline),
-                label: const Text('Chatter'),
+                label: Text('diaspo_detail.chat'.tr),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: AppThemeSystem.primaryColor),
                   foregroundColor: AppThemeSystem.primaryColor,
@@ -450,8 +451,8 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
                     ? Icons.shopping_bag_outlined
                     : Icons.lock_clock_outlined),
                 label: Text((controller.offer.value?.profileVerified ?? false)
-                    ? 'Commander'
-                    : 'Après vérification'),
+                    ? 'diaspo_detail.order'.tr
+                    : 'diaspo_detail.after_verification'.tr),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
                   foregroundColor: Colors.white,
@@ -467,6 +468,10 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return 'diaspo_detail.date_at_time'.trParams({
+      'date': '${dateTime.day}/${dateTime.month}/${dateTime.year}',
+      'time':
+          '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}',
+    });
   }
 }

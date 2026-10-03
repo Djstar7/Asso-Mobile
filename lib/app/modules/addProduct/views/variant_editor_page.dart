@@ -33,7 +33,7 @@ class VariantEditorPage extends StatelessWidget {
         elevation: 0,
         leading: const AppBackButton(close: true),
         title: Text(
-          'Couleurs, tailles & options',
+          'add_product.variants.title'.tr,
           style: context.h6.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -48,7 +48,7 @@ class VariantEditorPage extends StatelessWidget {
           children: [
             _intro(context),
             const SizedBox(height: 20),
-            _stepTitle(context, 1, 'Options proposées au client'),
+            _stepTitle(context, 1, 'add_product.variants.step_options'.tr),
             const SizedBox(height: 12),
             for (var i = 0; i < state.groups.length; i++)
               _GroupCard(
@@ -62,7 +62,7 @@ class VariantEditorPage extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _stepTitle(context, 2, 'Quantité par combinaison'),
+                    child: _stepTitle(context, 2, 'add_product.variants.step_quantity'.tr),
                   ),
                   _totalBadge(context),
                 ],
@@ -98,8 +98,11 @@ class VariantEditorPage extends StatelessWidget {
               icon: const Icon(Icons.check_rounded),
               label: Text(
                 count == 0
-                    ? 'Terminer'
-                    : 'Valider · $count choix · ${state.totalStock} en stock',
+                    ? 'add_product.variants.finish'.tr
+                    : 'add_product.variants.validate_count'.trParams({
+                        'count': '$count',
+                        'stock': '${state.totalStock}',
+                      }),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             );
@@ -125,9 +128,7 @@ class VariantEditorPage extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(
-            'Ajoutez ce que le client doit choisir : la couleur d’un téléphone, '
-            'la couleur et la pointure d’une chaussure… Toutes les combinaisons '
-            'sont créées pour vous, il ne reste qu’à indiquer les quantités.',
+            'add_product.variants.intro'.tr,
             style: context.body2.copyWith(height: 1.4),
           ),
         ),
@@ -171,7 +172,7 @@ class VariantEditorPage extends StatelessWidget {
       border: Border.all(color: context.borderColor),
     ),
     child: Text(
-      'Total : ${state.totalStock}',
+      'add_product.variants.total'.trParams({'total': '${state.totalStock}'}),
       style: const TextStyle(
         fontWeight: FontWeight.w700,
         color: AppThemeSystem.primaryColor,
@@ -189,7 +190,9 @@ class VariantEditorPage extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            state.groups.isEmpty ? 'Commencez par :' : 'Ajouter :',
+            state.groups.isEmpty
+                ? 'add_product.variants.start_with'.tr
+                : 'add_product.variants.add_colon'.tr,
             style: context.body2.copyWith(color: context.secondaryTextColor),
           ),
           for (final (name, icon) in _quickGroups)
@@ -201,7 +204,7 @@ class VariantEditorPage extends StatelessWidget {
               ),
           ActionChip(
             avatar: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Autre option'),
+            label: Text('add_product.variants.other_option'.tr),
             onPressed: () => _askCustomGroup(context),
           ),
         ],
@@ -214,24 +217,24 @@ class VariantEditorPage extends StatelessWidget {
     final name = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Nouvelle option'),
+        title: Text('add_product.variants.new_option'.tr),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            hintText: 'Ex. Matière, Parfum, Capacité',
+          decoration: InputDecoration(
+            hintText: 'add_product.variants.new_option_hint'.tr,
           ),
           onSubmitted: (value) => Navigator.pop(dialogContext, value),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text('add_product.cancel'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: const Text('Ajouter'),
+            child: Text('add_product.variants.add'.tr),
           ),
         ],
       ),
@@ -346,8 +349,8 @@ class _GroupCardState extends State<_GroupCard> {
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
-                    decoration: const InputDecoration(
-                      hintText: 'Nom de l’option',
+                    decoration: InputDecoration(
+                      hintText: 'add_product.variants.option_name'.tr,
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -370,15 +373,15 @@ class _GroupCardState extends State<_GroupCard> {
                     value: 'color',
                     child: Text(
                       group.isColor
-                          ? 'Afficher en étiquettes'
-                          : 'Afficher en pastilles de couleur',
+                          ? 'add_product.variants.show_as_labels'.tr
+                          : 'add_product.variants.show_as_swatches'.tr,
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
                     child: Text(
-                      'Supprimer cette option',
-                      style: TextStyle(color: AppDesign.danger),
+                      'add_product.variants.delete_option'.tr,
+                      style: const TextStyle(color: AppDesign.danger),
                     ),
                   ),
                 ],
@@ -389,8 +392,8 @@ class _GroupCardState extends State<_GroupCard> {
           if (group.values.isEmpty)
             Text(
               group.isColor
-                  ? 'Touchez une couleur ci-dessous ou saisissez-en une.'
-                  : 'Ajoutez les valeurs proposées (ex. S, M, L).',
+                  ? 'add_product.variants.color_values_empty'.tr
+                  : 'add_product.variants.values_empty'.tr,
               style: context.caption.copyWith(
                 color: context.secondaryTextColor,
               ),
@@ -411,7 +414,7 @@ class _GroupCardState extends State<_GroupCard> {
                           onPressed: () => _pickColor(i),
                           onDeleted: () =>
                               widget.state.removeValue(widget.index, i),
-                          tooltip: 'Touchez pour changer la teinte',
+                          tooltip: 'add_product.variants.change_shade'.tr,
                         )
                       : InputChip(
                           label: Text(
@@ -436,8 +439,8 @@ class _GroupCardState extends State<_GroupCard> {
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     hintText: group.isColor
-                        ? 'Autre couleur (ex. Bleu nuit)'
-                        : 'Ajouter une valeur (S, M, L…)',
+                        ? 'add_product.variants.other_color_hint'.tr
+                        : 'add_product.variants.add_value_hint'.tr,
                     isDense: true,
                     filled: true,
                     fillColor: context.inputFieldColor,
@@ -518,7 +521,7 @@ class _BulkStockRowState extends State<_BulkStockRow> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
-              hintText: 'Même quantité pour tout',
+              hintText: 'add_product.variants.same_quantity'.tr,
               prefixIcon: const Icon(Icons.format_paint_outlined),
               isDense: true,
               filled: true,
@@ -544,7 +547,7 @@ class _BulkStockRowState extends State<_BulkStockRow> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text('Appliquer'),
+          child: Text('add_product.variants.apply'.tr),
         ),
       ],
     );
@@ -695,7 +698,7 @@ class _ComboTileState extends State<_ComboTile> {
                 _stepButton(Icons.add_rounded, () => _setStock(row.stock + 1)),
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  tooltip: 'Prix, référence, visibilité',
+                  tooltip: 'add_product.variants.row_details'.tr,
                   onPressed: () => setState(() => _expanded = !_expanded),
                   icon: Icon(
                     _expanded ? Icons.expand_less : Icons.expand_more,
@@ -717,7 +720,7 @@ class _ComboTileState extends State<_ComboTile> {
                       ),
                       decoration: _fieldDecoration(
                         context,
-                        'Supplément de prix',
+                        'add_product.variants.price_adjustment'.tr,
                         Icons.add_card_outlined,
                       ),
                       onChanged: (v) => row.priceAdjustment =
@@ -730,7 +733,7 @@ class _ComboTileState extends State<_ComboTile> {
                       controller: _sku,
                       decoration: _fieldDecoration(
                         context,
-                        'Référence',
+                        'add_product.variants.sku'.tr,
                         Icons.qr_code_2_outlined,
                       ),
                       onChanged: (v) => row.sku = v.trim(),
@@ -747,7 +750,7 @@ class _ComboTileState extends State<_ComboTile> {
                   dense: true,
                   value: row.isActive,
                   activeThumbColor: AppThemeSystem.primaryColor,
-                  title: const Text('Proposer ce choix aux clients'),
+                  title: Text('add_product.variants.offer_choice'.tr),
                   onChanged: (v) {
                     row.isActive = v;
                     widget.state.touch();
@@ -855,7 +858,7 @@ Future<String?> showColorPalette(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Teinte affichée pour « $title »',
+              'add_product.variants.shade_for'.trParams({'title': title}),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 16),

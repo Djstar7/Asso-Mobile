@@ -65,7 +65,7 @@ class OtpView extends GetView<OtpController> {
       children: [
         // Titre
         Text(
-          'Vérification OTP',
+          'otp.title'.tr,
           style: context.h1.copyWith(
             color: AppThemeSystem.primaryColor,
           ),
@@ -85,8 +85,8 @@ class OtpView extends GetView<OtpController> {
                     color: context.secondaryTextColor,
                   ),
                   children: [
-                    const TextSpan(
-                      text: 'Nous avons envoyé un code de vérification sur votre e-mail\n',
+                    TextSpan(
+                      text: 'otp.code_sent_to_email'.tr,
                     ),
                   ],
                 ),
@@ -114,7 +114,7 @@ class OtpView extends GetView<OtpController> {
                       ),
                       SizedBox(width: context.elementSpacing * 0.25),
                       Text(
-                        'Modifier mon adresse e-mail',
+                        'otp.change_email'.tr,
                         style: context.caption.copyWith(
                           color: AppThemeSystem.primaryColor,
                           fontWeight: FontWeight.w600,
@@ -248,7 +248,9 @@ class OtpView extends GetView<OtpController> {
             ),
             SizedBox(width: context.elementSpacing * 0.5),
             Text(
-              'Code valide pendant ${_formatTime(secondsRemaining)}',
+              'otp.code_valid_for'.trParams({
+                'time': _formatTime(secondsRemaining),
+              }),
               style: context.body2.copyWith(
                 color: AppThemeSystem.primaryColor,
                 fontWeight: FontWeight.w600,
@@ -271,7 +273,7 @@ class OtpView extends GetView<OtpController> {
           children: [
             if (!canResend)
               Text(
-                'Vous n\'avez pas reçu le code ?',
+                'otp.not_received'.tr,
                 style: context.body2.copyWith(
                   color: context.secondaryTextColor,
                 ),
@@ -288,8 +290,10 @@ class OtpView extends GetView<OtpController> {
               ),
               label: Text(
                 canResend
-                    ? 'Renvoyer le code'
-                    : 'Renvoyer dans ${_formatTime(secondsRemaining)}',
+                    ? 'otp.resend'.tr
+                    : 'otp.resend_in'.trParams({
+                        'time': _formatTime(secondsRemaining),
+                      }),
                 style: context.subtitle2.copyWith(
                   color: canResend
                       ? AppThemeSystem.primaryColor
@@ -349,7 +353,7 @@ class OtpView extends GetView<OtpController> {
                   ),
                 )
               : Text(
-                  'Vérifier le code',
+                  'otp.verify'.tr,
                   style: context.button.copyWith(
                     color: AppThemeSystem.whiteColor,
                     fontWeight: FontWeight.w600,

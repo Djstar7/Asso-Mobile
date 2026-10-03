@@ -62,6 +62,7 @@ dependencies:
   # de la connexion, et données du chemin tableau de bord → ajout de produit.
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  flutter_widget_from_html_core: ^0.17.4
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +82,7 @@ flutter:
     - assets/images/
     - assets/lotties/
     - assets/svgs/categories/
+    - assets/i18n/
     - Politique de confidentialité.md
     - shorebird.yaml
 

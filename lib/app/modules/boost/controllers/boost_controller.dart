@@ -185,21 +185,21 @@ class BoostController extends GetxController {
     final package = selectedPackage.value;
 
     if (product == null) {
-      _error('Choisissez l\'article à sponsoriser.');
+      _error('boost.errors.choose_product'.tr);
       return;
     }
     if (package == null) {
-      _error('Choisissez une formule.');
+      _error('boost.errors.choose_package'.tr);
       return;
     }
     if (isProductBoosted(product['id'])) {
-      _error('Cet article est déjà sponsorisé. Attendez la fin de la campagne en cours.');
+      _error('boost.errors.already_boosted'.tr);
       return;
     }
 
     final productId = int.tryParse(product['id']?.toString() ?? '');
     if (productId == null) {
-      _error('Article invalide.');
+      _error('boost.errors.invalid_product'.tr);
       return;
     }
 
@@ -207,7 +207,7 @@ class BoostController extends GetxController {
     final method = await PaymentMethodSelector.show(
       amount: display.amount,
       currency: display.currency,
-      amountLabel: 'Prix du sponsoring',
+      amountLabel: 'boost.price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -224,7 +224,7 @@ class BoostController extends GetxController {
         await _buyWithCard(package, productId);
         break;
       default:
-        _error("Ce moyen de paiement n'est pas disponible pour le sponsoring.");
+        _error('boost.errors.method_unavailable'.tr);
     }
   }
 
@@ -235,14 +235,14 @@ class BoostController extends GetxController {
     PaymentMethodOption method,
   ) async {
     final confirmed = await WalletPaymentConfirmDialog.show(
-      itemLabel: 'Sponsoring — ${package.name}',
+      itemLabel: 'boost.item_label'.trParams({'name': package.name}),
       amount: package.price,
       balance: method.balance ?? 0,
     );
     if (!confirmed || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'Activation du sponsoring...');
+    PaymentLoadingDialog.show(message: 'boost.activating'.tr);
 
     try {
       final res = await PackageService.subscribePackageDirect(
@@ -261,7 +261,7 @@ class BoostController extends GetxController {
       if (_isDisposed) return;
       _success(package);
     } catch (e) {
-      _error('Une erreur est survenue : $e');
+      _error('boost.errors.generic'.trParams({'error': '$e'}));
     } finally {
       // Fermé ici et nulle part ailleurs : un `return` anticipé (écran quitté
       // pendant l'appel) laissait sinon un dialogue bloquant à l'écran.
@@ -274,12 +274,12 @@ class BoostController extends GetxController {
   Future<void> _buyWithKpay(BoostPackage package, int productId) async {
     final selection = await KpayDirectPaymentSheet.show(
       amount: package.price,
-      amountLabel: 'Prix du sponsoring',
+      amountLabel: 'boost.price'.tr,
     );
     if (selection == null || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'Création de votre campagne...');
+    PaymentLoadingDialog.show(message: 'boost.creating_campaign'.tr);
 
     try {
       final res = await PackageService.subscribePackageDirect(
@@ -298,8 +298,8 @@ class BoostController extends GetxController {
       }
 
       Get.snackbar(
-        'Paiement en attente',
-        'Validez le paiement sur votre téléphone (USSD). Le sponsoring démarrera ensuite.',
+        'package_subscription.payment_pending'.tr,
+        'boost.validate_ussd'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppThemeSystem.warningColor,
         colorText: Colors.white,
@@ -308,7 +308,7 @@ class BoostController extends GetxController {
 
       _pollPayment(subscriptionId, package);
     } catch (e) {
-      _error('Une erreur est survenue : $e');
+      _error('boost.errors.generic'.trParams({'error': '$e'}));
     } finally {
       PaymentLoadingDialog.hide();
       isSubscribing.value = false;
@@ -318,12 +318,12 @@ class BoostController extends GetxController {
   /// Carte bancaire (Payment Sheet Stripe native).
   Future<void> _buyWithCard(BoostPackage package, int productId) async {
     if (!StripeNativeService.isSupported) {
-      _error("Le paiement par carte est disponible sur l'application mobile.");
+      _error('wallet.recharge.card_mobile_only'.tr);
       return;
     }
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'Préparation du paiement...');
+    PaymentLoadingDialog.show(message: 'package_subscription.preparing_payment'.tr);
 
     try {
       final res = await PackageService.subscribePackageDirect(
@@ -346,7 +346,7 @@ class BoostController extends GetxController {
       }
       if (clientSecret == null || clientSecret.isEmpty ||
           publishableKey == null || publishableKey.isEmpty) {
-        _error('Données de paiement carte indisponibles. Réessayez.');
+        _error('package_subscription.card_data_unavailable'.tr);
         return;
       }
 
@@ -358,8 +358,8 @@ class BoostController extends GetxController {
 
       if (!ok) {
         Get.snackbar(
-          'Paiement annulé',
-          "Le paiement n'a pas été finalisé.",
+          'wallet.webview.cancelled'.tr,
+          'package_subscription.payment_not_finalized'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.warningColor,
           colorText: Colors.white,
@@ -369,8 +369,8 @@ class BoostController extends GetxController {
       }
 
       Get.snackbar(
-        'Paiement en cours',
-        'Votre paiement est en cours de confirmation.',
+        'package_subscription.payment_in_progress'.tr,
+        'boost.payment_confirming'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.success,
         colorText: Colors.white,
@@ -406,8 +406,8 @@ class BoostController extends GetxController {
         }
         if (status == 'failed') {
           Get.snackbar(
-            'Paiement échoué',
-            "Le paiement du sponsoring n'a pas abouti.",
+            'package_subscription.payment_failed'.tr,
+            'boost.payment_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppThemeSystem.errorColor,
             colorText: Colors.white,
@@ -420,8 +420,8 @@ class BoostController extends GetxController {
 
     if (_isDisposed) return;
     Get.snackbar(
-      'Paiement en attente',
-      "La confirmation n'est pas encore arrivée. Vos campagnes se mettront à jour automatiquement.",
+      'package_subscription.payment_pending'.tr,
+      'boost.confirmation_pending'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.warningColor,
       colorText: Colors.white,
@@ -437,21 +437,22 @@ class BoostController extends GetxController {
   Future<void> cancelCampaign(BoostCampaign campaign) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Arrêter le sponsoring ?'),
+        title: Text('boost.cancel_dialog.title'.tr),
         content: Text(
-          '« ${campaign.productName} » ne sera plus mis en avant. '
-          'Les ${campaign.impressionsRemaining} vues restantes seront perdues '
-          'et ne sont pas remboursées.',
+          'boost.cancel_dialog.message'.trParams({
+            'product': campaign.productName,
+            'views': '${campaign.impressionsRemaining}',
+          }),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Continuer le sponsoring'),
+            child: Text('boost.cancel_dialog.keep'.tr),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
             style: TextButton.styleFrom(foregroundColor: AppThemeSystem.errorColor),
-            child: const Text('Arrêter'),
+            child: Text('boost.cancel_dialog.stop'.tr),
           ),
         ],
       ),
@@ -466,15 +467,15 @@ class BoostController extends GetxController {
       if (res.success) {
         await loadCampaigns();
         Get.snackbar(
-          'Sponsoring arrêté',
-          'La campagne est terminée.',
+          'boost.stopped_title'.tr,
+          'boost.stopped_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
         _error(res.message);
       }
     } catch (e) {
-      _error('Une erreur est survenue : $e');
+      _error('boost.errors.generic'.trParams({'error': '$e'}));
     }
   }
 
@@ -507,8 +508,8 @@ class BoostController extends GetxController {
 
   void _success(BoostPackage package) {
     Get.snackbar(
-      'Sponsoring activé 🚀',
-      'Votre article sera vu par ${package.formattedReach}.',
+      'boost.activated_title'.tr,
+      'boost.activated_message'.trParams({'reach': package.formattedReach}),
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppDesign.success,
       colorText: Colors.white,
@@ -518,8 +519,8 @@ class BoostController extends GetxController {
 
   void _error(String? message) {
     Get.snackbar(
-      'Erreur',
-      message?.isNotEmpty == true ? message! : 'Impossible de lancer le sponsoring',
+      'boost.error'.tr,
+      message?.isNotEmpty == true ? message! : 'boost.errors.launch_failed'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.errorColor,
       colorText: Colors.white,
