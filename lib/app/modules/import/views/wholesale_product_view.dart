@@ -212,9 +212,28 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     _mixVariants ? _quantity : (_variantQuantities[_focusedVariantId] ?? 0),
   );
 
-  /// Pas de minimum de commande : sous le premier seuil, le client paie le
-  /// prix du premier palier. Il faut seulement une quantité.
-  bool get _quantityTooLow => _lines.isEmpty;
+  /// Minimum de commande : le seuil du premier palier.
+  int get _minQuantity => _tiers.firstOrNull?.minQuantity ?? 1;
+
+  /// Le minimum porte sur le total du produit si les options se cumulent,
+  /// sinon chaque option doit l'atteindre seule. Même règle que le serveur.
+  bool get _belowMinimum => _mixVariants
+      ? _quantity < _minQuantity
+      : _lines.any((line) => line.$2 < _minQuantity);
+
+  bool get _quantityTooLow => _lines.isEmpty || _belowMinimum;
+
+  /// Rappel du minimum non atteint.
+  String get _minimumMessage => !_hasVariants
+      ? 'import.wholesale.hint.minimum'.trParams({'minimum': '$_minQuantity'})
+      : _mixVariants
+      ? 'import.wholesale.hint.minimum_total'.trParams({
+          'quantity': '$_quantity',
+          'minimum': '$_minQuantity',
+        })
+      : 'import.wholesale.hint.minimum_per_option'.trParams({
+          'minimum': '$_minQuantity',
+        });
 
   double get _subtotal => _lines.fold(
     0,
@@ -303,11 +322,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   /// Première étape qui bloque la commande ; null quand tout est prêt.
   String? get _missingStep {
-    if (_quantityTooLow) {
+    if (_lines.isEmpty) {
       return _hasVariants
           ? 'import.wholesale.choose_message'.tr
           : 'import.wholesale.hint.enter_quantity'.tr;
     }
+    if (_belowMinimum) return _minimumMessage;
     if (_tier == null || _shipping == null) {
       return 'import.wholesale.choose_tier_and_shipping'.tr;
     }
@@ -455,6 +475,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               children: [
                 QuantityStepper(
                   value: _singleQuantity,
+                  // Pas de min à 50 ici : la saisie au clavier repasserait au
+                  // minimum dès le premier chiffre. Le rappel s'affiche en rouge.
                   min: 1,
                   hasError: _quantityTooLow,
                   onChanged: (value) {
@@ -1039,12 +1061,18 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        t.id == _tiers.first.id
-                            ? (_tiers.length > 1
+                        // Le premier seuil est le minimum de commande.
+                        t.id == _tiers.first.id && _tiers.length > 1
+                            ? (t.minQuantity <= 1
                                   ? 'import.wholesale.tier_up_to'.trParams({
                                       'count': '${_tiers[1].minQuantity - 1}',
                                     })
-                                  : 'import.wholesale.tier_any_quantity'.tr)
+                                  : 'import.wholesale.tier_range'.trParams({
+                                      'min': '${t.minQuantity}',
+                                      'count': '${_tiers[1].minQuantity - 1}',
+                                    }))
+                            : t.minQuantity <= 1
+                            ? 'import.wholesale.tier_any_quantity'.tr
                             : 'import.wholesale.tier_from'.trParams({
                                 'count': '${t.minQuantity}',
                               }),
@@ -1078,10 +1106,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   Widget _buildQuantityHint(BuildContext context) {
     final tooLow = _quantityTooLow;
     final String text;
-    if (tooLow) {
+    if (_lines.isEmpty) {
       text = _hasVariants
           ? 'import.wholesale.hint.choose_option'.tr
           : 'import.wholesale.hint.enter_quantity'.tr;
+    } else if (_belowMinimum) {
+      text = _minimumMessage;
     } else if (!_mixVariants) {
       text = 'import.wholesale.hint.total_per_option'.trParams({
         'quantity': '$_quantity',
