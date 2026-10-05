@@ -3711,9 +3711,13 @@
       "tier_up_to": "Up to @count",
       "tier_any_quantity": "Any quantity",
       "tier_from": "From @count",
+      "tier_range": "@min to @count",
       "hint": {
         "choose_option": "Choose an option and enter its quantity",
         "enter_quantity": "Enter a quantity",
+        "minimum": "Minimum @minimum units",
+        "minimum_total": "Total: @quantity — minimum @minimum, all options combined",
+        "minimum_per_option": "Minimum @minimum per option",
         "total_per_option": "Total: @quantity units · each option is priced by its quantity",
         "at_price": " at @price / unit",
         "nudge": " · @count more for @price / unit",

@@ -139,7 +139,7 @@ void main() {
     expect(find.textContaining('Minimum 50 pour'), findsNothing);
   });
 
-  testWidgets('accepte une quantité sous le premier palier, à son prix', (
+  testWidgets('sous le premier palier, rappelle le minimum et bloque', (
     tester,
   ) async {
     await openPage(tester);
@@ -148,9 +148,9 @@ void main() {
     await tester.enterText(quantityField(), '12');
     await tester.pump();
 
-    // Pas de minimum : 12 × 1 000 + 20 000.
-    expect(find.textContaining('32'), findsWidgets);
-    expect(find.textContaining('Total : 12'), findsOneWidget);
+    // Le seuil du premier palier (50) est le minimum de commande.
+    expect(find.textContaining('Minimum 50 unités'), findsWidgets);
+    expect(find.textContaining('Total : 12'), findsNothing);
   });
 
   testWidgets('les boutons ajustent la quantité', (tester) async {

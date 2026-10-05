@@ -300,7 +300,11 @@ void main() {
     await tester.pump();
     await tester.enterText(comboField(), '30');
     await tester.pump();
-    expect(inSheet(find.textContaining('Total : 30')), findsOneWidget);
+    // Sous le minimum (seuil du premier palier, 50) : rappel, commande bloquée.
+    expect(
+      inSheet(find.textContaining('Total : 30 — minimum 50')),
+      findsWidgets,
+    );
 
     // 30 L + 20 XL : une ligne par taille, un seul total. Les paliers
     // séparent les options de la saisie : on remonte jusqu'à XL.
@@ -310,7 +314,9 @@ void main() {
     await tester.pump();
     await tester.enterText(comboField(), '20');
     await tester.pump();
+    // 30 + 20 atteint le minimum, toutes tailles confondues.
     expect(inSheet(find.textContaining('Total : 50')), findsOneWidget);
+    expect(find.textContaining('minimum 50'), findsNothing);
     expect(find.text('L × 30'), findsOneWidget);
     expect(find.text('XL × 20'), findsOneWidget);
   });
