@@ -407,7 +407,8 @@ class StorageService {
   /// doit tomber avec eux, sinon la reconnexion croirait le token connu.
   static void clearFcmRegistration() => _storage.remove('fcm_registration');
 
-  /// Token FCM déjà abonné au topic des annonces (`all_users`).
+  /// Token FCM et langue déjà abonnés au topic des annonces
+  /// (`token|langue`, voir FirebaseMessagingService.topicMarker).
   ///
   /// Gardé à la déconnexion : l'abonnement suit l'appareil, pas le compte,
   /// et un invité doit continuer à recevoir les annonces.
