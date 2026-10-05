@@ -43,6 +43,8 @@ class ShopService {
     double? shopLongitude,
     List<String>? categories,
     XFile? shopLogo,
+    // translations[en][name|description] : version anglaise facultative.
+    Map<String, String> translationFields = const {},
   }) async {
     print('');
     print('========================================');
@@ -78,6 +80,8 @@ class ShopService {
       // serveur de retirer toutes les catégories (null = ne pas y toucher).
       fields['categories'] = '';
     }
+
+    fields.addAll(translationFields);
 
     print('  └─ Total fields: ${fields.length}');
 

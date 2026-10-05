@@ -7,6 +7,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/english_version_section.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/widgets/image_source_sheet.dart';
 import '../../../core/widgets/offline_badge.dart';
@@ -401,6 +402,13 @@ class AddProductView extends GetView<AddProductController> {
         _buildSubcategorySelector(context),
         SizedBox(height: AppDesign.space6),
         _buildDescriptionSection(context),
+        SizedBox(height: AppDesign.space6),
+        EnglishVersionSection(
+          nameController: controller.nameEnController,
+          descriptionController: controller.descriptionEnController,
+          nameHint: 'add_product.view.name_en_hint'.tr,
+          descriptionHint: 'add_product.view.description_en_hint'.tr,
+        ),
       ],
     );
   }

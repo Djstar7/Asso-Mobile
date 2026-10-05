@@ -952,6 +952,12 @@
         "balance_due": "vérification validée, en attente du solde du client",
         "settled": "solde payé, vente créditée"
       }
+    },
+    "english_version": {
+      "title": "Version anglaise (facultatif)",
+      "subtitle": "Sans traduction, les clients anglophones voient le texte français.",
+      "name_label": "Nom en anglais",
+      "description_label": "Description en anglais"
     }
   },
   "wallet": {
@@ -2338,7 +2344,9 @@
       "stock_label": "Quantité en stock *",
       "stock_auto": "Calculée automatiquement à partir des couleurs / tailles",
       "stock_hint": "Ex: 200",
-      "units": "unités"
+      "units": "unités",
+      "name_en_hint": "Ex. : Leather handbag",
+      "description_en_hint": "Décrivez le produit en anglais"
     },
     "free_delivery": {
       "title": "Livraison gratuite",
@@ -2622,7 +2630,9 @@
       "sheet_address_label": "Adresse",
       "sheet_address_hint": "Quartier, rue, repère…",
       "reason_label": "Motif (facultatif)",
-      "reason_hint": "Ex. nouveau local, repère mal placé…"
+      "reason_hint": "Ex. nouveau local, repère mal placé…",
+      "name_en_hint": "Ex. : Mama's Shop",
+      "description_en_hint": "Présentez votre boutique en anglais"
     }
   },
   "vendor_config": {

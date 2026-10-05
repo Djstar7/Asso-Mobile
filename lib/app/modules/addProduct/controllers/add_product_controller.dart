@@ -12,6 +12,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/models/category_catalog.dart';
 import '../../../data/models/currency_model.dart';
+import '../../../core/widgets/english_version_section.dart';
 import '../../../data/providers/offline_store.dart';
 import '../../../data/services/connectivity_service.dart';
 import '../../../data/services/offline_product_sync_service.dart';
@@ -26,6 +27,9 @@ class AddProductController extends GetxController {
   // Form controllers
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  // Version anglaise facultative (translations[en][…]) ; repli : le français.
+  final TextEditingController nameEnController = TextEditingController();
+  final TextEditingController descriptionEnController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController stockController = TextEditingController();
   final TextEditingController weightKgController = TextEditingController();
@@ -435,6 +439,8 @@ class AddProductController extends GetxController {
         fields: {
           'name': nameController.text,
           'description': descriptionController.text,
+          'nameEn': nameEnController.text,
+          'descriptionEn': descriptionEnController.text,
           'price': priceController.text,
           'stock': stockController.text,
           'weight': weightKgController.text,
@@ -456,6 +462,8 @@ class AddProductController extends GetxController {
   void restoreDraft(ProductDraft draft) {
     nameController.text = draft.fields['name'] ?? '';
     descriptionController.text = draft.fields['description'] ?? '';
+    nameEnController.text = draft.fields['nameEn'] ?? '';
+    descriptionEnController.text = draft.fields['descriptionEn'] ?? '';
     priceController.text = draft.fields['price'] ?? '';
     stockController.text = draft.fields['stock'] ?? '';
     weightKgController.text = draft.fields['weight'] ?? '';
@@ -666,6 +674,8 @@ class AddProductController extends GetxController {
     // aucun nettoyage manuel de fichiers n'est nécessaire (et impossible sur le web).
     nameController.dispose();
     descriptionController.dispose();
+    nameEnController.dispose();
+    descriptionEnController.dispose();
     priceController.dispose();
     stockController.dispose();
     weightKgController.dispose();
@@ -932,6 +942,14 @@ class AddProductController extends GetxController {
       // Champs texte
       nameController.text = product['name'] ?? '';
       descriptionController.text = product['description'] ?? '';
+      nameEnController.text = EnglishVersionSection.readTranslation(
+        product['translations'],
+        'name',
+      );
+      descriptionEnController.text = EnglishVersionSection.readTranslation(
+        product['translations'],
+        'description',
+      );
 
       // Devise + prix source du produit
       final productCurrency = (product['currency']?.toString() ?? 'XAF')
@@ -1574,6 +1592,12 @@ class AddProductController extends GetxController {
         'price': formatPriceForApi(price),
         'currency': selectedCurrency.value,
         'condition': 'new', // L'API requiert ce champ
+        // En modification, un champ anglais vidé efface la traduction.
+        ...EnglishVersionSection.fields(
+          nameEnController,
+          descriptionEnController,
+          clearEmpty: isEditMode.value,
+        ),
       };
 
       // Si en mode édition, ajouter _method=PUT pour Laravel

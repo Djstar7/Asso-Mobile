@@ -42,6 +42,7 @@ class _OfflineStoreController extends StoreManagementController {
   Future<bool> saveStoreInfo({
     required String name,
     String? description,
+    Map<String, String> translationFields = const {},
     required String address,
     required String city,
     required String phone,
@@ -54,6 +55,7 @@ class _OfflineStoreController extends StoreManagementController {
   }) async {
     saved = {
       'description': description,
+      'translations': translationFields,
       'address': address,
       'locationCity': locationCity,
       'locationCountry': locationCountry,
@@ -68,11 +70,16 @@ class _OfflineStoreController extends StoreManagementController {
 
 /// Boutique déjà placée ([placed]) : son emplacement est en lecture seule.
 /// Sinon, premier placement : adresse et repère se modifient librement.
-StoreInfo _store({List<String> categories = const [], bool placed = true}) =>
+StoreInfo _store({
+  List<String> categories = const [],
+  bool placed = true,
+  String nameEn = '',
+}) =>
     StoreInfo(
       id: '1',
       name: 'Ma boutique',
       description: 'Boutique high-tech',
+      nameEn: nameEn,
       latitude: placed ? 4.05 : 0,
       longitude: placed ? 9.77 : 0,
       address: 'Akwa, Douala',
@@ -328,5 +335,31 @@ void main() {
 
     expect(controller.saved?['description'], '');
     expect(controller.saved?['categories'], isEmpty);
+  });
+
+  testWidgets('la version anglaise est pré-remplie et part avec le '
+      'formulaire ; vidée, elle part vide pour être effacée', (tester) async {
+    final controller = await _openEditor(
+      tester,
+      store: _store(nameEn: 'Tech Shop'),
+    );
+
+    // Une traduction existe : la section est déjà dépliée.
+    final nameEn = find.byKey(const Key('english_name_field'));
+    await tester.ensureVisible(nameEn);
+    expect(find.widgetWithText(TextField, 'Tech Shop'), findsOneWidget);
+
+    await tester.enterText(nameEn, '');
+    await tester.enterText(
+      find.byKey(const Key('english_description_field')),
+      'High-tech shop',
+    );
+    await _tapSave(tester);
+    await tester.pumpAndSettle();
+
+    expect(controller.saved?['translations'], {
+      'translations[en][name]': '',
+      'translations[en][description]': 'High-tech shop',
+    });
   });
 }
