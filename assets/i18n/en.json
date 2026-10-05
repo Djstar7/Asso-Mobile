@@ -3682,7 +3682,7 @@
         "title": "Your order",
         "combination_title": "Choose your combination",
         "combination_subtitle": "Pick a combination, enter its quantity, then move on to the next one.",
-        "pay": "Pay @total"
+        "review": "Review order · @total"
       },
       "price_per_unit": "@price / unit",
       "tiers_title": "Price by quantity",
@@ -3695,7 +3695,6 @@
       "shipping_subtitle": "Whatever its origin, the order arrives at the ASSO warehouse in @city.",
       "delivery_title": "Delivery from @city",
       "delivery_subtitle": "From the ASSO warehouse to your address, priced according to your address and the parcel weight.",
-      "summary_title": "Summary",
       "opening": "Opening…",
       "ask_support": "Ask support a question",
       "one_photo": "1 photo",
@@ -3762,7 +3761,23 @@
       "support_unavailable_message": "The support service is not available right now. Please try again later.",
       "support_start_failed": "Unable to start the conversation with support.",
       "conversation_unavailable": "Conversation unavailable.",
-      "error_with_details": "An error occurred: @error"
+      "error_with_details": "An error occurred: @error",
+      "recap": {
+        "title": "Order summary",
+        "edit": "Edit",
+        "confirm_and_pay": "Confirm and pay",
+        "item": "Item",
+        "quantity": "Quantity",
+        "delivery": "Shipping and delivery",
+        "shipping": "Shipping to @city",
+        "address": "Address",
+        "address_details": "Details",
+        "contact_phone": "Contact number",
+        "courier": "Courier",
+        "mode": "Method",
+        "lead_time": "Lead time",
+        "amount": "Amount"
+      }
     }
   },
   "vendor_dashboard": {

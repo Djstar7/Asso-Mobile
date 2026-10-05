@@ -320,8 +320,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   /// Feuille de commande, comme celle de la fiche détail : la page ne montre
   /// que le produit, tout se règle ici dans l'ordre — combinaison, prix selon
-  /// la quantité, expédition, adresse et contact, partenaire, récapitulatif.
-  /// Elle rend `true` quand l'acheteur passe au paiement.
+  /// la quantité, expédition, adresse et contact, partenaire. Le
+  /// récapitulatif s'ouvre ensuite par-dessus ([_openSummarySheet]) ; elle
+  /// rend `true` quand l'acheteur l'a confirmé.
   Future<bool?> _openOrderSheet() {
     return AppSheet.show<bool>(
       ListenableBuilder(
@@ -365,15 +366,18 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                     ),
                   ),
                 AppButton(
-                  label: 'import.wholesale.order_sheet.pay'.trParams({
+                  label: 'import.wholesale.order_sheet.review'.trParams({
                     'total': _fmt(_total),
                   }),
-                  icon: Icons.lock_rounded,
+                  icon: Icons.receipt_long_rounded,
                   size: AppButtonSize.large,
                   onPressed: missing == null
-                      ? () {
+                      ? () async {
                           AppNavigation.dismissKeyboard();
-                          AppNavigation.pop(true);
+                          // Récapitulatif par-dessus la feuille : « Modifier »
+                          // y ramène, « Confirmer et payer » passe au paiement.
+                          final confirmed = await _openSummarySheet();
+                          if (confirmed == true) AppNavigation.pop(true);
                         }
                       : null,
                 ),
@@ -492,13 +496,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             delivery: _delivery,
             formatPrice: _fmt,
           ),
-        ),
-        // 5. Récapitulatif.
-        const SizedBox(height: AppDesign.space3),
-        _section(
-          context,
-          title: 'import.wholesale.summary_title'.tr,
-          child: _summary(context),
         ),
       ],
     );
@@ -1261,6 +1258,182 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     ),
   );
 
+  /// Récapitulatif complet, comme celui de la fiche détail : article et
+  /// options, expédition, livraison, montant. Rend `true` sur « Confirmer et
+  /// payer », `false` sur « Modifier ».
+  Future<bool?> _openSummarySheet() {
+    final delivery = _delivery.selected;
+    final details = _delivery.detailsController.text.trim();
+    final image = _images.isNotEmpty
+        ? _images.first
+        : (widget.product.image ?? '');
+    return AppSheet.show<bool>(
+      Builder(
+        builder: (context) => AppSheet(
+          title: 'import.wholesale.recap.title'.tr,
+          subtitle: widget.product.name,
+          color: context.ds.canvas,
+          // La flèche ramène à la feuille de commande, restée ouverte dessous.
+          onBack: () => AppNavigation.pop(false),
+          showClose: false,
+          footer: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: 'import.wholesale.recap.edit'.tr,
+                  variant: AppButtonVariant.secondary,
+                  size: AppButtonSize.large,
+                  onPressed: () => AppNavigation.pop(false),
+                ),
+              ),
+              const SizedBox(width: AppDesign.space3),
+              Expanded(
+                flex: 2,
+                child: AppButton(
+                  label: 'import.wholesale.recap.confirm_and_pay'.tr,
+                  icon: Icons.lock_rounded,
+                  size: AppButtonSize.large,
+                  onPressed: () => AppNavigation.pop(true),
+                ),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _section(
+                context,
+                title: 'import.wholesale.recap.item'.tr,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppDesign.radiusSm,
+                          ),
+                          child: SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: image.isEmpty
+                                ? _imagePlaceholder()
+                                : _image(image, BoxFit.cover),
+                          ),
+                        ),
+                        const SizedBox(width: AppDesign.space3),
+                        Expanded(
+                          child: Text(
+                            widget.product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.body1,
+                              fontWeight: FontWeight.w600,
+                              color: context.ds.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDesign.space2),
+                    // Une ligne par option : « Rouge · L — 30 × 1 000 FCFA ».
+                    for (final (label, quantity) in _recapLines)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppDesign.space2),
+                        child: _sumRow(
+                          context,
+                          label,
+                          '$quantity × ${_fmt(_tierFor(quantity)?.unitPriceXaf ?? 0)}',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppDesign.space3),
+              _section(
+                context,
+                title: 'import.wholesale.recap.delivery'.tr,
+                child: Column(
+                  children: [
+                    _sumRow(
+                      context,
+                      'import.wholesale.recap.shipping'.trParams({
+                        'city': _hubCity,
+                      }),
+                      _shipping?.modeLabel ?? '—',
+                    ),
+                    const SizedBox(height: AppDesign.space2),
+                    _sumRow(
+                      context,
+                      'import.wholesale.recap.address'.tr,
+                      _delivery.address,
+                    ),
+                    if (details.isNotEmpty) ...[
+                      const SizedBox(height: AppDesign.space2),
+                      _sumRow(
+                        context,
+                        'import.wholesale.recap.address_details'.tr,
+                        details,
+                      ),
+                    ],
+                    const SizedBox(height: AppDesign.space2),
+                    _sumRow(
+                      context,
+                      'import.wholesale.recap.contact_phone'.tr,
+                      _delivery.phoneController.text.trim(),
+                    ),
+                    if (delivery != null) ...[
+                      const SizedBox(height: AppDesign.space2),
+                      _sumRow(
+                        context,
+                        'import.wholesale.recap.courier'.tr,
+                        delivery.vehicleLabel != null
+                            ? '${delivery.companyName} · ${delivery.vehicleLabel}'
+                            : delivery.companyName,
+                      ),
+                      const SizedBox(height: AppDesign.space2),
+                      _sumRow(
+                        context,
+                        'import.wholesale.recap.mode'.tr,
+                        delivery.deliveryOptionLabel,
+                      ),
+                      if (delivery.leadTime != null) ...[
+                        const SizedBox(height: AppDesign.space2),
+                        _sumRow(
+                          context,
+                          'import.wholesale.recap.lead_time'.tr,
+                          delivery.leadTime!,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppDesign.space3),
+              _section(
+                context,
+                title: 'import.wholesale.recap.amount'.tr,
+                child: _summary(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Lignes du récapitulatif : (libellé de l'option, quantité).
+  List<(String, int)> get _recapLines => _hasVariants
+      ? [
+          for (final (variant, quantity) in _variantLines)
+            (VariantCatalog.attributesOf(variant).values.join(' · '), quantity),
+        ]
+      : [
+          if (_singleQuantity > 0)
+            ('import.wholesale.recap.quantity'.tr, _singleQuantity),
+        ];
+
   Widget _summary(BuildContext context) {
     return Column(
       children: [
@@ -1382,7 +1555,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
     final confirmed = await _openOrderSheet();
     if (confirmed != true || !mounted) return;
-    // La feuille ne laisse passer qu'une commande complète ; garde au cas où
+    // La feuille ne laisse passer qu'une commande complète, récapitulatif
+    // confirmé ; garde au cas où
     // un devis aurait changé entre-temps.
     final missing = _missingStep, shipping = _shipping;
     if (missing != null || shipping == null) {

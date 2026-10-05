@@ -3682,7 +3682,7 @@
         "title": "Votre commande",
         "combination_title": "Choisissez votre combinaison",
         "combination_subtitle": "Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.",
-        "pay": "Payer @total"
+        "review": "Voir le récapitulatif · @total"
       },
       "price_per_unit": "@price / unité",
       "tiers_title": "Prix selon la quantité",
@@ -3695,7 +3695,6 @@
       "shipping_subtitle": "Quelle que soit la provenance, la commande arrive à l’entrepôt ASSO de @city.",
       "delivery_title": "Livraison depuis @city",
       "delivery_subtitle": "De l’entrepôt ASSO jusqu’à votre adresse, au prix calculé selon votre adresse et le poids du colis.",
-      "summary_title": "Récapitulatif",
       "opening": "Ouverture…",
       "ask_support": "Poser une question au support",
       "one_photo": "1 photo",
@@ -3762,7 +3761,23 @@
       "support_unavailable_message": "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
       "support_start_failed": "Impossible de démarrer la conversation avec le support.",
       "conversation_unavailable": "Conversation indisponible.",
-      "error_with_details": "Une erreur est survenue: @error"
+      "error_with_details": "Une erreur est survenue: @error",
+      "recap": {
+        "title": "Récapitulatif de la commande",
+        "edit": "Modifier",
+        "confirm_and_pay": "Confirmer et payer",
+        "item": "Article",
+        "quantity": "Quantité",
+        "delivery": "Expédition et livraison",
+        "shipping": "Expédition jusqu’à @city",
+        "address": "Adresse",
+        "address_details": "Précision",
+        "contact_phone": "Numéro à contacter",
+        "courier": "Livreur",
+        "mode": "Mode",
+        "lead_time": "Délai",
+        "amount": "Montant"
+      }
     }
   },
   "vendor_dashboard": {
