@@ -911,6 +911,47 @@
       "sign_in": "Sign in",
       "snackbar_feature": "Sign in to access @feature",
       "snackbar_generic": "Sign-in required for this feature"
+    },
+    "deposit": {
+      "on_order": "Made to order",
+      "total_price": "Total price",
+      "deposit_now": "Deposit to pay now",
+      "balance_later": "Remaining balance",
+      "verification_notice": "Once your goods arrive, an ASSO team member will contact you to check them with you. When this check is approved, the balance payment will be unlocked in the app.",
+      "pay_deposit": "Pay the deposit",
+      "pickup_title": "I'll collect my product at an ASSO partner point",
+      "pickup_hint": "Choose an available pickup point.",
+      "home_title": "I want home delivery",
+      "home_hint": "Delivered to your address, after the check and the balance payment.",
+      "order_title": "Deposit order",
+      "steps": {
+        "deposit_paid": "Deposit paid",
+        "supplier_order": "Supplier order",
+        "in_transit": "Shipped / in transit",
+        "presented": "Delivered or ready for pickup",
+        "verification": "Check with ASSO",
+        "balance": "Balance payment",
+        "handover": "Product handed over"
+      },
+      "balance_status": {
+        "locked": "The balance can be paid once your product has been checked with ASSO.",
+        "unlocked": "Check completed: you can now pay the balance.",
+        "paid": "Balance paid",
+        "cancelled": "Order closed"
+      },
+      "already_paid": "Already paid",
+      "balance": "Balance due",
+      "pay_balance": "Pay the balance - @amount",
+      "balance_of": "Balance of order #@order",
+      "balance_failed": "The balance payment did not go through. You can try again.",
+      "balance_paid_message": "Thank you! Your product can now be handed over.",
+      "vendor": {
+        "title": "Deposit order",
+        "in_progress": "you will be paid after delivery, the ASSO check and the customer's balance",
+        "verification": "ASSO check in progress with the customer",
+        "balance_due": "check approved, waiting for the customer's balance",
+        "settled": "balance paid, sale credited"
+      }
     }
   },
   "wallet": {
@@ -2095,7 +2136,8 @@
       "name": "Give your product a name.",
       "category": "Choose a category and a subcategory.",
       "description": "Describe your product.",
-      "price": "Enter a price greater than zero."
+      "price": "Enter a price greater than zero.",
+      "deposit_rate": "Enter the deposit percentage (between 1 and 99)."
     },
     "active_package": "Active package",
     "error": "Error",
@@ -2312,6 +2354,14 @@
       "gb": "@value GB",
       "of_total": " / @value GB",
       "usage": "@percent% used · @available GB available"
+    },
+    "deposit": {
+      "title": "Deposit order",
+      "subtitle": "Made-to-order or imported product: the customer pays a deposit, then the balance after delivery.",
+      "rate_label": "Deposit required (% of customer price)",
+      "rate_error": "Enter a percentage between 1 and 99.",
+      "preview": "On your price: deposit @deposit, balance @balance (excluding commission and delivery).",
+      "notice": "An ASSO team member checks the goods with the customer before the balance is paid. You are paid once the balance is settled."
     }
   },
   "inventory_list": {

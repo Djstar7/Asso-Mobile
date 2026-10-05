@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/values/constants.dart';
 import '../../../core/utils/device_location.dart';
 import '../../../core/utils/string_utils.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/widgets/variant_quantity_list.dart';
 import '../../../data/models/delivery_info.dart';
@@ -670,6 +671,25 @@ class ProductController extends GetxController {
     }
     return total;
   }
+
+  /// Commande avec acompte : acompte des articles (ligne par ligne, arrondi
+  /// comme le serveur) plus la livraison, payés à la commande.
+  double orderDeposit(Map<String, dynamic> product) {
+    final rate = DepositProduct.rate(product);
+    final items = orderLines(product).fold(
+      0.0,
+      (sum, line) => sum + DepositProduct.depositFor(line.totalXaf, rate),
+    );
+    final total = orderTotal(product);
+    final deposit = items + (total - orderSubtotal(product));
+    return deposit > total ? total : deposit;
+  }
+
+  /// Montant payé maintenant : l'acompte d'un produit sur commande, sinon le total.
+  double orderAmountDue(Map<String, dynamic> product) =>
+      DepositProduct.enabled(product)
+      ? orderDeposit(product)
+      : orderTotal(product);
 
   /// Montant pivot (XAF) affiché dans la devise choisie par l'utilisateur.
   /// À appeler dans un Obx pour suivre un changement de devise.

@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/widgets/product_image_viewer.dart';
 import '../../../core/widgets/product_variant_selector.dart';
@@ -423,6 +424,21 @@ class ProductView extends GetView<ProductController> {
           if (readFreeDelivery(product['free_delivery'])) ...[
             SizedBox(height: AppDesign.space2),
             const FreeDeliveryBadge(),
+          ],
+          if (DepositProduct.enabled(product)) ...[
+            SizedBox(height: AppDesign.space3),
+            Obx(() {
+              final price = controller.unitPriceXaf(product);
+              final deposit = DepositProduct.depositFor(
+                price,
+                DepositProduct.rate(product),
+              );
+              return DepositInfoCard(
+                total: controller.formatPrice(price),
+                deposit: controller.formatPrice(deposit),
+                balance: controller.formatPrice(price - deposit),
+              );
+            }),
           ],
           SizedBox(height: AppDesign.space2),
           Text(
@@ -1156,9 +1172,20 @@ class ProductView extends GetView<ProductController> {
                   SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: _OrderButton(
-                      priceLabel: () => controller.formatPrice(
-                        controller.unitPriceXaf(product),
-                      ),
+                      label: DepositProduct.enabled(product)
+                          ? 'core.deposit.pay_deposit'.tr
+                          : 'product.order_button'.tr,
+                      priceLabel: () {
+                        final price = controller.unitPriceXaf(product);
+                        return controller.formatPrice(
+                          DepositProduct.enabled(product)
+                              ? DepositProduct.depositFor(
+                                  price,
+                                  DepositProduct.rate(product),
+                                )
+                              : price,
+                        );
+                      },
                       onPressed: () => AuthGuard.requireAuth(
                         context,
                         onAuthenticated: () =>
@@ -1770,7 +1797,7 @@ class ProductView extends GetView<ProductController> {
             ),
             SizedBox(height: 16),
 
-            _buildDeliveryPartnersSection(context),
+            _buildDeliveryPartnersSection(context, product),
 
             SizedBox(height: 20),
 
@@ -1890,7 +1917,9 @@ class ProductView extends GetView<ProductController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'product.order.total'.tr,
+                          DepositProduct.enabled(product)
+                              ? 'core.deposit.deposit_now'.tr
+                              : 'product.order.total'.tr,
                           style: context.textStyle(
                             FontSizeType.h5,
                             fontWeight: FontWeight.bold,
@@ -1898,7 +1927,7 @@ class ProductView extends GetView<ProductController> {
                         ),
                         Text(
                           controller.formatPrice(
-                            controller.orderTotal(product),
+                            controller.orderAmountDue(product),
                           ),
                           style: context.textStyle(
                             FontSizeType.h5,
@@ -1974,7 +2003,10 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
-  Widget _buildDeliveryPartnersSection(BuildContext context) {
+  Widget _buildDeliveryPartnersSection(
+    BuildContext context,
+    Map<String, dynamic> product,
+  ) {
     return Obx(() {
       if (controller.isLoadingPartners.value) {
         return Center(
@@ -2111,11 +2143,68 @@ class ProductView extends GetView<ProductController> {
                 ],
               ),
             ),
-          for (final raw in controller.deliveryPartners)
-            _buildPartnerCard(context, DeliveryPartnerQuote(raw)),
+          if (DepositProduct.enabled(product))
+            ..._buildPickupChoice(context)
+          else
+            for (final raw in controller.deliveryPartners)
+              _buildPartnerCard(context, DeliveryPartnerQuote(raw)),
         ],
       );
     });
+  }
+
+  /// Produit sur commande : le client choisit dès l'acompte entre le retrait
+  /// dans un point partenaire ASSO et la livraison à domicile. Pour une
+  /// commande internationale, l'acheminement jusqu'au pays reste compris.
+  List<Widget> _buildPickupChoice(BuildContext context) {
+    final quotes = controller.deliveryPartners.map(DeliveryPartnerQuote.new);
+    final pickup = quotes.where((q) => q.isAgencyPickup).toList();
+    final home = quotes.where((q) => !q.isAgencyPickup).toList();
+
+    Widget title(IconData icon, String text, String hint) => Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppDesign.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(hint, style: context.caption),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return [
+      if (pickup.isNotEmpty) ...[
+        title(
+          Icons.storefront_rounded,
+          'core.deposit.pickup_title'.tr,
+          'core.deposit.pickup_hint'.tr,
+        ),
+        for (final quote in pickup) _buildPartnerCard(context, quote),
+      ],
+      if (home.isNotEmpty) ...[
+        title(
+          Icons.home_rounded,
+          'core.deposit.home_title'.tr,
+          'core.deposit.home_hint'.tr,
+        ),
+        for (final quote in home) _buildPartnerCard(context, quote),
+      ],
+    ];
   }
 
   Widget _buildPartnerCard(BuildContext context, DeliveryPartnerQuote partner) {
@@ -2553,6 +2642,8 @@ class ProductView extends GetView<ProductController> {
     final quote = partner == null ? null : DeliveryPartnerQuote(partner);
     final details = controller.addressDetailsController.text.trim();
     final total = controller.orderTotal(product);
+    final hasDeposit = DepositProduct.enabled(product);
+    final amountDue = controller.orderAmountDue(product);
     final images = _getProductImages(product);
 
     Widget line(String label, String value, {bool strong = false}) => Padding(
@@ -2779,11 +2870,28 @@ class ProductView extends GetView<ProductController> {
                   ),
                 ),
               const Divider(height: 16),
-              line(
-                'product.summary.total_to_pay'.tr,
-                controller.formatPrice(total),
-                strong: true,
-              ),
+              if (hasDeposit) ...[
+                line('core.deposit.total_price'.tr, controller.formatPrice(total)),
+                line(
+                  'core.deposit.balance_later'.tr,
+                  controller.formatPrice(total - amountDue),
+                ),
+                line(
+                  'core.deposit.deposit_now'.tr,
+                  controller.formatPrice(amountDue),
+                  strong: true,
+                ),
+                const SizedBox(height: 6),
+                DeliveryNotice(
+                  'core.deposit.verification_notice'.tr,
+                  icon: Icons.verified_user_outlined,
+                ),
+              ] else
+                line(
+                  'product.summary.total_to_pay'.tr,
+                  controller.formatPrice(total),
+                  strong: true,
+                ),
             ]),
           ],
         ),
@@ -2791,7 +2899,7 @@ class ProductView extends GetView<ProductController> {
     );
 
     if (confirmed == true && context.mounted) {
-      await _choosePaymentAndOrder(context, product, total);
+      await _choosePaymentAndOrder(context, product, amountDue);
     }
   }
 
@@ -2802,10 +2910,13 @@ class ProductView extends GetView<ProductController> {
     Map<String, dynamic> product,
     double total,
   ) async {
+    final amountLabel = DepositProduct.enabled(product)
+        ? 'core.deposit.deposit_now'.tr
+        : 'product.summary.total_to_pay'.tr;
     final method = await PaymentMethodSelector.show(
       amount: total,
       currency: 'XAF',
-      amountLabel: 'product.summary.total_to_pay'.tr,
+      amountLabel: amountLabel,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -2816,7 +2927,7 @@ class ProductView extends GetView<ProductController> {
         await _payViaWallet(product, total, method);
         break;
       case 'kpay':
-        await _payViaMobileMoney(product, total);
+        await _payViaMobileMoney(product, total, amountLabel);
         break;
       case 'stripe':
         await _payViaCard(product);
@@ -2860,10 +2971,11 @@ class ProductView extends GetView<ProductController> {
   Future<void> _payViaMobileMoney(
     Map<String, dynamic> product,
     double total,
+    String amountLabel,
   ) async {
     final selection = await KpayDirectPaymentSheet.show(
       amount: total,
-      amountLabel: 'product.summary.total_to_pay'.tr,
+      amountLabel: amountLabel,
     );
     if (selection == null) return; // paiement annulé
 
@@ -3464,7 +3576,14 @@ class _SecondaryAction extends StatelessWidget {
 /// Porte le prix sous son libellé : c'est le montant qu'on engage en
 /// appuyant, et le rappeler évite de remonter la page pour le vérifier.
 class _OrderButton extends StatelessWidget {
-  const _OrderButton({required this.priceLabel, required this.onPressed});
+  const _OrderButton({
+    required this.label,
+    required this.priceLabel,
+    required this.onPressed,
+  });
+
+  /// « Commander », ou « Payer l'acompte » pour un produit sur commande.
+  final String label;
 
   /// Évalué à la construction pour suivre la devise et la variante choisie.
   final String Function() priceLabel;
@@ -3498,7 +3617,7 @@ class _OrderButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'product.order_button'.tr,
+                      label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.textStyle(

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../models/order_model.dart';
 import '../models/cameroon_cities.dart';
 import '../../../data/providers/api_provider.dart';
@@ -142,6 +143,8 @@ class OrderManagementController extends GetxController {
             order['status'] == 'preparing' && delivery?.isCarrier != true,
         rawStatus: order['status']?.toString() ?? '',
         delivery: delivery,
+        deposit: DepositOrderInfo.fromOrder(order),
+        settled: order['settled'] == true,
       );
     }).toList();
   }

@@ -54,7 +54,9 @@ class CustomerOrderDeliverySection extends StatelessWidget {
               ],
             ),
           ),
-          if (delivery.canConfirmReception)
+          // Commande avec acompte : la remise suit le paiement du solde.
+          if (delivery.canConfirmReception &&
+              (order.deposit == null || order.deposit!.balancePaid))
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

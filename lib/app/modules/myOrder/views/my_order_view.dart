@@ -8,6 +8,7 @@ import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
 import 'order_delivery_section.dart';
+import 'order_deposit_section.dart';
 
 class MyOrderView extends GetView<MyOrderController> {
   const MyOrderView({super.key});
@@ -177,6 +178,9 @@ class MyOrderView extends GetView<MyOrderController> {
 
           // Détails de la commande
           _buildOrderDetails(context, order),
+
+          // Commande avec acompte : suivi jusqu'au solde, puis paiement du solde
+          CustomerOrderDepositSection(order: order),
 
           // Livraison P4 : transporteur, suivi daté, détail du prix
           CustomerOrderDeliverySection(order: order),

@@ -446,6 +446,7 @@ class FirebaseMessagingService extends GetxService {
       case 'order_shipped_vendor':
       case 'order_delivered_vendor':
       case 'order_rated':
+      case 'order_balance_paid_vendor':
         Get.toNamed(Routes.ORDER_MANAGEMENT);
         break;
 
@@ -462,7 +463,12 @@ class FirebaseMessagingService extends GetxService {
         Get.toNamed(Routes.WALLET_HISTORY);
         break;
 
+      // Commande avec acompte : solde débloqué, payé, échoué ou commande clôturée.
       case 'order_update':
+      case 'order_balance_due':
+      case 'order_balance_paid':
+      case 'order_balance_failed':
+      case 'order_deposit_closed':
         Get.toNamed(Routes.MY_ORDER);
         break;
 
