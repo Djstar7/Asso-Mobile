@@ -18,6 +18,10 @@ import '../modules/about/bindings/about_binding.dart';
 import '../modules/about/views/about_view.dart';
 import '../modules/legal/bindings/legal_binding.dart';
 import '../modules/legal/views/legal_view.dart';
+import '../modules/disputes/bindings/disputes_binding.dart';
+import '../modules/disputes/views/dispute_detail_view.dart';
+import '../modules/disputes/views/similar_products_view.dart';
+import '../modules/disputes/views/vendor_disputes_view.dart';
 import '../modules/chat/bindings/chat_binding.dart';
 import '../modules/chat/views/chat_view.dart';
 import '../modules/chatdetail/views/chatdetail_view.dart';
@@ -279,6 +283,23 @@ class AppPages {
       name: _Paths.LEGAL,
       page: () => const LegalView(),
       binding: LegalBinding(),
+    ),
+    // Réclamations / litiges : suivi (client ou vendeur), liste vendeur,
+    // produits similaires après remboursement.
+    GetPage(
+      name: _Paths.DISPUTE_DETAIL,
+      page: () => const DisputeDetailView(),
+      binding: DisputeDetailBinding(),
+    ),
+    GetPage(
+      name: _Paths.VENDOR_DISPUTES,
+      page: () => const VendorDisputesView(),
+      binding: VendorDisputesBinding(),
+    ),
+    GetPage(
+      name: _Paths.DISPUTE_SIMILAR,
+      page: () => const SimilarProductsView(),
+      binding: SimilarProductsBinding(),
     ),
     GetPage(
       name: _Paths.PACKAGE_SUBSCRIPTION,

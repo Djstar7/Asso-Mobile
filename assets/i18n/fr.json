@@ -1029,7 +1029,8 @@
       "info": "Vous avez des fonds bloqués qui seront débloqués après confirmation de livraison",
       "unlock_with_code": "Débloquer avec code",
       "amount": "Montant",
-      "unlock": "Débloquer"
+      "unlock": "Débloquer",
+      "pending_validation": "Dont @amount en attente : ventes à valider par le client (48 h après la livraison), réclamations ou commandes en cours."
     },
     "balances": {
       "title": "Soldes par Méthode",
@@ -3895,5 +3896,114 @@
     },
     "search_hint": "Rechercher dans la boutique",
     "clear": "Effacer"
+  },
+  "disputes": {
+    "title": "Réclamation",
+    "not_found": "Réclamation introuvable.",
+    "order_ref": "Commande @order",
+    "history": "Historique",
+    "status": {
+      "new": "Nouvelle",
+      "in_review": "En analyse",
+      "vendor_contacted": "Vendeur contacté",
+      "replacement": "Remplacement",
+      "return": "Retour",
+      "refunded": "Remboursée",
+      "rejected": "Non fondée",
+      "resolved": "Résolue",
+      "closed": "Fermée"
+    },
+    "reasons": {
+      "different": "Produit différent",
+      "damaged": "Endommagé",
+      "defective": "Défectueux",
+      "incomplete": "Incomplet",
+      "wrong_variant": "Mauvaise variante",
+      "other": "Autre"
+    },
+    "form": {
+      "title": "Signaler un problème",
+      "replacement_title": "Le remplacement n'est pas conforme",
+      "submit": "Envoyer ma réclamation",
+      "reason": "Motif",
+      "explain": "Expliquez le problème",
+      "explain_hint": "Décrivez ce qui ne va pas (10 caractères minimum)",
+      "photos": "Ajoutez vos preuves (photos)",
+      "funds_notice": "Le paiement du vendeur reste bloqué pendant l'analyse de votre réclamation par ASSO."
+    },
+    "control": {
+      "title": "Vérifiez votre commande",
+      "message": "Vous avez jusqu'au @date pour vérifier vos produits. Sans action de votre part, la commande sera validée automatiquement.",
+      "conform": "Tout est conforme",
+      "report": "Faire une réclamation",
+      "conform_title": "Tout est conforme ?",
+      "conform_confirm": "Le vendeur sera payé tout de suite et vous ne pourrez plus faire de réclamation sur cette commande."
+    },
+    "decision": {
+      "title": "Décision ASSO",
+      "founded": "Réclamation fondée",
+      "unfounded": "Réclamation non fondée"
+    },
+    "shipment": {
+      "return_title": "Retour du produit",
+      "replacement_title": "Produit de remplacement",
+      "paid_by_asso": "Course prise en charge par ASSO",
+      "paid_by_vendor": "Course payée par le vendeur",
+      "free_for_you": "Aucun frais de livraison pour vous",
+      "tracking": "N° de suivi : @number"
+    },
+    "claim": {
+      "title": "Votre réclamation"
+    },
+    "client": {
+      "replacement_check": "Votre produit de remplacement est livré. Vérifiez-le avant le @date.",
+      "replacement_ok": "Le remplacement est conforme",
+      "replacement_ko": "Le remplacement n'est pas conforme",
+      "return_notice": "Votre demande de retour est validée. Un partenaire de livraison va vous contacter pour récupérer le produit. Vous n'avez aucun frais de retour à payer.",
+      "refunded_notice": "Nous sommes désolés que votre commande n'ait pas répondu à vos attentes. @amount ont été remboursés sur votre Wallet ASSO.",
+      "see_similar": "Voir les produits similaires"
+    },
+    "similar": {
+      "title": "Produits similaires",
+      "sorry": "Nous sommes désolés que votre commande n'ait pas répondu à vos attentes.",
+      "free_delivery": "Découvrez une sélection de produits similaires dont la livraison est offerte par le vendeur.",
+      "empty": "Aucun produit similaire avec livraison offerte pour le moment."
+    },
+    "payment": {
+      "no_partner": "Aucun partenaire de livraison disponible pour cette adresse.",
+      "return_fee": "Livraison retour",
+      "replacement_fee": "Livraison du remplacement",
+      "delivery_fee": "Frais de livraison",
+      "failed": "Le paiement de la livraison n'a pas abouti.",
+      "paid_title": "Livraison payée",
+      "paid_message": "Le partenaire de livraison prend le relais.",
+      "choose_partner": "Choisir un partenaire de livraison",
+      "return_subtitle": "Collecte chez le client et retour vers vous, à vos frais",
+      "replacement_subtitle": "Envoi du produit de remplacement au client, à vos frais"
+    },
+    "vendor": {
+      "list_title": "Réclamations",
+      "dashboard_subtitle": "Litiges clients, remplacements et retours",
+      "filter_open": "En cours",
+      "filter_closed": "Clôturées",
+      "empty": "Aucune réclamation",
+      "empty_message": "Les réclamations de vos clients apparaîtront ici.",
+      "held_notice": "@amount restent bloqués sur votre Wallet en attendant la décision d'ASSO.",
+      "held_short": "@amount bloqués",
+      "pay_notice": "Choisissez un partenaire de livraison et payez la course pour que le dossier avance.",
+      "pay_shipment": "Choisir le livreur et payer",
+      "replace": "Remplacer le produit",
+      "organize_return": "Organiser le retour",
+      "mark_shipped": "Produit remis au livreur",
+      "return_received": "J'ai reçu le produit retourné",
+      "send_evidence": "Envoyer mes explications / preuves",
+      "evidence_title": "Vos explications pour ASSO",
+      "asso_decides": "ASSO décide de l'issue du dossier ; vous ne pouvez pas le clôturer vous-même.",
+      "replace_confirm": "Vous enverrez un produit de remplacement au client et paierez la livraison. Un seul remplacement est possible. Continuer ?",
+      "return_confirm": "Le produit sera récupéré chez le client et retourné à vos frais ; le client sera remboursé. Continuer ?",
+      "todo_pay": "À faire : payer la livraison",
+      "todo_choose": "À faire : remplacer ou organiser le retour",
+      "todo_ship": "À faire : remettre le remplacement au livreur"
+    }
   }
 }

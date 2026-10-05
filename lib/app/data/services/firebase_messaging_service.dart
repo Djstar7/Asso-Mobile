@@ -469,10 +469,27 @@ class FirebaseMessagingService extends GetxService {
       case 'order_balance_paid':
       case 'order_balance_failed':
       case 'order_deposit_closed':
+      // Commande livrée : 48 h pour la valider ou faire une réclamation.
+      case 'order_control_window':
         Get.toNamed(Routes.MY_ORDER);
         break;
 
+      // Part vendeur débloquée (client conforme, 48 h écoulées, litige clos).
+      case 'vendor_funds_released':
+        Get.toNamed(Routes.WALLET_HISTORY);
+        break;
+
       default:
+        // Réclamations / litiges : le dossier, côté client ou vendeur. « Paiement
+        // de livraison requis » ouvre directement le paiement de la course.
+        if (type.startsWith('dispute_') && data['dispute_id'] != null) {
+          Get.toNamed(Routes.DISPUTE_DETAIL, arguments: {
+            'id': data['dispute_id'],
+            'role': data['role'] == 'vendor' ? 'vendor' : 'client',
+            'pay': type == 'dispute_shipment_payment_required' || type == 'dispute_shipment_payment_failed',
+          });
+          break;
+        }
         print('⚠️ Type de notification non géré: $type');
         break;
     }

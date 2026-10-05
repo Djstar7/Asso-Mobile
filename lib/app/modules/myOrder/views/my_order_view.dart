@@ -9,6 +9,7 @@ import '../models/customer_order_models.dart';
 import '../../../core/utils/app_design.dart';
 import 'order_delivery_section.dart';
 import 'order_deposit_section.dart';
+import 'order_control_section.dart';
 
 class MyOrderView extends GetView<MyOrderController> {
   const MyOrderView({super.key});
@@ -184,6 +185,9 @@ class MyOrderView extends GetView<MyOrderController> {
 
           // Livraison P4 : transporteur, suivi daté, détail du prix
           CustomerOrderDeliverySection(order: order),
+
+          // 48 h après la livraison : « Tout est conforme » ou réclamation par article
+          CustomerOrderControlSection(order: order),
 
           // Actions
           if (_shouldShowActions(order)) ...[

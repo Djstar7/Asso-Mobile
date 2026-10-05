@@ -6,6 +6,9 @@ import '../../../data/providers/wallet_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../models/customer_order_models.dart';
 import '../../payment/deposit_balance_payment.dart';
+import '../../../data/providers/dispute_service.dart';
+import '../../../routes/app_pages.dart';
+import '../../disputes/widgets/dispute_form_sheet.dart';
 import '../../../core/utils/app_design.dart';
 
 class MyOrderController extends GetxController {
@@ -230,6 +233,81 @@ class MyOrderController extends GetxController {
       payingBalanceOrderId.value = null;
       await loadOrders(refresh: true);
     }
+  }
+
+  /// Commande en cours de validation ou de réclamation (bouton occupé).
+  final RxnString controlBusyOrderId = RxnString();
+
+  /// « Tout est conforme » pendant les 48 h : la commande est validée et le
+  /// vendeur payé tout de suite.
+  Future<void> confirmConformity(CustomerOrder order) async {
+    final id = int.tryParse(order.id);
+    if (id == null || controlBusyOrderId.value != null) return;
+    final ok = await Get.dialog<bool>(AlertDialog(
+      title: Text('disputes.control.conform_title'.tr),
+      content: Text('disputes.control.conform_confirm'.tr),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
+        TextButton(onPressed: () => Get.back(result: true), child: Text('common.confirm'.tr)),
+      ],
+    ));
+    if (ok != true) return;
+
+    controlBusyOrderId.value = order.id;
+    try {
+      final response = await DisputeService.confirmConformity(id);
+      _controlSnack(response.message, error: !response.success);
+    } finally {
+      controlBusyOrderId.value = null;
+      await loadOrders(refresh: true);
+    }
+  }
+
+  /// « Faire une réclamation » sur un article : motif, explication, photos.
+  Future<void> reportProblem(CustomerOrder order, CustomerOrderItem item) async {
+    final orderId = int.tryParse(order.id);
+    final itemId = item.orderItemId;
+    if (orderId == null || itemId == null || controlBusyOrderId.value != null) return;
+
+    final form = await DisputeFormSheet.show(productName: item.displayName);
+    if (form == null) return;
+
+    controlBusyOrderId.value = order.id;
+    try {
+      final response = await DisputeService.open(
+        orderId: orderId,
+        orderItemId: itemId,
+        reason: form.reason,
+        description: form.description,
+        photos: form.photos,
+      );
+      _controlSnack(response.message, error: !response.success);
+      final disputeId = int.tryParse('${response.data?['dispute']?['id']}');
+      if (response.success && disputeId != null) {
+        openDispute(disputeId);
+      }
+    } finally {
+      controlBusyOrderId.value = null;
+      await loadOrders(refresh: true);
+    }
+  }
+
+  Future<void> openDispute(int disputeId) async {
+    await Get.toNamed(Routes.DISPUTE_DETAIL, arguments: {'id': disputeId, 'role': 'client'});
+    await loadOrders(refresh: true);
+  }
+
+  void _controlSnack(String message, {bool error = false}) {
+    if (message.isEmpty) return;
+    Get.snackbar(
+      error ? 'my_order.errors.title'.tr : 'disputes.title'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: error ? AppDesign.danger : AppDesign.success,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+    );
   }
 
   /// Client rate une commande livrée
