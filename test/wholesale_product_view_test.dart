@@ -273,6 +273,19 @@ void main() {
     expect(find.text('Précisions (obligatoire)'), findsOneWidget);
   });
 
+  testWidgets('la feuille mène au récapitulatif avant le paiement', (
+    tester,
+  ) async {
+    await openPage(tester);
+    await openOrderSheet(tester);
+
+    // Le récapitulatif est une étape à part, comme sur la fiche détail : la
+    // feuille ne propose pas de payer directement.
+    expect(find.textContaining('Voir le récapitulatif'), findsOneWidget);
+    expect(find.textContaining('Payer'), findsNothing);
+    expect(find.text('Montant'), findsNothing);
+  });
+
   testWidgets('porte un bouton retour', (tester) async {
     await openPage(tester);
     expect(find.byTooltip('Retour'), findsOneWidget);
