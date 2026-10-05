@@ -1029,7 +1029,8 @@
       "info": "You have locked funds that will be released after delivery confirmation",
       "unlock_with_code": "Unlock with code",
       "amount": "Amount",
-      "unlock": "Unlock"
+      "unlock": "Unlock",
+      "pending_validation": "Including @amount on hold: sales awaiting customer validation (48 h after delivery), claims or orders in progress."
     },
     "balances": {
       "title": "Balances by Method",
@@ -3895,5 +3896,114 @@
     },
     "search_hint": "Search this shop",
     "clear": "Clear"
+  },
+  "disputes": {
+    "title": "Claim",
+    "not_found": "Claim not found.",
+    "order_ref": "Order @order",
+    "history": "History",
+    "status": {
+      "new": "New",
+      "in_review": "Under review",
+      "vendor_contacted": "Seller contacted",
+      "replacement": "Replacement",
+      "return": "Return",
+      "refunded": "Refunded",
+      "rejected": "Not upheld",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "reasons": {
+      "different": "Different product",
+      "damaged": "Damaged",
+      "defective": "Defective",
+      "incomplete": "Incomplete",
+      "wrong_variant": "Wrong variant",
+      "other": "Other"
+    },
+    "form": {
+      "title": "Report a problem",
+      "replacement_title": "The replacement isn't right",
+      "submit": "Send my claim",
+      "reason": "Reason",
+      "explain": "Explain the problem",
+      "explain_hint": "Describe what's wrong (at least 10 characters)",
+      "photos": "Add your evidence (photos)",
+      "funds_notice": "The seller's payment stays on hold while ASSO reviews your claim."
+    },
+    "control": {
+      "title": "Check your order",
+      "message": "You have until @date to check your products. If you do nothing, the order will be validated automatically.",
+      "conform": "Everything is fine",
+      "report": "File a claim",
+      "conform_title": "Everything is fine?",
+      "conform_confirm": "The seller will be paid right away and you won't be able to file a claim on this order anymore."
+    },
+    "decision": {
+      "title": "ASSO decision",
+      "founded": "Claim upheld",
+      "unfounded": "Claim not upheld"
+    },
+    "shipment": {
+      "return_title": "Product return",
+      "replacement_title": "Replacement product",
+      "paid_by_asso": "Delivery covered by ASSO",
+      "paid_by_vendor": "Delivery paid by the seller",
+      "free_for_you": "No delivery fees for you",
+      "tracking": "Tracking no.: @number"
+    },
+    "claim": {
+      "title": "Your claim"
+    },
+    "client": {
+      "replacement_check": "Your replacement product has been delivered. Check it before @date.",
+      "replacement_ok": "The replacement is fine",
+      "replacement_ko": "The replacement isn't right",
+      "return_notice": "Your return request is approved. A delivery partner will contact you to collect the product. You pay no return fees.",
+      "refunded_notice": "We're sorry your order didn't meet your expectations. @amount has been refunded to your ASSO Wallet.",
+      "see_similar": "See similar products"
+    },
+    "similar": {
+      "title": "Similar products",
+      "sorry": "We're sorry your order didn't meet your expectations.",
+      "free_delivery": "Discover a selection of similar products with delivery offered by the seller.",
+      "empty": "No similar products with free delivery right now."
+    },
+    "payment": {
+      "no_partner": "No delivery partner available for this address.",
+      "return_fee": "Return delivery",
+      "replacement_fee": "Replacement delivery",
+      "delivery_fee": "Delivery fee",
+      "failed": "The delivery payment did not go through.",
+      "paid_title": "Delivery paid",
+      "paid_message": "The delivery partner takes over.",
+      "choose_partner": "Choose a delivery partner",
+      "return_subtitle": "Pickup from the customer and return to you, at your expense",
+      "replacement_subtitle": "Shipping the replacement to the customer, at your expense"
+    },
+    "vendor": {
+      "list_title": "Claims",
+      "dashboard_subtitle": "Customer disputes, replacements and returns",
+      "filter_open": "Open",
+      "filter_closed": "Closed",
+      "empty": "No claims",
+      "empty_message": "Your customers' claims will appear here.",
+      "held_notice": "@amount stays on hold in your Wallet until ASSO decides.",
+      "held_short": "@amount on hold",
+      "pay_notice": "Choose a delivery partner and pay for the delivery so the case can move forward.",
+      "pay_shipment": "Choose courier and pay",
+      "replace": "Replace the product",
+      "organize_return": "Organize the return",
+      "mark_shipped": "Product handed to the courier",
+      "return_received": "I received the returned product",
+      "send_evidence": "Send my explanations / evidence",
+      "evidence_title": "Your explanations for ASSO",
+      "asso_decides": "ASSO decides the outcome; you can't close the case yourself.",
+      "replace_confirm": "You'll send a replacement product to the customer and pay for the delivery. Only one replacement is allowed. Continue?",
+      "return_confirm": "The product will be collected from the customer and returned at your expense; the customer will be refunded. Continue?",
+      "todo_pay": "To do: pay for the delivery",
+      "todo_choose": "To do: replace or organize the return",
+      "todo_ship": "To do: hand the replacement to the courier"
+    }
   }
 }

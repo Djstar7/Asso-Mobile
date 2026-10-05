@@ -10,6 +10,7 @@ import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../myOrder/views/order_delivery_section.dart';
 import '../../myOrder/views/order_deposit_section.dart';
+import '../../myOrder/views/order_control_section.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
   const ShipmentView({super.key});
@@ -258,6 +259,9 @@ class ShipmentView extends GetView<MyOrderController> {
 
           // Livraison P4 : transporteur, suivi daté, détail du prix
           CustomerOrderDeliverySection(order: order),
+
+          // 48 h après la livraison : « Tout est conforme » ou réclamation par article
+          CustomerOrderControlSection(order: order),
 
           // Code de confirmation (visible quand shipped)
           if (order.status == CustomerOrderStatus.shipped && order.confirmationCode != null)
