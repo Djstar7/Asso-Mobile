@@ -20,6 +20,10 @@ class WholesaleDelivery extends ChangeNotifier {
   WholesaleDelivery({required this.items}) {
     final phone = (StorageService.getUser()?.phone ?? '').trim();
     if (phone.isNotEmpty) phoneController.text = phone;
+    // La feuille de commande grise son bouton tant qu'une étape manque : elle
+    // doit se redessiner à chaque caractère saisi.
+    detailsController.addListener(notifyListeners);
+    phoneController.addListener(notifyListeners);
   }
 
   /// Lignes commandées ({product_id, quantity, price_tier_id}) : le prix
@@ -70,6 +74,9 @@ class WholesaleDelivery extends ChangeNotifier {
   /// Ce qui manque avant de payer ; null quand la livraison est prête.
   String? get missingStep {
     if (!hasLocation) return 'import.delivery.missing_address'.tr;
+    if (detailsController.text.trim().isEmpty) {
+      return 'import.delivery.missing_details'.tr;
+    }
     if (!hasValidPhone) return 'import.delivery.missing_phone'.tr;
     if (loading) return 'import.delivery.computing'.tr;
     if (selected == null) {
@@ -154,8 +161,7 @@ class WholesaleDelivery extends ChangeNotifier {
     if (hasLocation && _itemsKey() != _quotedItems) load();
   }
 
-  String _itemsKey() =>
-      items().map((line) => line.values.join(':')).join(',');
+  String _itemsKey() => items().map((line) => line.values.join(':')).join(',');
 
   Future<void> load() async {
     if (!hasLocation) return;
@@ -234,6 +240,8 @@ class WholesaleDelivery extends ChangeNotifier {
 
   @override
   void dispose() {
+    detailsController.removeListener(notifyListeners);
+    phoneController.removeListener(notifyListeners);
     detailsController.dispose();
     phoneController.dispose();
     super.dispose();
@@ -305,7 +313,10 @@ class WholesaleDeliverySection extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.location_on_rounded, color: AppDesign.accent),
+                  : const Icon(
+                      Icons.location_on_rounded,
+                      color: AppDesign.accent,
+                    ),
               const SizedBox(width: AppDesign.space3),
               Expanded(
                 child: Text(
