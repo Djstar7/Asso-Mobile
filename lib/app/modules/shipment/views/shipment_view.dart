@@ -9,6 +9,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../myOrder/views/order_delivery_section.dart';
+import '../../myOrder/views/order_deposit_section.dart';
 
 class ShipmentView extends GetView<MyOrderController> {
   const ShipmentView({super.key});
@@ -251,6 +252,9 @@ class ShipmentView extends GetView<MyOrderController> {
               ],
             ),
           ),
+
+          // Commande avec acompte : suivi jusqu'au solde, puis paiement du solde
+          CustomerOrderDepositSection(order: order),
 
           // Livraison P4 : transporteur, suivi daté, détail du prix
           CustomerOrderDeliverySection(order: order),

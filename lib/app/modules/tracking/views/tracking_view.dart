@@ -8,6 +8,7 @@ import '../../../core/utils/auth_guard.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 import '../controllers/tracking_controller.dart';
 import '../../../core/utils/app_design.dart';
@@ -471,6 +472,7 @@ class TrackingView extends GetView<TrackingController> {
 
   void _showTrackingDetails(BuildContext context, Map<String, dynamic> shipment) {
     final delivery = shipment['delivery'] is DeliveryInfo ? shipment['delivery'] as DeliveryInfo : null;
+    final deposit = shipment['deposit'] is DepositOrderInfo ? shipment['deposit'] as DepositOrderInfo : null;
     // Feuille standard : elle prend la hauteur de son contenu (bornée sous la
     // barre d'état) au lieu d'occuper d'office 85 % de l'écran.
     AppSheet.show(
@@ -481,6 +483,39 @@ class TrackingView extends GetView<TrackingController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildOrderInfo(context, shipment),
+
+            // Commande avec acompte : suivi jusqu'au solde, puis paiement du solde.
+            if (deposit != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppThemeSystem.getSurfaceColor(context),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('core.deposit.order_title'.tr, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    DepositOrderTimeline(info: deposit),
+                    Obx(
+                      () => DepositBalanceCard(
+                        info: deposit,
+                        total: shipment['total'] as double? ?? 0,
+                        formatPrice: controller.formatPrice,
+                        isPaying: controller.payingBalanceOrderId.value == '${shipment['orderId']}',
+                        onPayBalance: () async {
+                          final paid = await controller.payBalance(shipment);
+                          if (paid) Get.back();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // Code confirmation dans les détails
             if (shipment['rawStatus'] == 'shipped' && shipment['confirmationCode'] != null) ...[
@@ -575,7 +610,8 @@ class TrackingView extends GetView<TrackingController> {
               ),
             ],
 
-            if (delivery?.canConfirmReception == true) ...[
+            // Commande avec acompte : la remise suit le paiement du solde.
+            if (delivery?.canConfirmReception == true && (deposit == null || deposit.balancePaid)) ...[
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,

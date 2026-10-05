@@ -911,6 +911,47 @@
       "sign_in": "Se connecter",
       "snackbar_feature": "Connectez-vous pour accéder à @feature",
       "snackbar_generic": "Connexion requise pour cette fonctionnalité"
+    },
+    "deposit": {
+      "on_order": "Produit sur commande",
+      "total_price": "Prix total",
+      "deposit_now": "Acompte à payer maintenant",
+      "balance_later": "Solde restant",
+      "verification_notice": "Après réception de votre marchandise, un membre de l'équipe ASSO vous contactera pour la vérifier avec vous. Une fois cette vérification validée, le paiement du solde sera débloqué dans l'application.",
+      "pay_deposit": "Payer l'acompte",
+      "pickup_title": "Je récupère mon produit dans un point partenaire ASSO",
+      "pickup_hint": "Choisissez un point de retrait disponible.",
+      "home_title": "Je souhaite être livré à domicile",
+      "home_hint": "Livraison à l'adresse indiquée, après vérification et paiement du solde.",
+      "order_title": "Commande avec acompte",
+      "steps": {
+        "deposit_paid": "Acompte payé",
+        "supplier_order": "Commande fournisseur",
+        "in_transit": "Produit expédié / en transit",
+        "presented": "Produit livré ou disponible au retrait",
+        "verification": "Vérification avec ASSO",
+        "balance": "Paiement du solde",
+        "handover": "Remise du produit"
+      },
+      "balance_status": {
+        "locked": "Le solde sera payable après la vérification de votre produit avec ASSO.",
+        "unlocked": "Vérification terminée : vous pouvez payer le solde.",
+        "paid": "Solde payé",
+        "cancelled": "Commande clôturée"
+      },
+      "already_paid": "Déjà payé",
+      "balance": "Solde à régler",
+      "pay_balance": "Payer le solde - @amount",
+      "balance_of": "Solde de la commande #@order",
+      "balance_failed": "Le paiement du solde n'a pas abouti. Vous pouvez réessayer.",
+      "balance_paid_message": "Merci ! Votre produit peut vous être remis.",
+      "vendor": {
+        "title": "Commande avec acompte",
+        "in_progress": "vous serez payé après la livraison, la vérification ASSO et le solde du client",
+        "verification": "vérification ASSO en cours avec le client",
+        "balance_due": "vérification validée, en attente du solde du client",
+        "settled": "solde payé, vente créditée"
+      }
     }
   },
   "wallet": {
@@ -2095,7 +2136,8 @@
       "name": "Donnez un nom à votre produit.",
       "category": "Choisissez une catégorie et une sous-catégorie.",
       "description": "Décrivez votre produit.",
-      "price": "Indiquez un prix supérieur à zéro."
+      "price": "Indiquez un prix supérieur à zéro.",
+      "deposit_rate": "Indiquez le pourcentage d'acompte (entre 1 et 99)."
     },
     "active_package": "Package actif",
     "error": "Erreur",
@@ -2312,6 +2354,14 @@
       "gb": "@value Go",
       "of_total": " / @value Go",
       "usage": "@percent % utilisé · @available Go disponibles"
+    },
+    "deposit": {
+      "title": "Commande avec acompte",
+      "subtitle": "Produit sur commande ou importé : le client paie un acompte, puis le solde après la livraison.",
+      "rate_label": "Acompte demandé (% du prix client)",
+      "rate_error": "Indiquez un pourcentage entre 1 et 99.",
+      "preview": "Sur votre prix : acompte @deposit, solde @balance (hors commission et livraison).",
+      "notice": "Un employé ASSO vérifie la marchandise avec le client avant le paiement du solde. Vous êtes payé une fois le solde réglé."
     }
   },
   "inventory_list": {
@@ -3219,7 +3269,7 @@
     "error": "Erreur",
     "load_offers_error": "Impossible de charger les offres",
     "code_validated_title": "Code validé",
-    "code_validated_message": "La livraison est confirmée. L'acheteur doit maintenant confirmer la réception.",
+    "code_validated_message": "La livraison est confirmée. Votre part a été créditée sur votre portefeuille.",
     "receipt_confirmed": {
       "title": "Réception confirmée",
       "message": "Merci ! Les fonds ont été débloqués et versés au voyageur. Vous retrouvez le détail de l'opération dans votre portefeuille.",
@@ -3311,7 +3361,7 @@
       "kg_booked": "Kilos réservés",
       "total_price": "Prix total",
       "secret_code": "Votre code secret",
-      "code_hint": "Donnez ce code au voyageur au moment de la remise",
+      "code_hint": "Ne donnez ce code au voyageur qu'à la remise de votre colis : sa validation lui verse le paiement.",
       "validate_code": "Valider le code de livraison",
       "view_earnings": "Voir mes gains dans le portefeuille",
       "awaiting_receipt": "Code validé. En attente de la confirmation de réception par l'acheteur.",
@@ -3319,7 +3369,7 @@
     },
     "validate_dialog": {
       "title": "Valider la livraison",
-      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a communiqué.",
+      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a remis à la livraison. Sa validation clôt la réservation et crédite votre part.",
       "invalid_title": "Code invalide",
       "invalid_message": "Le code doit contenir 6 chiffres",
       "validate": "Valider"

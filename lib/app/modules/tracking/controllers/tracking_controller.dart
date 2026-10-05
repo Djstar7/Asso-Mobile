@@ -11,6 +11,8 @@ import '../../../data/services/fcm_service.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../data/models/delivery_info.dart';
+import '../../../core/widgets/deposit_widgets.dart';
+import '../../payment/deposit_balance_payment.dart';
 
 class TrackingController extends GetxController {
   final TextEditingController searchController = TextEditingController();
@@ -325,7 +327,34 @@ class TrackingController extends GetxController {
       'freeDeliveryAmount': order['free_delivery'] == true
           ? double.tryParse(order['free_delivery_amount']?.toString() ?? '') ?? 0.0
           : 0.0,
+      // Commande avec acompte : suivi jusqu'au solde (null sinon).
+      'deposit': DepositOrderInfo.fromOrder(order),
+      'total': total,
     };
+  }
+
+  /// Commande avec acompte en cours de paiement du solde (bouton occupé).
+  final RxnString payingBalanceOrderId = RxnString();
+
+  /// Paiement du solde, débloqué après la livraison et la vérification ASSO.
+  /// Renvoie true si le solde est payé.
+  Future<bool> payBalance(Map<String, dynamic> shipment) async {
+    final info = shipment['deposit'];
+    final id = int.tryParse('${shipment['orderId']}');
+    if (info is! DepositOrderInfo || id == null || payingBalanceOrderId.value != null) {
+      return false;
+    }
+    payingBalanceOrderId.value = '$id';
+    try {
+      return await DepositBalancePayment.pay(
+        orderId: id,
+        orderNumber: '${shipment['id']}',
+        info: info,
+      );
+    } finally {
+      payingBalanceOrderId.value = null;
+      await loadOrders();
+    }
   }
 
   /// Commande transporteur : l'acheteur confirme lui-même la réception.

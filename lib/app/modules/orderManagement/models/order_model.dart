@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 
 /// Modèle de données pour une commande
@@ -46,6 +47,13 @@ class OrderModel {
   /// Bloc `delivery` (P4) : mode, transporteur, suivi daté, détail du prix.
   final DeliveryInfo? delivery;
 
+  /// Commande avec acompte (null sinon) : le vendeur n'est payé qu'après la
+  /// livraison, la vérification ASSO et le paiement du solde.
+  final DepositOrderInfo? deposit;
+
+  /// Vente déjà créditée sur le Wallet du vendeur.
+  final bool settled;
+
   /// Commande expédiée par un transporteur (SOLEX, DHL…) et non par un livreur.
   bool get isCarrier => delivery?.isCarrier == true;
 
@@ -87,6 +95,8 @@ class OrderModel {
     this.deliveryAssigned = false,
     this.rawStatus = '',
     this.delivery,
+    this.deposit,
+    this.settled = false,
   });
 
   /// Nombre total d'articles
@@ -195,6 +205,8 @@ class OrderModel {
       deliveryAssigned: deliveryAssigned,
       rawStatus: rawStatus,
       delivery: delivery,
+      deposit: deposit,
+      settled: settled,
     );
   }
 }

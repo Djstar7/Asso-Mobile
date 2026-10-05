@@ -5,6 +5,7 @@ import '../../../data/providers/order_service.dart';
 import '../../../data/providers/wallet_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../models/customer_order_models.dart';
+import '../../payment/deposit_balance_payment.dart';
 import '../../../core/utils/app_design.dart';
 
 class MyOrderController extends GetxController {
@@ -205,6 +206,29 @@ class MyOrderController extends GetxController {
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
       );
+    }
+  }
+
+  /// Commande avec acompte en cours de paiement du solde (bouton occupé).
+  final RxnString payingBalanceOrderId = RxnString();
+
+  /// Commande avec acompte : le client paie le solde, débloqué après la
+  /// livraison et la vérification du produit avec ASSO.
+  Future<void> payBalance(CustomerOrder order) async {
+    final info = order.deposit;
+    final id = int.tryParse(order.id);
+    if (info == null || id == null || payingBalanceOrderId.value != null) return;
+
+    payingBalanceOrderId.value = order.id;
+    try {
+      await DepositBalancePayment.pay(
+        orderId: id,
+        orderNumber: order.orderNumber ?? order.id,
+        info: info,
+      );
+    } finally {
+      payingBalanceOrderId.value = null;
+      await loadOrders(refresh: true);
     }
   }
 

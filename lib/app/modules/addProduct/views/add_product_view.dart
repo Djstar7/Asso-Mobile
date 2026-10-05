@@ -422,6 +422,8 @@ class AddProductView extends GetView<AddProductController> {
         SizedBox(height: AppDesign.space6),
         _buildFreeDeliverySection(context),
         SizedBox(height: AppDesign.space6),
+        _buildDepositSection(context),
+        SizedBox(height: AppDesign.space6),
         _buildStorageSection(context),
       ],
     );
@@ -2245,6 +2247,67 @@ class AddProductView extends GetView<AddProductController> {
         ].join(' '),
         value: value,
         onChanged: controller.setFreeDelivery,
+      );
+    });
+  }
+
+  /// Commande avec acompte : le client paie une part du prix à la commande et
+  /// le solde après la livraison, une fois la marchandise vérifiée avec ASSO.
+  Widget _buildDepositSection(BuildContext context) {
+    return Obx(() {
+      // Une prestation ne se commande pas sur acompte.
+      if (controller.articleType.value == 'service') {
+        return const SizedBox.shrink();
+      }
+      controller.formRevision.value; // réagit à la saisie du % et du prix
+      final enabled = controller.depositEnabled.value;
+      final price = AddProductController.parsePrice(controller.priceController.text);
+      final rate = controller.depositRate;
+      final showPreview =
+          enabled && controller.depositRateValid && price != null && price > 0;
+      final deposit = showPreview ? (price * rate! / 100).roundToDouble() : 0.0;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FreeDeliveryToggle(
+            title: 'add_product.deposit.title'.tr,
+            subtitle: 'add_product.deposit.subtitle'.tr,
+            value: enabled,
+            onChanged: (value) => controller.depositEnabled.value = value,
+          ),
+          if (enabled) ...[
+            SizedBox(height: context.elementSpacing),
+            TextField(
+              controller: controller.depositRateController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+              ],
+              decoration: InputDecoration(
+                labelText: 'add_product.deposit.rate_label'.tr,
+                suffixText: '%',
+                errorText:
+                    controller.depositRateController.text.trim().isNotEmpty &&
+                        !controller.depositRateValid
+                    ? 'add_product.deposit.rate_error'.tr
+                    : null,
+              ),
+            ),
+            if (showPreview) ...[
+              SizedBox(height: context.elementSpacing),
+              Text(
+                'add_product.deposit.preview'.trParams({
+                  'deposit': deposit.toStringAsFixed(0),
+                  'balance': (price - deposit).toStringAsFixed(0),
+                }),
+                style: context.caption,
+              ),
+            ],
+            SizedBox(height: context.elementSpacing),
+            Text('add_product.deposit.notice'.tr, style: context.caption),
+          ],
+        ],
       );
     });
   }

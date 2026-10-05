@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 
 /// Statut de commande client
@@ -123,6 +124,9 @@ class CustomerOrder {
   final int? ratingValue;
   final String? ratingComment;
 
+  /// Commande avec acompte : montants, solde et vérification ASSO (null sinon).
+  final DepositOrderInfo? deposit;
+
   bool get isCarrier => delivery?.isCarrier == true;
 
   CustomerOrder({
@@ -147,6 +151,7 @@ class CustomerOrder {
     this.delivery,
     this.ratingValue,
     this.ratingComment,
+    this.deposit,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
@@ -180,6 +185,7 @@ class CustomerOrder {
       ratingComment: map['rating'] is Map
           ? (map['rating'] as Map)['comment']?.toString()
           : null,
+      deposit: DepositOrderInfo.fromOrder(map),
     );
   }
 

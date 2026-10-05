@@ -217,6 +217,19 @@ class AddProductController extends GetxController {
     freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
   }
 
+  // Commande avec acompte (produit sur commande / importé) : % du prix client
+  // payé à la commande, solde après la livraison et la vérification ASSO.
+  final depositEnabled = false.obs;
+  final depositRateController = TextEditingController();
+
+  double? get depositRate =>
+      double.tryParse(depositRateController.text.trim().replaceAll(',', '.'));
+
+  bool get depositRateValid {
+    final rate = depositRate;
+    return rate != null && rate >= 1 && rate <= 99;
+  }
+
   Future<void> _loadShopFreeDelivery() async {
     if (!ConnectivityService.isOffline) {
       try {
@@ -316,6 +329,7 @@ class AddProductController extends GetxController {
       nameController,
       descriptionController,
       priceController,
+      depositRateController,
     ]) {
       controller.addListener(() => formRevision.value++);
     }
@@ -343,8 +357,11 @@ class AddProductController extends GetxController {
             selectedSubcategoryId.value!.isNotEmpty &&
             descriptionController.text.trim().isNotEmpty;
       case 2:
+        depositEnabled.value; // abonne les Obx à l'interrupteur
         final price = parsePrice(priceController.text);
-        return price != null && price > 0;
+        return price != null &&
+            price > 0 &&
+            (!depositEnabled.value || depositRateValid);
       case 3:
         // Les déclinaisons sont facultatives.
         return true;
@@ -369,6 +386,10 @@ class AddProductController extends GetxController {
         }
         return 'add_product.blocking.description'.tr;
       case 2:
+        final price = parsePrice(priceController.text);
+        if (price != null && price > 0) {
+          return 'add_product.blocking.deposit_rate'.tr;
+        }
         return 'add_product.blocking.price'.tr;
       default:
         return null;
@@ -421,6 +442,8 @@ class AddProductController extends GetxController {
           'subcategoryId': selectedSubcategoryId.value ?? '',
           'subcategory': selectedSubcategory.value ?? '',
           'isVariable': isVariableProduct.value ? '1' : '0',
+          'depositEnabled': depositEnabled.value ? '1' : '0',
+          'depositRate': depositRateController.text,
         },
         imagePaths: productImages.map((image) => image.path).toList(),
         primaryImageIndex: primaryImageIndex.value,
@@ -436,6 +459,8 @@ class AddProductController extends GetxController {
     priceController.text = draft.fields['price'] ?? '';
     stockController.text = draft.fields['stock'] ?? '';
     weightKgController.text = draft.fields['weight'] ?? '';
+    depositEnabled.value = draft.fields['depositEnabled'] == '1';
+    depositRateController.text = draft.fields['depositRate'] ?? '';
 
     final category = draft.fields['category'] ?? '';
     if (category.isNotEmpty) selectedCategory.value = category;
@@ -644,6 +669,7 @@ class AddProductController extends GetxController {
     priceController.dispose();
     stockController.dispose();
     weightKgController.dispose();
+    depositRateController.dispose();
     super.onClose();
   }
 
@@ -973,6 +999,13 @@ class AddProductController extends GetxController {
       freeDeliveryOverride.value = freeSetting == null
           ? null
           : readFreeDelivery(freeSetting);
+
+      // Commande avec acompte.
+      depositEnabled.value = readFreeDelivery(product['deposit_enabled']);
+      final rate = product['deposit_rate'];
+      depositRateController.text = rate == null
+          ? ''
+          : (double.tryParse('$rate') ?? 0).toStringAsFixed(0);
 
       // Poids réel en kg (utilisé pour chiffrer la livraison).
       final weightKg = parseWeightKg(product['weight']?.toString());
@@ -1583,6 +1616,12 @@ class AddProductController extends GetxController {
       fieldsMap['free_delivery'] = freeOverride == null
           ? ''
           : (freeOverride ? '1' : '0');
+
+      // Commande avec acompte : % du prix client, solde après vérification ASSO.
+      fieldsMap['deposit_enabled'] = depositEnabled.value ? '1' : '0';
+      if (depositEnabled.value) {
+        fieldsMap['deposit_rate'] = depositRateController.text.trim().replaceAll(',', '.');
+      }
 
       // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
       final weightText = weightKgController.text.trim();
