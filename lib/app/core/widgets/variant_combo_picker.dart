@@ -28,6 +28,7 @@ class VariantComboPicker extends StatefulWidget {
     this.onStockLimit,
     this.onFocusChanged,
     this.lineHasError,
+    this.beforeQuantity,
   });
 
   final VariantCatalog catalog;
@@ -50,6 +51,10 @@ class VariantComboPicker extends StatefulWidget {
 
   /// Quantité en erreur pour une ligne (ex. sous le minimum du palier).
   final bool Function(int variantId, int quantity)? lineHasError;
+
+  /// Bloc glissé entre les options et la saisie de quantité (ex. les paliers
+  /// de prix en gros : on voit le prix avant de taper la quantité).
+  final Widget? beforeQuantity;
 
   @override
   State<VariantComboPicker> createState() => _VariantComboPickerState();
@@ -181,6 +186,10 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
       children: [
         for (final group in _catalog.groups) ...[
           _buildGroup(context, group),
+          const SizedBox(height: AppDesign.space3),
+        ],
+        if (widget.beforeQuantity != null) ...[
+          widget.beforeQuantity!,
           const SizedBox(height: AppDesign.space3),
         ],
         _buildComboQuantity(context),
@@ -352,7 +361,9 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
         icon: Icons.touch_app_outlined,
         text: missing.isEmpty
             ? 'core.variant.unavailable_combination'.tr
-            : 'core.variant.choose_missing'.trParams({'options': missing.join(', ')}),
+            : 'core.variant.choose_missing'.trParams({
+                'options': missing.join(', '),
+              }),
       );
     }
 
@@ -361,7 +372,8 @@ class _VariantComboPickerState extends State<VariantComboPicker> {
     final stock = VariantCatalog.stockOf(variant);
     final details = [
       if (widget.priceOf != null) widget.priceOf!(variant),
-      if (widget.limitToStock) 'core.variant.in_stock'.trParams({'count': '$stock'}),
+      if (widget.limitToStock)
+        'core.variant.in_stock'.trParams({'count': '$stock'}),
     ];
     final hasError =
         quantity > 0 && (widget.lineHasError?.call(id, quantity) ?? false);

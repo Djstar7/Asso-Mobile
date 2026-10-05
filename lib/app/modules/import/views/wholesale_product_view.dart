@@ -387,20 +387,22 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   }
 
   Widget _orderSheetContent(BuildContext context) {
-    final p = widget.product;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Combinaison (ou quantité, sans options).
-        _hasVariants
-            ? _section(
-                context,
-                title: 'import.wholesale.order_sheet.combination_title'.tr,
-                subtitle:
-                    'import.wholesale.order_sheet.combination_subtitle'.tr,
+        // 1. Combinaison, avec les paliers glissés entre les options et la
+        // saisie : l'acheteur voit le prix avant de taper sa quantité.
+        if (_hasVariants)
+          _section(
+            context,
+            title: 'import.wholesale.order_sheet.combination_title'.tr,
+            subtitle: 'import.wholesale.order_sheet.combination_subtitle'.tr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 // En gros, le stock saisi sur une variante n'a pas de sens :
                 // toutes les options restent commandables.
-                child: VariantComboPicker(
+                VariantComboPicker(
                   catalog: _variantCatalog,
                   quantities: _variantQuantities,
                   limitToStock: false,
@@ -416,17 +418,38 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                             ),
                           });
                   },
+                  beforeQuantity: _tiers.isEmpty ? null : _sheetTiers(context),
                   onFocusChanged: (id) => _focusedVariantId = id,
                   onChanged: (next) {
                     _update(() => _variantQuantities = next);
                     _quantityChanged();
                   },
                 ),
-              )
-            : _section(
-                context,
-                title: 'import.wholesale.quantity_title'.tr,
-                child: QuantityStepper(
+                if (_tiers.isNotEmpty) _buildQuantityHint(context),
+              ],
+            ),
+          )
+        else ...[
+          // 1. Sans options : prix selon la quantité, puis la quantité.
+          // Toucher un palier y amène la quantité.
+          if (_tiers.isNotEmpty) ...[
+            _section(
+              context,
+              title: 'import.wholesale.tiers_title'.tr,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [..._tiers.map(_tierTile)],
+              ),
+            ),
+            const SizedBox(height: AppDesign.space3),
+          ],
+          _section(
+            context,
+            title: 'import.wholesale.quantity_title'.tr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                QuantityStepper(
                   value: _singleQuantity,
                   min: 1,
                   hasError: _quantityTooLow,
@@ -435,20 +458,8 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                     _quantityChanged();
                   },
                 ),
-              ),
-        // 2. Prix selon la quantité, juste après la combinaison : toucher un
-        // palier y amène la quantité.
-        if (p.priceTiers.isNotEmpty) ...[
-          const SizedBox(height: AppDesign.space3),
-          _section(
-            context,
-            title: 'import.wholesale.tiers_title'.tr,
-            subtitle: _mixVariants
-                ? 'import.wholesale.tiers_mixed_subtitle'.tr
-                : 'import.wholesale.tiers_per_option_subtitle'.tr,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [..._tiers.map(_tierTile), _buildQuantityHint(context)],
+                if (_tiers.isNotEmpty) _buildQuantityHint(context),
+              ],
             ),
           ),
         ],
@@ -489,6 +500,36 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           title: 'import.wholesale.summary_title'.tr,
           child: _summary(context),
         ),
+      ],
+    );
+  }
+
+  /// Paliers dans la feuille de commande, entre les options et la saisie :
+  /// titre, règle de calcul et paliers à toucher.
+  Widget _sheetTiers(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'import.wholesale.tiers_title'.tr,
+          style: context.textStyle(
+            FontSizeType.subtitle1,
+            fontWeight: FontWeight.w700,
+            color: context.ds.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          _mixVariants
+              ? 'import.wholesale.tiers_mixed_subtitle'.tr
+              : 'import.wholesale.tiers_per_option_subtitle'.tr,
+          style: context.textStyle(
+            FontSizeType.caption,
+            color: context.ds.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppDesign.space2),
+        ..._tiers.map(_tierTile),
       ],
     );
   }

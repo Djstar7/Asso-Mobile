@@ -302,7 +302,10 @@ void main() {
     await tester.pump();
     expect(inSheet(find.textContaining('Total : 30')), findsOneWidget);
 
-    // 30 L + 20 XL : une ligne par taille, un seul total.
+    // 30 L + 20 XL : une ligne par taille, un seul total. Les paliers
+    // séparent les options de la saisie : on remonte jusqu'à XL.
+    await tester.ensureVisible(inSheet(find.text('XL')));
+    await tester.pumpAndSettle();
     await tester.tap(inSheet(find.text('XL')));
     await tester.pump();
     await tester.enterText(comboField(), '20');
