@@ -32,15 +32,13 @@ import '../../../data/services/stripe_native_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../widgets/wholesale_delivery.dart';
 
-/// Fiche produit GROS + tunnel de commande : palier (cota) → quantité →
-/// expédition jusqu'à Douala → livraison depuis Douala (SOLEX) → moyen de
-/// paiement (sélecteur unifié). Le client paie les deux trajets à la commande.
-///
-/// Une page plutôt qu'une feuille : photos, conditionnements, expédition et
-/// récapitulatif s'entassaient dans une feuille qui couvrait déjà l'écran, les
-/// photos y étaient réduites à un bandeau, et le clavier de la quantité
-/// masquait le reste. La page donne toute sa hauteur à la galerie, range le
-/// contenu en cartes, et garde le total et l'action au-dessus du clavier.
+/// Fiche produit GROS + tunnel de commande. La page ne montre que le
+/// produit : galerie, prix, options et descriptions. « Commander » ouvre une
+/// feuille, comme sur la fiche détail, où l'acheteur règle dans l'ordre :
+/// combinaison → prix selon la quantité (paliers) → expédition jusqu'à Douala
+/// → adresse, précision, contact et partenaire de livraison (SOLEX) →
+/// récapitulatif, puis le moyen de paiement (sélecteur unifié). Le client paie
+/// les deux trajets à la commande.
 class WholesaleProductView extends StatefulWidget {
   final WholesaleProduct product;
   final List<ShippingOption> shippingOptions;
@@ -73,6 +71,7 @@ class WholesaleProductView extends StatefulWidget {
 
 class _WholesaleProductViewState extends State<WholesaleProductView> {
   ShippingOption? _shipping;
+
   /// Quantité d'un produit sans options.
   int _singleQuantity = 0;
 
@@ -96,6 +95,16 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     items: () => _orderItems,
   )..addListener(_onDeliveryChanged);
   Timer? _requote;
+
+  /// Prévient la feuille de commande d'un changement fait sur la page :
+  /// ouverte par-dessus, elle ne se redessine pas avec `setState`.
+  final ValueNotifier<int> _orderRevision = ValueNotifier(0);
+
+  /// `setState` qui redessine aussi la feuille de commande.
+  void _update(VoidCallback change) {
+    setState(change);
+    _orderRevision.value++;
+  }
 
   late final List<String> _images = [
     ...widget.product.images,
@@ -132,6 +141,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       ..removeListener(_onDeliveryChanged)
       ..dispose();
     _galleryController.dispose();
+    _orderRevision.dispose();
     super.dispose();
   }
 
@@ -176,16 +186,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final lines = _variantLines;
     if (lines.isEmpty) return null;
     return 'Variantes : ${lines.map((line) => '${VariantCatalog.attributesOf(line.$1).entries.map((e) => '${e.key}: ${e.value}').join(', ')} × ${line.$2}').join(' ; ')}';
-  }
-
-  bool _requireVariant() {
-    if (!_hasVariants || _variantQuantities.isNotEmpty) return true;
-    Get.snackbar(
-      'import.wholesale.choose_title'.tr,
-      'import.wholesale.choose_message'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-    );
-    return false;
   }
 
   List<PriceTier> get _tiers => widget.product.sortedTiers;
@@ -252,6 +252,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   bool get _needsWeight => _shipping?.rateType == 'per_kg';
   bool get _needsCbm => _shipping?.rateType == 'per_cbm';
+
   /// Poids d'une unité commandée : celui du palier (un pack, un bidon…),
   /// sinon celui de la fiche.
   double get _shippingWeightKg => _lines.fold(
@@ -267,13 +268,18 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   /// l'écart ; sinon elle prend la quantité du palier.
   void _selectTier(PriceTier tier) {
     if (!_hasVariants) {
-      setState(() => _singleQuantity = tier.minQuantity);
+      _update(() => _singleQuantity = tier.minQuantity);
       _quantityChanged();
       return;
     }
     final id = _focusedVariantId ?? _lines.lastOrNull?.$1;
     if (id == null) {
-      _openOptionsSheet(thenPay: false);
+      // Un palier s'applique à une combinaison : il en faut une d'abord.
+      Get.snackbar(
+        'import.wholesale.choose_title'.tr,
+        'import.wholesale.choose_message'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     final current = _variantQuantities[id] ?? 0;
@@ -291,60 +297,199 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       );
       return;
     }
-    setState(() => _variantQuantities = {..._variantQuantities, id: next});
+    _update(() => _variantQuantities = {..._variantQuantities, id: next});
     _quantityChanged();
   }
 
-  /// Feuille où l'acheteur choisit ses options et leurs quantités : sur la
-  /// fiche, couleurs et tailles ne sont qu'affichées. « Commander » l'ouvre
-  /// avant le paiement ([thenPay]) ; elle rend `true` une fois validée.
-  Future<bool?> _openOptionsSheet({required bool thenPay}) {
+  /// Première étape qui bloque la commande ; null quand tout est prêt.
+  String? get _missingStep {
+    if (_quantityTooLow) {
+      return _hasVariants
+          ? 'import.wholesale.choose_message'.tr
+          : 'import.wholesale.hint.enter_quantity'.tr;
+    }
+    if (_tier == null || _shipping == null) {
+      return 'import.wholesale.choose_tier_and_shipping'.tr;
+    }
+    if (_needsWeight && _shippingWeightKg <= 0) {
+      return 'import.wholesale.weight_unavailable_message'.tr;
+    }
+    if (_needsCbm) return 'import.wholesale.volume_unavailable_message'.tr;
+    return _delivery.missingStep;
+  }
+
+  /// Feuille de commande, comme celle de la fiche détail : la page ne montre
+  /// que le produit, tout se règle ici dans l'ordre — combinaison, prix selon
+  /// la quantité, expédition, adresse et contact, partenaire, récapitulatif.
+  /// Elle rend `true` quand l'acheteur passe au paiement.
+  Future<bool?> _openOrderSheet() {
     return AppSheet.show<bool>(
-      StatefulBuilder(
-        builder: (context, setSheetState) => AppSheet(
-          title: 'import.wholesale.options_sheet.title'.tr,
-          subtitle: 'import.wholesale.options_sheet.subtitle'.tr,
-          footer: AppButton(
-            label: thenPay
-                ? 'import.wholesale.options_sheet.continue_to_payment'.tr
-                : 'import.wholesale.options_sheet.confirm'.tr,
-            icon: thenPay ? Icons.lock_rounded : Icons.check_rounded,
-            size: AppButtonSize.large,
-            onPressed: () {
-              if (_requireVariant()) AppNavigation.pop(true);
-            },
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // En gros, le stock saisi sur une variante n'a pas de sens :
-              // toutes les options restent commandables.
-              VariantComboPicker(
-                catalog: _variantCatalog,
-                quantities: _variantQuantities,
-                limitToStock: false,
-                priceOf: (variant) {
-                  final id = VariantQuantityList.idOf(variant);
-                  final tier = _tierFor(_variantQuantities[id] ?? 0);
-                  return tier == null
-                      ? ''
-                      : 'import.wholesale.price_per_unit'.trParams({
-                          'price': _fmtConverted(tier.unitPrice, tier.currency),
-                        });
-                },
-                onFocusChanged: (id) => _focusedVariantId = id,
-                onChanged: (next) {
-                  setState(() => _variantQuantities = next);
-                  setSheetState(() {});
-                  _quantityChanged();
-                },
+      ListenableBuilder(
+        listenable: Listenable.merge([_delivery, _orderRevision]),
+        builder: (context, _) {
+          final missing = _missingStep;
+          return AppSheet(
+            title: 'import.wholesale.order_sheet.title'.tr,
+            subtitle: widget.product.name,
+            // Les étapes sont des cartes : elles se détachent mieux sur le
+            // fond d'écran que sur une surface blanche.
+            color: context.ds.canvas,
+            // Épinglé au-dessus du clavier, avec l'étape qui le bloque.
+            footer: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (missing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppDesign.space2),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: AppDesign.warning,
+                        ),
+                        const SizedBox(width: AppDesign.space2),
+                        Expanded(
+                          child: Text(
+                            missing,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppDesign.warningText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                AppButton(
+                  label: 'import.wholesale.order_sheet.pay'.trParams({
+                    'total': _fmt(_total),
+                  }),
+                  icon: Icons.lock_rounded,
+                  size: AppButtonSize.large,
+                  onPressed: missing == null
+                      ? () {
+                          AppNavigation.dismissKeyboard();
+                          AppNavigation.pop(true);
+                        }
+                      : null,
+                ),
+              ],
+            ),
+            child: _orderSheetContent(context),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _orderSheetContent(BuildContext context) {
+    final p = widget.product;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Combinaison (ou quantité, sans options).
+        _hasVariants
+            ? _section(
+                context,
+                title: 'import.wholesale.order_sheet.combination_title'.tr,
+                subtitle:
+                    'import.wholesale.order_sheet.combination_subtitle'.tr,
+                // En gros, le stock saisi sur une variante n'a pas de sens :
+                // toutes les options restent commandables.
+                child: VariantComboPicker(
+                  catalog: _variantCatalog,
+                  quantities: _variantQuantities,
+                  limitToStock: false,
+                  priceOf: (variant) {
+                    final id = VariantQuantityList.idOf(variant);
+                    final tier = _tierFor(_variantQuantities[id] ?? 0);
+                    return tier == null
+                        ? ''
+                        : 'import.wholesale.price_per_unit'.trParams({
+                            'price': _fmtConverted(
+                              tier.unitPrice,
+                              tier.currency,
+                            ),
+                          });
+                  },
+                  onFocusChanged: (id) => _focusedVariantId = id,
+                  onChanged: (next) {
+                    _update(() => _variantQuantities = next);
+                    _quantityChanged();
+                  },
+                ),
+              )
+            : _section(
+                context,
+                title: 'import.wholesale.quantity_title'.tr,
+                child: QuantityStepper(
+                  value: _singleQuantity,
+                  min: 1,
+                  hasError: _quantityTooLow,
+                  onChanged: (value) {
+                    _update(() => _singleQuantity = value);
+                    _quantityChanged();
+                  },
+                ),
               ),
-              const SizedBox(height: AppDesign.space3),
-              _buildQuantityHint(context),
-            ],
+        // 2. Prix selon la quantité, juste après la combinaison : toucher un
+        // palier y amène la quantité.
+        if (p.priceTiers.isNotEmpty) ...[
+          const SizedBox(height: AppDesign.space3),
+          _section(
+            context,
+            title: 'import.wholesale.tiers_title'.tr,
+            subtitle: _mixVariants
+                ? 'import.wholesale.tiers_mixed_subtitle'.tr
+                : 'import.wholesale.tiers_per_option_subtitle'.tr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [..._tiers.map(_tierTile), _buildQuantityHint(context)],
+            ),
+          ),
+        ],
+        // 3. Expédition jusqu'à l'entrepôt ASSO.
+        if (widget.shippingOptions.isNotEmpty) ...[
+          const SizedBox(height: AppDesign.space3),
+          _section(
+            context,
+            title: 'import.wholesale.shipping_title'.trParams({
+              'city': _hubCity,
+            }),
+            subtitle: 'import.wholesale.shipping_subtitle'.trParams({
+              'city': _hubCity,
+            }),
+            child: Column(
+              children: [
+                ...widget.shippingOptions.map(_shippingTile),
+                if (_needsWeight || _needsCbm) _shippingMeasureInfo(context),
+              ],
+            ),
+          ),
+        ],
+        // 4. Adresse, précision, contact et partenaire de livraison.
+        const SizedBox(height: AppDesign.space3),
+        _section(
+          context,
+          title: 'import.wholesale.delivery_title'.trParams({'city': _hubCity}),
+          subtitle: 'import.wholesale.delivery_subtitle'.tr,
+          child: WholesaleDeliverySection(
+            delivery: _delivery,
+            formatPrice: _fmt,
           ),
         ),
-      ),
+        // 5. Récapitulatif.
+        const SizedBox(height: AppDesign.space3),
+        _section(
+          context,
+          title: 'import.wholesale.summary_title'.tr,
+          child: _summary(context),
+        ),
+      ],
     );
   }
 
@@ -363,8 +508,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         children: [
           Expanded(
             child: CustomScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 _buildGalleryAppBar(context),
                 SliverToBoxAdapter(
@@ -392,122 +536,22 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                             const SizedBox(height: AppDesign.space3),
                           ],
                           _buildHeaderCard(context, p),
-                          // Les paliers viennent d'abord : ils disent quel prix
-                          // chaque quantité obtient.
-                          if (p.priceTiers.isNotEmpty) ...[
+                          // Couleurs et tailles sont seulement montrées : la
+                          // combinaison, les paliers et la livraison se
+                          // règlent dans la feuille « Commander ».
+                          if (_hasVariants) ...[
                             const SizedBox(height: AppDesign.space3),
                             _section(
                               context,
-                              title: 'import.wholesale.tiers_title'.tr,
-                              subtitle: _mixVariants
-                                  ? 'import.wholesale.tiers_mixed_subtitle'.tr
-                                  : 'import.wholesale.tiers_per_option_subtitle'
-                                        .tr,
-                              child: Column(
-                                children: _tiers.map(_tierTile).toList(),
+                              title: 'import.wholesale.options_title'.tr,
+                              subtitle: 'import.wholesale.options_subtitle'.tr,
+                              child: VariantOptionsPreview(
+                                catalog: _variantCatalog,
+                                dimOutOfStock: false,
                               ),
                             ),
                           ],
-                          const SizedBox(height: AppDesign.space3),
-                          _hasVariants
-                              ? _section(
-                                  context,
-                                  title: 'import.wholesale.options_title'.tr,
-                                  subtitle:
-                                      'import.wholesale.options_subtitle'.tr,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      VariantOptionsPreview(
-                                        catalog: _variantCatalog,
-                                        dimOutOfStock: false,
-                                      ),
-                                      if (!_quantityTooLow) ...[
-                                        const SizedBox(
-                                          height: AppDesign.space3,
-                                        ),
-                                        _buildQuantityHint(context),
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: TextButton.icon(
-                                            onPressed: () => _openOptionsSheet(
-                                              thenPay: false,
-                                            ),
-                                            icon: const Icon(
-                                              Icons.edit_outlined,
-                                              size: 18,
-                                            ),
-                                            label: Text(
-                                              'import.wholesale.edit_choices'
-                                                  .tr,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                )
-                              : _section(
-                                  context,
-                                  title: 'import.wholesale.quantity_title'.tr,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      QuantityStepper(
-                                        value: _singleQuantity,
-                                        min: 1,
-                                        hasError: _quantityTooLow,
-                                        onChanged: (value) {
-                                          setState(
-                                            () => _singleQuantity = value,
-                                          );
-                                          _quantityChanged();
-                                        },
-                                      ),
-                                      const SizedBox(height: AppDesign.space2),
-                                      _buildQuantityHint(context),
-                                    ],
-                                  ),
-                                ),
-                          if (widget.shippingOptions.isNotEmpty) ...[
-                            const SizedBox(height: AppDesign.space3),
-                            _section(
-                              context,
-                              title: 'import.wholesale.shipping_title'.trParams(
-                                {'city': _hubCity},
-                              ),
-                              subtitle: 'import.wholesale.shipping_subtitle'
-                                  .trParams({'city': _hubCity}),
-                              child: Column(
-                                children: [
-                                  ...widget.shippingOptions.map(_shippingTile),
-                                  if (_needsWeight || _needsCbm)
-                                    _shippingMeasureInfo(context),
-                                ],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: AppDesign.space3),
-                          _section(
-                            context,
-                            title: 'import.wholesale.delivery_title'.trParams({
-                              'city': _hubCity,
-                            }),
-                            subtitle: 'import.wholesale.delivery_subtitle'.tr,
-                            child: WholesaleDeliverySection(
-                              delivery: _delivery,
-                              formatPrice: _fmt,
-                            ),
-                          ),
                           ..._buildDetailSections(context, p),
-                          const SizedBox(height: AppDesign.space3),
-                          _section(
-                            context,
-                            title: 'import.wholesale.summary_title'.tr,
-                            child: _summary(context),
-                          ),
                           const SizedBox(height: AppDesign.space4),
                           // Contacter le support ASSO à propos de cette
                           // commande en gros.
@@ -1012,9 +1056,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               'price': _fmtConverted(tier.unitPrice, tier.currency),
             });
       // Palier suivant : combien il manque pour le prix plus bas.
-      final next = _tiers
-          .where((t) => t.minQuantity > _quantity)
-          .firstOrNull;
+      final next = _tiers.where((t) => t.minQuantity > _quantity).firstOrNull;
       final nudge = next == null
           ? ''
           : 'import.wholesale.hint.nudge'.trParams({
@@ -1079,7 +1121,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         color: selected ? AppDesign.accentSubtle : context.ds.surface,
         borderRadius: BorderRadius.circular(AppDesign.radiusSm),
         child: InkWell(
-          onTap: () => setState(() => _shipping = s),
+          onTap: () => _update(() => _shipping = s),
           borderRadius: BorderRadius.circular(AppDesign.radiusSm),
           child: Container(
             padding: const EdgeInsets.all(AppDesign.space3),
@@ -1228,37 +1270,37 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     String v, {
     bool bold = false,
     bool struck = false,
-  }) =>
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              l,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: c.textStyle(
-                bold ? FontSizeType.body1 : FontSizeType.body2,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
-                color: bold ? c.ds.textPrimary : c.ds.textSecondary,
-              ),
-            ),
+  }) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          l,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: c.textStyle(
+            bold ? FontSizeType.body1 : FontSizeType.body2,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+            color: bold ? c.ds.textPrimary : c.ds.textSecondary,
           ),
-          const SizedBox(width: AppDesign.space2),
-          // Course offerte par le vendeur : prix barré, suivi de « Offerte ».
-          DeliveryPriceText(
-            price: v,
-            isFree: struck,
-            style: c.textStyle(
-              bold ? FontSizeType.body1 : FontSizeType.body2,
-              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-              color: bold ? AppDesign.accent : c.ds.textPrimary,
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(width: AppDesign.space2),
+      // Course offerte par le vendeur : prix barré, suivi de « Offerte ».
+      DeliveryPriceText(
+        price: v,
+        isFree: struck,
+        style: c.textStyle(
+          bold ? FontSizeType.body1 : FontSizeType.body2,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+          color: bold ? AppDesign.accent : c.ds.textPrimary,
+        ),
+      ),
+    ],
+  );
 
-  /// Barre d'action : le total, mis à jour à chaque chiffre saisi, et la
-  /// commande. Elle suit le clavier (voir [build]).
+  /// Barre d'action : « Commander » ouvre la feuille où tout se règle. Le
+  /// prix est déjà dans l'en-tête ; le total n'existe qu'une fois la
+  /// quantité choisie, il s'affiche dans la feuille.
   Widget _buildActionBar(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1274,40 +1316,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             context.ds.gutter,
             AppDesign.space3,
           ),
-          child: Row(
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'import.wholesale.total'.tr,
-                    style: context.textStyle(
-                      FontSizeType.caption,
-                      color: context.ds.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    _fmt(_total),
-                    style: context.textStyle(
-                      FontSizeType.h6,
-                      fontWeight: FontWeight.w800,
-                      color: context.ds.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: AppDesign.space4),
-              Expanded(
-                child: AppButton(
-                  label: 'import.wholesale.order_button'.tr,
-                  icon: Icons.lock_rounded,
-                  size: AppButtonSize.large,
-                  isLoading: _submitting,
-                  onPressed: _pay,
-                ),
-              ),
-            ],
+          child: AppButton(
+            label: 'import.wholesale.order_button'.tr,
+            icon: Icons.shopping_cart_checkout_rounded,
+            size: AppButtonSize.large,
+            isLoading: _submitting,
+            onPressed: _pay,
           ),
         ),
       ),
@@ -1325,40 +1339,15 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     )) {
       return;
     }
-    if (_hasVariants) {
-      final confirmed = await _openOptionsSheet(thenPay: true);
-      if (confirmed != true || !mounted) return;
-    }
-    final tier = _tier, shipping = _shipping;
-    if (tier == null || shipping == null || _lines.isEmpty) {
+    final confirmed = await _openOrderSheet();
+    if (confirmed != true || !mounted) return;
+    // La feuille ne laisse passer qu'une commande complète ; garde au cas où
+    // un devis aurait changé entre-temps.
+    final missing = _missingStep, shipping = _shipping;
+    if (missing != null || shipping == null) {
       Get.snackbar(
         'import.wholesale.error'.tr,
-        'import.wholesale.choose_tier_and_shipping'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    if (_needsWeight && _shippingWeightKg <= 0) {
-      Get.snackbar(
-        'import.wholesale.weight_unavailable_title'.tr,
-        'import.wholesale.weight_unavailable_message'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    if (_needsCbm) {
-      Get.snackbar(
-        'import.wholesale.volume_unavailable_title'.tr,
-        'import.wholesale.volume_unavailable_message'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    final deliveryMissing = _delivery.missingStep;
-    if (deliveryMissing != null) {
-      Get.snackbar(
-        'import.wholesale.delivery_title'.trParams({'city': _hubCity}),
-        deliveryMissing,
+        missing ?? 'import.wholesale.choose_tier_and_shipping'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;

@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:asso/app/core/widgets/app_sheet.dart';
+import 'package:asso/app/data/models/user_model.dart';
 import 'package:asso/app/data/models/wholesale_models.dart';
+import 'package:asso/app/data/providers/storage_service.dart';
 import 'package:asso/app/modules/import/views/wholesale_product_view.dart';
 
 /// Produit en gros minimal : un palier de 50 unités à 1 000 FCFA, une
@@ -53,7 +56,34 @@ void main() {
     await GetStorage.init();
   });
 
-  tearDown(Get.reset);
+  tearDown(() {
+    StorageService.clearAuthSession();
+    Get.reset();
+  });
+
+  /// « Commander » demande un compte : la feuille ne s'ouvre qu'une fois
+  /// connecté.
+  void signIn() => StorageService.saveAuthSession(
+    'token-abc',
+    UserModel(
+      id: 7,
+      firstName: 'Awa',
+      lastName: 'Diop',
+      name: 'Awa Diop',
+      email: 'awa@example.com',
+      phone: '+237690000000',
+      role: 'client',
+      createdAt: DateTime(2026, 1, 1).toIso8601String(),
+    ),
+  );
+
+  /// Ouvre la feuille de commande, où se règlent quantité et paliers.
+  Future<void> openOrderSheet(WidgetTester tester) async {
+    signIn();
+    await tester.tap(find.text('Commander'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppSheet), findsOneWidget);
+  }
 
   Future<void> openPage(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2340);
@@ -76,10 +106,22 @@ void main() {
     (w) => w is TextField && w.keyboardType == TextInputType.number,
   );
 
-  testWidgets('part du minimum du palier', (tester) async {
+  testWidgets('la fiche ne montre ni quantité, ni paliers, ni livraison', (
+    tester,
+  ) async {
     await openPage(tester);
 
-    expect(find.text('Chaises pliantes'), findsOneWidget);
+    expect(quantityField(), findsNothing);
+    expect(find.text('Prix selon la quantité'), findsNothing);
+    expect(find.text('Numéro à contacter'), findsNothing);
+    expect(find.text('Récapitulatif'), findsNothing);
+  });
+
+  testWidgets('part du minimum du palier', (tester) async {
+    await openPage(tester);
+    await openOrderSheet(tester);
+
+    expect(find.text('Chaises pliantes'), findsWidgets);
     expect(tester.widget<TextField>(quantityField()).controller!.text, '50');
     // 50 × 1 000 + 20 000 d'expédition.
     expect(find.textContaining('70'), findsWidgets);
@@ -87,6 +129,7 @@ void main() {
 
   testWidgets('accepte une quantité saisie au clavier', (tester) async {
     await openPage(tester);
+    await openOrderSheet(tester);
 
     await tester.enterText(quantityField(), '500');
     await tester.pump();
@@ -100,6 +143,7 @@ void main() {
     tester,
   ) async {
     await openPage(tester);
+    await openOrderSheet(tester);
 
     await tester.enterText(quantityField(), '12');
     await tester.pump();
@@ -111,6 +155,7 @@ void main() {
 
   testWidgets('les boutons ajustent la quantité', (tester) async {
     await openPage(tester);
+    await openOrderSheet(tester);
 
     await tester.tap(find.byTooltip('Augmenter'));
     await tester.pump();
@@ -123,9 +168,7 @@ void main() {
     expect(tester.widget<TextField>(quantityField()).controller!.text, '49');
   });
 
-  testWidgets('garde le total et « Commander » au-dessus du clavier', (
-    tester,
-  ) async {
+  testWidgets('garde « Commander » au-dessus du clavier', (tester) async {
     await openPage(tester);
     tester.view.viewInsets = const FakeViewPadding(bottom: 900);
     await tester.pumpAndSettle();
@@ -184,6 +227,7 @@ void main() {
 
     testWidgets('part du premier palier', (tester) async {
       await openTiered(tester);
+      await openOrderSheet(tester);
       expect(tester.widget<TextField>(quantityField()).controller!.text, '50');
       // 50 × 1 000 + 20 000.
       expect(find.textContaining('70'), findsWidgets);
@@ -193,6 +237,7 @@ void main() {
       tester,
     ) async {
       await openTiered(tester);
+      await openOrderSheet(tester);
 
       await tester.tap(find.text('Pack de 100'));
       await tester.pump();
@@ -204,6 +249,7 @@ void main() {
 
     testWidgets('le prix suit la quantité saisie', (tester) async {
       await openTiered(tester);
+      await openOrderSheet(tester);
 
       // Entre deux paliers : prix du palier atteint.
       await tester.enterText(quantityField(), '80');
@@ -217,6 +263,14 @@ void main() {
       // 120 × 750 + 20 000.
       expect(find.textContaining('110'), findsWidgets);
     });
+  });
+
+  testWidgets('le paiement attend l’adresse et sa précision', (tester) async {
+    await openPage(tester);
+    await openOrderSheet(tester);
+
+    expect(find.text('Indiquez votre adresse de livraison.'), findsOneWidget);
+    expect(find.text('Précisions (obligatoire)'), findsOneWidget);
   });
 
   testWidgets('porte un bouton retour', (tester) async {
