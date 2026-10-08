@@ -13,7 +13,7 @@ class AppConstants {
   //
   // Pour travailler en local, surcharger au build sans toucher au code :
   //   flutter run --dart-define=API_BASE_URL=http://localhost:8001/api
-  //   flutter run --dart-define=API_BASE_URL=http://192.168.34.157:8001/api
+  //   flutter run --dart-define=API_BASE_URL=http://192.168.1.156:8001/api
   //
   // Assurez-vous que le serveur local écoute sur toutes les interfaces :
   //   php artisan serve --host=0.0.0.0 --port=8001

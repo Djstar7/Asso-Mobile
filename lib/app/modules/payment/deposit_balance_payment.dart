@@ -6,6 +6,7 @@ import '../../core/widgets/deposit_widgets.dart';
 import '../../data/providers/order_service.dart';
 import '../../data/services/stripe_native_service.dart';
 import '../wallet/widgets/kpay_payment_sheet.dart';
+import 'widgets/mobile_money_waiting.dart';
 import 'widgets/payment_method_selector.dart';
 import 'widgets/wallet_payment_confirm_dialog.dart';
 
@@ -93,6 +94,21 @@ class DepositBalancePayment {
         _paid();
         return true;
       }
+      if (mode == 'kpay_direct') {
+        // Rien n'est annoncé avant la réponse de l'opérateur.
+        final outcome = await MobileMoneyWaiting.run(
+          amount: info.balanceAmount,
+          provider: provider!,
+          phone: phone!,
+          check: () => _state(orderId),
+        );
+        if (outcome.status == 'paid') {
+          _paid();
+          return true;
+        }
+        if (outcome.status == 'pending') _poll(orderId); // prévient à la réponse
+        return false;
+      }
       Get.snackbar(
         'core.deposit.balance'.tr,
         response.message,
@@ -105,6 +121,16 @@ class DepositBalancePayment {
       _error(e.toString().replaceAll('Exception: ', ''));
       return false;
     }
+  }
+
+  /// État du paiement du solde (une lecture).
+  static Future<MobileMoneyStatus> _state(int orderId) async {
+    final data = (await OrderService.orderPaymentStatus(orderId)).data?['data'];
+    if (data?['balance_status'] == 'paid') return (status: 'paid', failure: null);
+    if (data?['balance_payment_pending'] == false) {
+      return (status: 'failed', failure: null);
+    }
+    return (status: 'pending', failure: null);
   }
 
   /// Suit la confirmation serveur du paiement du solde (Mobile Money / carte).

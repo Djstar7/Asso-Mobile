@@ -14,3 +14,13 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }
+
+/// Délégué de scène : la fenêtre de la scène est aussi exposée par
+/// `AppDelegate.window`. stripe_ios 11.x y cherche l'écran d'où présenter la
+/// Payment Sheet ; depuis le passage au cycle de vie par scènes elle restait
+/// nil, et la feuille de paiement par carte ne s'affichait plus.
+class SceneDelegate: FlutterSceneDelegate {
+  override var window: UIWindow? {
+    didSet { (UIApplication.shared.delegate as? FlutterAppDelegate)?.window = window }
+  }
+}

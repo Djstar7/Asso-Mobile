@@ -5,7 +5,9 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/certification_packages_controller.dart';
 import '../../packageSubscription/widgets/sales_code_field.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../../data/providers/package_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../../data/models/payment_method_option.dart';
@@ -466,22 +468,37 @@ class CertificationPackagesView
     );
     if (selection == null) return; // paiement annulé
 
-    final success = await controller.createOrder(
+    final subscriptionId = await controller.createOrder(
       packageId: packageId,
       paymentMode: 'kpay_direct',
       kpayProvider: selection['provider'],
       kpayPhone: selection['phone'],
     );
+    if (subscriptionId == null) return; // erreur déjà affichée
 
-    if (success) {
-      Get.snackbar(
-        'certification.view.order_created'.tr,
-        'certification.view.validate_ussd'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.success,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-      );
+    // Rien n'est annoncé avant la réponse de l'opérateur.
+    final outcome = await MobileMoneyWaiting.run(
+      amount: amount,
+      provider: selection['provider']!,
+      phone: selection['phone']!,
+      formatAmount: controller.formatCurrency,
+      check: () => PackageService.subscriptionPaymentState(subscriptionId),
+    );
+    switch (outcome.status) {
+      case 'paid':
+        controller.onPaymentConfirmed();
+      case 'failed':
+        break; // motif déjà expliqué
+      default:
+        controller.pollOrderPayment(subscriptionId);
+        Get.snackbar(
+          'certification.view.order_created'.tr,
+          'certification.view.validate_ussd'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppDesign.accent,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
     }
   }
 

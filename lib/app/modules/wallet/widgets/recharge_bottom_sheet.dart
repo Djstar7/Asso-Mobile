@@ -8,6 +8,7 @@ import '../../../routes/app_pages.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../data/services/stripe_native_service.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import 'kpay_phone_selector.dart';
 import '../../../core/widgets/app_sheet.dart';
 
@@ -560,28 +561,37 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         if (!mounted) return;
 
         if (result['success'] == true) {
-          // Lancer le suivi du statut en arrière-plan (polling 5 s + notification)
           final txId = result['data']?['transaction_id'];
-          if (txId is int) {
-            walletController.trackDepositInBackground(txId);
-          }
+          // Rien n'est annoncé avant la réponse de l'opérateur ; en cas de
+          // refus, la feuille reste ouverte pour corriger l'opérateur.
+          final outcome = txId is int
+              ? await MobileMoneyWaiting.run(
+                  amount: amount,
+                  formatAmount: (value) =>
+                      '${value.toStringAsFixed(0)} ${_currencyLabel(_kpayCurrency)}',
+                  provider: _kpayProvider!,
+                  phone: _kpayPhone!,
+                  check: () => _depositState(txId),
+                )
+              : (status: 'pending', failure: null);
+          if (!mounted || outcome.status == 'failed') return;
 
-          // Fermer le bottom sheet
-          Navigator.of(context).pop();
-
-          // Afficher les instructions USSD (non-bloquant)
-          await _showUssdInstructionDialog(
-            context,
-            amount,
-            _kpayPhone!,
-            'kpay',
-          );
-
-          // Rafraîchir le wallet et naviguer vers l'historique
+          Navigator.of(context).pop(); // fermer la feuille
           await walletController.refresh();
 
-          // Naviguer vers l'historique pour voir la transaction en pending
-          Get.toNamed(Routes.WALLET_HISTORY);
+          if (outcome.status == 'paid') {
+            Get.snackbar(
+              'wallet.recharge.title'.tr,
+              'wallet.messages.payment_success'.tr,
+              backgroundColor: AppThemeSystem.successColor,
+              colorText: AppThemeSystem.whiteColor,
+            );
+          } else {
+            // Toujours en attente : suivi en arrière-plan (notification à la
+            // réponse) et transaction visible « en attente » dans l'historique.
+            if (txId is int) walletController.trackDepositInBackground(txId);
+            Get.toNamed(Routes.WALLET_HISTORY);
+          }
         } else {
           Get.snackbar(
             'wallet.recharge.error'.tr,
@@ -688,209 +698,17 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
     }
   }
 
-  /// Afficher le dialogue d'instructions USSD (non-bloquant)
-  /// L'utilisateur peut fermer le dialogue et retourner au wallet
-  /// Il recevra une notification FCM quand le paiement sera confirmé
-  Future<void> _showUssdInstructionDialog(
-    BuildContext context,
-    double amount,
-    String phoneNumber,
-    String paymentMethod,
-  ) async {
-    final providerName = paymentMethod == 'orange'
-        ? 'Orange Money'
-        : 'MTN Mobile Money';
-    final providerEmoji = paymentMethod == 'orange' ? '(OM)' : '(MTN)';
-
-    return showDialog(
-      context: context,
-      barrierDismissible: false, // Force l'utilisateur à cliquer sur "Compris"
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Text(providerEmoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'wallet.recharge.ussd_title'.tr,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'wallet.recharge.ussd_sent_to'.tr,
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  phoneNumber,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppThemeSystem.primaryColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.infoColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppThemeSystem.infoColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: AppThemeSystem.infoColor,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'wallet.ussd.instructions_title'.tr,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppThemeSystem.infoColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInstructionStep(
-                      '1',
-                      'wallet.recharge.ussd_step1'.tr,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildInstructionStep(
-                      '2',
-                      'wallet.recharge.ussd_step2'.trParams({'provider': providerName}),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildInstructionStep(
-                      '3',
-                      'wallet.recharge.ussd_step3'
-                          .trParams({'amount': amount.toStringAsFixed(0)}),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.successColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.notifications_active_outlined,
-                      color: AppThemeSystem.successColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'wallet.recharge.ussd_notify'.tr,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppThemeSystem.successColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeSystem.primaryColor,
-                foregroundColor: AppThemeSystem.whiteColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'wallet.recharge.understood'.tr,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+  /// État d'une recharge Mobile Money relu sur le serveur (une lecture).
+  Future<MobileMoneyStatus> _depositState(int txId) async {
+    final result = await walletController.checkPaymentStatus(txId);
+    final status = result['status']?.toString();
+    return switch (status) {
+      'completed' => (status: 'paid', failure: null),
+      'failed' || 'cancelled' => (
+        status: 'failed',
+        failure: result['payment_failure']?.toString(),
       ),
-    );
-  }
-
-  /// Widget helper pour afficher une étape d'instruction
-  Widget _buildInstructionStep(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: AppThemeSystem.infoColor,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppThemeSystem.whiteColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[800],
-                height: 1.4,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+      _ => (status: 'pending', failure: null),
+    };
   }
 }

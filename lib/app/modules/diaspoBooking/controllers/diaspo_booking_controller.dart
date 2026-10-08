@@ -7,6 +7,7 @@ import '../../../data/providers/diaspo_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../wallet/views/payment_webview.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../../data/services/stripe_native_service.dart';
 import '../../../core/utils/app_design.dart';
@@ -209,15 +210,30 @@ class DiaspoBookingController extends GetxController {
 
       isSubmitting.value = false;
       // La réservation n'est PAS encore confirmée : le paiement Mobile Money doit être
-      // validé sur le téléphone. On informe, puis on n'affiche le succès (+ code) qu'au
-      // statut « payé » (voir _pollBookingPayment).
-      Get.snackbar(
-        'diaspo_booking.payment_pending_title'.tr,
-        'diaspo_booking.payment_pending_ussd'.tr,
-        backgroundColor: AppDesign.accent, colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      // validé sur le téléphone. Le succès (+ code) n'est affiché qu'au statut « payé ».
+      final outcome = await MobileMoneyWaiting.run(
+        amount: totalPrice.value,
+        // Montant dans la devise de l'offre (pas forcément le FCFA).
+        formatAmount: (amount) => '${amount.toStringAsFixed(0)} $currency',
+        provider: provider,
+        phone: phone,
+        check: () => _diaspoService.bookingPaymentState(booking.id),
+        failureNote: 'diaspo_booking.payment_failed_released'.tr,
       );
-      _pollBookingPayment(booking);
+      switch (outcome.status) {
+        case 'paid':
+          _showSuccessDialog(booking);
+        case 'failed':
+          break; // motif déjà expliqué
+        default:
+          Get.snackbar(
+            'diaspo_booking.payment_pending_title'.tr,
+            'diaspo_booking.payment_pending_ussd'.tr,
+            backgroundColor: AppDesign.accent, colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+          _pollBookingPayment(booking);
+      }
     } catch (e) {
       isSubmitting.value = false;
       _showError(e);

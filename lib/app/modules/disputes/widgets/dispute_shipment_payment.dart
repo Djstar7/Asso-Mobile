@@ -7,6 +7,7 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../data/providers/dispute_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/services/stripe_native_service.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
@@ -112,6 +113,21 @@ class DisputeShipmentPayment {
         _paid();
         return true;
       }
+      if (mode == 'kpay_direct') {
+        // Rien n'est annoncé avant la réponse de l'opérateur.
+        final outcome = await MobileMoneyWaiting.run(
+          amount: amount,
+          provider: provider!,
+          phone: phone!,
+          check: () => _state(shipmentId),
+        );
+        if (outcome.status == 'paid') {
+          _paid();
+          return true;
+        }
+        if (outcome.status == 'pending') _poll(shipmentId); // prévient à la réponse
+        return false;
+      }
       Get.snackbar(
         'disputes.payment.delivery_fee'.tr,
         response.message,
@@ -124,6 +140,16 @@ class DisputeShipmentPayment {
       _error(e.toString().replaceAll('Exception: ', ''));
       return false;
     }
+  }
+
+  /// État du paiement de la course (une lecture).
+  static Future<MobileMoneyStatus> _state(int shipmentId) async {
+    final shipment = (await DisputeService.shipmentPaymentStatus(shipmentId)).data?['shipment'];
+    final status = shipment?['payment_status']?.toString();
+    return (
+      status: status == 'paid' || status == 'failed' ? status! : 'pending',
+      failure: null,
+    );
   }
 
   /// Suit la confirmation serveur du paiement (Mobile Money / carte).
