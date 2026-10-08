@@ -179,6 +179,20 @@
     },
     "invalid_form_title": "Formulaire invalide",
     "invalid_form_message": "Veuillez vérifier vos identifiants",
+    "errors": {
+      "credentials_title": "Identifiants incorrects",
+      "credentials_message": "L'adresse e-mail ou le mot de passe ne correspond à aucun compte. Vérifiez votre saisie ou réinitialisez votre mot de passe.",
+      "validation_title": "Informations incomplètes",
+      "validation_message": "Saisissez une adresse e-mail valide et votre mot de passe.",
+      "too_many_title": "Trop de tentatives",
+      "too_many_message": "Par sécurité, patientez quelques minutes avant de réessayer.",
+      "network_title": "Pas de connexion",
+      "network_message": "Impossible de joindre le serveur. Vérifiez votre connexion Internet puis réessayez.",
+      "server_title": "Service indisponible",
+      "server_message": "Nos serveurs rencontrent un problème. Réessayez dans un instant.",
+      "generic_title": "Connexion impossible",
+      "generic_message": "Une erreur inattendue est survenue. Réessayez dans un instant."
+    },
     "success": "Connexion réussie"
   },
   "otp": {
@@ -897,6 +911,47 @@
       "sign_in": "Se connecter",
       "snackbar_feature": "Connectez-vous pour accéder à @feature",
       "snackbar_generic": "Connexion requise pour cette fonctionnalité"
+    },
+    "deposit": {
+      "on_order": "Produit sur commande",
+      "total_price": "Prix total",
+      "deposit_now": "Acompte à payer maintenant",
+      "balance_later": "Solde restant",
+      "verification_notice": "Après réception de votre marchandise, un membre de l'équipe ASSO vous contactera pour la vérifier avec vous. Une fois cette vérification validée, le paiement du solde sera débloqué dans l'application.",
+      "pay_deposit": "Payer l'acompte",
+      "pickup_title": "Je récupère mon produit dans un point partenaire ASSO",
+      "pickup_hint": "Choisissez un point de retrait disponible.",
+      "home_title": "Je souhaite être livré à domicile",
+      "home_hint": "Livraison à l'adresse indiquée, après vérification et paiement du solde.",
+      "order_title": "Commande avec acompte",
+      "steps": {
+        "deposit_paid": "Acompte payé",
+        "supplier_order": "Commande fournisseur",
+        "in_transit": "Produit expédié / en transit",
+        "presented": "Produit livré ou disponible au retrait",
+        "verification": "Vérification avec ASSO",
+        "balance": "Paiement du solde",
+        "handover": "Remise du produit"
+      },
+      "balance_status": {
+        "locked": "Le solde sera payable après la vérification de votre produit avec ASSO.",
+        "unlocked": "Vérification terminée : vous pouvez payer le solde.",
+        "paid": "Solde payé",
+        "cancelled": "Commande clôturée"
+      },
+      "already_paid": "Déjà payé",
+      "balance": "Solde à régler",
+      "pay_balance": "Payer le solde - @amount",
+      "balance_of": "Solde de la commande #@order",
+      "balance_failed": "Le paiement du solde n'a pas abouti. Vous pouvez réessayer.",
+      "balance_paid_message": "Merci ! Votre produit peut vous être remis.",
+      "vendor": {
+        "title": "Commande avec acompte",
+        "in_progress": "vous serez payé après la livraison, la vérification ASSO et le solde du client",
+        "verification": "vérification ASSO en cours avec le client",
+        "balance_due": "vérification validée, en attente du solde du client",
+        "settled": "solde payé, vente créditée"
+      }
     }
   },
   "wallet": {
@@ -974,7 +1029,8 @@
       "info": "Vous avez des fonds bloqués qui seront débloqués après confirmation de livraison",
       "unlock_with_code": "Débloquer avec code",
       "amount": "Montant",
-      "unlock": "Débloquer"
+      "unlock": "Débloquer",
+      "pending_validation": "Dont @amount en attente : ventes à valider par le client (48 h après la livraison), réclamations ou commandes en cours."
     },
     "balances": {
       "title": "Soldes par Méthode",
@@ -2081,7 +2137,8 @@
       "name": "Donnez un nom à votre produit.",
       "category": "Choisissez une catégorie et une sous-catégorie.",
       "description": "Décrivez votre produit.",
-      "price": "Indiquez un prix supérieur à zéro."
+      "price": "Indiquez un prix supérieur à zéro.",
+      "deposit_rate": "Indiquez le pourcentage d'acompte (entre 1 et 99)."
     },
     "active_package": "Package actif",
     "error": "Erreur",
@@ -2298,6 +2355,14 @@
       "gb": "@value Go",
       "of_total": " / @value Go",
       "usage": "@percent % utilisé · @available Go disponibles"
+    },
+    "deposit": {
+      "title": "Commande avec acompte",
+      "subtitle": "Produit sur commande ou importé : le client paie un acompte, puis le solde après la livraison.",
+      "rate_label": "Acompte demandé (% du prix client)",
+      "rate_error": "Indiquez un pourcentage entre 1 et 99.",
+      "preview": "Sur votre prix : acompte @deposit, solde @balance (hors commission et livraison).",
+      "notice": "Un employé ASSO vérifie la marchandise avec le client avant le paiement du solde. Vous êtes payé une fois le solde réglé."
     }
   },
   "inventory_list": {
@@ -3205,7 +3270,7 @@
     "error": "Erreur",
     "load_offers_error": "Impossible de charger les offres",
     "code_validated_title": "Code validé",
-    "code_validated_message": "La livraison est confirmée. L'acheteur doit maintenant confirmer la réception.",
+    "code_validated_message": "La livraison est confirmée. Votre part a été créditée sur votre portefeuille.",
     "receipt_confirmed": {
       "title": "Réception confirmée",
       "message": "Merci ! Les fonds ont été débloqués et versés au voyageur. Vous retrouvez le détail de l'opération dans votre portefeuille.",
@@ -3297,7 +3362,7 @@
       "kg_booked": "Kilos réservés",
       "total_price": "Prix total",
       "secret_code": "Votre code secret",
-      "code_hint": "Donnez ce code au voyageur au moment de la remise",
+      "code_hint": "Ne donnez ce code au voyageur qu'à la remise de votre colis : sa validation lui verse le paiement.",
       "validate_code": "Valider le code de livraison",
       "view_earnings": "Voir mes gains dans le portefeuille",
       "awaiting_receipt": "Code validé. En attente de la confirmation de réception par l'acheteur.",
@@ -3305,7 +3370,7 @@
     },
     "validate_dialog": {
       "title": "Valider la livraison",
-      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a communiqué.",
+      "message": "Saisissez le code à 6 chiffres que l'acheteur vous a remis à la livraison. Sa validation clôt la réservation et crédite votre part.",
       "invalid_title": "Code invalide",
       "invalid_message": "Le code doit contenir 6 chiffres",
       "validate": "Valider"
@@ -3584,12 +3649,13 @@
     },
     "delivery": {
       "missing_address": "Indiquez votre adresse de livraison.",
+      "missing_details": "Précisez l’adresse : repère, immeuble, portail…",
       "missing_phone": "Renseignez un numéro à contacter valide.",
       "computing": "Calcul de la livraison en cours…",
       "choose_offer": "Choisissez la livraison depuis Douala.",
       "gps_position": "Position GPS (@lat, @lng)",
       "quote_failed": "Impossible de calculer la livraison. Réessayez.",
-      "details_label": "Précisions (facultatif)",
+      "details_label": "Précisions (obligatoire)",
       "details_hint": "Repère, immeuble, portail…",
       "phone_label": "Numéro à contacter",
       "phone_hint": "Ex. 6 90 00 00 00",
@@ -3612,11 +3678,11 @@
       "choose_message": "Indiquez la quantité d’au moins une option.",
       "quantities_exceeded_title": "Quantités déjà supérieures",
       "quantities_exceeded_message": "Vos autres options font déjà @count au total : réduisez-les pour revenir à « @tier ».",
-      "options_sheet": {
-        "title": "Vos options et quantités",
-        "subtitle": "Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.",
-        "continue_to_payment": "Continuer vers le paiement",
-        "confirm": "Valider"
+      "order_sheet": {
+        "title": "Votre commande",
+        "combination_title": "Choisissez votre combinaison",
+        "combination_subtitle": "Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante.",
+        "review": "Voir le récapitulatif · @total"
       },
       "price_per_unit": "@price / unité",
       "tiers_title": "Prix selon la quantité",
@@ -3624,13 +3690,11 @@
       "tiers_per_option_subtitle": "Chaque option a le prix de sa propre quantité.",
       "options_title": "Options disponibles",
       "options_subtitle": "Vous choisirez vos couleurs, tailles et quantités en commandant.",
-      "edit_choices": "Modifier mes choix",
       "quantity_title": "Quantité souhaitée",
       "shipping_title": "Expédition jusqu’à @city",
       "shipping_subtitle": "Quelle que soit la provenance, la commande arrive à l’entrepôt ASSO de @city.",
       "delivery_title": "Livraison depuis @city",
       "delivery_subtitle": "De l’entrepôt ASSO jusqu’à votre adresse, au prix calculé selon votre adresse et le poids du colis.",
-      "summary_title": "Récapitulatif",
       "opening": "Ouverture…",
       "ask_support": "Poser une question au support",
       "one_photo": "1 photo",
@@ -3647,9 +3711,13 @@
       "tier_up_to": "Jusqu’à @count",
       "tier_any_quantity": "Toute quantité",
       "tier_from": "À partir de @count",
+      "tier_range": "De @min à @count",
       "hint": {
         "choose_option": "Choisissez une option et indiquez sa quantité",
         "enter_quantity": "Indiquez une quantité",
+        "minimum": "Minimum @minimum unités",
+        "minimum_total": "Total : @quantity — minimum @minimum, toutes options confondues",
+        "minimum_per_option": "Minimum @minimum par option",
         "total_per_option": "Total : @quantity unités · chaque option a le prix de sa quantité",
         "at_price": " à @price / unité",
         "nudge": " · encore @count pour @price / unité",
@@ -3670,9 +3738,7 @@
       "feature_messaging": "la messagerie",
       "error": "Erreur",
       "choose_tier_and_shipping": "Choisissez un conditionnement et une expédition.",
-      "weight_unavailable_title": "Poids indisponible",
       "weight_unavailable_message": "ASSO doit encore renseigner le poids de ce colis avant le paiement.",
-      "volume_unavailable_title": "Volume indisponible",
       "volume_unavailable_message": "ASSO doit encore valider le volume de ce colis avant le paiement.",
       "amount_to_pay": "Total à payer",
       "wallet_item_label": "Commande en gros — @name",
@@ -3699,7 +3765,23 @@
       "support_unavailable_message": "Le service d'assistance n'est pas disponible pour le moment. Réessayez plus tard.",
       "support_start_failed": "Impossible de démarrer la conversation avec le support.",
       "conversation_unavailable": "Conversation indisponible.",
-      "error_with_details": "Une erreur est survenue: @error"
+      "error_with_details": "Une erreur est survenue: @error",
+      "recap": {
+        "title": "Récapitulatif de la commande",
+        "edit": "Modifier",
+        "confirm_and_pay": "Confirmer et payer",
+        "item": "Article",
+        "quantity": "Quantité",
+        "delivery": "Expédition et livraison",
+        "shipping": "Expédition jusqu’à @city",
+        "address": "Adresse",
+        "address_details": "Précision",
+        "contact_phone": "Numéro à contacter",
+        "courier": "Livreur",
+        "mode": "Mode",
+        "lead_time": "Délai",
+        "amount": "Montant"
+      }
     }
   },
   "vendor_dashboard": {
@@ -3831,5 +3913,114 @@
     },
     "search_hint": "Rechercher dans la boutique",
     "clear": "Effacer"
+  },
+  "disputes": {
+    "title": "Réclamation",
+    "not_found": "Réclamation introuvable.",
+    "order_ref": "Commande @order",
+    "history": "Historique",
+    "status": {
+      "new": "Nouvelle",
+      "in_review": "En analyse",
+      "vendor_contacted": "Vendeur contacté",
+      "replacement": "Remplacement",
+      "return": "Retour",
+      "refunded": "Remboursée",
+      "rejected": "Non fondée",
+      "resolved": "Résolue",
+      "closed": "Fermée"
+    },
+    "reasons": {
+      "different": "Produit différent",
+      "damaged": "Endommagé",
+      "defective": "Défectueux",
+      "incomplete": "Incomplet",
+      "wrong_variant": "Mauvaise variante",
+      "other": "Autre"
+    },
+    "form": {
+      "title": "Signaler un problème",
+      "replacement_title": "Le remplacement n'est pas conforme",
+      "submit": "Envoyer ma réclamation",
+      "reason": "Motif",
+      "explain": "Expliquez le problème",
+      "explain_hint": "Décrivez ce qui ne va pas (10 caractères minimum)",
+      "photos": "Ajoutez vos preuves (photos)",
+      "funds_notice": "Le paiement du vendeur reste bloqué pendant l'analyse de votre réclamation par ASSO."
+    },
+    "control": {
+      "title": "Vérifiez votre commande",
+      "message": "Vous avez jusqu'au @date pour vérifier vos produits. Sans action de votre part, la commande sera validée automatiquement.",
+      "conform": "Tout est conforme",
+      "report": "Faire une réclamation",
+      "conform_title": "Tout est conforme ?",
+      "conform_confirm": "Le vendeur sera payé tout de suite et vous ne pourrez plus faire de réclamation sur cette commande."
+    },
+    "decision": {
+      "title": "Décision ASSO",
+      "founded": "Réclamation fondée",
+      "unfounded": "Réclamation non fondée"
+    },
+    "shipment": {
+      "return_title": "Retour du produit",
+      "replacement_title": "Produit de remplacement",
+      "paid_by_asso": "Course prise en charge par ASSO",
+      "paid_by_vendor": "Course payée par le vendeur",
+      "free_for_you": "Aucun frais de livraison pour vous",
+      "tracking": "N° de suivi : @number"
+    },
+    "claim": {
+      "title": "Votre réclamation"
+    },
+    "client": {
+      "replacement_check": "Votre produit de remplacement est livré. Vérifiez-le avant le @date.",
+      "replacement_ok": "Le remplacement est conforme",
+      "replacement_ko": "Le remplacement n'est pas conforme",
+      "return_notice": "Votre demande de retour est validée. Un partenaire de livraison va vous contacter pour récupérer le produit. Vous n'avez aucun frais de retour à payer.",
+      "refunded_notice": "Nous sommes désolés que votre commande n'ait pas répondu à vos attentes. @amount ont été remboursés sur votre Wallet ASSO.",
+      "see_similar": "Voir les produits similaires"
+    },
+    "similar": {
+      "title": "Produits similaires",
+      "sorry": "Nous sommes désolés que votre commande n'ait pas répondu à vos attentes.",
+      "free_delivery": "Découvrez une sélection de produits similaires dont la livraison est offerte par le vendeur.",
+      "empty": "Aucun produit similaire avec livraison offerte pour le moment."
+    },
+    "payment": {
+      "no_partner": "Aucun partenaire de livraison disponible pour cette adresse.",
+      "return_fee": "Livraison retour",
+      "replacement_fee": "Livraison du remplacement",
+      "delivery_fee": "Frais de livraison",
+      "failed": "Le paiement de la livraison n'a pas abouti.",
+      "paid_title": "Livraison payée",
+      "paid_message": "Le partenaire de livraison prend le relais.",
+      "choose_partner": "Choisir un partenaire de livraison",
+      "return_subtitle": "Collecte chez le client et retour vers vous, à vos frais",
+      "replacement_subtitle": "Envoi du produit de remplacement au client, à vos frais"
+    },
+    "vendor": {
+      "list_title": "Réclamations",
+      "dashboard_subtitle": "Litiges clients, remplacements et retours",
+      "filter_open": "En cours",
+      "filter_closed": "Clôturées",
+      "empty": "Aucune réclamation",
+      "empty_message": "Les réclamations de vos clients apparaîtront ici.",
+      "held_notice": "@amount restent bloqués sur votre Wallet en attendant la décision d'ASSO.",
+      "held_short": "@amount bloqués",
+      "pay_notice": "Choisissez un partenaire de livraison et payez la course pour que le dossier avance.",
+      "pay_shipment": "Choisir le livreur et payer",
+      "replace": "Remplacer le produit",
+      "organize_return": "Organiser le retour",
+      "mark_shipped": "Produit remis au livreur",
+      "return_received": "J'ai reçu le produit retourné",
+      "send_evidence": "Envoyer mes explications / preuves",
+      "evidence_title": "Vos explications pour ASSO",
+      "asso_decides": "ASSO décide de l'issue du dossier ; vous ne pouvez pas le clôturer vous-même.",
+      "replace_confirm": "Vous enverrez un produit de remplacement au client et paierez la livraison. Un seul remplacement est possible. Continuer ?",
+      "return_confirm": "Le produit sera récupéré chez le client et retourné à vos frais ; le client sera remboursé. Continuer ?",
+      "todo_pay": "À faire : payer la livraison",
+      "todo_choose": "À faire : remplacer ou organiser le retour",
+      "todo_ship": "À faire : remettre le remplacement au livreur"
+    }
   }
 }

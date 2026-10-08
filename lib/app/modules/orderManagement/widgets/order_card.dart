@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../controllers/order_management_controller.dart';
 import '../models/order_model.dart';
 
@@ -185,6 +186,12 @@ class OrderCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            // Commande avec acompte : versement après le solde du client.
+            if (order.deposit != null) ...[
+              const SizedBox(height: 6),
+              DepositVendorNotice(info: order.deposit!, settled: order.settled),
+            ],
 
             // Livraison offerte au client : déjà déduite du montant ci-dessus.
             if (order.freeDeliveryAmount > 0) ...[

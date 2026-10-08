@@ -8,7 +8,9 @@ import 'package:asso/app/core/widgets/app_sheet.dart';
 import 'package:asso/app/core/widgets/product_variant_selector.dart';
 import 'package:asso/app/core/widgets/quantity_stepper.dart';
 import 'package:asso/app/core/widgets/variant_quantity_list.dart';
+import 'package:asso/app/data/models/user_model.dart';
 import 'package:asso/app/data/models/wholesale_models.dart';
+import 'package:asso/app/data/providers/storage_service.dart';
 import 'package:asso/app/modules/import/views/wholesale_product_view.dart';
 import 'package:asso/app/modules/product/controllers/product_controller.dart';
 
@@ -19,14 +21,22 @@ Map<String, dynamic> _tshirt() => {
   'name': 'T-shirt',
   'price_xaf': 5000,
   'variants': [
-    {'id': 101, 'attributes': {'Taille': 'L'}, 'stock': 4},
+    {
+      'id': 101,
+      'attributes': {'Taille': 'L'},
+      'stock': 4,
+    },
     {
       'id': 102,
       'attributes': {'Taille': 'XL'},
       'stock': 2,
       'price_adjustment_xaf': 500,
     },
-    {'id': 103, 'attributes': {'Taille': 'S'}, 'stock': 0},
+    {
+      'id': 103,
+      'attributes': {'Taille': 'S'},
+      'stock': 0,
+    },
   ],
   'variant_options': [
     {
@@ -67,9 +77,10 @@ void main() {
       expect(lines.map((l) => l.quantity), [2, 1]);
       expect(controller.orderQuantity.value, 3);
       expect(controller.orderSubtotal(product), 2 * 5000 + 1 * 5500);
-      expect(controller.missingOrderSteps(product), isNot(contains(
-        'Indiquer la quantité d’au moins une option',
-      )));
+      expect(
+        controller.missingOrderSteps(product),
+        isNot(contains('Indiquer la quantité d’au moins une option')),
+      );
     });
 
     test('rien de choisi : la commande le signale', () {
@@ -205,9 +216,7 @@ void main() {
     expect(value, 1);
   });
 
-  testWidgets('en gros, le total cumule les tailles', (
-    tester,
-  ) async {
+  testWidgets('en gros, le total cumule les tailles', (tester) async {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -228,8 +237,16 @@ void main() {
         ),
       ],
       variants: [
-        {'id': 1, 'attributes': {'Taille': 'L'}, 'stock': 0},
-        {'id': 2, 'attributes': {'Taille': 'XL'}, 'stock': 0},
+        {
+          'id': 1,
+          'attributes': {'Taille': 'L'},
+          'stock': 0,
+        },
+        {
+          'id': 2,
+          'attributes': {'Taille': 'XL'},
+          'stock': 0,
+        },
       ],
     );
 
@@ -255,9 +272,22 @@ void main() {
     await tester.pump();
     expect(comboField(), findsNothing);
 
-    // Le choix se fait dans la feuille des options ; toucher un palier sans
-    // option choisie l'ouvre.
-    await tester.tap(find.text('Carton de 50'));
+    // Le choix se fait dans la feuille « Commander » (compte requis).
+    StorageService.saveAuthSession(
+      'token-abc',
+      UserModel(
+        id: 7,
+        firstName: 'Awa',
+        lastName: 'Diop',
+        name: 'Awa Diop',
+        email: 'awa@example.com',
+        phone: '+237690000000',
+        role: 'client',
+        createdAt: DateTime(2026, 1, 1).toIso8601String(),
+      ),
+    );
+    addTearDown(StorageService.clearAuthSession);
+    await tester.tap(find.text('Commander'));
     await tester.pumpAndSettle();
     final sheet = find.byType(AppSheet);
     expect(sheet, findsOneWidget);
@@ -270,14 +300,23 @@ void main() {
     await tester.pump();
     await tester.enterText(comboField(), '30');
     await tester.pump();
-    expect(inSheet(find.textContaining('Total : 30')), findsOneWidget);
+    // Sous le minimum (seuil du premier palier, 50) : rappel, commande bloquée.
+    expect(
+      inSheet(find.textContaining('Total : 30 — minimum 50')),
+      findsWidgets,
+    );
 
-    // 30 L + 20 XL : une ligne par taille, un seul total.
+    // 30 L + 20 XL : une ligne par taille, un seul total. Les paliers
+    // séparent les options de la saisie : on remonte jusqu'à XL.
+    await tester.ensureVisible(inSheet(find.text('XL')));
+    await tester.pumpAndSettle();
     await tester.tap(inSheet(find.text('XL')));
     await tester.pump();
     await tester.enterText(comboField(), '20');
     await tester.pump();
+    // 30 + 20 atteint le minimum, toutes tailles confondues.
     expect(inSheet(find.textContaining('Total : 50')), findsOneWidget);
+    expect(find.textContaining('minimum 50'), findsNothing);
     expect(find.text('L × 30'), findsOneWidget);
     expect(find.text('XL × 20'), findsOneWidget);
   });

@@ -979,6 +979,28 @@ import '../../../core/widgets/app_ui.dart';
               );
             }),
 
+            // Fonds bloqués : ventes en attente de validation du client (48 h
+            // après la livraison), litiges en cours, commandes payées au Wallet.
+            Obx(() {
+              final locked = controller.wallet.value?.lockedKPayBalance ?? 0.0;
+              if (locked <= 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_clock_outlined, size: 16, color: AppThemeSystem.getSecondaryTextColor(context)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'wallet.locked.pending_validation'.trParams({'amount': controller.formatPrice(locked)}),
+                        style: TextStyle(fontSize: 12, color: AppThemeSystem.getSecondaryTextColor(context)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
             const SizedBox(height: 12),
             
 

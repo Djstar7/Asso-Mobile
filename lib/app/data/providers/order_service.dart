@@ -82,6 +82,24 @@ class OrderService {
     );
   }
 
+  /// Commande avec acompte : paiement du solde, débloqué après la livraison et
+  /// la vérification conjointe avec ASSO.
+  static Future<ApiResponse> payBalance(
+    int orderId, {
+    required String paymentMode,
+    String? provider,
+    String? phone,
+  }) async {
+    return await ApiProvider.post(
+      '${AppConstants.ordersUrl}/$orderId/pay-balance',
+      body: {
+        'payment_mode': paymentMode,
+        'provider': ?provider,
+        'phone_number': ?phone,
+      },
+    );
+  }
+
   /// Statut de paiement d'une commande (mode kpay_direct) — re-vérifie chez KPay.
   static Future<ApiResponse> orderPaymentStatus(int orderId) async {
     return await ApiProvider.get('${AppConstants.ordersUrl}/$orderId/payment-status');

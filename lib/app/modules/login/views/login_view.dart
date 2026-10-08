@@ -46,6 +46,7 @@ class LoginView extends GetView<LoginController> {
           ),
         ),
         SizedBox(height: AppDesign.space3),
+        _buildLoginError(context),
         _buildLoginButton(context),
         SizedBox(height: AppDesign.space6),
         const AuthDivider(),
@@ -96,7 +97,9 @@ class LoginView extends GetView<LoginController> {
               : Icons.visibility_outlined,
           size: 19,
           color: context.ds.textTertiary,
-          tooltip: controller.obscurePassword.value ? 'welcomer.show_password'.tr : 'welcomer.hide_password'.tr,
+          tooltip: controller.obscurePassword.value
+              ? 'welcomer.show_password'.tr
+              : 'welcomer.hide_password'.tr,
           onPressed: controller.togglePasswordVisibility,
         ),
       ),
@@ -199,7 +202,9 @@ class LoginView extends GetView<LoginController> {
               child: Text(
                 loading
                     ? 'common.please_wait'.tr
-                    : (codeSent ? 'common.edit'.tr : 'login.reset.send_code'.tr),
+                    : (codeSent
+                          ? 'common.edit'.tr
+                          : 'login.reset.send_code'.tr),
               ),
             ),
           ],
@@ -209,6 +214,69 @@ class LoginView extends GetView<LoginController> {
     email.dispose();
     code.dispose();
     password.dispose();
+  }
+
+  /// Motif du dernier échec, au plus près du bouton qui l'a provoqué.
+  ///
+  /// Un encart plutôt qu'un snackbar : le message reste lisible pendant
+  /// que l'on corrige sa saisie, et disparaît dès la première frappe.
+  Widget _buildLoginError(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Obx(() {
+        final error = controller.loginError.value;
+        if (error == null) return const SizedBox(width: double.infinity);
+        return Padding(
+          padding: EdgeInsets.only(bottom: AppDesign.space4),
+          child: Semantics(
+            liveRegion: true,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(AppDesign.space3),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer,
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+                border: Border.all(color: scheme.error.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(error.icon, size: 20, color: scheme.error),
+                  SizedBox(width: AppDesign.space3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          error.title,
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onErrorContainer,
+                          ),
+                        ),
+                        SizedBox(height: AppDesign.space1),
+                        Text(
+                          error.message,
+                          style: context.textStyle(
+                            FontSizeType.caption,
+                            color: scheme.onErrorContainer,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   /// Action principale de l'écran.

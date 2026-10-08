@@ -1041,7 +1041,8 @@ class DiaspoListView extends GetView<DiaspoListController> {
               ),
             ],
 
-            // Acheteur : confirmer la réception (libère les fonds au voyageur).
+            // Acheteur : réservation dont le code a été validé avant que la
+            // validation ne verse elle-même les fonds ; la confirmation les libère.
             if (isBuyer && booking.status == 'confirmed') ...[
               const SizedBox(height: 12),
               SizedBox(

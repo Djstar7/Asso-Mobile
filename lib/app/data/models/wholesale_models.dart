@@ -41,7 +41,8 @@ class PriceTier {
   );
 
   /// Palier applicable à [quantity] : le plus haut dont le seuil est atteint ;
-  /// sous le premier seuil, le premier palier (même règle que le serveur).
+  /// sous le premier seuil, le premier palier, pour afficher un prix. Ce seuil
+  /// est le minimum de commande : le serveur refuse une quantité inférieure.
   static PriceTier? forQuantity(List<PriceTier> tiers, int quantity) {
     if (tiers.isEmpty) return null;
     final sorted = [...tiers]

@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../data/models/delivery_info.dart';
+import '../../disputes/models/dispute_models.dart';
 
 /// Statut de commande client
 enum CustomerOrderStatus {
@@ -57,6 +59,14 @@ class CustomerOrderItem {
   final double unitPrice;
   final double totalPrice;
 
+  /// Ligne de commande (order_items.id) : cible d'une réclamation.
+  final int? orderItemId;
+
+  /// Réclamation ouverte sur cet article, et possibilité d'en ouvrir une
+  /// (fenêtre de 48 h après la livraison).
+  final OrderItemDisputeRef? dispute;
+  final bool canReport;
+
   /// Option commandée (« Rouge · 42 »), vide pour un produit sans options.
   /// Une commande multi-couleurs a une ligne par couleur : sans ce libellé,
   /// le client voyait deux fois le même produit sans savoir lequel est quoi.
@@ -70,6 +80,9 @@ class CustomerOrderItem {
     required this.unitPrice,
     required this.totalPrice,
     this.variantLabel = '',
+    this.orderItemId,
+    this.dispute,
+    this.canReport = false,
   });
 
   /// Nom affiché : le produit, suivi de l'option s'il y en a une.
@@ -89,6 +102,9 @@ class CustomerOrderItem {
       variantLabel: attributes is Map
           ? attributes.values.map((v) => v.toString()).join(' · ')
           : '',
+      orderItemId: map.containsKey('product_id') ? int.tryParse('${map['id']}') : null,
+      dispute: OrderItemDisputeRef.fromMap(map['dispute']),
+      canReport: map['can_report'] == true,
     );
   }
 }
@@ -123,6 +139,12 @@ class CustomerOrder {
   final int? ratingValue;
   final String? ratingComment;
 
+  /// Commande avec acompte : montants, solde et vérification ASSO (null sinon).
+  final DepositOrderInfo? deposit;
+
+  /// Fenêtre de contrôle de 48 h après la livraison (null si absente).
+  final OrderControlInfo? control;
+
   bool get isCarrier => delivery?.isCarrier == true;
 
   CustomerOrder({
@@ -147,6 +169,8 @@ class CustomerOrder {
     this.delivery,
     this.ratingValue,
     this.ratingComment,
+    this.deposit,
+    this.control,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
@@ -180,6 +204,8 @@ class CustomerOrder {
       ratingComment: map['rating'] is Map
           ? (map['rating'] as Map)['comment']?.toString()
           : null,
+      deposit: DepositOrderInfo.fromOrder(map),
+      control: OrderControlInfo.fromMap(map['control']),
     );
   }
 
