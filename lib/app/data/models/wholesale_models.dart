@@ -1,4 +1,7 @@
 /// Modèles du module GROS (ASSO CHINA / DUBAÏ / TURQUIE).
+library;
+
+import '../../core/utils/delivery_delay.dart';
 
 class PriceTier {
   final int id;
@@ -185,6 +188,9 @@ class WholesaleProduct {
   final List<String> images;
   final WholesaleVideo? video;
 
+  /// Délai de livraison annoncé (jours ouvrables), fiche détaillée seulement.
+  final DeliveryDelay? deliveryDelay;
+
   /// Livraison gratuite offerte par le vendeur : la course SOLEX depuis
   /// Douala est offerte, l'expédition jusqu'à Douala reste due.
   final bool freeDelivery;
@@ -209,6 +215,7 @@ class WholesaleProduct {
     this.image,
     this.images = const [],
     this.video,
+    this.deliveryDelay,
     this.freeDelivery = false,
     this.tierMixVariants = true,
   });
@@ -246,6 +253,7 @@ class WholesaleProduct {
             .toList() ??
         const [],
     video: WholesaleVideo.fromJson(j['video']),
+    deliveryDelay: DeliveryDelay.fromApi(j['delivery_delay']),
     freeDelivery: j['free_delivery'] == true,
     tierMixVariants: j['tier_mix_variants'] != false,
   );

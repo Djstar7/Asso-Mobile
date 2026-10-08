@@ -137,6 +137,10 @@ class DeliveryInfo {
   final String? serviceModeLabel;
   final String? routeLabel;
   final String? leadTime;
+
+  /// Livraison estimée, figée à la commande (dates « AAAA-MM-JJ », jours ouvrables).
+  final String? estimatedDeliveryFrom;
+  final String? estimatedDeliveryTo;
   final String? conditions;
   final List<DeliveryPriceGridRow> priceGrid;
   final double? weightKg;
@@ -159,6 +163,8 @@ class DeliveryInfo {
     this.serviceModeLabel,
     this.routeLabel,
     this.leadTime,
+    this.estimatedDeliveryFrom,
+    this.estimatedDeliveryTo,
     this.conditions,
     this.priceGrid = const [],
     this.weightKg,
@@ -183,6 +189,8 @@ class DeliveryInfo {
       serviceModeLabel: _toText(raw['service_mode_label']),
       routeLabel: _toText(raw['route_label']),
       leadTime: _toText(raw['lead_time']),
+      estimatedDeliveryFrom: _toText(raw['estimated_delivery_from']),
+      estimatedDeliveryTo: _toText(raw['estimated_delivery_to']),
       conditions: _toText(raw['conditions']),
       priceGrid: DeliveryPriceGridRow.listFrom(raw['price_grid']),
       weightKg: _toDouble(raw['weight_kg']),

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/utils/delivery_delay.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../core/widgets/deposit_widgets.dart';
@@ -618,6 +619,7 @@ class ProductView extends GetView<ProductController> {
     final origin = _originLabel(
       product['origin_country']?.toString().trim().toUpperCase(),
     );
+    final deliveryDelay = DeliveryDelay.fromApi(product['delivery_delay']);
 
     return Container(
       color: context.ds.surface,
@@ -652,6 +654,14 @@ class ProductView extends GetView<ProductController> {
           if (origin.isNotEmpty) ...[
             AppDivider(),
             _specRow(context, label: 'product.specs.origin'.tr, value: origin),
+          ],
+          if (deliveryDelay != null) ...[
+            AppDivider(),
+            _specRow(
+              context,
+              label: 'product.specs.delivery_delay'.tr,
+              value: deliveryDelay.label,
+            ),
           ],
         ],
       ),
@@ -2819,6 +2829,8 @@ class ProductView extends GetView<ProductController> {
                 line('product.summary.mode'.tr, quote.deliveryOptionLabel),
                 if (quote.leadTime != null)
                   line('product.summary.lead_time'.tr, quote.leadTime!),
+                if (DeliveryDelay.fromApi(product['delivery_delay']) case final delay?)
+                  line('product.specs.delivery_delay'.tr, delay.label),
                 if (quote.pickupNotice != null) ...[
                   const SizedBox(height: 6),
                   DeliveryNotice(
