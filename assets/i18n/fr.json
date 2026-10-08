@@ -316,7 +316,7 @@
       },
       "delivery_time": {
         "question": "Quel est le délai de livraison ?",
-        "answer": "Le délai standard est de 24-48h pour Douala et Yaoundé, et de 3-5 jours pour les autres villes. Vous serez informé du délai précis lors de votre commande."
+        "answer": "Le délai dépend de l'article : de 1 à 20 jours ouvrables. Il est indiqué sur chaque fiche produit, et la date de livraison estimée apparaît sur votre commande."
       },
       "change_address": {
         "question": "Puis-je modifier l'adresse de livraison ?",
@@ -407,7 +407,7 @@
       },
       "delivery_times": {
         "question": "Quels sont les délais de livraison ?",
-        "answer": "Les délais de livraison varient selon votre localisation :\n• Zone urbaine : 1-2 heures\n• Zone périurbaine : 2-4 heures\n• Zone rurale : 24-48 heures"
+        "answer": "Chaque article affiche son délai de livraison, de 1 à 20 jours ouvrables (hors week-ends). La date estimée figure ensuite sur votre commande."
       },
       "payment_methods": {
         "question": "Quels modes de paiement acceptez-vous ?",
@@ -829,7 +829,8 @@
       "agency_to_agency": "Agence → agence",
       "home_delivery": "À domicile",
       "choose_partner_free": "Choisir ce partenaire — livraison offerte",
-      "choose_partner_price": "Choisir ce partenaire — @price"
+      "choose_partner_price": "Choisir ce partenaire — @price",
+      "estimated_delivery": "Livraison estimée"
     },
     "markdown": {
       "load_error": "Erreur lors du chargement du document: @error"
@@ -1952,7 +1953,8 @@
       "units_singular": "@count unité",
       "units_plural": "@count unités",
       "weight": "Poids",
-      "origin": "Provenance"
+      "origin": "Provenance",
+      "delivery_delay": "Délai de livraison"
     },
     "out_of_stock": "Épuisé",
     "origin": {
@@ -2018,7 +2020,14 @@
       "see_more": "Voir plus"
     },
     "image_unavailable": "Image non disponible",
-    "order_button": "Commander"
+    "order_button": "Commander",
+    "delivery_delay": {
+      "day": "@count jour ouvrable",
+      "days": "@count jours ouvrables",
+      "range": "@min à @max jours ouvrables",
+      "estimated_on": "le @date",
+      "estimated_between": "entre le @from et le @to"
+    }
   },
   "search": {
     "refresh_failed": "Impossible de rafraîchir les produits",
@@ -2363,6 +2372,15 @@
       "rate_error": "Indiquez un pourcentage entre 1 et 99.",
       "preview": "Sur votre prix : acompte @deposit, solde @balance (hors commission et livraison).",
       "notice": "Un employé ASSO vérifie la marchandise avec le client avant le paiement du solde. Vous êtes payé une fois le solde réglé."
+    },
+    "delivery_delay": {
+      "title": "Délai de livraison",
+      "min": "Minimum",
+      "max": "Maximum",
+      "auto": "Auto",
+      "day": "@count jour",
+      "days": "@count jours",
+      "helper": "En jours ouvrables, de 1 à 20. « Auto » : délai de la catégorie, fixé par ASSO."
     }
   },
   "inventory_list": {

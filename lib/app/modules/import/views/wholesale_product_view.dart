@@ -994,6 +994,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         'import.wholesale.details.commercial_information'.tr,
         p.commercialInformation,
       ),
+      ('product.specs.delivery_delay'.tr, p.deliveryDelay?.label),
     ];
 
     return [

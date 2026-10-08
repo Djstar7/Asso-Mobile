@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/delivery_info.dart';
 import '../utils/app_theme_system.dart';
+import '../utils/delivery_delay.dart';
 import 'free_delivery_widgets.dart';
 
 typedef PriceFormatter = String Function(double amount);
@@ -183,6 +184,9 @@ class DeliveryServiceLines extends StatelessWidget {
   final String? routeLabel;
   final String? leadTime;
 
+  /// Livraison estimée (commande) : « entre le 16 oct. et le 23 oct. ».
+  final String? estimatedDelivery;
+
   const DeliveryServiceLines({
     super.key,
     this.companyName,
@@ -190,6 +194,7 @@ class DeliveryServiceLines extends StatelessWidget {
     this.serviceModeLabel,
     this.routeLabel,
     this.leadTime,
+    this.estimatedDelivery,
   });
 
   @override
@@ -201,6 +206,8 @@ class DeliveryServiceLines extends StatelessWidget {
         if (serviceModeLabel != null) DeliveryInfoLine('core.delivery.mode'.tr, serviceModeLabel!),
         if (routeLabel != null) DeliveryInfoLine('core.delivery.route'.tr, routeLabel!),
         if (leadTime != null) DeliveryInfoLine('core.delivery.lead_time'.tr, leadTime!),
+        if (estimatedDelivery != null)
+          DeliveryInfoLine('core.delivery.estimated_delivery'.tr, estimatedDelivery!),
       ],
     );
   }
@@ -492,6 +499,10 @@ class OrderDeliveryDetails extends StatelessWidget {
           serviceModeLabel: delivery.serviceModeLabel,
           routeLabel: delivery.routeLabel,
           leadTime: delivery.leadTime,
+          estimatedDelivery: DeliveryDelay.estimatedLabel(
+            delivery.estimatedDeliveryFrom,
+            delivery.estimatedDeliveryTo,
+          ),
         ),
         if (delivery.trackingStatusLabel != null)
           DeliveryInfoLine('core.delivery.status'.tr, delivery.trackingStatusLabel!),

@@ -217,6 +217,26 @@ class AddProductController extends GetxController {
     freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
   }
 
+  // Délai de livraison annoncé au client, en jours ouvrables (1 à 20).
+  // null = délai de la catégorie, sinon le délai par défaut d'ASSO.
+  static const maxDeliveryDays = 20;
+  final deliveryDaysMin = Rxn<int>();
+  final deliveryDaysMax = Rxn<int>();
+
+  void setDeliveryDaysMin(int? days) {
+    deliveryDaysMin.value = days;
+    final max = deliveryDaysMax.value;
+    if (days != null && (max == null || max < days)) deliveryDaysMax.value = days;
+    if (days == null) deliveryDaysMax.value = null;
+  }
+
+  void setDeliveryDaysMax(int? days) {
+    deliveryDaysMax.value = days;
+    final min = deliveryDaysMin.value;
+    if (days != null && (min == null || min > days)) deliveryDaysMin.value = days;
+    if (days == null) deliveryDaysMin.value = null;
+  }
+
   // Commande avec acompte (produit sur commande / importé) : % du prix client
   // payé à la commande, solde après la livraison et la vérification ASSO.
   final depositEnabled = false.obs;
@@ -444,6 +464,8 @@ class AddProductController extends GetxController {
           'isVariable': isVariableProduct.value ? '1' : '0',
           'depositEnabled': depositEnabled.value ? '1' : '0',
           'depositRate': depositRateController.text,
+          'deliveryDaysMin': '${deliveryDaysMin.value ?? ''}',
+          'deliveryDaysMax': '${deliveryDaysMax.value ?? ''}',
         },
         imagePaths: productImages.map((image) => image.path).toList(),
         primaryImageIndex: primaryImageIndex.value,
@@ -461,6 +483,8 @@ class AddProductController extends GetxController {
     weightKgController.text = draft.fields['weight'] ?? '';
     depositEnabled.value = draft.fields['depositEnabled'] == '1';
     depositRateController.text = draft.fields['depositRate'] ?? '';
+    deliveryDaysMin.value = int.tryParse(draft.fields['deliveryDaysMin'] ?? '');
+    deliveryDaysMax.value = int.tryParse(draft.fields['deliveryDaysMax'] ?? '');
 
     final category = draft.fields['category'] ?? '';
     if (category.isNotEmpty) selectedCategory.value = category;
@@ -999,6 +1023,10 @@ class AddProductController extends GetxController {
       freeDeliveryOverride.value = freeSetting == null
           ? null
           : readFreeDelivery(freeSetting);
+
+      // Délai de livraison propre au produit (null = délai de la catégorie).
+      deliveryDaysMin.value = int.tryParse('${product['delivery_days_min'] ?? ''}');
+      deliveryDaysMax.value = int.tryParse('${product['delivery_days_max'] ?? ''}');
 
       // Commande avec acompte.
       depositEnabled.value = readFreeDelivery(product['deposit_enabled']);
@@ -1616,6 +1644,10 @@ class AddProductController extends GetxController {
       fieldsMap['free_delivery'] = freeOverride == null
           ? ''
           : (freeOverride ? '1' : '0');
+
+      // Délai de livraison en jours ouvrables : vide = délai de la catégorie.
+      fieldsMap['delivery_days_min'] = '${deliveryDaysMin.value ?? ''}';
+      fieldsMap['delivery_days_max'] = '${deliveryDaysMax.value ?? ''}';
 
       // Commande avec acompte : % du prix client, solde après vérification ASSO.
       fieldsMap['deposit_enabled'] = depositEnabled.value ? '1' : '0';

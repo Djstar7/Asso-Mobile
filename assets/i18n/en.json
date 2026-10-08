@@ -316,7 +316,7 @@
       },
       "delivery_time": {
         "question": "How long does delivery take?",
-        "answer": "Standard delivery takes 24-48 hours for Douala and Yaoundé, and 3-5 days for other cities. You will be told the exact time when you place your order."
+        "answer": "It depends on the item: 1 to 20 business days. The time is shown on each product page, and the estimated delivery date appears on your order."
       },
       "change_address": {
         "question": "Can I change the delivery address?",
@@ -407,7 +407,7 @@
       },
       "delivery_times": {
         "question": "What are the delivery times?",
-        "answer": "Delivery times vary depending on your location:\n• Urban area: 1-2 hours\n• Suburban area: 2-4 hours\n• Rural area: 24-48 hours"
+        "answer": "Each item shows its delivery time, from 1 to 20 business days (weekends excluded). The estimated date then appears on your order."
       },
       "payment_methods": {
         "question": "Which payment methods do you accept?",
@@ -829,7 +829,8 @@
       "agency_to_agency": "Agency → agency",
       "home_delivery": "Home delivery",
       "choose_partner_free": "Choose this partner — free delivery",
-      "choose_partner_price": "Choose this partner — @price"
+      "choose_partner_price": "Choose this partner — @price",
+      "estimated_delivery": "Estimated delivery"
     },
     "markdown": {
       "load_error": "Error while loading the document: @error"
@@ -1952,7 +1953,8 @@
       "units_singular": "@count unit",
       "units_plural": "@count units",
       "weight": "Weight",
-      "origin": "Origin"
+      "origin": "Origin",
+      "delivery_delay": "Delivery time"
     },
     "out_of_stock": "Out of stock",
     "origin": {
@@ -2018,7 +2020,14 @@
       "see_more": "See more"
     },
     "image_unavailable": "Image unavailable",
-    "order_button": "Order"
+    "order_button": "Order",
+    "delivery_delay": {
+      "day": "@count business day",
+      "days": "@count business days",
+      "range": "@min to @max business days",
+      "estimated_on": "on @date",
+      "estimated_between": "between @from and @to"
+    }
   },
   "search": {
     "refresh_failed": "Unable to refresh products",
@@ -2363,6 +2372,15 @@
       "rate_error": "Enter a percentage between 1 and 99.",
       "preview": "On your price: deposit @deposit, balance @balance (excluding commission and delivery).",
       "notice": "An ASSO team member checks the goods with the customer before the balance is paid. You are paid once the balance is settled."
+    },
+    "delivery_delay": {
+      "title": "Delivery time",
+      "min": "Minimum",
+      "max": "Maximum",
+      "auto": "Auto",
+      "day": "@count day",
+      "days": "@count days",
+      "helper": "In business days, from 1 to 20. \"Auto\": the category time set by ASSO."
     }
   },
   "inventory_list": {
