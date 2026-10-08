@@ -12,6 +12,7 @@ import '../widgets/payment_success_dialog.dart';
 import '../widgets/sales_code_field.dart';
 import '../../../data/services/stripe_native_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 
 class PackageSubscriptionController extends GetxController {
   // State management
@@ -249,16 +250,30 @@ class PackageSubscriptionController extends GetxController {
         return;
       }
 
-      Get.snackbar(
-        'package_subscription.payment_pending'.tr,
-        'package_subscription.validate_ussd'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.warningColor,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      // Rien n'est annoncé avant la réponse de l'opérateur.
+      final outcome = await MobileMoneyWaiting.run(
+        amount: price,
+        provider: selection['provider']!,
+        phone: selection['phone']!,
+        check: () => PackageService.subscriptionPaymentState(subscriptionId),
       );
-
-      _pollSubscriptionPayment(subscriptionId, package, price, 'kpay');
+      if (_isDisposed) return;
+      switch (outcome.status) {
+        case 'paid':
+          await _onSubscriptionPaid(package, price, 'kpay');
+        case 'failed':
+          break; // motif déjà expliqué
+        default:
+          Get.snackbar(
+            'package_subscription.payment_pending'.tr,
+            'package_subscription.validate_ussd'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppThemeSystem.warningColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+          _pollSubscriptionPayment(subscriptionId, package, price, 'kpay');
+      }
     } catch (e) {
       PaymentLoadingDialog.hide();
       _showSubscriptionError('package_subscription.generic_error'.trParams({'error': '$e'}));
@@ -360,14 +375,7 @@ class PackageSubscriptionController extends GetxController {
         final status = res.data?['data']?['status'];
 
         if (status == 'paid') {
-          // Abonnement actif : on recharge le package courant puis on révèle le succès.
-          await loadCurrentPackage();
-          if (_isDisposed) return;
-          await PaymentSuccessDialog.show(
-            packageName: package['name'] ?? 'Package',
-            amount: price,
-            paymentMethod: methodCode,
-          );
+          await _onSubscriptionPaid(package, price, methodCode);
           return;
         } else if (status == 'failed') {
           Get.snackbar(
@@ -392,6 +400,21 @@ class PackageSubscriptionController extends GetxController {
       backgroundColor: AppThemeSystem.warningColor,
       colorText: Colors.white,
       duration: const Duration(seconds: 5),
+    );
+  }
+
+  /// Abonnement actif : on recharge le package courant puis on révèle le succès.
+  Future<void> _onSubscriptionPaid(
+    Map<String, dynamic> package,
+    double price,
+    String methodCode,
+  ) async {
+    await loadCurrentPackage();
+    if (_isDisposed) return;
+    await PaymentSuccessDialog.show(
+      packageName: package['name'] ?? 'Package',
+      amount: price,
+      paymentMethod: methodCode,
     );
   }
 

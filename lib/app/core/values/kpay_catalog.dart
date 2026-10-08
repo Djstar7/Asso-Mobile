@@ -100,6 +100,45 @@ class KPayCatalog {
   static KPayCountry get defaultCountry =>
       countries.firstWhere((c) => c.iso3 == 'CMR', orElse: () => countries.first);
 
+  /// Pays et opérateurs limités aux codes [providers] acceptés par le
+  /// prestataire actif (ex. ElgioPay : Cameroun seul). null ou vide = tout.
+  static List<KPayCountry> restrictedTo(Set<String>? providers) {
+    if (providers == null || providers.isEmpty) return countries;
+    return [
+      for (final c in countries)
+        if (c.operators.any((o) => providers.contains(o.providerCode)))
+          KPayCountry(
+            iso3: c.iso3,
+            iso2: c.iso2,
+            name: c.name,
+            dialCode: c.dialCode,
+            currency: c.currency,
+            operators: c.operators
+                .where((o) => providers.contains(o.providerCode))
+                .toList(),
+          ),
+    ];
+  }
+
+  /// Opérateur déduit du préfixe d'un numéro local (Cameroun : MTN 67x,
+  /// 650-654, 680-683 ; Orange 69x, 655-659, 686-689, 640). null si le pays
+  /// n'est pas couvert ou le préfixe inconnu : le choix reste à l'utilisateur.
+  static String? detectProviderCode(String iso3, String localDigits) {
+    if (iso3 != 'CMR' || localDigits.length < 3) return null;
+    final p2 = localDigits.substring(0, 2);
+    final p3 = int.tryParse(localDigits.substring(0, 3)) ?? 0;
+    if (p2 == '67' || (p3 >= 650 && p3 <= 654) || (p3 >= 680 && p3 <= 683)) {
+      return 'MTN_MOMO_CMR';
+    }
+    if (p2 == '69' ||
+        (p3 >= 655 && p3 <= 659) ||
+        (p3 >= 686 && p3 <= 689) ||
+        p3 == 640) {
+      return 'ORANGE_CMR';
+    }
+    return null;
+  }
+
   static KPayCountry? byIso3(String iso3) {
     for (final c in countries) {
       if (c.iso3 == iso3) return c;

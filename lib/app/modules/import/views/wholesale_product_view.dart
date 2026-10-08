@@ -25,6 +25,7 @@ import '../../../data/providers/import_service.dart';
 import '../../../data/providers/order_service.dart';
 import '../../../data/providers/conversation_service.dart';
 import '../../payment/widgets/payment_method_selector.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import '../../wallet/views/payment_webview.dart';
@@ -1688,6 +1689,44 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       }
       final orderId = res.data?['order_id'] as int?;
       final approvalUrl = res.data?['approval_url']?.toString();
+
+      if (mode == 'kpay_direct') {
+        // Rien n'est annoncé avant la réponse de l'opérateur ; en cas de
+        // refus, la fiche reste ouverte pour corriger l'opérateur ou le numéro.
+        if (mounted) setState(() => _submitting = false);
+        final outcome = await MobileMoneyWaiting.run(
+          amount: _total,
+          provider: provider!,
+          phone: phone!,
+          formatAmount: _fmt,
+          check: () => _orderPaymentState(orderId),
+          failureNote: 'product.payment.failed_order_cancelled'.tr,
+        );
+        if (outcome.status == 'failed') return;
+        AppNavigation.pop(); // fermer la fiche
+        if (outcome.status == 'paid') {
+          Get.snackbar(
+            'import.wholesale.payment_confirmed_title'.tr,
+            'import.wholesale.payment_confirmed_message'.tr,
+            backgroundColor: AppDesign.success,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        } else {
+          _pollOrder(orderId);
+          Get.snackbar(
+            'import.wholesale.created_title'.tr,
+            'import.wholesale.created_kpay_message'.tr,
+            backgroundColor: AppDesign.accent,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+        return;
+      }
+
       // `AppNavigation.pop` : `Get.back()` fermerait d'abord un snackbar
       // encore affiché et laisserait la fiche ouverte.
       AppNavigation.pop(); // fermer la fiche : la commande est passée
@@ -1696,19 +1735,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         Get.snackbar(
           'import.wholesale.paid_title'.tr,
           'import.wholesale.paid_wallet_message'.tr,
-          backgroundColor: AppDesign.success,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 5),
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
-
-      if (mode == 'kpay_direct') {
-        _pollOrder(orderId);
-        Get.snackbar(
-          'import.wholesale.created_title'.tr,
-          'import.wholesale.created_kpay_message'.tr,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
@@ -1848,6 +1874,17 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
   }
 
+  /// État du paiement de la commande relu sur le serveur (une lecture).
+  Future<MobileMoneyStatus> _orderPaymentState(int? orderId) async {
+    if (orderId == null) return (status: 'pending', failure: null);
+    final data = (await OrderService.orderPaymentStatus(orderId)).data?['data'];
+    final status = data?['payment_status']?.toString();
+    return (
+      status: status == 'paid' || status == 'failed' ? status! : 'pending',
+      failure: data?['payment_failure']?.toString(),
+    );
+  }
+
   void _pollOrder(int? orderId) async {
     if (orderId == null) return;
     for (int i = 0; i < 120; i++) {
@@ -1868,7 +1905,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         } else if (status == 'failed') {
           Get.snackbar(
             'import.wholesale.payment_failed_title'.tr,
-            'import.wholesale.payment_failed_message'.tr,
+            switch (res.data?['data']?['payment_failure']?.toString()) {
+              final String failure => MobileMoneyWaiting.failureMessage(failure),
+              _ => 'import.wholesale.payment_failed_message'.tr,
+            },
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),

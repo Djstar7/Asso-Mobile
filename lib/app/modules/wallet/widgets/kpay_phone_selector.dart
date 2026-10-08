@@ -5,10 +5,12 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/values/kpay_catalog.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../data/providers/payment_service.dart';
 
 /// Sélecteur KPay : pays (drapeau + indicatif) → opérateur → numéro.
 ///
-/// Restreint aux pays couverts par KPay. Renvoie via [onChanged] le code
+/// Restreint aux pays et opérateurs du prestataire Mobile Money actif côté
+/// backend (KPay : tout son catalogue ; ElgioPay : Cameroun seul). Renvoie via [onChanged] le code
 /// opérateur KPay (ex. MTN_MOMO_CMR) et le numéro au format international
 /// sans '+' (ex. 237670000001), ainsi que la validité du formulaire.
 class KpayPhoneSelector extends StatefulWidget {
@@ -39,6 +41,7 @@ class KpayPhoneSelector extends StatefulWidget {
 class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
   late KPayCountry _country;
   late KPayOperator _operator;
+  List<KPayCountry> _countries = KPayCatalog.countries;
   final TextEditingController _phoneController = TextEditingController();
 
   @override
@@ -57,13 +60,43 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
           : phone;
     }
 
-    _phoneController.addListener(_notify);
+    _phoneController.addListener(_onPhoneChanged);
     // Valeurs pré-remplies : le parent reçoit l'état initial sans attendre une saisie.
     if (initial != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _notify();
       });
     }
+    _loadAllowedProviders();
+  }
+
+  /// Ne garde que les pays/opérateurs du prestataire actif. Le choix courant
+  /// bascule sur le premier opérateur accepté s'il n'en fait pas partie.
+  Future<void> _loadAllowedProviders() async {
+    final providers = await PaymentService.fetchMobileMoneyProviders();
+    if (!mounted) return;
+    final allowed = KPayCatalog.restrictedTo(providers);
+    if (allowed.isEmpty) return;
+
+    final country =
+        allowed.firstWhereOrNull((c) => c.iso3 == _country.iso3) ??
+        allowed.first;
+    final operator =
+        country.operators.firstWhereOrNull(
+          (o) => o.providerCode == _operator.providerCode,
+        ) ??
+        country.operators.first;
+    final countryChanged = country.iso3 != _country.iso3;
+    final operatorChanged = operator.providerCode != _operator.providerCode;
+
+    setState(() {
+      _countries = allowed;
+      _country = country;
+      _operator = operator;
+      // Numéro saisi pour un autre indicatif : il ne vaut plus rien.
+      if (countryChanged) _phoneController.clear();
+    });
+    if (countryChanged || operatorChanged) _notify();
   }
 
   @override
@@ -85,6 +118,22 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
 
   String get _fullPhone => '${_country.dialCode}$_localDigits';
 
+  /// Opérateur reconnu au préfixe du numéro, s'il fait partie des choix.
+  KPayOperator? get _detectedOperator {
+    final code = KPayCatalog.detectProviderCode(_country.iso3, _localDigits);
+    return _country.operators.firstWhereOrNull((o) => o.providerCode == code);
+  }
+
+  /// Le numéro désigne son opérateur : un numéro Orange envoyé chez MTN est
+  /// refusé sans qu'aucune demande USSD n'arrive sur le téléphone.
+  void _onPhoneChanged() {
+    final detected = _detectedOperator;
+    if (detected != null && detected.providerCode != _operator.providerCode) {
+      setState(() => _operator = detected);
+    }
+    _notify();
+  }
+
   void _notify() {
     widget.onChanged(
       providerCode: _operator.providerCode,
@@ -105,9 +154,9 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         bodyPadding: EdgeInsets.zero,
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: KPayCatalog.countries.length,
+          itemCount: _countries.length,
           itemBuilder: (itemContext, i) {
-            final c = KPayCatalog.countries[i];
+            final c = _countries[i];
             return ListTile(
               leading: Text(c.flag, style: const TextStyle(fontSize: 26)),
               title: Text(c.name),
@@ -137,6 +186,8 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Un seul pays servi (ElgioPay : Cameroun) : rien à choisir.
+    final canPickCountry = _countries.length > 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -144,7 +195,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         Text('wallet.kpay.country'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         InkWell(
-          onTap: _pickCountry,
+          onTap: canPickCountry ? _pickCountry : null,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -169,7 +220,8 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                if (canPickCountry)
+                  const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
               ],
             ),
           ),
@@ -231,6 +283,17 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
             ),
           ),
         ),
+        if (_detectedOperator case final detected?
+            when detected.providerCode != _operator.providerCode)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'wallet.kpay.operator_mismatch'.trParams({
+                'operator': detected.name,
+              }),
+              style: const TextStyle(color: AppDesign.warningText, fontSize: 12),
+            ),
+          ),
         if (_phoneController.text.isNotEmpty && !_isValid)
           Padding(
             padding: EdgeInsets.only(top: 6),

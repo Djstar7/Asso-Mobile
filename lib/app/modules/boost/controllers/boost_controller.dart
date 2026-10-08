@@ -14,6 +14,7 @@ import '../../packageSubscription/widgets/payment_loading_dialog.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 
 /// Asso Ads — achat et suivi du sponsoring d'un article.
 ///
@@ -297,16 +298,33 @@ class BoostController extends GetxController {
         return;
       }
 
-      Get.snackbar(
-        'package_subscription.payment_pending'.tr,
-        'boost.validate_ussd'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppThemeSystem.warningColor,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      // Rien n'est annoncé avant la réponse de l'opérateur.
+      PaymentLoadingDialog.hide();
+      final outcome = await MobileMoneyWaiting.run(
+        amount: package.price,
+        provider: selection['provider']!,
+        phone: selection['phone']!,
+        check: () => PackageService.subscriptionPaymentState(subscriptionId),
       );
-
-      _pollPayment(subscriptionId, package);
+      if (_isDisposed) return;
+      switch (outcome.status) {
+        case 'paid':
+          await loadCampaigns();
+          if (_isDisposed) return;
+          _success(package);
+        case 'failed':
+          break; // motif déjà expliqué
+        default:
+          Get.snackbar(
+            'package_subscription.payment_pending'.tr,
+            'boost.validate_ussd'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppThemeSystem.warningColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+          _pollPayment(subscriptionId, package);
+      }
     } catch (e) {
       _error('boost.errors.generic'.trParams({'error': '$e'}));
     } finally {

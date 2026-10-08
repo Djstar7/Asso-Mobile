@@ -83,13 +83,14 @@ class CertificationPackagesController extends GetxController {
 
   /// KPay direct (USSD) — équivalent de ProductController.createOrder
 /// Confirmer et créer l'abonnement — paiement Mobile Money (KPay direct, USSD).
-Future<bool> createOrder({
+/// Renvoie l'id de l'abonnement créé (paiement à valider), ou null en cas d'échec.
+Future<int?> createOrder({
   required int packageId,
   String paymentMode = 'kpay_direct',
   String? kpayProvider,
   String? kpayPhone,
 }) async {
-  if (_isDisposed) return false;
+  if (_isDisposed) return null;
   isCreatingOrder.value = true;
   try {
     final response = await PackageService.subscribePackageDirect(
@@ -102,20 +103,17 @@ Future<bool> createOrder({
 
     if (response.success) {
       final subscriptionId = response.data?['subscription_id'];
-      if (paymentMode == 'kpay_direct' && subscriptionId is int) {
-        _pollOrderPayment(subscriptionId);
-      }
-      return true;
+      return subscriptionId is int ? subscriptionId : int.tryParse('$subscriptionId');
     } else if (salesCode.handleServerRejection(response)) {
-      return false;
+      return null;
     } else {
       Get.snackbar('certification.error'.tr, response.message.isNotEmpty ? response.message : 'certification.order_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      return false;
+      return null;
     }
   } catch (e) {
     Get.snackbar('certification.error'.tr, 'certification.generic_error'.tr, snackPosition: SnackPosition.BOTTOM);
-    return false;
+    return null;
   } finally {
     if (!_isDisposed) isCreatingOrder.value = false;
   }
@@ -192,6 +190,16 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
   }
 }
 
+/// Paiement confirmé : la certification est active.
+void onPaymentConfirmed() {
+  loadWallet();
+  loadPackages();
+  Get.snackbar('certification.payment_confirmed'.tr, 'certification.activated_message'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppDesign.success, colorText: Colors.white,
+      duration: const Duration(seconds: 4));
+}
+
 /// Démarre le suivi du paiement (utilisé après la Payment Sheet carte).
 void pollOrderPayment(int orderId) => _pollOrderPayment(orderId);
 
@@ -203,12 +211,7 @@ void _pollOrderPayment(int subscriptionId) async {
       final res = await PackageService.getSubscriptionPaymentStatus(subscriptionId);
       final status = res.data?['data']?['status'];
       if (status == 'paid') {
-        loadWallet();
-        loadPackages();
-        Get.snackbar('certification.payment_confirmed'.tr, 'certification.activated_message'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppDesign.success, colorText: Colors.white,
-            duration: const Duration(seconds: 4));
+        onPaymentConfirmed();
         return;
       } else if (status == 'failed') {
         Get.snackbar('package_subscription.payment_failed'.tr, 'certification.payment_not_completed'.tr,
