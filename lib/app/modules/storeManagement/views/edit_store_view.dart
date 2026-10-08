@@ -18,6 +18,7 @@ import '../../../data/providers/category_service.dart';
 import '../controllers/store_management_controller.dart';
 import '../../product/views/map_selection_view.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/english_version_section.dart';
 
 class EditStoreView extends StatefulWidget {
   const EditStoreView({super.key});
@@ -38,6 +39,8 @@ class _EditStoreViewState extends State<EditStoreView> {
 
   late final TextEditingController nameController;
   late final TextEditingController descriptionController;
+  late final TextEditingController nameEnController;
+  late final TextEditingController descriptionEnController;
   late final TextEditingController phoneController;
   late final TextEditingController addressController;
 
@@ -101,6 +104,10 @@ class _EditStoreViewState extends State<EditStoreView> {
     descriptionController = TextEditingController(
       text: store?.description ?? '',
     );
+    nameEnController = TextEditingController(text: store?.nameEn ?? '');
+    descriptionEnController = TextEditingController(
+      text: store?.descriptionEn ?? '',
+    );
     phoneController = TextEditingController(text: store?.phone ?? '');
     addressController = TextEditingController(text: store?.address ?? '');
 
@@ -136,6 +143,8 @@ class _EditStoreViewState extends State<EditStoreView> {
     addressFocus.dispose();
     nameController.dispose();
     descriptionController.dispose();
+    nameEnController.dispose();
+    descriptionEnController.dispose();
     phoneController.dispose();
     addressController.dispose();
     mapController.dispose();
@@ -415,6 +424,15 @@ class _EditStoreViewState extends State<EditStoreView> {
               hint: 'store_management.edit.description_hint'.tr,
               icon: Icons.description,
               maxLines: 3,
+            ),
+
+            SizedBox(height: context.elementSpacing),
+
+            EnglishVersionSection(
+              nameController: nameEnController,
+              descriptionController: descriptionEnController,
+              nameHint: 'store_management.edit.name_en_hint'.tr,
+              descriptionHint: 'store_management.edit.description_en_hint'.tr,
             ),
 
             SizedBox(height: context.elementSpacing),
@@ -1033,6 +1051,12 @@ class _EditStoreViewState extends State<EditStoreView> {
       name: name,
       // Vide compris : le vendeur peut effacer sa description.
       description: description,
+      // Toujours envoyée : un champ anglais vidé efface la traduction.
+      translationFields: EnglishVersionSection.fields(
+        nameEnController,
+        descriptionEnController,
+        clearEmpty: true,
+      ),
       address: address,
       city: locationLabel.value ?? '',
       locationCity: resolvedLocation.value?.city,

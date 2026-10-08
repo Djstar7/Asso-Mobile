@@ -616,18 +616,9 @@ class SearchController extends GetxController {
         }
       }
     } catch (e) {
-      // Use fallback categories
-      categories.value = [
-        'Tous',
-        'Vêtements',
-        'Électronique',
-        'Accessoires',
-        'Maison',
-        'Sport',
-        'Beauté',
-        'Livres',
-        'Autres',
-      ];
+      // Pas de liste de secours : sans identifiant, une catégorie inventée
+      // ne filtrerait rien. « Tous » reste disponible.
+      categories.value = ['Tous'];
     }
   }
 

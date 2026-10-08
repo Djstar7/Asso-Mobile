@@ -12,6 +12,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/location_label.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
+import '../../../core/widgets/english_version_section.dart';
 
 class StoreManagementController extends GetxController {
   // État de chargement
@@ -365,6 +366,11 @@ class StoreManagementController extends GetxController {
       name: shop['name']?.toString() ?? '',
       logoUrl: shop['logo']?.toString(),
       description: shop['description']?.toString() ?? '',
+      nameEn: EnglishVersionSection.readTranslation(shop['translations'], 'name'),
+      descriptionEn: EnglishVersionSection.readTranslation(
+        shop['translations'],
+        'description',
+      ),
       latitude: _toDouble(shop['latitude']),
       longitude: _toDouble(shop['longitude']),
       address: address,
@@ -601,6 +607,7 @@ class StoreManagementController extends GetxController {
   Future<bool> saveStoreInfo({
     required String name,
     String? description,
+    Map<String, String> translationFields = const {},
     required String address,
     required String city,
     required String phone,
@@ -673,6 +680,7 @@ class StoreManagementController extends GetxController {
         shopLongitude: placed ? null : longitude,
         shopLogo: logo,
         categories: categories,
+        translationFields: translationFields,
       );
 
       print('');

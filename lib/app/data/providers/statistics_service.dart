@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/services/locale_service.dart';
 import '../../core/values/constants.dart';
 import 'api_provider.dart';
 import 'storage_service.dart';
@@ -71,6 +72,8 @@ class StatisticsService {
 
     final response = await http.get(uri, headers: {
       'Accept': format == 'pdf' ? 'application/pdf' : 'text/csv',
+      // Rapport rédigé dans la langue de l'app.
+      'Accept-Language': LocaleService.currentLanguage,
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
     });
 

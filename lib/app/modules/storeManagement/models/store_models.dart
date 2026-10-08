@@ -341,6 +341,9 @@ class StoreInfo {
   final String name;
   final String? logoUrl;
   final String? description;
+  /// Version anglaise saisie par le vendeur (vide = repli sur le français).
+  final String nameEn;
+  final String descriptionEn;
   final double latitude;
   final double longitude;
   final String address;
@@ -353,6 +356,8 @@ class StoreInfo {
     required this.name,
     this.logoUrl,
     this.description,
+    this.nameEn = '',
+    this.descriptionEn = '',
     required this.latitude,
     required this.longitude,
     required this.address,
@@ -367,6 +372,8 @@ class StoreInfo {
       name: json['name'] as String,
       logoUrl: json['logoUrl'] as String?,
       description: json['description'] as String?,
+      nameEn: json['nameEn'] as String? ?? '',
+      descriptionEn: json['descriptionEn'] as String? ?? '',
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       address: json['address'] as String,
@@ -384,6 +391,8 @@ class StoreInfo {
       'name': name,
       'logoUrl': logoUrl,
       'description': description,
+      'nameEn': nameEn,
+      'descriptionEn': descriptionEn,
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
@@ -397,6 +406,8 @@ class StoreInfo {
     String? name,
     String? logoUrl,
     String? description,
+    String? nameEn,
+    String? descriptionEn,
     double? latitude,
     double? longitude,
     String? address,
@@ -409,6 +420,8 @@ class StoreInfo {
       name: name ?? this.name,
       logoUrl: logoUrl ?? this.logoUrl,
       description: description ?? this.description,
+      nameEn: nameEn ?? this.nameEn,
+      descriptionEn: descriptionEn ?? this.descriptionEn,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,

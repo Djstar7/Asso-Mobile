@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import '../../../core/services/locale_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/values/constants.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -153,6 +154,8 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/pdf',
+          // Facture rédigée dans la langue de l'app.
+          'Accept-Language': LocaleService.currentLanguage,
         },
       );
 

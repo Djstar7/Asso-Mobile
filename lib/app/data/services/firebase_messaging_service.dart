@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../core/values/constants.dart';
+import '../../core/services/locale_service.dart';
 import '../providers/api_provider.dart';
 import '../providers/storage_service.dart';
 import '../../core/utils/app_navigation.dart';
@@ -27,9 +28,25 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class FirebaseMessagingService extends GetxService {
   static FirebaseMessagingService get to => Get.find();
 
-  /// Topic des annonces envoyées à tous : nouveaux produits, produits
-  /// sponsorisés, offres Diaspo, annonces de l'administration.
-  static const String announcementsTopic = 'all_users';
+  /// Ancien topic des annonces, en français seulement. Le serveur y publie
+  /// encore pour les versions précédentes de l'app ; celle-ci le quitte, sans
+  /// quoi chaque annonce arriverait deux fois.
+  static const String legacyAnnouncementsTopic = 'all_users';
+
+  /// Topic des annonces envoyées à tous (nouveaux produits, produits
+  /// sponsorisés, offres Diaspo, annonces de l'administration) dans une
+  /// langue : `all_users_fr`, `all_users_en`.
+  static String announcementsTopicFor(String language) =>
+      '${legacyAnnouncementsTopic}_$language';
+
+  /// Topic de la langue courante de l'app.
+  static String get announcementsTopic =>
+      announcementsTopicFor(LocaleService.currentLanguage);
+
+  /// Marque d'abonnement : token et langue. Une nouvelle langue (ou une
+  /// installation encore abonnée à `all_users`) relance l'abonnement.
+  static String topicMarker(String token) =>
+      '$token|${LocaleService.currentLanguage}';
 
   /// Vrai pendant [ensureRegisteredAndSubscribed], pour qu'un retour rapide
   /// sur l'accueil ne lance pas deux rattrapages en parallèle.
@@ -69,6 +86,16 @@ class FirebaseMessagingService extends GetxService {
 
     // Gérer les notifications qui ont ouvert l'app
     _handleNotificationTaps();
+
+    // Changement de langue : les annonces suivent sur le topic de la langue.
+    if (Get.isRegistered<LocaleService>()) {
+      ever(LocaleService.to.language, (_) {
+        final token = fcmToken.value;
+        if (token != null && StorageService.announcementsTopicToken != topicMarker(token)) {
+          unawaited(subscribeToAnnouncementsTopic());
+        }
+      });
+    }
 
     print('✅ Firebase Messaging Service initialisé');
 
@@ -648,19 +675,21 @@ class FirebaseMessagingService extends GetxService {
     }
   }
 
-  /// S'abonne au topic des annonces (all_users)
+  /// S'abonne au topic des annonces de la langue courante et quitte les
+  /// autres (ancien `all_users`, autre langue).
   /// Retourne true si succès, false sinon
   Future<bool> subscribeToAnnouncementsTopic() async {
+    final topic = announcementsTopic;
     try {
       // Sans token APNs, l'appel échouerait aussitôt : on le signale comme un
       // report, pas comme une erreur — le token arrivé, l'abonnement est
       // repris (initialisation, rafraîchissement du token, accueil).
       if (!await _apnsTokenReady()) {
-        print('⏳ Abonnement à "$announcementsTopic" reporté : token APNs indisponible');
+        print('⏳ Abonnement à "$topic" reporté : token APNs indisponible');
         return false;
       }
 
-      print('📢 Abonnement au topic "$announcementsTopic" pour les annonces...');
+      print('📢 Abonnement au topic "$topic" pour les annonces...');
       // Appel direct plutôt que [subscribeToTopic], qui avale l'erreur : cette
       // méthode répondait toujours « abonné », même sans APNS sur iOS ou sans
       // services Google Play, et l'échec n'était jamais retenté.
@@ -668,18 +697,46 @@ class FirebaseMessagingService extends GetxService {
       // Borné dans le temps : sans services Google Play, l'appel ne rend
       // jamais la main.
       await _firebaseMessaging
-          .subscribeToTopic(announcementsTopic)
+          .subscribeToTopic(topic)
           .timeout(const Duration(seconds: 10));
 
-      final token = fcmToken.value;
-      if (token != null) StorageService.setAnnouncementsTopicToken(token);
+      // Puis on quitte les autres topics. Un échec laisse la marque de côté :
+      // le rattrapage de l'accueil réessaiera (l'abonnement est idempotent).
+      final left = await _leaveOtherAnnouncementTopics(topic);
 
-      print('✅ Abonné au topic "$announcementsTopic" avec succès');
+      final token = fcmToken.value;
+      if (token != null && left) {
+        StorageService.setAnnouncementsTopicToken(topicMarker(token));
+      }
+
+      print('✅ Abonné au topic "$topic" avec succès');
       return true;
     } catch (e) {
-      print('❌ Erreur lors de l\'abonnement au topic "$announcementsTopic": $e');
+      print('❌ Erreur lors de l\'abonnement au topic "$topic": $e');
       return false;
     }
+  }
+
+  /// Quitte `all_users` et les topics des autres langues.
+  Future<bool> _leaveOtherAnnouncementTopics(String keep) async {
+    final others = [
+      legacyAnnouncementsTopic,
+      for (final language in LocaleService.supportedLanguages)
+        announcementsTopicFor(language),
+    ].where((topic) => topic != keep);
+
+    var ok = true;
+    for (final topic in others) {
+      try {
+        await _firebaseMessaging
+            .unsubscribeFromTopic(topic)
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        ok = false;
+        print('⚠️ Désabonnement de "$topic" impossible: $e');
+      }
+    }
+    return ok;
   }
 
   /// Retient que le backend connaît ce token pour le compte courant.
@@ -727,7 +784,7 @@ class FirebaseMessagingService extends GetxService {
         await sendTokenToBackend();
       }
 
-      if (StorageService.announcementsTopicToken != token) {
+      if (StorageService.announcementsTopicToken != topicMarker(token)) {
         print('📢 Rattrapage FCM : appareil non abonné aux annonces...');
         await subscribeToAnnouncementsTopic();
       }
