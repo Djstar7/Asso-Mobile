@@ -20,6 +20,11 @@ class PaymentMethodOption {
   final double? balance; // solde disponible (option « wallet » uniquement)
   final double? missingAmount; // montant manquant si solde insuffisant (option « wallet »)
 
+  /// Mobile Money : prestataire actif côté backend (kpay | elgiopay) et codes
+  /// opérateurs qu'il accepte (ex. MTN_MOMO_CMR). Vide = pas de restriction.
+  final String? gateway;
+  final List<String> providers;
+
   const PaymentMethodOption({
     required this.code,
     required this.label,
@@ -35,6 +40,8 @@ class PaymentMethodOption {
     this.hint,
     this.balance,
     this.missingAmount,
+    this.gateway,
+    this.providers = const [],
   });
 
   /// Paiement depuis le solde Wallet ASSO ?
@@ -56,6 +63,8 @@ class PaymentMethodOption {
       convertedAmount: toD(json['converted_amount']),
       balance: toD(json['balance']),
       missingAmount: toD(json['missing_amount']),
+      gateway: json['gateway']?.toString(),
+      providers: (json['providers'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 }

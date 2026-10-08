@@ -19,6 +19,7 @@ import '../../../data/providers/product_service.dart';
 import '../../../data/providers/statistics_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 
 /// Pourquoi la position automatique n'a pas pu être obtenue.
 /// Une ligne de la commande : une variante (ou le produit sans options) et
@@ -805,6 +806,17 @@ class ProductController extends GetxController {
     }
   }
 
+  /// État du paiement d'une commande relu sur le serveur (une lecture).
+  Future<MobileMoneyStatus> orderPaymentState(int orderId) async {
+    final res = await OrderService.orderPaymentStatus(orderId);
+    final data = res.data?['data'];
+    final status = data?['payment_status']?.toString();
+    return (
+      status: status == 'paid' || status == 'failed' ? status! : 'pending',
+      failure: data?['payment_failure']?.toString(),
+    );
+  }
+
   /// Suit la confirmation serveur d'un paiement direct (Mobile Money / carte)
   /// et prévient l'acheteur dès que le statut est connu.
   Future<void> pollOrderPayment(int orderId) async {
@@ -812,9 +824,8 @@ class ProductController extends GetxController {
     for (var i = 0; i < 60; i++) {
       await Future.delayed(const Duration(seconds: 5));
       try {
-        final res = await OrderService.orderPaymentStatus(orderId);
-        final status = res.data?['data']?['payment_status'];
-        if (status == 'paid') {
+        final state = await orderPaymentState(orderId);
+        if (state.status == 'paid') {
           Get.snackbar(
             'product.payment.confirmed_title'.tr,
             'product.payment.confirmed_message'.tr,
@@ -825,10 +836,13 @@ class ProductController extends GetxController {
           );
           return;
         }
-        if (status == 'failed') {
+        if (state.status == 'failed') {
           Get.snackbar(
             'product.payment.failed_title'.tr,
-            'product.payment.failed_message'.tr,
+            switch (state.failure) {
+              final String failure => MobileMoneyWaiting.failureMessage(failure),
+              _ => 'product.payment.failed_message'.tr,
+            },
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,

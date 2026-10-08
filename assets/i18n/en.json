@@ -1161,14 +1161,7 @@
       "card_cancelled": "Card payment cancelled",
       "pending_title": "Payment in progress",
       "pending_message": "Your top-up is being confirmed. You will be notified.",
-      "generic_error": "An error occurred",
-      "ussd_title": "Payment initiated",
-      "ussd_sent_to": "A USSD code has been sent to the number:",
-      "ussd_step1": "Dial the USSD code received on your phone",
-      "ussd_step2": "Enter your @provider PIN code",
-      "ussd_step3": "Confirm the payment of @amount FCFA",
-      "ussd_notify": "You will receive a notification as soon as the payment is confirmed.",
-      "understood": "Got it"
+      "generic_error": "An error occurred"
     },
     "payout_sheet": {
       "incomplete_title": "Incomplete number",
@@ -1226,7 +1219,8 @@
       "total_to_pay": "Total to pay",
       "amount_to_pay": "Amount to pay",
       "pay_now": "Pay now",
-      "debited_by_operator": "Debited by your operator"
+      "debited_by_operator": "Debited by your operator",
+      "operator_mismatch": "This looks like an @operator number."
     }
   },
   "payment": {
@@ -1251,6 +1245,19 @@
       "balance_available": "Available balance: @balance",
       "balance_missing": "Balance: @balance — @missing short",
       "minimum": "Minimum @amount"
+    },
+    "mobile_money": {
+      "waiting_title": "Approve the payment on your phone",
+      "waiting_message": "A payment request (USSD) has just been sent to this number. Enter your PIN to approve it.",
+      "waiting_background": "Continue in the background",
+      "failed_wrong_network": "This number isn't registered with the selected operator. Check the operator (MTN or Orange) and try again.",
+      "failed_insufficient_funds": "Your Mobile Money balance is too low for this payment.",
+      "failed_expired": "The request wasn't approved on your phone in time.",
+      "failed_declined": "The payment was declined or cancelled on your phone.",
+      "retry": "Try again",
+      "failed_title": "Payment not completed",
+      "failed_generic": "The payment didn't go through. Check the number and the selected operator, then try again.",
+      "nothing_charged": "Nothing was charged."
     }
   },
   "invoices": {
@@ -1907,7 +1914,8 @@
       "card_data_missing": "Card payment details unavailable. Your order remains pending.",
       "cancelled_title": "Payment cancelled",
       "cancelled_message": "The payment wasn't completed. Your order remains pending.",
-      "card_pending": "Your card payment is being confirmed. You'll be notified."
+      "card_pending": "Your card payment is being confirmed. You'll be notified.",
+      "failed_order_cancelled": "The order was cancelled and nothing was charged."
     },
     "chat": {
       "start_error": "Unable to start the conversation.",
@@ -2018,7 +2026,8 @@
       "title": "Order placed",
       "order_number": "No. @number",
       "back_home": "Back to home",
-      "track_order": "Track my order"
+      "track_order": "Track my order",
+      "pending_title": "Payment pending"
     },
     "similar": {
       "this_category": "this category",
@@ -3493,7 +3502,8 @@
     "payment_details": "Payment details",
     "total": "Total",
     "escrow_note": "You will receive a confirmation code to give to the traveler. Funds are only released once receipt is confirmed.",
-    "pay": "Pay @amount"
+    "pay": "Pay @amount",
+    "payment_failed_released": "The booking was cancelled and the kilos released. Nothing was charged."
   },
   "diaspo_create": {
     "departure_country": "Departure country",

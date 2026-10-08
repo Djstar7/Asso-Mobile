@@ -318,17 +318,25 @@ class DiaspoService extends GetxService {
 
   /// Statut de paiement d'une réservation (re-vérifie côté serveur selon le rail).
   /// Normalise en 'pending' | 'paid' | 'failed'.
-  Future<String> bookingPaymentStatus(int bookingId) async {
+  Future<String> bookingPaymentStatus(int bookingId) async =>
+      (await bookingPaymentState(bookingId)).status;
+
+  /// État du paiement d'une réservation : `paid`, `failed` (avec le motif
+  /// Mobile Money s'il est connu) ou `pending`.
+  Future<({String status, String? failure})> bookingPaymentState(
+    int bookingId,
+  ) async {
     try {
       final response = await _dio.get('/v1/diaspo/bookings/$bookingId/payment-status');
       final data = response.data['data'] ?? {};
       final paymentStatus = data['payment_status']?.toString() ?? 'pending';
       final status = data['status']?.toString() ?? 'pending';
-      if (paymentStatus == 'completed') return 'paid';
-      if (status == 'cancelled') return 'failed';
-      return 'pending';
+      final failure = data['payment_failure']?.toString();
+      if (paymentStatus == 'completed') return (status: 'paid', failure: null);
+      if (status == 'cancelled') return (status: 'failed', failure: failure);
+      return (status: 'pending', failure: null);
     } catch (e) {
-      return 'pending';
+      return (status: 'pending', failure: null);
     }
   }
 

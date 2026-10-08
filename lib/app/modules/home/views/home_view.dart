@@ -303,20 +303,20 @@ class HomeView extends GetView<HomeController> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.textStyle(
-              FontSizeType.overline,
-              color: context.ds.textTertiary,
-            ),
-          ),
-          Text(
-            isGuest ? 'home.header.guest'.tr : firstName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textStyle(
               FontSizeType.subtitle1,
-              fontWeight: FontWeight.w700,
               color: context.ds.textPrimary,
             ),
           ),
+          // Text(
+          //   isGuest ? 'home.header.guest'.tr : firstName,
+          //   maxLines: 1,
+          //   overflow: TextOverflow.ellipsis,
+          //   style: context.textStyle(
+          //     FontSizeType.subtitle1,
+          //     fontWeight: FontWeight.w700,
+          //     color: context.ds.textPrimary,
+          //   ),
+          // ),
         ],
       );
     });

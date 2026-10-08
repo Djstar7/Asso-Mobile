@@ -16,6 +16,7 @@ import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/product_controller.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
+import '../../payment/widgets/mobile_money_waiting.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../../data/models/delivery_info.dart';
@@ -2999,11 +3000,34 @@ class ProductView extends GetView<ProductController> {
     );
     if (data == null) return; // snackbar déjà affiché
 
-    controller.pollOrderPayment(_orderIdOf(data));
-    _showOrderConfirmation(
-      data,
-      'product.payment.mobile_money_pending'.tr,
+    // La commande n'est confirmée qu'une fois le paiement validé sur le
+    // téléphone : on attend la réponse de l'opérateur avant d'annoncer quoi
+    // que ce soit. La feuille de commande reste ouverte derrière, pour
+    // réessayer aussitôt en cas de refus.
+    final orderId = _orderIdOf(data);
+    final outcome = await MobileMoneyWaiting.run(
+      amount: total,
+      provider: selection['provider']!,
+      phone: selection['phone']!,
+      formatAmount: controller.formatPrice,
+      check: () => controller.orderPaymentState(orderId),
+      failureNote: 'product.payment.failed_order_cancelled'.tr,
     );
+
+    switch (outcome.status) {
+      case 'paid':
+        _showOrderConfirmation(data, 'product.payment.confirmed_message'.tr);
+      case 'failed':
+        break; // motif déjà expliqué ; la feuille reste ouverte pour réessayer
+      default:
+        // Toujours en attente : l'acheteur est prévenu dès la réponse.
+        controller.pollOrderPayment(orderId);
+        _showOrderConfirmation(
+          data,
+          'product.payment.mobile_money_pending'.tr,
+          paid: false,
+        );
+    }
   }
 
   /// Paiement par CARTE (Payment Sheet Stripe native), confirmé côté serveur.
@@ -3073,7 +3097,12 @@ class ProductView extends GetView<ProductController> {
 
   /// Confirmation de commande : ferme la feuille puis propose le suivi ou le
   /// retour à l'accueil (le retour depuis le suivi ramène aussi à l'accueil).
-  void _showOrderConfirmation(Map<String, dynamic> data, String message) {
+  /// [paid] faux : commande enregistrée mais paiement pas encore confirmé.
+  void _showOrderConfirmation(
+    Map<String, dynamic> data,
+    String message, {
+    bool paid = true,
+  }) {
     // `AppNavigation.pop` et non `Get.back()` : un snackbar encore affiché
     // (paiement, adresse) aurait été fermé à la place de la feuille, et la
     // confirmation se serait ouverte par-dessus une commande déjà passée.
@@ -3100,10 +3129,10 @@ class ProductView extends GetView<ProductController> {
         icon: Row(
           children: [
             const SizedBox(width: AppDesign.minTapTarget),
-            const Expanded(
+            Expanded(
               child: Icon(
-                Icons.check_circle_rounded,
-                color: AppDesign.success,
+                paid ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                color: paid ? AppDesign.success : AppDesign.warning,
                 size: 56,
               ),
             ),
@@ -3115,7 +3144,9 @@ class ProductView extends GetView<ProductController> {
           ],
         ),
         title: Text(
-          'product.confirmation.title'.tr,
+          paid
+              ? 'product.confirmation.title'.tr
+              : 'product.confirmation.pending_title'.tr,
           textAlign: TextAlign.center,
         ),
         content: Column(

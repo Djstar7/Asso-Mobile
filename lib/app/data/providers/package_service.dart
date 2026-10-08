@@ -156,6 +156,19 @@ class PackageService {
   /// Réponse : { success, data:{ subscription_id, status:"pending|paid|failed",
   ///             payment_mode, payment_reference, vendor_package_id,
   ///             vendor_package:{...}|null } }
+  /// État du paiement d'un abonnement (une lecture) : `paid`, `failed` (avec
+  /// le motif Mobile Money s'il est connu) ou `pending`.
+  static Future<({String status, String? failure})> subscriptionPaymentState(
+    int subscriptionId,
+  ) async {
+    final data = (await getSubscriptionPaymentStatus(subscriptionId)).data?['data'];
+    final status = data?['status']?.toString();
+    return (
+      status: status == 'paid' || status == 'failed' ? status! : 'pending',
+      failure: data?['payment_failure']?.toString(),
+    );
+  }
+
   static Future<ApiResponse> getSubscriptionPaymentStatus(
     int subscriptionId,
   ) async {

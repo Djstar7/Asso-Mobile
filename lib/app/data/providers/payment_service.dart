@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import '../models/payment_method_option.dart';
 import 'api_provider.dart';
 
@@ -28,5 +30,33 @@ class PaymentService {
           .toList();
     }
     return [];
+  }
+
+  static Set<String>? _mobileMoneyProviders;
+  static DateTime? _mobileMoneyProvidersAt;
+
+  /// Opérateurs Mobile Money acceptés par le prestataire ACTIF côté backend
+  /// (KPay : tout son catalogue ; ElgioPay : MTN et Orange Cameroun).
+  ///
+  /// Mis en cache quelques minutes. null si inconnu (réseau) : l'appelant garde
+  /// alors le catalogue complet, le backend refusant de toute façon un opérateur
+  /// non servi.
+  static Future<Set<String>?> fetchMobileMoneyProviders() async {
+    final at = _mobileMoneyProvidersAt;
+    if (_mobileMoneyProviders != null &&
+        at != null &&
+        DateTime.now().difference(at) < const Duration(minutes: 5)) {
+      return _mobileMoneyProviders;
+    }
+    try {
+      final methods = await fetchMethods(amount: 0, currency: 'XAF');
+      final kpay = methods.firstWhereOrNull((m) => m.code == 'kpay');
+      if (kpay == null || kpay.providers.isEmpty) return null;
+      _mobileMoneyProviders = kpay.providers.toSet();
+      _mobileMoneyProvidersAt = DateTime.now();
+      return _mobileMoneyProviders;
+    } catch (_) {
+      return null;
+    }
   }
 }

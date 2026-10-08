@@ -1161,14 +1161,7 @@
       "card_cancelled": "Paiement par carte annulé",
       "pending_title": "Paiement en cours",
       "pending_message": "Votre recharge est en cours de confirmation. Vous serez notifié.",
-      "generic_error": "Une erreur est survenue",
-      "ussd_title": "Paiement initié",
-      "ussd_sent_to": "Un code USSD a été envoyé sur le numéro :",
-      "ussd_step1": "Composez le code USSD reçu sur votre téléphone",
-      "ussd_step2": "Entrez votre code PIN @provider",
-      "ussd_step3": "Confirmez le paiement de @amount FCFA",
-      "ussd_notify": "Vous recevrez une notification dès que le paiement sera confirmé.",
-      "understood": "Compris"
+      "generic_error": "Une erreur est survenue"
     },
     "payout_sheet": {
       "incomplete_title": "Numéro incomplet",
@@ -1226,7 +1219,8 @@
       "total_to_pay": "Total à payer",
       "amount_to_pay": "Montant à payer",
       "pay_now": "Payer maintenant",
-      "debited_by_operator": "Débité par votre opérateur"
+      "debited_by_operator": "Débité par votre opérateur",
+      "operator_mismatch": "Ce numéro semble être un numéro @operator."
     }
   },
   "payment": {
@@ -1251,6 +1245,19 @@
       "balance_available": "Solde disponible : @balance",
       "balance_missing": "Solde : @balance — il manque @missing",
       "minimum": "Minimum @amount"
+    },
+    "mobile_money": {
+      "waiting_title": "Validez le paiement sur votre téléphone",
+      "waiting_message": "Une demande de paiement (USSD) vient d'être envoyée à ce numéro. Saisissez votre code secret pour valider.",
+      "waiting_background": "Continuer en arrière-plan",
+      "failed_wrong_network": "Ce numéro n'est pas inscrit chez l'opérateur choisi. Vérifiez l'opérateur (MTN ou Orange) puis réessayez.",
+      "failed_insufficient_funds": "Solde Mobile Money insuffisant pour ce paiement.",
+      "failed_expired": "La demande n'a pas été validée à temps sur votre téléphone.",
+      "failed_declined": "Le paiement a été refusé ou annulé sur votre téléphone.",
+      "retry": "Réessayer",
+      "failed_title": "Paiement non abouti",
+      "failed_generic": "Le paiement n'a pas abouti. Vérifiez le numéro et l'opérateur choisi, puis réessayez.",
+      "nothing_charged": "Rien n'a été débité."
     }
   },
   "invoices": {
@@ -1907,7 +1914,8 @@
       "card_data_missing": "Données de paiement carte indisponibles. Votre commande reste en attente.",
       "cancelled_title": "Paiement annulé",
       "cancelled_message": "Le paiement n'a pas été finalisé. Votre commande reste en attente.",
-      "card_pending": "Votre paiement par carte est en cours de confirmation. Vous serez notifié."
+      "card_pending": "Votre paiement par carte est en cours de confirmation. Vous serez notifié.",
+      "failed_order_cancelled": "La commande a été annulée et rien n'a été débité."
     },
     "chat": {
       "start_error": "Impossible de démarrer la conversation.",
@@ -2018,7 +2026,8 @@
       "title": "Commande enregistrée",
       "order_number": "N° @number",
       "back_home": "Retour à l’accueil",
-      "track_order": "Suivre ma commande"
+      "track_order": "Suivre ma commande",
+      "pending_title": "Paiement en attente"
     },
     "similar": {
       "this_category": "cette catégorie",
@@ -3493,7 +3502,8 @@
     "payment_details": "Détails du paiement",
     "total": "Total",
     "escrow_note": "Vous recevrez un code de confirmation à remettre au voyageur. Les fonds ne sont débloqués qu'à la confirmation de réception.",
-    "pay": "Payer @amount"
+    "pay": "Payer @amount",
+    "payment_failed_released": "La réservation a été annulée et les kilos remis en vente. Rien n'a été débité."
   },
   "diaspo_create": {
     "departure_country": "Pays de départ",
