@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 
@@ -36,23 +40,40 @@ class StripeNativeService {
       Stripe.publishableKey = publishableKey;
       await Stripe.instance.applySettings();
 
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: merchantDisplayName,
-        ),
-      );
+      // Préparation bornée : bloquée, elle laissait l'écran sans réaction et
+      // sans message après le choix « Carte bancaire ».
+      await Stripe.instance
+          .initPaymentSheet(
+            paymentSheetParameters: SetupPaymentSheetParameters(
+              paymentIntentClientSecret: clientSecret,
+              merchantDisplayName: merchantDisplayName,
+            ),
+          )
+          .timeout(_initTimeout);
 
       await Stripe.instance.presentPaymentSheet();
       return true; // Paiement confirmé côté client.
+    } on TimeoutException {
+      debugPrint('[StripeNativeService] initPaymentSheet sans réponse après ${_initTimeout.inSeconds} s');
+      throw Exception('data.stripe.sheet_unavailable'.tr);
     } on StripeException catch (e) {
       // Annulation utilisateur : retour silencieux (false), pas une erreur.
       if (e.error.code == FailureCode.Canceled) {
         return false;
       }
+      // Visible en logcat / console même en release : seule trace de la cause
+      // quand la feuille ne s'ouvre pas (clés test/live mélangées, compte…).
+      debugPrint('[StripeNativeService] ${e.error.code}: ${e.error.message}');
       throw Exception(
         e.error.localizedMessage ?? e.error.message ?? 'data.stripe.payment_failed'.tr,
       );
+    } on PlatformException catch (e) {
+      // Erreur native hors StripeException (SDK non initialisé, écran absent…).
+      debugPrint('[StripeNativeService] ${e.code}: ${e.message}');
+      throw Exception('data.stripe.sheet_unavailable'.tr);
     }
   }
+
+  /// Délai maximal de préparation de la Payment Sheet (appel réseau Stripe).
+  static const Duration _initTimeout = Duration(seconds: 25);
 }

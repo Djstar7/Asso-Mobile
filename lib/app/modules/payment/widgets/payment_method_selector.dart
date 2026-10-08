@@ -191,10 +191,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       snackPosition: SnackPosition.BOTTOM,
       margin: const EdgeInsets.all(12),
       borderRadius: 12,
-      duration: const Duration(seconds: 3),
-      backgroundColor: AppThemeSystem.errorColor.withValues(alpha: 0.12),
-      colorText: AppThemeSystem.errorColor,
-      icon: Icon(Icons.info_outline_rounded, color: AppThemeSystem.errorColor),
+      duration: const Duration(seconds: 4),
+      // Fond plein : presque transparente, la bannière se confondait avec le
+      // sélecteur ouvert dessous et le clic semblait sans effet.
+      backgroundColor: AppThemeSystem.errorColor,
+      colorText: AppThemeSystem.whiteColor,
+      icon: Icon(Icons.info_outline_rounded, color: AppThemeSystem.whiteColor),
     );
   }
 

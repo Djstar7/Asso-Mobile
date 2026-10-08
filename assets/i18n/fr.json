@@ -743,7 +743,8 @@
     },
     "stripe": {
       "missing_params": "Paramètres de paiement carte manquants.",
-      "payment_failed": "Paiement carte échoué."
+      "payment_failed": "Paiement carte échoué.",
+      "sheet_unavailable": "La page de paiement par carte n'a pas pu s'ouvrir. Réessayez dans un instant ou choisissez un autre moyen de paiement."
     },
     "deep_link": {
       "product_not_found_title": "Produit introuvable",

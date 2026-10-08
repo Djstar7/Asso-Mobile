@@ -685,9 +685,13 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
       }
     } catch (e) {
       print('[RechargeBottomSheet] Error: $e');
+      // Message réel de Stripe quand il y en a un (comme les autres paiements carte).
+      final message = e is Exception
+          ? e.toString().replaceAll('Exception: ', '')
+          : 'wallet.recharge.generic_error'.tr;
       Get.snackbar(
         'wallet.recharge.error'.tr,
-        'wallet.recharge.generic_error'.tr,
+        message,
         backgroundColor: AppThemeSystem.errorColor,
         colorText: AppThemeSystem.whiteColor,
       );

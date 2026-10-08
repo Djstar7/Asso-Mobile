@@ -743,7 +743,8 @@
     },
     "stripe": {
       "missing_params": "Missing card payment parameters.",
-      "payment_failed": "Card payment failed."
+      "payment_failed": "Card payment failed.",
+      "sheet_unavailable": "The card payment screen could not open. Please try again shortly or choose another payment method."
     },
     "deep_link": {
       "product_not_found_title": "Product not found",
