@@ -2399,6 +2399,29 @@
       "day": "@count day",
       "days": "@count days",
       "helper": "In business days, from 1 to 20. \"Auto\": the category time set by ASSO."
+    },
+    "video": {
+      "title": "Presentation video (optional)",
+      "subtitle": "Plays muted on a loop on the product card, with sound on the product page. Vertical format recommended, up to 1 minute and @max MB. Its size counts against your plan storage, like photos.",
+      "add": "Add a video",
+      "replace": "Change video",
+      "remove": "Remove",
+      "uploading": "Uploading video… @percent%",
+      "processing": "Video uploaded, being prepared. It will appear in the app as soon as it is ready; you can save now.",
+      "ready": "Video ready",
+      "ready_duration": "Video ready (@duration)",
+      "upload_failed": "The video upload failed. Check your connection and try again.",
+      "processing_failed": "This video could not be read. Try another video.",
+      "unsupported_format": "Unsupported format (mp4, mov, m4v, webm, 3gp, mkv).",
+      "too_large": "The video exceeds 100 MB.",
+      "pick_failed": "Unable to select the video.",
+      "offline": "Adding a video requires an Internet connection.",
+      "wait_upload": "Please wait for the video upload to finish before saving.",
+      "source_title": "Add a video",
+      "source_camera": "Film the product (1 minute max.)",
+      "source_gallery": "Choose an existing video",
+      "storage_insufficient": "Not enough space in your plan for this video (@required MB needed, @available MB available).",
+      "package_required": "An active plan is required to add a video."
     }
   },
   "inventory_list": {

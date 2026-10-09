@@ -8,6 +8,7 @@ import '../../../core/widgets/scoped_controller_page.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../data/models/wholesale_models.dart';
 
 /// Page ouverte par la route : chaque boutique empilée a son propre
 /// [VendorDetailsController] (voir [ScopedControllerPage]).
@@ -424,6 +425,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
     }
 
     return ProductCard(
+      video: WholesaleVideo.fromJson(product['video']),
       name: product['name']?.toString() ?? 'vendor_details.default_product_name'.tr,
       price: controller.formatPrice(
         price is num ? price.toDouble() : double.tryParse('$price') ?? 0,

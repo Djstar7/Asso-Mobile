@@ -14,6 +14,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../import/views/wholesale_product_view.dart';
 import '../controllers/search_controller.dart' as search_ctrl;
 import '../../../core/widgets/scoped_controller_page.dart';
+import '../../../data/models/wholesale_models.dart';
 
 /// Libellé affiché d'une catégorie de repli ou d'un tag populaire : la
 /// valeur française reste la donnée (filtre, requête), seul l'affichage
@@ -1075,17 +1076,22 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     // Asso Ads : emplacement acheté par le vendeur, signalé comme tel — sur
     // le visuel et sous le prix, où une photo sombre ne peut pas le masquer.
     final isSponsored = product['is_sponsored'] == true;
+    final video = WholesaleVideo.fromJson(product['video']);
 
     return MasonryProductTile(
       key: ValueKey('${isSponsored ? 'ad' : 'p'}$id'),
       // Format stable dérivé de l'identifiant : les photos du catalogue
       // sont presque toutes carrées, leurs vraies proportions aligneraient
-      // le mur.
-      aspectRatio: masonryAspectRatioFor(id),
+      // le mur. Une vidéo garde son format réel.
+      aspectRatio: video == null
+          ? masonryAspectRatioFor(id)
+          : masonryVideoAspectRatio(video.aspectRatio),
       image: MasonryTileImage(
-        url: product['primary_image']?.toString(),
+        url: video?.posterUrl ?? product['primary_image']?.toString(),
         cacheWidth: cacheWidth,
       ),
+      videoUrl: video == null ? null : resolveMediaUrl(video.previewUrl),
+      videoDurationLabel: video?.durationLabel,
       badge: isSponsored
           ? const AssoAdsChip()
           : ProductCard.isShopCertified(product)

@@ -18,6 +18,7 @@ import '../../../data/services/connectivity_service.dart';
 import '../../../data/services/offline_product_sync_service.dart';
 import '../../vendorDashboard/controllers/vendor_dashboard_controller.dart';
 import 'product_draft_store.dart';
+import 'product_video_upload.dart';
 import 'variant_editor_state.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
@@ -530,6 +531,9 @@ class AddProductController extends GetxController {
 
   final ImagePicker _picker = ImagePicker();
 
+  /// Vidéo de présentation (facultative), envoyée dès qu'elle est choisie.
+  final video = ProductVideoUpload();
+
   /// Catégories du serveur par nom, avec leurs sous-catégories.
   final Map<String, List<Map<String, String>>> categoriesData = {};
 
@@ -693,6 +697,7 @@ class AddProductController extends GetxController {
   @override
   void onClose() {
     _previewDebounce?.cancel();
+    video.dispose();
     _onlineWorker?.dispose();
     // Les images sont des XFile (mémoire/cache géré par la plateforme) :
     // aucun nettoyage manuel de fichiers n'est nécessaire (et impossible sur le web).
@@ -963,6 +968,8 @@ class AddProductController extends GetxController {
       print('📝 ADD_PRODUCT: Populating edit data...');
       print('📝 ADD_PRODUCT: Product data structure: ${product.keys.toList()}');
 
+      video.loadExisting(product);
+
       // Champs texte
       nameController.text = product['name'] ?? '';
       descriptionController.text = product['description'] ?? '';
@@ -1178,6 +1185,33 @@ class AddProductController extends GetxController {
       Get.snackbar(
         'add_product.error'.tr,
         'add_product.snack.take_photo_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  /// Choisit une vidéo (galerie ou caméra) et l'envoie aussitôt.
+  ///
+  /// L'envoi demande le serveur : hors ligne, la vidéo n'est pas proposée.
+  Future<void> pickVideo(ImageSource source) async {
+    if (!await ConnectivityService.ensureFresh()) {
+      _warnMissingField(
+        'add_product.offline'.tr,
+        'add_product.video.offline'.tr,
+      );
+      return;
+    }
+    try {
+      final file = await _picker.pickVideo(
+        source: source,
+        maxDuration: const Duration(seconds: 60),
+      );
+      if (file != null) await video.upload(file);
+    } catch (e) {
+      print('❌ ADD_PRODUCT: Erreur lors de la sélection de la vidéo: $e');
+      Get.snackbar(
+        'add_product.error'.tr,
+        'add_product.video.pick_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -1546,6 +1580,15 @@ class AddProductController extends GetxController {
     //   return;
     // }
 
+    // La vidéo doit avoir fini de partir pour être rattachée au produit.
+    if (video.isUploading) {
+      _warnMissingField(
+        'add_product.video.title'.tr,
+        'add_product.video.wait_upload'.tr,
+      );
+      return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -1646,6 +1689,9 @@ class AddProductController extends GetxController {
 
       fieldsMap['category_id'] = categoryId;
       if (subcategoryId != null) fieldsMap['subcategory_id'] = subcategoryId;
+
+      // Vidéo déjà envoyée : seul son identifiant part avec la fiche.
+      fieldsMap.addAll(video.toFields());
 
       // Ajouter stock si disponible
       if (stockController.text.trim().isNotEmpty) {

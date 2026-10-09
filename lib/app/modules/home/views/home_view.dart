@@ -25,6 +25,7 @@ import '../../notification/controllers/notification_controller.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
+import '../../../data/models/wholesale_models.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -2013,6 +2014,7 @@ class HomeItemView extends GetView<HomeController> {
     final isSponsored = product['is_sponsored'] == true;
 
     return ProductCard(
+      video: WholesaleVideo.fromJson(product['video']),
       name: product['name']?.toString() ?? 'product.fallback_name'.tr,
       price: _formatPrice(product),
       location: _getLocation(product),

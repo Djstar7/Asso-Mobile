@@ -10,6 +10,9 @@ import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../core/widgets/deposit_widgets.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/widgets/product_image_viewer.dart';
+import '../../../core/widgets/product_video_player.dart';
+import '../../../core/utils/media_url.dart';
+import '../../../data/models/wholesale_models.dart';
 import '../../../core/widgets/product_variant_selector.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/providers/storage_service.dart';
@@ -247,7 +250,11 @@ class ProductView extends GetView<ProductController> {
     Map<String, dynamic> product,
   ) {
     final images = _getProductImages(product);
-    if (images.isEmpty) {
+    final video = WholesaleVideo.fromJson(product['video']);
+    // La vidéo, quand il y en a une, ouvre la galerie ; les photos suivent.
+    final offset = video == null ? 0 : 1;
+    final mediaCount = images.length + offset;
+    if (mediaCount == 0) {
       return const _ImagePlaceholder(icon: Icons.image_outlined);
     }
 
@@ -255,64 +262,87 @@ class ProductView extends GetView<ProductController> {
       children: [
         PageView.builder(
           controller: controller.imagePageController,
-          itemCount: images.length,
+          itemCount: mediaCount,
           onPageChanged: (index) {
             controller.currentImageIndex.value = index;
           },
           itemBuilder: (context, index) {
+            if (video != null && index == 0) {
+              return Obx(
+                () => ProductGalleryVideo(
+                  url: resolveMediaUrl(video.url),
+                  poster: _buildImageWidget(
+                    _videoPoster(video, images),
+                    fit: BoxFit.cover,
+                  ),
+                  active: controller.currentImageIndex.value == 0,
+                ),
+              );
+            }
+            final photo = index - offset;
             return GestureDetector(
-              onTap: () => _openImageViewer(context, images, index),
+              onTap: () => _openImageViewer(context, images, photo, offset),
               child: Hero(
-                tag: 'product-image-${product['id']}-$index',
-                child: _buildImageWidget(images[index], fit: BoxFit.cover),
+                tag: 'product-image-${product['id']}-$photo',
+                child: _buildImageWidget(images[photo], fit: BoxFit.cover),
               ),
             );
           },
         ),
         // Compteur + invitation à zoomer
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: GestureDetector(
-            onTap: () => _openImageViewer(
-              context,
-              images,
-              controller.currentImageIndex.value,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.zoom_in_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  if (images.length > 1) ...[
-                    const SizedBox(width: 6),
-                    Obx(
-                      () => Text(
-                        '${controller.currentImageIndex.value + 1}/${images.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+        if (images.isNotEmpty)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: GestureDetector(
+              onTap: () {
+                final photo = controller.currentImageIndex.value - offset;
+                // Sur la vidéo, le bouton mène aux photos qui suivent.
+                if (photo < 0) {
+                  controller.goToImage(offset);
+                } else {
+                  _openImageViewer(context, images, photo, offset);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.zoom_in_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    if (images.length > 1) ...[
+                      const SizedBox(width: 6),
+                      Obx(
+                        () => Text(
+                          controller.currentImageIndex.value < offset
+                              ? '${images.length}'
+                              : '${controller.currentImageIndex.value - offset + 1}/${images.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        // Indicateurs d'images
-        if (images.length > 1)
+        // Indicateurs d'images (la vidéo compte pour une page)
+        if (mediaCount > 1)
           Positioned(
             bottom: 22,
             left: 0,
@@ -322,7 +352,7 @@ class ProductView extends GetView<ProductController> {
                 () => Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
-                    images.length,
+                    mediaCount,
                     (index) => AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       margin: EdgeInsets.symmetric(horizontal: 4),
@@ -352,38 +382,73 @@ class ProductView extends GetView<ProductController> {
     );
   }
 
+  /// Visionneuse plein écran des photos ; [photoIndex] ne compte pas la
+  /// vidéo, [offset] la place qu'elle occupe en tête de galerie.
   Future<void> _openImageViewer(
     BuildContext context,
     List<String> images,
-    int index,
-  ) async {
-    final lastIndex = await ProductImageViewer.open(
+    int photoIndex, [
+    int offset = 0,
+  ]) async {
+    final lastPhoto = await ProductImageViewer.open(
       context,
       images: images,
-      initialIndex: index,
+      initialIndex: photoIndex,
       imageBuilder: (image, fit) => _buildImageWidget(image, fit: fit),
     );
-    if (lastIndex != null && lastIndex != controller.currentImageIndex.value) {
-      controller.imagePageController.jumpToPage(lastIndex);
-      controller.currentImageIndex.value = lastIndex;
+    if (lastPhoto == null) return;
+    final page = lastPhoto + offset;
+    if (page != controller.currentImageIndex.value) {
+      controller.imagePageController.jumpToPage(page);
+      controller.currentImageIndex.value = page;
     }
   }
 
+  /// Affiche de la vidéo, sinon la première photo du produit.
+  String _videoPoster(WholesaleVideo video, List<String> images) =>
+      video.posterUrl ?? (images.isNotEmpty ? images.first : '');
+
+  /// Clé de la vignette vidéo dans le bandeau (jamais une URL de photo).
+  static const _videoThumbKey = '__video__';
+
   Widget _buildThumbnails(BuildContext context, Map<String, dynamic> product) {
     final images = _getProductImages(product);
-    if (images.length < 2) return const SizedBox.shrink();
+    final video = WholesaleVideo.fromJson(product['video']);
+    final media = [if (video != null) _videoThumbKey, ...images];
+    if (media.length < 2) return const SizedBox.shrink();
+
+    Widget thumb(String value, BoxFit fit) {
+      final image = _buildImageWidget(
+        value == _videoThumbKey ? _videoPoster(video!, images) : value,
+        fit: fit,
+        decodeSize: const Size.square(60),
+      );
+      if (value != _videoThumbKey) return image;
+      // La vidéo se distingue par un symbole lecture.
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          image,
+          const ColoredBox(color: Color(0x33000000)),
+          const Center(
+            child: Icon(
+              Icons.play_circle_fill_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Obx(
         () => ProductThumbnailStrip(
-          images: images,
+          images: media,
           currentIndex: controller.currentImageIndex.value,
           onSelected: controller.goToImage,
-          imageBuilder: (image, fit) => _buildImageWidget(
-            image,
-            fit: fit,
-            decodeSize: const Size.square(60),
-          ),
+          imageBuilder: thumb,
         ),
       ),
     );
