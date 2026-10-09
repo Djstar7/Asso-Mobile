@@ -2399,6 +2399,29 @@
       "day": "@count jour",
       "days": "@count jours",
       "helper": "En jours ouvrables, de 1 à 20. « Auto » : délai de la catégorie, fixé par ASSO."
+    },
+    "video": {
+      "title": "Vidéo de présentation (facultative)",
+      "subtitle": "Lue en boucle et sans le son sur la carte du produit, avec le son sur sa fiche. Format vertical conseillé, 1 minute et @max Mo au plus. Sa taille est décomptée de l'espace de votre forfait, comme les photos.",
+      "add": "Ajouter une vidéo",
+      "replace": "Changer de vidéo",
+      "remove": "Retirer",
+      "uploading": "Envoi de la vidéo… @percent %",
+      "processing": "Vidéo envoyée, préparation en cours. Elle apparaîtra dans l'app dès qu'elle sera prête ; vous pouvez déjà enregistrer.",
+      "ready": "Vidéo prête",
+      "ready_duration": "Vidéo prête (@duration)",
+      "upload_failed": "L'envoi de la vidéo a échoué. Vérifiez votre connexion et réessayez.",
+      "processing_failed": "Cette vidéo n'a pas pu être lue. Essayez avec une autre vidéo.",
+      "unsupported_format": "Format non pris en charge (mp4, mov, m4v, webm, 3gp, mkv).",
+      "too_large": "La vidéo dépasse 100 Mo.",
+      "pick_failed": "Impossible de sélectionner la vidéo.",
+      "offline": "L'ajout d'une vidéo demande une connexion à Internet.",
+      "wait_upload": "Patientez jusqu'à la fin de l'envoi de la vidéo avant d'enregistrer.",
+      "source_title": "Ajouter une vidéo",
+      "source_camera": "Filmer le produit (1 minute max.)",
+      "source_gallery": "Choisir une vidéo existante",
+      "storage_insufficient": "Espace insuffisant dans votre forfait pour cette vidéo (@required Mo nécessaires, @available Mo disponibles).",
+      "package_required": "Un forfait actif est nécessaire pour ajouter une vidéo."
     }
   },
   "inventory_list": {

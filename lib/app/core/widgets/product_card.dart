@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../data/models/wholesale_models.dart';
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
+import '../utils/media_url.dart';
 import 'app_ui.dart';
+import 'autoplay_video.dart';
+import 'product_video_player.dart';
 
 /// Carte produit unique de l'application.
 ///
@@ -31,7 +35,12 @@ class ProductCard extends StatelessWidget {
     this.badgeTone = AppBadgeTone.accent,
     this.originalPrice,
     this.isSponsored = false,
+    this.video,
   });
+
+  /// Vidéo du produit (champ `video` de l'API) : le visuel devient sa boucle
+  /// muette, lue quand la carte est à l'écran, précédée de la photo.
+  final WholesaleVideo? video;
 
   final String name;
 
@@ -138,6 +147,21 @@ class ProductCard extends StatelessWidget {
     );
   }
 
+  Widget _buildVisual(BuildContext context) {
+    final image = imageBuilder?.call(context) ??
+        Icon(
+          Icons.image_outlined,
+          color: context.ds.textTertiary,
+          size: 28,
+        );
+    final clip = video;
+    if (clip == null) return image;
+    return AutoplayVideo(
+      url: resolveMediaUrl(clip.previewUrl),
+      poster: image,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppDesign.radiusMd);
@@ -172,13 +196,14 @@ class ProductCard extends StatelessWidget {
                     children: [
                       ColoredBox(
                         color: context.ds.surfaceMuted,
-                        child: imageBuilder?.call(context) ??
-                            Icon(
-                              Icons.image_outlined,
-                              color: context.ds.textTertiary,
-                              size: 28,
-                            ),
+                        child: _buildVisual(context),
                       ),
+                      if (video != null)
+                        Positioned(
+                          right: AppDesign.space2,
+                          bottom: AppDesign.space2,
+                          child: VideoDurationPill(label: video!.durationLabel),
+                        ),
                       if (isSponsored)
                         Positioned(
                           top: AppDesign.space2,

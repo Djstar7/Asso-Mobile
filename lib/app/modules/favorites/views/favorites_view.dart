@@ -8,6 +8,7 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_widgets.dart';
 import '../controllers/favorites_controller.dart';
+import '../../../data/models/wholesale_models.dart';
 
 class FavoritesView extends GetView<FavoritesController> {
   const FavoritesView({super.key});
@@ -188,6 +189,7 @@ class FavoritesView extends GetView<FavoritesController> {
     final shop = product['shop'] as Map<String, dynamic>?;
 
     return ProductCard(
+      video: WholesaleVideo.fromJson(product['video']),
       name: product['name']?.toString() ?? 'favorites.product_fallback'.tr,
       price: _formatPrice(product),
       location: _getLocation(product),

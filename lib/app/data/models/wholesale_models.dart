@@ -110,7 +110,7 @@ class ShippingOption {
   );
 }
 
-/// Vidéo de présentation d'un produit grossiste (facultative).
+/// Vidéo de présentation d'un produit (facultative), grossiste ou non.
 ///
 /// Deux versions : la boucle courte et muette des cartes ([previewUrl]),
 /// légère pour ne pas épuiser le forfait pendant le défilement, et la version
