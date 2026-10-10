@@ -199,6 +199,13 @@ class WholesaleProduct {
   /// palier ? Sinon chaque option atteint son palier seule.
   final bool tierMixVariants;
 
+  /// Vente avec acompte : % du prix du palier payé à la commande (avec
+  /// l'expédition et la course SOLEX), solde après vérification ASSO.
+  final bool depositEnabled;
+  final double depositRate;
+
+  bool get hasDeposit => depositEnabled && depositRate > 0;
+
   const WholesaleProduct({
     required this.id,
     required this.name,
@@ -218,6 +225,8 @@ class WholesaleProduct {
     this.deliveryDelay,
     this.freeDelivery = false,
     this.tierMixVariants = true,
+    this.depositEnabled = false,
+    this.depositRate = 0,
   });
 
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
@@ -256,6 +265,8 @@ class WholesaleProduct {
     deliveryDelay: DeliveryDelay.fromApi(j['delivery_delay']),
     freeDelivery: j['free_delivery'] == true,
     tierMixVariants: j['tier_mix_variants'] != false,
+    depositEnabled: j['deposit_enabled'] == true,
+    depositRate: double.tryParse(j['deposit_rate']?.toString() ?? '') ?? 0,
   );
 
   /// Paliers du plus petit seuil au plus grand.

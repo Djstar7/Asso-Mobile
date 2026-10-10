@@ -11,6 +11,8 @@ import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/widgets/deposit_widgets.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/product_image_viewer.dart';
@@ -267,6 +269,32 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   double get _total => _subtotal + _shippingCost + _delivery.buyerPrice;
 
+  bool get _hasDeposit => widget.product.hasDeposit;
+
+  /// Acompte (même calcul que le serveur) : part de chaque ligne au prix du
+  /// palier + expédition jusqu'à Douala + course SOLEX, plafonné au total.
+  double get _deposit {
+    final rate = widget.product.depositRate;
+    final lines = _lines.fold<double>(
+      0,
+      (sum, line) =>
+          sum +
+          DepositProduct.depositFor(
+            (_tierFor(line.$2)?.unitPriceXaf ?? 0) * line.$2,
+            rate,
+          ),
+    );
+    final deposit = lines + _shippingCost + _delivery.buyerPrice;
+    return deposit < _total ? deposit : _total;
+  }
+
+  /// Montant payé à la commande : l'acompte, ou le total.
+  double get _amountDue => _hasDeposit ? _deposit : _total;
+
+  String get _amountDueLabel => _hasDeposit
+      ? 'core.deposit.deposit_now'.tr
+      : 'import.wholesale.amount_to_pay'.tr;
+
   /// Ville d'arrivée de l'import, d'où part la livraison locale.
   String get _hubCity => _shipping?.destination ?? 'Douala';
 
@@ -388,7 +416,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                   ),
                 AppButton(
                   label: 'import.wholesale.order_sheet.review'.trParams({
-                    'total': _fmt(_total),
+                    'total': _fmt(_amountDue),
                   }),
                   icon: Icons.receipt_long_rounded,
                   size: AppButtonSize.large,
@@ -891,6 +919,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                 icon: Icons.inventory_2_outlined,
               ),
               if (p.freeDelivery) const FreeDeliveryBadge(),
+              if (p.hasDeposit)
+                AppBadge(
+                  label: 'core.deposit.on_order'.tr,
+                  tone: AppBadgeTone.warning,
+                  icon: Icons.schedule_rounded,
+                ),
             ],
           ),
           const SizedBox(height: AppDesign.space3),
@@ -1505,7 +1539,31 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
           child: AppDivider(),
         ),
-        _sumRow(context, 'import.wholesale.total'.tr, _fmt(_total), bold: true),
+        _sumRow(
+          context,
+          _hasDeposit
+              ? 'core.deposit.total_price'.tr
+              : 'import.wholesale.total'.tr,
+          _fmt(_total),
+          bold: !_hasDeposit,
+        ),
+        if (_hasDeposit) ...[
+          const SizedBox(height: AppDesign.space2),
+          _sumRow(
+            context,
+            'core.deposit.balance_later'.tr,
+            _fmt(_total - _deposit),
+          ),
+          const SizedBox(height: AppDesign.space2),
+          _sumRow(
+            context,
+            'core.deposit.deposit_now'.tr,
+            _fmt(_deposit),
+            bold: true,
+          ),
+          const SizedBox(height: AppDesign.space3),
+          DeliveryNotice('core.deposit.verification_notice'.tr),
+        ],
       ],
     );
   }
@@ -1603,12 +1661,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     final currency = Get.isRegistered<CurrencyService>()
         ? CurrencyService.to
         : null;
-    final displayAmount = currency?.convertFromXOF(_total) ?? _total;
+    final displayAmount = currency?.convertFromXOF(_amountDue) ?? _amountDue;
     final displayCurrency = currency?.currencyCode ?? 'XAF';
     final method = await PaymentMethodSelector.show(
       amount: displayAmount,
       currency: displayCurrency,
-      amountLabel: 'import.wholesale.amount_to_pay'.tr,
+      amountLabel: _amountDueLabel,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -1624,15 +1682,15 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         itemLabel: 'import.wholesale.wallet_item_label'.trParams({
           'name': widget.product.name,
         }),
-        amount: _total,
+        amount: _amountDue,
         balance: method.balance ?? 0,
       );
       if (!confirmed) return;
       await _create('wallet', items, shipping.id, weight, cbm);
     } else if (method.code == 'kpay') {
       final sel = await KpayDirectPaymentSheet.show(
-        amount: _total,
-        amountLabel: 'import.wholesale.amount_to_pay'.tr,
+        amount: _amountDue,
+        amountLabel: _amountDueLabel,
       );
       if (sel == null) return;
       await _create(
@@ -1695,7 +1753,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         // refus, la fiche reste ouverte pour corriger l'opérateur ou le numéro.
         if (mounted) setState(() => _submitting = false);
         final outcome = await MobileMoneyWaiting.run(
-          amount: _total,
+          amount: _amountDue,
           provider: provider!,
           phone: phone!,
           formatAmount: _fmt,
