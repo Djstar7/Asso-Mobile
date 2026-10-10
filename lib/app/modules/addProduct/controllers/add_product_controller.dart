@@ -222,24 +222,38 @@ class AddProductController extends GetxController {
     freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
   }
 
-  // Délai de livraison annoncé au client, en jours ouvrables (1 à 20).
-  // null = délai de la catégorie, sinon le délai par défaut d'ASSO.
-  static const maxDeliveryDays = 20;
+  // Délai de livraison annoncé au client, en jours ouvrables (1 minimum,
+  // sans maximum). Vide = délai de la catégorie, sinon le défaut d'ASSO.
   final deliveryDaysMin = Rxn<int>();
   final deliveryDaysMax = Rxn<int>();
+  final deliveryDaysMinController = TextEditingController();
+  final deliveryDaysMaxController = TextEditingController();
 
-  void setDeliveryDaysMin(int? days) {
-    deliveryDaysMin.value = days;
-    final max = deliveryDaysMax.value;
-    if (days != null && (max == null || max < days)) deliveryDaysMax.value = days;
-    if (days == null) deliveryDaysMax.value = null;
+  static int? _parseDays(String text) {
+    final days = int.tryParse(text.trim());
+    return days != null && days >= 1 ? days : null;
   }
 
-  void setDeliveryDaysMax(int? days) {
-    deliveryDaysMax.value = days;
-    final min = deliveryDaysMin.value;
-    if (days != null && (min == null || min > days)) deliveryDaysMin.value = days;
-    if (days == null) deliveryDaysMin.value = null;
+  void setDeliveryDaysMin(String text) =>
+      deliveryDaysMin.value = _parseDays(text);
+
+  void setDeliveryDaysMax(String text) =>
+      deliveryDaysMax.value = _parseDays(text);
+
+  void _loadDeliveryDays(int? min, int? max) {
+    deliveryDaysMin.value = min;
+    deliveryDaysMax.value = max;
+    deliveryDaysMinController.text = min?.toString() ?? '';
+    deliveryDaysMaxController.text = max?.toString() ?? '';
+  }
+
+  /// Délai envoyé et affiché : une seule borne saisie vaut pour les deux, et
+  /// le maximum n'est jamais sous le minimum. null = Auto.
+  ({int min, int max})? get deliveryDelay {
+    final min = deliveryDaysMin.value ?? deliveryDaysMax.value;
+    final max = deliveryDaysMax.value ?? deliveryDaysMin.value;
+    if (min == null || max == null) return null;
+    return min <= max ? (min: min, max: max) : (min: max, max: min);
   }
 
   // Commande avec acompte (produit sur commande / importé) : % du prix client
@@ -492,8 +506,10 @@ class AddProductController extends GetxController {
     weightKgController.text = draft.fields['weight'] ?? '';
     depositEnabled.value = draft.fields['depositEnabled'] == '1';
     depositRateController.text = draft.fields['depositRate'] ?? '';
-    deliveryDaysMin.value = int.tryParse(draft.fields['deliveryDaysMin'] ?? '');
-    deliveryDaysMax.value = int.tryParse(draft.fields['deliveryDaysMax'] ?? '');
+    _loadDeliveryDays(
+      int.tryParse(draft.fields['deliveryDaysMin'] ?? ''),
+      int.tryParse(draft.fields['deliveryDaysMax'] ?? ''),
+    );
 
     final category = draft.fields['category'] ?? '';
     if (category.isNotEmpty) selectedCategory.value = category;
@@ -708,6 +724,8 @@ class AddProductController extends GetxController {
     priceController.dispose();
     stockController.dispose();
     weightKgController.dispose();
+    deliveryDaysMinController.dispose();
+    deliveryDaysMaxController.dispose();
     depositRateController.dispose();
     super.onClose();
   }
@@ -1050,8 +1068,10 @@ class AddProductController extends GetxController {
           : readFreeDelivery(freeSetting);
 
       // Délai de livraison propre au produit (null = délai de la catégorie).
-      deliveryDaysMin.value = int.tryParse('${product['delivery_days_min'] ?? ''}');
-      deliveryDaysMax.value = int.tryParse('${product['delivery_days_max'] ?? ''}');
+      _loadDeliveryDays(
+        int.tryParse('${product['delivery_days_min'] ?? ''}'),
+        int.tryParse('${product['delivery_days_max'] ?? ''}'),
+      );
 
       // Commande avec acompte.
       depositEnabled.value = readFreeDelivery(product['deposit_enabled']);
@@ -1716,8 +1736,9 @@ class AddProductController extends GetxController {
           : (freeOverride ? '1' : '0');
 
       // Délai de livraison en jours ouvrables : vide = délai de la catégorie.
-      fieldsMap['delivery_days_min'] = '${deliveryDaysMin.value ?? ''}';
-      fieldsMap['delivery_days_max'] = '${deliveryDaysMax.value ?? ''}';
+      final delay = deliveryDelay;
+      fieldsMap['delivery_days_min'] = '${delay?.min ?? ''}';
+      fieldsMap['delivery_days_max'] = '${delay?.max ?? ''}';
 
       // Commande avec acompte : % du prix client, solde après vérification ASSO.
       fieldsMap['deposit_enabled'] = depositEnabled.value ? '1' : '0';

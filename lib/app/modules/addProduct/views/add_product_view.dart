@@ -891,11 +891,11 @@ class AddProductView extends GetView<AddProductController> {
                 _buildReviewRow(
                   context,
                   'add_product.delivery_delay.title'.tr,
-                  controller.deliveryDaysMax.value == null
+                  controller.deliveryDelay == null
                       ? 'add_product.delivery_delay.auto'.tr
                       : 'product.delivery_delay.range'.trParams({
-                          'min': '${controller.deliveryDaysMin.value ?? controller.deliveryDaysMax.value}',
-                          'max': '${controller.deliveryDaysMax.value}',
+                          'min': '${controller.deliveryDelay!.min}',
+                          'max': '${controller.deliveryDelay!.max}',
                         }),
                   onEdit: () => controller.goToStep(2),
                 ),
@@ -2528,89 +2528,72 @@ class AddProductView extends GetView<AddProductController> {
   }
 
   /// Section Poids du produit : poids réel en kg, obligatoire pour un article.
-  /// Délai de livraison annoncé au client (jours ouvrables, 1 à 20).
-  /// « Auto » = délai de la catégorie, réglé par ASSO.
+  /// Délai de livraison annoncé au client (jours ouvrables, 1 minimum,
+  /// sans maximum). Vide = « Auto » : délai de la catégorie, réglé par ASSO.
   Widget _buildDeliveryDelaySection(BuildContext context) {
-    return Obx(() {
-      final min = controller.deliveryDaysMin.value;
-      final max = controller.deliveryDaysMax.value;
-
-      Widget picker({
-        required String label,
-        required int? value,
-        required ValueChanged<int?> onChanged,
-      }) {
-        return DropdownButtonFormField<int?>(
-          value: value,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: label,
-            filled: true,
-            fillColor: context.inputFieldColor,
-            border: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.borderRadius(BorderRadiusType.medium),
-              borderSide: BorderSide(color: context.borderColor),
-            ),
+    Widget field({
+      required String label,
+      required TextEditingController textController,
+      required ValueChanged<String> onChanged,
+    }) {
+      return TextField(
+        controller: textController,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: 'add_product.delivery_delay.auto'.tr,
+          suffixText: 'add_product.delivery_delay.unit'.tr,
+          filled: true,
+          fillColor: context.inputFieldColor,
+          border: OutlineInputBorder(
+            borderRadius: context.borderRadius(BorderRadiusType.medium),
+            borderSide: BorderSide(color: context.borderColor),
           ),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Text('add_product.delivery_delay.auto'.tr),
-            ),
-            for (var day = 1; day <= AddProductController.maxDeliveryDays; day++)
-              DropdownMenuItem<int?>(
-                value: day,
-                child: Text(
-                  (day > 1
-                          ? 'add_product.delivery_delay.days'
-                          : 'add_product.delivery_delay.day')
-                      .trParams({'count': '$day'}),
-                ),
-              ),
-          ],
-          onChanged: onChanged,
-        );
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'add_product.delivery_delay.title'.tr,
-            style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: context.borderRadius(BorderRadiusType.medium),
+            borderSide: BorderSide(color: context.borderColor),
           ),
-          SizedBox(height: context.elementSpacing),
-          Row(
-            children: [
-              Expanded(
-                child: picker(
-                  label: 'add_product.delivery_delay.min'.tr,
-                  value: min,
-                  onChanged: controller.setDeliveryDaysMin,
-                ),
-              ),
-              SizedBox(width: context.elementSpacing),
-              Expanded(
-                child: picker(
-                  label: 'add_product.delivery_delay.max'.tr,
-                  value: max,
-                  onChanged: controller.setDeliveryDaysMax,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppDesign.space2),
-          Text(
-            'add_product.delivery_delay.helper'.tr,
-            style: context.caption.copyWith(color: context.secondaryTextColor),
-          ),
-        ],
+        ),
       );
-    });
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'add_product.delivery_delay.title'.tr,
+          style: context.subtitle1.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: context.elementSpacing),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: field(
+                label: 'add_product.delivery_delay.min'.tr,
+                textController: controller.deliveryDaysMinController,
+                onChanged: controller.setDeliveryDaysMin,
+              ),
+            ),
+            SizedBox(width: context.elementSpacing),
+            Expanded(
+              child: field(
+                label: 'add_product.delivery_delay.max'.tr,
+                textController: controller.deliveryDaysMaxController,
+                onChanged: controller.setDeliveryDaysMax,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppDesign.space2),
+        Text(
+          'add_product.delivery_delay.helper'.tr,
+          style: context.caption.copyWith(color: context.secondaryTextColor),
+        ),
+      ],
+    );
   }
 
   Widget _buildWeightSection(BuildContext context) {

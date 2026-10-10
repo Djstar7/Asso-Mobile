@@ -316,7 +316,7 @@
       },
       "delivery_time": {
         "question": "How long does delivery take?",
-        "answer": "It depends on the item: 1 to 20 business days. The time is shown on each product page, and the estimated delivery date appears on your order."
+        "answer": "It depends on the item, in business days. The time is shown on each product page, and the estimated delivery date appears on your order."
       },
       "change_address": {
         "question": "Can I change the delivery address?",
@@ -407,7 +407,7 @@
       },
       "delivery_times": {
         "question": "What are the delivery times?",
-        "answer": "Each item shows its delivery time, from 1 to 20 business days (weekends excluded). The estimated date then appears on your order."
+        "answer": "Each item shows its delivery time, in business days (weekends excluded). The estimated date then appears on your order."
       },
       "payment_methods": {
         "question": "Which payment methods do you accept?",
@@ -2398,7 +2398,8 @@
       "auto": "Auto",
       "day": "@count day",
       "days": "@count days",
-      "helper": "In business days, from 1 to 20. \"Auto\": the category time set by ASSO."
+      "unit": "days",
+      "helper": "In business days, at least 1 day. Leave empty (\"Auto\") for the category time set by ASSO."
     },
     "video": {
       "title": "Presentation video (optional)",
