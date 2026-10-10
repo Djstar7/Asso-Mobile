@@ -1990,17 +1990,21 @@ class ProductView extends GetView<ProductController> {
                     ],
                     Divider(height: 24),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          DepositProduct.enabled(product)
-                              ? 'core.deposit.deposit_now'.tr
-                              : 'product.order.total'.tr,
-                          style: context.textStyle(
-                            FontSizeType.h5,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            DepositProduct.enabled(product)
+                                ? 'core.deposit.deposit_now'.tr
+                                : 'product.order.total'.tr,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textStyle(
+                              FontSizeType.h5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           controller.formatPrice(
                             controller.orderAmountDue(product),
