@@ -91,12 +91,7 @@ class _PaymentSuccessDialogState extends State<PaymentSuccessDialog>
     }
   }
 
-  String _formatPrice(double priceInXOF) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: true);
-  }
+  String _formatPrice(double amountXaf) => CurrencyService.formatFromPivot(amountXaf);
 
   @override
   Widget build(BuildContext context) {

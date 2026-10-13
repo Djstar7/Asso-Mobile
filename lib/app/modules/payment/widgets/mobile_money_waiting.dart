@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -44,7 +45,7 @@ class MobileMoneyWaiting {
           dialogContext = context;
           return _WaitingDialog(
             amount: formatAmount?.call(amount) ??
-                '${amount.toStringAsFixed(0)} FCFA',
+                CurrencyService.formatFromPivot(amount),
             operator: KPayCatalog.labelFor(provider),
             phone: '+$phone',
             onBackground: () {

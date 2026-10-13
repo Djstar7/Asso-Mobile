@@ -63,7 +63,7 @@ class DiaspoCreateController extends GetxController {
       final cs = CurrencyService.to;
       if (cs.currencyCode.isNotEmpty) {
         selectedCurrencyCode.value = cs.currencyCode;
-        selectedCurrencySymbol.value = cs.currencySymbol;
+        selectedCurrencySymbol.value = CurrencyService.getSymbolForCode(cs.currencyCode);
       }
       if (cs.detectedCountry.isNotEmpty && departureCountryController.text.isEmpty) {
         departureCountryController.text = cs.detectedCountry;
@@ -383,11 +383,8 @@ class DiaspoCreateController extends GetxController {
   // ================================
 
   /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Get currency symbol

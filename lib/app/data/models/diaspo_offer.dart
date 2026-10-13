@@ -1,4 +1,3 @@
-import 'package:get/get.dart';
 import '../providers/currency_service.dart';
 
 class DiaspoOffer {
@@ -173,19 +172,6 @@ class DiaspoOffer {
       (m) => '${m[1]} ',
     );
     return parts.join('.');
-  }
-
-  /// Prix formaté avec conversion de devise
-  String get convertedFormattedPrice {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        // Le backend renvoie les prix en XOF, donc on convertit
-        return CurrencyService.to.formatPrice(pricePerKg);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return formattedPrice; // Utilise le formattedPrice du backend
   }
 
   DiaspoOffer copyWith({

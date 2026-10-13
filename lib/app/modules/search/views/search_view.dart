@@ -1066,11 +1066,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
   /// Tuile d'un produit du catalogue local.
   Widget _buildLocalTile(Map<String, dynamic> product, int cacheWidth) {
     final id = (product['id'] as num?)?.toInt() ?? 0;
-    final price =
-        double.tryParse(
-          (product['price_xaf'] ?? product['price'])?.toString() ?? '0',
-        ) ??
-        0.0;
     final location = product['location']?.toString() ?? '';
 
     // Asso Ads : emplacement acheté par le vendeur, signalé comme tel — sur
@@ -1098,7 +1093,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           ? const CertifiedMark()
           : null,
       name: product['name']?.toString() ?? 'search.product_fallback'.tr,
-      price: controller.formatPrice(price),
+      price: CurrencyService.formatProductPrice(product),
       meta: isSponsored
           ? (location.isEmpty
                 ? 'search.sponsored'.tr

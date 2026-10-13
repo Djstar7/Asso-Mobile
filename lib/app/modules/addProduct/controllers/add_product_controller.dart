@@ -2078,14 +2078,6 @@ class AddProductController extends GetxController {
   // CURRENCY FORMATTING
   // ================================
 
-  /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
-  }
-
   /// Symbole de la devise actuellement sélectionnée dans le formulaire.
   String get selectedCurrencySymbol {
     final code = selectedCurrency.value.toUpperCase();

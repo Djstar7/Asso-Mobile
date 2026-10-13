@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'kpay_phone_selector.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
 
@@ -10,22 +11,28 @@ import '../../../core/widgets/app_sheet.dart';
 /// `{provider, phone, currency}` à la confirmation (ou null si annulé).
 class KpayDirectPaymentSheet extends StatefulWidget {
   final double amount;
+
+  /// Devise de [amount] : XAF (commandes, forfaits…) ou celle d'une offre Diaspo.
+  final String currency;
   final String? amountLabel; // ex. "Total à payer"
 
   const KpayDirectPaymentSheet({
     super.key,
     required this.amount,
+    this.currency = 'XAF',
     this.amountLabel,
   });
 
   /// Affiche le sheet ; renvoie {provider, phone, currency} ou null.
   static Future<Map<String, String>?> show({
     required double amount,
+    String currency = 'XAF',
     String? amountLabel,
   }) {
     return AppSheet.show<Map<String, String>>(
       KpayDirectPaymentSheet(
           amount: amount,
+          currency: currency,
           amountLabel: amountLabel ?? 'wallet.kpay.total_to_pay'.tr),
     );
   }
@@ -39,17 +46,33 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
   String? _phone;
   bool _valid = false;
 
-  String _currency = 'XAF';
+  late String _currency = _source;
   double? _converted; // montant converti dans la devise de l'opérateur
   bool _converting = false;
 
-  /// Convertit le montant (XAF) dans la devise de l'opérateur sélectionné.
+  String get _source {
+    final code = widget.currency.toUpperCase();
+    return code == 'FCFA' ? 'XAF' : code;
+  }
+
+  /// Montant à payer : un montant FCFA est affiché dans la devise de
+  /// l'utilisateur, avec le montant FCFA entre parenthèses s'il diffère.
+  String get _amountText {
+    if (_source != 'XAF') {
+      return CurrencyService.formatAmountInCurrency(widget.amount, _source);
+    }
+    final display = CurrencyService.formatFromPivot(widget.amount);
+    final pivot = CurrencyService.formatAmountInCurrency(widget.amount, 'XAF');
+    return display == pivot ? pivot : '$display ($pivot)';
+  }
+
+  /// Convertit le montant dans la devise de l'opérateur sélectionné.
   /// Purement pour l'affichage : la conversion débitée est refaite côté serveur.
   Future<void> _convertFor(String currency) async {
-    if (currency == 'XAF' || currency.isEmpty) {
+    if (currency == _source || currency.isEmpty) {
       if (mounted) {
         setState(() {
-          _currency = 'XAF';
+          _currency = _source;
           _converted = null;
           _converting = false;
         });
@@ -63,7 +86,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
     try {
       final res = await ApiProvider.get(
         '/v1/currencies/convert',
-        queryParams: {'from': 'XAF', 'to': currency, 'amount': widget.amount},
+        queryParams: {'from': _source, 'to': currency, 'amount': widget.amount},
       );
       final value = res.data?['data']?['converted'];
       if (mounted) {
@@ -143,7 +166,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
                     Text(
-                      '${widget.amount.toStringAsFixed(0)} FCFA',
+                      _amountText,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -153,7 +176,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                   ],
                 ),
                 // Montant converti dans la devise de l'opérateur (affichage)
-                if (_currency != 'XAF' &&
+                if (_currency != _source &&
                     (_converting || _converted != null)) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -186,7 +209,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              '≈ ${_converted!.toStringAsFixed(0)} $_currency',
+                              '≈ ${CurrencyService.formatAmountInCurrency(_converted!, _currency)}',
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,

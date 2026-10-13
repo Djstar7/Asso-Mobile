@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -250,18 +251,10 @@ class FavoritesView extends GetView<FavoritesController> {
   }
 
   String _formatPrice(Map<String, dynamic> product) {
-    final price = product['price_xaf'] ?? product['price'];
-    if (price != null) {
-      if (price is num) {
-        return controller.formatPrice(price.toDouble());
-      }
-      final priceValue = double.tryParse(price.toString());
-      if (priceValue != null) {
-        return controller.formatPrice(priceValue);
-      }
-      return '$price ${controller.currencySymbol}';
+    if (product['price'] == null && product['price_xaf'] == null) {
+      return 'favorites.price_undefined'.tr;
     }
-    return 'favorites.price_undefined'.tr;
+    return CurrencyService.formatProductPrice(product);
   }
 
   String _getLocation(Map<String, dynamic> product) {

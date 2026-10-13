@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -346,7 +347,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          controller.formatPrice(_priceOf(product)),
+                          CurrencyService.formatProductPrice(product),
                           style: context.h6.copyWith(
                             color: AppThemeSystem.primaryColor,
                             fontWeight: FontWeight.bold,
@@ -575,11 +576,6 @@ class ProductManagementView extends GetView<ProductManagementController> {
     final first = images.first;
     final url = first is Map ? first['url']?.toString() : first?.toString();
     return (url == null || url.isEmpty) ? null : url;
-  }
-
-  double _priceOf(Map<String, dynamic> product) {
-    final raw = (product['price_xaf'] ?? product['price'])?.toString();
-    return double.tryParse(raw ?? '') ?? 0;
   }
 }
 

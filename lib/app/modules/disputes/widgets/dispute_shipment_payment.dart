@@ -18,9 +18,7 @@ import '../../wallet/widgets/kpay_payment_sheet.dart';
 class DisputeShipmentPayment {
   const DisputeShipmentPayment._();
 
-  static String _price(double amount) => Get.isRegistered<CurrencyService>()
-      ? CurrencyService.to.formatPrice(amount)
-      : '${amount.toStringAsFixed(0)} FCFA';
+  static String _price(double amount) => CurrencyService.formatFromPivot(amount);
 
   /// Renvoie true si la course est payée.
   static Future<bool> pay({required int shipmentId, required bool isReturn}) async {

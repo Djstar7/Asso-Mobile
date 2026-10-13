@@ -350,17 +350,16 @@ class ProductController extends GetxController {
   ) {
     final variantPrice = variant?['price_xaf'];
     if (variantPrice is num) return variantPrice.toDouble();
-    final base =
-        double.tryParse(
-          (product['price_xaf'] ?? product['price'] ?? 0).toString().replaceAll(
-            ' ',
-            '',
-          ),
-        ) ??
-        0;
+    final base = CurrencyService.productPriceXaf(product) ?? 0;
+    // `price_adjustment` est dans la devise du produit : utilisable tel quel
+    // seulement si le produit est lui-même en FCFA.
+    final productInPivot = CurrencyService.productPriceXaf(
+          {'price': 0, 'currency': product['currency']},
+        ) !=
+        null;
     final adjustment =
         (variant?['price_adjustment_xaf'] as num?)?.toDouble() ??
-        (variant?['price_adjustment'] as num?)?.toDouble() ??
+        (productInPivot ? (variant?['price_adjustment'] as num?)?.toDouble() : null) ??
         0;
     return base + adjustment;
   }

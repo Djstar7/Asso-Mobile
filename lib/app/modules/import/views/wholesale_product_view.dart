@@ -162,9 +162,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
   }
 
-  String _fmt(double valueInXaf) => Get.isRegistered<CurrencyService>()
-      ? CurrencyService.to.formatPrice(valueInXaf)
-      : '${valueInXaf.toStringAsFixed(0)} FCFA';
+  String _fmt(double valueInXaf) => CurrencyService.formatFromPivot(valueInXaf);
 
   String _fmtConverted(double amount, String currency) =>
       CurrencyService.formatAmountInCurrency(amount, currency);
@@ -1679,14 +1677,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       return;
     }
 
-    final currency = Get.isRegistered<CurrencyService>()
-        ? CurrencyService.to
-        : null;
-    final displayAmount = currency?.convertFromXOF(_amountDue) ?? _amountDue;
-    final displayCurrency = currency?.currencyCode ?? 'XAF';
+    // Montant pivot : le sélecteur l'affiche converti et le serveur le
+    // reconvertit pour chaque moyen de paiement.
     final method = await PaymentMethodSelector.show(
-      amount: displayAmount,
-      currency: displayCurrency,
+      amount: _amountDue,
+      currency: 'XAF',
       amountLabel: _amountDueLabel,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,

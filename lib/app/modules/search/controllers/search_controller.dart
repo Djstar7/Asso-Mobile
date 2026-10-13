@@ -504,6 +504,10 @@ class SearchController extends GetxController {
     }
   }
 
+  double _toPivot(double amount) => Get.isRegistered<CurrencyService>()
+      ? CurrencyService.to.convertToPivot(amount)
+      : amount;
+
   /// Une page du catalogue local, ou null si l'appel a échoué.
   Future<({List<Map<String, dynamic>> products, bool hasMore, int total})?>
   _fetchLocalPage({required int page, required String query}) async {
@@ -515,9 +519,12 @@ class SearchController extends GetxController {
         categoryId: selectedCategoryId.value > 0
             ? selectedCategoryId.value
             : null,
-        minPrice: currentMinPrice.value > 0 ? currentMinPrice.value : null,
+        // Bornes saisies dans la devise affichée ; le backend filtre en XAF.
+        minPrice: currentMinPrice.value > 0
+            ? _toPivot(currentMinPrice.value)
+            : null,
         maxPrice: currentMaxPrice.value < _priceCap
-            ? currentMaxPrice.value
+            ? _toPivot(currentMaxPrice.value)
             : null,
         sortBy: sortBy.value,
         sortOrder: sortOrder.value,
@@ -932,11 +939,8 @@ class SearchController extends GetxController {
   // ================================
 
   /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Get currency symbol

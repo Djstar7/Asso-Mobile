@@ -104,9 +104,7 @@ class VendorDetailsController extends GetxController {
   }
 
   static double _priceOf(Map<String, dynamic> product) {
-    final raw = product['price_xaf'] ?? product['price'] ?? 0;
-    if (raw is num) return raw.toDouble();
-    return double.tryParse('$raw') ?? 0;
+    return CurrencyService.productPriceXaf(product) ?? 0;
   }
 
   static num _stockOf(Map<String, dynamic> product) {
@@ -189,11 +187,8 @@ class VendorDetailsController extends GetxController {
   // ================================
 
   /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Get currency symbol

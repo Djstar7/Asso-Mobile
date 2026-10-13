@@ -62,45 +62,15 @@ class WalletModel {
   }
 
   String get formattedBalance {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(currentBalance);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return '${currentBalance.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
+    return CurrencyService.formatFromPivot(currentBalance);
   }
 
   String get formattedLockedBalance {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(totalLockedBalance);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return '${totalLockedBalance.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
+    return CurrencyService.formatFromPivot(totalLockedBalance);
   }
 
   String get formattedAvailableBalance {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(availableBalance);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return '${availableBalance.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} FCFA';
+    return CurrencyService.formatFromPivot(availableBalance);
   }
 
   bool get hasLockedFunds => totalLockedBalance > 0;
@@ -193,20 +163,7 @@ class WalletTransactionModel {
     final sign = isCredit ? '+' : '-';
     final absAmount = amount.abs();
 
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        final formattedPrice = CurrencyService.to.formatPrice(absAmount, showSymbol: false);
-        final symbol = CurrencyService.to.currencySymbol;
-        return '$sign $formattedPrice $symbol';
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-
-    return '$sign ${absAmount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        )} F';
+    return '$sign ${CurrencyService.formatFromPivot(absAmount)}';
   }
 
   /// Get type label in French

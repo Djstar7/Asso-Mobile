@@ -876,7 +876,7 @@ class AddProductView extends GetView<AddProductController> {
                       ? 'add_product.view.base_price'.tr
                       : 'add_product.view.price'.tr,
                   price > 0
-                      ? controller.formatPrice(price)
+                      ? controller.formatInSelectedCurrency(price)
                       : 'add_product.view.not_set_m'.tr,
                   onEdit: () => controller.goToStep(2),
                 ),
