@@ -176,19 +176,19 @@ class ShopStatisticsController extends GetxController {
   String formatPrice(double amountXaf) {
     // Lecture volontaire : abonne les Obx au changement de devise.
     currencyRevision.value;
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${amountXaf.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(amountXaf);
+    return CurrencyService.formatFromPivot(amountXaf);
   }
 
   /// Montant converti dans la devise d'affichage, pour les axes du graphique.
   double toDisplayCurrency(double amountXaf) {
     currencyRevision.value;
     if (!Get.isRegistered<CurrencyService>()) return amountXaf;
-    return CurrencyService.to.convertFromXOF(amountXaf);
+    return CurrencyService.to.convertFromPivot(amountXaf);
   }
 
-  String get currencyCode =>
-      Get.isRegistered<CurrencyService>() ? CurrencyService.to.currencyCode : 'XOF';
+  /// Symbole de la devise d'affichage, pour les axes du graphique.
+  String get currencyLabel {
+    currencyRevision.value;
+    return Get.isRegistered<CurrencyService>() ? CurrencyService.to.currencySymbol : 'FCFA';
+  }
 }

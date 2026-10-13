@@ -8,9 +8,26 @@ import '../models/currency_model.dart';
 class CurrencyService extends GetxService {
   static CurrencyService get to => Get.find();
 
+  /// Devise pivot du backend : commandes, Wallet et `price_xaf` sont en XAF.
+  static const String pivot = 'XAF';
+
+  /// Le XOF a la même parité fixe avec l'euro que le XAF : 1 XOF = 1 XAF.
+  static const Set<String> _pivotEquivalents = {'XAF', 'XOF'};
+
+  /// Devises sans centimes à l'affichage.
+  static const Set<String> _zeroDecimal = {
+    'XAF', 'XOF', 'JPY', 'KRW', 'GNF', 'RWF', 'UGX', 'KMF', 'BIF', 'DJF', 'VND', 'CLP', 'PYG', 'ISK',
+  };
+
+  /// Au-delà, le taux enregistré est rafraîchi (il reste utilisé si l'API échoue).
+  static const Duration _rateMaxAge = Duration(hours: 6);
+
   // Reactive state
   final Rx<CurrencyModel?> _userCurrency = Rx<CurrencyModel?>(null);
-  final RxDouble _exchangeRateToXOF = 1.0.obs;
+
+  /// « 1 unité de la devise utilisateur = X XAF ». Null tant qu'aucun taux n'est
+  /// connu : les montants restent alors affichés en FCFA, jamais avec un faux taux.
+  final RxnDouble _rateToPivot = RxnDouble();
   final RxBool _isLoading = false.obs;
   final RxString _detectedCountry = ''.obs;
 
@@ -20,11 +37,25 @@ class CurrencyService extends GetxService {
   /// Devise observable : permet à un écran de se redessiner quand le vendeur
   /// change de devise d'affichage, sans rappeler l'API.
   Rx<CurrencyModel?> get userCurrencyRx => _userCurrency;
-  double get exchangeRateToXOF => _exchangeRateToXOF.value;
+  double? get rateToPivot => _rateToPivot.value;
   bool get isLoading => _isLoading.value;
   String get detectedCountry => _detectedCountry.value;
-  String get currencyCode => _userCurrency.value?.code ?? 'XOF';
-  String get currencySymbol => _userCurrency.value?.symbol ?? 'FCFA';
+
+  /// Devise choisie par l'utilisateur (saisie d'un prix, devise d'une offre…).
+  String get currencyCode => _userCurrency.value?.code ?? pivot;
+
+  /// Devise dans laquelle les montants convertis sont réellement affichés : celle
+  /// de l'utilisateur si son taux est connu, sinon le FCFA.
+  String get displayCurrencyCode {
+    final code = currencyCode.toUpperCase();
+    if (_pivotEquivalents.contains(code) || _rateToPivot.value != null) return code;
+    return pivot;
+  }
+
+  /// Symbole des montants affichés (suit [displayCurrencyCode]).
+  String get currencySymbol => getSymbolForCode(displayCurrencyCode);
+
+  static int decimalsFor(String code) => _zeroDecimal.contains(code.toUpperCase()) ? 0 : 2;
 
   /// Fallback synchrone code -> symbole (pour l'affichage d'une devise
   /// indépendante de la devise utilisateur, ex: devise réelle d'une offre Diaspo).
@@ -63,50 +94,69 @@ class CurrencyService extends GetxService {
   }
 
   /// Formate un montant déjà exprimé dans [currencyCode], sans effectuer une
-  /// nouvelle conversion. Utile pour les prix Import convertis par le backend.
-  static String formatAmountInCurrency(double amount, String currencyCode) {
-    final decimals = amount == amount.roundToDouble() ? 0 : 2;
-    final parts = amount.toStringAsFixed(decimals).split('.');
+  /// nouvelle conversion (prix Import convertis par le backend, offre Diaspo…).
+  /// 0 décimale pour XAF/XOF/JPY…, 2 pour les autres devises.
+  static String formatAmountInCurrency(double amount, String currencyCode, {bool showSymbol = true}) {
+    final parts = amount.toStringAsFixed(decimalsFor(currencyCode)).split('.');
     final integer = parts.first.replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (match) => '${match[1]} ',
     );
     final formatted = parts.length == 2 ? '$integer,${parts.last}' : integer;
-    return '$formatted ${getSymbolForCode(currencyCode)}';
+    return showSymbol ? '$formatted ${getSymbolForCode(currencyCode)}' : formatted;
   }
 
-  /// Formate un montant exprimé dans la devise pivot (XAF/XOF, parité 1:1) dans la
-  /// devise de l'utilisateur. Contrairement à [formatPrice], garde 2 décimales pour
-  /// les devises fortes (100 FCFA ≈ 0,15 € et non « 0 € »).
+  /// Formate un montant exprimé dans la devise pivot (XAF) dans la devise de
+  /// l'utilisateur — LE formateur de l'app : 0 décimale pour XAF/XOF/JPY…,
+  /// 2 pour les autres (100 FCFA ≈ 0,15 € et non « 0 € »).
   /// À appeler dans un Obx pour suivre un changement de devise.
-  static String formatFromPivot(double amountXaf) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return formatAmountInCurrency(amountXaf.roundToDouble(), 'XAF');
-    }
-    final service = CurrencyService.to;
-    final code = service.currencyCode.toUpperCase();
-    final converted = service.convertFromXOF(amountXaf);
-    final zeroDecimal = code == 'XAF' || code == 'XOF' || code == 'JPY';
-    final rounded = zeroDecimal
-        ? converted.roundToDouble()
-        : (converted * 100).roundToDouble() / 100;
-    return formatAmountInCurrency(rounded, code);
+  static String formatFromPivot(double amountXaf, {bool showSymbol = true}) {
+    final display = displayFromPivot(amountXaf);
+    return formatAmountInCurrency(display.amount, display.currency, showSymbol: showSymbol);
   }
 
-  /// Montant pivot (XAF) converti dans la devise utilisateur + code de cette devise,
+  /// Prix XAF d'un produit renvoyé par l'API : [xafKey] s'il est fourni, sinon
+  /// [priceKey] quand le produit est déjà en FCFA (ou sans devise, anciens
+  /// payloads). Null pour un prix en devise étrangère sans équivalent XAF : il ne
+  /// doit pas être lu comme du FCFA.
+  static double? productPriceXaf(
+    Map product, {
+    String priceKey = 'price',
+    String xafKey = 'price_xaf',
+  }) {
+    final xaf = double.tryParse('${product[xafKey] ?? ''}');
+    if (xaf != null) return xaf;
+    final code = '${product['currency'] ?? ''}'.toUpperCase();
+    if (code.isEmpty || _pivotEquivalents.contains(code) || code == 'FCFA') {
+      return double.tryParse('${product[priceKey] ?? ''}');
+    }
+    return null;
+  }
+
+  /// Prix d'un produit de l'API, dans la devise de l'utilisateur ; à défaut de
+  /// taux côté serveur, dans la devise du produit (jamais un faux FCFA).
+  static String formatProductPrice(
+    Map product, {
+    String priceKey = 'price',
+    String xafKey = 'price_xaf',
+  }) {
+    final xaf = productPriceXaf(product, priceKey: priceKey, xafKey: xafKey);
+    if (xaf != null) return formatFromPivot(xaf);
+    final price = double.tryParse('${product[priceKey] ?? ''}') ?? 0;
+    return formatAmountInCurrency(price, '${product['currency']}');
+  }
+
+  /// Montant pivot (XAF) converti dans la devise affichée + code de cette devise,
   /// pour les composants qui attendent un couple (montant, devise).
   static ({double amount, String currency}) displayFromPivot(double amountXaf) {
     if (!Get.isRegistered<CurrencyService>()) {
-      return (amount: amountXaf, currency: 'XAF');
+      return (amount: amountXaf.roundToDouble(), currency: pivot);
     }
     final service = CurrencyService.to;
-    final code = service.currencyCode.toUpperCase();
-    final converted = service.convertFromXOF(amountXaf);
-    final zeroDecimal = code == 'XAF' || code == 'XOF' || code == 'JPY';
-    return (
-      amount: zeroDecimal ? converted.roundToDouble() : (converted * 100).roundToDouble() / 100,
-      currency: code,
-    );
+    final code = service.displayCurrencyCode;
+    final converted = service.convertFromPivot(amountXaf);
+    final factor = decimalsFor(code) == 0 ? 1 : 100;
+    return (amount: (converted * factor).roundToDouble() / factor, currency: code);
   }
 
   @override
@@ -142,7 +192,6 @@ class CurrencyService extends GetxService {
       // Check location permission
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Default to XOF
         await _setDefaultCurrency();
         return;
       }
@@ -208,7 +257,7 @@ class CurrencyService extends GetxService {
         print('✅ Currency parsed: ${currency.code} - ${currency.name}');
         await _setUserCurrency(currency);
       } else {
-        print('⚠️ API failed or no data, using default XOF');
+        print('⚠️ API failed or no data, using default XAF');
         print('   Message: ${response.message}');
         await _setDefaultCurrency();
       }
@@ -218,59 +267,72 @@ class CurrencyService extends GetxService {
     }
   }
 
-  /// Set default currency (XOF)
+  /// Devise par défaut : le FCFA (XAF), devise pivot du backend.
   Future<void> _setDefaultCurrency() async {
     final defaultCurrency = CurrencyModel(
       id: 1,
-      code: 'XOF',
-      name: 'West African CFA franc',
+      code: 'XAF',
+      name: 'Franc CFA (CEMAC)',
       symbol: 'FCFA',
-      countries: ['Benin', 'Burkina Faso', 'Ivory Coast', 'Guinea-Bissau', 'Mali', 'Niger', 'Senegal', 'Togo'],
+      countries: ['Cameroun', 'Centrafrique', 'Congo', 'Gabon', 'Guinée équatoriale', 'Tchad'],
       isActive: true,
     );
     await _setUserCurrency(defaultCurrency);
   }
 
-  /// Set user currency and save to storage
+  /// Change de devise. Le taux de la nouvelle devise est obtenu AVANT de la
+  /// publier : un écran ne s'affiche jamais avec le nouveau symbole et l'ancien taux.
   Future<void> _setUserCurrency(CurrencyModel currency) async {
+    final code = currency.code.toUpperCase();
+    final saved = StorageService.getExchangeRate(code);
+    final rate = _pivotEquivalents.contains(code)
+        ? null
+        : (await _fetchRateToPivot(code)) ?? saved?.rate;
+
+    _rateToPivot.value = rate;
     _userCurrency.value = currency;
     StorageService.saveCurrency(currency.toJson());
-
-    // Fetch exchange rate to XOF if not XOF
-    if (currency.code != 'XOF') {
-      await _fetchExchangeRateToXOF(currency.code);
-    } else {
-      _exchangeRateToXOF.value = 1.0;
-    }
   }
 
-  /// Fetch exchange rate from user currency to XOF
-  Future<void> _fetchExchangeRateToXOF(String currencyCode) async {
+  /// Taux « 1 [code] = X XAF » depuis l'API, enregistré pour les prochains
+  /// démarrages. Null si l'API ne répond pas.
+  Future<double?> _fetchRateToPivot(String code) async {
     try {
       final response = await ApiProvider.get(
         '/v1/currencies/exchange-rate',
-        queryParams: {'from': currencyCode, 'to': 'XOF'},
+        queryParams: {'from': code, 'to': pivot},
       );
-
       if (response.success && response.data != null) {
-        final rate = response.data!['data']['rate'];
-        _exchangeRateToXOF.value = double.tryParse(rate.toString()) ?? 1.0;
-      } else {
-        _exchangeRateToXOF.value = 1.0;
+        final rate = double.tryParse(response.data!['data']['rate'].toString());
+        if (rate != null && rate > 0) {
+          StorageService.saveExchangeRate(code, rate);
+          return rate;
+        }
       }
     } catch (e) {
       print('Error fetching exchange rate: $e');
-      _exchangeRateToXOF.value = 1.0;
     }
+    return null;
   }
 
-  /// Load saved currency from storage
+  /// Recharge la devise enregistrée avec son dernier taux connu (affichage
+  /// immédiat, même hors ligne), puis rafraîchit ce taux s'il est ancien.
   Future<void> loadSavedCurrency() async {
     final savedCurrency = StorageService.getCurrency();
-    if (savedCurrency != null) {
-      _userCurrency.value = CurrencyModel.fromJson(savedCurrency);
-      if (_userCurrency.value!.code != 'XOF') {
-        await _fetchExchangeRateToXOF(_userCurrency.value!.code);
+    if (savedCurrency == null) return;
+
+    final currency = CurrencyModel.fromJson(savedCurrency);
+    final code = currency.code.toUpperCase();
+    final saved = StorageService.getExchangeRate(code);
+    _rateToPivot.value = saved?.rate;
+    _userCurrency.value = currency;
+
+    if (_pivotEquivalents.contains(code)) return;
+    final stale = saved == null || DateTime.now().difference(saved.fetchedAt) > _rateMaxAge;
+    if (stale) {
+      final fresh = await _fetchRateToPivot(code);
+      if (fresh != null && _userCurrency.value?.code.toUpperCase() == code) {
+        _rateToPivot.value = fresh;
       }
     }
   }
@@ -298,37 +360,28 @@ class CurrencyService extends GetxService {
     }
   }
 
-  /// Convert amount from XOF to user currency
-  double convertFromXOF(double amountInXOF) {
-    if (userCurrency == null || userCurrency!.code == 'XOF') {
-      return amountInXOF;
+  /// Montant XAF → devise affichée ([displayCurrencyCode]). Sans taux connu, le
+  /// montant reste en XAF (et s'affiche en FCFA).
+  double convertFromPivot(double amountXaf) {
+    final rate = _rateToPivot.value;
+    if (rate == null || _pivotEquivalents.contains(displayCurrencyCode)) {
+      return amountXaf;
     }
-    // Rate is: 1 XOF = X user_currency
-    // So: amount_in_XOF * rate = amount_in_user_currency
-    return amountInXOF * (1 / _exchangeRateToXOF.value);
+    return amountXaf / rate;
   }
 
-  /// Convert amount from user currency to XOF
-  double convertToXOF(double amountInUserCurrency) {
-    if (userCurrency == null || userCurrency!.code == 'XOF') {
-      return amountInUserCurrency;
+  /// Montant saisi dans la devise affichée → XAF (ex. bornes du filtre de prix).
+  double convertToPivot(double amountDisplayed) {
+    final rate = _rateToPivot.value;
+    if (rate == null || _pivotEquivalents.contains(displayCurrencyCode)) {
+      return amountDisplayed;
     }
-    return amountInUserCurrency * _exchangeRateToXOF.value;
+    return amountDisplayed * rate;
   }
 
-  /// Format price with user currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    final convertedPrice = convertFromXOF(priceInXOF);
-    final formattedAmount = convertedPrice.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        );
-
-    if (showSymbol) {
-      return '$formattedAmount ${currencySymbol}';
-    }
-    return formattedAmount;
-  }
+  /// Montant XAF formaté dans la devise affichée (alias de [formatFromPivot]).
+  String formatPrice(double amountXaf, {bool showSymbol = true}) =>
+      formatFromPivot(amountXaf, showSymbol: showSymbol);
 
   /// Get all available currencies
   Future<List<CurrencyModel>> getAllCurrencies() async {

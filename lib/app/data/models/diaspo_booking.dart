@@ -1,5 +1,3 @@
-import 'package:get/get.dart';
-import '../providers/currency_service.dart';
 import 'diaspo_offer.dart';
 
 class DiaspoBooking {
@@ -137,19 +135,6 @@ class DiaspoBooking {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
-  }
-
-  /// Prix total formaté avec conversion de devise
-  String get convertedFormattedTotal {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        // Le backend renvoie les prix en XOF, donc on convertit
-        return CurrencyService.to.formatPrice(totalPrice);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return formattedTotal; // Utilise le formattedTotal du backend
   }
 
   DiaspoBooking copyWith({

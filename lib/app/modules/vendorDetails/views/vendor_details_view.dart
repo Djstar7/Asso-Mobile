@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -411,7 +412,6 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
   }
 
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
-    final price = product['price_xaf'] ?? product['price'] ?? 0;
     final stock = product['stock'] ?? 0;
     final isOutOfStock = stock is num && stock <= 0;
 
@@ -427,9 +427,7 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
     return ProductCard(
       video: WholesaleVideo.fromJson(product['video']),
       name: product['name']?.toString() ?? 'vendor_details.default_product_name'.tr,
-      price: controller.formatPrice(
-        price is num ? price.toDouble() : double.tryParse('$price') ?? 0,
-      ),
+      price: CurrencyService.formatProductPrice(product),
       badgeLabel: isOutOfStock ? 'vendor_details.out_of_stock'.tr : null,
       badgeTone: AppBadgeTone.neutral,
       imageBuilder: image == null || image.isEmpty

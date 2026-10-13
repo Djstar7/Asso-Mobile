@@ -8,9 +8,9 @@ class ProductModel {
   final String description;
   final double price;
 
-  /// Prix canonique converti en XAF/XOF par le backend (valeur de référence
-  /// pour l'affichage/conversion). Fallback sur [price] si absent.
-  final double priceXaf;
+  /// Prix converti en XAF par le backend (référence pour la conversion).
+  /// Null si le backend n'a pas de taux pour la devise du produit.
+  final double? priceXaf;
   final String currency;
   final String category;
   final String location;
@@ -28,8 +28,8 @@ class ProductModel {
     required this.name,
     required this.description,
     required this.price,
-    double? priceXaf,
-    this.currency = 'FCFA',
+    this.priceXaf,
+    this.currency = 'XAF',
     required this.category,
     required this.location,
     required this.locationCity,
@@ -40,7 +40,7 @@ class ProductModel {
     this.isFavorite = false,
     required this.seller,
     this.tags = const [],
-  }) : priceXaf = priceXaf ?? price;
+  });
 
   /// Constructeur à partir d'un Map (pour la compatibilité avec les données hardcodées)
   factory ProductModel.fromMap(Map<String, dynamic> map) {
@@ -50,7 +50,7 @@ class ProductModel {
       description: map['description'] ?? '',
       price: _parsePrice(map['price']),
       priceXaf: map['price_xaf'] != null ? _parsePrice(map['price_xaf']) : null,
-      currency: map['currency'] ?? 'FCFA',
+      currency: map['currency'] ?? 'XAF',
       category: map['category'] ?? 'Tous',
       location: map['location'] ?? '',
       locationCity: _extractCity(map['location'] ?? ''),
@@ -95,6 +95,7 @@ class ProductModel {
     String? name,
     String? description,
     double? price,
+    double? priceXaf,
     String? currency,
     String? category,
     String? location,
@@ -112,6 +113,8 @@ class ProductModel {
       name: name ?? this.name,
       description: description ?? this.description,
       price: price ?? this.price,
+      // Un nouveau prix rend l'ancien équivalent XAF caduc.
+      priceXaf: priceXaf ?? ((price == null && currency == null) ? this.priceXaf : null),
       currency: currency ?? this.currency,
       category: category ?? this.category,
       location: location ?? this.location,
@@ -126,32 +129,15 @@ class ProductModel {
     );
   }
 
-  /// Prix formaté avec la devise
-  String get formattedPrice {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(priceXaf);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    return '$price $currency';
-  }
+  /// Prix formaté dans la devise de l'utilisateur (ou du produit sans taux).
+  String get formattedPrice => CurrencyService.formatProductPrice({
+        'price': price,
+        'price_xaf': priceXaf,
+        'currency': currency,
+      });
 
-  /// Prix formaté avec séparateur de milliers
-  String get formattedPriceWithSeparator {
-    try {
-      if (Get.isRegistered<CurrencyService>()) {
-        return CurrencyService.to.formatPrice(priceXaf);
-      }
-    } catch (e) {
-      // Fallback si CurrencyService n'est pas encore initialisé
-    }
-    final priceStr = price.toStringAsFixed(0);
-    final regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    final result = priceStr.replaceAllMapped(regex, (Match m) => '${m[1]} ');
-    return '$result $currency';
-  }
+  /// Alias historique de [formattedPrice].
+  String get formattedPriceWithSeparator => formattedPrice;
 
   /// Image principale
   String get mainImage => images.isNotEmpty ? images.first : '';

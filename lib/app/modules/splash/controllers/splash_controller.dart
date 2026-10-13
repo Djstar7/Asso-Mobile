@@ -55,11 +55,11 @@ class SplashController extends GetxController {
           if (currency != null) {
             print('✅ Currency loaded: ${currency.code} (${currency.symbol})');
             print('🌍 Country: ${CurrencyService.to.detectedCountry}');
-            print('💵 Exchange rate to XOF: ${CurrencyService.to.exchangeRateToXOF}');
+            print('💵 Rate to XAF: ${CurrencyService.to.rateToPivot}');
             developer.log(
               'Currency loaded: ${currency.code} - ${currency.name}',
               name: 'SplashController',
-              error: 'Rate to XOF: ${CurrencyService.to.exchangeRateToXOF}',
+              error: 'Rate to XAF: ${CurrencyService.to.rateToPivot}',
             );
           }
         } else {

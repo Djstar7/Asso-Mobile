@@ -232,11 +232,8 @@ class DiaspoDetailController extends GetxController {
   // ================================
 
   /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Get currency symbol

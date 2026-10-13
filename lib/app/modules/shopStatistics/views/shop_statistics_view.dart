@@ -425,7 +425,7 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
                       isCurve: metric == StatsMetric.revenue,
                       monthly: monthly,
                       formatter: (v) => metric == StatsMetric.revenue
-                          ? '${v.toStringAsFixed(0)} ${controller.currencyCode}'
+                          ? '${v.toStringAsFixed(0)} ${controller.currencyLabel}'
                           : v.toStringAsFixed(0),
                     ),
             ),

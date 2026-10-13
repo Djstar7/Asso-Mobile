@@ -508,13 +508,10 @@ class VendorDashboardController extends GetxController {
   final currencyRevision = 0.obs;
   Worker? _currencyWorker;
 
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
     // Lecture volontaire : abonne les Obx au changement de devise.
     currencyRevision.value;
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Get currency symbol

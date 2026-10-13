@@ -108,14 +108,10 @@ class BoostProductPicker extends GetView<BoostController> {
   /// `formatted_price` de l'API est toujours libellé en FCFA : on repart du
   /// montant pivot pour que le vendeur lise ses prix dans sa propre devise.
   String _price(Map<String, dynamic> product) {
-    final raw = product['price_xaf'] ?? product['price'];
-    final value = raw is num ? raw.toDouble() : double.tryParse('${raw ?? ''}');
-
-    if (value == null || value <= 0) {
+    if (product['price'] == null && product['price_xaf'] == null) {
       return product['formatted_price']?.toString() ?? '';
     }
-
-    return CurrencyService.formatFromPivot(value);
+    return CurrencyService.formatProductPrice(product);
   }
 
   Widget _thumb(BuildContext context, Map<String, dynamic>? product) {

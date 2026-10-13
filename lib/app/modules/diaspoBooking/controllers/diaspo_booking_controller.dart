@@ -135,6 +135,7 @@ class DiaspoBookingController extends GetxController {
       // Mobile Money : sélecteur pays → opérateur → numéro.
       final selection = await KpayDirectPaymentSheet.show(
         amount: totalPrice.value,
+        currency: currency, // total dans la devise de l'offre, pas en FCFA
         amountLabel: 'diaspo_booking.total_to_pay'.tr,
       );
       if (selection == null) return; // annulé
@@ -214,7 +215,7 @@ class DiaspoBookingController extends GetxController {
       final outcome = await MobileMoneyWaiting.run(
         amount: totalPrice.value,
         // Montant dans la devise de l'offre (pas forcément le FCFA).
-        formatAmount: (amount) => '${amount.toStringAsFixed(0)} $currency',
+        formatAmount: (amount) => CurrencyService.formatAmountInCurrency(amount, currency),
         provider: provider,
         phone: phone,
         check: () => _diaspoService.bookingPaymentState(booking.id),
@@ -427,11 +428,8 @@ class DiaspoBookingController extends GetxController {
   // ================================
 
   /// Format price with user's currency
-  String formatPrice(double priceInXOF, {bool showSymbol = true}) {
-    if (!Get.isRegistered<CurrencyService>()) {
-      return '${priceInXOF.toStringAsFixed(0)} FCFA';
-    }
-    return CurrencyService.to.formatPrice(priceInXOF, showSymbol: showSymbol);
+  String formatPrice(double amountXaf, {bool showSymbol = true}) {
+    return CurrencyService.formatFromPivot(amountXaf, showSymbol: showSymbol);
   }
 
   /// Symbole de la devise réelle de l'offre (pas celle de l'utilisateur).

@@ -123,11 +123,19 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     }
   }
 
-  String _fmt(double value, String currency) {
-    final rounded = value == value.roundToDouble()
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2);
-    return '$rounded $currency';
+  String _fmt(double value, String currency) =>
+      CurrencyService.formatAmountInCurrency(value, currency);
+
+  /// Montant à payer dans la devise de l'utilisateur ; un montant en FCFA (pivot)
+  /// est converti, avec le montant FCFA réellement facturé entre parenthèses.
+  String _amountLine() {
+    final code = widget.currency.toUpperCase();
+    if (code != 'XAF' && code != 'XOF' && code != 'FCFA') {
+      return _fmt(widget.amount, code);
+    }
+    final display = CurrencyService.formatFromPivot(widget.amount);
+    final pivot = _fmt(widget.amount, 'XAF');
+    return display == pivot ? pivot : '$display ($pivot)';
   }
 
   IconData _iconFor(String code) {
@@ -213,7 +221,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           Text(
             'payment.selector.amount_line'.trParams({
               'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
-              'amount': _fmt(widget.amount, widget.currency),
+              'amount': _amountLine(),
             }),
             style: context.textStyle(
               FontSizeType.body2,

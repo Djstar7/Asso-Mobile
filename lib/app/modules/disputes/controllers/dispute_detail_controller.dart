@@ -52,9 +52,7 @@ class DisputeDetailController extends GetxController {
     }
   }
 
-  String formatPrice(double amount) => Get.isRegistered<CurrencyService>()
-      ? CurrencyService.to.formatPrice(amount)
-      : '${amount.toStringAsFixed(0)} FCFA';
+  String formatPrice(double amount) => CurrencyService.formatFromPivot(amount);
 
   // ── Client ──────────────────────────────────────────────────────────────
 

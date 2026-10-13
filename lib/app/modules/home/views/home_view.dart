@@ -1718,30 +1718,10 @@ class HomeItemView extends GetView<HomeController> {
 
   /// Format price for display (with currency conversion)
   String _formatPrice(Map<String, dynamic> product) {
-    final price = product['price_xaf'] ?? product['price'];
-
-    if (price != null) {
-      double priceValue = 0.0;
-      if (price is num) {
-        priceValue = price.toDouble();
-      } else if (price is String) {
-        priceValue = double.tryParse(price) ?? 0.0;
-      }
-
-      // Utiliser CurrencyService pour la conversion
-      try {
-        if (Get.isRegistered<CurrencyService>()) {
-          return CurrencyService.to.formatPrice(priceValue);
-        }
-      } catch (e) {
-        print('Error using CurrencyService in _formatPrice: $e');
-      }
-
-      // Fallback: affichage sans conversion
-      return '${priceValue.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} FCFA';
+    if (product['price'] == null && product['price_xaf'] == null) {
+      return 'home.price_undefined'.tr;
     }
-
-    return 'home.price_undefined'.tr;
+    return CurrencyService.formatProductPrice(product);
   }
 
   /// Get product location

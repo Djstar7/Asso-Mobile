@@ -331,6 +331,30 @@ class StorageService {
     _storage.remove('user_currency');
   }
 
+  /// Dernier taux connu « 1 [code] = rate XAF », pour afficher les prix convertis
+  /// dès le démarrage et hors ligne, sans attendre l'API.
+  static void saveExchangeRate(String code, double rate) {
+    _storage.write('user_currency_rate', {
+      'code': code,
+      'rate': rate,
+      'fetched_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Taux enregistré pour [code], ou null s'il n'y en a pas (ou pour une autre devise).
+  static ({double rate, DateTime fetchedAt})? getExchangeRate(String code) {
+    try {
+      final data = _storage.read('user_currency_rate');
+      if (data is! Map || data['code'] != code) return null;
+      final rate = double.tryParse(data['rate'].toString());
+      final fetchedAt = DateTime.tryParse(data['fetched_at']?.toString() ?? '');
+      if (rate == null || rate <= 0 || fetchedAt == null) return null;
+      return (rate: rate, fetchedAt: fetchedAt);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ==================== Country Management ====================
 
   /// Save user selected country

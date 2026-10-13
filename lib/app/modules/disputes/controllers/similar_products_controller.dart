@@ -32,10 +32,5 @@ class SimilarProductsController extends GetxController {
 
   void openProduct(Map<String, dynamic> product) => Get.toNamed('/product', arguments: product);
 
-  String formatPrice(Map<String, dynamic> product) {
-    final value = double.tryParse('${product['price_xaf'] ?? product['price'] ?? 0}') ?? 0;
-    return Get.isRegistered<CurrencyService>()
-        ? CurrencyService.to.formatPrice(value)
-        : '${value.toStringAsFixed(0)} FCFA';
-  }
+  String formatPrice(Map<String, dynamic> product) => CurrencyService.formatProductPrice(product);
 }
