@@ -210,6 +210,24 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   PriceTier? _tierFor(int lineQuantity) =>
       PriceTier.forQuantity(_tiers, _mixVariants ? _quantity : lineQuantity);
 
+  /// Supplément de prix d'une variante, en XAF (ex. +500 pour le XL).
+  double _adjustmentXaf(int? variantId) {
+    if (variantId == null) return 0;
+    final variant = _variantCatalog.variants.firstWhereOrNull(
+      (v) => VariantQuantityList.idOf(v) == variantId,
+    );
+    return (variant?['price_adjustment_xaf'] as num?)?.toDouble() ??
+        (variant?['price_adjustment'] as num?)?.toDouble() ??
+        0;
+  }
+
+  /// Prix unitaire en XAF d'une ligne : palier atteint + supplément de la
+  /// variante. Même calcul que le serveur.
+  double _unitPriceXaf(int? variantId, int lineQuantity) {
+    final tier = _tierFor(lineQuantity);
+    return tier == null ? 0 : tier.unitPriceXaf + _adjustmentXaf(variantId);
+  }
+
   /// Palier mis en avant : celui du total, ou de l'option en cours de saisie.
   PriceTier? get _tier => _tierFor(
     _mixVariants ? _quantity : (_variantQuantities[_focusedVariantId] ?? 0),
@@ -240,7 +258,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   double get _subtotal => _lines.fold(
     0,
-    (sum, line) => sum + (_tierFor(line.$2)?.unitPriceXaf ?? 0) * line.$2,
+    (sum, line) => sum + _unitPriceXaf(line.$1, line.$2) * line.$2,
   );
 
   /// Lignes envoyées au serveur (commande et devis de livraison).
@@ -280,7 +298,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       (sum, line) =>
           sum +
           DepositProduct.depositFor(
-            (_tierFor(line.$2)?.unitPriceXaf ?? 0) * line.$2,
+            _unitPriceXaf(line.$1, line.$2) * line.$2,
             rate,
           ),
     );
@@ -462,14 +480,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                   priceOf: (variant) {
                     final id = VariantQuantityList.idOf(variant);
                     final tier = _tierFor(_variantQuantities[id] ?? 0);
-                    return tier == null
-                        ? ''
-                        : 'import.wholesale.price_per_unit'.trParams({
-                            'price': _fmtConverted(
-                              tier.unitPrice,
-                              tier.currency,
-                            ),
-                          });
+                    if (tier == null) return '';
+                    final adjustment = _adjustmentXaf(id);
+                    return 'import.wholesale.price_per_unit'.trParams({
+                      'price': adjustment == 0
+                          ? _fmtConverted(tier.unitPrice, tier.currency)
+                          : _fmt(tier.unitPriceXaf + adjustment),
+                    });
                   },
                   beforeQuantity: _tiers.isEmpty ? null : _sheetTiers(context),
                   onFocusChanged: (id) => _focusedVariantId = id,
@@ -1404,13 +1421,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                     ),
                     const SizedBox(height: AppDesign.space2),
                     // Une ligne par option : « Rouge · L — 30 × 1 000 FCFA ».
-                    for (final (label, quantity) in _recapLines)
+                    for (final (variantId, label, quantity) in _recapLines)
                       Padding(
                         padding: const EdgeInsets.only(top: AppDesign.space2),
                         child: _sumRow(
                           context,
                           label,
-                          '$quantity × ${_fmt(_tierFor(quantity)?.unitPriceXaf ?? 0)}',
+                          '$quantity × ${_fmt(_unitPriceXaf(variantId, quantity))}',
                         ),
                       ),
                   ],
@@ -1489,15 +1506,19 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     );
   }
 
-  /// Lignes du récapitulatif : (libellé de l'option, quantité).
-  List<(String, int)> get _recapLines => _hasVariants
+  /// Lignes du récapitulatif : (variante, libellé de l'option, quantité).
+  List<(int?, String, int)> get _recapLines => _hasVariants
       ? [
           for (final (variant, quantity) in _variantLines)
-            (VariantCatalog.attributesOf(variant).values.join(' · '), quantity),
+            (
+              VariantQuantityList.idOf(variant),
+              VariantCatalog.attributesOf(variant).values.join(' · '),
+              quantity,
+            ),
         ]
       : [
           if (_singleQuantity > 0)
-            ('import.wholesale.recap.quantity'.tr, _singleQuantity),
+            (null, 'import.wholesale.recap.quantity'.tr, _singleQuantity),
         ];
 
   Widget _summary(BuildContext context) {
