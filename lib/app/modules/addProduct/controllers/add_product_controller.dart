@@ -222,6 +222,10 @@ class AddProductController extends GetxController {
     freeDeliveryOverride.value = value == shopFreeDelivery.value ? null : value;
   }
 
+  // Origine : « Produit importé » (par défaut, comme tous les produits déjà
+  // publiés) ou « Produit local » (fabriqué au Cameroun).
+  final isLocalMade = false.obs;
+
   // Délai de livraison annoncé au client, en jours ouvrables (1 minimum,
   // sans maximum). Vide = délai de la catégorie, sinon le défaut d'ASSO.
   final deliveryDaysMin = Rxn<int>();
@@ -487,6 +491,7 @@ class AddProductController extends GetxController {
           'depositRate': depositRateController.text,
           'deliveryDaysMin': '${deliveryDaysMin.value ?? ''}',
           'deliveryDaysMax': '${deliveryDaysMax.value ?? ''}',
+          'isLocalMade': isLocalMade.value ? '1' : '0',
         },
         imagePaths: productImages.map((image) => image.path).toList(),
         primaryImageIndex: primaryImageIndex.value,
@@ -505,6 +510,7 @@ class AddProductController extends GetxController {
     stockController.text = draft.fields['stock'] ?? '';
     weightKgController.text = draft.fields['weight'] ?? '';
     depositEnabled.value = draft.fields['depositEnabled'] == '1';
+    isLocalMade.value = draft.fields['isLocalMade'] == '1';
     depositRateController.text = draft.fields['depositRate'] ?? '';
     _loadDeliveryDays(
       int.tryParse(draft.fields['deliveryDaysMin'] ?? ''),
@@ -1072,6 +1078,9 @@ class AddProductController extends GetxController {
         int.tryParse('${product['delivery_days_min'] ?? ''}'),
         int.tryParse('${product['delivery_days_max'] ?? ''}'),
       );
+
+      // Origine : produit local (Cameroun) ou importé.
+      isLocalMade.value = readFreeDelivery(product['is_local_made']);
 
       // Commande avec acompte.
       depositEnabled.value = readFreeDelivery(product['deposit_enabled']);
@@ -1739,6 +1748,9 @@ class AddProductController extends GetxController {
       final delay = deliveryDelay;
       fieldsMap['delivery_days_min'] = '${delay?.min ?? ''}';
       fieldsMap['delivery_days_max'] = '${delay?.max ?? ''}';
+
+      // Origine : produit local (fabriqué au Cameroun) ou importé.
+      fieldsMap['is_local_made'] = isLocalMade.value ? '1' : '0';
 
       // Commande avec acompte : % du prix client, solde après vérification ASSO.
       fieldsMap['deposit_enabled'] = depositEnabled.value ? '1' : '0';

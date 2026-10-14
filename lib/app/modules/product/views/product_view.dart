@@ -685,6 +685,8 @@ class ProductView extends GetView<ProductController> {
     final weight = _weightDisplay(product);
     final origin = _originLabel(
       product['origin_country']?.toString().trim().toUpperCase(),
+      isLocalMade: product['is_local_made'] == true ||
+          '${product['is_local_made']}' == '1',
     );
     final deliveryDelay = DeliveryDelay.fromApi(product['delivery_delay']);
 
@@ -736,9 +738,12 @@ class ProductView extends GetView<ProductController> {
   }
 
   /// Pays d'origine en clair. Absent, l'article est considéré local.
-  String _originLabel(String? code) {
+  /// Sans pays : « Produit local » (fabriqué au Cameroun) ou « Produit
+  /// importé » (tous les produits publiés avant l'option locale).
+  String _originLabel(String? code, {bool isLocalMade = false}) {
     if (code == null || code.isEmpty || code == 'NULL') {
-      return 'product.origin.local'.tr;
+      return (isLocalMade ? 'product.origin.local' : 'product.origin.imported')
+          .tr;
     }
     final countries = {
       'CN': 'product.origin.china'.tr,

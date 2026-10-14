@@ -1973,10 +1973,11 @@
     },
     "out_of_stock": "Épuisé",
     "origin": {
-      "local": "Produit local",
+      "local": "Produit local (Cameroun)",
       "china": "Chine",
       "uae": "Dubaï / Émirats arabes unis",
-      "turkey": "Turquie"
+      "turkey": "Turquie",
+      "imported": "Produit importé"
     },
     "description": {
       "title": "Description",
@@ -2423,6 +2424,15 @@
       "source_gallery": "Choisir une vidéo existante",
       "storage_insufficient": "Espace insuffisant dans votre forfait pour cette vidéo (@required Mo nécessaires, @available Mo disponibles).",
       "package_required": "Un forfait actif est nécessaire pour ajouter une vidéo."
+    },
+    "origin": {
+      "title": "Origine du produit",
+      "imported": "Produit importé",
+      "imported_subtitle": "Fabriqué hors du Cameroun, puis importé.",
+      "imported_example": "Ex. : vêtements, téléphones, accessoires importés",
+      "local": "Produit local",
+      "local_subtitle": "Fabriqué au Cameroun.",
+      "local_example": "Ex. : savon artisanal, pagne, café, miel du Cameroun"
     }
   },
   "inventory_list": {

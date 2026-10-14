@@ -1973,10 +1973,11 @@
     },
     "out_of_stock": "Out of stock",
     "origin": {
-      "local": "Local product",
+      "local": "Local product (Cameroon)",
       "china": "China",
       "uae": "Dubai / United Arab Emirates",
-      "turkey": "Turkey"
+      "turkey": "Turkey",
+      "imported": "Imported product"
     },
     "description": {
       "title": "Description",
@@ -2423,6 +2424,15 @@
       "source_gallery": "Choose an existing video",
       "storage_insufficient": "Not enough space in your plan for this video (@required MB needed, @available MB available).",
       "package_required": "An active plan is required to add a video."
+    },
+    "origin": {
+      "title": "Product origin",
+      "imported": "Imported product",
+      "imported_subtitle": "Made outside Cameroon, then imported.",
+      "imported_example": "E.g. imported clothes, phones, accessories",
+      "local": "Local product",
+      "local_subtitle": "Made in Cameroon.",
+      "local_example": "E.g. handmade soap, loincloth, coffee, honey from Cameroon"
     }
   },
   "inventory_list": {
