@@ -204,10 +204,11 @@ class BoostController extends GetxController {
       return;
     }
 
-    final display = CurrencyService.displayFromPivot(package.price);
+    // Montant en FCFA (pivot) : le sélecteur l'affiche dans la devise de
+    // l'utilisateur, le serveur vérifie minimum et solde sur ce montant exact.
     final method = await PaymentMethodSelector.show(
-      amount: display.amount,
-      currency: display.currency,
+      amount: package.price,
+      currency: CurrencyService.pivot,
       amountLabel: 'boost.price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,

@@ -140,10 +140,11 @@ class PackageSubscriptionController extends GetxController {
     if (!await salesCode.ensureReady() || _isDisposed) return;
 
     // 1) Choix du moyen de paiement (tous affichés, grisés si indisponibles).
-    final display = CurrencyService.displayFromPivot(price);
+    // Montant en FCFA (pivot) : le sélecteur l'affiche dans la devise de
+    // l'utilisateur, le serveur vérifie minimum et solde sur ce montant exact.
     final method = await PaymentMethodSelector.show(
-      amount: display.amount,
-      currency: display.currency,
+      amount: price,
+      currency: CurrencyService.pivot,
       amountLabel: 'package_subscription.package_price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
