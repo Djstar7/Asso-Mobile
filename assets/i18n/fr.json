@@ -1121,7 +1121,7 @@
       "error_occurred": "Une erreur s'est produite",
       "payment_done": "Paiement effectué",
       "cancelled_or_failed": "Paiement annulé ou échoué",
-      "success_credited": "Paiement réussi! +@amount FCFA crédités",
+      "success_credited": "Paiement réussi ! Votre Wallet a été crédité.",
       "success_title": "Succès",
       "failure_title": "Échec",
       "title_paypal": "Paiement PayPal",
@@ -3086,7 +3086,7 @@
       "fixed": "Prix fixe",
       "weight_category": "Par catégorie de poids",
       "volumetric": "Poids volumétrique",
-      "fixed_desc": "Prix fixe: @price FCFA",
+      "fixed_desc": "Prix fixe : @price",
       "category_desc": "Par catégorie: @categories",
       "volumetric_desc": "Poids volumétrique (L × l × h) / 139"
     },

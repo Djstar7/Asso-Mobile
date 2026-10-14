@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 
 import '../../../core/widgets/currency_switcher.dart';
 import 'package:intl/intl.dart';
@@ -425,7 +426,10 @@ class _EvolutionCard extends GetView<ShopStatisticsController> {
                       isCurve: metric == StatsMetric.revenue,
                       monthly: monthly,
                       formatter: (v) => metric == StatsMetric.revenue
-                          ? '${v.toStringAsFixed(0)} ${controller.currencyLabel}'
+                          ? CurrencyService.formatAmountInCurrency(
+                              v,
+                              controller.displayCurrencyCode,
+                            )
                           : v.toStringAsFixed(0),
                     ),
             ),
