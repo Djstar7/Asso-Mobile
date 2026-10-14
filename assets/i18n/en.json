@@ -755,9 +755,9 @@
     },
     "notifications": {
       "wallet_body": "Transaction updated",
-      "package_activated_title": "🎉 Package activated",
+      "package_activated_title": "Package activated",
       "package_activated_body": "Your package has been activated successfully",
-      "package_expiring_title": "⚠️ Package expiring",
+      "package_expiring_title": "Package expiring",
       "package_expiring_body": "Your package will expire soon",
       "order_title": "Order",
       "order_body": "Order update"
@@ -964,19 +964,19 @@
   },
   "wallet": {
     "notif": {
-      "deposit_success_title": "💰 Deposit successful",
+      "deposit_success_title": "Deposit successful",
       "deposit_success_message": "Your deposit of @amount has been confirmed.",
-      "deposit_failed_title": "❌ Deposit failed",
+      "deposit_failed_title": "Deposit failed",
       "deposit_failed_message": "The deposit failed",
-      "withdrawal_done_title": "💸 Withdrawal completed",
+      "withdrawal_done_title": "Withdrawal completed",
       "withdrawal_done_message": "Your withdrawal of @amount has been sent.",
-      "withdrawal_failed_title": "⚠️ Withdrawal failed",
+      "withdrawal_failed_title": "Withdrawal failed",
       "withdrawal_failed_message": "Your withdrawal failed. The amount has been refunded to your wallet.",
-      "funds_unlocked_title": "💰 Funds released!",
+      "funds_unlocked_title": "Funds released!",
       "funds_unlocked_message": "You received @amount. The funds are now available in your wallet.",
-      "recharge_confirmed_title": "💰 Top-up confirmed",
+      "recharge_confirmed_title": "Top-up confirmed",
       "recharge_confirmed_message": "Your deposit has been credited to your wallet.",
-      "recharge_failed_title": "❌ Top-up failed",
+      "recharge_failed_title": "Top-up failed",
       "recharge_failed_message": "The payment did not go through.",
       "withdrawal_sent_message": "Your withdrawal has been sent to the recipient.",
       "withdrawal_refunded_message": "The amount has been refunded to your wallet."
@@ -1459,7 +1459,7 @@
       "method_unavailable": "This payment method is not yet available for certifications.",
       "order_created": "Order created!",
       "validate_ussd": "Approve the payment on your phone (USSD). You will be notified once confirmed.",
-      "certified": "Shop certified ✅"
+      "certified": "Shop certified"
     }
   },
   "boost": {
@@ -1488,7 +1488,7 @@
     },
     "stopped_title": "Sponsoring stopped",
     "stopped_message": "The campaign has ended.",
-    "activated_title": "Sponsoring activated 🚀",
+    "activated_title": "Sponsoring activated",
     "activated_message": "Your item will be seen by @reach.",
     "error": "Error",
     "detail": {
@@ -1540,7 +1540,7 @@
     }
   },
   "chat": {
-    "image_message": "📷 Image",
+    "image_message": "Image",
     "default_user_name": "User",
     "time": {
       "minutes_ago": "@minutesmin ago",

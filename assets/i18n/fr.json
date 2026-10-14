@@ -755,9 +755,9 @@
     },
     "notifications": {
       "wallet_body": "Transaction mise à jour",
-      "package_activated_title": "🎉 Package activé",
+      "package_activated_title": "Package activé",
       "package_activated_body": "Votre package a été activé avec succès",
-      "package_expiring_title": "⚠️ Package expirant",
+      "package_expiring_title": "Package expirant",
       "package_expiring_body": "Votre package va bientôt expirer",
       "order_title": "Commande",
       "order_body": "Mise à jour de commande"
@@ -964,19 +964,19 @@
   },
   "wallet": {
     "notif": {
-      "deposit_success_title": "💰 Dépôt réussi",
+      "deposit_success_title": "Dépôt réussi",
       "deposit_success_message": "Votre dépôt de @amount a été confirmé.",
-      "deposit_failed_title": "❌ Dépôt échoué",
+      "deposit_failed_title": "Dépôt échoué",
       "deposit_failed_message": "Le dépôt a échoué",
-      "withdrawal_done_title": "💸 Retrait effectué",
+      "withdrawal_done_title": "Retrait effectué",
       "withdrawal_done_message": "Votre retrait de @amount a été envoyé.",
-      "withdrawal_failed_title": "⚠️ Retrait échoué",
+      "withdrawal_failed_title": "Retrait échoué",
       "withdrawal_failed_message": "Votre retrait a échoué. Le montant a été remboursé dans votre wallet.",
-      "funds_unlocked_title": "💰 Fonds débloqués!",
+      "funds_unlocked_title": "Fonds débloqués!",
       "funds_unlocked_message": "Vous avez reçu @amount. Les fonds sont maintenant disponibles dans votre wallet.",
-      "recharge_confirmed_title": "💰 Recharge confirmée",
+      "recharge_confirmed_title": "Recharge confirmée",
       "recharge_confirmed_message": "Votre dépôt a été crédité dans votre wallet.",
-      "recharge_failed_title": "❌ Recharge échouée",
+      "recharge_failed_title": "Recharge échouée",
       "recharge_failed_message": "Le paiement n'a pas abouti.",
       "withdrawal_sent_message": "Votre retrait a été envoyé au bénéficiaire.",
       "withdrawal_refunded_message": "Le montant a été remboursé dans votre wallet."
@@ -1459,7 +1459,7 @@
       "method_unavailable": "Ce moyen de paiement n'est pas encore disponible pour les certifications.",
       "order_created": "Commande créée !",
       "validate_ussd": "Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.",
-      "certified": "Boutique certifiée ✅"
+      "certified": "Boutique certifiée"
     }
   },
   "boost": {
@@ -1488,7 +1488,7 @@
     },
     "stopped_title": "Sponsoring arrêté",
     "stopped_message": "La campagne est terminée.",
-    "activated_title": "Sponsoring activé 🚀",
+    "activated_title": "Sponsoring activé",
     "activated_message": "Votre article sera vu par @reach.",
     "error": "Erreur",
     "detail": {
@@ -1540,7 +1540,7 @@
     }
   },
   "chat": {
-    "image_message": "📷 Image",
+    "image_message": "Image",
     "default_user_name": "Utilisateur",
     "time": {
       "minutes_ago": "Il y a @minutesmin",

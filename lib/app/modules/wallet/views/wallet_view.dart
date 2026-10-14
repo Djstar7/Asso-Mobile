@@ -970,7 +970,6 @@ import '../../../core/widgets/app_ui.dart';
               return _buildProviderCard(
                 context: context,
                 iconData: Icons.phone_android_rounded,
-                emoji: '📱',
                 title: 'Mobile Money',
                 subtitle: 'MTN, Orange, Moov, Airtel, M-Pesa…',
                 balance: balance,
@@ -1024,7 +1023,6 @@ import '../../../core/widgets/app_ui.dart';
                   _buildProviderCard(
                     context: context,
                     iconData: Icons.account_balance_rounded,
-                    emoji: '🏦',
                     title: 'wallet.balances.bank_transfer_iban'.tr,
                     subtitle: subtitle,
                     balance: available,
@@ -1192,7 +1190,6 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
     Widget _buildProviderCard({
       required BuildContext context,
       required IconData iconData,
-      required String emoji,
       required String title,
       required String subtitle,
       required double balance,
@@ -1218,7 +1215,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
         ),
         child: Row(
           children: [
-            // Icône avec emoji
+            // Icône
             Stack(
               children: [
                 Container(
@@ -1232,14 +1229,6 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                     iconData,
                     color: color,
                     size: 24,
-                  ),
-                ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ],
@@ -1427,7 +1416,11 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              const Text('🏦', style: TextStyle(fontSize: 22)),
+              const Icon(
+                Icons.account_balance_rounded,
+                color: AppThemeSystem.bankColor,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
