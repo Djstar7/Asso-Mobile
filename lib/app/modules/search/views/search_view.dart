@@ -1135,7 +1135,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       name: product.name,
       price: tier == null
           ? '—'
-          : CurrencyService.formatAmountInCurrency(
+          : CurrencyService.formatFromCurrency(
               tier.unitPrice,
               tier.currency,
             ),
