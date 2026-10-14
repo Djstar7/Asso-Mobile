@@ -159,6 +159,11 @@ class DiaspoOffer {
   /// Symbole de la devise RÉELLE de l'offre (et non celle de l'utilisateur).
   String get currencySymbol => CurrencyService.getSymbolForCode(currency);
 
+  /// Prix par kilo dans la devise de l'utilisateur (converti depuis la devise
+  /// de l'offre). À afficher dans un Obx.
+  String get displayPricePerKg =>
+      CurrencyService.formatFromCurrency(pricePerKg, currency);
+
   /// Prix par kilo formaté SANS reconversion, dans la devise réelle de l'offre.
   /// Ajoute un séparateur de milliers et ne garde les décimales que si utiles.
   String get formattedPricePerKg {

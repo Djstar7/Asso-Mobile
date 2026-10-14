@@ -111,14 +111,16 @@ class PasscolisCard extends StatelessWidget {
           ),
         ),
         SizedBox(width: AppDesign.space2),
-        Text(
-          '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: context.textStyle(
-            FontSizeType.body2,
-            fontWeight: FontWeight.w700,
-            color: AppThemeSystem.primaryColor,
+        Obx(
+          () => Text(
+            '${offer.displayPricePerKg}/kg',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w700,
+              color: AppThemeSystem.primaryColor,
+            ),
           ),
         ),
       ],
@@ -283,14 +285,16 @@ class PasscolisCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textStyle(
-                  compact ? FontSizeType.body2 : FontSizeType.body1,
-                  fontWeight: FontWeight.w700,
-                  color: AppThemeSystem.primaryColor,
+              Obx(
+                () => Text(
+                  '${offer.displayPricePerKg}/kg',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textStyle(
+                    compact ? FontSizeType.body2 : FontSizeType.body1,
+                    fontWeight: FontWeight.w700,
+                    color: AppThemeSystem.primaryColor,
+                  ),
                 ),
               ),
             ],
@@ -298,7 +302,9 @@ class PasscolisCard extends StatelessWidget {
         ),
         SizedBox(width: AppDesign.space2),
         AppBadge(
-          label: 'core.passcolis.kg_available'.trParams({'kg': _formatKg(offer.remainingKg)}),
+          label: 'core.passcolis.kg_available'.trParams({
+            'kg': _formatKg(offer.remainingKg),
+          }),
           tone: offer.remainingKg > 0
               ? AppBadgeTone.success
               : AppBadgeTone.neutral,

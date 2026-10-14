@@ -641,12 +641,14 @@ class DiaspoListView extends GetView<DiaspoListController> {
                           style: TextStyle(fontSize: 12, color: muted),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppThemeSystem.primaryColor,
+                        Obx(
+                          () => Text(
+                            '${offer.displayPricePerKg}/kg',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppThemeSystem.primaryColor,
+                            ),
                           ),
                         ),
                       ],
@@ -879,12 +881,14 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         color: isDark ? Colors.white70 : Colors.grey[600],
                       ),
                     ),
-                    Text(
-                      booking.formattedTotal,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppThemeSystem.primaryColor,
+                    Obx(
+                      () => Text(
+                        booking.displayTotal,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppThemeSystem.primaryColor,
+                        ),
                       ),
                     ),
                   ],
@@ -1139,7 +1143,10 @@ class DiaspoListView extends GetView<DiaspoListController> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('diaspo_list.cancel'.tr)),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('diaspo_list.cancel'.tr),
+          ),
           Obx(
             () => ElevatedButton(
               style: ElevatedButton.styleFrom(
