@@ -29,6 +29,11 @@ class CurrencyService extends GetxService {
   /// connu : les montants restent alors affichés en FCFA, jamais avec un faux taux.
   final RxnDouble _rateToPivot = RxnDouble();
   final RxBool _isLoading = false.obs;
+
+  /// « 1 [code] = X XAF » des autres devises (offres Diaspo…), gardés en mémoire
+  /// le temps de la session, sans toucher au taux enregistré de l'utilisateur.
+  final RxMap<String, double> _foreignRates = <String, double>{}.obs;
+  final Set<String> _pendingRates = {};
   final RxString _detectedCountry = ''.obs;
 
   // Getters
@@ -113,6 +118,42 @@ class CurrencyService extends GetxService {
   static String formatFromPivot(double amountXaf, {bool showSymbol = true}) {
     final display = displayFromPivot(amountXaf);
     return formatAmountInCurrency(display.amount, display.currency, showSymbol: showSymbol);
+  }
+
+  /// Montant exprimé dans [currencyCode] (prix d'une offre Diaspo…) affiché dans
+  /// la devise de l'utilisateur, via le pivot XAF. Tant que le taux n'est pas
+  /// connu, le montant reste dans sa devise d'origine (jamais un faux taux).
+  /// À appeler dans un Obx : l'affichage se met à jour à l'arrivée du taux.
+  static String formatFromCurrency(double amount, String currencyCode, {bool showSymbol = true}) {
+    final code = currencyCode.trim().toUpperCase();
+    if (code.isEmpty || code == 'FCFA' || _pivotEquivalents.contains(code)) {
+      return formatFromPivot(amount, showSymbol: showSymbol);
+    }
+    if (!Get.isRegistered<CurrencyService>()) {
+      return formatAmountInCurrency(amount, code, showSymbol: showSymbol);
+    }
+    final service = CurrencyService.to;
+    if (code == service.displayCurrencyCode.toUpperCase()) {
+      return formatAmountInCurrency(amount, code, showSymbol: showSymbol);
+    }
+    final rate = service._rateToPivotFor(code);
+    if (rate == null) return formatAmountInCurrency(amount, code, showSymbol: showSymbol);
+    return formatFromPivot(amount * rate, showSymbol: showSymbol);
+  }
+
+  /// Taux « 1 [code] = X XAF » connu, sinon null et demande à l'API (une seule
+  /// requête à la fois par devise).
+  double? _rateToPivotFor(String code) {
+    if (code == currencyCode.toUpperCase() && _rateToPivot.value != null) {
+      return _rateToPivot.value;
+    }
+    final rate = _foreignRates[code];
+    if (rate == null && _pendingRates.add(code)) {
+      _requestRateToPivot(code).then((fresh) {
+        if (fresh != null) _foreignRates[code] = fresh;
+      }).whenComplete(() => _pendingRates.remove(code));
+    }
+    return rate;
   }
 
   /// Prix XAF d'un produit renvoyé par l'API : [xafKey] s'il est fourni, sinon
@@ -297,6 +338,14 @@ class CurrencyService extends GetxService {
   /// Taux « 1 [code] = X XAF » depuis l'API, enregistré pour les prochains
   /// démarrages. Null si l'API ne répond pas.
   Future<double?> _fetchRateToPivot(String code) async {
+    final rate = await _requestRateToPivot(code);
+    if (rate != null) StorageService.saveExchangeRate(code, rate);
+    return rate;
+  }
+
+  /// Taux « 1 [code] = X XAF » depuis l'API, sans l'enregistrer. Null si l'API
+  /// ne répond pas.
+  Future<double?> _requestRateToPivot(String code) async {
     try {
       final response = await ApiProvider.get(
         '/v1/currencies/exchange-rate',
@@ -304,10 +353,7 @@ class CurrencyService extends GetxService {
       );
       if (response.success && response.data != null) {
         final rate = double.tryParse(response.data!['data']['rate'].toString());
-        if (rate != null && rate > 0) {
-          StorageService.saveExchangeRate(code, rate);
-          return rate;
-        }
+        if (rate != null && rate > 0) return rate;
       }
     } catch (e) {
       print('Error fetching exchange rate: $e');

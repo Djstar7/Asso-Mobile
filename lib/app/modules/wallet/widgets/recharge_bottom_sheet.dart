@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import '../../../data/services/stripe_native_service.dart';
@@ -437,7 +438,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               labelText: _selectedMethod == 'kpay'
                   ? 'wallet.recharge.amount_label'
                       .trParams({'currency': _currencyLabel(_kpayCurrency)})
-                  : 'wallet.recharge.amount_label'.trParams({'currency': 'FCFA'}),
+                  : 'wallet.recharge.amount_label'.trParams({
+                      'currency': _currencyLabel(CurrencyService.pivot),
+                    }),
               // Le libellé reste au-dessus du champ, même vide : en
               // placeholder, il disparaissait à la première frappe et on ne
               // savait plus dans quelle devise on saisissait.
@@ -567,8 +570,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           final outcome = txId is int
               ? await MobileMoneyWaiting.run(
                   amount: amount,
-                  formatAmount: (value) =>
-                      '${value.toStringAsFixed(0)} ${_currencyLabel(_kpayCurrency)}',
+                  // Montant saisi, débité tel quel dans la devise de l'opérateur.
+                  formatAmount: (value) => CurrencyService.formatAmountInCurrency(
+                    value,
+                    _kpayCurrency,
+                  ),
                   provider: _kpayProvider!,
                   phone: _kpayPhone!,
                   check: () => _depositState(txId),

@@ -1628,9 +1628,9 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    // Prix au kilo dans la devise de l'offre, comme sur la fiche Diaspo.
-                    '${CurrencyService.formatAmountInCurrency(double.tryParse(diaspoOffer['price_per_kg']?.toString() ?? '0') ?? 0, '${diaspoOffer['currency'] ?? 'XAF'}')}/kg',
+                  Obx(() => Text(
+                    // Prix au kilo dans la devise de l'utilisateur, comme sur la fiche Diaspo.
+                    '${CurrencyService.formatFromCurrency(double.tryParse(diaspoOffer['price_per_kg']?.toString() ?? '0') ?? 0, '${diaspoOffer['currency'] ?? 'XAF'}')}/kg',
                     style: context.textStyle(
                       FontSizeType.caption,
                       color: isSentByMe
@@ -1638,7 +1638,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                           : AppThemeSystem.primaryColor,
                       fontWeight: FontWeight.w500,
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),

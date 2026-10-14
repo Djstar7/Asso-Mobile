@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -23,16 +24,17 @@ extension DeliveryStatusExtension on DeliveryStatus {
     }
   }
 
-  String get icon {
+  /// Icône native du statut (à colorer avec la couleur du statut).
+  IconData get icon {
     switch (this) {
       case DeliveryStatus.pending:
-        return '⏳';
+        return Icons.hourglass_top_rounded;
       case DeliveryStatus.inProgress:
-        return '🚚';
+        return Icons.local_shipping_outlined;
       case DeliveryStatus.delivered:
-        return '✅';
+        return Icons.task_alt_rounded;
       case DeliveryStatus.cancelled:
-        return '❌';
+        return Icons.cancel_outlined;
     }
   }
 }

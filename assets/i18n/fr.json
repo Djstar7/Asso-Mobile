@@ -755,9 +755,9 @@
     },
     "notifications": {
       "wallet_body": "Transaction mise à jour",
-      "package_activated_title": "🎉 Package activé",
+      "package_activated_title": "Package activé",
       "package_activated_body": "Votre package a été activé avec succès",
-      "package_expiring_title": "⚠️ Package expirant",
+      "package_expiring_title": "Package expirant",
       "package_expiring_body": "Votre package va bientôt expirer",
       "order_title": "Commande",
       "order_body": "Mise à jour de commande"
@@ -964,19 +964,19 @@
   },
   "wallet": {
     "notif": {
-      "deposit_success_title": "💰 Dépôt réussi",
+      "deposit_success_title": "Dépôt réussi",
       "deposit_success_message": "Votre dépôt de @amount a été confirmé.",
-      "deposit_failed_title": "❌ Dépôt échoué",
+      "deposit_failed_title": "Dépôt échoué",
       "deposit_failed_message": "Le dépôt a échoué",
-      "withdrawal_done_title": "💸 Retrait effectué",
+      "withdrawal_done_title": "Retrait effectué",
       "withdrawal_done_message": "Votre retrait de @amount a été envoyé.",
-      "withdrawal_failed_title": "⚠️ Retrait échoué",
+      "withdrawal_failed_title": "Retrait échoué",
       "withdrawal_failed_message": "Votre retrait a échoué. Le montant a été remboursé dans votre wallet.",
-      "funds_unlocked_title": "💰 Fonds débloqués!",
+      "funds_unlocked_title": "Fonds débloqués!",
       "funds_unlocked_message": "Vous avez reçu @amount. Les fonds sont maintenant disponibles dans votre wallet.",
-      "recharge_confirmed_title": "💰 Recharge confirmée",
+      "recharge_confirmed_title": "Recharge confirmée",
       "recharge_confirmed_message": "Votre dépôt a été crédité dans votre wallet.",
-      "recharge_failed_title": "❌ Recharge échouée",
+      "recharge_failed_title": "Recharge échouée",
       "recharge_failed_message": "Le paiement n'a pas abouti.",
       "withdrawal_sent_message": "Votre retrait a été envoyé au bénéficiaire.",
       "withdrawal_refunded_message": "Le montant a été remboursé dans votre wallet."
@@ -1021,8 +1021,8 @@
     "iban_banner": {
       "rejected_title": "IBAN refusé - à corriger",
       "missing_title": "IBAN non configuré",
-      "rejected_subtitle": "Vos informations bancaires ont été refusées. Configurez votre IBAN dans les paramètres vendeur pour être payé.",
-      "missing_subtitle": "Votre IBAN se configure dans les paramètres vendeur. Appuyez pour l'ajouter et recevoir vos paiements."
+      "rejected_subtitle": "Vos informations bancaires ont été refusées. Corrigez votre IBAN pour retirer votre solde et recevoir vos remboursements.",
+      "missing_subtitle": "Ajoutez votre IBAN pour retirer votre solde par virement et recevoir vos remboursements de litige."
     },
     "card": {
       "balance": "Solde"
@@ -1056,8 +1056,7 @@
       "add": "Ajouter"
     },
     "iban_link": {
-      "vendor_mode_feature": "le mode vendeur",
-      "become_vendor": "Devenez vendeur pour recevoir des paiements",
+      "bank_transfer_feature": "le virement bancaire",
       "rejected": "IBAN refusé — appuyez pour corriger",
       "configure": "Configurer votre IBAN pour retirer"
     },
@@ -1100,29 +1099,12 @@
       "yesterday_at": "Hier à @time",
       "days": "@days jours"
     },
-    "ussd": {
-      "pending_validation": "Validation en attente...",
-      "in_progress": "Paiement en cours...",
-      "retry_error": "Une erreur est survenue. Veuillez réessayer.",
-      "validated": "Paiement validé avec succès !",
-      "timeout_title": "Délai dépassé",
-      "timeout_message": "Le délai d'attente a été dépassé. Vérifiez votre téléphone et votre wallet.",
-      "cancel_title": "Annuler la recharge ?",
-      "cancel_message": "Le paiement est en cours de traitement. Êtes-vous sûr de vouloir quitter ?",
-      "keep_waiting": "Continuer d'attendre",
-      "remaining_time": "Temps restant: @seconds secondes",
-      "number": "Numéro",
-      "instructions_title": "Instructions",
-      "instructions": "1. Vérifiez votre téléphone (@phone)\n2. Une notification USSD devrait apparaître\n3. Entrez votre code PIN pour confirmer\n4. Attendez la confirmation",
-      "continue": "Continuer",
-      "cancel_recharge": "Annuler la recharge"
-    },
     "webview": {
       "cancelled": "Paiement annulé",
       "error_occurred": "Une erreur s'est produite",
       "payment_done": "Paiement effectué",
       "cancelled_or_failed": "Paiement annulé ou échoué",
-      "success_credited": "Paiement réussi! +@amount FCFA crédités",
+      "success_credited": "Paiement réussi ! Votre Wallet a été crédité.",
       "success_title": "Succès",
       "failure_title": "Échec",
       "title_paypal": "Paiement PayPal",
@@ -1201,7 +1183,7 @@
       "balance_of": "Solde @label",
       "amount_label": "Montant à retirer (@currency)",
       "amount_hint": "Ex: @amount",
-      "min_amount": "Le montant minimum est de @amount FCFA",
+      "min_amount": "Le montant minimum est de @amount",
       "remember_number": "Mémoriser ce numéro pour mes prochains retraits",
       "replace_account": "Remplacer mon compte de retrait enregistré",
       "notes_label": "Notes (optionnel)",
@@ -1304,7 +1286,7 @@
     },
     "view": {
       "title": "Compte de virement",
-      "intro": "Enregistrez votre IBAN pour recevoir vos paiements par virement bancaire. Vos informations sont vérifiées par notre équipe avant activation.",
+      "intro": "Enregistrez votre IBAN pour retirer votre solde et recevoir vos paiements ou remboursements par virement bancaire. Vos informations sont vérifiées par notre équipe avant activation.",
       "more_info_title": "Informations complémentaires demandées",
       "more_info_default": "Notre partenaire bancaire a besoin de précisions avant d'autoriser vos virements.",
       "more_info_contact": "Notre équipe va vous recontacter pour compléter votre dossier. Vos informations restent enregistrées.",
@@ -1312,7 +1294,7 @@
       "status_unavailable_hint": "Si vous avez déjà enregistré un IBAN, il est toujours là : cet écran n'a pas pu le récupérer.",
       "retry": "Réessayer",
       "banner_approved_title": "Compte validé",
-      "banner_approved_detail": "Vous pouvez être payé par virement sur cet IBAN.",
+      "banner_approved_detail": "Vos retraits et remboursements peuvent être virés sur cet IBAN.",
       "banner_rejected_title": "Compte rejeté",
       "banner_rejected_detail": "Veuillez corriger vos informations et renvoyer.",
       "banner_pending_title": "En attente de validation",
@@ -1325,7 +1307,7 @@
       "country": "Pays",
       "pending_locked": "Vous ne pouvez pas modifier votre IBAN pendant la vérification. Tirez vers le bas pour actualiser le statut.",
       "approved_title": "Compte de virement validé",
-      "approved_message": "Vos paiements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du retrait.",
+      "approved_message": "Vos retraits et remboursements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du virement.",
       "back_to_wallet": "Retour au portefeuille",
       "approved_locked": "Pour modifier un IBAN déjà validé, contactez le support.",
       "partner_verification_default": "Vérification bancaire en cours.",
@@ -1460,7 +1442,7 @@
       "method_unavailable": "Ce moyen de paiement n'est pas encore disponible pour les certifications.",
       "order_created": "Commande créée !",
       "validate_ussd": "Validez le paiement sur votre téléphone (USSD). Vous serez notifié dès confirmation.",
-      "certified": "Boutique certifiée ✅"
+      "certified": "Boutique certifiée"
     }
   },
   "boost": {
@@ -1489,7 +1471,7 @@
     },
     "stopped_title": "Sponsoring arrêté",
     "stopped_message": "La campagne est terminée.",
-    "activated_title": "Sponsoring activé 🚀",
+    "activated_title": "Sponsoring activé",
     "activated_message": "Votre article sera vu par @reach.",
     "error": "Erreur",
     "detail": {
@@ -1541,7 +1523,7 @@
     }
   },
   "chat": {
-    "image_message": "📷 Image",
+    "image_message": "Image",
     "default_user_name": "Utilisateur",
     "time": {
       "minutes_ago": "Il y a @minutesmin",
@@ -1847,6 +1829,7 @@
       "step_option_quantity": "Indiquer la quantité d’au moins une option",
       "step_quantity": "Indiquer une quantité",
       "step_address": "Indiquer l’adresse de livraison",
+      "step_address_details": "Préciser le complément d’adresse",
       "step_phone": "Renseigner un numéro à contacter valide",
       "step_weight_missing": "Livraison impossible : le vendeur doit renseigner le poids du produit",
       "step_partner": "Choisir un partenaire de livraison",
@@ -1856,7 +1839,7 @@
       "sheet_title": "Passer commande",
       "to_continue": "Pour continuer : @step",
       "review": "Vérifier ma commande",
-      "address_details_label": "Complément d’adresse (facultatif)",
+      "address_details_label": "Complément d’adresse *",
       "address_details_hint": "Quartier, rue, portail, étage, point de repère…",
       "contact_phone_label": "Numéro à contacter *",
       "contact_phone_hint": "Ex. 6XXXXXXXX",
@@ -2808,6 +2791,7 @@
     }
   },
   "order_management": {
+    "refresh": "Actualiser",
     "title": "Gestion des commandes",
     "stats": {
       "total": "Total",
@@ -3086,7 +3070,7 @@
       "fixed": "Prix fixe",
       "weight_category": "Par catégorie de poids",
       "volumetric": "Poids volumétrique",
-      "fixed_desc": "Prix fixe: @price FCFA",
+      "fixed_desc": "Prix fixe : @price",
       "category_desc": "Par catégorie: @categories",
       "volumetric_desc": "Poids volumétrique (L × l × h) / 139"
     },
@@ -3728,9 +3712,9 @@
       "choose_offer": "Choisissez la livraison depuis Douala.",
       "gps_position": "Position GPS (@lat, @lng)",
       "quote_failed": "Impossible de calculer la livraison. Réessayez.",
-      "details_label": "Précisions (obligatoire)",
+      "details_label": "Complément d’adresse *",
       "details_hint": "Repère, immeuble, portail…",
-      "phone_label": "Numéro à contacter",
+      "phone_label": "Numéro à contacter *",
       "phone_hint": "Ex. 6 90 00 00 00",
       "locating": "Détection de votre position…",
       "where_to_deliver": "Où livrer votre commande ?",

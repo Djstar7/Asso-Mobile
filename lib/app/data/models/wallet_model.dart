@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../providers/currency_service.dart';
 
@@ -191,26 +192,45 @@ class WalletTransactionModel {
   }
 
   /// Get type icon emoji
-  String get typeIcon {
+  IconData get typeIcon {
     switch (type) {
       case 'credit':
-        return '💵';
+        return Icons.south_west_rounded;
       case 'debit':
-        return '💸';
+        return Icons.north_east_rounded;
       case 'refund':
-        return '↩️';
+        return Icons.replay_rounded;
       case 'bonus':
-        return '🎁';
+        return Icons.card_giftcard_rounded;
       case 'adjustment':
-        return '⚙️';
+        return Icons.tune_rounded;
       case 'lock':
-        return '🔒';
+        return Icons.lock_outline_rounded;
       case 'unlock':
-        return '🔓';
+        return Icons.lock_open_rounded;
       case 'escrow_release':
-        return '✅';
+        return Icons.verified_outlined;
       default:
-        return '💰';
+        return Icons.account_balance_wallet_outlined;
+    }
+  }
+
+  /// Icône du statut de paiement (réussi, en cours, en attente, échoué…).
+  IconData get statusIcon {
+    switch (status) {
+      case 'completed':
+        return Icons.check_circle_rounded;
+      case 'processing':
+        return Icons.autorenew_rounded;
+      case 'pending':
+        return Icons.schedule_rounded;
+      case 'failed':
+        return Icons.error_rounded;
+      case 'cancelled':
+      case 'canceled':
+        return Icons.cancel_rounded;
+      default:
+        return Icons.info_rounded;
     }
   }
 

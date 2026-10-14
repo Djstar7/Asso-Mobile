@@ -60,6 +60,10 @@ void main() {
     test('affiche le montant pivot en FCFA', () {
       expect(CurrencyService.formatFromPivot(10000), '10 000 FCFA');
     });
+
+    test('une offre en euros reste en euros', () {
+      expect(CurrencyService.formatFromCurrency(12, 'EUR'), '12,00 €');
+    });
   });
 
   group('utilisateur en euros', () {
@@ -90,6 +94,21 @@ void main() {
 
     test('formatPrice suit le même arrondi que formatFromPivot', () {
       expect(CurrencyService.to.formatPrice(10000), CurrencyService.formatFromPivot(10000));
+    });
+
+    test('une offre Diaspo en FCFA est affichée en euros', () {
+      expect(CurrencyService.formatFromCurrency(6559.57, 'XAF'), '10,00 €');
+    });
+
+    test('une offre déjà en euros garde son montant', () {
+      expect(CurrencyService.formatFromCurrency(12, 'EUR'), '12,00 €');
+    });
+
+    test("sans taux connu, une offre reste dans sa devise d'origine", () {
+      expect(
+        CurrencyService.formatFromCurrency(12, 'USD'),
+        CurrencyService.formatAmountInCurrency(12, 'USD'),
+      );
     });
   });
 }

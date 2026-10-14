@@ -365,7 +365,7 @@ class MyVoiceView extends GetView<MyVoiceController> {
     AppSheet.show(
       AppSheet(
         title: isEditing ? 'my_voice.edit_message_title'.tr : 'my_voice.new_message_title'.tr,
-        footer: Obx(() {
+        footer: Builder(builder: (sheetContext) => Obx(() {
           final length = charCount.value;
           final valid = length >= 2 && length <= _maxPostLength;
           return AppButton(
@@ -385,13 +385,16 @@ class MyVoiceView extends GetView<MyVoiceController> {
                             content: content,
                             isAnonymous: isAnonymous.value,
                           );
-                    if (ok && (Get.isBottomSheetOpen ?? false)) {
-                      Get.back();
+                    // Navigator et non Get.back() : avec GetX 4.7.3, Get.back()
+                    // fermait le message de confirmation et laissait la
+                    // feuille ouverte (doublons au clic suivant).
+                    if (ok && sheetContext.mounted) {
+                      Navigator.of(sheetContext).pop();
                     }
                   }
                 : null,
           );
-        }),
+        })),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

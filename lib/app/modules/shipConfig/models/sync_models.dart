@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../data/providers/currency_service.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -210,12 +211,14 @@ class DeliveryPricelist {
   String get description {
     switch (pricingType) {
       case PricingType.fixed:
-        final price = pricingData['price'] ?? 0;
-        return 'ship_config.pricing.fixed_desc'.trParams({'price': '$price'});
+        final price = double.tryParse('${pricingData['price'] ?? 0}') ?? 0;
+        return 'ship_config.pricing.fixed_desc'.trParams({
+          'price': CurrencyService.formatFromPivot(price),
+        });
 
       case PricingType.weightCategory:
         final categories = pricingData.entries
-            .map((e) => '${e.key}: ${e.value} FCFA')
+            .map((e) => '${e.key}: ${CurrencyService.formatFromPivot(double.tryParse('${e.value}') ?? 0)}')
             .join(', ');
         return 'ship_config.pricing.category_desc'.trParams({'categories': categories});
 

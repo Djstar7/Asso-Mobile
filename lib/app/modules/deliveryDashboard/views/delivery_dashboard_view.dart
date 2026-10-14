@@ -1273,9 +1273,10 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   color: _getStatusColor(request.status).withValues(alpha: 0.1),
                   borderRadius: context.borderRadius(BorderRadiusType.small),
                 ),
-                child: Text(
+                child: Icon(
                   request.status.icon,
-                  style: const TextStyle(fontSize: 20),
+                  size: 22,
+                  color: _getStatusColor(request.status),
                 ),
               ),
               const SizedBox(width: 12),

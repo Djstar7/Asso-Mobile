@@ -34,8 +34,7 @@ class TrackingView extends GetView<TrackingController> {
             ),
       body: Column(
         children: [
-          _buildHeader(context),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSearchBar(context),
           const SizedBox(height: 12),
           _buildFilters(context),
@@ -73,55 +72,45 @@ class TrackingView extends GetView<TrackingController> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-    return Container(
-      padding: EdgeInsets.only(
-        left: AppThemeSystem.getHorizontalPadding(context),
-        right: AppThemeSystem.getHorizontalPadding(context),
-        // top: MediaQuery.of(context).padding.top + 8,
-        bottom: AppThemeSystem.getHorizontalPadding(context),
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        border: Border(
-          bottom: BorderSide(color: AppThemeSystem.getBorderColor(context).withValues(alpha: 0.2)),
-        ),
-      ),
+  /// Recherche et actualisation sur la même ligne.
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // Le libellé de l'onglet actif sert déjà de titre dans la barre
-          // du haut ; le répéter ici consommait une ligne pour rien.
-          const Spacer(),
-          GestureDetector(
-            onTap: () async {
-              await controller.loadOrders();
-              Get.snackbar(
-                'tracking.refreshed_title'.tr,
-                'tracking.refreshed_message'.tr,
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 1),
-              );
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Icon(Icons.refresh_rounded, color: AppThemeSystem.primaryColor, size: 24),
-            ),
-          ),
+          Expanded(child: _buildSearchField(context)),
+          const SizedBox(width: 8),
+          _buildRefreshButton(),
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TextField(
+  Widget _buildRefreshButton() {
+    return GestureDetector(
+      onTap: () async {
+        await controller.loadOrders();
+        Get.snackbar(
+          'tracking.refreshed_title'.tr,
+          'tracking.refreshed_message'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1),
+        );
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(Icons.refresh_rounded, color: AppThemeSystem.primaryColor, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    return TextField(
         controller: controller.searchController,
         decoration: InputDecoration(
           hintText: 'tracking.search_hint'.tr,
@@ -136,7 +125,6 @@ class TrackingView extends GetView<TrackingController> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         style: context.textStyle(FontSizeType.body2),
-      ),
     );
   }
 

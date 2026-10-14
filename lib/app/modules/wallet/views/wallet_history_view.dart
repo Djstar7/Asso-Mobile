@@ -244,17 +244,39 @@ class WalletHistoryView extends GetView<WalletController> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: amountColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  transaction.typeIcon,
-                  style: const TextStyle(fontSize: 24),
-                ),
+              // Icône du type, pastille du statut de paiement
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      transaction.typeIcon,
+                      size: 24,
+                      color: statusColor,
+                    ),
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppThemeSystem.getSurfaceColor(context),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(1),
+                      child: Icon(
+                        transaction.statusIcon,
+                        size: 16,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
 
@@ -324,13 +346,24 @@ class WalletHistoryView extends GetView<WalletController> {
                             color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            transaction.statusText,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                transaction.statusIcon,
+                                size: 12,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                transaction.statusText,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -351,11 +384,12 @@ class WalletHistoryView extends GetView<WalletController> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
+                                Icon(
                                   transaction.paymentProvider == 'kpay'
-                                      ? '📱'
-                                      : '💳',
-                                  style: const TextStyle(fontSize: 12),
+                                      ? Icons.phone_android_rounded
+                                      : Icons.credit_card_rounded,
+                                  size: 12,
+                                  color: AppThemeSystem.infoColor,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(

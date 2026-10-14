@@ -712,7 +712,7 @@ class _ImportViewState extends State<ImportView> {
                         child: Text(
                           tier == null
                               ? '—'
-                              : CurrencyService.formatAmountInCurrency(
+                              : CurrencyService.formatFromCurrency(
                                   tier.unitPrice,
                                   tier.currency,
                                 ),

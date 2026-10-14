@@ -150,11 +150,9 @@ class InvoicesView extends GetView<InvoicesController> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            if (invoice.pdfUrl != null || invoice.downloadUrl != null) {
-              controller.downloadInvoice(invoice);
-            }
-          },
+          onTap: invoice.pdfUrl != null
+              ? () => controller.downloadInvoice(invoice)
+              : null,
           borderRadius: context.borderRadius(BorderRadiusType.medium),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -233,7 +231,7 @@ class InvoicesView extends GetView<InvoicesController> {
                     ),
 
                     // Download button
-                    if (invoice.pdfUrl != null || invoice.downloadUrl != null)
+                    if (invoice.pdfUrl != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -246,10 +244,21 @@ class InvoicesView extends GetView<InvoicesController> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.download_outlined,
-                              size: 16,
-                              color: AppThemeSystem.primaryColor,
+                            Obx(
+                              () => controller.downloadingNumber.value ==
+                                      invoice.invoiceNumber
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.download_outlined,
+                                      size: 16,
+                                      color: AppThemeSystem.primaryColor,
+                                    ),
                             ),
                             const SizedBox(width: 4),
                             Text(
