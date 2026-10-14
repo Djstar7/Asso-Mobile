@@ -1021,8 +1021,8 @@
     "iban_banner": {
       "rejected_title": "IBAN refusé - à corriger",
       "missing_title": "IBAN non configuré",
-      "rejected_subtitle": "Vos informations bancaires ont été refusées. Configurez votre IBAN dans les paramètres vendeur pour être payé.",
-      "missing_subtitle": "Votre IBAN se configure dans les paramètres vendeur. Appuyez pour l'ajouter et recevoir vos paiements."
+      "rejected_subtitle": "Vos informations bancaires ont été refusées. Corrigez votre IBAN pour retirer votre solde et recevoir vos remboursements.",
+      "missing_subtitle": "Ajoutez votre IBAN pour retirer votre solde par virement et recevoir vos remboursements de litige."
     },
     "card": {
       "balance": "Solde"
@@ -1056,8 +1056,7 @@
       "add": "Ajouter"
     },
     "iban_link": {
-      "vendor_mode_feature": "le mode vendeur",
-      "become_vendor": "Devenez vendeur pour recevoir des paiements",
+      "bank_transfer_feature": "le virement bancaire",
       "rejected": "IBAN refusé — appuyez pour corriger",
       "configure": "Configurer votre IBAN pour retirer"
     },
@@ -1304,7 +1303,7 @@
     },
     "view": {
       "title": "Compte de virement",
-      "intro": "Enregistrez votre IBAN pour recevoir vos paiements par virement bancaire. Vos informations sont vérifiées par notre équipe avant activation.",
+      "intro": "Enregistrez votre IBAN pour retirer votre solde et recevoir vos paiements ou remboursements par virement bancaire. Vos informations sont vérifiées par notre équipe avant activation.",
       "more_info_title": "Informations complémentaires demandées",
       "more_info_default": "Notre partenaire bancaire a besoin de précisions avant d'autoriser vos virements.",
       "more_info_contact": "Notre équipe va vous recontacter pour compléter votre dossier. Vos informations restent enregistrées.",
@@ -1312,7 +1311,7 @@
       "status_unavailable_hint": "Si vous avez déjà enregistré un IBAN, il est toujours là : cet écran n'a pas pu le récupérer.",
       "retry": "Réessayer",
       "banner_approved_title": "Compte validé",
-      "banner_approved_detail": "Vous pouvez être payé par virement sur cet IBAN.",
+      "banner_approved_detail": "Vos retraits et remboursements peuvent être virés sur cet IBAN.",
       "banner_rejected_title": "Compte rejeté",
       "banner_rejected_detail": "Veuillez corriger vos informations et renvoyer.",
       "banner_pending_title": "En attente de validation",
@@ -1325,7 +1324,7 @@
       "country": "Pays",
       "pending_locked": "Vous ne pouvez pas modifier votre IBAN pendant la vérification. Tirez vers le bas pour actualiser le statut.",
       "approved_title": "Compte de virement validé",
-      "approved_message": "Vos paiements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du retrait.",
+      "approved_message": "Vos retraits et remboursements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du virement.",
       "back_to_wallet": "Retour au portefeuille",
       "approved_locked": "Pour modifier un IBAN déjà validé, contactez le support.",
       "partner_verification_default": "Vérification bancaire en cours.",

@@ -1021,8 +1021,8 @@
     "iban_banner": {
       "rejected_title": "IBAN rejected - needs correction",
       "missing_title": "IBAN not set up",
-      "rejected_subtitle": "Your bank details were rejected. Set up your IBAN in the vendor settings to get paid.",
-      "missing_subtitle": "Your IBAN is set up in the vendor settings. Tap to add it and receive your payments."
+      "rejected_subtitle": "Your bank details were rejected. Fix your IBAN to withdraw your balance and receive your refunds.",
+      "missing_subtitle": "Add your IBAN to withdraw your balance by bank transfer and receive your dispute refunds."
     },
     "card": {
       "balance": "Balance"
@@ -1056,8 +1056,7 @@
       "add": "Add"
     },
     "iban_link": {
-      "vendor_mode_feature": "vendor mode",
-      "become_vendor": "Become a vendor to receive payments",
+      "bank_transfer_feature": "bank transfers",
       "rejected": "IBAN rejected — tap to fix",
       "configure": "Set up your IBAN to withdraw"
     },
@@ -1304,7 +1303,7 @@
     },
     "view": {
       "title": "Payout account",
-      "intro": "Register your IBAN to receive your payments by bank transfer. Your details are verified by our team before activation.",
+      "intro": "Save your IBAN to withdraw your balance and receive your payments or refunds by bank transfer. Our team checks your details before activation.",
       "more_info_title": "Additional information requested",
       "more_info_default": "Our banking partner needs more details before authorizing your transfers.",
       "more_info_contact": "Our team will contact you to complete your file. Your information remains saved.",
@@ -1312,7 +1311,7 @@
       "status_unavailable_hint": "If you already registered an IBAN, it is still there: this screen could not retrieve it.",
       "retry": "Retry",
       "banner_approved_title": "Account approved",
-      "banner_approved_detail": "You can be paid by bank transfer to this IBAN.",
+      "banner_approved_detail": "Your withdrawals and refunds can be transferred to this IBAN.",
       "banner_rejected_title": "Account rejected",
       "banner_rejected_detail": "Please correct your information and resubmit.",
       "banner_pending_title": "Awaiting approval",
@@ -1325,7 +1324,7 @@
       "country": "Country",
       "pending_locked": "You cannot change your IBAN during verification. Pull down to refresh the status.",
       "approved_title": "Payout account approved",
-      "approved_message": "Your payments can now be transferred to this bank account. The amount is converted from your wallet at the time of withdrawal.",
+      "approved_message": "Your withdrawals and refunds can now be transferred to this bank account. The amount is converted from your wallet at the time of the transfer.",
       "back_to_wallet": "Back to wallet",
       "approved_locked": "To change an already approved IBAN, contact support.",
       "partner_verification_default": "Bank verification in progress.",
