@@ -186,6 +186,14 @@ class ShopStatisticsController extends GetxController {
     return CurrencyService.to.convertFromPivot(amountXaf);
   }
 
+  /// Devise d'affichage (code ISO), pour formater les montants convertis.
+  String get displayCurrencyCode {
+    currencyRevision.value;
+    return Get.isRegistered<CurrencyService>()
+        ? CurrencyService.to.displayCurrencyCode
+        : CurrencyService.pivot;
+  }
+
   /// Symbole de la devise d'affichage, pour les axes du graphique.
   String get currencyLabel {
     currencyRevision.value;

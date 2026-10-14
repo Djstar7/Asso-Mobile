@@ -528,7 +528,7 @@ class PostDetailView extends GetView<PostDetailController> {
                     ? 'post_detail.anonymous'.tr
                     : (replyTo.user?.fullName ?? 'post_detail.anonymous'.tr),
               }),
-        footer: SizedBox(
+        footer: Builder(builder: (sheetContext) => SizedBox(
           width: double.infinity,
           child: Obx(() => ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -556,8 +556,11 @@ class PostDetailView extends GetView<PostDetailController> {
                       isAnonymous: isAnonymous.value,
                       parentId: replyTo?.id,
                     );
-                    if (ok && (Get.isBottomSheetOpen ?? false)) {
-                      Get.back();
+                    // Navigator et non Get.back() : avec GetX 4.7.3, Get.back()
+                    // fermait le message de confirmation et laissait la
+                    // feuille ouverte (doublons au clic suivant).
+                    if (ok && sheetContext.mounted) {
+                      Navigator.of(sheetContext).pop();
                     }
                   },
             child: controller.isSubmitting.value
@@ -571,7 +574,7 @@ class PostDetailView extends GetView<PostDetailController> {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
           )),
-        ),
+        )),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

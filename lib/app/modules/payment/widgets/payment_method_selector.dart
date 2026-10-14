@@ -126,17 +126,10 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   String _fmt(double value, String currency) =>
       CurrencyService.formatAmountInCurrency(value, currency);
 
-  /// Montant à payer dans la devise de l'utilisateur ; un montant en FCFA (pivot)
-  /// est converti, avec le montant FCFA réellement facturé entre parenthèses.
-  String _amountLine() {
-    final code = widget.currency.toUpperCase();
-    if (code != 'XAF' && code != 'XOF' && code != 'FCFA') {
-      return _fmt(widget.amount, code);
-    }
-    final display = CurrencyService.formatFromPivot(widget.amount);
-    final pivot = _fmt(widget.amount, 'XAF');
-    return display == pivot ? pivot : '$display ($pivot)';
-  }
+  /// Montant à payer, uniquement dans la devise de l'utilisateur (converti
+  /// depuis la devise du montant : FCFA, devise d'une offre Diaspo…).
+  String _amountLine() =>
+      CurrencyService.formatFromCurrency(widget.amount, widget.currency);
 
   IconData _iconFor(String code) {
     switch (code) {
@@ -218,15 +211,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'payment.selector.amount_line'.trParams({
-              'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
-              'amount': _amountLine(),
-            }),
-            style: context.textStyle(
-              FontSizeType.body2,
-              fontWeight: FontWeight.w600,
-              color: AppThemeSystem.primaryColor,
+          Obx(
+            () => Text(
+              'payment.selector.amount_line'.trParams({
+                'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
+                'amount': _amountLine(),
+              }),
+              style: context.textStyle(
+                FontSizeType.body2,
+                fontWeight: FontWeight.w600,
+                color: AppThemeSystem.primaryColor,
+              ),
             ),
           ),
           const SizedBox(height: AppDesign.space4),
@@ -279,10 +274,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     }
     if (hint == null) {
       if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
-        hint = 'payment.selector.minimum'.trParams({'amount': _fmt(m.minAmount!, m.minCurrency)});
+        hint = 'payment.selector.minimum'.trParams({
+          'amount': CurrencyService.formatFromCurrency(m.minAmount!, m.minCurrency),
+        });
       } else if (!canPay && m.unavailableReason == 'disabled') {
         hint = 'wallet.recharge.unavailable_title'.tr;
-      } else if (canPay && m.convertedAmount != null && m.targetCurrency != null) {
+      } else if (canPay &&
+          m.code == 'stripe' &&
+          m.convertedAmount != null &&
+          m.targetCurrency != null) {
+        // Seule mention hors devise de l'utilisateur : la devise d'encaissement
+        // de la carte, réglée dans l'admin (section Stripe).
         hint = '≈ ${_fmt(m.convertedAmount!, m.targetCurrency!)}';
       }
     }

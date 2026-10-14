@@ -79,7 +79,6 @@ import '../modules/wallet/bindings/wallet_binding.dart';
 import '../modules/wallet/views/wallet_view.dart';
 import '../modules/stripeConnect/bindings/stripe_connect_binding.dart';
 import '../modules/stripeConnect/views/stripe_connect_view.dart';
-import '../modules/wallet/views/ussd_waiting_view.dart';
 import '../modules/wallet/views/wallet_history_view.dart';
 import '../modules/welcomer/bindings/welcomer_binding.dart';
 import '../modules/welcomer/views/welcomer_view.dart';
@@ -320,11 +319,6 @@ class AppPages {
       name: _Paths.ADD_PRODUCT,
       page: () => const AddProductView(),
       binding: AddProductBinding(),
-    ),
-    GetPage(
-      name: _Paths.USSD_WAITING,
-      page: () => const UssdWaitingView(),
-      binding: WalletBinding(),
     ),
     GetPage(
       name: _Paths.WALLET_HISTORY,

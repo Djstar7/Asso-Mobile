@@ -1,7 +1,11 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../core/services/locale_service.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/models/invoice_model.dart';
 import '../../../data/providers/api_provider.dart';
@@ -142,54 +146,68 @@ class InvoicesController extends GetxController {
     await fetchInvoices(refresh: true);
   }
 
-  /// Download or open invoice
-  Future<void> downloadInvoice(InvoiceModel invoice) async {
-    final url = invoice.pdfUrl ?? invoice.downloadUrl;
+  /// Facture en cours de téléchargement (affiche une roue sur sa carte).
+  final downloadingNumber = RxnString();
 
+  /// Télécharge le PDF de la facture AVEC la session de l'utilisateur, puis
+  /// ouvre le partage système (enregistrer dans Fichiers, ouvrir, envoyer…).
+  /// Ouvrir le lien dans le navigateur échouait : la route exige d'être connecté.
+  Future<void> downloadInvoice(InvoiceModel invoice) async {
+    final url = invoice.pdfUrl;
     if (url == null) {
-      Get.snackbar(
-        'invoices.error'.tr,
-        'invoices.download_url_unavailable'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.accent,
-        colorText: Colors.white,
-      );
+      _error('invoices.download_url_unavailable'.tr);
       return;
     }
-
-    developer.log(
-      'Downloading invoice',
-      name: 'InvoicesController',
-      error: 'URL: $url',
-    );
+    if (downloadingNumber.value != null) return;
+    downloadingNumber.value = invoice.invoiceNumber;
 
     try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        Get.snackbar(
-          'invoices.error'.tr,
-          'invoices.open_link_error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppDesign.danger,
-          colorText: Colors.white,
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer ${ApiProvider.token}',
+          'Accept': 'application/pdf',
+          // Facture rédigée dans la langue de l'app.
+          'Accept-Language': LocaleService.currentLanguage,
+        },
+      );
+      final isPdf = (response.headers['content-type'] ?? '').contains('pdf');
+      if (response.statusCode != 200 || !isPdf) {
+        developer.log(
+          'Invoice download failed',
+          name: 'InvoicesController',
+          error: 'Status: ${response.statusCode}',
         );
+        _error('invoices.download_error'.tr);
+        return;
       }
+
+      final dir = await getTemporaryDirectory();
+      final safeName = invoice.invoiceNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+      final file = File('${dir.path}/facture_$safeName.pdf');
+      await file.writeAsBytes(response.bodyBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'package_subscription.invoice.share_subject'.tr,
+        text: 'package_subscription.invoice.share_text'.tr,
+      );
     } catch (e) {
-      developer.log(
-        'Error downloading invoice',
-        name: 'InvoicesController',
-        error: e,
-      );
-      Get.snackbar(
-        'invoices.error'.tr,
-        'invoices.download_error'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.danger,
-        colorText: Colors.white,
-      );
+      developer.log('Error downloading invoice', name: 'InvoicesController', error: e);
+      _error('invoices.download_error'.tr);
+    } finally {
+      downloadingNumber.value = null;
     }
+  }
+
+  void _error(String message) {
+    Get.snackbar(
+      'invoices.error'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppDesign.danger,
+      colorText: Colors.white,
+    );
   }
 
   String getTypeLabel(String type) {

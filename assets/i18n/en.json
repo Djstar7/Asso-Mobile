@@ -755,9 +755,9 @@
     },
     "notifications": {
       "wallet_body": "Transaction updated",
-      "package_activated_title": "🎉 Package activated",
+      "package_activated_title": "Package activated",
       "package_activated_body": "Your package has been activated successfully",
-      "package_expiring_title": "⚠️ Package expiring",
+      "package_expiring_title": "Package expiring",
       "package_expiring_body": "Your package will expire soon",
       "order_title": "Order",
       "order_body": "Order update"
@@ -964,19 +964,19 @@
   },
   "wallet": {
     "notif": {
-      "deposit_success_title": "💰 Deposit successful",
+      "deposit_success_title": "Deposit successful",
       "deposit_success_message": "Your deposit of @amount has been confirmed.",
-      "deposit_failed_title": "❌ Deposit failed",
+      "deposit_failed_title": "Deposit failed",
       "deposit_failed_message": "The deposit failed",
-      "withdrawal_done_title": "💸 Withdrawal completed",
+      "withdrawal_done_title": "Withdrawal completed",
       "withdrawal_done_message": "Your withdrawal of @amount has been sent.",
-      "withdrawal_failed_title": "⚠️ Withdrawal failed",
+      "withdrawal_failed_title": "Withdrawal failed",
       "withdrawal_failed_message": "Your withdrawal failed. The amount has been refunded to your wallet.",
-      "funds_unlocked_title": "💰 Funds released!",
+      "funds_unlocked_title": "Funds released!",
       "funds_unlocked_message": "You received @amount. The funds are now available in your wallet.",
-      "recharge_confirmed_title": "💰 Top-up confirmed",
+      "recharge_confirmed_title": "Top-up confirmed",
       "recharge_confirmed_message": "Your deposit has been credited to your wallet.",
-      "recharge_failed_title": "❌ Top-up failed",
+      "recharge_failed_title": "Top-up failed",
       "recharge_failed_message": "The payment did not go through.",
       "withdrawal_sent_message": "Your withdrawal has been sent to the recipient.",
       "withdrawal_refunded_message": "The amount has been refunded to your wallet."
@@ -1099,29 +1099,12 @@
       "yesterday_at": "Yesterday at @time",
       "days": "@days days ago"
     },
-    "ussd": {
-      "pending_validation": "Awaiting validation...",
-      "in_progress": "Payment in progress...",
-      "retry_error": "An error occurred. Please try again.",
-      "validated": "Payment validated successfully!",
-      "timeout_title": "Timed out",
-      "timeout_message": "The waiting time has expired. Check your phone and your wallet.",
-      "cancel_title": "Cancel the top-up?",
-      "cancel_message": "The payment is being processed. Are you sure you want to leave?",
-      "keep_waiting": "Keep waiting",
-      "remaining_time": "Time remaining: @seconds seconds",
-      "number": "Number",
-      "instructions_title": "Instructions",
-      "instructions": "1. Check your phone (@phone)\n2. A USSD notification should appear\n3. Enter your PIN code to confirm\n4. Wait for confirmation",
-      "continue": "Continue",
-      "cancel_recharge": "Cancel top-up"
-    },
     "webview": {
       "cancelled": "Payment cancelled",
       "error_occurred": "An error occurred",
       "payment_done": "Payment completed",
       "cancelled_or_failed": "Payment cancelled or failed",
-      "success_credited": "Payment successful! +@amount FCFA credited",
+      "success_credited": "Payment successful! Your Wallet has been credited.",
       "success_title": "Success",
       "failure_title": "Failed",
       "title_paypal": "PayPal payment",
@@ -1200,7 +1183,7 @@
       "balance_of": "@label balance",
       "amount_label": "Amount to withdraw (@currency)",
       "amount_hint": "e.g. @amount",
-      "min_amount": "The minimum amount is @amount FCFA",
+      "min_amount": "The minimum amount is @amount",
       "remember_number": "Remember this number for future withdrawals",
       "replace_account": "Replace my saved withdrawal account",
       "notes_label": "Notes (optional)",
@@ -1459,7 +1442,7 @@
       "method_unavailable": "This payment method is not yet available for certifications.",
       "order_created": "Order created!",
       "validate_ussd": "Approve the payment on your phone (USSD). You will be notified once confirmed.",
-      "certified": "Shop certified ✅"
+      "certified": "Shop certified"
     }
   },
   "boost": {
@@ -1488,7 +1471,7 @@
     },
     "stopped_title": "Sponsoring stopped",
     "stopped_message": "The campaign has ended.",
-    "activated_title": "Sponsoring activated 🚀",
+    "activated_title": "Sponsoring activated",
     "activated_message": "Your item will be seen by @reach.",
     "error": "Error",
     "detail": {
@@ -1540,7 +1523,7 @@
     }
   },
   "chat": {
-    "image_message": "📷 Image",
+    "image_message": "Image",
     "default_user_name": "User",
     "time": {
       "minutes_ago": "@minutesmin ago",
@@ -1846,6 +1829,7 @@
       "step_option_quantity": "Enter the quantity for at least one option",
       "step_quantity": "Enter a quantity",
       "step_address": "Enter the delivery address",
+      "step_address_details": "Add the address details",
       "step_phone": "Enter a valid contact number",
       "step_weight_missing": "Delivery unavailable: the seller must enter the product weight",
       "step_partner": "Choose a delivery partner",
@@ -1855,7 +1839,7 @@
       "sheet_title": "Place order",
       "to_continue": "To continue: @step",
       "review": "Review my order",
-      "address_details_label": "Address details (optional)",
+      "address_details_label": "Address details *",
       "address_details_hint": "District, street, gate, floor, landmark…",
       "contact_phone_label": "Contact number *",
       "contact_phone_hint": "e.g. 6XXXXXXXX",
@@ -3085,7 +3069,7 @@
       "fixed": "Fixed price",
       "weight_category": "By weight category",
       "volumetric": "Volumetric weight",
-      "fixed_desc": "Fixed price: @price FCFA",
+      "fixed_desc": "Fixed price: @price",
       "category_desc": "By category: @categories",
       "volumetric_desc": "Volumetric weight (L × W × H) / 139"
     },
@@ -3727,9 +3711,9 @@
       "choose_offer": "Choose delivery from Douala.",
       "gps_position": "GPS position (@lat, @lng)",
       "quote_failed": "Unable to calculate delivery. Please try again.",
-      "details_label": "Details (required)",
+      "details_label": "Address details *",
       "details_hint": "Landmark, building, gate…",
-      "phone_label": "Contact number",
+      "phone_label": "Contact number *",
       "phone_hint": "E.g. 6 90 00 00 00",
       "locating": "Detecting your location…",
       "where_to_deliver": "Where should we deliver your order?",

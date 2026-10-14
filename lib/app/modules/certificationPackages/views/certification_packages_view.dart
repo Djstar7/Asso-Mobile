@@ -426,11 +426,11 @@ class CertificationPackagesView
     // Code commercial saisi : il doit être valide avant de payer (P6).
     if (!await controller.salesCode.ensureReady()) return;
 
-    final display = CurrencyService.displayFromPivot(price);
-
+    // Montant en FCFA (pivot) : le sélecteur l'affiche dans la devise de
+    // l'utilisateur, le serveur vérifie minimum et solde sur ce montant exact.
     final method = await PaymentMethodSelector.show(
-      amount: display.amount,
-      currency: display.currency,
+      amount: price,
+      currency: CurrencyService.pivot,
       amountLabel: 'certification.view.price'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,

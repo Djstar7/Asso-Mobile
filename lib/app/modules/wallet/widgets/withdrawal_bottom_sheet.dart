@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../routes/app_pages.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/api_provider.dart';
 import '../controllers/wallet_controller.dart';
 import 'kpay_phone_selector.dart';
@@ -67,7 +68,14 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
 
   /// Libellé de devise affiché (FCFA pour XAF/XOF, sinon le code ISO).
   String _currencyLabel(String c) =>
-      (c == 'XAF' || c == 'XOF') ? '$c (FCFA)' : c;
+      (c == 'XAF' || c == 'XOF') ? 'FCFA' : c;
+
+  /// Devise de la saisie : celle de l'opérateur (Mobile Money), sinon FCFA.
+  String get _inputCurrency => isKpay ? _kpayCurrency : CurrencyService.pivot;
+
+  /// Montant dans la devise de la saisie (solde, minimum).
+  String _fmtInput(double amount) =>
+      CurrencyService.formatAmountInCurrency(amount, _inputCurrency);
 
   /// Convertit le montant déjà saisi lorsqu'on change de devise d'opérateur.
   Future<void> _convertFieldToCurrency(String from, String to) async {
@@ -158,14 +166,16 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'wallet.withdrawal.balance_of'.trParams({'label': isKpay ? _kpayCurrency : providerLabel}),
+                    'wallet.withdrawal.balance_of'.trParams({
+                      'label': isKpay ? _currencyLabel(_kpayCurrency) : providerLabel,
+                    }),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppThemeSystem.getSecondaryTextColor(context),
                     ),
                   ),
                   Text(
-                    '${_availableBalance.toStringAsFixed(0)} ${isKpay ? _kpayCurrency : "FCFA"}',
+                    _fmtInput(_availableBalance),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -189,8 +199,8 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
               decoration: InputDecoration(
                 labelText: isKpay
                     ? 'wallet.withdrawal.amount_label'.trParams({'currency': _currencyLabel(_kpayCurrency)})
-                    : 'wallet.withdrawal.amount_label'.trParams({'currency': 'FCFA'}),
-                hintText: 'wallet.withdrawal.amount_hint'.trParams({'amount': minAmount.toStringAsFixed(0)}),
+                    : 'wallet.withdrawal.amount_label'.trParams({'currency': _currencyLabel(CurrencyService.pivot)}),
+                hintText: 'wallet.withdrawal.amount_hint'.trParams({'amount': _fmtInput(minAmount)}),
                 prefixIcon: const Icon(Icons.attach_money),
                 filled: true,
                 fillColor: AppThemeSystem.getSurfaceColor(context),
@@ -220,7 +230,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
                 }
                 final amount = double.tryParse(value);
                 if (amount == null || amount < minAmount) {
-                  return 'wallet.withdrawal.min_amount'.trParams({'amount': minAmount.toStringAsFixed(0)});
+                  return 'wallet.withdrawal.min_amount'.trParams({'amount': _fmtInput(minAmount)});
                 }
                 if (amount > _availableBalance) {
                   return 'wallet.stripe_dialog.insufficient_balance'.tr;

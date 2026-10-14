@@ -145,7 +145,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     color: _statusColor(order.status).withValues(alpha: 0.1),
                     borderRadius: context.borderRadius(BorderRadiusType.small),
                   ),
-                  child: Text(order.status.icon, style: const TextStyle(fontSize: 20)),
+                  child: Icon(order.status.icon, size: 22, color: _statusColor(order.status)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -325,20 +325,6 @@ class ShipmentView extends GetView<MyOrderController> {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          if (order.status == CustomerOrderStatus.pending)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => controller.cancelOrder(order.id),
-                icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: Text('shipment.cancel'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppDesign.danger,
-                  side: const BorderSide(color: AppDesign.danger),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-
           if (order.status == CustomerOrderStatus.shipped && order.deliveryPersonPhone != null) ...[
             if (order.status == CustomerOrderStatus.pending) const SizedBox(width: 8),
             IconButton(

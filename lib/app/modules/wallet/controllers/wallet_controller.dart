@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:asso/app/routes/app_pages.dart';
 import 'package:get/get.dart';
 
@@ -181,6 +182,7 @@ class WalletController extends GetxController {
                 .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
+            icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
             duration: const Duration(seconds: 4),
           );
         } else if (type == 'wallet_credit_failed') {
@@ -193,6 +195,7 @@ class WalletController extends GetxController {
             data['reason'] as String? ?? 'wallet.notif.deposit_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
+            icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
             duration: const Duration(seconds: 5),
           );
         } else if (type == 'wallet_withdrawal_completed') {
@@ -206,6 +209,7 @@ class WalletController extends GetxController {
                 .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
+            icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
             duration: const Duration(seconds: 4),
           );
         } else if (type == 'wallet_withdrawal_failed') {
@@ -218,6 +222,7 @@ class WalletController extends GetxController {
             'wallet.notif.withdrawal_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
+            icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
             duration: const Duration(seconds: 5),
           );
         } else if (type == 'wallet_unlocked') {
@@ -231,6 +236,7 @@ class WalletController extends GetxController {
                 .trParams({'amount': _notifAmount(data['amount'])}),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
+            icon: Icon(Icons.lock_open_rounded, color: Get.theme.colorScheme.onPrimary),
             duration: const Duration(seconds: 4),
           );
         }
@@ -656,6 +662,7 @@ class WalletController extends GetxController {
           'wallet.notif.recharge_confirmed_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
+          icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
           duration: const Duration(seconds: 4),
         );
       } else if (status == 'failed' || status == 'cancelled') {
@@ -664,6 +671,7 @@ class WalletController extends GetxController {
           res['message'] ?? 'wallet.notif.recharge_failed_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
+          icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
           duration: const Duration(seconds: 5),
         );
       }
@@ -684,6 +692,7 @@ class WalletController extends GetxController {
           'wallet.notif.withdrawal_sent_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
+          icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
           duration: const Duration(seconds: 4),
         );
         return;
@@ -694,6 +703,7 @@ class WalletController extends GetxController {
           'wallet.notif.withdrawal_refunded_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
+          icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
           duration: const Duration(seconds: 5),
         );
         return;

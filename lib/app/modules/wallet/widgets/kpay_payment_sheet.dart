@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'kpay_phone_selector.dart';
-import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
@@ -46,66 +45,11 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
   String? _phone;
   bool _valid = false;
 
-  late String _currency = _source;
-  double? _converted; // montant converti dans la devise de l'opérateur
-  bool _converting = false;
-
-  String get _source {
-    final code = widget.currency.toUpperCase();
-    return code == 'FCFA' ? 'XAF' : code;
-  }
-
-  /// Montant à payer : un montant FCFA est affiché dans la devise de
-  /// l'utilisateur, avec le montant FCFA entre parenthèses s'il diffère.
-  String get _amountText {
-    if (_source != 'XAF') {
-      return CurrencyService.formatAmountInCurrency(widget.amount, _source);
-    }
-    final display = CurrencyService.formatFromPivot(widget.amount);
-    final pivot = CurrencyService.formatAmountInCurrency(widget.amount, 'XAF');
-    return display == pivot ? pivot : '$display ($pivot)';
-  }
-
-  /// Convertit le montant dans la devise de l'opérateur sélectionné.
-  /// Purement pour l'affichage : la conversion débitée est refaite côté serveur.
-  Future<void> _convertFor(String currency) async {
-    if (currency == _source || currency.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _currency = _source;
-          _converted = null;
-          _converting = false;
-        });
-      }
-      return;
-    }
-    setState(() {
-      _currency = currency;
-      _converting = true;
-    });
-    try {
-      final res = await ApiProvider.get(
-        '/v1/currencies/convert',
-        queryParams: {'from': _source, 'to': currency, 'amount': widget.amount},
-      );
-      final value = res.data?['data']?['converted'];
-      if (mounted) {
-        setState(() {
-          _converted = (value is num)
-              ? value.toDouble()
-              : double.tryParse('$value');
-          _converting = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _converted = null;
-          _converting = false;
-        });
-      }
-    }
-  }
+  /// Montant à payer, affiché uniquement dans la devise de l'utilisateur
+  /// (converti depuis sa devise d'origine : FCFA, devise d'une offre Diaspo…).
+  /// La conversion vers la devise de l'opérateur est faite par le serveur.
+  String get _amountText =>
+      CurrencyService.formatFromCurrency(widget.amount, widget.currency);
 
   @override
   Widget build(BuildContext context) {
@@ -165,60 +109,18 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                       widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
-                    Text(
-                      _amountText,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppDesign.accentText,
+                    Obx(
+                      () => Text(
+                        _amountText,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppDesign.accentText,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                // Montant converti dans la devise de l'opérateur (affichage)
-                if (_currency != _source &&
-                    (_converting || _converted != null)) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(height: 1),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.sync_alt_rounded,
-                            size: 15,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'wallet.kpay.debited_by_operator'.tr,
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      _converting
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              '≈ ${CurrencyService.formatAmountInCurrency(_converted!, _currency)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppDesign.neutral900,
-                              ),
-                            ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -237,10 +139,6 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                     _phone = phoneNumber;
                     _valid = isValid;
                   });
-                  // Convertir l'affichage dès que la devise de l'opérateur change
-                  if (currency != _currency) {
-                    _convertFor(currency);
-                  }
                 },
           ),
         ],

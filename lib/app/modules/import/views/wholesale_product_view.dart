@@ -164,8 +164,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   String _fmt(double valueInXaf) => CurrencyService.formatFromPivot(valueInXaf);
 
+  /// Montant renvoyé par le serveur dans [currency] (paliers, tarifs de
+  /// livraison), affiché dans la devise de l'utilisateur.
   String _fmtConverted(double amount, String currency) =>
-      CurrencyService.formatAmountInCurrency(amount, currency);
+      CurrencyService.formatFromCurrency(amount, currency);
 
   bool get _hasVariants => !_variantCatalog.isEmpty;
 

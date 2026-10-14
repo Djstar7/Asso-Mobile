@@ -296,10 +296,10 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('diaspo_detail.price_per_kg'.tr, style: TextStyle(fontSize: 14, color: _muted(isDark))),
-              Text(
-                '${offer.formattedPricePerKg} ${offer.currencySymbol}/kg',
+              Obx(() => Text(
+                '${offer.displayPricePerKg}/kg',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppThemeSystem.primaryColor),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 14),
