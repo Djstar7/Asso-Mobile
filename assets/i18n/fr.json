@@ -1183,7 +1183,7 @@
       "balance_of": "Solde @label",
       "amount_label": "Montant à retirer (@currency)",
       "amount_hint": "Ex: @amount",
-      "min_amount": "Le montant minimum est de @amount FCFA",
+      "min_amount": "Le montant minimum est de @amount",
       "remember_number": "Mémoriser ce numéro pour mes prochains retraits",
       "replace_account": "Remplacer mon compte de retrait enregistré",
       "notes_label": "Notes (optionnel)",

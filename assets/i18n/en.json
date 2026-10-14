@@ -1183,7 +1183,7 @@
       "balance_of": "@label balance",
       "amount_label": "Amount to withdraw (@currency)",
       "amount_hint": "e.g. @amount",
-      "min_amount": "The minimum amount is @amount FCFA",
+      "min_amount": "The minimum amount is @amount",
       "remember_number": "Remember this number for future withdrawals",
       "replace_account": "Replace my saved withdrawal account",
       "notes_label": "Notes (optional)",
