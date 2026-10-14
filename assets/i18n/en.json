@@ -3730,7 +3730,7 @@
       "quote_failed": "Unable to calculate delivery. Please try again.",
       "details_label": "Address details *",
       "details_hint": "Landmark, building, gate…",
-      "phone_label": "Contact number",
+      "phone_label": "Contact number *",
       "phone_hint": "E.g. 6 90 00 00 00",
       "locating": "Detecting your location…",
       "where_to_deliver": "Where should we deliver your order?",
