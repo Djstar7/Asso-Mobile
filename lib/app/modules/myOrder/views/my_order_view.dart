@@ -454,9 +454,7 @@ class MyOrderView extends GetView<MyOrderController> {
   }
 
   bool _shouldShowActions(CustomerOrder order) {
-    return order.status == CustomerOrderStatus.pending ||
-        order.status == CustomerOrderStatus.confirmed ||
-        order.status == CustomerOrderStatus.shipped ||
+    return order.status == CustomerOrderStatus.shipped ||
         order.status == CustomerOrderStatus.delivered;
   }
 
@@ -465,28 +463,6 @@ class MyOrderView extends GetView<MyOrderController> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // Bouton Annuler (seulement pour pending et confirmed)
-          if (order.status == CustomerOrderStatus.pending ||
-              order.status == CustomerOrderStatus.confirmed)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => controller.cancelOrder(order.id),
-                icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: Text('my_order.actions.cancel'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppDesign.danger,
-                  side: const BorderSide(color: AppDesign.danger),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-
-          // Espacement
-          if ((order.status == CustomerOrderStatus.pending ||
-                  order.status == CustomerOrderStatus.confirmed) &&
-              order.status == CustomerOrderStatus.shipped)
-            const SizedBox(width: 12),
-
           // Bouton Suivre (seulement pour shipped)
           if (order.status == CustomerOrderStatus.shipped) ...[
             if (order.status == CustomerOrderStatus.pending ||
