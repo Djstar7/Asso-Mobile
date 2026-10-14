@@ -1099,23 +1099,6 @@
       "yesterday_at": "Yesterday at @time",
       "days": "@days days ago"
     },
-    "ussd": {
-      "pending_validation": "Awaiting validation...",
-      "in_progress": "Payment in progress...",
-      "retry_error": "An error occurred. Please try again.",
-      "validated": "Payment validated successfully!",
-      "timeout_title": "Timed out",
-      "timeout_message": "The waiting time has expired. Check your phone and your wallet.",
-      "cancel_title": "Cancel the top-up?",
-      "cancel_message": "The payment is being processed. Are you sure you want to leave?",
-      "keep_waiting": "Keep waiting",
-      "remaining_time": "Time remaining: @seconds seconds",
-      "number": "Number",
-      "instructions_title": "Instructions",
-      "instructions": "1. Check your phone (@phone)\n2. A USSD notification should appear\n3. Enter your PIN code to confirm\n4. Wait for confirmation",
-      "continue": "Continue",
-      "cancel_recharge": "Cancel top-up"
-    },
     "webview": {
       "cancelled": "Payment cancelled",
       "error_occurred": "An error occurred",

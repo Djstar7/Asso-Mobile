@@ -1099,23 +1099,6 @@
       "yesterday_at": "Hier à @time",
       "days": "@days jours"
     },
-    "ussd": {
-      "pending_validation": "Validation en attente...",
-      "in_progress": "Paiement en cours...",
-      "retry_error": "Une erreur est survenue. Veuillez réessayer.",
-      "validated": "Paiement validé avec succès !",
-      "timeout_title": "Délai dépassé",
-      "timeout_message": "Le délai d'attente a été dépassé. Vérifiez votre téléphone et votre wallet.",
-      "cancel_title": "Annuler la recharge ?",
-      "cancel_message": "Le paiement est en cours de traitement. Êtes-vous sûr de vouloir quitter ?",
-      "keep_waiting": "Continuer d'attendre",
-      "remaining_time": "Temps restant: @seconds secondes",
-      "number": "Numéro",
-      "instructions_title": "Instructions",
-      "instructions": "1. Vérifiez votre téléphone (@phone)\n2. Une notification USSD devrait apparaître\n3. Entrez votre code PIN pour confirmer\n4. Attendez la confirmation",
-      "continue": "Continuer",
-      "cancel_recharge": "Annuler la recharge"
-    },
     "webview": {
       "cancelled": "Paiement annulé",
       "error_occurred": "Une erreur s'est produite",
