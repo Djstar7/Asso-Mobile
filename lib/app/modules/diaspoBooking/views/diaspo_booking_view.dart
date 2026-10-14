@@ -146,7 +146,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 child: _statTile(
                   isDark,
                   label: 'diaspo_booking.price_per_kg'.tr,
-                  value: '${offer.formattedPricePerKg} ${offer.currencySymbol}',
+                  value: offer.displayPricePerKg,
                   valueColor: AppThemeSystem.primaryColor,
                 ),
               ),
