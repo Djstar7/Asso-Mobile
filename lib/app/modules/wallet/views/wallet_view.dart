@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
   import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
-  import '../../../data/providers/storage_service.dart';
   import '../widgets/withdrawal_bottom_sheet.dart';
   import '../widgets/recharge_bottom_sheet.dart';
   import '../widgets/payout_account_sheet.dart';
@@ -133,13 +132,13 @@ import '../../../core/widgets/app_ui.dart';
     /// (compte de virement Stripe Connect) tant qu'il n'est pas approuvé.
     Widget _buildIbanSyncBanner(BuildContext context) {
       return Obx(() {
-        // Réservé aux vendeurs : un acheteur n'a pas d'IBAN de versement.
-        final isVendor = StorageService.getUser()?.isVendor ?? false;
+        // Vendeur ET acheteur : l'IBAN sert aux retraits et aux remboursements
+        // de litige virés par ASSO. Seul un invité n'a rien à synchroniser.
         final status = controller.stripeWithdrawStatus.value; // null|pending|approved|rejected
         // Afficher uniquement quand l'IBAN est absent ou refusé (pas "en cours").
         final bool rejected = status == 'rejected';
         final bool absent = status == null || status.isEmpty;
-        if (!isVendor || !(absent || rejected)) {
+        if (AuthGuard.isGuest || !(absent || rejected)) {
           return const SizedBox.shrink();
         }
 
@@ -1145,43 +1144,6 @@ import '../../../core/widgets/app_ui.dart';
     /// Petit lien texte discret sous la carte IBAN — pas de bouton
 /// Petit lien texte discret sous la carte IBAN — pas de bouton
 Widget _buildIbanConfigLink(BuildContext context, String? status) {
-  final isVendor = StorageService.getUser()?.isVendor ?? false;
-
-  // Cas 1 : pas encore vendeur → on l'invite à activer le mode vendeur
-  if (!isVendor) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, left: 4),
-      child: InkWell(
-        onTap: () {
-          if (AuthGuard.isGuest) {
-            AppDialogs.showLoginRequiredDialog(context, featureName: 'wallet.iban_link.vendor_mode_feature'.tr);
-          } else {
-            controller.handleVendorModeNavigation();
-          }
-        },
-        borderRadius: BorderRadius.circular(6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.store_rounded, size: 13, color: AppThemeSystem.primaryColor),
-            const SizedBox(width: 4),
-            Text(
-              'wallet.iban_link.become_vendor'.tr,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppThemeSystem.primaryColor,
-                decoration: TextDecoration.underline,
-                decorationColor: AppThemeSystem.primaryColor.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Cas 2 : déjà vendeur, IBAN à configurer/corriger
   if (status == 'approved') return const SizedBox.shrink();
 
   final color = status == 'rejected'
@@ -1197,7 +1159,15 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
   return Padding(
     padding: const EdgeInsets.only(top: 8, left: 4),
     child: InkWell(
-      onTap: () => Get.toNamed('/stripe-connect'),
+      // Ouvert à tout compte connecté (vendeur comme acheteur) ; l'invité
+      // doit d'abord se connecter.
+      onTap: () {
+        if (AuthGuard.isGuest) {
+          AppDialogs.showLoginRequiredDialog(context, featureName: 'wallet.iban_link.bank_transfer_feature'.tr);
+        } else {
+          Get.toNamed('/stripe-connect');
+        }
+      },
       borderRadius: BorderRadius.circular(6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
