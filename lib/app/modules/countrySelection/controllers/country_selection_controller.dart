@@ -174,6 +174,10 @@ class CountrySelectionController extends GetxController {
 
       allCountries.value = options;
       _applyFilter('');
+
+      // Aucun pays reçu : sans cela l'écran afficherait « Aucun résultat »,
+      // sans bouton pour réessayer, alors que le pays est obligatoire.
+      if (options.isEmpty) hasError.value = true;
     } catch (e) {
       hasError.value = true;
       Get.snackbar(
