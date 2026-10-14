@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/widgets/deposit_widgets.dart';
@@ -32,20 +33,22 @@ extension CustomerOrderStatusExtension on CustomerOrderStatus {
     }
   }
 
-  String get icon {
+  /// Icône native du statut (rendu identique sur toutes les plateformes, à
+  /// colorer avec la couleur du statut).
+  IconData get icon {
     switch (this) {
       case CustomerOrderStatus.pending:
-        return '⏳';
+        return Icons.hourglass_top_rounded;
       case CustomerOrderStatus.confirmed:
-        return '✅';
+        return Icons.check_circle_outline_rounded;
       case CustomerOrderStatus.preparing:
-        return '📦';
+        return Icons.inventory_2_outlined;
       case CustomerOrderStatus.shipped:
-        return '🚚';
+        return Icons.local_shipping_outlined;
       case CustomerOrderStatus.delivered:
-        return '✨';
+        return Icons.task_alt_rounded;
       case CustomerOrderStatus.cancelled:
-        return '❌';
+        return Icons.cancel_outlined;
     }
   }
 }

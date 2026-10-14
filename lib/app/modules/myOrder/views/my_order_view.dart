@@ -211,9 +211,10 @@ class MyOrderView extends GetView<MyOrderController> {
               color: _getStatusColor(order.status).withValues(alpha: 0.1),
               borderRadius: context.borderRadius(BorderRadiusType.small),
             ),
-            child: Text(
+            child: Icon(
               order.status.icon,
-              style: const TextStyle(fontSize: 20),
+              size: 22,
+              color: _getStatusColor(order.status),
             ),
           ),
           const SizedBox(width: 12),

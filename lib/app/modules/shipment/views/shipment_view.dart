@@ -145,7 +145,7 @@ class ShipmentView extends GetView<MyOrderController> {
                     color: _statusColor(order.status).withValues(alpha: 0.1),
                     borderRadius: context.borderRadius(BorderRadiusType.small),
                   ),
-                  child: Text(order.status.icon, style: const TextStyle(fontSize: 20)),
+                  child: Icon(order.status.icon, size: 22, color: _statusColor(order.status)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
