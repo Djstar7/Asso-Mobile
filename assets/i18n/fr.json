@@ -2791,6 +2791,7 @@
     }
   },
   "order_management": {
+    "refresh": "Actualiser",
     "title": "Gestion des commandes",
     "stats": {
       "total": "Total",
