@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
-import '../../../core/utils/app_theme_system.dart';
 import '../../../data/providers/currency_service.dart';
+import 'confirm_code_parts.dart';
 import '../../../data/providers/diaspo_service.dart';
 
 class QuickConfirmCodeDialog extends StatefulWidget {
@@ -50,7 +49,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
       Get.snackbar(
         'wallet.confirm_code.error'.tr,
         'wallet.confirm_code.code_required'.tr,
-        backgroundColor: AppDesign.accent,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -60,7 +59,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
       Get.snackbar(
         'wallet.confirm_code.error'.tr,
         'wallet.confirm_code.code_length'.tr,
-        backgroundColor: AppDesign.accent,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
       return;
@@ -81,96 +80,15 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
 
       // Show success message
       Get.dialog(
-        Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppDesign.success,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle,
-                    color: AppDesign.success,
-                    size: 48,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'wallet.confirm_code.delivery_confirmed'.tr,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppThemeSystem.getPrimaryTextColor(Get.context!),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'wallet.confirm_code.funds_available'.tr,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppThemeSystem.getSecondaryTextColor(Get.context!),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppDesign.success,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        '💰',
-                        style: TextStyle(fontSize: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '+${_formatAmount(result.subtotal)}',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppDesign.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Get.back();
-                      // Attendre 1 seconde pour laisser le backend traiter la transaction
-                      await Future.delayed(const Duration(seconds: 1));
-                      // Call success callback after closing success dialog
-                      widget.onSuccess();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeSystem.primaryColor,
-                      foregroundColor: AppThemeSystem.whiteColor,
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text('wallet.confirm_code.close'.tr),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ConfirmCodeSuccessDialog(
+          amountLabel: _formatAmount(result.subtotal),
+          onClose: () async {
+            Get.back();
+            // Attendre 1 seconde pour laisser le backend traiter la transaction
+            await Future.delayed(const Duration(seconds: 1));
+            // Call success callback after closing success dialog
+            widget.onSuccess();
+          },
         ),
         barrierDismissible: false,
       );
@@ -192,7 +110,7 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDesign.radiusLg)),
       // Seul le contenu défile : les boutons restent au pied du dialogue,
       // au-dessus du clavier, au lieu de disparaître en bas du défilement.
       child: Column(
@@ -200,181 +118,34 @@ class _QuickConfirmCodeDialogState extends State<QuickConfirmCodeDialog> {
         children: [
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              padding: const EdgeInsets.fromLTRB(AppDesign.space6, AppDesign.space6, AppDesign.space6, 0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header Icon
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppDesign.info,
-                          AppDesign.info,
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.lock_open,
-                      color: Colors.white,
-                      size: 40,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Title
+                  ConfirmCodeHeaderIcon(icon: Icons.lock_open_rounded, tone: ToneColors.accent(context)),
+                  const SizedBox(height: AppDesign.space4),
                   Text(
                     'wallet.confirm_code.unlock_funds'.tr,
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.getPrimaryTextColor(context),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesign.textPrimary(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // Instructions
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppDesign.warning,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppDesign.warning,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppDesign.warning,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'wallet.confirm_code.enter_client_code'.tr,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppDesign.warning,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Code input field
-                  TextField(
+                  const SizedBox(height: AppDesign.space4),
+                  ConfirmCodeNotice(text: 'wallet.confirm_code.enter_client_code'.tr),
+                  const SizedBox(height: AppDesign.space5),
+                  ConfirmCodeField(
                     controller: _codeController,
                     focusNode: _codeFocusNode,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 12,
-                    ),
-                    keyboardType: TextInputType.text,
-                    textCapitalization: TextCapitalization.characters,
-                    maxLength: 6,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        return newValue.copyWith(
-                          text: newValue.text.toUpperCase(),
-                        );
-                      }),
-                    ],
-                    decoration: InputDecoration(
-                      hintText: '••••••',
-                      hintStyle: TextStyle(
-                        fontSize: 32,
-                        color: AppThemeSystem.getSecondaryTextColor(context).withValues(alpha: 0.3),
-                        letterSpacing: 12,
-                      ),
-                      filled: true,
-                      fillColor: AppThemeSystem.getSurfaceColor(context),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: AppThemeSystem.getBorderColor(context),
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: AppThemeSystem.primaryColor,
-                          width: 2,
-                        ),
-                      ),
-                      counterText: '',
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 16,
-                      ),
-                    ),
+                    onSubmitted: _submitCode,
                   ),
                 ],
               ),
             ),
           ),
-
-          // Buttons
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Get.back(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppThemeSystem.getSecondaryTextColor(context),
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text('wallet.confirm_code.cancel'.tr),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: Obx(() => ElevatedButton(
-                        onPressed: isSubmitting.value ? null : _submitCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppThemeSystem.primaryColor,
-                          foregroundColor: AppThemeSystem.whiteColor,
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isSubmitting.value
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : Text('wallet.confirm_code.confirm'.tr),
-                      )),
-                ),
-              ],
-            ),
-          ),
+          ConfirmCodeActions(isSubmitting: isSubmitting, onConfirm: _submitCode),
         ],
       ),
     );

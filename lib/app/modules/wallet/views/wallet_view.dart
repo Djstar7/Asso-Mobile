@@ -12,6 +12,7 @@ import '../../../core/widgets/app_ui.dart';
   import '../widgets/payout_account_sheet.dart';
   import '../../../core/values/kpay_catalog.dart';
   import '../widgets/quick_confirm_code_dialog.dart';
+  import '../widgets/confirm_code_parts.dart';
   import '../../payment/widgets/payment_method_selector.dart';
   import '../../../data/models/payment_method_option.dart';
   
@@ -679,6 +680,7 @@ import '../../../core/widgets/app_ui.dart';
     Widget _buildLockedFundsSection(BuildContext context) {
       return Obx(() {
         final bookings = controller.lockedBookings;
+        final tone = ToneColors.accent(context);
 
         // Calculer le total des fonds bloqués pour les diaspo uniquement
         final lockedBalance = bookings.fold<double>(
@@ -693,109 +695,62 @@ import '../../../core/widgets/app_ui.dart';
             children: [
               Row(
                 children: [
-                  const Icon(Icons.lock_clock, size: 20, color: AppDesign.accent),
+                  Icon(Icons.lock_clock_outlined, size: 20, color: AppDesign.icon(context)),
                   const SizedBox(width: 8),
-                  Text(
-                    'wallet.locked.title'.tr,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppThemeSystem.getPrimaryTextColor(context),
+                  Expanded(
+                    child: Text(
+                      'wallet.locked.title'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppThemeSystem.getPrimaryTextColor(context),
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppDesign.accent,
-                      borderRadius: BorderRadius.circular(12),
+                      color: tone.background,
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                      border: Border.all(color: tone.border),
                     ),
                     child: Text(
                       controller.formatPrice(lockedBalance),
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppDesign.accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: tone.foreground,
                       ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 6),
+              Text(
+                'wallet.locked.info'.tr,
+                style: TextStyle(fontSize: 12, height: 1.4, color: AppDesign.textSecondary(context)),
+              ),
               const SizedBox(height: 12),
 
-              // Affichage horizontal scrollable des bookings
-              if (bookings.isEmpty)
-                // Si pas de bookings détaillés, afficher une card générique
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppDesign.accent,
-                        AppDesign.warning,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppDesign.accent,
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 16,
-                            color: AppDesign.accent,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'wallet.locked.info'.tr,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppDesign.accent,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showEnterCodeForUnlock(context),
-                          icon: const Icon(Icons.lock_open, size: 20),
-                          label: Text('wallet.locked.unlock_with_code'.tr),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppThemeSystem.primaryColor,
-                            foregroundColor: AppThemeSystem.whiteColor,
-                            minimumSize: const Size(double.infinity, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+              // Une seule réservation : carte pleine largeur. Plusieurs :
+              // défilement horizontal.
+              if (bookings.length == 1)
+                _buildLockedBookingCard(context, bookings.first)
               else
-                // Afficher les bookings individuellement avec scroll horizontal
                 SizedBox(
-                  height: 195,
-                  child: ListView.builder(
+                  height: 188,
+                  child: ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.none,
                     itemCount: bookings.length,
-                    itemBuilder: (context, index) {
-                      final booking = bookings[index];
-                      return _buildLockedBookingCard(context, booking);
-                    },
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) => SizedBox(
+                      width: 270,
+                      child: _buildLockedBookingCard(context, bookings[index]),
+                    ),
                   ),
                 ),
             ],
@@ -809,32 +764,15 @@ import '../../../core/widgets/app_ui.dart';
       final subtotal = booking['subtotal'] as double;
       final kgBooked = booking['kg_booked'] as double;
       final buyerName = booking['buyer_name'] ?? 'wallet.default_client'.tr;
+      final tone = ToneColors.accent(context);
 
       return Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppDesign.accent,
-              AppDesign.warning,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppDesign.accent,
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppDesign.accent.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: AppDesign.surface(context),
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+          border: Border.all(color: AppDesign.border(context)),
+          boxShadow: AppDesign.shadowSm(context),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,17 +781,15 @@ import '../../../core/widgets/app_ui.dart';
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: AppDesign.accent,
-                    borderRadius: BorderRadius.circular(8),
+                    color: tone.background,
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                   ),
-                  child: const Text(
-                    '🔒',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  child: Icon(Icons.luggage_outlined, size: 20, color: tone.foreground),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,9 +797,9 @@ import '../../../core/widgets/app_ui.dart';
                       Text(
                         buyerName,
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppDesign.accent,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppDesign.textPrimary(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -872,8 +808,8 @@ import '../../../core/widgets/app_ui.dart';
                       Text(
                         '${kgBooked.toStringAsFixed(1)} kg',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: AppDesign.accent,
+                          fontSize: 12,
+                          color: AppDesign.textSecondary(context),
                         ),
                       ),
                     ],
@@ -881,51 +817,57 @@ import '../../../core/widgets/app_ui.dart';
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                color: AppDesign.surfaceMuted(context),
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'wallet.locked.amount'.tr,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppDesign.accent,
+                  Expanded(
+                    child: Text(
+                      'wallet.locked.amount'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppDesign.textSecondary(context),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     controller.formatPrice(subtotal),
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppDesign.accent,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesign.textPrimary(context),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => _showEnterCodeForUnlock(context),
-                icon: const Icon(Icons.lock_open, size: 16),
+                icon: const Icon(Icons.lock_open_rounded, size: 18),
                 label: Text(
                   'wallet.locked.unlock'.tr,
-                  style: const TextStyle(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
                   foregroundColor: AppThemeSystem.whiteColor,
-                  minimumSize: const Size(double.infinity, 38),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  elevation: 0,
+                  minimumSize: const Size(double.infinity, 42),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                   ),
                 ),
               ),
