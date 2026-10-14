@@ -24,16 +24,6 @@ class OrderManagementView extends GetView<OrderManagementController> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          // Bouton rafraîchir
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: context.primaryTextColor,
-            ),
-            onPressed: controller.loadOrders,
-          ),
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.allOrders.isEmpty) {

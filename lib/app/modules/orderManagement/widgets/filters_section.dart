@@ -68,33 +68,41 @@ class FiltersSection extends GetView<OrderManagementController> {
 
           SizedBox(height: context.elementSpacing),
 
-          // Barre de recherche
-          TextField(
-            controller: controller.searchController,
-            onChanged: (value) => controller.searchQuery.value = value,
-            decoration: InputDecoration(
-              hintText: 'order_management.filters.search_hint'.tr,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: Obx(() {
-                if (controller.searchQuery.value.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    controller.searchController.clear();
-                    controller.searchQuery.value = '';
-                  },
-                );
-              }),
-              border: OutlineInputBorder(
-                borderRadius: context.borderRadius(BorderRadiusType.small),
+          // Barre de recherche + actualisation sur la même ligne
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller.searchController,
+                  onChanged: (value) => controller.searchQuery.value = value,
+                  decoration: InputDecoration(
+                    hintText: 'order_management.filters.search_hint'.tr,
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: Obx(() {
+                      if (controller.searchQuery.value.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          controller.searchController.clear();
+                          controller.searchQuery.value = '';
+                        },
+                      );
+                    }),
+                    border: OutlineInputBorder(
+                      borderRadius: context.borderRadius(BorderRadiusType.small),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
+              const SizedBox(width: 8),
+              _buildRefreshButton(context),
+            ],
           ),
 
           SizedBox(height: context.elementSpacing),
@@ -150,6 +158,47 @@ class FiltersSection extends GetView<OrderManagementController> {
         ],
       ),
     );
+  }
+
+  /// Bouton d'actualisation au bout de la barre de recherche ; il affiche
+  /// une roue pendant le rechargement pour éviter les appuis répétés.
+  Widget _buildRefreshButton(BuildContext context) {
+    return Obx(() {
+      final loading = controller.isLoading.value;
+      return SizedBox(
+        width: 48,
+        height: 48,
+        child: Material(
+          color: context.surfaceColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: context.borderRadius(BorderRadiusType.small),
+            side: BorderSide(color: context.borderColor),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: loading ? null : controller.loadOrders,
+            child: Tooltip(
+              message: 'order_management.refresh'.tr,
+              child: Center(
+                child: loading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppThemeSystem.primaryColor,
+                        ),
+                      )
+                    : Icon(
+                        Icons.refresh_rounded,
+                        color: AppThemeSystem.primaryColor,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildStatusFilter(BuildContext context) {
