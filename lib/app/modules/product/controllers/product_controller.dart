@@ -76,6 +76,7 @@ class ProductController extends GetxController {
 
   /// Texte saisi, observé pour activer/désactiver le bouton de paiement.
   final customerPhone = ''.obs;
+  final addressDetails = ''.obs;
   final PageController imagePageController = PageController();
 
   final deliveryPartners = <Map<String, dynamic>>[].obs;
@@ -272,6 +273,9 @@ class ProductController extends GetxController {
   void onInit() {
     super.onInit();
 
+    addressDetailsController.addListener(
+      () => addressDetails.value = addressDetailsController.text.trim(),
+    );
     customerPhoneController.addListener(
       () => customerPhone.value = customerPhoneController.text.trim(),
     );
@@ -464,6 +468,7 @@ class ProductController extends GetxController {
     else if (orderQuantity.value < 1)
       'product.order.step_quantity'.tr,
     if (!hasValidLocation) 'product.order.step_address'.tr,
+    if (addressDetails.value.isEmpty) 'product.order.step_address_details'.tr,
     if (!hasValidPhone) 'product.order.step_phone'.tr,
     if (deliveryBlockedMessage.value != null)
       'product.order.step_weight_missing'.tr
