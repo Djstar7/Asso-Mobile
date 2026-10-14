@@ -70,7 +70,9 @@ class StripeNativeService {
     } on PlatformException catch (e) {
       // Erreur native hors StripeException (SDK non initialisé, écran absent…).
       debugPrint('[StripeNativeService] ${e.code}: ${e.message}');
-      throw Exception('data.stripe.sheet_unavailable'.tr);
+      // Le code natif suit le message : sans lui, impossible de distinguer une
+      // installation défaillante du SDK d'une simple coupure réseau.
+      throw Exception('${'data.stripe.sheet_unavailable'.tr}\n(${e.code})');
     }
   }
 
