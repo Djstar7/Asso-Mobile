@@ -10,6 +10,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/package_service.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../data/services/stripe_native_service.dart';
+import '../../packageSubscription/widgets/package_details_sheet.dart';
 import '../../packageSubscription/widgets/payment_loading_dialog.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
@@ -203,6 +204,9 @@ class BoostController extends GetxController {
       _error('boost.errors.invalid_product'.tr);
       return;
     }
+
+    // Récapitulatif : produit sponsorisé, portée, durée, prix, avant de payer.
+    if (!await _confirmDetails(package, product)) return;
 
     // Montant en FCFA (pivot) : le sélecteur l'affiche dans la devise de
     // l'utilisateur, le serveur vérifie minimum et solde sur ce montant exact.
@@ -544,6 +548,34 @@ class BoostController extends GetxController {
       backgroundColor: AppThemeSystem.errorColor,
       colorText: Colors.white,
       duration: const Duration(seconds: 4),
+    );
+  }
+
+  /// Fiche détaillée de la campagne avant paiement. Elle s'arrête au premier
+  /// des deux : quota de personnes atteint ou échéance (règle du serveur).
+  Future<bool> _confirmDetails(BoostPackage package, Map<String, dynamic> product) {
+    final end = DateTime.now().add(Duration(days: package.durationDays));
+    final productName = '${product['name'] ?? ''}'.trim();
+
+    return PackageDetailsSheet.show(
+      typeLabel: 'package_details.types.boost'.tr,
+      name: package.name,
+      priceXaf: package.price,
+      durationLabel: package.formattedDuration,
+      description: package.description,
+      facts: [
+        if (productName.isNotEmpty)
+          PackageDetailFact(Icons.inventory_2_outlined, 'package_details.boost.product'.tr, productName),
+        PackageDetailFact(Icons.groups_outlined, 'package_details.boost.reach'.tr, package.formattedReach),
+        PackageDetailFact(Icons.schedule_outlined, 'package_details.duration'.tr, package.formattedDuration),
+        PackageDetailFact(Icons.event_outlined, 'package_details.boost.ends_at_latest'.tr, PackageDetailsSheet.formatDate(end)),
+        PackageDetailFact(Icons.bolt_outlined, 'package_details.activation'.tr, 'package_details.activation_value'.tr),
+      ],
+      benefits: package.benefits,
+      notes: [
+        'package_details.boost.stop_rule'.trParams({'reach': package.formattedReach, 'duration': package.formattedDuration}),
+        'package_details.boost.stats'.tr,
+      ],
     );
   }
 }

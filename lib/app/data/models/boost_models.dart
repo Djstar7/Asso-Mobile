@@ -20,6 +20,9 @@ class BoostPackage {
   final String formattedReach;
   final bool isPopular;
 
+  /// Avantages saisis dans l'admin (vide si aucun).
+  final List<String> benefits;
+
   const BoostPackage({
     required this.id,
     required this.name,
@@ -30,6 +33,7 @@ class BoostPackage {
     required this.reachUsers,
     required this.formattedReach,
     required this.isPopular,
+    this.benefits = const [],
   });
 
   factory BoostPackage.fromJson(Map<String, dynamic> json) {
@@ -43,6 +47,9 @@ class BoostPackage {
       reachUsers: _int(json['reach_users']),
       formattedReach: json['formatted_reach']?.toString() ?? '',
       isPopular: json['is_popular'] == true,
+      benefits: json['benefits'] is List
+          ? (json['benefits'] as List).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList()
+          : const [],
     );
   }
 

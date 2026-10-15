@@ -315,6 +315,8 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
     final price = (package['price'] ?? 0).toDouble();
     final storage = package['formatted_storage_size'] ?? '';
     final duration = package['formatted_duration'] ?? '';
+    final description = (package['description'] ?? '').toString().trim();
+    final hiddenBenefits = (benefits?.length ?? 0) - 4;
 
     return Obx(() {
       final isSelected = controller.selectedPackage.value?['id'] == package['id'];
@@ -379,6 +381,16 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                     ],
                   ],
                 ),
+
+                if (description.isNotEmpty) ...[
+                  SizedBox(height: AppDesign.space2),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.body2.copyWith(color: ds.textSecondary),
+                  ),
+                ],
 
                 SizedBox(height: AppDesign.space4),
 
@@ -457,6 +469,34 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                   ),
                 ],
 
+                if (hiddenBenefits > 0) ...[
+                  SizedBox(height: AppDesign.space2),
+                  Padding(
+                    padding: EdgeInsets.only(left: AppDesign.space6),
+                    child: Text(
+                      'package_details.more_benefits'.trParams({'count': '$hiddenBenefits'}),
+                      style: context.caption.copyWith(color: ds.textTertiary),
+                    ),
+                  ),
+                ],
+
+                // Détail complet : ouvre le récapitulatif, premier pas de l'achat.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: controller.isSubscribing.value
+                        ? null
+                        : () => controller.subscribeToSelectedPackage(package),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppDesign.accent,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 40),
+                    ),
+                    icon: const Icon(Icons.info_outline_rounded, size: 16),
+                    label: Text('package_details.see_details'.tr),
+                  ),
+                ),
+
                 // L'action n'apparaît que sur la carte choisie : une seule
                 // cible d'action à l'écran au lieu d'une par carte.
                 AnimatedSize(
@@ -466,7 +506,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                   child: isSelected
                       ? Column(
                           children: [
-                            SizedBox(height: AppDesign.space5),
+                            SizedBox(height: AppDesign.space2),
                             SizedBox(
                               width: double.infinity,
                               height: context.buttonHeight,

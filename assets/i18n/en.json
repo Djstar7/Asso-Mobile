@@ -4079,5 +4079,48 @@
       "todo_choose": "To do: replace or organize the return",
       "todo_ship": "To do: hand the replacement to the courier"
     }
+  },
+  "package_details": {
+    "title": "Plan details",
+    "continue": "Continue to payment",
+    "cancel": "Cancel",
+    "to_pay": "Amount to pay",
+    "one_time": "One-time payment, no automatic renewal. You choose the payment method in the next step.",
+    "what_you_get": "What you are buying",
+    "benefits": "Included benefits",
+    "sales_code": "Sales code",
+    "duration": "Duration",
+    "valid_until": "Valid until",
+    "activation": "Activation",
+    "activation_value": "As soon as the payment is confirmed",
+    "see_details": "See details",
+    "more_benefits": "+@count more benefits in the details",
+    "mb": "@size MB",
+    "gb": "@size GB",
+    "types": {
+      "storage": "Storage",
+      "certification": "Certification",
+      "boost": "Asso Ads"
+    },
+    "storage": {
+      "space": "Storage space",
+      "new": "Your space is available as soon as the payment is confirmed, until @date.",
+      "cumulative": "This plan is added to your current space: +@added, @total in total. Your end date moves from @from to @to.",
+      "usage": "Your product photos and videos count against this space."
+    },
+    "certification": {
+      "badge": "Badge",
+      "badge_value": "Certified shop",
+      "new": "Your shop is certified as soon as the payment is confirmed, until @date.",
+      "renewal": "Your shop is already certified: the duration is added to the current end date, which moves from @from to @to.",
+      "scope": "The certification applies to your main shop."
+    },
+    "boost": {
+      "product": "Sponsored product",
+      "reach": "People reached",
+      "ends_at_latest": "Ends at the latest",
+      "stop_rule": "The campaign stops as soon as @reach have seen your product, or after @duration, whichever comes first.",
+      "stats": "You can follow the campaign's views and clicks in Asso Ads."
+    }
   }
 }

@@ -276,6 +276,7 @@ class CertificationPackagesView
     final name = package['name']?.toString() ?? '';
     final priceXaf = (package['price'] ?? 0).toDouble();
     final duration = package['formatted_duration']?.toString() ?? '';
+    final description = (package['description'] ?? '').toString().trim();
 
     return Obx(() {
       final isSelected =
@@ -327,6 +328,13 @@ class CertificationPackagesView
                     ],
                   ],
                 ),
+                if (description.isNotEmpty) ...[
+                  SizedBox(height: AppDesign.space2),
+                  Text(
+                    description,
+                    style: context.body2.copyWith(color: ds.textSecondary),
+                  ),
+                ],
                 SizedBox(height: AppDesign.space4),
 
                 // Prix : l'information la plus lourde de la carte, dans la
@@ -425,6 +433,9 @@ class CertificationPackagesView
 
     // Code commercial saisi : il doit être valide avant de payer (P6).
     if (!await controller.salesCode.ensureReady()) return;
+
+    // Récapitulatif : ce qui est acheté et jusqu'à quand, avant de payer.
+    if (!await controller.confirmDetails(package)) return;
 
     // Montant en FCFA (pivot) : le sélecteur l'affiche dans la devise de
     // l'utilisateur, le serveur vérifie minimum et solde sur ce montant exact.
