@@ -1410,7 +1410,15 @@
       "clear": "Effacer",
       "verify": "Vérifier",
       "valid_with_agent": "Code valide — commercial : @name",
-      "valid": "Code valide"
+      "valid": "Code valide",
+      "own_code": {
+        "title": "C'est votre propre code",
+        "message": "Ce code est le vôtre : vous ne percevrez aucune commission sur votre propre abonnement. Vous pouvez tout de même continuer.",
+        "continue": "Continuer sans commission",
+        "edit": "Modifier le code",
+        "helper": "Votre code — aucune commission",
+        "retry": "Code confirmé. Relancez le paiement pour continuer."
+      }
     }
   },
   "certification": {

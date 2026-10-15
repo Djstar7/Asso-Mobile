@@ -249,6 +249,7 @@ class PackageSubscriptionController extends GetxController {
         package['id'] as int,
         paymentMode: 'wallet',
         salesCode: salesCode.code,
+        acceptOwnCode: salesCode.acceptOwnCode,
       );
       if (_isDisposed) return;
       PaymentLoadingDialog.hide();
@@ -295,6 +296,7 @@ class PackageSubscriptionController extends GetxController {
         provider: selection['provider'],
         phoneNumber: selection['phone'],
         salesCode: salesCode.code,
+        acceptOwnCode: salesCode.acceptOwnCode,
       );
 
       if (_isDisposed) return;
@@ -358,6 +360,7 @@ class PackageSubscriptionController extends GetxController {
         package['id'] as int,
         paymentMode: 'stripe_direct',
         salesCode: salesCode.code,
+        acceptOwnCode: salesCode.acceptOwnCode,
       );
 
       if (_isDisposed) return;

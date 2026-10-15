@@ -103,6 +103,7 @@ Future<int?> createOrder({
       provider: kpayProvider,
       phoneNumber: kpayPhone,
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
 
     if (response.success) {
@@ -133,6 +134,7 @@ Future<String?> payWithWallet({required int packageId}) async {
       packageId,
       paymentMode: 'wallet',
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
     if (salesCode.handleServerRejection(response)) return null;
     if (!response.success) {
@@ -162,6 +164,7 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
       packageId,
       paymentMode: 'stripe_direct',
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
 
     if (salesCode.handleServerRejection(response)) return null;

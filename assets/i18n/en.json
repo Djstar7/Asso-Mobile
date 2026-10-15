@@ -1410,7 +1410,15 @@
       "clear": "Clear",
       "verify": "Verify",
       "valid_with_agent": "Valid code — agent: @name",
-      "valid": "Valid code"
+      "valid": "Valid code",
+      "own_code": {
+        "title": "This is your own code",
+        "message": "This code is yours: you will not earn any commission on your own subscription. You can still continue.",
+        "continue": "Continue without commission",
+        "edit": "Change the code",
+        "helper": "Your code — no commission",
+        "retry": "Code confirmed. Start the payment again to continue."
+      }
     }
   },
   "certification": {
