@@ -4079,5 +4079,48 @@
       "todo_choose": "À faire : remplacer ou organiser le retour",
       "todo_ship": "À faire : remettre le remplacement au livreur"
     }
+  },
+  "package_details": {
+    "title": "Détails du forfait",
+    "continue": "Continuer vers le paiement",
+    "cancel": "Annuler",
+    "to_pay": "Montant à payer",
+    "one_time": "Paiement unique, sans renouvellement automatique. Moyen de paiement choisi à l'étape suivante.",
+    "what_you_get": "Ce que vous achetez",
+    "benefits": "Avantages inclus",
+    "sales_code": "Code commercial",
+    "duration": "Durée",
+    "valid_until": "Valable jusqu'au",
+    "activation": "Activation",
+    "activation_value": "Dès la confirmation du paiement",
+    "see_details": "Voir le détail",
+    "more_benefits": "+@count autres avantages dans le détail",
+    "mb": "@size Mo",
+    "gb": "@size Go",
+    "types": {
+      "storage": "Stockage",
+      "certification": "Certification",
+      "boost": "Asso Ads"
+    },
+    "storage": {
+      "space": "Espace de stockage",
+      "new": "Votre espace est disponible dès la confirmation du paiement, jusqu'au @date.",
+      "cumulative": "Ce forfait s'ajoute à votre espace actuel : +@added, soit @total au total. Votre échéance passe du @from au @to.",
+      "usage": "Les photos et vidéos de vos produits sont décomptées de cet espace."
+    },
+    "certification": {
+      "badge": "Badge",
+      "badge_value": "Boutique certifiée",
+      "new": "Votre boutique est certifiée dès la confirmation du paiement, jusqu'au @date.",
+      "renewal": "Votre boutique est déjà certifiée : la durée s'ajoute à l'échéance en cours, qui passe du @from au @to.",
+      "scope": "La certification s'applique à votre boutique principale."
+    },
+    "boost": {
+      "product": "Produit sponsorisé",
+      "reach": "Personnes touchées",
+      "ends_at_latest": "Fin au plus tard",
+      "stop_rule": "La campagne s'arrête dès que @reach ont vu votre produit, ou au bout de @duration, au premier des deux.",
+      "stats": "Vous suivez les vues et les clics de la campagne depuis Asso Ads."
+    }
   }
 }
