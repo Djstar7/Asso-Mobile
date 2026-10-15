@@ -24,6 +24,7 @@ class CertificationPackagesController extends GetxController {
 
   // P6 : code commercial facultatif, vérifié avant le paiement.
   final salesCode = SalesCodeInput();
+  RxBool get canUseSalesCode => salesCode.available;
 
   @override
   void onInit() {
@@ -39,6 +40,7 @@ class CertificationPackagesController extends GetxController {
       final response = await PackageService.getCertificationPackages();
       if (_isDisposed) return;
       if (response.success && response.data != null) {
+        salesCode.applyEligibility(response.data);
         final packagesData = response.data!['packages'] as List?;
         if (packagesData != null) {
           packages.value = packagesData.map((e) => e as Map<String, dynamic>).toList();

@@ -94,6 +94,7 @@
     "sections": {
       "application": "Application",
       "data_privacy": "Données et confidentialité",
+      "sales_program": "Programme commercial",
       "about": "À propos"
     },
     "menu": {
@@ -110,7 +111,9 @@
       "legal": "Conditions & politiques",
       "legal_subtitle": "CGU, CGV, confidentialité…",
       "about": "À propos",
-      "about_subtitle": "Version, conditions d'utilisation"
+      "about_subtitle": "Version, conditions d'utilisation",
+      "sales_program": "Devenir un commercial ASSO",
+      "sales_program_subtitle": "Gagnez une commission en recommandant ASSO aux vendeurs"
     },
     "version": "Version @version",
     "edit_profile": "Modifier le profil"
@@ -699,7 +702,8 @@
         "lock": "Fonds bloqués",
         "unlock": "Fonds débloqués",
         "escrow_release": "Paiement libéré",
-        "other": "Transaction"
+        "other": "Transaction",
+        "sales_commission": "Commission commercial"
       },
       "status": {
         "completed": "Complété",
@@ -4121,6 +4125,38 @@
       "ends_at_latest": "Fin au plus tard",
       "stop_rule": "La campagne s'arrête dès que @reach ont vu votre produit, ou au bout de @duration, au premier des deux.",
       "stats": "Vous suivez les vues et les clics de la campagne depuis Asso Ads."
+    }
+  },
+  "sales_program": {
+    "app_bar": "Programme commercial",
+    "title": "Devenir un commercial ASSO",
+    "intro": "Recommandez ASSO aux vendeurs de votre entourage et soyez rémunéré pour chaque vendeur qui s'abonne grâce à vous.",
+    "commission": "Commission : @rate % du premier abonnement de chaque vendeur que vous recommandez",
+    "terms_title": "Modalités du programme",
+    "terms_empty": "Les modalités du programme ne sont pas disponibles pour le moment. Contactez ASSO pour en savoir plus.",
+    "accept": "Je certifie avoir pris connaissance des modalités",
+    "submit": "Obtenir mon code",
+    "load_error_title": "Programme indisponible",
+    "load_error": "Impossible de charger le programme commercial. Vérifiez votre connexion et réessayez.",
+    "enroll_error": "Votre inscription n'a pas pu aboutir. Veuillez réessayer.",
+    "agent": {
+      "title": "Votre code commercial",
+      "intro": "Vous êtes commercial ASSO. Communiquez ce code aux vendeurs que vous accompagnez.",
+      "inactive": "Votre compte commercial est désactivé. Contactez ASSO."
+    },
+    "success": {
+      "title": "Félicitations !",
+      "message": "Vous êtes désormais un commercial ASSO. Vous pouvez commencer à démarcher les vendeurs.",
+      "done": "Terminer"
+    },
+    "code": {
+      "label": "Votre code commercial",
+      "copy": "Copier",
+      "share": "Partager",
+      "copied_title": "Code copié",
+      "copied_message": "Collez-le dans un message pour le transmettre à un vendeur.",
+      "share_text": "Abonnez-vous à un forfait vendeur sur ASSO avec mon code commercial : @code",
+      "explanation": "Communiquez ce code aux vendeurs : lorsqu'ils l'utilisent pour leur premier abonnement, vous recevez @rate % du montant directement dans votre wallet."
     }
   }
 }

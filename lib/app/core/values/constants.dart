@@ -177,6 +177,11 @@ class AppConstants {
   // P6 : vérification d'un code commercial avant souscription
   //   GET $salesCodeUrl/{code} → { data:{ code, agent_display_name } } | 404
   static const String salesCodeUrl = '/v1/sales-codes';
+  // Programme commercial : modalités, statut et inscription de l'utilisateur
+  //   GET  $salesProgramUrl        → { data:{ terms, commission_rate, is_agent, is_active, code } }
+  //   POST $salesProgramEnrollUrl  { accepted:true } → { data:{ code, commission_rate } }
+  static const String salesProgramUrl = '/v1/sales-program';
+  static const String salesProgramEnrollUrl = '/v1/sales-program/enroll';
   // Statut de paiement d'un abonnement vendeur (polling) :
   //   GET $packageSubscriptionUrl/{subscription_id}/payment-status
   static const String packageSubscriptionUrl = '/v1/packages/subscription';

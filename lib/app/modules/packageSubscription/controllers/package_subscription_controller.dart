@@ -32,6 +32,7 @@ class PackageSubscriptionController extends GetxController {
 
   // P6 : code commercial facultatif, vérifié avant le paiement.
   final salesCode = SalesCodeInput();
+  RxBool get canUseSalesCode => salesCode.available;
 
   @override
   void onInit() {
@@ -58,6 +59,7 @@ class PackageSubscriptionController extends GetxController {
       if (_isDisposed) return;
 
       if (response.success && response.data != null) {
+        salesCode.applyEligibility(response.data);
         final packagesData = response.data!['packages'] as List?;
 
         if (packagesData != null) {
@@ -105,6 +107,7 @@ class PackageSubscriptionController extends GetxController {
       if (_isDisposed) return;
 
       if (response.success && response.data != null) {
+        salesCode.applyEligibility(response.data);
         hasPackage.value = response.data!['has_package'] ?? false;
 
         if (hasPackage.value) {

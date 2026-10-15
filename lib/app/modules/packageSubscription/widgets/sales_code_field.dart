@@ -20,10 +20,24 @@ class SalesCodeInput {
   final agentName = ''.obs;
   final errorMessage = ''.obs;
 
+  /// Le code ne vaut que pour le premier abonnement payant : le serveur
+  /// l'indique par `can_use_sales_code`, et le champ disparaît sinon.
+  final available = true.obs;
+
   String get _typed => textController.text.replaceAll(RegExp(r'\s+'), '').toUpperCase();
 
   /// Code à envoyer au serveur : uniquement s'il a été vérifié.
-  String? get code => status.value == SalesCodeStatus.valid ? _typed : null;
+  String? get code =>
+      available.value && status.value == SalesCodeStatus.valid ? _typed : null;
+
+  /// Lit `can_use_sales_code` dans une réponse forfaits ; absent, le champ
+  /// reste proposé (serveur antérieur). Un code déjà saisi est alors effacé.
+  void applyEligibility(Map<String, dynamic>? body) {
+    final allowed = body?['can_use_sales_code'];
+    if (allowed is! bool) return;
+    available.value = allowed;
+    if (!allowed) clear();
+  }
 
   void onChanged(String _) {
     agentName.value = '';
@@ -79,6 +93,7 @@ class SalesCodeInput {
   /// À appeler avant d'ouvrir le paiement. Vérifie le code s'il ne l'est pas encore
   /// et bloque (avec message) tant qu'un code saisi n'est pas valide.
   Future<bool> ensureReady() async {
+    if (!available.value) return true;
     switch (status.value) {
       case SalesCodeStatus.empty:
       case SalesCodeStatus.valid:
