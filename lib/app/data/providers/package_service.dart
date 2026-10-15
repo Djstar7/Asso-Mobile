@@ -36,6 +36,8 @@ class PackageService {
 
   /// Subscribe to a package with wallet type selection
   /// walletType: 'kpay' or 'paypal'
+  /// [acceptOwnCode] : le vendeur a confirmé utiliser son propre code.
+  ///
   /// [productId] : produit à sponsoriser, requis pour un forfait Asso Ads.
   static Future<ApiResponse> subscribeToPackage(
     int packageId, {
@@ -104,6 +106,7 @@ class PackageService {
     String? provider,
     String? phoneNumber,
     String? salesCode,
+    bool acceptOwnCode = false,
     int? productId,
   }) async {
     print('');
@@ -127,6 +130,9 @@ class PackageService {
       }
       if (salesCode != null && salesCode.isNotEmpty) {
         body['sales_code'] = salesCode;
+        // Son propre code, confirmé par le vendeur : accepté sans commission
+        // (sinon 422 own_sales_code).
+        if (acceptOwnCode) body['accept_own_code'] = true;
       }
 
       final response = await ApiProvider.post(

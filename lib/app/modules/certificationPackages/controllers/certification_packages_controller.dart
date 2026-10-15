@@ -24,6 +24,7 @@ class CertificationPackagesController extends GetxController {
 
   // P6 : code commercial facultatif, vérifié avant le paiement.
   final salesCode = SalesCodeInput();
+  RxBool get canUseSalesCode => salesCode.available;
 
   @override
   void onInit() {
@@ -39,6 +40,7 @@ class CertificationPackagesController extends GetxController {
       final response = await PackageService.getCertificationPackages();
       if (_isDisposed) return;
       if (response.success && response.data != null) {
+        salesCode.applyEligibility(response.data);
         final packagesData = response.data!['packages'] as List?;
         if (packagesData != null) {
           packages.value = packagesData.map((e) => e as Map<String, dynamic>).toList();
@@ -101,6 +103,7 @@ Future<int?> createOrder({
       provider: kpayProvider,
       phoneNumber: kpayPhone,
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
 
     if (response.success) {
@@ -131,6 +134,7 @@ Future<String?> payWithWallet({required int packageId}) async {
       packageId,
       paymentMode: 'wallet',
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
     if (salesCode.handleServerRejection(response)) return null;
     if (!response.success) {
@@ -160,6 +164,7 @@ Future<Map<String, dynamic>?> createCardOrder({required int packageId}) async {
       packageId,
       paymentMode: 'stripe_direct',
       salesCode: salesCode.code,
+      acceptOwnCode: salesCode.acceptOwnCode,
     );
 
     if (salesCode.handleServerRejection(response)) return null;

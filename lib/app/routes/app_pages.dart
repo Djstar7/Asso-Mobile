@@ -102,6 +102,9 @@ import '../modules/shopStatistics/bindings/shop_statistics_binding.dart';
 import '../modules/shopStatistics/views/shop_statistics_view.dart';
 import '../modules/countrySelection/bindings/country_selection_binding.dart';
 import '../modules/countrySelection/views/country_selection_view.dart';
+import '../modules/salesProgram/bindings/sales_program_binding.dart';
+import '../modules/salesProgram/views/sales_program_view.dart';
+import '../modules/salesProgram/views/sales_program_success_view.dart';
 
 import '../core/widgets/unknown_route_view.dart';
 
@@ -309,6 +312,15 @@ class AppPages {
       name: _Paths.CERTIFICATION_PACKAGES,
       page: () => const CertificationPackagesView(),
       binding: CertificationPackagesBinding(),
+    ),
+    GetPage(
+      name: _Paths.SALES_PROGRAM,
+      page: () => const SalesProgramView(),
+      binding: SalesProgramBinding(),
+    ),
+    GetPage(
+      name: _Paths.SALES_PROGRAM_SUCCESS,
+      page: () => const SalesProgramSuccessView(),
     ),
     GetPage(
       name: _Paths.PRODUCT_MANAGEMENT,

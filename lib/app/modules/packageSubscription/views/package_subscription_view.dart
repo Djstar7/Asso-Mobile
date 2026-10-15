@@ -86,11 +86,13 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                         else
                           _buildPackagesList(context),
 
-                        SizedBox(height: AppDesign.space8),
-
                         // Code commercial (P6) : secondaire, donc placé après
                         // le choix du forfait plutôt qu'avant.
-                        SalesCodeField(input: controller.salesCode),
+                        // Réservé au premier abonnement payant.
+                        if (controller.canUseSalesCode.value) ...[
+                          SizedBox(height: AppDesign.space8),
+                          SalesCodeField(input: controller.salesCode),
+                        ],
                       ],
                     ),
                   ),

@@ -94,6 +94,7 @@
     "sections": {
       "application": "App",
       "data_privacy": "Data and privacy",
+      "sales_program": "Sales programme",
       "about": "About"
     },
     "menu": {
@@ -110,7 +111,9 @@
       "legal": "Terms & policies",
       "legal_subtitle": "Terms of use, terms of sale, privacy…",
       "about": "About",
-      "about_subtitle": "Version, terms of use"
+      "about_subtitle": "Version, terms of use",
+      "sales_program": "Become an ASSO sales agent",
+      "sales_program_subtitle": "Earn a commission by recommending ASSO to vendors"
     },
     "version": "Version @version",
     "edit_profile": "Edit profile"
@@ -699,7 +702,8 @@
         "lock": "Funds held",
         "unlock": "Funds released",
         "escrow_release": "Payment released",
-        "other": "Transaction"
+        "other": "Transaction",
+        "sales_commission": "Sales commission"
       },
       "status": {
         "completed": "Completed",
@@ -1406,7 +1410,15 @@
       "clear": "Clear",
       "verify": "Verify",
       "valid_with_agent": "Valid code — agent: @name",
-      "valid": "Valid code"
+      "valid": "Valid code",
+      "own_code": {
+        "title": "This is your own code",
+        "message": "This code is yours: you will not earn any commission on your own subscription. You can still continue.",
+        "continue": "Continue without commission",
+        "edit": "Change the code",
+        "helper": "Your code — no commission",
+        "retry": "Code confirmed. Start the payment again to continue."
+      }
     }
   },
   "certification": {
@@ -4121,6 +4133,38 @@
       "ends_at_latest": "Ends at the latest",
       "stop_rule": "The campaign stops as soon as @reach have seen your product, or after @duration, whichever comes first.",
       "stats": "You can follow the campaign's views and clicks in Asso Ads."
+    }
+  },
+  "sales_program": {
+    "app_bar": "Sales programme",
+    "title": "Become an ASSO sales agent",
+    "intro": "Recommend ASSO to vendors around you and get paid for every vendor who subscribes thanks to you.",
+    "commission": "Commission: @rate% of the first subscription of every vendor you refer",
+    "terms_title": "Programme terms",
+    "terms_empty": "The programme terms are not available right now. Contact ASSO to learn more.",
+    "accept": "I confirm that I have read the terms",
+    "submit": "Get my code",
+    "load_error_title": "Programme unavailable",
+    "load_error": "Unable to load the sales programme. Check your connection and try again.",
+    "enroll_error": "Your enrolment could not be completed. Please try again.",
+    "agent": {
+      "title": "Your sales code",
+      "intro": "You are an ASSO sales agent. Share this code with the vendors you support.",
+      "inactive": "Your sales agent account is disabled. Contact ASSO."
+    },
+    "success": {
+      "title": "Congratulations!",
+      "message": "You are now an ASSO sales agent. You can start reaching out to vendors.",
+      "done": "Done"
+    },
+    "code": {
+      "label": "Your sales code",
+      "copy": "Copy",
+      "share": "Share",
+      "copied_title": "Code copied",
+      "copied_message": "Paste it in a message to send it to a vendor.",
+      "share_text": "Subscribe to a vendor plan on ASSO with my sales code: @code",
+      "explanation": "Share this code with vendors: when they use it for their first subscription, you receive @rate% of the amount directly in your wallet."
     }
   }
 }

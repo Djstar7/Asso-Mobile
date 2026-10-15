@@ -42,6 +42,8 @@ abstract class Routes {
   static const DISPUTE_SIMILAR = _Paths.DISPUTE_SIMILAR;
   static const PACKAGE_SUBSCRIPTION = _Paths.PACKAGE_SUBSCRIPTION;
   static const CERTIFICATION_PACKAGES = _Paths.CERTIFICATION_PACKAGES;
+  static const SALES_PROGRAM = _Paths.SALES_PROGRAM;
+  static const SALES_PROGRAM_SUCCESS = _Paths.SALES_PROGRAM_SUCCESS;
   static const PRODUCT_MANAGEMENT = _Paths.PRODUCT_MANAGEMENT;
   static const ADD_PRODUCT = _Paths.ADD_PRODUCT;
   static const WALLET_HISTORY = _Paths.WALLET_HISTORY;
@@ -102,6 +104,8 @@ abstract class _Paths {
   static const DISPUTE_SIMILAR = '/disputes/similar';
   static const PACKAGE_SUBSCRIPTION = '/package-subscription';
   static const CERTIFICATION_PACKAGES = '/certification-packages';
+  static const SALES_PROGRAM = '/sales-program';
+  static const SALES_PROGRAM_SUCCESS = '/sales-program/success';
   static const PRODUCT_MANAGEMENT = '/product-management';
   static const ADD_PRODUCT = '/add-product';
   static const WALLET_HISTORY = '/wallet/history';

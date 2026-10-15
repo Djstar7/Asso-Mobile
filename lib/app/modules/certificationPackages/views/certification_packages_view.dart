@@ -92,11 +92,13 @@ class CertificationPackagesView
                       else
                         _buildPackagesList(context),
 
-                      SizedBox(height: AppDesign.space8),
-
                       // Code commercial (P6) : secondaire, donc après le
                       // choix de la formule, comme sur les forfaits.
-                      SalesCodeField(input: controller.salesCode),
+                      // Réservé au premier abonnement payant.
+                      if (controller.canUseSalesCode.value) ...[
+                        SizedBox(height: AppDesign.space8),
+                        SalesCodeField(input: controller.salesCode),
+                      ],
                     ],
                   ),
                 ),

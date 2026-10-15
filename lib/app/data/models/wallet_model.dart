@@ -126,8 +126,9 @@ class WalletTransactionModel {
       description: json['description'] ?? '',
       referenceType: json['reference_type'],
       referenceId: json['reference_id'],
-      metadata: json['metadata'] != null
-          ? Map<String, dynamic>.from(json['metadata'])
+      // Un tableau PHP vide arrive en `[]` : seule une map est retenue.
+      metadata: json['metadata'] is Map
+          ? Map<String, dynamic>.from(json['metadata'] as Map)
           : null,
       createdAt: DateTime.parse(json['created_at']),
       completedAt: json['completed_at'] != null
@@ -167,8 +168,12 @@ class WalletTransactionModel {
     return '$sign ${CurrencyService.formatFromPivot(absAmount)}';
   }
 
+  /// Commission versée à un commercial pour le premier abonnement d'un vendeur.
+  bool get isSalesCommission => metadata?['kind'] == 'sales_commission';
+
   /// Get type label in French
   String get typeLabel {
+    if (isSalesCommission) return 'data.wallet.type.sales_commission'.tr;
     switch (type) {
       case 'credit':
         return 'data.wallet.type.credit'.tr;
@@ -193,6 +198,7 @@ class WalletTransactionModel {
 
   /// Get type icon emoji
   IconData get typeIcon {
+    if (isSalesCommission) return Icons.handshake_outlined;
     switch (type) {
       case 'credit':
         return Icons.south_west_rounded;

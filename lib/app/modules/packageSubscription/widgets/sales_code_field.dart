@@ -9,25 +9,63 @@ import '../../../data/providers/sales_code_service.dart';
 
 enum SalesCodeStatus { empty, unverified, checking, valid, invalid }
 
+typedef SalesCodeCheck = Future<ApiResponse> Function(String code);
+typedef OwnSalesCodeConfirm = Future<bool> Function(String warning);
+
 /// État du champ « Code commercial / Code de parrainage » (P6), détenu par le
 /// contrôleur de l'écran de souscription (forfaits de stockage, certification).
 ///
 /// Le code est facultatif ; s'il est saisi, il doit être vérifié avant le paiement
 /// pour que la vente soit bien attribuée au commercial.
 class SalesCodeInput {
+  SalesCodeInput({SalesCodeCheck? checkCode, OwnSalesCodeConfirm? confirmOwnCode})
+      : _checkCode = checkCode ?? SalesCodeService.checkCode,
+        _confirmOwnCode = confirmOwnCode ?? showOwnSalesCodeDialog;
+
+  final SalesCodeCheck _checkCode;
+  final OwnSalesCodeConfirm _confirmOwnCode;
+
   final textController = TextEditingController();
   final status = SalesCodeStatus.empty.obs;
   final agentName = ''.obs;
   final errorMessage = ''.obs;
 
+  /// Le code ne vaut que pour le premier abonnement payant : le serveur
+  /// l'indique par `can_use_sales_code`, et le champ disparaît sinon.
+  final available = true.obs;
+
+  /// Avertissement affiché pendant que le vendeur décide s'il garde son
+  /// propre code (vide hors confirmation).
+  final pendingOwnCodeWarning = ''.obs;
+
+  /// Le vendeur garde son propre code : l'abonnement passe, sans commission.
+  final ownCodeAccepted = false.obs;
+
+  bool _ownCodeDeclined = false;
+
   String get _typed => textController.text.replaceAll(RegExp(r'\s+'), '').toUpperCase();
 
   /// Code à envoyer au serveur : uniquement s'il a été vérifié.
-  String? get code => status.value == SalesCodeStatus.valid ? _typed : null;
+  String? get code =>
+      available.value && status.value == SalesCodeStatus.valid ? _typed : null;
+
+  /// À envoyer avec le code (`accept_own_code`) quand le vendeur a confirmé
+  /// utiliser le sien.
+  bool get acceptOwnCode => code != null && ownCodeAccepted.value;
+
+  /// Lit `can_use_sales_code` dans une réponse forfaits ; absent, le champ
+  /// reste proposé (serveur antérieur). Un code déjà saisi est alors effacé.
+  void applyEligibility(Map<String, dynamic>? body) {
+    final allowed = body?['can_use_sales_code'];
+    if (allowed is! bool) return;
+    available.value = allowed;
+    if (!allowed) clear();
+  }
 
   void onChanged(String _) {
     agentName.value = '';
     errorMessage.value = '';
+    ownCodeAccepted.value = false;
     status.value = _typed.isEmpty ? SalesCodeStatus.empty : SalesCodeStatus.unverified;
   }
 
@@ -39,6 +77,7 @@ class SalesCodeInput {
   /// Vérifie le code saisi auprès du serveur. Renvoie true s'il est valide.
   Future<bool> verify() async {
     final typed = _typed;
+    _ownCodeDeclined = false;
     if (typed.isEmpty) {
       status.value = SalesCodeStatus.empty;
       return true;
@@ -47,12 +86,17 @@ class SalesCodeInput {
 
     status.value = SalesCodeStatus.checking;
     errorMessage.value = '';
+    ownCodeAccepted.value = false;
     try {
-      final response = await SalesCodeService.checkCode(typed);
+      final response = await _checkCode(typed);
       if (_typed != typed) return false; // le texte a changé pendant l'appel
 
       if (response.success) {
-        agentName.value = '${response.data?['data']?['agent_display_name'] ?? ''}';
+        final data = response.data?['data'];
+        agentName.value = '${data is Map ? data['agent_display_name'] ?? '' : ''}';
+        if (data is Map && data['is_own_code'] == true) {
+          return _confirmOwn(typed, data['warning']?.toString());
+        }
         status.value = SalesCodeStatus.valid;
         return true;
       }
@@ -76,9 +120,35 @@ class SalesCodeInput {
     }
   }
 
+  /// Son propre code n'est pas refusé : le vendeur choisit de continuer sans
+  /// commission, ou de le modifier (le champ reste alors à vérifier).
+  Future<bool> _confirmOwn(String typed, String? warning) async {
+    final message = warning != null && warning.trim().isNotEmpty
+        ? warning
+        : 'package_subscription.sales_code.own_code.message'.tr;
+    pendingOwnCodeWarning.value = message;
+    bool accepted;
+    try {
+      accepted = await _confirmOwnCode(message);
+    } finally {
+      pendingOwnCodeWarning.value = '';
+    }
+    if (_typed != typed) return false;
+    if (accepted) {
+      ownCodeAccepted.value = true;
+      status.value = SalesCodeStatus.valid;
+      return true;
+    }
+    _ownCodeDeclined = true;
+    ownCodeAccepted.value = false;
+    status.value = SalesCodeStatus.unverified;
+    return false;
+  }
+
   /// À appeler avant d'ouvrir le paiement. Vérifie le code s'il ne l'est pas encore
   /// et bloque (avec message) tant qu'un code saisi n'est pas valide.
   Future<bool> ensureReady() async {
+    if (!available.value) return true;
     switch (status.value) {
       case SalesCodeStatus.empty:
       case SalesCodeStatus.valid:
@@ -88,19 +158,38 @@ class SalesCodeInput {
       case SalesCodeStatus.unverified:
       case SalesCodeStatus.invalid:
         if (await verify()) return true;
-        _warn();
+        // « Modifier le code » est un choix, pas une erreur à signaler.
+        if (!_ownCodeDeclined) _warn();
         return false;
     }
   }
 
-  /// Traite un refus du serveur (422 invalid_sales_code). Renvoie true si c'en était un.
+  /// Traite un refus du serveur (422 invalid_sales_code ou own_sales_code).
+  /// Renvoie true si c'en était un. Un 422 ne crée rien : après confirmation
+  /// de son propre code, le vendeur relance simplement le paiement.
   bool handleServerRejection(ApiResponse response) {
-    if (response.data?['code'] != 'invalid_sales_code') return false;
+    final code = response.data?['code'];
+    if (code == 'own_sales_code') {
+      _confirmAfterRejection(response.message);
+      return true;
+    }
+    if (code != 'invalid_sales_code') return false;
     agentName.value = '';
     errorMessage.value = response.message;
     status.value = SalesCodeStatus.invalid;
     _warn();
     return true;
+  }
+
+  Future<void> _confirmAfterRejection(String warning) async {
+    final typed = _typed;
+    if (typed.isEmpty) return;
+    if (!await _confirmOwn(typed, warning)) return;
+    Get.snackbar(
+      'package_subscription.sales_code.own_code.title'.tr,
+      'package_subscription.sales_code.own_code.retry'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   void _warn() {
@@ -117,6 +206,29 @@ class SalesCodeInput {
   }
 
   void dispose() => textController.dispose();
+}
+
+/// Demande au vendeur s'il garde son propre code (aucune commission) ou le
+/// modifie. Renvoie true pour continuer.
+Future<bool> showOwnSalesCodeDialog(String warning) async {
+  final accepted = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text('package_subscription.sales_code.own_code.title'.tr),
+      content: Text(warning),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('package_subscription.sales_code.own_code.edit'.tr),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          style: TextButton.styleFrom(foregroundColor: AppDesign.accent),
+          child: Text('package_subscription.sales_code.own_code.continue'.tr),
+        ),
+      ],
+    ),
+  );
+  return accepted == true;
 }
 
 /// Champ facultatif « Code commercial / Code de parrainage » avec bouton Vérifier.
@@ -219,7 +331,22 @@ class SalesCodeField extends StatelessWidget {
                 ),
               ],
             ),
-            if (status == SalesCodeStatus.valid) ...[
+            if (status == SalesCodeStatus.valid && input.ownCodeAccepted.value) ...[
+              const SizedBox(height: 8),
+              // Information, pas une erreur : l'abonnement passe sans commission.
+              Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 16, color: ds.textSecondary),
+                  SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: Text(
+                      'package_subscription.sales_code.own_code.helper'.tr,
+                      style: context.body2.copyWith(color: ds.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (status == SalesCodeStatus.valid) ...[
               const SizedBox(height: 8),
               Row(
                 children: [

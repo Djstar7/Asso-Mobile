@@ -104,6 +104,25 @@ class SettingsView extends GetView<SettingsController> {
 
             SizedBox(height: context.sectionSpacing),
 
+            // Section Programme commercial
+            _buildSectionTitle(context, 'settings.sections.sales_program'.tr),
+            SizedBox(height: context.elementSpacing),
+            _buildSettingsCard(
+              context,
+              children: [
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.handshake_outlined,
+                  title: 'settings.menu.sales_program'.tr,
+                  subtitle: 'settings.menu.sales_program_subtitle'.tr,
+                  onTap: () => Get.toNamed(Routes.SALES_PROGRAM),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                ),
+              ],
+            ),
+
+            SizedBox(height: context.sectionSpacing),
+
             // Section À propos
             _buildSectionTitle(context, 'settings.sections.about'.tr),
             SizedBox(height: context.elementSpacing),
