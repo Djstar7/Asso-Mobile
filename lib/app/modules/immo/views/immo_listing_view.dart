@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/utils/auth_guard.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../data/models/real_estate_models.dart';
@@ -11,6 +12,7 @@ import '../immo_actions.dart';
 import '../immo_nav.dart';
 import '../widgets/immo_quote_sheet.dart';
 import '../widgets/immo_widgets.dart';
+import 'immo_reserve_view.dart';
 import 'immo_room_tour_view.dart';
 
 /// Fiche d'une maison ou d'un terrain (captures Studapart 10 à 21).
@@ -77,6 +79,20 @@ class _ImmoListingViewState extends State<ImmoListingView> {
     ));
   }
 
+  /// Récapitulatif des montants, puis parcours de réservation (compte requis).
+  void _reserve(RealEstateListing listing, RealEstateUnit? unit) {
+    AuthGuard.requireAuth(
+      context,
+      featureName: 'immo.feature.reserve'.tr,
+      onAuthenticated: () => showImmoQuoteSheet(
+        context,
+        listing: listing,
+        unit: unit,
+        onContinue: () => ImmoNav.push(ImmoNav.reserve, arguments: ImmoReserveArgs(listing: listing, unit: unit)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final listing = _listing;
@@ -104,7 +120,7 @@ class _ImmoListingViewState extends State<ImmoListingView> {
         listing: listing,
         unit: _unit,
         onContact: () => ImmoActions.contactAsso(context, listing),
-        onReserve: () => showImmoQuoteSheet(context, listing: listing, unit: _unit),
+        onReserve: () => _reserve(listing, _unit),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -178,7 +194,7 @@ class _ImmoListingViewState extends State<ImmoListingView> {
                       onReserve: unit.isAvailable
                           ? () {
                               setState(() => _unitId = unit.id);
-                              showImmoQuoteSheet(context, listing: listing, unit: unit);
+                              _reserve(listing, unit);
                             }
                           : null,
                       onContact: () => ImmoActions.contactAsso(context, listing),

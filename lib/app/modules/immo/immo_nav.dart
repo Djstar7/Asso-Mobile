@@ -7,6 +7,8 @@ import 'views/immo_favorites_view.dart';
 import 'views/immo_home_view.dart';
 import 'views/immo_listing_view.dart';
 import 'views/immo_project_view.dart';
+import 'views/immo_reservation_view.dart';
+import 'views/immo_reserve_view.dart';
 import 'views/immo_room_tour_view.dart';
 
 /// Navigation de la rubrique Immobilier.
@@ -26,6 +28,9 @@ class ImmoNav {
   static const String project = '/project';
   static const String favorites = '/favorites';
   static const String chat = '/chat';
+  static const String reserve = '/reserve';
+  static const String reservation = '/reservation';
+  static const String reservations = '/reservations';
 
   static NavigatorState? get _navigator => Get.nestedKey(id)?.currentState;
 
@@ -37,6 +42,9 @@ class ImmoNav {
         favorites => 'immo.favorites.title'.tr,
         project => 'immo.project.cta'.tr,
         cabinet => 'immo.cabinet.title'.tr,
+        reserve => 'immo.detail.reserve'.tr,
+        reservation => 'immo.booking.title'.tr,
+        reservations => 'immo.booking.list_title'.tr,
         _ => 'immo.title'.tr,
       };
 
@@ -69,6 +77,12 @@ class ImmoNav {
         page = ImmoProjectView(hasLand: args as bool?);
       case favorites:
         page = const ImmoFavoritesView();
+      case reserve:
+        page = ImmoReserveView(args: args as ImmoReserveArgs);
+      case reservation:
+        page = ImmoReservationView(reservationId: args as int);
+      case reservations:
+        page = const ImmoReservationsView();
       case chat:
         // La conversation lit ses arguments dans Get.arguments, alimenté
         // d'ordinaire par le navigateur racine.

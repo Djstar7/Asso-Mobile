@@ -301,6 +301,17 @@ class HomeView extends GetView<HomeController> {
                       ),
                     ),
                   ),
+                  if (inRealEstate)
+                    AppIconButton(
+                      icon: Icons.receipt_long_outlined,
+                      tooltip: 'immo.booking.list_title'.tr,
+                      onPressed: () => AuthGuard.requireAuth(
+                        context,
+                        featureName: 'immo.feature.reservations'.tr,
+                        useDialog: false,
+                        onAuthenticated: () => ImmoNav.push(ImmoNav.reservations),
+                      ),
+                    ),
                   AppIconButton(
                     icon: Icons.favorite_border_rounded,
                     tooltip: 'home.tooltip.favorites'.tr,

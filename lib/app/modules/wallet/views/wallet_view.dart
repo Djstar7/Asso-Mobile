@@ -15,6 +15,8 @@ import '../../../core/widgets/app_ui.dart';
   import '../widgets/confirm_code_parts.dart';
   import '../../payment/widgets/payment_method_selector.dart';
   import '../../../data/models/payment_method_option.dart';
+  import '../../immo/views/immo_reservation_view.dart';
+  import '../../immo/widgets/immo_widgets.dart';
   
 
   class WalletView extends GetView<WalletController> {
@@ -110,6 +112,13 @@ import '../../../core/widgets/app_ui.dart';
                       }
                       return const SizedBox.shrink();
                     }),
+
+                    Obx(() => controller.lockedRealEstate.isEmpty
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: _buildLockedRealEstateSection(context),
+                          )),
 
                     _buildBalancesByProvider(context),
 
@@ -757,6 +766,83 @@ import '../../../core/widgets/app_ui.dart';
           ),
         );
       });
+    }
+
+    /// Loyers et acomptes Immo bloqués jusqu'à la visite (ou la fin du litige).
+    Widget _buildLockedRealEstateSection(BuildContext context) {
+      final items = controller.lockedRealEstate;
+      final total = items.fold<int>(0, (sum, r) => sum + (r.ownerAmount ?? 0));
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.home_work_outlined, size: 20, color: AppDesign.icon(context)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'wallet.locked.real_estate_title'.tr,
+                    style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: AppDesign.textPrimary(context)),
+                  ),
+                ),
+                Text(
+                  controller.formatPrice(total.toDouble()),
+                  style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w800, color: AppDesign.accent),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'wallet.locked.real_estate_info'.tr,
+              style: context.textStyle(FontSizeType.body2, color: AppDesign.textSecondary(context)),
+            ),
+            const SizedBox(height: 12),
+            for (final r in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: AppCard(
+                  onTap: () async {
+                    await Get.to(() => ImmoReservationView(reservationId: r.id, standalone: true));
+                    controller.refresh();
+                  },
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(r.isLand ? Icons.landscape_outlined : Icons.home_outlined, color: AppDesign.accent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600, color: AppDesign.textPrimary(context))),
+                            Text(
+                              r.status == 'disputed'
+                                  ? 'wallet.locked.real_estate_disputed'.tr
+                                  : r.visitDeadlineAt == null
+                                      ? r.reference
+                                      : 'wallet.locked.real_estate_until'.trParams({'date': immoDate(r.visitDeadlineAt!)}),
+                              style: context.textStyle(FontSizeType.caption, color: AppDesign.textSecondary(context)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        controller.formatPrice((r.ownerAmount ?? 0).toDouble()),
+                        style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w700, color: AppDesign.textPrimary(context)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
     }
 
     /// Card individuelle pour un booking avec fonds bloqués

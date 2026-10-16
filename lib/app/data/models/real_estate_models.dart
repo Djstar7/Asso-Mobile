@@ -554,3 +554,168 @@ class LandlordStatus {
         proofTypes: (j['proof_types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       );
 }
+
+/// Réservation d'une maison ou acompte d'un terrain.
+class RealEstateReservation {
+  final int id;
+  final String reference;
+  final String kind;
+  final String status;
+  final Map<String, dynamic>? listing;
+  final String? unitLabel;
+  final DateTime? moveInDate;
+  final int? months;
+  final int? advanceMonths;
+  final int unitPrice;
+  final int baseAmount;
+  final int commissionAmount;
+  final int totalAmount;
+  final int? ownerAmount;
+  final String? paymentMethod;
+  final DateTime? paidAt;
+  final DateTime? visitDeadlineAt;
+  final DateTime? releasedAt;
+  final bool hasDocuments;
+  final bool canConfirm;
+  final bool canDispute;
+  final Map<String, dynamic>? contact;
+  final Map<String, dynamic>? tenant;
+  final String? clientSecret;
+  final String? publishableKey;
+  final bool isPayee;
+  final bool canRespond;
+  final List<String> occupants;
+  final String? applicantStatus;
+  final String? schoolOrEmployer;
+  final String? message;
+  final RealEstateDispute? dispute;
+
+  const RealEstateReservation({
+    required this.id,
+    required this.reference,
+    required this.kind,
+    required this.status,
+    this.listing,
+    this.unitLabel,
+    this.moveInDate,
+    this.months,
+    this.advanceMonths,
+    this.unitPrice = 0,
+    this.baseAmount = 0,
+    this.commissionAmount = 0,
+    this.totalAmount = 0,
+    this.ownerAmount,
+    this.paymentMethod,
+    this.paidAt,
+    this.visitDeadlineAt,
+    this.releasedAt,
+    this.hasDocuments = false,
+    this.canConfirm = false,
+    this.canDispute = false,
+    this.contact,
+    this.tenant,
+    this.clientSecret,
+    this.publishableKey,
+    this.isPayee = false,
+    this.canRespond = false,
+    this.occupants = const [],
+    this.applicantStatus,
+    this.schoolOrEmployer,
+    this.message,
+    this.dispute,
+  });
+
+  bool get isLand => kind == 'land';
+  bool get isPaid => const ['paid', 'disputed', 'released', 'confirmed'].contains(status);
+  String get title => listing?['title']?.toString() ?? reference;
+  int? get listingId => _intOrNull(listing?['id']);
+
+  factory RealEstateReservation.fromJson(Map<String, dynamic> j) => RealEstateReservation(
+        id: _int(j['id']),
+        reference: j['reference']?.toString() ?? '',
+        kind: j['kind']?.toString() ?? 'rent',
+        status: j['status']?.toString() ?? 'pending_payment',
+        listing: j['listing'] is Map ? Map<String, dynamic>.from(j['listing']) : null,
+        unitLabel: j['unit_label']?.toString(),
+        moveInDate: _date(j['move_in_date']),
+        months: _intOrNull(j['months']),
+        advanceMonths: _intOrNull(j['advance_months']),
+        unitPrice: _int(j['unit_price']),
+        baseAmount: _int(j['base_amount']),
+        commissionAmount: _int(j['commission_amount']),
+        totalAmount: _int(j['total_amount']),
+        ownerAmount: _intOrNull(j['owner_amount']),
+        paymentMethod: j['payment_method']?.toString(),
+        paidAt: _date(j['paid_at']),
+        visitDeadlineAt: _date(j['visit_deadline_at']),
+        releasedAt: _date(j['released_at']),
+        hasDocuments: _bool(j['has_documents']),
+        canConfirm: _bool(j['can_confirm']),
+        canDispute: _bool(j['can_dispute']),
+        contact: j['contact'] is Map ? Map<String, dynamic>.from(j['contact']) : null,
+        tenant: j['tenant'] is Map ? Map<String, dynamic>.from(j['tenant']) : null,
+        clientSecret: j['client_secret']?.toString(),
+        publishableKey: j['stripe_publishable_key']?.toString(),
+        isPayee: _bool(j['is_payee']),
+        canRespond: _bool(j['can_respond']),
+        occupants: (j['occupants'] as List? ?? const [])
+            .map((o) => o is Map ? o['name']?.toString() ?? '' : o.toString())
+            .where((n) => n.isNotEmpty)
+            .toList(),
+        applicantStatus: j['applicant_status']?.toString(),
+        schoolOrEmployer: j['school_or_employer']?.toString(),
+        message: j['message']?.toString(),
+        dispute: j['dispute'] is Map ? RealEstateDispute.fromJson(Map<String, dynamic>.from(j['dispute'])) : null,
+      );
+}
+
+/// Motif de litige configuré par ASSO.
+class RealEstateDisputeReason {
+  final int id;
+  final String label;
+
+  const RealEstateDisputeReason({required this.id, required this.label});
+
+  factory RealEstateDisputeReason.fromJson(Map<String, dynamic> j) =>
+      RealEstateDisputeReason(id: _int(j['id']), label: j['label']?.toString() ?? '');
+}
+
+/// Litige ouvert sur une réservation : motif, échanges et décision d'ASSO.
+class RealEstateDispute {
+  final int id;
+  final String status;
+  final String reason;
+  final String description;
+  final String? payeeResponse;
+  final String? decisionNote;
+  final DateTime? decidedAt;
+  final List<({String author, String url})> attachments;
+
+  const RealEstateDispute({
+    required this.id,
+    required this.status,
+    required this.reason,
+    required this.description,
+    this.payeeResponse,
+    this.decisionNote,
+    this.decidedAt,
+    this.attachments = const [],
+  });
+
+  bool get isOpen => status == 'open';
+
+  factory RealEstateDispute.fromJson(Map<String, dynamic> j) => RealEstateDispute(
+        id: _int(j['id']),
+        status: j['status']?.toString() ?? 'open',
+        reason: j['reason']?.toString() ?? '',
+        description: j['description']?.toString() ?? '',
+        payeeResponse: j['payee_response']?.toString(),
+        decisionNote: j['decision_note']?.toString(),
+        decidedAt: _date(j['decided_at']),
+        attachments: (j['attachments'] as List? ?? const [])
+            .whereType<Map>()
+            .map((a) => (author: a['author']?.toString() ?? 'tenant', url: a['url']?.toString() ?? ''))
+            .where((a) => a.url.isNotEmpty)
+            .toList(),
+      );
+}

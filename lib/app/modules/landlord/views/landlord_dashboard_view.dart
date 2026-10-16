@@ -7,11 +7,12 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../data/models/real_estate_models.dart';
 import '../../../data/providers/real_estate_service.dart';
+import '../../immo/views/immo_reservation_view.dart';
 import '../../immo/widgets/immo_widgets.dart';
 import 'landlord_editor_view.dart';
 import 'landlord_verification_view.dart';
 
-/// Espace bailleur : statut de vérification et annonces publiées.
+/// Espace bailleur : statut de vérification, réservations reçues et annonces.
 class LandlordDashboardView extends StatefulWidget {
   const LandlordDashboardView({super.key});
 
@@ -22,6 +23,7 @@ class LandlordDashboardView extends StatefulWidget {
 class _LandlordDashboardViewState extends State<LandlordDashboardView> {
   LandlordStatus? _status;
   List<RealEstateListing> _listings = const [];
+  List<RealEstateReservation> _received = const [];
   bool _loading = true;
 
   @override
@@ -32,11 +34,16 @@ class _LandlordDashboardViewState extends State<LandlordDashboardView> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final results = await Future.wait([RealEstateService.landlordStatus(), RealEstateService.myListings()]);
+    final results = await Future.wait([
+      RealEstateService.landlordStatus(),
+      RealEstateService.myListings(),
+      RealEstateService.receivedReservations(),
+    ]);
     if (!mounted) return;
     setState(() {
       _status = results[0] as LandlordStatus?;
       _listings = results[1] as List<RealEstateListing>;
+      _received = results[2] as List<RealEstateReservation>;
       _loading = false;
     });
   }
@@ -77,6 +84,23 @@ class _LandlordDashboardViewState extends State<LandlordDashboardView> {
                 padding: EdgeInsets.fromLTRB(gutter, AppDesign.space4, gutter, 96),
                 children: [
                   _StatusCard(status: status, onVerify: _openVerification),
+                  if (_received.isNotEmpty) ...[
+                    const SizedBox(height: AppDesign.space6),
+                    Text('landlord.received'.tr,
+                        style: context.textStyle(FontSizeType.h6, fontWeight: FontWeight.w800, color: context.ds.textPrimary)),
+                    const SizedBox(height: AppDesign.space3),
+                    for (final r in _received) ...[
+                      ImmoReservationTile(
+                        reservation: r,
+                        subtitle: r.tenant?['name']?.toString(),
+                        onTap: () async {
+                          await Get.to(() => ImmoReservationView(reservationId: r.id, standalone: true));
+                          _load();
+                        },
+                      ),
+                      const SizedBox(height: AppDesign.space3),
+                    ],
+                  ],
                   const SizedBox(height: AppDesign.space6),
                   Text('landlord.my_listings'.tr,
                       style: context.textStyle(FontSizeType.h6, fontWeight: FontWeight.w800, color: context.ds.textPrimary)),
