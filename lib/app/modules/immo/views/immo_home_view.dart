@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../data/models/real_estate_models.dart';
+import '../../landlord/views/landlord_dashboard_view.dart';
 import '../controllers/immo_home_controller.dart';
 import '../immo_nav.dart';
 import '../widgets/immo_sheets.dart';
@@ -89,6 +90,7 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
                 _FilterChips(c: c),
                 const SizedBox(height: AppDesign.space3),
                 _CriteriaBanner(c: c),
+                _PublishBanner(c: c),
                 _CountRow(c: c),
                 const SizedBox(height: AppDesign.space2),
               ]),
@@ -387,6 +389,44 @@ class _CountRow extends StatelessWidget {
             ),
           ),
         ],
+      );
+    });
+  }
+}
+
+/// « Vous louez un bien ? » : entrée de l'espace bailleur depuis la rubrique.
+class _PublishBanner extends StatelessWidget {
+  const _PublishBanner({required this.c});
+
+  final ImmoHomeController c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (c.type.value != RealEstateType.rent) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppDesign.space3),
+        child: AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3, vertical: AppDesign.space2),
+          onTap: () => AuthGuard.requireAuth(
+            context,
+            featureName: 'home.feature.landlord_mode'.tr,
+            onAuthenticated: () => Get.to(() => const LandlordDashboardView()),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.real_estate_agent_outlined, color: AppDesign.accent),
+              const SizedBox(width: AppDesign.space3),
+              Expanded(
+                child: Text('immo.home.publish'.tr,
+                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: context.ds.textPrimary)),
+              ),
+              Text('immo.home.publish_cta'.tr,
+                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: AppDesign.accent)),
+            ],
+          ),
+        ),
       );
     });
   }

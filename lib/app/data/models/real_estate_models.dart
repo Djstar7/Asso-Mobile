@@ -533,3 +533,24 @@ class RealEstatePage {
 
   bool get hasMore => currentPage < lastPage;
 }
+
+/// Statut de vérification du bailleur.
+class LandlordStatus {
+  final String status;
+  final String? rejectionReason;
+  final bool canPublish;
+  final List<String> proofTypes;
+
+  const LandlordStatus({required this.status, this.rejectionReason, this.canPublish = false, this.proofTypes = const []});
+
+  bool get isVerified => status == 'verified';
+  bool get isPending => status == 'pending';
+  bool get isRejected => status == 'rejected';
+
+  factory LandlordStatus.fromJson(Map<String, dynamic> j) => LandlordStatus(
+        status: j['status']?.toString() ?? 'none',
+        rejectionReason: j['rejection_reason']?.toString(),
+        canPublish: _bool(j['can_publish']),
+        proofTypes: (j['proof_types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      );
+}

@@ -1657,7 +1657,8 @@
       "diaspora_mode": "Diaspora mode",
       "delivery_mode": "Courier mode",
       "vendor_mode": "Vendor mode",
-      "settings": "settings"
+      "settings": "settings",
+      "landlord_mode": "the landlord space"
     },
     "favorite": {
       "added": "Added to favorites",
@@ -1700,7 +1701,9 @@
       "help_support": "Help & Support",
       "faq": "FAQ",
       "terms_policies": "Terms & policies",
-      "about": "About"
+      "about": "About",
+      "landlord_mode": "Become a landlord",
+      "landlord_space": "Landlord space"
     },
     "logout": {
       "title": "Log out",
@@ -4185,7 +4188,9 @@
       "empty_title": "No matching property",
       "empty_message": "Widen your search or remove a filter.",
       "error": "Unable to load properties",
-      "retry": "Try again"
+      "retry": "Try again",
+      "publish": "Renting out a home?",
+      "publish_cta": "List my property"
     },
     "kinds": {
       "house": "House",
@@ -4432,6 +4437,172 @@
       "sent_message": "ASSO will get back to you very soon.",
       "back": "Back to properties",
       "error": "Unable to send"
+    }
+  },
+  "landlord": {
+    "title": "Landlord space",
+    "new_listing": "New listing",
+    "my_listings": "My listings",
+    "no_listing": "No listing yet",
+    "no_listing_help": "Get your profile verified, then publish your first home.",
+    "status": {
+      "none": "Get your profile verified",
+      "none_help": "Send your ID, a proof of ownership and a short video. ASSO checks them before publishing your listings.",
+      "pending": "Verification in progress",
+      "pending_help": "You can already prepare your listings: they will be published once your profile is approved.",
+      "verified": "Verified landlord",
+      "verified_help": "Your listings show the \"Verified landlord\" badge.",
+      "rejected": "Documents to resend",
+      "rejected_help": "Your verification was not approved. Correct and resend your documents.",
+      "reason": "Reason: @reason"
+    },
+    "listing_status": {
+      "draft": "Draft",
+      "pending_review": "In review",
+      "published": "Live",
+      "rejected": "To correct",
+      "archived": "Archived"
+    },
+    "proof": {
+      "land_title": "Land title",
+      "sale_deed": "Sale deed",
+      "certificate": "Certificate of ownership",
+      "lease_contract": "Lease (subletting allowed)",
+      "other": "Other document"
+    },
+    "verify": {
+      "title": "Landlord verification",
+      "intro": "These documents prove that you own the property. They stay confidential: only the ASSO team sees them.",
+      "id_title": "ID document",
+      "id_cni": "ID card",
+      "id_passport": "Passport",
+      "front": "Front",
+      "back": "Back",
+      "proof_title": "Proof of ownership",
+      "proof_type": "Document type",
+      "proof_file": "Photo of the document",
+      "video_title": "Verification video",
+      "video_help": "Film yourself holding your ID and your proof of ownership while saying your name (15 to 30 seconds).",
+      "video_button": "Record the video",
+      "tap_to_add": "Tap to add",
+      "privacy": "Your documents are never shown to tenants.",
+      "send": "Send my documents",
+      "start": "Get my profile verified",
+      "sent_title": "Documents sent",
+      "sent_message": "ASSO checks your documents and will let you know.",
+      "error": "Unable to send"
+    },
+    "road_access": {
+      "roadside": "Right by the road",
+      "near_road": "Near the road",
+      "inside": "Inside the neighbourhood"
+    },
+    "road_condition": {
+      "paved": "Paved",
+      "dirt": "Dirt road",
+      "poor": "Difficult in rainy season"
+    },
+    "water": {
+      "network": "Mains",
+      "borehole": "Borehole",
+      "well": "Well",
+      "none": "None"
+    },
+    "electricity": {
+      "network": "Standard meter",
+      "prepaid": "Prepaid meter",
+      "solar": "Solar",
+      "none": "None"
+    },
+    "security": {
+      "high": "Very safe",
+      "medium": "Quiet",
+      "low": "Busy"
+    },
+    "amenity_kind": {
+      "highlight": "Highlights",
+      "equipment": "Equipment",
+      "service": "Services"
+    },
+    "missing": {
+      "photos": "At least one photo",
+      "entrance_photo": "The entrance photo",
+      "room_photos": "One photo for each room",
+      "video": "A video of the home",
+      "price": "The rent",
+      "lots": "At least one plot"
+    },
+    "editor": {
+      "new_title": "List a home",
+      "edit_title": "Edit listing",
+      "step": "Step @n of @total",
+      "step_kind": "What are you renting out?",
+      "step_location": "Where is it?",
+      "step_area": "Access and neighbourhood",
+      "step_features": "Features",
+      "step_price": "Rent and conditions",
+      "step_amenities": "Highlights and equipment",
+      "step_tour": "Room-by-room tour",
+      "step_review": "Check and send",
+      "title_field": "Listing title",
+      "title_hint": "E.g. 3-bedroom house in Odza",
+      "description": "Description",
+      "description_hint": "What makes your home pleasant (optional).",
+      "address": "Exact address",
+      "address_help": "Shared with the tenant only after payment.",
+      "place_on_map": "Place on the map",
+      "move_on_map": "Move on the map",
+      "position_saved": "Location saved.",
+      "area_intro": "These answers write the neighbourhood description for you.",
+      "road_access": "Road access",
+      "distance": "Distance from the road (metres)",
+      "road_condition": "Road condition",
+      "water": "Water",
+      "electricity": "Electricity",
+      "security": "Neighbourhood safety",
+      "landlocked_help": "Hard to reach by car.",
+      "bathrooms": "Bathrooms",
+      "surface": "Size (m²)",
+      "units_title": "Several homes?",
+      "units_help": "For a residence, add each type of home with its number of places.",
+      "add_unit": "Add a type of home",
+      "unit_label": "Label (e.g. Single room)",
+      "unit_price": "Net rent",
+      "unit_total": "Places",
+      "unit_surface": "Size (m²)",
+      "unit_capacity": "People",
+      "net_price": "Monthly rent you want to receive (FCFA)",
+      "net_price_help": "ASSO adds its fees to the displayed price; you receive this amount.",
+      "advance": "Months paid in advance",
+      "min_lease": "Minimum lease (months)",
+      "available_from": "Available from",
+      "old_price": "Previous rent (struck-through, optional)",
+      "promo": "Special offer (optional)",
+      "promo_hint": "E.g. First month free",
+      "preview_title": "What the tenant sees",
+      "preview_displayed": "Displayed rent: @price / month",
+      "preview_receive": "You receive for the advance: @amount",
+      "preview_blocked": "Amount held for @days days during the visit, then paid to your Wallet.",
+      "tour_intro": "Add at least one photo per room, starting with the entrance. Sharp, bright photos are reviewed by ASSO.",
+      "add_room": "Add a room",
+      "room_label": "Room name",
+      "add": "Add",
+      "video_title": "Video of the home",
+      "video_add": "Add a tour video",
+      "video_replace": "Video added — tap to add another",
+      "missing_title": "Still missing:",
+      "generated_description": "Generated description",
+      "review_help": "ASSO reviews your listing before publishing it. You are notified as soon as it is live.",
+      "previous": "Previous",
+      "next": "Next",
+      "submit": "Send for review",
+      "submitted_title": "Listing sent",
+      "submitted_message": "ASSO reviews it and will let you know when it is live.",
+      "incomplete": "Incomplete listing",
+      "step_required_0": "Choose the type of home and give it a title.",
+      "step_required_1": "Enter the city.",
+      "step_required_4": "Enter the rent.",
+      "error": "Unable to save"
     }
   }
 }

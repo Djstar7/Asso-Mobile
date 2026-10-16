@@ -26,6 +26,8 @@ import '../../../core/widgets/offline_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
 import '../../immo/immo_nav.dart';
+import '../../landlord/views/landlord_dashboard_view.dart';
+import '../../../data/providers/real_estate_service.dart';
 import '../../../data/models/wholesale_models.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -624,6 +626,33 @@ class HomeView extends GetView<HomeController> {
                           return;
                         }
                         Get.toNamed(isVendor ? '/vendor-dashboard' : '/vendor-config');
+                      },
+                    );
+                  },
+                ),
+                // Bailleur : « Devenir bailleur » tant que le profil n'est pas
+                // vérifié, « Espace bailleur » ensuite. Les terrains ne sont
+                // pas ouverts aux utilisateurs, d'où ce libellé.
+                Builder(
+                  builder: (context) {
+                    final verified = RealEstateService.cachedLandlordStatus == 'verified';
+
+                    return _buildDrawerItem(
+                      context: context,
+                      icon: Icons.real_estate_agent_rounded,
+                      title: verified ? 'home.drawer.landlord_space'.tr : 'home.drawer.landlord_mode'.tr,
+                      isActive: verified,
+                      badge: verified ? null : 'home.drawer.badge_new'.tr,
+                      onTap: () {
+                        Get.back();
+                        if (AuthGuard.isGuest) {
+                          AppDialogs.showLoginRequiredDialog(
+                            context,
+                            featureName: 'home.feature.landlord_mode'.tr,
+                          );
+                          return;
+                        }
+                        Get.to(() => const LandlordDashboardView());
                       },
                     );
                   },

@@ -1657,7 +1657,8 @@
       "diaspora_mode": "le mode Diaspora",
       "delivery_mode": "le mode livreur",
       "vendor_mode": "le mode vendeur",
-      "settings": "les paramètres"
+      "settings": "les paramètres",
+      "landlord_mode": "l'espace bailleur"
     },
     "favorite": {
       "added": "Ajouté aux favoris",
@@ -1700,7 +1701,9 @@
       "help_support": "Aide & Support",
       "faq": "FAQ",
       "terms_policies": "Conditions & politiques",
-      "about": "À propos"
+      "about": "À propos",
+      "landlord_mode": "Devenir bailleur",
+      "landlord_space": "Espace bailleur"
     },
     "logout": {
       "title": "Déconnexion",
@@ -4185,7 +4188,9 @@
       "empty_title": "Aucun bien ne correspond",
       "empty_message": "Élargissez votre recherche ou retirez un filtre.",
       "error": "Impossible de charger les biens",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "publish": "Vous louez un logement ?",
+      "publish_cta": "Publier mon bien"
     },
     "kinds": {
       "house": "Maison",
@@ -4432,6 +4437,172 @@
       "sent_message": "ASSO vous recontacte très vite pour vous orienter.",
       "back": "Retour aux biens",
       "error": "Envoi impossible"
+    }
+  },
+  "landlord": {
+    "title": "Espace bailleur",
+    "new_listing": "Nouvelle annonce",
+    "my_listings": "Mes annonces",
+    "no_listing": "Aucune annonce pour le moment",
+    "no_listing_help": "Faites vérifier votre profil, puis publiez votre premier logement.",
+    "status": {
+      "none": "Faites vérifier votre profil",
+      "none_help": "Envoyez votre pièce d'identité, une preuve de propriété et une courte vidéo. ASSO les vérifie avant de publier vos annonces.",
+      "pending": "Vérification en cours",
+      "pending_help": "Vous pouvez déjà préparer vos annonces : elles seront publiées dès que votre profil sera validé.",
+      "verified": "Bailleur vérifié",
+      "verified_help": "Vos annonces affichent le badge « Bailleur vérifié ».",
+      "rejected": "Pièces à renvoyer",
+      "rejected_help": "Votre vérification n'a pas été validée. Corrigez et renvoyez vos pièces.",
+      "reason": "Motif : @reason"
+    },
+    "listing_status": {
+      "draft": "Brouillon",
+      "pending_review": "En relecture",
+      "published": "En ligne",
+      "rejected": "À corriger",
+      "archived": "Archivée"
+    },
+    "proof": {
+      "land_title": "Titre foncier",
+      "sale_deed": "Acte de vente / cession",
+      "certificate": "Attestation de propriété",
+      "lease_contract": "Contrat de bail (sous-location autorisée)",
+      "other": "Autre document"
+    },
+    "verify": {
+      "title": "Vérification du bailleur",
+      "intro": "Ces pièces prouvent que vous êtes bien propriétaire. Elles restent confidentielles : seule l'équipe ASSO les consulte.",
+      "id_title": "Pièce d'identité",
+      "id_cni": "CNI",
+      "id_passport": "Passeport",
+      "front": "Recto",
+      "back": "Verso",
+      "proof_title": "Preuve de propriété",
+      "proof_type": "Type de document",
+      "proof_file": "Photo du document",
+      "video_title": "Vidéo de vérification",
+      "video_help": "Filmez-vous en tenant votre pièce d'identité et votre preuve de propriété, en disant votre nom (15 à 30 secondes).",
+      "video_button": "Enregistrer la vidéo",
+      "tap_to_add": "Touchez pour ajouter",
+      "privacy": "Vos documents ne sont jamais montrés aux locataires.",
+      "send": "Envoyer mes pièces",
+      "start": "Faire vérifier mon profil",
+      "sent_title": "Pièces envoyées",
+      "sent_message": "ASSO vérifie vos documents et vous prévient.",
+      "error": "Envoi impossible"
+    },
+    "road_access": {
+      "roadside": "En bordure de route",
+      "near_road": "Proche de la route",
+      "inside": "Dans le quartier"
+    },
+    "road_condition": {
+      "paved": "Goudronnée",
+      "dirt": "En terre",
+      "poor": "Difficile en saison des pluies"
+    },
+    "water": {
+      "network": "Réseau",
+      "borehole": "Forage",
+      "well": "Puits",
+      "none": "Aucune"
+    },
+    "electricity": {
+      "network": "Compteur classique",
+      "prepaid": "Compteur prépayé",
+      "solar": "Solaire",
+      "none": "Aucune"
+    },
+    "security": {
+      "high": "Très sûr",
+      "medium": "Calme",
+      "low": "Animé"
+    },
+    "amenity_kind": {
+      "highlight": "Les atouts",
+      "equipment": "Équipements",
+      "service": "Services"
+    },
+    "missing": {
+      "photos": "Au moins une photo",
+      "entrance_photo": "La photo de l'entrée",
+      "room_photos": "Une photo pour chaque pièce",
+      "video": "Une vidéo du logement",
+      "price": "Le loyer",
+      "lots": "Au moins un lot"
+    },
+    "editor": {
+      "new_title": "Publier un logement",
+      "edit_title": "Modifier l'annonce",
+      "step": "Étape @n sur @total",
+      "step_kind": "Quel logement louez-vous ?",
+      "step_location": "Où se trouve-t-il ?",
+      "step_area": "Accès et quartier",
+      "step_features": "Caractéristiques",
+      "step_price": "Loyer et conditions",
+      "step_amenities": "Atouts et équipements",
+      "step_tour": "Visite pièce par pièce",
+      "step_review": "Vérifiez et envoyez",
+      "title_field": "Titre de l'annonce",
+      "title_hint": "Ex. Maison 3 chambres à Odza",
+      "description": "Description",
+      "description_hint": "Ce qui rend votre logement agréable (facultatif).",
+      "address": "Adresse exacte",
+      "address_help": "Communiquée au locataire seulement après paiement.",
+      "place_on_map": "Placer sur la carte",
+      "move_on_map": "Déplacer sur la carte",
+      "position_saved": "Position enregistrée.",
+      "area_intro": "Ces réponses écrivent la description du quartier pour vous.",
+      "road_access": "Accès à la route",
+      "distance": "Distance de la route (mètres)",
+      "road_condition": "État de la route",
+      "water": "Eau",
+      "electricity": "Électricité",
+      "security": "Sécurité du quartier",
+      "landlocked_help": "Difficile d'accès en voiture.",
+      "bathrooms": "Douches",
+      "surface": "Surface (m²)",
+      "units_title": "Plusieurs logements ?",
+      "units_help": "Pour une cité ou une résidence, ajoutez chaque type de logement avec son nombre de places.",
+      "add_unit": "Ajouter un type de logement",
+      "unit_label": "Libellé (ex. Chambre simple)",
+      "unit_price": "Loyer net",
+      "unit_total": "Places",
+      "unit_surface": "Surface (m²)",
+      "unit_capacity": "Personnes",
+      "net_price": "Loyer mensuel que vous voulez toucher (FCFA)",
+      "net_price_help": "ASSO ajoute ses frais au prix affiché ; vous touchez ce montant.",
+      "advance": "Mois d'avance demandés",
+      "min_lease": "Durée minimale (mois)",
+      "available_from": "Disponible à partir du",
+      "old_price": "Ancien loyer (prix barré, facultatif)",
+      "promo": "Offre spéciale (facultatif)",
+      "promo_hint": "Ex. Premier mois offert",
+      "preview_title": "Ce que voit le locataire",
+      "preview_displayed": "Loyer affiché : @price / mois",
+      "preview_receive": "Vous recevez pour l'avance : @amount",
+      "preview_blocked": "Montant bloqué @days jours, le temps de la visite, puis versé sur votre Wallet.",
+      "tour_intro": "Ajoutez au moins une photo par pièce, en commençant par l'entrée. Des photos nettes et lumineuses sont relues par ASSO.",
+      "add_room": "Ajouter une pièce",
+      "room_label": "Nom de la pièce",
+      "add": "Ajouter",
+      "video_title": "Vidéo du logement",
+      "video_add": "Ajouter une vidéo de la visite",
+      "video_replace": "Vidéo ajoutée — toucher pour en ajouter une autre",
+      "missing_title": "Il manque encore :",
+      "generated_description": "Description générée",
+      "review_help": "ASSO relit votre annonce avant de la publier. Vous êtes prévenu dès qu'elle est en ligne.",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "submit": "Envoyer en relecture",
+      "submitted_title": "Annonce envoyée",
+      "submitted_message": "ASSO la relit et vous prévient dès sa publication.",
+      "incomplete": "Annonce incomplète",
+      "step_required_0": "Choisissez le type de logement et donnez un titre.",
+      "step_required_1": "Indiquez la ville.",
+      "step_required_4": "Indiquez le loyer.",
+      "error": "Enregistrement impossible"
     }
   }
 }
