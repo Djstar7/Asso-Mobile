@@ -25,6 +25,7 @@ import '../../notification/controllers/notification_controller.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
+import '../../immo/immo_nav.dart';
 import '../../../data/models/wholesale_models.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -53,17 +54,34 @@ class HomeView extends GetView<HomeController> {
           children: [
             _buildTopBar(context),
             Expanded(
-              child: TabBarView(
-                controller: controller.tabController,
-                // Le balayage latéral est désactivé : il entrait en conflit
-                // avec les carrousels horizontaux de la page d'accueil.
-                physics: const NeverScrollableScrollPhysics(),
-                children: const [
-                  HomeItemView(),
-                  SearchTabView(),
-                  ImportView(),
-                  TrackingView(),
-                  ProfileView(),
+              child: Stack(
+                children: [
+                  TabBarView(
+                    controller: controller.tabController,
+                    // Le balayage latéral est désactivé : il entrait en conflit
+                    // avec les carrousels horizontaux de la page d'accueil.
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: const [
+                      HomeItemView(),
+                      SearchTabView(),
+                      ImportView(),
+                      TrackingView(),
+                      ProfileView(),
+                    ],
+                  ),
+                  // Rubrique Immobilier : ouverte depuis la tuile de
+                  // l'accueil, elle se pose au-dessus des onglets et garde
+                  // la barre du bas visible.
+                  Obx(() => AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: controller.realEstateOpen.value
+                            ? ImmoShell(
+                                key: const ValueKey('immo-shell'),
+                                initialRoute: controller.realEstateInitialRoute,
+                                initialArguments: controller.realEstateInitialArguments,
+                              )
+                            : const SizedBox.shrink(),
+                      )),
                 ],
               ),
             ),
@@ -77,9 +95,19 @@ class HomeView extends GetView<HomeController> {
     // navigation basse. Seul l'Accueil laisse sortir.
     return Obx(
       () => PopScope(
-        canPop: controller.currentTabIndex.value == 0,
+        canPop: controller.currentTabIndex.value == 0 && !controller.realEstateOpen.value,
         onPopInvokedWithResult: (didPop, _) {
           if (didPop) return;
+          // Dans la rubrique Immobilier : on remonte d'abord ses pages, puis
+          // on la referme sur l'accueil.
+          if (controller.realEstateOpen.value) {
+            if (ImmoNav.canPop) {
+              ImmoNav.maybePop();
+            } else {
+              controller.closeRealEstate();
+            }
+            return;
+          }
           controller.handleTabTap(0);
           if (controller.tabController.index != 0) {
             controller.tabController.animateTo(0);
@@ -181,10 +209,13 @@ class HomeView extends GetView<HomeController> {
   Widget _buildTopBar(BuildContext context) {
     return Obx(() {
       final tab = controller.currentTabIndex.value;
+      final inRealEstate = controller.realEstateOpen.value;
+      // La conversation et la visite pièce par pièce ont leur propre barre.
+      if (inRealEstate && ImmoNav.hidesTopBar) return const SizedBox.shrink();
       // Raccourci de recherche gardé sur l'accueil seulement. L'onglet
       // Recherche porte déjà son propre champ, et le catalogue grossiste a
       // le sien, filtré par pays.
-      final showSearch = tab == 0;
+      final showSearch = tab == 0 && !inRealEstate;
 
       return Container(
         decoration: BoxDecoration(
@@ -203,19 +234,43 @@ class HomeView extends GetView<HomeController> {
               height: 56,
               child: Row(
                 children: [
-                  Builder(
-                    builder: (scaffoldContext) => AppIconButton(
-                      icon: Icons.menu_rounded,
-                      tooltip: 'home.tooltip.menu'.tr,
-                      onPressed: () =>
-                          Scaffold.of(scaffoldContext).openDrawer(),
+                  if (inRealEstate)
+                    AppIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      tooltip: 'common.back'.tr,
+                      onPressed: () {
+                        if (ImmoNav.canPop) {
+                          ImmoNav.maybePop();
+                        } else {
+                          controller.closeRealEstate();
+                        }
+                      },
+                    )
+                  else
+                    Builder(
+                      builder: (scaffoldContext) => AppIconButton(
+                        icon: Icons.menu_rounded,
+                        tooltip: 'home.tooltip.menu'.tr,
+                        onPressed: () =>
+                            Scaffold.of(scaffoldContext).openDrawer(),
+                      ),
                     ),
-                  ),
                   Expanded(
                     // Sur l'accueil, on s'adresse à la personne plutôt que
                     // de répéter le nom de l'application, déjà porté par
                     // l'icône du téléphone.
-                    child: tab == 0
+                    child: inRealEstate
+                        ? Text(
+                            ImmoNav.title,
+                            style: context.textStyle(
+                              FontSizeType.h6,
+                              fontWeight: FontWeight.w700,
+                              color: context.ds.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : tab == 0
                         ? _buildGreeting(context)
                         : Text(
                             _destinations[tab].label.tr,
@@ -247,13 +302,21 @@ class HomeView extends GetView<HomeController> {
                   AppIconButton(
                     icon: Icons.favorite_border_rounded,
                     tooltip: 'home.tooltip.favorites'.tr,
-                    badgeCount: controller.favoritesCount.value,
-                    onPressed: () => AuthGuard.navigateIfAuthenticated(
-                      context,
-                      '/favorites',
-                      featureName: 'home.feature.your_favorites'.tr,
-                      useDialog: false,
-                    ),
+                    badgeCount: inRealEstate ? null : controller.favoritesCount.value,
+                    // Dans la rubrique, le cœur mène aux biens mis de côté.
+                    onPressed: () => inRealEstate
+                        ? AuthGuard.requireAuth(
+                            context,
+                            featureName: 'home.feature.your_favorites'.tr,
+                            useDialog: false,
+                            onAuthenticated: () => ImmoNav.push(ImmoNav.favorites),
+                          )
+                        : AuthGuard.navigateIfAuthenticated(
+                            context,
+                            '/favorites',
+                            featureName: 'home.feature.your_favorites'.tr,
+                            useDialog: false,
+                          ),
                   ),
                   GetX<NotificationController>(
                     builder: (notifController) => AppIconButton(
@@ -1396,6 +1459,12 @@ class HomeItemView extends GetView<HomeController> {
           controller.handleTabTap(2);
           controller.tabController.animateTo(controller.currentTabIndex.value);
         },
+      ),
+      _QuickLink(
+        label: 'home.quick.real_estate'.tr,
+        icon: Icons.home_outlined,
+        isNew: true,
+        onTap: controller.openRealEstate,
       ),
       _QuickLink(
         label: 'home.quick.orders'.tr,
