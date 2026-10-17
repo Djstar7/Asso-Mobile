@@ -3227,7 +3227,11 @@
     "delivery": "Livraison",
     "received_parcel": "J’ai reçu mon colis",
     "delivery_tracking": "Suivi de livraison",
-    "delivery_address": "Adresse de livraison"
+    "delivery_address": "Adresse de livraison",
+    "tabs": {
+      "orders": "Mes commandes",
+      "tracking": "Suivi"
+    }
   },
   "delivery_dashboard": {
     "route": {

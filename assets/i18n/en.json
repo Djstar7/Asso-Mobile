@@ -3227,7 +3227,11 @@
     "delivery": "Delivery",
     "received_parcel": "I received my parcel",
     "delivery_tracking": "Delivery tracking",
-    "delivery_address": "Delivery address"
+    "delivery_address": "Delivery address",
+    "tabs": {
+      "orders": "My orders",
+      "tracking": "Tracking"
+    }
   },
   "delivery_dashboard": {
     "route": {

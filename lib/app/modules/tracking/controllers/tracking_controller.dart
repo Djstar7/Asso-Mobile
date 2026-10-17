@@ -419,11 +419,19 @@ class TrackingController extends GetxController {
       results = results.where((s) {
         final id = s['id'].toString().toLowerCase();
         final name = s['productName'].toString().toLowerCase();
-        return id.contains(query) || name.contains(query);
+        return id.contains(query) ||
+            name.contains(query) ||
+            '${s['orderId']}' == query;
       }).toList();
     }
 
     return results;
+  }
+
+  /// Cible une commande (numéro ou identifiant) : la recherche la retrouve.
+  void focusOrder(String orderRef) {
+    selectedFilter.value = 'tracking.filters.all';
+    searchController.text = orderRef;
   }
 
   void clearSearch() {
