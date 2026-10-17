@@ -238,14 +238,11 @@ class VendorDashboardController extends GetxController {
     }
   }
 
-  /// Échec du serveur : dernier état connu, sinon l'ancien repli.
+  /// Échec du serveur : dernier état connu, sinon un écran neutre (jamais de
+  /// fausse boutique, qui faisait croire à des produits ou chiffres erronés).
   void _fallbackAfterFailure() {
     if (_applySnapshot() || _hasDashboardData) return;
-    if (ConnectivityService.isOffline) {
-      _loadOfflineIdentity();
-    } else {
-      _loadMockData();
-    }
+    _loadOfflineIdentity();
   }
 
   /// Applique l'instantané Hive du tableau de bord. Faux s'il n'y en a pas.
@@ -405,17 +402,6 @@ class VendorDashboardController extends GetxController {
       print('========================================');
       // Ne pas bloquer si cette requête échoue
     }
-  }
-
-  /// Données fictives de secours
-  void _loadMockData() {
-    shopName.value = 'Boutique Kira';
-    shopDescription.value = 'Vente d\'articles de mode et électronique';
-    selectedCategories.value = ['Électronique', 'Mode & Vêtements'];
-    totalOrders.value = 0;
-    totalSales.value = 0.0;
-    totalProducts.value = 0;
-    rating.value = 0.0;
   }
 
   /// Vérifie le statut de vérification (appelé via l'API)

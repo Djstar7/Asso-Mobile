@@ -63,6 +63,11 @@ class OfflineStore {
 
   // ── Instantanés du serveur ────────────────────────────────────────────
 
+  /// Format des instantanés. À incrémenter quand une mise à jour de l'app
+  /// change la forme des réponses mémorisées : les anciens instantanés sont
+  /// alors ignorés (et supprimés) au lieu d'afficher des données périmées.
+  static const _snapshotVersion = 2;
+
   static String? get _userScope {
     final id = StorageService.getUser()?.id;
     return id == null ? null : 'u$id';
@@ -78,6 +83,7 @@ class OfflineStore {
       await box.put(
         '$scope:$key',
         jsonEncode({
+          'v': _snapshotVersion,
           'saved_at': DateTime.now().toIso8601String(),
           'data': data,
         }),
@@ -93,7 +99,12 @@ class OfflineStore {
     final raw = scope == null ? null : _cache?.get('$scope:$key');
     if (raw == null) return null;
     try {
-      return (jsonDecode(raw) as Map)['data'];
+      final decoded = jsonDecode(raw) as Map;
+      if (decoded['v'] != _snapshotVersion) {
+        _cache?.delete('$scope:$key');
+        return null;
+      }
+      return decoded['data'];
     } catch (_) {
       _cache?.delete('$scope:$key');
       return null;
