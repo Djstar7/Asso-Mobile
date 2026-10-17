@@ -12,7 +12,8 @@
     "continue": "Continuer",
     "generic_error_retry": "Une erreur est survenue. Veuillez réessayer.",
     "generic_error": "Une erreur est survenue",
-    "please_wait": "Veuillez patienter…"
+    "please_wait": "Veuillez patienter…",
+    "or": "ou"
   },
   "settings": {
     "language": {
@@ -161,7 +162,10 @@
     "code_sent_title": "Code envoyé",
     "code_sent_message": "Un code de vérification a été envoyé à @email",
     "google_signing_in": "Connexion avec Google...",
-    "apple_signing_in": "Connexion avec Apple..."
+    "apple_signing_in": "Connexion avec Apple...",
+    "first_name_label": "Prénom",
+    "last_name_label": "Nom",
+    "optional_hint": "Facultatif"
   },
   "login": {
     "title": "Bon retour",

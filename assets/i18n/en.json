@@ -12,7 +12,8 @@
     "continue": "Continue",
     "generic_error_retry": "An error occurred. Please try again.",
     "generic_error": "An error occurred",
-    "please_wait": "Please wait…"
+    "please_wait": "Please wait…",
+    "or": "or"
   },
   "settings": {
     "language": {
@@ -161,7 +162,10 @@
     "code_sent_title": "Code sent",
     "code_sent_message": "A verification code has been sent to @email",
     "google_signing_in": "Signing in with Google...",
-    "apple_signing_in": "Signing in with Apple..."
+    "apple_signing_in": "Signing in with Apple...",
+    "first_name_label": "First name",
+    "last_name_label": "Last name",
+    "optional_hint": "Optional"
   },
   "login": {
     "title": "Welcome back",

@@ -281,9 +281,10 @@ class _SkipButton extends StatelessWidget {
 
 /// Séparateur « ou » entre l'action principale et les autres entrées.
 class AuthDivider extends StatelessWidget {
-  const AuthDivider({super.key, this.label = 'ou'});
+  const AuthDivider({super.key, this.label});
 
-  final String label;
+  /// Texte du séparateur ; « ou » / « or » selon la langue par défaut.
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +298,7 @@ class AuthDivider extends StatelessWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppDesign.space3),
           child: Text(
-            label,
+            label ?? 'common.or'.tr,
             style: context.textStyle(
               FontSizeType.caption,
               color: context.ds.textTertiary,

@@ -6,6 +6,9 @@ import '../../../data/providers/guest_access.dart';
 import '../../../routes/app_pages.dart';
 
 class WelcomerController extends GetxController {
+  // Prénom et nom facultatifs : sans eux, le compte s'affiche « Utilisateur ».
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
   late TextEditingController emailController;
   late TextEditingController passwordController;
   late TextEditingController confirmPasswordController;
@@ -26,6 +29,8 @@ class WelcomerController extends GetxController {
       '========== WELCOMER CONTROLLER INIT ==========',
       name: 'WelcomerController',
     );
+    firstNameController = TextEditingController();
+    lastNameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
     confirmPasswordController = TextEditingController();
@@ -69,10 +74,17 @@ class WelcomerController extends GetxController {
 
   @override
   void onClose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.onClose();
+  }
+
+  String? _optional(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// Visiter l'application sans compte.
@@ -159,6 +171,8 @@ class WelcomerController extends GetxController {
         email: email.value,
         password: password.value,
         passwordConfirmation: confirmPassword.value,
+        firstName: _optional(firstNameController.text),
+        lastName: _optional(lastNameController.text),
       );
 
       developer.log(

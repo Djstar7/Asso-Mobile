@@ -25,7 +25,7 @@ class WelcomerView extends GetView<WelcomerController> {
       subtitle:
           'welcomer.subtitle'.tr,
       onSkip: controller.skipWelcome,
-      // Formulaire long (trois champs, conditions, bouton) : un bandeau
+      // Formulaire long (quatre lignes de champs, conditions, bouton) : un bandeau
       // aussi haut qu'à la connexion repoussait « Créer mon compte »
       // hors de l'écran à l'ouverture.
       bannerRatio: 0.18,
@@ -51,6 +51,33 @@ class WelcomerView extends GetView<WelcomerController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppTextField(
+                label: 'welcomer.first_name_label'.tr,
+                hint: 'welcomer.optional_hint'.tr,
+                controller: controller.firstNameController,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.givenName],
+              ),
+            ),
+            SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: AppTextField(
+                label: 'welcomer.last_name_label'.tr,
+                hint: 'welcomer.optional_hint'.tr,
+                controller: controller.lastNameController,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.familyName],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppDesign.space4),
         AppTextField(
           label: 'welcomer.email_label'.tr,
           hint: 'welcomer.email_hint'.tr,
