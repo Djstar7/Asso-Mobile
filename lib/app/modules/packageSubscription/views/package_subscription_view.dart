@@ -119,6 +119,7 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
     final storageUsedMb = (vendorPackage['storage_used_mb'] ?? 0).toDouble();
     final storagePercentageUsed =
         (vendorPackage['storage_percentage_used'] ?? 0).toDouble();
+    final unlimited = vendorPackage['is_unlimited_storage'] == true;
     final daysRemaining = vendorPackage['days_remaining'] ?? 0;
     final packageData = vendorPackage['package'];
 
@@ -203,21 +204,25 @@ class PackageSubscriptionView extends GetView<PackageSubscriptionController> {
                 ),
               ),
               Text(
-                ' / ${'package_subscription.view.mb'.trParams({'size': storageTotalMb.toStringAsFixed(0)})}',
+                unlimited
+                    ? ' · ${'core.storage.unlimited'.tr}'
+                    : ' / ${'package_subscription.view.mb'.trParams({'size': storageTotalMb.toStringAsFixed(0)})}',
                 style: context.body2.copyWith(color: ds.textTertiary),
               ),
             ],
           ),
-          SizedBox(height: AppDesign.space2),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-            child: LinearProgressIndicator(
-              value: (storagePercentageUsed / 100).clamp(0.0, 1.0),
-              backgroundColor: ds.surfaceMuted,
-              valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
-              minHeight: 6,
+          if (!unlimited) ...[
+            SizedBox(height: AppDesign.space2),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+              child: LinearProgressIndicator(
+                value: (storagePercentageUsed / 100).clamp(0.0, 1.0),
+                backgroundColor: ds.surfaceMuted,
+                valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                minHeight: 6,
+              ),
             ),
-          ),
+          ],
 
           if (daysRemaining <= 7) ...[
             SizedBox(height: AppDesign.space4),

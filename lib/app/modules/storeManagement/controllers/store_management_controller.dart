@@ -126,6 +126,7 @@ class StoreManagementController extends GetxController {
           storageStats.value = StorageStats(
             usedSpaceGB: storageUsedGB,
             totalSpaceGB: storageTotalGB,
+            isUnlimited: package?['is_unlimited_storage'] == true,
             totalProducts: totalProducts,
             totalImages: 0, // TODO: À calculer depuis les produits
           );

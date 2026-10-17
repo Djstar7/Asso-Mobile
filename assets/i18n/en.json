@@ -972,6 +972,9 @@
       "subtitle": "Without a translation, English-speaking customers see the French text.",
       "name_label": "Name in English",
       "description_label": "Description in English"
+    },
+    "storage": {
+      "unlimited": "Unlimited"
     }
   },
   "wallet": {

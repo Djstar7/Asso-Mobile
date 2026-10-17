@@ -536,32 +536,37 @@ class _StorageCard extends GetView<StoreManagementController> {
                         ),
                       ),
                       Text(
-                        'store_management.storage.total_gb'.trParams({
-                          'value': storage.totalSpaceGB.toStringAsFixed(1),
-                        }),
+                        storage.isUnlimited
+                            ? ' · ${'core.storage.unlimited'.tr}'
+                            : 'store_management.storage.total_gb'.trParams({
+                                'value': storage.totalSpaceGB.toStringAsFixed(1),
+                              }),
                         style: context.body2.copyWith(color: ds.textTertiary),
                       ),
                     ],
                   ),
-                  SizedBox(height: AppDesign.space2),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-                    child: LinearProgressIndicator(
-                      value: (percent / 100).clamp(0.0, 1.0),
-                      minHeight: 6,
-                      backgroundColor: ds.surfaceMuted,
-                      valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                  // Forfait illimité : ni plafond ni jauge.
+                  if (!storage.isUnlimited) ...[
+                    SizedBox(height: AppDesign.space2),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                      child: LinearProgressIndicator(
+                        value: (percent / 100).clamp(0.0, 1.0),
+                        minHeight: 6,
+                        backgroundColor: ds.surfaceMuted,
+                        valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: AppDesign.space2),
-                  Text(
-                    'store_management.storage.summary'.trParams({
-                      'percent': percent.toStringAsFixed(0),
-                      'products': '${storage.totalProducts}',
-                      'images': '${storage.totalImages}',
-                    }),
-                    style: context.caption.copyWith(color: ds.textTertiary),
-                  ),
+                    SizedBox(height: AppDesign.space2),
+                    Text(
+                      'store_management.storage.summary'.trParams({
+                        'percent': percent.toStringAsFixed(0),
+                        'products': '${storage.totalProducts}',
+                        'images': '${storage.totalImages}',
+                      }),
+                      style: context.caption.copyWith(color: ds.textTertiary),
+                    ),
+                  ],
                 ],
 
                 if (storage.isAlmostFull) ...[

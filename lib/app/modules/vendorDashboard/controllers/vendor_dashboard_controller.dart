@@ -53,6 +53,8 @@ class VendorDashboardController extends GetxController {
   final storageUsedMb = 0.0.obs;
   final storageRemainingMb = 0.0.obs;
   final storagePercentageUsed = 0.0.obs;
+  /// Forfait « taille illimitée » : pas de plafond ni de jauge.
+  final storageUnlimited = false.obs;
   final packageExpiresAt = Rx<String?>(null);
   final daysRemaining = 0.obs;
 
@@ -340,6 +342,7 @@ class VendorDashboardController extends GetxController {
         storageUsedMb.value = (package['vendor_package']['storage_used_mb'] ?? 0).toDouble();
         storageRemainingMb.value = (package['vendor_package']['storage_remaining_mb'] ?? 0).toDouble();
         storagePercentageUsed.value = (package['vendor_package']['storage_percentage_used'] ?? 0).toDouble();
+        storageUnlimited.value = package['vendor_package']['is_unlimited_storage'] == true;
         packageExpiresAt.value = package['vendor_package']['expires_at'];
 
         // Convert days_remaining to int (backend might return double)

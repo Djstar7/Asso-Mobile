@@ -8,11 +8,15 @@ class StorageStats {
   final int totalProducts;
   final int totalImages;
 
+  /// Forfait « taille illimitée » : l'usage est compté, sans plafond.
+  final bool isUnlimited;
+
   StorageStats({
     required this.usedSpaceGB,
     required this.totalSpaceGB,
     required this.totalProducts,
     required this.totalImages,
+    this.isUnlimited = false,
   });
 
   /// Taux d'occupation, borné à [0, 100].
@@ -25,11 +29,11 @@ class StorageStats {
     return ((usedSpaceGB / totalSpaceGB) * 100).clamp(0, 100);
   }
 
-  /// Vrai seulement si un quota existe réellement.
-  bool get hasQuota => totalSpaceGB > 0;
+  /// Vrai seulement si un quota existe réellement (ou un forfait illimité).
+  bool get hasQuota => isUnlimited || totalSpaceGB > 0;
 
   double get availableSpaceGB => totalSpaceGB - usedSpaceGB;
-  bool get isAlmostFull => hasQuota && usagePercentage > 80;
+  bool get isAlmostFull => !isUnlimited && hasQuota && usagePercentage > 80;
 
   factory StorageStats.fromJson(Map<String, dynamic> json) {
     return StorageStats(

@@ -972,6 +972,9 @@
       "subtitle": "Sans traduction, les clients anglophones voient le texte français.",
       "name_label": "Nom en anglais",
       "description_label": "Description en anglais"
+    },
+    "storage": {
+      "unlimited": "Illimité"
     }
   },
   "wallet": {
