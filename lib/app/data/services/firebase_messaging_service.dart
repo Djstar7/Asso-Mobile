@@ -506,6 +506,12 @@ class FirebaseMessagingService extends GetxService {
         Get.toNamed(Routes.WALLET_HISTORY);
         break;
 
+      // Livreur partenaire : course de litige (remplacement ou retour) à prendre.
+      case 'dispute_replacement_course':
+      case 'dispute_return_course':
+        Get.toNamed(Routes.DELIVERY_DASHBOARD);
+        break;
+
       default:
         // Réclamations / litiges : le dossier, côté client ou vendeur. « Paiement
         // de livraison requis » ouvre directement le paiement de la course.

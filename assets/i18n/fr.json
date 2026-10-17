@@ -4032,7 +4032,7 @@
     },
     "form": {
       "title": "Signaler un problème",
-      "replacement_title": "Le remplacement n'est pas conforme",
+      "replacement_title": "Problème sur le produit de remplacement",
       "submit": "Envoyer ma réclamation",
       "reason": "Motif",
       "explain": "Expliquez le problème",
@@ -4046,7 +4046,10 @@
       "conform": "Tout est conforme",
       "report": "Faire une réclamation",
       "conform_title": "Tout est conforme ?",
-      "conform_confirm": "Le vendeur sera payé tout de suite et vous ne pourrez plus faire de réclamation sur cette commande."
+      "conform_confirm": "Le vendeur sera payé tout de suite et vous ne pourrez plus faire de réclamation sur cette commande.",
+      "replacement_title": "Produit de remplacement reçu : @product",
+      "replacement_conform_confirm": "Le vendeur sera payé et la réclamation sera close.",
+      "report_issue": "Signaler un problème"
     },
     "decision": {
       "title": "Décision ASSO",
@@ -4059,15 +4062,19 @@
       "paid_by_asso": "Course prise en charge par ASSO",
       "paid_by_vendor": "Course payée par le vendeur",
       "free_for_you": "Aucun frais de livraison pour vous",
-      "tracking": "N° de suivi : @number"
+      "tracking": "N° de suivi : @number",
+      "code_client": "Votre code de réception, à donner au livreur seulement quand il vous remet le produit :",
+      "code_vendor": "Votre code de réception du retour, à donner au livreur quand il vous rapporte le produit (le client est alors remboursé) :",
+      "courier": "Livreur : @name",
+      "call_courier": "Appeler le livreur"
     },
     "claim": {
       "title": "Votre réclamation"
     },
     "client": {
       "replacement_check": "Votre produit de remplacement est livré. Vérifiez-le avant le @date.",
-      "replacement_ok": "Le remplacement est conforme",
-      "replacement_ko": "Le remplacement n'est pas conforme",
+      "replacement_ok": "Tout est conforme",
+      "replacement_ko": "Signaler un problème",
       "return_notice": "Votre demande de retour est validée. Un partenaire de livraison va vous contacter pour récupérer le produit. Vous n'avez aucun frais de retour à payer.",
       "refunded_notice": "Nous sommes désolés que votre commande n'ait pas répondu à vos attentes. @amount ont été remboursés sur votre Wallet ASSO.",
       "see_similar": "Voir les produits similaires"
@@ -4104,7 +4111,6 @@
       "replace": "Remplacer le produit",
       "organize_return": "Organiser le retour",
       "mark_shipped": "Produit remis au livreur",
-      "return_received": "J'ai reçu le produit retourné",
       "send_evidence": "Envoyer mes explications / preuves",
       "evidence_title": "Vos explications pour ASSO",
       "asso_decides": "ASSO décide de l'issue du dossier ; vous ne pouvez pas le clôturer vous-même.",

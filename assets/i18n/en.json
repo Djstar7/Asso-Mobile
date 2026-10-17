@@ -4032,7 +4032,7 @@
     },
     "form": {
       "title": "Report a problem",
-      "replacement_title": "The replacement isn't right",
+      "replacement_title": "Problem with the replacement product",
       "submit": "Send my claim",
       "reason": "Reason",
       "explain": "Explain the problem",
@@ -4046,7 +4046,10 @@
       "conform": "Everything is fine",
       "report": "File a claim",
       "conform_title": "Everything is fine?",
-      "conform_confirm": "The seller will be paid right away and you won't be able to file a claim on this order anymore."
+      "conform_confirm": "The seller will be paid right away and you won't be able to file a claim on this order anymore.",
+      "replacement_title": "Replacement product received: @product",
+      "replacement_conform_confirm": "The seller will be paid and the claim will be closed.",
+      "report_issue": "Report a problem"
     },
     "decision": {
       "title": "ASSO decision",
@@ -4059,15 +4062,19 @@
       "paid_by_asso": "Delivery covered by ASSO",
       "paid_by_vendor": "Delivery paid by the seller",
       "free_for_you": "No delivery fees for you",
-      "tracking": "Tracking no.: @number"
+      "tracking": "Tracking no.: @number",
+      "code_client": "Your delivery code, to give the courier only when they hand you the product:",
+      "code_vendor": "Your return code, to give the courier when they bring the product back (the customer is then refunded):",
+      "courier": "Courier: @name",
+      "call_courier": "Call the courier"
     },
     "claim": {
       "title": "Your claim"
     },
     "client": {
       "replacement_check": "Your replacement product has been delivered. Check it before @date.",
-      "replacement_ok": "The replacement is fine",
-      "replacement_ko": "The replacement isn't right",
+      "replacement_ok": "Everything is fine",
+      "replacement_ko": "Report a problem",
       "return_notice": "Your return request is approved. A delivery partner will contact you to collect the product. You pay no return fees.",
       "refunded_notice": "We're sorry your order didn't meet your expectations. @amount has been refunded to your ASSO Wallet.",
       "see_similar": "See similar products"
@@ -4104,7 +4111,6 @@
       "replace": "Replace the product",
       "organize_return": "Organize the return",
       "mark_shipped": "Product handed to the courier",
-      "return_received": "I received the returned product",
       "send_evidence": "Send my explanations / evidence",
       "evidence_title": "Your explanations for ASSO",
       "asso_decides": "ASSO decides the outcome; you can't close the case yourself.",

@@ -71,6 +71,44 @@ class CustomerOrderControlSection extends StatelessWidget {
                     ),
                   )),
             ],
+            // Produit de remplacement livré : mêmes choix qu'à la réception.
+            ...disputed.where((i) => i.dispute!.inReplacementControl).map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppDesign.space3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'disputes.control.replacement_title'.trParams({'product': item.displayName}),
+                        style: context.body2.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: AppDesign.space2),
+                      Text(
+                        'disputes.client.replacement_check'.trParams({
+                          'date': DateFormat('dd/MM/yyyy HH:mm').format(item.dispute!.replacementControlUntil!),
+                        }),
+                        style: context.caption.copyWith(color: ds.textSecondary),
+                      ),
+                      const SizedBox(height: AppDesign.space3),
+                      AppButton(
+                        label: 'disputes.control.conform'.tr,
+                        icon: Icons.verified_outlined,
+                        isLoading: busy,
+                        onPressed: () => controller.confirmReplacement(order, item),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: busy ? null : () => controller.reportReplacement(order, item),
+                          icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppDesign.danger),
+                          label: Text(
+                            'disputes.control.report_issue'.tr,
+                            style: context.caption.copyWith(color: AppDesign.danger, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
             ...disputed.map((item) => Padding(
                   padding: const EdgeInsets.only(bottom: AppDesign.space2),
                   child: InkWell(

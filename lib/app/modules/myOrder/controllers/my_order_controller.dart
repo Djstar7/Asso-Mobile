@@ -294,6 +294,55 @@ class MyOrderController extends GetxController {
     }
   }
 
+  /// Produit de remplacement conforme : la vente est conclue.
+  Future<void> confirmReplacement(CustomerOrder order, CustomerOrderItem item) async {
+    final disputeId = item.dispute?.id;
+    if (disputeId == null || controlBusyOrderId.value != null) return;
+    final ok = await Get.dialog<bool>(AlertDialog(
+      title: Text('disputes.control.conform_title'.tr),
+      content: Text('disputes.control.replacement_conform_confirm'.tr),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
+        TextButton(onPressed: () => Get.back(result: true), child: Text('common.confirm'.tr)),
+      ],
+    ));
+    if (ok != true) return;
+
+    controlBusyOrderId.value = order.id;
+    try {
+      final response = await DisputeService.confirmReplacement(disputeId);
+      _controlSnack(response.message, error: !response.success);
+    } finally {
+      controlBusyOrderId.value = null;
+      await loadOrders(refresh: true);
+    }
+  }
+
+  /// Problème sur le produit de remplacement : la réclamation est rouverte.
+  Future<void> reportReplacement(CustomerOrder order, CustomerOrderItem item) async {
+    final disputeId = item.dispute?.id;
+    if (disputeId == null || controlBusyOrderId.value != null) return;
+    final form = await DisputeFormSheet.show(
+      productName: item.displayName,
+      title: 'disputes.form.replacement_title'.tr,
+    );
+    if (form == null) return;
+
+    controlBusyOrderId.value = order.id;
+    try {
+      final response = await DisputeService.reportReplacement(
+        disputeId,
+        description: form.description,
+        reason: form.reason,
+        photos: form.photos,
+      );
+      _controlSnack(response.message, error: !response.success);
+    } finally {
+      controlBusyOrderId.value = null;
+      await loadOrders(refresh: true);
+    }
+  }
+
   Future<void> openDispute(int disputeId) async {
     await Get.toNamed(Routes.DISPUTE_DETAIL, arguments: {'id': disputeId, 'role': 'client'});
     await loadOrders(refresh: true);
