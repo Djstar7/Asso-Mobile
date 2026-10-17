@@ -314,7 +314,7 @@ class WholesaleCatalog {
       hasMore: pagination['has_more'] == true,
       countryCode: country['code']?.toString() ?? '',
       countryName: country['name']?.toString() ?? '',
-      countryFlag: country['flag']?.toString() ?? '🏳️',
+      countryFlag: country['flag']?.toString() ?? '',
       products:
           (j['products'] as List?)
               ?.map(

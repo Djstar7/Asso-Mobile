@@ -31,7 +31,7 @@ class KPayCountry {
 
   /// Drapeau emoji dérivé de l'ISO2 (regional indicator symbols).
   String get flag {
-    if (iso2.length != 2) return '🏳️';
+    if (iso2.length != 2) return '';
     final base = 0x1F1E6;
     final a = iso2.codeUnitAt(0) - 0x41;
     final b = iso2.codeUnitAt(1) - 0x41;
