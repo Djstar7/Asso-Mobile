@@ -196,15 +196,6 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
         ));
         buttons.add(const SizedBox(height: AppDesign.space2));
       }
-      if (dispute.action('confirm_return_received')) {
-        buttons.add(AppButton(
-          label: 'disputes.vendor.return_received'.tr,
-          icon: Icons.inventory_2_outlined,
-          variant: AppButtonVariant.secondary,
-          onPressed: busy ? null : controller.confirmReturnReceived,
-        ));
-        buttons.add(const SizedBox(height: AppDesign.space2));
-      }
       if (dispute.action('add_evidence')) {
         buttons.add(AppButton(
           label: 'disputes.vendor.send_evidence'.tr,
@@ -279,6 +270,31 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
           ),
           if (shipment.trackingNumber != null)
             Text('disputes.shipment.tracking'.trParams({'number': shipment.trackingNumber!}), style: context.caption),
+          if (shipment.confirmationCode != null) ...[
+            const SizedBox(height: AppDesign.space3),
+            _codeBox(context, shipment),
+          ],
+          if (shipment.courierName != null) ...[
+            const SizedBox(height: AppDesign.space3),
+            Row(
+              children: [
+                Icon(Icons.delivery_dining_rounded, size: 18, color: ds.textSecondary),
+                const SizedBox(width: AppDesign.space2),
+                Expanded(
+                  child: Text(
+                    'disputes.shipment.courier'.trParams({'name': shipment.courierName!}),
+                    style: context.body2,
+                  ),
+                ),
+                if ((shipment.courierPhone ?? '').isNotEmpty)
+                  IconButton(
+                    tooltip: 'disputes.shipment.call_courier'.tr,
+                    icon: const Icon(Icons.phone_rounded, color: AppDesign.success),
+                    onPressed: () => controller.callCourier(shipment.courierPhone!),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppDesign.space3),
           ...shipment.steps.asMap().entries.map((entry) {
             final done = entry.key <= current;
@@ -305,6 +321,35 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  /// Code de remise : le destinataire le donne au livreur, qui valide ainsi la
+  /// livraison (remplacement chez le client, retour chez le vendeur).
+  Widget _codeBox(BuildContext context, DisputeShipmentInfo shipment) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesign.space3),
+      decoration: BoxDecoration(
+        color: AppDesign.accentSubtle,
+        borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            shipment.isReturn
+                ? 'disputes.shipment.code_vendor'.tr
+                : 'disputes.shipment.code_client'.tr,
+            style: context.caption,
+          ),
+          const SizedBox(height: AppDesign.space2),
+          SelectableText(
+            shipment.confirmationCode!,
+            style: context.h4.copyWith(fontWeight: FontWeight.w800, letterSpacing: 6),
+          ),
         ],
       ),
     );

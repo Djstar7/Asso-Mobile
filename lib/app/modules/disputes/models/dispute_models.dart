@@ -33,7 +33,16 @@ class OrderItemDisputeRef {
   final String number;
   final String status;
 
-  const OrderItemDisputeRef({required this.id, required this.number, required this.status});
+  /// Produit de remplacement livré : 48 h pour le vérifier, avec les mêmes
+  /// choix qu'à la première réception.
+  final DateTime? replacementControlUntil;
+
+  const OrderItemDisputeRef({
+    required this.id,
+    required this.number,
+    required this.status,
+    this.replacementControlUntil,
+  });
 
   static OrderItemDisputeRef? fromMap(dynamic map) {
     if (map is! Map) return null;
@@ -41,8 +50,12 @@ class OrderItemDisputeRef {
       id: _int(map['id']),
       number: '${map['number'] ?? ''}',
       status: '${map['status'] ?? ''}',
+      replacementControlUntil: _date(map['replacement_control_until']),
     );
   }
+
+  bool get inReplacementControl =>
+      replacementControlUntil != null && replacementControlUntil!.isAfter(DateTime.now());
 
   String get statusLabel => 'disputes.status.$status'.tr;
 }
@@ -76,6 +89,12 @@ class DisputeShipmentInfo {
   final List<MapEntry<String, String>> steps;
   final String? trackingNumber;
 
+  /// Code à 6 chiffres à donner au livreur à la remise (client pour un
+  /// remplacement, vendeur pour un retour) ; null pour les autres.
+  final String? confirmationCode;
+  final String? courierName;
+  final String? courierPhone;
+
   const DisputeShipmentInfo({
     required this.id,
     required this.type,
@@ -87,6 +106,9 @@ class DisputeShipmentInfo {
     required this.statusLabel,
     required this.steps,
     this.trackingNumber,
+    this.confirmationCode,
+    this.courierName,
+    this.courierPhone,
   });
 
   bool get isReturn => type == 'return';
@@ -111,6 +133,9 @@ class DisputeShipmentInfo {
           .map((s) => MapEntry('${s['key']}', '${s['label']}'))
           .toList(),
       trackingNumber: map['carrier_tracking_number']?.toString(),
+      confirmationCode: map['confirmation_code']?.toString(),
+      courierName: (map['delivery_person'] as Map?)?['name']?.toString(),
+      courierPhone: (map['delivery_person'] as Map?)?['phone']?.toString(),
     );
   }
 }

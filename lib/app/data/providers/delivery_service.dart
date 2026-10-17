@@ -24,6 +24,29 @@ class DeliveryService {
     });
   }
 
+  // ── Courses de litige (produit de remplacement, retour) ────────────────
+
+  /// Courses de litige de mes sociétés (à prendre) et celles que j'ai acceptées.
+  static Future<ApiResponse> getDisputeCourses() {
+    return ApiProvider.get('/v1/delivery/dispute-courses');
+  }
+
+  static Future<ApiResponse> acceptDisputeCourse(int id) {
+    return ApiProvider.post('/v1/delivery/dispute-courses/$id/accept', body: {});
+  }
+
+  /// Colis récupéré (à la boutique pour un remplacement, chez le client pour un retour).
+  static Future<ApiResponse> pickUpDisputeCourse(int id) {
+    return ApiProvider.post('/v1/delivery/dispute-courses/$id/pickup', body: {});
+  }
+
+  /// Remise au destinataire contre son code à 6 chiffres.
+  static Future<ApiResponse> completeDisputeCourse(int id, {required String confirmationCode}) {
+    return ApiProvider.post('/v1/delivery/dispute-courses/$id/complete', body: {
+      'confirmation_code': confirmationCode,
+    });
+  }
+
   /// Get delivery partners with calculated pricing for a product
   /// Le prix dépend du poids réel : poids unitaire × [quantity].
   static Future<ApiResponse> getDeliveryPartnersWithPricing({

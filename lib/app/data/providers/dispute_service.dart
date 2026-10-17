@@ -43,11 +43,12 @@ class DisputeService {
     return ApiProvider.post('$_clientUrl/$id/confirm-replacement', body: {});
   }
 
-  /// Remplacement encore non conforme : le retour avec remboursement est imposé.
-  static Future<ApiResponse> reportReplacement(int id, {required String description, List<XFile> photos = const []}) {
+  /// Problème sur le produit de remplacement : le dossier est rouvert (réponse
+  /// du vendeur, décision ASSO).
+  static Future<ApiResponse> reportReplacement(int id, {required String description, String? reason, List<XFile> photos = const []}) {
     return ApiProvider.multipart(
       '$_clientUrl/$id/report-replacement',
-      fields: {'description': description},
+      fields: {'description': description, 'reason': ?reason},
       mediaFileLists: photos.isEmpty ? null : {'photos[]': photos},
     );
   }
@@ -103,7 +104,8 @@ class DisputeService {
     return ApiProvider.get('$_vendorUrl/shipments/$shipmentId/payment-status');
   }
 
-  /// Le vendeur remet le remplacement au livreur, ou confirme la réception du retour.
+  /// Le vendeur remet le remplacement au livreur (un retour se valide en donnant
+  /// son code au livreur).
   static Future<ApiResponse> shipmentStep(int shipmentId, String step, {String? trackingNumber}) {
     return ApiProvider.post('$_vendorUrl/shipments/$shipmentId/step', body: {
       'step': step,

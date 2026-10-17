@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../data/providers/api_provider.dart';
@@ -63,11 +64,15 @@ class DisputeDetailController extends GetxController {
     if (current == null) return;
     final form = await DisputeFormSheet.show(
       productName: current.productName,
-      withReason: false,
       title: 'disputes.form.replacement_title'.tr,
     );
     if (form == null) return;
-    await _run(() => DisputeService.reportReplacement(disputeId, description: form.description, photos: form.photos));
+    await _run(() => DisputeService.reportReplacement(
+          disputeId,
+          description: form.description,
+          reason: form.reason,
+          photos: form.photos,
+        ));
   }
 
   void openSimilarProducts() => Get.toNamed(Routes.DISPUTE_SIMILAR, arguments: {'id': disputeId});
@@ -115,7 +120,9 @@ class DisputeDetailController extends GetxController {
 
   Future<void> markShipped() => _shipmentStep(dispute.value?.replacement?.id, 'shipped');
 
-  Future<void> confirmReturnReceived() => _shipmentStep(dispute.value?.returnShipment?.id, 'delivered_to_vendor');
+  /// Appelle le livreur de la course.
+  Future<void> callCourier(String phone) =>
+      launchUrl(Uri(scheme: 'tel', path: phone.replaceAll(' ', '')));
 
   Future<void> _shipmentStep(int? shipmentId, String step) async {
     if (shipmentId == null) return;
