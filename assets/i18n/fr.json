@@ -3306,7 +3306,8 @@
     "date_time_format": "dd/MM/yyyy à HH:mm",
     "errors": {
       "error": "Erreur",
-      "load_failed": "Impossible de charger les demandes de livraison"
+      "load_failed": "Impossible de charger les demandes de livraison",
+      "generic": "Une erreur est survenue. Réessayez."
     },
     "customer": "Client",
     "online": {
@@ -3355,7 +3356,23 @@
       "failed": "Impossible de se désynchroniser",
       "error": "Une erreur est survenue lors de la désynchronisation"
     },
-    "item": "Article"
+    "item": "Article",
+    "dispute": {
+      "title": "Course réclamation",
+      "section": "Courses réclamation",
+      "replacement_title": "Produit de remplacement",
+      "return_title": "Retour au vendeur",
+      "pickup": "Retrait",
+      "dropoff": "Remise",
+      "code_hint_client": "Remise contre le code à 6 chiffres du client.",
+      "code_hint_vendor": "Remise contre le code à 6 chiffres du vendeur.",
+      "picked_up": "Colis récupéré",
+      "hand_over": "Remettre avec le code",
+      "code_prompt_client": "Demandez au client son code à 6 chiffres.",
+      "code_prompt_vendor": "Demandez au vendeur son code à 6 chiffres.",
+      "completed": "Remise confirmée.",
+      "updated": "Course mise à jour."
+    }
   },
   "diaspo_list": {
     "error": "Erreur",

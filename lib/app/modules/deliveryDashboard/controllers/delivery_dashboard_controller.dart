@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/delivery_models.dart';
 import '../../../data/providers/deliverer_service.dart';
+import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
@@ -285,6 +286,84 @@ class DeliveryDashboardController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+    await loadDisputeCourses();
+  }
+
+  // ── Courses de litige (produit de remplacement, retour) ────────────────
+
+  /// Courses de litige à prendre ou en cours (voir DisputeCoursesSection).
+  final disputeCourses = <Map<String, dynamic>>[].obs;
+
+  /// Course dont une action est en cours (bouton en chargement).
+  final disputeCourseBusyId = RxnInt();
+
+  Future<void> loadDisputeCourses() async {
+    try {
+      final response = await DeliveryService.getDisputeCourses();
+      final list = response.data?['courses'];
+      if (response.success && list is List) {
+        disputeCourses.value = list
+            .whereType<Map>()
+            .map((c) => Map<String, dynamic>.from(c))
+            .toList();
+      }
+    } catch (_) {
+      // Sans incidence sur les livraisons classiques.
+    }
+  }
+
+  Future<void> acceptDisputeCourse(int id) =>
+      _disputeCourseAction(id, () => DeliveryService.acceptDisputeCourse(id));
+
+  Future<void> pickUpDisputeCourse(int id) =>
+      _disputeCourseAction(id, () => DeliveryService.pickUpDisputeCourse(id));
+
+  /// Remise au destinataire : le client (remplacement) ou le vendeur (retour)
+  /// donne son code à 6 chiffres.
+  Future<void> completeDisputeCourse(int id, {required bool isReturn}) async {
+    final code = await _askConfirmationCode(
+      isReturn
+          ? 'delivery_dashboard.dispute.code_prompt_vendor'.tr
+          : 'delivery_dashboard.dispute.code_prompt_client'.tr,
+    );
+    if (code == null) return;
+    await _disputeCourseAction(
+      id,
+      () => DeliveryService.completeDisputeCourse(id, confirmationCode: code),
+      success: 'delivery_dashboard.dispute.completed'.tr,
+    );
+  }
+
+  Future<void> _disputeCourseAction(
+    int id,
+    Future<ApiResponse> Function() action, {
+    String? success,
+  }) async {
+    if (disputeCourseBusyId.value != null) return;
+    disputeCourseBusyId.value = id;
+    try {
+      final response = await action();
+      Get.snackbar(
+        response.success ? 'delivery_dashboard.dispute.title'.tr : 'delivery_dashboard.errors.error'.tr,
+        response.success
+            ? (success ?? (response.message.isNotEmpty ? response.message : 'delivery_dashboard.dispute.updated'.tr))
+            : (response.message.isNotEmpty ? response.message : 'delivery_dashboard.errors.generic'.tr),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: response.success ? AppDesign.success : AppDesign.danger,
+        colorText: Colors.white,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.errors.generic'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
+    } finally {
+      disputeCourseBusyId.value = null;
+      await loadDisputeCourses();
     }
   }
 
@@ -590,8 +669,8 @@ class DeliveryDashboardController extends GetxController {
     }
   }
 
-  /// Complète une livraison avec le code secret du client
-  Future<void> markAsDelivered(String requestId) async {
+  /// Saisie du code à 6 chiffres du destinataire ; null si annulée.
+  Future<String?> _askConfirmationCode(String prompt) async {
     final codeController = TextEditingController();
 
     final confirm = await Get.dialog<bool>(
@@ -603,9 +682,7 @@ class DeliveryDashboardController extends GetxController {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'delivery_dashboard.confirm.prompt'.tr,
-            ),
+            Text(prompt),
             const SizedBox(height: 16),
             TextField(
               controller: codeController,
@@ -638,7 +715,14 @@ class DeliveryDashboardController extends GetxController {
       ),
     );
 
-    if (confirm != true || codeController.text.length != 6) return;
+    final code = codeController.text.trim();
+    return confirm == true && code.length == 6 ? code : null;
+  }
+
+  /// Complète une livraison avec le code secret du client
+  Future<void> markAsDelivered(String requestId) async {
+    final code = await _askConfirmationCode('delivery_dashboard.confirm.prompt'.tr);
+    if (code == null) return;
 
     try {
       final orderId = int.tryParse(requestId.toString());
@@ -646,7 +730,7 @@ class DeliveryDashboardController extends GetxController {
 
       final response = await DeliveryService.completeDelivery(
         orderId,
-        confirmationCode: codeController.text,
+        confirmationCode: code,
       );
 
       if (response.success) {

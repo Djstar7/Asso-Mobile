@@ -3306,7 +3306,8 @@
     "date_time_format": "dd/MM/yyyy 'at' HH:mm",
     "errors": {
       "error": "Error",
-      "load_failed": "Unable to load delivery requests"
+      "load_failed": "Unable to load delivery requests",
+      "generic": "Something went wrong. Please try again."
     },
     "customer": "Customer",
     "online": {
@@ -3355,7 +3356,23 @@
       "failed": "Unable to unsync",
       "error": "An error occurred while unsyncing"
     },
-    "item": "Item"
+    "item": "Item",
+    "dispute": {
+      "title": "Claim run",
+      "section": "Claim runs",
+      "replacement_title": "Replacement product",
+      "return_title": "Return to the seller",
+      "pickup": "Pickup",
+      "dropoff": "Drop-off",
+      "code_hint_client": "Hand over against the customer's 6-digit code.",
+      "code_hint_vendor": "Hand over against the seller's 6-digit code.",
+      "picked_up": "Parcel collected",
+      "hand_over": "Hand over with the code",
+      "code_prompt_client": "Ask the customer for their 6-digit code.",
+      "code_prompt_vendor": "Ask the seller for their 6-digit code.",
+      "completed": "Handover confirmed.",
+      "updated": "Run updated."
+    }
   },
   "diaspo_list": {
     "error": "Error",
