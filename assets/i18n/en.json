@@ -1321,7 +1321,7 @@
       "approved_title": "Payout account approved",
       "approved_message": "Your withdrawals and refunds can now be transferred to this bank account. The amount is converted from your wallet at the time of the transfer.",
       "back_to_wallet": "Back to wallet",
-      "approved_locked": "To change an already approved IBAN, contact support.",
+      "approved_locked": "To change your IBAN, unlink this one and save the new one: ASSO will check it again.",
       "partner_verification_default": "Bank verification in progress.",
       "partner_blocking": "Transfers will remain unavailable until this is resolved.",
       "fix_and_resend": "Correct your information and resubmit.",
@@ -1338,6 +1338,13 @@
       "postal_label": "Postal code",
       "resend_iban": "Resubmit my IBAN",
       "save_iban": "Save my IBAN"
+    },
+    "unlink": {
+      "button": "Unlink my IBAN",
+      "title": "Unlink this IBAN?",
+      "confirm": "No transfer can be sent to this bank account until you save a new IBAN, which ASSO will then check.",
+      "action": "Unlink",
+      "done_title": "IBAN unlinked"
     }
   },
   "package_subscription": {

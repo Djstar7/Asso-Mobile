@@ -1321,7 +1321,7 @@
       "approved_title": "Compte de virement validé",
       "approved_message": "Vos retraits et remboursements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du virement.",
       "back_to_wallet": "Retour au portefeuille",
-      "approved_locked": "Pour modifier un IBAN déjà validé, contactez le support.",
+      "approved_locked": "Pour changer d’IBAN, désynchronisez celui-ci puis enregistrez le nouveau : il sera de nouveau vérifié par ASSO.",
       "partner_verification_default": "Vérification bancaire en cours.",
       "partner_blocking": "Les virements resteront indisponibles tant que ce point n'est pas réglé.",
       "fix_and_resend": "Corrigez vos informations puis renvoyez.",
@@ -1338,6 +1338,13 @@
       "postal_label": "Code postal",
       "resend_iban": "Renvoyer mon IBAN",
       "save_iban": "Enregistrer mon IBAN"
+    },
+    "unlink": {
+      "button": "Désynchroniser mon IBAN",
+      "title": "Désynchroniser l’IBAN ?",
+      "confirm": "Plus aucun virement ne pourra être envoyé vers ce compte bancaire tant que vous n’aurez pas enregistré un nouvel IBAN, validé ensuite par ASSO.",
+      "action": "Désynchroniser",
+      "done_title": "IBAN désynchronisé"
     }
   },
   "package_subscription": {

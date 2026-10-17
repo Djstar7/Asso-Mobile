@@ -300,6 +300,8 @@ class StripeConnectView extends GetView<StripeConnectController> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        _unlinkButton(),
       ],
     );
   }
@@ -308,6 +310,28 @@ class StripeConnectView extends GetView<StripeConnectController> {
   ///
   /// Le vendeur n'a plus rien à saisir — lui reproposer les champs laisse croire
   /// que sa demande n'a pas abouti.
+  /// Désynchroniser l'IBAN (validé ou en attente de validation).
+  Widget _unlinkButton() {
+    return Obx(() => SizedBox(
+          width: double.infinity,
+          child: TextButton.icon(
+            onPressed: controller.isUnlinking.value ? null : controller.unlink,
+            icon: controller.isUnlinking.value
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.link_off_rounded, size: 18),
+            label: Text('stripe_connect.unlink.button'.tr),
+            style: TextButton.styleFrom(
+              foregroundColor: AppDesign.danger,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ));
+  }
+
   Widget _approvedCard(BuildContext context) {
     const green = AppDesign.success;
     final holder = controller.holderName.value;
@@ -370,6 +394,8 @@ class StripeConnectView extends GetView<StripeConnectController> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        _unlinkButton(),
         const SizedBox(height: 12),
         Row(
           children: [

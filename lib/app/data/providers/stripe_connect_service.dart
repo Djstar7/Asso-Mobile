@@ -9,6 +9,12 @@ class StripeConnectService {
     return await ApiProvider.get(AppConstants.stripeConnectStatusUrl);
   }
 
+  /// Désynchronise l'IBAN enregistré (refusé pendant un virement en cours).
+  /// DELETE /v1/stripe/connect
+  static Future<ApiResponse> unlink() async {
+    return await ApiProvider.delete(AppConstants.stripeConnectUrl);
+  }
+
   /// Soumet (ou met à jour) les informations bancaires du vendeur.
   /// POST /v1/stripe/connect/submit
   ///
