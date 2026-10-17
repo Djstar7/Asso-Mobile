@@ -2895,8 +2895,9 @@
       "success_message": "The customer has been notified and refunded."
     },
     "chat": {
-      "title": "Chat",
-      "message": "Conversation with @name"
+      "no_client": "Customer not found for this order.",
+      "failed": "Could not open the conversation with the customer. Please try again.",
+      "default_message": "Hello, I am writing about your order @order."
     },
     "deliverers": {
       "default_company": "Delivery company",

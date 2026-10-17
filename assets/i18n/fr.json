@@ -2895,8 +2895,9 @@
       "success_message": "Le client a été notifié et remboursé."
     },
     "chat": {
-      "title": "Chat",
-      "message": "Conversation avec @name"
+      "no_client": "Client introuvable pour cette commande.",
+      "failed": "Impossible d'ouvrir la conversation avec le client. Réessayez.",
+      "default_message": "Bonjour, je vous écris au sujet de votre commande @order."
     },
     "deliverers": {
       "default_company": "Entreprise de livraison",
