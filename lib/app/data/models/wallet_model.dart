@@ -171,9 +171,17 @@ class WalletTransactionModel {
   /// Commission versée à un commercial pour le premier abonnement d'un vendeur.
   bool get isSalesCommission => metadata?['kind'] == 'sales_commission';
 
+  /// Vente créditée au vendeur au règlement de la commande (settleOrder).
+  bool get isSale => type == 'credit' && metadata?['direct_settlement'] == true;
+
+  /// Part vendeur bloquée jusqu'à la confirmation du client (ou 48 h).
+  bool get isVendorFundsHold => type == 'lock' && metadata?['vendor_funds'] == true;
+
   /// Get type label in French
   String get typeLabel {
     if (isSalesCommission) return 'data.wallet.type.sales_commission'.tr;
+    if (isSale) return 'data.wallet.type.sale'.tr;
+    if (isVendorFundsHold) return 'data.wallet.type.sale_held'.tr;
     switch (type) {
       case 'credit':
         return 'data.wallet.type.credit'.tr;

@@ -703,7 +703,9 @@
         "unlock": "Fonds débloqués",
         "escrow_release": "Paiement libéré",
         "other": "Transaction",
-        "sales_commission": "Commission commercial"
+        "sales_commission": "Commission commercial",
+        "sale": "Vente",
+        "sale_held": "En attente de confirmation client"
       },
       "status": {
         "completed": "Complété",
@@ -1029,7 +1031,7 @@
       "missing_subtitle": "Ajoutez votre IBAN pour retirer votre solde par virement et recevoir vos remboursements de litige."
     },
     "card": {
-      "balance": "Solde"
+      "balance": "Solde disponible"
     },
     "actions": {
       "recharge": "Recharger",
@@ -1042,7 +1044,7 @@
       "unlock_with_code": "Débloquer avec code",
       "amount": "Montant",
       "unlock": "Débloquer",
-      "pending_validation": "Dont @amount en attente : ventes à valider par le client (48 h après la livraison), réclamations ou commandes en cours."
+      "pending_validation": "@amount bloqués, non retirables pour l’instant : ventes en attente de confirmation du client (48 h après la livraison), réclamations ou commandes en cours."
     },
     "balances": {
       "title": "Soldes par Méthode",

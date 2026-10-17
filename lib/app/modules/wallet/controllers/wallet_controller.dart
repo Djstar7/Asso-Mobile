@@ -784,12 +784,24 @@ class WalletController extends GetxController {
   String _notifAmount(dynamic amount) =>
       CurrencyService.formatFromPivot(double.tryParse('$amount') ?? 0);
 
-  /// Getter pour le solde formaté
-  String get formattedBalance => wallet.value?.formattedBalance ?? '0 FCFA';
+  /// Solde utilisable (retrait, paiement) : hors fonds bloqués (ventes en
+  /// attente de confirmation du client, réclamations, commandes en cours).
+  double get availableBalance => wallet.value?.availableBalance ?? 0.0;
+
+  /// Solde mobile money (KPay) utilisable, hors fonds bloqués.
+  double get kpayAvailableBalance {
+    final w = wallet.value;
+    if (w == null) return 0.0;
+    final available = w.kpayBalance - w.lockedKPayBalance;
+    return available > 0 ? available : 0.0;
+  }
+
+  /// Getter pour le solde formaté (solde disponible, fonds bloqués exclus)
+  String get formattedBalance => wallet.value?.formattedAvailableBalance ?? '0 FCFA';
 
   /// Vérifie si le wallet a un solde suffisant
   bool hasSufficientBalance(double amount) {
-    return currentBalance >= amount;
+    return availableBalance >= amount;
   }
 
   /// Efface les messages d'erreur et de succès

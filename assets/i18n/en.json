@@ -703,7 +703,9 @@
         "unlock": "Funds released",
         "escrow_release": "Payment released",
         "other": "Transaction",
-        "sales_commission": "Sales commission"
+        "sales_commission": "Sales commission",
+        "sale": "Sale",
+        "sale_held": "Awaiting customer confirmation"
       },
       "status": {
         "completed": "Completed",
@@ -1029,7 +1031,7 @@
       "missing_subtitle": "Add your IBAN to withdraw your balance by bank transfer and receive your dispute refunds."
     },
     "card": {
-      "balance": "Balance"
+      "balance": "Available balance"
     },
     "actions": {
       "recharge": "Top up",
@@ -1042,7 +1044,7 @@
       "unlock_with_code": "Unlock with code",
       "amount": "Amount",
       "unlock": "Unlock",
-      "pending_validation": "Including @amount on hold: sales awaiting customer validation (48 h after delivery), claims or orders in progress."
+      "pending_validation": "@amount on hold, not withdrawable yet: sales awaiting customer confirmation (48 h after delivery), claims or orders in progress."
     },
     "balances": {
       "title": "Balances by Method",
