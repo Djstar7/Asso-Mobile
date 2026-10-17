@@ -53,6 +53,8 @@ class VendorDashboardController extends GetxController {
   final storageUsedMb = 0.0.obs;
   final storageRemainingMb = 0.0.obs;
   final storagePercentageUsed = 0.0.obs;
+  /// Forfait « taille illimitée » : pas de plafond ni de jauge.
+  final storageUnlimited = false.obs;
   final packageExpiresAt = Rx<String?>(null);
   final daysRemaining = 0.obs;
 
@@ -238,14 +240,11 @@ class VendorDashboardController extends GetxController {
     }
   }
 
-  /// Échec du serveur : dernier état connu, sinon l'ancien repli.
+  /// Échec du serveur : dernier état connu, sinon un écran neutre (jamais de
+  /// fausse boutique, qui faisait croire à des produits ou chiffres erronés).
   void _fallbackAfterFailure() {
     if (_applySnapshot() || _hasDashboardData) return;
-    if (ConnectivityService.isOffline) {
-      _loadOfflineIdentity();
-    } else {
-      _loadMockData();
-    }
+    _loadOfflineIdentity();
   }
 
   /// Applique l'instantané Hive du tableau de bord. Faux s'il n'y en a pas.
@@ -343,6 +342,7 @@ class VendorDashboardController extends GetxController {
         storageUsedMb.value = (package['vendor_package']['storage_used_mb'] ?? 0).toDouble();
         storageRemainingMb.value = (package['vendor_package']['storage_remaining_mb'] ?? 0).toDouble();
         storagePercentageUsed.value = (package['vendor_package']['storage_percentage_used'] ?? 0).toDouble();
+        storageUnlimited.value = package['vendor_package']['is_unlimited_storage'] == true;
         packageExpiresAt.value = package['vendor_package']['expires_at'];
 
         // Convert days_remaining to int (backend might return double)
@@ -405,17 +405,6 @@ class VendorDashboardController extends GetxController {
       print('========================================');
       // Ne pas bloquer si cette requête échoue
     }
-  }
-
-  /// Données fictives de secours
-  void _loadMockData() {
-    shopName.value = 'Boutique Kira';
-    shopDescription.value = 'Vente d\'articles de mode et électronique';
-    selectedCategories.value = ['Électronique', 'Mode & Vêtements'];
-    totalOrders.value = 0;
-    totalSales.value = 0.0;
-    totalProducts.value = 0;
-    rating.value = 0.0;
   }
 
   /// Vérifie le statut de vérification (appelé via l'API)

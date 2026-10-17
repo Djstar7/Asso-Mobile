@@ -12,7 +12,8 @@
     "continue": "Continue",
     "generic_error_retry": "An error occurred. Please try again.",
     "generic_error": "An error occurred",
-    "please_wait": "Please wait…"
+    "please_wait": "Please wait…",
+    "or": "or"
   },
   "settings": {
     "language": {
@@ -161,7 +162,10 @@
     "code_sent_title": "Code sent",
     "code_sent_message": "A verification code has been sent to @email",
     "google_signing_in": "Signing in with Google...",
-    "apple_signing_in": "Signing in with Apple..."
+    "apple_signing_in": "Signing in with Apple...",
+    "first_name_label": "First name",
+    "last_name_label": "Last name",
+    "optional_hint": "Optional"
   },
   "login": {
     "title": "Welcome back",
@@ -613,7 +617,9 @@
     "less": "Less",
     "choose_at_least_one": "Choose at least one interest",
     "selected_one": "@count selected",
-    "selected_many": "@count selected"
+    "selected_many": "@count selected",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all"
   },
   "complete_profile": {
     "required_title": "Required fields",
@@ -703,7 +709,9 @@
         "unlock": "Funds released",
         "escrow_release": "Payment released",
         "other": "Transaction",
-        "sales_commission": "Sales commission"
+        "sales_commission": "Sales commission",
+        "sale": "Sale",
+        "sale_held": "Awaiting customer confirmation"
       },
       "status": {
         "completed": "Completed",
@@ -964,6 +972,9 @@
       "subtitle": "Without a translation, English-speaking customers see the French text.",
       "name_label": "Name in English",
       "description_label": "Description in English"
+    },
+    "storage": {
+      "unlimited": "Unlimited"
     }
   },
   "wallet": {
@@ -1029,7 +1040,7 @@
       "missing_subtitle": "Add your IBAN to withdraw your balance by bank transfer and receive your dispute refunds."
     },
     "card": {
-      "balance": "Balance"
+      "balance": "Available balance"
     },
     "actions": {
       "recharge": "Top up",
@@ -1042,7 +1053,7 @@
       "unlock_with_code": "Unlock with code",
       "amount": "Amount",
       "unlock": "Unlock",
-      "pending_validation": "Including @amount on hold: sales awaiting customer validation (48 h after delivery), claims or orders in progress."
+      "pending_validation": "@amount on hold, not withdrawable yet: sales awaiting customer confirmation (48 h after delivery), claims or orders in progress."
     },
     "balances": {
       "title": "Balances by Method",
@@ -1313,7 +1324,7 @@
       "approved_title": "Payout account approved",
       "approved_message": "Your withdrawals and refunds can now be transferred to this bank account. The amount is converted from your wallet at the time of the transfer.",
       "back_to_wallet": "Back to wallet",
-      "approved_locked": "To change an already approved IBAN, contact support.",
+      "approved_locked": "To change your IBAN, unlink this one and save the new one: ASSO will check it again.",
       "partner_verification_default": "Bank verification in progress.",
       "partner_blocking": "Transfers will remain unavailable until this is resolved.",
       "fix_and_resend": "Correct your information and resubmit.",
@@ -1330,6 +1341,13 @@
       "postal_label": "Postal code",
       "resend_iban": "Resubmit my IBAN",
       "save_iban": "Save my IBAN"
+    },
+    "unlink": {
+      "button": "Unlink my IBAN",
+      "title": "Unlink this IBAN?",
+      "confirm": "No transfer can be sent to this bank account until you save a new IBAN, which ASSO will then check.",
+      "action": "Unlink",
+      "done_title": "IBAN unlinked"
     }
   },
   "package_subscription": {
@@ -2895,8 +2913,9 @@
       "success_message": "The customer has been notified and refunded."
     },
     "chat": {
-      "title": "Chat",
-      "message": "Conversation with @name"
+      "no_client": "Customer not found for this order.",
+      "failed": "Could not open the conversation with the customer. Please try again.",
+      "default_message": "Hello, I am writing about your order @order."
     },
     "deliverers": {
       "default_company": "Delivery company",
@@ -3208,7 +3227,11 @@
     "delivery": "Delivery",
     "received_parcel": "I received my parcel",
     "delivery_tracking": "Delivery tracking",
-    "delivery_address": "Delivery address"
+    "delivery_address": "Delivery address",
+    "tabs": {
+      "orders": "My orders",
+      "tracking": "Tracking"
+    }
   },
   "delivery_dashboard": {
     "route": {

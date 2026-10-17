@@ -135,6 +135,14 @@ class DepositOrderInfo {
   bool get balancePayable => raw['balance_payable'] == true;
   bool get balancePaid => balanceStatus == 'paid';
 
+  /// Montant déjà réglé par le client (acompte, puis total une fois le solde payé).
+  double amountPaid(double total) =>
+      raw['amount_paid'] != null ? _num('amount_paid') : (balancePaid ? total : depositAmount);
+
+  /// Reste à payer : 0 une fois le solde réglé.
+  double get balanceDue =>
+      raw['balance_due'] != null ? _num('balance_due') : (balancePaid ? 0 : balanceAmount);
+
   /// Étapes de la timeline : [{key, state: done|current|todo}].
   List<Map<String, dynamic>> get timeline => [
     for (final step in (raw['timeline'] as List? ?? const []))
@@ -287,14 +295,11 @@ class DepositBalanceCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         row('core.deposit.total_price'.tr, formatPrice(total)),
-        row(
-          'core.deposit.already_paid'.tr,
-          formatPrice(info.balancePaid ? total : info.depositAmount),
-        ),
+        row('core.deposit.already_paid'.tr, formatPrice(info.amountPaid(total))),
         row(
           'core.deposit.balance'.tr,
-          formatPrice(info.balanceAmount),
-          strong: !info.balancePaid,
+          formatPrice(info.balanceDue),
+          strong: info.balanceDue > 0,
         ),
         const SizedBox(height: AppDesign.space2),
         Text(status, style: context.caption),

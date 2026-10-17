@@ -12,7 +12,8 @@
     "continue": "Continuer",
     "generic_error_retry": "Une erreur est survenue. Veuillez réessayer.",
     "generic_error": "Une erreur est survenue",
-    "please_wait": "Veuillez patienter…"
+    "please_wait": "Veuillez patienter…",
+    "or": "ou"
   },
   "settings": {
     "language": {
@@ -161,7 +162,10 @@
     "code_sent_title": "Code envoyé",
     "code_sent_message": "Un code de vérification a été envoyé à @email",
     "google_signing_in": "Connexion avec Google...",
-    "apple_signing_in": "Connexion avec Apple..."
+    "apple_signing_in": "Connexion avec Apple...",
+    "first_name_label": "Prénom",
+    "last_name_label": "Nom",
+    "optional_hint": "Facultatif"
   },
   "login": {
     "title": "Bon retour",
@@ -613,7 +617,9 @@
     "less": "Moins",
     "choose_at_least_one": "Choisissez au moins un centre d'intérêt",
     "selected_one": "@count sélectionné",
-    "selected_many": "@count sélectionnés"
+    "selected_many": "@count sélectionnés",
+    "select_all": "Tout sélectionner",
+    "deselect_all": "Tout désélectionner"
   },
   "complete_profile": {
     "required_title": "Champs requis",
@@ -703,7 +709,9 @@
         "unlock": "Fonds débloqués",
         "escrow_release": "Paiement libéré",
         "other": "Transaction",
-        "sales_commission": "Commission commercial"
+        "sales_commission": "Commission commercial",
+        "sale": "Vente",
+        "sale_held": "En attente de confirmation client"
       },
       "status": {
         "completed": "Complété",
@@ -964,6 +972,9 @@
       "subtitle": "Sans traduction, les clients anglophones voient le texte français.",
       "name_label": "Nom en anglais",
       "description_label": "Description en anglais"
+    },
+    "storage": {
+      "unlimited": "Illimité"
     }
   },
   "wallet": {
@@ -1029,7 +1040,7 @@
       "missing_subtitle": "Ajoutez votre IBAN pour retirer votre solde par virement et recevoir vos remboursements de litige."
     },
     "card": {
-      "balance": "Solde"
+      "balance": "Solde disponible"
     },
     "actions": {
       "recharge": "Recharger",
@@ -1042,7 +1053,7 @@
       "unlock_with_code": "Débloquer avec code",
       "amount": "Montant",
       "unlock": "Débloquer",
-      "pending_validation": "Dont @amount en attente : ventes à valider par le client (48 h après la livraison), réclamations ou commandes en cours."
+      "pending_validation": "@amount bloqués, non retirables pour l’instant : ventes en attente de confirmation du client (48 h après la livraison), réclamations ou commandes en cours."
     },
     "balances": {
       "title": "Soldes par Méthode",
@@ -1313,7 +1324,7 @@
       "approved_title": "Compte de virement validé",
       "approved_message": "Vos retraits et remboursements peuvent désormais être virés sur ce compte bancaire. Le montant est converti depuis votre portefeuille au moment du virement.",
       "back_to_wallet": "Retour au portefeuille",
-      "approved_locked": "Pour modifier un IBAN déjà validé, contactez le support.",
+      "approved_locked": "Pour changer d’IBAN, désynchronisez celui-ci puis enregistrez le nouveau : il sera de nouveau vérifié par ASSO.",
       "partner_verification_default": "Vérification bancaire en cours.",
       "partner_blocking": "Les virements resteront indisponibles tant que ce point n'est pas réglé.",
       "fix_and_resend": "Corrigez vos informations puis renvoyez.",
@@ -1330,6 +1341,13 @@
       "postal_label": "Code postal",
       "resend_iban": "Renvoyer mon IBAN",
       "save_iban": "Enregistrer mon IBAN"
+    },
+    "unlink": {
+      "button": "Désynchroniser mon IBAN",
+      "title": "Désynchroniser l’IBAN ?",
+      "confirm": "Plus aucun virement ne pourra être envoyé vers ce compte bancaire tant que vous n’aurez pas enregistré un nouvel IBAN, validé ensuite par ASSO.",
+      "action": "Désynchroniser",
+      "done_title": "IBAN désynchronisé"
     }
   },
   "package_subscription": {
@@ -2895,8 +2913,9 @@
       "success_message": "Le client a été notifié et remboursé."
     },
     "chat": {
-      "title": "Chat",
-      "message": "Conversation avec @name"
+      "no_client": "Client introuvable pour cette commande.",
+      "failed": "Impossible d'ouvrir la conversation avec le client. Réessayez.",
+      "default_message": "Bonjour, je vous écris au sujet de votre commande @order."
     },
     "deliverers": {
       "default_company": "Entreprise de livraison",
@@ -3208,7 +3227,11 @@
     "delivery": "Livraison",
     "received_parcel": "J’ai reçu mon colis",
     "delivery_tracking": "Suivi de livraison",
-    "delivery_address": "Adresse de livraison"
+    "delivery_address": "Adresse de livraison",
+    "tabs": {
+      "orders": "Mes commandes",
+      "tracking": "Suivi"
+    }
   },
   "delivery_dashboard": {
     "route": {

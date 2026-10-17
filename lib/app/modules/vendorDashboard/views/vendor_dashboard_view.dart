@@ -708,29 +708,34 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     ),
                   ),
                   Text(
-                    'vendor_dashboard.package.storage_total'.trParams({'total': controller.storageTotalMb.value.toStringAsFixed(0)}),
+                    controller.storageUnlimited.value
+                        ? ' · ${'core.storage.unlimited'.tr}'
+                        : 'vendor_dashboard.package.storage_total'.trParams({'total': controller.storageTotalMb.value.toStringAsFixed(0)}),
                     style: context.body2.copyWith(color: ds.textTertiary),
                   ),
                 ],
               ),
-              SizedBox(height: AppDesign.space2),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-                child: LinearProgressIndicator(
-                  value: (percentUsed / 100).clamp(0.0, 1.0),
-                  backgroundColor: ds.surfaceMuted,
-                  valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
-                  minHeight: 6,
+              // Forfait illimité : ni plafond ni jauge.
+              if (!controller.storageUnlimited.value) ...[
+                SizedBox(height: AppDesign.space2),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                  child: LinearProgressIndicator(
+                    value: (percentUsed / 100).clamp(0.0, 1.0),
+                    backgroundColor: ds.surfaceMuted,
+                    valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                    minHeight: 6,
+                  ),
                 ),
-              ),
-              SizedBox(height: AppDesign.space2),
-              Text(
-                'vendor_dashboard.package.storage_usage'.trParams({
-                  'percent': percentUsed.toStringAsFixed(0),
-                  'remaining': controller.storageRemainingMb.value.toStringAsFixed(1),
-                }),
-                style: context.caption.copyWith(color: ds.textTertiary),
-              ),
+                SizedBox(height: AppDesign.space2),
+                Text(
+                  'vendor_dashboard.package.storage_usage'.trParams({
+                    'percent': percentUsed.toStringAsFixed(0),
+                    'remaining': controller.storageRemainingMb.value.toStringAsFixed(1),
+                  }),
+                  style: context.caption.copyWith(color: ds.textTertiary),
+                ),
+              ],
 
               SizedBox(height: AppDesign.space4),
               Divider(height: 1, color: ds.border),

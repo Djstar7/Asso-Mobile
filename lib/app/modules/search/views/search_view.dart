@@ -14,6 +14,7 @@ import '../../../data/providers/currency_service.dart';
 import '../../import/views/wholesale_product_view.dart';
 import '../controllers/search_controller.dart' as search_ctrl;
 import '../../../core/widgets/scoped_controller_page.dart';
+import '../../../core/widgets/segmented_tabs.dart';
 import '../../../data/models/wholesale_models.dart';
 
 /// Libellé affiché d'une catégorie de repli ou d'un tag populaire : la
@@ -142,7 +143,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
           _buildCollapsible(
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildScopeTabs(context, isDark),
+              child: _buildScopeTabs(context),
             ),
           ),
 
@@ -270,85 +271,19 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
   }
 
   /// Bascule entre les deux familles de résultats.
-  ///
-  /// Un segmenté plutôt qu'un `TabBar` : les deux listes ne se font pas
-  /// défiler horizontalement l'une vers l'autre, et l'état sélectionné reste
-  /// lisible sans dépendre d'un indicateur fin.
-  Widget _buildScopeTabs(BuildContext context, bool isDark) {
+  Widget _buildScopeTabs(BuildContext context) {
     return Obx(() {
-      final current = controller.scope.value;
-
-      Widget tab(String label, IconData icon, search_ctrl.SearchScope value) {
-        final isSelected = current == value;
-
-        return Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => controller.changeScope(value),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppThemeSystem.primaryColor
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 17,
-                    color: isSelected
-                        ? Colors.white
-                        : AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: isSelected
-                            ? Colors.white
-                            : AppThemeSystem.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-
-      return Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
-          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
-        ),
-        child: Row(
-          children: [
-            tab(
-              'search.tab_products'.tr,
-              Icons.grid_view_rounded,
-              search_ctrl.SearchScope.products,
-            ),
-            tab(
-              'search.tab_passcolis'.tr,
-              Icons.flight_takeoff_rounded,
-              search_ctrl.SearchScope.passcolis,
-            ),
-          ],
-        ),
+      const scopes = [
+        search_ctrl.SearchScope.products,
+        search_ctrl.SearchScope.passcolis,
+      ];
+      return SegmentedTabs(
+        tabs: [
+          SegmentedTab(label: 'search.tab_products'.tr, icon: Icons.grid_view_rounded),
+          SegmentedTab(label: 'search.tab_passcolis'.tr, icon: Icons.flight_takeoff_rounded),
+        ],
+        selectedIndex: scopes.indexOf(controller.scope.value),
+        onChanged: (index) => controller.changeScope(scopes[index]),
       );
     });
   }

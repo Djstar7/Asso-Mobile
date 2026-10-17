@@ -975,6 +975,8 @@ class AddProductController extends GetxController {
           'name': packageName,
           'available': storageRemainingMb / 1024, // Convert MB to GB
           'total': storageTotalMb / 1024, // Convert MB to GB
+          'unlimited': vendorPackage['is_unlimited_storage'] == true,
+          'used': ((vendorPackage['storage_used_mb'] ?? 0) as num).toDouble() / 1024,
         },
       ];
 

@@ -1919,6 +1919,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         clientSecret: clientSecret,
       );
       if (!ok) {
+        await OrderService.abandonUnpaidOrder(orderId);
         Get.snackbar(
           'import.wholesale.payment_cancelled_title'.tr,
           'import.wholesale.payment_cancelled_message'.tr,

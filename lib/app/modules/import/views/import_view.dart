@@ -90,7 +90,7 @@ class _ImportViewState extends State<ImportView> {
         _ImportCountry(
           raw[i]['code'] ?? '',
           raw[i]['name'] ?? '',
-          (raw[i]['flag'] ?? '').isNotEmpty ? raw[i]['flag']! : '🏳️',
+          raw[i]['flag'] ?? '',
         ),
     ];
   }

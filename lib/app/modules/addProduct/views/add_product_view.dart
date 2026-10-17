@@ -2967,7 +2967,10 @@ class AddProductView extends GetView<AddProductController> {
           final storage = controller.selectedStorage.value!;
           final available = storage['available'] as double;
           final total = storage['total'] as double;
-          final used = total - available;
+          final unlimited = storage['unlimited'] == true;
+          final used = unlimited
+              ? (storage['used'] as double? ?? 0)
+              : total - available;
           final percentageUsed = total > 0 ? (used / total * 100) : 0.0;
 
           final ds = context.ds;
@@ -3041,31 +3044,36 @@ class AddProductView extends GetView<AddProductController> {
                       ),
                     ),
                     Text(
-                      'add_product.storage.of_total'
-                          .trParams({'value': total.toStringAsFixed(0)}),
+                      unlimited
+                          ? ' · ${'core.storage.unlimited'.tr}'
+                          : 'add_product.storage.of_total'
+                              .trParams({'value': total.toStringAsFixed(0)}),
                       style: context.body2.copyWith(color: ds.textTertiary),
                     ),
                   ],
                 ),
-                SizedBox(height: AppDesign.space2),
+                // Forfait illimité : ni plafond ni jauge.
+                if (!unlimited) ...[
+                  SizedBox(height: AppDesign.space2),
 
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-                  child: LinearProgressIndicator(
-                    value: (percentageUsed / 100).clamp(0.0, 1.0),
-                    backgroundColor: ds.surfaceMuted,
-                    valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
-                    minHeight: 6,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                    child: LinearProgressIndicator(
+                      value: (percentageUsed / 100).clamp(0.0, 1.0),
+                      backgroundColor: ds.surfaceMuted,
+                      valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                      minHeight: 6,
+                    ),
                   ),
-                ),
-                SizedBox(height: AppDesign.space2),
-                Text(
-                  'add_product.storage.usage'.trParams({
-                    'percent': percentageUsed.toStringAsFixed(0),
-                    'available': available.toStringAsFixed(1),
-                  }),
-                  style: context.caption.copyWith(color: ds.textTertiary),
-                ),
+                  SizedBox(height: AppDesign.space2),
+                  Text(
+                    'add_product.storage.usage'.trParams({
+                      'percent': percentageUsed.toStringAsFixed(0),
+                      'available': available.toStringAsFixed(1),
+                    }),
+                    style: context.caption.copyWith(color: ds.textTertiary),
+                  ),
+                ],
               ],
             ),
           );

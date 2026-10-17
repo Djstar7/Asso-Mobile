@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/providers/order_service.dart';
+import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/wallet_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../models/customer_order_models.dart';
@@ -22,7 +23,8 @@ class MyOrderController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadOrders();
+    // Visiteur sans compte : rien à charger (et pas d'alerte d'erreur).
+    if (StorageService.isAuthenticated) loadOrders();
   }
 
   Future<void> loadOrders({bool refresh = false}) async {

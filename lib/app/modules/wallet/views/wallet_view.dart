@@ -908,7 +908,7 @@ import '../../../core/widgets/app_ui.dart';
 
             // KPay (Mobile Money multi-opérateurs)
             Obx(() {
-              final balance = controller.wallet.value?.kpayBalance ?? 0.0;
+              final balance = controller.kpayAvailableBalance;
               return _buildProviderCard(
                 context: context,
                 iconData: Icons.phone_android_rounded,
@@ -1233,7 +1233,9 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
     /// Les deux rails (KPay / Virement IBAN) sont toujours affichés,
     /// grisés + non cliquables quand indisponibles (aucun solde, ou IBAN non validé).
     void _showWithdrawalOptions(BuildContext context) async {
-      final kpayBal = controller.wallet.value?.kpayBalance ?? 0.0;
+      // Seul le disponible se retire : les fonds bloqués attendent la
+      // confirmation du client ou l'issue d'une réclamation.
+      final kpayBal = controller.kpayAvailableBalance;
       final stripeEligible = controller.stripeWithdrawEligible.value;
       final stripeBal = controller.stripeWithdrawAvailable.value;
       final stripeLast4 = controller.stripeIbanLast4.value;

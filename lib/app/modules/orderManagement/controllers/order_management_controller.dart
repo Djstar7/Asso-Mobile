@@ -6,6 +6,8 @@ import '../models/order_model.dart';
 import '../models/cameroon_cities.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/vendor_service.dart';
+import '../../../data/providers/conversation_service.dart';
+import '../../../core/utils/string_utils.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/app_design.dart';
@@ -405,14 +407,54 @@ class OrderManagementController extends GetxController {
     }
   }
 
-  /// Ouvre la conversation avec le client
-  void openChat(OrderModel order) {
-    // TODO: Implémenter l'ouverture du chat
-    Get.snackbar(
-      'order_management.chat.title'.tr,
-      'order_management.chat.message'.trParams({'name': order.clientName}),
-      snackPosition: SnackPosition.BOTTOM,
-    );
+  /// Commande dont la conversation est en cours d'ouverture (évite les doubles appuis).
+  final RxString openingChatOrderId = ''.obs;
+
+  /// Ouvre (ou crée) la conversation avec le client, en taguant le premier
+  /// produit de la commande, comme le fait le suivi côté client.
+  Future<void> openChat(OrderModel order) async {
+    final clientId = int.tryParse(order.clientId);
+    if (clientId == null || clientId <= 0) {
+      Get.snackbar('common.error'.tr, 'order_management.chat.no_client'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (openingChatOrderId.value.isNotEmpty) return;
+
+    openingChatOrderId.value = order.id;
+    try {
+      final productId =
+          order.items.isNotEmpty ? int.tryParse(order.items.first.productId) : null;
+      final response = await ConversationService.startConversation(
+        userId: clientId,
+        productId: productId,
+      );
+      final conversation = response.data?['conversation'] ?? response.data;
+      final conversationId = conversation?['id'] ?? conversation?['conversation_id'];
+      if (!response.success || conversationId == null) {
+        Get.snackbar('common.error'.tr, 'order_management.chat.failed'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final otherUser = conversation['other_user'] as Map<String, dynamic>?;
+      final name = otherUser?['name']?.toString().isNotEmpty == true
+          ? otherUser!['name'].toString()
+          : order.clientName;
+      Get.toNamed('/chatdetail', arguments: {
+        'id': conversationId.toString(),
+        'name': name,
+        'avatar': StringUtils.getInitials(name),
+        'isOnline': false,
+        'default_message': 'order_management.chat.default_message'
+            .trParams({'order': order.orderNumber}),
+      });
+    } catch (_) {
+      Get.snackbar('common.error'.tr, 'order_management.chat.failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      openingChatOrderId.value = '';
+    }
   }
 
   /// Affiche les livreurs de la company assignée à cette commande
@@ -1120,7 +1162,7 @@ class OrderManagementController extends GetxController {
               line(
                 Icons.payments_outlined,
                 'order_management.details.for_you'.trParams({
-                  'amount': formatPrice(order.vendorAmount > 0 ? order.vendorAmount : order.totalAmount),
+                  'amount': formatPrice(order.vendorAmount),
                 }),
               ),
               if (order.freeDeliveryAmount > 0)

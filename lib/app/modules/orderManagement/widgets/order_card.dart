@@ -173,11 +173,7 @@ class OrderCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    controller.formatPrice(
-                      order.vendorAmount > 0
-                          ? order.vendorAmount
-                          : order.totalAmount,
-                    ),
+                    controller.formatPrice(order.vendorAmount),
                     style: context.h6.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppThemeSystem.primaryColor,

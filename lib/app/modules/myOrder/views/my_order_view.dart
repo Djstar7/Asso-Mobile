@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
-import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
@@ -11,56 +10,51 @@ import 'order_delivery_section.dart';
 import 'order_deposit_section.dart';
 import 'order_control_section.dart';
 
-class MyOrderView extends GetView<MyOrderController> {
-  const MyOrderView({super.key});
+/// Liste « Mes commandes » (filtres par statut et cartes détaillées).
+///
+/// Affichée comme onglet de la page Suivi, à côté du suivi des livraisons
+/// (voir TrackingView) : plus d'écran séparé.
+class MyOrderList extends GetView<MyOrderController> {
+  const MyOrderList({super.key, this.onTrackOrder});
+
+  /// Ouvre le suivi de la commande dans l'onglet voisin.
+  final void Function(CustomerOrder order)? onTrackOrder;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          'my_order.title'.tr,
-          style: context.h5.copyWith(fontWeight: FontWeight.w600),
+    return Column(
+      children: [
+        // Filtres par statut
+        _buildStatusFilters(context),
+
+        SizedBox(height: context.elementSpacing),
+
+        // Liste des commandes
+        Expanded(
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (controller.filteredOrders.isEmpty) {
+              return _buildEmptyState(context);
+            }
+
+            return RefreshIndicator(
+              onRefresh: () => controller.loadOrders(refresh: true),
+              child: ListView.separated(
+                padding: EdgeInsets.all(context.horizontalPadding),
+                itemCount: controller.filteredOrders.length,
+                separatorBuilder: (context, index) => SizedBox(height: context.elementSpacing),
+                itemBuilder: (context, index) {
+                  final order = controller.filteredOrders[index];
+                  return _buildOrderCard(context, order);
+                },
+              ),
+            );
+          }),
         ),
-      ),
-      body: Column(
-        children: [
-          // Filtres par statut
-          _buildStatusFilters(context),
-
-          SizedBox(height: context.elementSpacing),
-
-          // Liste des commandes
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (controller.filteredOrders.isEmpty) {
-                return _buildEmptyState(context);
-              }
-
-              return RefreshIndicator(
-                onRefresh: () => controller.loadOrders(refresh: true),
-                child: ListView.separated(
-                  padding: EdgeInsets.all(context.horizontalPadding),
-                  itemCount: controller.filteredOrders.length,
-                  separatorBuilder: (context, index) => SizedBox(height: context.elementSpacing),
-                  itemBuilder: (context, index) {
-                    final order = controller.filteredOrders[index];
-                    return _buildOrderCard(context, order);
-                  },
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -454,8 +448,18 @@ class MyOrderView extends GetView<MyOrderController> {
   }
 
   bool _shouldShowActions(CustomerOrder order) {
-    return order.status == CustomerOrderStatus.shipped ||
-        order.status == CustomerOrderStatus.delivered;
+    return _canTrack(order) || order.status == CustomerOrderStatus.delivered;
+  }
+
+  /// Une commande se suit dès qu'elle est confirmée, jusqu'à sa livraison.
+  bool _canTrack(CustomerOrder order) =>
+      order.status == CustomerOrderStatus.confirmed ||
+      order.status == CustomerOrderStatus.preparing ||
+      order.status == CustomerOrderStatus.shipped;
+
+  void _track(CustomerOrder order) {
+    final open = onTrackOrder;
+    open != null ? open(order) : controller.trackOrder(order.id);
   }
 
   Widget _buildOrderActions(BuildContext context, CustomerOrder order) {
@@ -463,13 +467,13 @@ class MyOrderView extends GetView<MyOrderController> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // Bouton Suivre (seulement pour shipped)
-          if (order.status == CustomerOrderStatus.shipped) ...[
-            if (order.status == CustomerOrderStatus.pending ||
-                order.status == CustomerOrderStatus.confirmed)
+          // Bouton Suivre : dès la confirmation, « Suivre la livraison » une
+          // fois le colis parti.
+          if (_canTrack(order)) ...[
+            if (order.status != CustomerOrderStatus.shipped)
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => controller.trackOrder(order.id),
+                  onPressed: () => _track(order),
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: Text('my_order.actions.track'.tr),
                   style: ElevatedButton.styleFrom(
@@ -481,7 +485,7 @@ class MyOrderView extends GetView<MyOrderController> {
             else
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => controller.trackOrder(order.id),
+                  onPressed: () => _track(order),
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: Text('my_order.actions.track_delivery'.tr),
                   style: ElevatedButton.styleFrom(

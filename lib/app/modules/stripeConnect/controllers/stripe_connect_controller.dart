@@ -9,6 +9,7 @@ import '../../../core/utils/app_design.dart';
 class StripeConnectController extends GetxController {
   final isLoading = true.obs;
   final isSubmitting = false.obs;
+  final isUnlinking = false.obs;
 
   /// Statut non chargé (réseau, session expirée, serveur). Sans cela, un échec
   /// silencieux affichait le formulaire vierge : le vendeur croyait son IBAN perdu.
@@ -161,6 +162,48 @@ class StripeConnectController extends GetxController {
               ?.map((e) => e.toString())
               .toList() ??
           <String>[];
+    }
+  }
+
+  /// Désynchronise l'IBAN après confirmation : plus de virement vers ce
+  /// compte, le formulaire est rouvert pour en enregistrer un autre.
+  Future<void> unlink() async {
+    if (isUnlinking.value) return;
+    final ok = await Get.dialog<bool>(AlertDialog(
+      title: Text('stripe_connect.unlink.title'.tr),
+      content: Text('stripe_connect.unlink.confirm'.tr),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          style: TextButton.styleFrom(foregroundColor: AppDesign.danger),
+          child: Text('stripe_connect.unlink.action'.tr),
+        ),
+      ],
+    ));
+    if (ok != true) return;
+
+    isUnlinking.value = true;
+    try {
+      final res = await StripeConnectService.unlink();
+      if (res.success && res.data != null) _applyStatus(res.data!);
+      Get.snackbar(
+        res.success ? 'stripe_connect.unlink.done_title'.tr : 'stripe_connect.error'.tr,
+        res.message.isNotEmpty ? res.message : 'stripe_connect.errors.generic_retry'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: res.success ? AppDesign.success : AppDesign.danger,
+        colorText: Colors.white,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'stripe_connect.error'.tr,
+        'stripe_connect.errors.generic_retry'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
+    } finally {
+      isUnlinking.value = false;
     }
   }
 
