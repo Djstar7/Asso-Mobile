@@ -117,6 +117,36 @@ class _Header extends GetView<PreferencesController> {
               ),
             ),
           ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: canGoBack ? context.ds.gutter - AppDesign.space1 : 0,
+            ),
+            child: Obx(() {
+              final all = controller.allSelected;
+              return TextButton.icon(
+                onPressed: controller.toggleSelectAll,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppDesign.accent,
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: Icon(
+                  all ? Icons.remove_done_rounded : Icons.done_all_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  all
+                      ? 'preferences.deselect_all'.tr
+                      : 'preferences.select_all'.tr,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesign.accent,
+                  ),
+                ),
+              );
+            }),
+          ),
         ],
       ),
     );

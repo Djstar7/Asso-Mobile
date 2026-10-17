@@ -369,6 +369,22 @@ class PreferencesController extends GetxController {
     }
   }
 
+  /// Toutes les sous-catégories proposées.
+  Iterable<String> get _allSubcategoryIds =>
+      categories.expand((cat) => cat.subcategories).map((sub) => sub.id);
+
+  bool get allSelected =>
+      _allSubcategoryIds.every(selectedSubcategories.contains);
+
+  /// « Tout sélectionner » / « Tout désélectionner ».
+  void toggleSelectAll() {
+    if (allSelected) {
+      selectedSubcategories.clear();
+    } else {
+      selectedSubcategories.addAll(_allSubcategoryIds);
+    }
+  }
+
   bool isCategorySelected(String categoryId) {
     final category = categories.firstWhere((cat) => cat.id == categoryId);
     return category.subcategories.any(

@@ -617,7 +617,9 @@
     "less": "Less",
     "choose_at_least_one": "Choose at least one interest",
     "selected_one": "@count selected",
-    "selected_many": "@count selected"
+    "selected_many": "@count selected",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all"
   },
   "complete_profile": {
     "required_title": "Required fields",

@@ -617,7 +617,9 @@
     "less": "Moins",
     "choose_at_least_one": "Choisissez au moins un centre d'intérêt",
     "selected_one": "@count sélectionné",
-    "selected_many": "@count sélectionnés"
+    "selected_many": "@count sélectionnés",
+    "select_all": "Tout sélectionner",
+    "deselect_all": "Tout désélectionner"
   },
   "complete_profile": {
     "required_title": "Champs requis",
