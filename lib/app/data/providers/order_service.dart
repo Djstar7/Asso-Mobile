@@ -112,6 +112,18 @@ class OrderService {
     });
   }
 
+  /// Annule une commande dont le paiement carte vient d'être abandonné par
+  /// l'acheteur : le stock réservé à la création est rendu tout de suite, et un
+  /// nouvel essai crée une commande propre au lieu d'un doublon en attente.
+  /// Sans effet si la commande a déjà été traitée (erreurs ignorées : la
+  /// réconciliation serveur reste le filet de sécurité).
+  static Future<void> abandonUnpaidOrder(int id) async {
+    if (id <= 0) return;
+    try {
+      await cancelOrder(id, reason: 'card_payment_abandoned');
+    } catch (_) {}
+  }
+
   /// Initiate payment
   static Future<ApiResponse> initiatePayment({
     required int orderId,

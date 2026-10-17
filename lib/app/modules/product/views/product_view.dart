@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/providers/order_service.dart';
 import '../../../data/providers/currency_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_design.dart';
@@ -3126,6 +3127,7 @@ class ProductView extends GetView<ProductController> {
     final clientSecret = data['client_secret']?.toString() ?? '';
     final publishableKey = data['publishable_key']?.toString() ?? '';
     if (clientSecret.isEmpty || publishableKey.isEmpty) {
+      await OrderService.abandonUnpaidOrder(orderId);
       Get.snackbar(
         'product.error'.tr,
         'product.payment.card_data_missing'.tr,
@@ -3140,6 +3142,7 @@ class ProductView extends GetView<ProductController> {
         clientSecret: clientSecret,
       );
       if (!ok) {
+        await OrderService.abandonUnpaidOrder(orderId);
         Get.snackbar(
           'product.payment.cancelled_title'.tr,
           'product.payment.cancelled_message'.tr,
