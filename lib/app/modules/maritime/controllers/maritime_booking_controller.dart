@@ -145,10 +145,15 @@ class MaritimeBookingController extends GetxController {
       amount: grandTotal,
       currency: currency,
       amountLabel: 'maritime.form.total_to_pay'.tr,
+      includeWallet: true, // payer avec le solde Wallet ASSO
     );
     if (method == null) return;
 
-    if (method.code == 'kpay') {
+    if (method.isWallet) {
+      // Débité et confirmé immédiatement par le serveur.
+      final booking = await _create('wallet');
+      if (booking != null) _showSuccess(booking);
+    } else if (method.code == 'kpay') {
       final selection = await KpayDirectPaymentSheet.show(
         amount: grandTotal,
         currency: currency,
