@@ -119,6 +119,14 @@ class MaritimeSection extends GetView<MaritimeController> {
                 ),
                 const SizedBox(height: 4),
                 Text(d.partnerName, style: TextStyle(fontSize: 12, color: _muted(isDark))),
+                if (d.isPricedPerCbm)
+                  Text(
+                    'maritime.cbm_rate'.trParams({
+                      'price': controller.formatAmount(d.pricePerCbm!, d.currency),
+                      'kg': d.kgPerCbm!.toStringAsFixed(0),
+                    }),
+                    style: TextStyle(fontSize: 12, color: _muted(isDark)),
+                  ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 16,

@@ -57,6 +57,10 @@ class MaritimeDeparture {
 
   /// Prix public au kilo (commission ASSO incluse), dans [currency].
   final double pricePerKg;
+
+  /// Départ tarifé au m³ : tarif public au m³ et kilos comptés pour 1 m³.
+  final double? pricePerCbm;
+  final double? kgPerCbm;
   final String currency;
   final String status;
   final String? notes;
@@ -75,10 +79,17 @@ class MaritimeDeparture {
     required this.isBookable,
     required this.remainingKg,
     required this.pricePerKg,
+    this.pricePerCbm,
+    this.kgPerCbm,
     required this.currency,
     required this.status,
     this.notes,
   });
+
+  bool get isPricedPerCbm => (pricePerCbm ?? 0) > 0 && (kgPerCbm ?? 0) > 0;
+
+  /// Volume (m³) correspondant à des kilos, pour un départ tarifé au m³.
+  double? volumeForKg(double kg) => isPricedPerCbm ? kg / kgPerCbm! : null;
 
   factory MaritimeDeparture.fromJson(Map<String, dynamic> json) {
     final partner = json['partner'] as Map?;
@@ -100,6 +111,8 @@ class MaritimeDeparture {
       isBookable: json['is_bookable'] == true,
       remainingKg: _d(json['remaining_kg']),
       pricePerKg: _d(json['price_per_kg']),
+      pricePerCbm: json['price_per_cbm'] == null ? null : _d(json['price_per_cbm']),
+      kgPerCbm: json['kg_per_cbm'] == null ? null : _d(json['kg_per_cbm']),
       currency: json['currency']?.toString() ?? 'EUR',
       status: json['status']?.toString() ?? 'open',
       notes: json['notes']?.toString(),

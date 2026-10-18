@@ -4320,7 +4320,9 @@
       "dropoff_warning": "Nous attendons votre colis à @hub avant le @date. Passé ce délai, votre argent vous sera retourné, hors frais ASSO.",
       "fill_all": "Remplissez toutes les coordonnées.",
       "kg_range": "Le poids doit être compris entre 0,5 et @max kg.",
-      "payment_failed_released": "Le paiement n'a pas abouti : les kilos ont été libérés."
-    }
+      "payment_failed_released": "Le paiement n'a pas abouti : les kilos ont été libérés.",
+      "volume_line": "Soit @volume m³ au tarif de @price le m³"
+    },
+    "cbm_rate": "@price le m³ (1 m³ = @kg kg)"
   }
 }
