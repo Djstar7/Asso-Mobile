@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
-import '../../../core/widgets/iso_country_field.dart';
 import '../../diaspoBooking/widgets/parcel_insurance_form.dart';
 import '../controllers/maritime_booking_controller.dart';
 
@@ -91,8 +90,6 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                             child: _field(isDark, controller.recipientLastName, 'maritime.form.last_name'.tr,
                                 errorKey: 'recipient_last_name')),
                       ]),
-                      const SizedBox(height: 12),
-                      _countryField(isDark),
                       const SizedBox(height: 12),
                       _field(isDark, controller.recipientPhone, 'maritime.form.recipient_phone'.tr,
                           errorKey: 'recipient_phone', phone: true),
@@ -191,37 +188,6 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
               ),
             ),
           ));
-
-  Widget _countryField(bool isDark) => Obx(() {
-        final error = controller.errorOf('recipient_country');
-        return KeyedSubtree(
-          key: controller.fieldKeys['recipient_country'],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                decoration: error == null
-                    ? null
-                    : BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppDesign.danger, width: 1.2),
-                      ),
-                child: IsoCountryField(
-                  label: 'maritime.form.destination_country'.tr,
-                  value: controller.recipientCountry.value,
-                  fillColor: _fill(isDark),
-                  onChanged: (code) => controller.recipientCountry.value = code,
-                ),
-              ),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 6),
-                  child: Text(error, style: const TextStyle(fontSize: 12, color: AppDesign.danger)),
-                ),
-            ],
-          ),
-        );
-      });
 
   Widget _routeCard(bool isDark) {
     final d = controller.departure.value!;
