@@ -176,6 +176,7 @@ class MaritimeBookingController extends GetxController {
   }
 
   /// Retourne true si tout est valide ; remplit [fieldErrors] sinon.
+  /// Retourne true si tout est valide ; remplit [fieldErrors] sinon.
   bool _validate() {
     final errors = <String, String>{};
 
@@ -184,67 +185,72 @@ class MaritimeBookingController extends GetxController {
     // Poids
     final rawKg = double.tryParse(kgController.text.replaceAll(',', '.'));
     if (rawKg == null || t(kgController).isEmpty) {
-      errors['kg_booked'] = 'Indiquez le poids de votre envoi.';
+      errors['kg_booked'] = 'maritime.validation.kg_required'.tr;
     } else if (rawKg < 0.5) {
-      errors['kg_booked'] = 'Le poids minimum est de 0,5 kg.';
+      errors['kg_booked'] = 'maritime.validation.kg_min'.tr;
     } else if (rawKg > remainingKg) {
-      errors['kg_booked'] = 'Maximum ${remainingKg.toStringAsFixed(1)} kg disponibles.';
+      errors['kg_booked'] = 'maritime.validation.kg_max'
+          .trParams({'max': remainingKg.toStringAsFixed(1)});
     }
 
     // Colis
     final parcels = int.tryParse(parcelsController.text);
     if (parcels == null || parcels < 1) {
-      errors['parcels_count'] = 'Indiquez au moins 1 colis.';
+      errors['parcels_count'] = 'maritime.validation.parcels_min'.tr;
     } else if (parcels > 500) {
-      errors['parcels_count'] = 'Maximum 500 colis par envoi.';
+      errors['parcels_count'] = 'maritime.validation.parcels_max'.tr;
     }
 
     // Expéditeur
-    if (t(senderFirstName).isEmpty) errors['sender_first_name'] = 'Le prénom est obligatoire.';
-    if (t(senderLastName).isEmpty) errors['sender_last_name'] = 'Le nom est obligatoire.';
+    if (t(senderFirstName).isEmpty) {
+      errors['sender_first_name'] = 'maritime.validation.first_name_required'.tr;
+    }
+    if (t(senderLastName).isEmpty) {
+      errors['sender_last_name'] = 'maritime.validation.last_name_required'.tr;
+    }
 
-    String? phoneError(TextEditingController c, String label) {
-      if (t(c).isEmpty) return '$label est obligatoire.';
-      if (!_phoneRegex.hasMatch(t(c))) return 'Numéro invalide (ex. +237 6XX XX XX XX).';
+    /// [requiredKey] = clé du message « obligatoire » propre au champ.
+    String? phoneError(TextEditingController c, String requiredKey) {
+      if (t(c).isEmpty) return requiredKey.tr;
+      if (!_phoneRegex.hasMatch(t(c))) return 'maritime.validation.phone_invalid'.tr;
       return null;
     }
 
-    final sp = phoneError(senderPhone, 'Votre téléphone');
+    final sp = phoneError(senderPhone, 'maritime.validation.sender_phone_required');
     if (sp != null) errors['sender_phone'] = sp;
 
-    final ep = phoneError(emergencyPhone, 'Le téléphone d\'urgence');
+    final ep = phoneError(emergencyPhone, 'maritime.validation.emergency_phone_required');
     if (ep != null) {
       errors['emergency_phone'] = ep;
     } else if (t(emergencyPhone) == t(senderPhone)) {
-      errors['emergency_phone'] = 'Le numéro d\'urgence doit être différent du vôtre.';
+      errors['emergency_phone'] = 'maritime.validation.emergency_phone_same'.tr;
     }
 
     // Destinataire
     if (t(recipientFirstName).isEmpty) {
-      errors['recipient_first_name'] = 'Le prénom du destinataire est obligatoire.';
+      errors['recipient_first_name'] = 'maritime.validation.recipient_first_name_required'.tr;
     }
     if (t(recipientLastName).isEmpty) {
-      errors['recipient_last_name'] = 'Le nom du destinataire est obligatoire.';
+      errors['recipient_last_name'] = 'maritime.validation.recipient_last_name_required'.tr;
     }
     if (recipientCountry.value == null) {
-      errors['recipient_country'] = 'Choisissez le pays de destination.';
+      errors['recipient_country'] = 'maritime.validation.country_required'.tr;
     }
 
-    final rp = phoneError(recipientPhone, 'Le téléphone du destinataire');
+    final rp = phoneError(recipientPhone, 'maritime.validation.recipient_phone_required');
     if (rp != null) errors['recipient_phone'] = rp;
 
     // Assurance / nature / valeur
     if (insurance.selectedNature.value == null) {
-      errors['parcel_nature_id'] = 'Sélectionnez la nature du colis.';
+      errors['parcel_nature_id'] = 'maritime.validation.nature_required'.tr;
     }
     if (insurance.declaredValue.value <= 0) {
-      errors['declared_value'] = 'Indiquez la valeur déclarée du colis.';
+      errors['declared_value'] = 'maritime.validation.value_required'.tr;
     }
 
     _setErrors(errors);
     return errors.isEmpty;
   }
-
   Map<String, dynamic> _payload(String method, {String? provider, String? phone}) => {
         'kg_booked': double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
         'parcels_count': int.tryParse(parcelsController.text) ?? 1,
@@ -267,8 +273,8 @@ class MaritimeBookingController extends GetxController {
   Future<void> submit() async {
     if (!_validate()) {
       _scrollToFirstError();
-      Get.snackbar('maritime.error'.tr, 'Corrigez les champs signalés en rouge.',
-          backgroundColor: AppDesign.danger, colorText: Colors.white);
+     Get.snackbar('maritime.error'.tr, 'maritime.validation.fix_fields'.tr,
+    backgroundColor: AppDesign.danger, colorText: Colors.white);
       return;
     }
     if (insurance.isQuoting.value) return;
@@ -313,8 +319,8 @@ class MaritimeBookingController extends GetxController {
       if (e.fieldErrors.isNotEmpty) {
         _setErrors(e.fieldErrors);
         _scrollToFirstError();
-        Get.snackbar('maritime.error'.tr, 'Corrigez les champs signalés en rouge.',
-            backgroundColor: AppDesign.danger, colorText: Colors.white);
+        Get.snackbar('maritime.error'.tr, 'maritime.validation.fix_fields'.tr,
+          backgroundColor: AppDesign.danger, colorText: Colors.white);
       } else {
         Get.snackbar('maritime.error'.tr, e.message,
             backgroundColor: AppDesign.danger,
