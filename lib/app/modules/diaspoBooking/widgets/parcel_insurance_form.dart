@@ -14,7 +14,6 @@ import '../../../data/providers/diaspo_service.dart';
 /// par la réservation avion et l'envoi maritime. Le supplément d'assurance est
 /// toujours calculé par le serveur (même formule qu'à l'encaissement).
 class ParcelInsuranceForm {
-  
   ParcelInsuranceForm({required this.currency}) {
     valueController.addListener(_onValueChanged);
   }
@@ -96,7 +95,6 @@ class ParcelInsuranceForm {
     valueController.dispose();
   }
 }
-
 /// Carte « Nature et valeur du colis » avec le supplément d'assurance.
 class ParcelInsuranceCard extends StatelessWidget {
   const ParcelInsuranceCard({
@@ -104,6 +102,10 @@ class ParcelInsuranceCard extends StatelessWidget {
     required this.form,
     required this.formatAmount,
     required this.decoration,
+    this.natureError,
+    this.valueError,
+    this.natureKey,
+    this.valueKey,
   });
 
   final ParcelInsuranceForm form;
@@ -112,19 +114,40 @@ class ParcelInsuranceCard extends StatelessWidget {
   final String Function(double) formatAmount;
   final BoxDecoration decoration;
 
+  /// Message d'erreur affiché sous le sélecteur de nature.
+  final String? natureError;
+
+  /// Message d'erreur affiché sous le champ valeur déclarée.
+  final String? valueError;
+
+  /// Clés utilisées par Scrollable.ensureVisible pour le scroll automatique.
+  final Key? natureKey;
+  final Key? valueKey;
+
   @override
   Widget build(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final muted = isDark ? Colors.white70 : AppDesign.neutral500;
     final fill = isDark ? Colors.white.withValues(alpha: 0.04) : AppDesign.neutral50;
-    InputDecoration deco(String label, {String? suffix}) => InputDecoration(
+
+    InputDecoration deco(String label, {String? suffix, String? error}) => InputDecoration(
           labelText: label,
           suffixText: suffix,
+          errorText: error,
+          errorMaxLines: 2,
           filled: true,
           fillColor: fill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppDesign.danger, width: 1.2),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppDesign.danger, width: 1.5),
           ),
         );
 
@@ -150,27 +173,37 @@ class ParcelInsuranceCard extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: muted, height: 1.4),
           ),
           const SizedBox(height: 14),
-          Obx(
-            () => DropdownButtonFormField<int>(
-              value: form.selectedNature.value?.id,
-              isExpanded: true,
-              decoration: deco('parcel_insurance.nature'.tr),
-              items: form.natures
-                  .map((n) => DropdownMenuItem(value: n.id, child: Text(n.name)))
-                  .toList(),
-              onChanged: (id) => form.selectNature(
-                form.natures.firstWhereOrNull((n) => n.id == id),
+          KeyedSubtree(
+            key: natureKey,
+            child: Obx(
+              () => DropdownButtonFormField<int>(
+                value: form.selectedNature.value?.id,
+                isExpanded: true,
+                decoration: deco('parcel_insurance.nature'.tr, error: natureError),
+                items: form.natures
+                    .map((n) => DropdownMenuItem(value: n.id, child: Text(n.name)))
+                    .toList(),
+                onChanged: (id) => form.selectNature(
+                  form.natures.firstWhereOrNull((n) => n.id == id),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: form.valueController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d+[.,]?\d{0,2}')),
-            ],
-            decoration: deco('parcel_insurance.value'.tr, suffix: form.valueCurrencySymbol),
+          KeyedSubtree(
+            key: valueKey,
+            child: TextField(
+              controller: form.valueController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+[.,]?\d{0,2}')),
+              ],
+              decoration: deco(
+                'parcel_insurance.value'.tr,
+                suffix: form.valueCurrencySymbol,
+                error: valueError,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Obx(
