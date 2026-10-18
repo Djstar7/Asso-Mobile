@@ -33,6 +33,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                controller: controller.scrollController,
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
@@ -42,15 +43,16 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                     const SizedBox(height: 16),
                     _section(isDark, 'maritime.form.parcel'.tr, Icons.scale_outlined, [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: _field(isDark, controller.kgController, 'maritime.form.kg'.tr,
-                                suffix: 'kg', number: true, decimal: true),
+                                errorKey: 'kg_booked', suffix: 'kg', number: true, decimal: true),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _field(isDark, controller.parcelsController, 'maritime.form.parcels'.tr,
-                                number: true),
+                                errorKey: 'parcels_count', number: true),
                           ),
                         ],
                       ),
@@ -62,39 +64,49 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                     ]),
                     const SizedBox(height: 16),
                     _section(isDark, 'maritime.form.sender'.tr, Icons.person_outline, [
-                      Row(children: [
-                        Expanded(child: _field(isDark, controller.senderFirstName, 'maritime.form.first_name'.tr)),
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(
+                            child: _field(isDark, controller.senderFirstName, 'maritime.form.first_name'.tr,
+                                errorKey: 'sender_first_name')),
                         const SizedBox(width: 12),
-                        Expanded(child: _field(isDark, controller.senderLastName, 'maritime.form.last_name'.tr)),
+                        Expanded(
+                            child: _field(isDark, controller.senderLastName, 'maritime.form.last_name'.tr,
+                                errorKey: 'sender_last_name')),
                       ]),
                       const SizedBox(height: 12),
-                      _field(isDark, controller.senderPhone, 'maritime.form.your_phone'.tr, phone: true),
+                      _field(isDark, controller.senderPhone, 'maritime.form.your_phone'.tr,
+                          errorKey: 'sender_phone', phone: true),
                       const SizedBox(height: 12),
-                      _field(isDark, controller.emergencyPhone, 'maritime.form.emergency_phone'.tr, phone: true),
+                      _field(isDark, controller.emergencyPhone, 'maritime.form.emergency_phone'.tr,
+                          errorKey: 'emergency_phone', phone: true),
                     ]),
                     const SizedBox(height: 16),
                     _section(isDark, 'maritime.form.recipient'.tr, Icons.person_pin_circle_outlined, [
-                      Row(children: [
-                        Expanded(child: _field(isDark, controller.recipientFirstName, 'maritime.form.first_name'.tr)),
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(
+                            child: _field(isDark, controller.recipientFirstName, 'maritime.form.first_name'.tr,
+                                errorKey: 'recipient_first_name')),
                         const SizedBox(width: 12),
-                        Expanded(child: _field(isDark, controller.recipientLastName, 'maritime.form.last_name'.tr)),
+                        Expanded(
+                            child: _field(isDark, controller.recipientLastName, 'maritime.form.last_name'.tr,
+                                errorKey: 'recipient_last_name')),
                       ]),
                       const SizedBox(height: 12),
-                      Obx(() => IsoCountryField(
-                            label: 'maritime.form.destination_country'.tr,
-                            value: controller.recipientCountry.value,
-                            fillColor: _fill(isDark),
-                            onChanged: (code) => controller.recipientCountry.value = code,
-                          )),
+                      _countryField(isDark),
                       const SizedBox(height: 12),
-                      _field(isDark, controller.recipientPhone, 'maritime.form.recipient_phone'.tr, phone: true),
+                      _field(isDark, controller.recipientPhone, 'maritime.form.recipient_phone'.tr,
+                          errorKey: 'recipient_phone', phone: true),
                     ]),
                     const SizedBox(height: 16),
-                    ParcelInsuranceCard(
-                      form: controller.insurance,
-                      formatAmount: controller.formatAmount,
-                      decoration: _cardDeco(isDark),
-                    ),
+                    Obx(() => ParcelInsuranceCard(
+                          form: controller.insurance,
+                          formatAmount: controller.formatAmount,
+                          decoration: _cardDeco(isDark),
+                          natureError: controller.errorOf('parcel_nature_id'),
+                          valueError: controller.errorOf('declared_value'),
+                          natureKey: controller.fieldKeys['parcel_nature_id'],
+                          valueKey: controller.fieldKeys['declared_value'],
+                        )),
                     const SizedBox(height: 16),
                     _summary(isDark),
                   ],
@@ -138,33 +150,78 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
     bool isDark,
     TextEditingController c,
     String label, {
+    required String errorKey,
     String? suffix,
     bool number = false,
     bool decimal = false,
     bool phone = false,
   }) =>
-      TextField(
-        controller: c,
-        keyboardType: phone
-            ? TextInputType.phone
-            : number
-                ? TextInputType.numberWithOptions(decimal: decimal)
-                : TextInputType.name,
-        textCapitalization: number || phone ? TextCapitalization.none : TextCapitalization.words,
-        inputFormatters: number
-            ? [FilteringTextInputFormatter.allow(RegExp(decimal ? r'^\d+[.,]?\d{0,1}' : r'^\d+'))]
-            : phone
-                ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))]
-                : null,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: phone ? '+237 6XX XX XX XX' : null,
-          suffixText: suffix,
-          filled: true,
-          fillColor: _fill(isDark),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        ),
-      );
+      Obx(() => KeyedSubtree(
+            key: controller.fieldKeys[errorKey],
+            child: TextField(
+              controller: c,
+              keyboardType: phone
+                  ? TextInputType.phone
+                  : number
+                      ? TextInputType.numberWithOptions(decimal: decimal)
+                      : TextInputType.name,
+              textCapitalization: number || phone ? TextCapitalization.none : TextCapitalization.words,
+              inputFormatters: number
+                  ? [FilteringTextInputFormatter.allow(RegExp(decimal ? r'^\d+[.,]?\d{0,1}' : r'^\d+'))]
+                  : phone
+                      ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))]
+                      : null,
+              decoration: InputDecoration(
+                labelText: label,
+                hintText: phone ? '+237 6XX XX XX XX' : null,
+                suffixText: suffix,
+                errorText: controller.errorOf(errorKey),
+                errorMaxLines: 2,
+                filled: true,
+                fillColor: _fill(isDark),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppDesign.danger, width: 1.2),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppDesign.danger, width: 1.5),
+                ),
+              ),
+            ),
+          ));
+
+  Widget _countryField(bool isDark) => Obx(() {
+        final error = controller.errorOf('recipient_country');
+        return KeyedSubtree(
+          key: controller.fieldKeys['recipient_country'],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: error == null
+                    ? null
+                    : BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppDesign.danger, width: 1.2),
+                      ),
+                child: IsoCountryField(
+                  label: 'maritime.form.destination_country'.tr,
+                  value: controller.recipientCountry.value,
+                  fillColor: _fill(isDark),
+                  onChanged: (code) => controller.recipientCountry.value = code,
+                ),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 6),
+                  child: Text(error, style: const TextStyle(fontSize: 12, color: AppDesign.danger)),
+                ),
+            ],
+          ),
+        );
+      });
 
   Widget _routeCard(bool isDark) {
     final d = controller.departure.value!;

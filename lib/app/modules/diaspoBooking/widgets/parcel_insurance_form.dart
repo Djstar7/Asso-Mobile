@@ -14,6 +14,7 @@ import '../../../data/providers/diaspo_service.dart';
 /// par la réservation avion et l'envoi maritime. Le supplément d'assurance est
 /// toujours calculé par le serveur (même formule qu'à l'encaissement).
 class ParcelInsuranceForm {
+  
   ParcelInsuranceForm({required this.currency}) {
     valueController.addListener(_onValueChanged);
   }
