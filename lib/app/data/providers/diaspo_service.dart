@@ -317,11 +317,13 @@ class DiaspoService extends GetxService {
   Future<double> insuranceQuote({
     required int natureId,
     required double declaredValue,
+    required String declaredValueCurrency,
     required String currency,
   }) async {
     final response = await _dio.post('/v1/diaspo/insurance-quote', data: {
       'parcel_nature_id': natureId,
       'declared_value': declaredValue,
+      'declared_value_currency': declaredValueCurrency,
       'currency': currency,
     });
     return double.tryParse(
@@ -344,6 +346,7 @@ class DiaspoService extends GetxService {
     String? notes,
     int? parcelNatureId,
     double? declaredValue,
+    String? declaredValueCurrency,
   }) async {
     try {
       final response = await _dio.post(
@@ -356,6 +359,7 @@ class DiaspoService extends GetxService {
           if (notes != null) 'notes': notes,
           if (parcelNatureId != null) 'parcel_nature_id': parcelNatureId,
           if (declaredValue != null) 'declared_value': declaredValue,
+          if (declaredValueCurrency != null) 'declared_value_currency': declaredValueCurrency,
         },
       );
 

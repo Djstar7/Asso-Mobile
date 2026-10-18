@@ -127,6 +127,7 @@ class MaritimeBookingController extends GetxController {
         'recipient_phone': recipientPhone.text.trim(),
         'parcel_nature_id': insurance.selectedNature.value!.id,
         'declared_value': insurance.declaredValue.value,
+        'declared_value_currency': insurance.valueCurrency,
         'payment_method': method,
         if (provider != null) 'provider': provider,
         if (phone != null) 'phone_number': phone,
@@ -144,10 +145,15 @@ class MaritimeBookingController extends GetxController {
       amount: grandTotal,
       currency: currency,
       amountLabel: 'maritime.form.total_to_pay'.tr,
+      includeWallet: true, // payer avec le solde Wallet ASSO
     );
     if (method == null) return;
 
-    if (method.code == 'kpay') {
+    if (method.isWallet) {
+      // Débité et confirmé immédiatement par le serveur.
+      final booking = await _create('wallet');
+      if (booking != null) _showSuccess(booking);
+    } else if (method.code == 'kpay') {
       final selection = await KpayDirectPaymentSheet.show(
         amount: grandTotal,
         currency: currency,

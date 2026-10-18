@@ -144,11 +144,14 @@ class DiaspoBookingController extends GetxController {
       amount: grandTotal,
       currency: currency,
       amountLabel: 'diaspo_booking.total_to_pay'.tr,
+      includeWallet: true, // payer avec le solde Wallet ASSO
     );
     if (method == null) return; // annulé
 
     // 2) Sous-parcours selon le rail choisi.
-    if (method.code == 'kpay') {
+    if (method.isWallet) {
+      await _processWalletBooking();
+    } else if (method.code == 'kpay') {
       // Mobile Money : sélecteur pays → opérateur → numéro.
       final selection = await KpayDirectPaymentSheet.show(
         amount: grandTotal,
@@ -166,6 +169,27 @@ class DiaspoBookingController extends GetxController {
     }
   }
 
+  /// Réservation payée avec le solde Wallet ASSO : débitée et confirmée
+  /// immédiatement par le serveur.
+  Future<void> _processWalletBooking() async {
+    isSubmitting.value = true;
+    try {
+      final result = await _diaspoService.bookOffer(
+        offerId: offer.value!.id,
+        kgBooked: kgBooked.value,
+        parcelNatureId: insurance.selectedNature.value?.id,
+        declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
+        paymentMethod: 'wallet',
+      );
+      isSubmitting.value = false;
+      _showSuccessDialog(result['booking'] as DiaspoBooking);
+    } catch (e) {
+      isSubmitting.value = false;
+      _showError(e);
+    }
+  }
+
   /// Réservation payée par CARTE (Payment Sheet Stripe native).
   Future<void> _processCardBooking() async {
     if (!StripeNativeService.isSupported) {
@@ -180,6 +204,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: 'stripe',
       );
       final booking = result['booking'] as DiaspoBooking;
@@ -224,6 +249,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: 'kpay',
         provider: provider,
         phoneNumber: phone,
@@ -271,6 +297,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: method.code,
       );
       final booking = result['booking'] as DiaspoBooking;

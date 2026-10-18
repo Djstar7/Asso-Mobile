@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../data/models/parcel_nature.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 
 /// État du formulaire « nature + valeur déclarée » d'un colis Diaspo, partagé
@@ -19,6 +20,14 @@ class ParcelInsuranceForm {
 
   /// Devise de l'offre ou du départ (celle du montant encaissé).
   final String Function() currency;
+
+  /// Devise de saisie de la valeur : celle de l'utilisateur. Le serveur la
+  /// convertit dans la devise de l'offre avant de calculer l'assurance.
+  String get valueCurrency => Get.isRegistered<CurrencyService>()
+      ? CurrencyService.to.displayCurrencyCode
+      : CurrencyService.pivot;
+
+  String get valueCurrencySymbol => CurrencyService.getSymbolForCode(valueCurrency);
 
   final DiaspoService _service = Get.find<DiaspoService>();
 
@@ -70,6 +79,7 @@ class ParcelInsuranceForm {
       final amount = await _service.insuranceQuote(
         natureId: nature.id,
         declaredValue: declaredValue.value,
+        declaredValueCurrency: valueCurrency,
         currency: currency(),
       );
       if (seq == _quoteSeq) insuranceAmount.value = amount;
@@ -92,7 +102,6 @@ class ParcelInsuranceCard extends StatelessWidget {
     super.key,
     required this.form,
     required this.formatAmount,
-    required this.currencySymbol,
     required this.decoration,
   });
 
@@ -100,7 +109,6 @@ class ParcelInsuranceCard extends StatelessWidget {
 
   /// Formate un montant exprimé dans la devise de l'offre.
   final String Function(double) formatAmount;
-  final String currencySymbol;
   final BoxDecoration decoration;
 
   @override
@@ -161,7 +169,7 @@ class ParcelInsuranceCard extends StatelessWidget {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'^\d+[.,]?\d{0,2}')),
             ],
-            decoration: deco('parcel_insurance.value'.tr, suffix: currencySymbol),
+            decoration: deco('parcel_insurance.value'.tr, suffix: form.valueCurrencySymbol),
           ),
           const SizedBox(height: 12),
           Obx(
