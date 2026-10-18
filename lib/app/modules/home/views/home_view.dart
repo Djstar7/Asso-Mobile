@@ -491,11 +491,7 @@ class HomeView extends GetView<HomeController> {
                   title: 'home.drawer.my_orders'.tr,
                   onTap: () {
                     Get.back();
-                    AuthGuard.navigateIfAuthenticated(
-                      context,
-                      '/shipment',
-                      featureName: 'home.feature.your_orders'.tr,
-                    );
+                    controller.openOrdersTab();
                   },
                 ),
                 SizedBox(height: AppThemeSystem.getElementSpacing(context)),
@@ -1400,12 +1396,7 @@ class HomeItemView extends GetView<HomeController> {
       _QuickLink(
         label: 'home.quick.orders'.tr,
         icon: Icons.receipt_long_rounded,
-        onTap: () => AuthGuard.navigateIfAuthenticated(
-          context,
-          Routes.MY_ORDER,
-          featureName: 'home.feature.your_orders'.tr,
-          useDialog: true,
-        ),
+        onTap: controller.openOrdersTab,
       ),
       _QuickLink(
         label: 'home.tooltip.favorites'.tr,

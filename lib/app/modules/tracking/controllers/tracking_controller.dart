@@ -20,6 +20,7 @@ class TrackingController extends GetxController {
   final RxString selectedFilter = 'tracking.filters.all'.obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
+  final RxInt selectedSectionIndex = 1.obs;
 
   /// Identifiant (numéro) de la commande dont la conversation est en cours
   /// d'ouverture. Sert à afficher un indicateur de chargement sur la bonne carte.
@@ -39,6 +40,10 @@ class TrackingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final arguments = Get.arguments;
+    if (arguments is Map && arguments['initialTrackingSection'] == 0) {
+      selectedSectionIndex.value = 0;
+    }
     if (StorageService.isAuthenticated) {
       loadOrders();
       _listenToOrderNotifications();
@@ -46,6 +51,10 @@ class TrackingController extends GetxController {
     searchController.addListener(() {
       searchQuery.value = searchController.text;
     });
+  }
+
+  void selectSection(int index) {
+    selectedSectionIndex.value = index;
   }
 
   @override

@@ -760,20 +760,18 @@ class _OrdersTrackingPage extends StatefulWidget {
 }
 
 class _OrdersTrackingPageState extends State<_OrdersTrackingPage> {
-  late TrackingSection _section = widget.initialSection;
-
-  /// La liste des commandes n'est chargée qu'au premier passage sur l'onglet.
-  late bool _ordersVisited = _section == TrackingSection.orders;
-
   @override
   void initState() {
     super.initState();
-    if (_ordersVisited) _ensureOrdersController();
+    final trackingController = Get.find<TrackingController>();
+    if (widget.showAppBar) {
+      trackingController.selectSection(widget.initialSection.index);
+    }
     // Ouvert pour une commande précise (notification, « Suivre ») : on la
     // retrouve directement dans le suivi.
     final args = Get.arguments;
     if (widget.showAppBar && args is Map && args['order_id'] != null) {
-      _section = TrackingSection.tracking;
+      trackingController.selectSection(TrackingSection.tracking.index);
       Get.find<TrackingController>().focusOrder('${args['order_id']}');
     }
   }
@@ -785,16 +783,16 @@ class _OrdersTrackingPageState extends State<_OrdersTrackingPage> {
   }
 
   void _select(TrackingSection section) {
-    if (section == _section) return;
+    final trackingController = Get.find<TrackingController>();
+    if (section.index == trackingController.selectedSectionIndex.value) return;
     if (section == TrackingSection.orders) {
-      if (_ordersVisited) {
+      if (Get.isRegistered<MyOrderController>()) {
         Get.find<MyOrderController>().loadOrders(refresh: true);
       } else {
         _ensureOrdersController();
-        _ordersVisited = true;
       }
     }
-    setState(() => _section = section);
+    trackingController.selectSection(section.index);
   }
 
   /// « Suivre » depuis une commande : bascule sur le suivi, commande ciblée.
@@ -805,53 +803,57 @@ class _OrdersTrackingPageState extends State<_OrdersTrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
-      appBar: widget.showAppBar
-          ? AppBar(
-              leading: const AppBackButton(),
-              title: Text(
-                _section == TrackingSection.orders
-                    ? 'my_order.title'.tr
-                    : 'tracking.title'.tr,
-                style: context.h5.copyWith(fontWeight: FontWeight.w600),
+    return Obx(() {
+      final selectedIndex = Get.find<TrackingController>().selectedSectionIndex.value;
+      final selectedSection = TrackingSection.values[selectedIndex];
+      final ordersSelected = selectedSection == TrackingSection.orders;
+
+      return Scaffold(
+        backgroundColor: AppThemeSystem.getBackgroundColor(context),
+        appBar: widget.showAppBar
+            ? AppBar(
+                leading: const AppBackButton(),
+                title: Text(
+                  ordersSelected ? 'my_order.title'.tr : 'tracking.title'.tr,
+                  style: context.h5.copyWith(fontWeight: FontWeight.w600),
+                ),
+              )
+            : null,
+        body: Column(
+          children: [
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedTabs(
+                tabs: [
+                  SegmentedTab(
+                    label: 'tracking.tabs.orders'.tr,
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                  SegmentedTab(
+                    label: 'tracking.tabs.tracking'.tr,
+                    icon: Icons.local_shipping_outlined,
+                  ),
+                ],
+                selectedIndex: selectedIndex,
+                onChanged: (index) => _select(TrackingSection.values[index]),
               ),
-            )
-          : null,
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedTabs(
-              tabs: [
-                SegmentedTab(
-                  label: 'tracking.tabs.orders'.tr,
-                  icon: Icons.receipt_long_outlined,
-                ),
-                SegmentedTab(
-                  label: 'tracking.tabs.tracking'.tr,
-                  icon: Icons.local_shipping_outlined,
-                ),
-              ],
-              selectedIndex: TrackingSection.values.indexOf(_section),
-              onChanged: (index) => _select(TrackingSection.values[index]),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: IndexedStack(
-              index: TrackingSection.values.indexOf(_section),
-              children: [
-                _ordersVisited
-                    ? MyOrderList(onTrackOrder: _trackOrder)
-                    : const SizedBox.shrink(),
-                widget.trackingBody,
-              ],
+            const SizedBox(height: 12),
+            Expanded(
+              child: IndexedStack(
+                index: selectedIndex,
+                children: [
+                  ordersSelected
+                      ? MyOrderList(onTrackOrder: _trackOrder)
+                      : const SizedBox.shrink(),
+                  widget.trackingBody,
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 }

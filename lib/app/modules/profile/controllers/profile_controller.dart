@@ -5,6 +5,7 @@ import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/auth_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../routes/app_pages.dart';
+import '../../home/controllers/home_controller.dart';
 import '../widgets/logout_loading_dialog.dart';
 
 class ProfileController extends GetxController {
@@ -101,7 +102,8 @@ class ProfileController extends GetxController {
       'initials': initials,
       'email': data['email'] ?? '',
       'phone': data['phone'] ?? '',
-      'location': data['address'] ?? data['city'] ?? 'profile.default_location'.tr,
+      'location':
+          data['address'] ?? data['city'] ?? 'profile.default_location'.tr,
       'memberSince': _formatMemberSince(data['created_at']),
       'role': data['role'] ?? 'client',
       'stats':
@@ -219,7 +221,26 @@ class ProfileController extends GetxController {
   }
 
   void goToOrders() {
-    Get.toNamed(Routes.MY_ORDER);
+    if (AuthGuard.isGuest) {
+      final context = Get.context;
+      if (context != null) {
+        AuthGuard.checkAuthWithAlert(
+          context,
+          featureName: 'home.feature.your_orders'.tr,
+        );
+      }
+      return;
+    }
+
+    if (Get.isRegistered<HomeController>()) {
+      Get.find<HomeController>().openOrdersTab();
+      return;
+    }
+
+    Get.toNamed(
+      Routes.HOME,
+      arguments: {'initialTab': 3, 'initialTrackingSection': 0},
+    );
   }
 
   /// Wallet ASSO : solde, recharge, paiements, remboursements et retraits (tous profils).

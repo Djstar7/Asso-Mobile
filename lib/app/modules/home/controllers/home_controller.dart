@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../myOrder/controllers/my_order_controller.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/providers/diaspo_service.dart';
+import '../../tracking/controllers/tracking_controller.dart';
 import '../../search/controllers/search_controller.dart' as search_ctrl;
 import '../../../data/providers/product_service.dart';
 import '../../../data/providers/api_provider.dart';
@@ -703,6 +705,23 @@ class HomeController extends GetxController
     } else {
       // Autoriser l'accès au tab
       currentTabIndex.value = index;
+    }
+  }
+
+  /// Ouvre le même écran Commandes / Suivi que l'onglet Suivi de l'accueil.
+  void openOrdersTab() {
+    handleTabTap(3);
+    if (currentTabIndex.value != 3) return;
+
+    if (Get.isRegistered<MyOrderController>()) {
+      Get.find<MyOrderController>().loadOrders(refresh: true);
+    } else {
+      Get.put(MyOrderController());
+    }
+    Get.find<TrackingController>().selectSection(0);
+
+    if (tabController.index != 3) {
+      tabController.animateTo(3);
     }
   }
 
