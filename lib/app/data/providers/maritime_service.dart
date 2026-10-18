@@ -5,6 +5,7 @@ import '../../core/services/locale_service.dart';
 import '../../core/values/constants.dart';
 import '../models/maritime.dart';
 import 'storage_service.dart';
+import 'api_validation_exception.dart';
 
 /// Diaspo Maritime : départs des partenaires maritimes et envois.
 class MaritimeService extends GetxService {
@@ -85,8 +86,12 @@ class MaritimeService extends GetxService {
         booking: MaritimeBooking.fromJson(Map<String, dynamic>.from(response.data['data'])),
         payment: Map<String, dynamic>.from(response.data['payment'] ?? {}),
       );
-    } catch (e) {
-      throw _error(e);
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      if (e.response?.statusCode == 422 && body is Map<String, dynamic>) {
+        throw ApiValidationException.fromJson(body);
+      }
+      rethrow;
     }
   }
 

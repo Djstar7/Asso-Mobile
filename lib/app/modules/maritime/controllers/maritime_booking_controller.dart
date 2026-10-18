@@ -5,6 +5,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/models/payment_method_option.dart';
+import '../../../data/providers/api_validation_exception.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/maritime_service.dart';
 import '../../../data/providers/storage_service.dart';
@@ -40,14 +41,86 @@ class MaritimeBookingController extends GetxController {
   late final ParcelInsuranceForm insurance =
       ParcelInsuranceForm(currency: () => currency);
 
+  // ── Erreurs par champ ─────────────────────────────────────────────
+  /// Clé = nom du champ API (identique à Laravel), valeur = message.
+  final fieldErrors = <String, String>{}.obs;
+
+  final scrollController = ScrollController();
+
+  /// Ordre d'affichage des champs dans le formulaire.
+  static const _fieldOrder = [
+    'kg_booked',
+    'parcels_count',
+    'sender_first_name',
+    'sender_last_name',
+    'sender_phone',
+    'emergency_phone',
+    'recipient_first_name',
+    'recipient_last_name',
+    'recipient_country',
+    'recipient_phone',
+    'parcel_nature_id',
+    'declared_value',
+  ];
+
+  /// Une clé par champ pour Scrollable.ensureVisible.
+  final Map<String, GlobalKey> fieldKeys = {
+    for (final k in _fieldOrder) k: GlobalKey(),
+  };
+
+  static final _phoneRegex = RegExp(r'^\+?[0-9 ]{8,20}$');
+
+  String? errorOf(String key) => fieldErrors[key];
+
+  void clearError(String key) {
+    if (fieldErrors.containsKey(key)) fieldErrors.remove(key);
+  }
+
+  void _setErrors(Map<String, String> errors) => fieldErrors.assignAll(errors);
+
+  void _scrollToFirstError() {
+    for (final key in _fieldOrder) {
+      if (fieldErrors.containsKey(key)) {
+        final ctx = fieldKeys[key]?.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+            alignment: 0.2,
+          );
+        }
+        break;
+      }
+    }
+  }
+
+  /// Efface l'erreur d'un champ dès que l'utilisateur le corrige.
+  void _bindErrorClearing() {
+    final map = <String, TextEditingController>{
+      'kg_booked': kgController,
+      'parcels_count': parcelsController,
+      'sender_first_name': senderFirstName,
+      'sender_last_name': senderLastName,
+      'sender_phone': senderPhone,
+      'emergency_phone': emergencyPhone,
+      'recipient_first_name': recipientFirstName,
+      'recipient_last_name': recipientLastName,
+      'recipient_phone': recipientPhone,
+    };
+    map.forEach((key, c) => c.addListener(() => clearError(key)));
+    ever(recipientCountry, (_) => clearError('recipient_country'));
+    ever(insurance.selectedNature, (_) => clearError('parcel_nature_id'));
+    ever(insurance.declaredValue, (_) => clearError('declared_value'));
+  }
+
   String get currency => departure.value?.currency ?? 'EUR';
   double get pricePerKg => departure.value?.pricePerKg ?? 0;
   double get remainingKg => departure.value?.remainingKg ?? 0;
 
   /// À lire dans un Obx.
   double get freight => double.parse((kg.value * pricePerKg).toStringAsFixed(2));
-  double get grandTotal =>
-      double.parse((freight + insurance.insuranceAmount.value).toStringAsFixed(2));
+  double get grandTotal => double.parse(freight.toStringAsFixed(2));
 
   @override
   void onInit() {
@@ -76,6 +149,8 @@ class MaritimeBookingController extends GetxController {
       final value = double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
       if (value > 0 && value <= remainingKg) kg.value = value;
     });
+
+    _bindErrorClearing();
     insurance.load();
   }
 
@@ -87,6 +162,7 @@ class MaritimeBookingController extends GetxController {
     ]) {
       c.dispose();
     }
+    scrollController.dispose();
     insurance.dispose();
     super.onClose();
   }
@@ -99,23 +175,78 @@ class MaritimeBookingController extends GetxController {
     return '${two(d.day)}/${two(d.month)}/${d.year}';
   }
 
-  String? _validate() {
-    final requiredFields = [
-      senderFirstName, senderLastName, senderPhone, emergencyPhone,
-      recipientFirstName, recipientLastName, recipientPhone,
-    ];
-    if (requiredFields.any((c) => c.text.trim().isEmpty) || recipientCountry.value == null) {
-      return 'maritime.form.fill_all'.tr;
+  /// Retourne true si tout est valide ; remplit [fieldErrors] sinon.
+  bool _validate() {
+    final errors = <String, String>{};
+
+    String t(TextEditingController c) => c.text.trim();
+
+    // Poids
+    final rawKg = double.tryParse(kgController.text.replaceAll(',', '.'));
+    if (rawKg == null || t(kgController).isEmpty) {
+      errors['kg_booked'] = 'Indiquez le poids de votre envoi.';
+    } else if (rawKg < 0.5) {
+      errors['kg_booked'] = 'Le poids minimum est de 0,5 kg.';
+    } else if (rawKg > remainingKg) {
+      errors['kg_booked'] = 'Maximum ${remainingKg.toStringAsFixed(1)} kg disponibles.';
     }
-    if (kg.value < 0.5 || kg.value > remainingKg) {
-      return 'maritime.form.kg_range'.trParams({'max': remainingKg.toStringAsFixed(1)});
+
+    // Colis
+    final parcels = int.tryParse(parcelsController.text);
+    if (parcels == null || parcels < 1) {
+      errors['parcels_count'] = 'Indiquez au moins 1 colis.';
+    } else if (parcels > 500) {
+      errors['parcels_count'] = 'Maximum 500 colis par envoi.';
     }
-    if (!insurance.isComplete) return 'parcel_insurance.required'.tr;
-    return null;
+
+    // Expéditeur
+    if (t(senderFirstName).isEmpty) errors['sender_first_name'] = 'Le prénom est obligatoire.';
+    if (t(senderLastName).isEmpty) errors['sender_last_name'] = 'Le nom est obligatoire.';
+
+    String? phoneError(TextEditingController c, String label) {
+      if (t(c).isEmpty) return '$label est obligatoire.';
+      if (!_phoneRegex.hasMatch(t(c))) return 'Numéro invalide (ex. +237 6XX XX XX XX).';
+      return null;
+    }
+
+    final sp = phoneError(senderPhone, 'Votre téléphone');
+    if (sp != null) errors['sender_phone'] = sp;
+
+    final ep = phoneError(emergencyPhone, 'Le téléphone d\'urgence');
+    if (ep != null) {
+      errors['emergency_phone'] = ep;
+    } else if (t(emergencyPhone) == t(senderPhone)) {
+      errors['emergency_phone'] = 'Le numéro d\'urgence doit être différent du vôtre.';
+    }
+
+    // Destinataire
+    if (t(recipientFirstName).isEmpty) {
+      errors['recipient_first_name'] = 'Le prénom du destinataire est obligatoire.';
+    }
+    if (t(recipientLastName).isEmpty) {
+      errors['recipient_last_name'] = 'Le nom du destinataire est obligatoire.';
+    }
+    if (recipientCountry.value == null) {
+      errors['recipient_country'] = 'Choisissez le pays de destination.';
+    }
+
+    final rp = phoneError(recipientPhone, 'Le téléphone du destinataire');
+    if (rp != null) errors['recipient_phone'] = rp;
+
+    // Assurance / nature / valeur
+    if (insurance.selectedNature.value == null) {
+      errors['parcel_nature_id'] = 'Sélectionnez la nature du colis.';
+    }
+    if (insurance.declaredValue.value <= 0) {
+      errors['declared_value'] = 'Indiquez la valeur déclarée du colis.';
+    }
+
+    _setErrors(errors);
+    return errors.isEmpty;
   }
 
   Map<String, dynamic> _payload(String method, {String? provider, String? phone}) => {
-        'kg_booked': kg.value,
+        'kg_booked': double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
         'parcels_count': int.tryParse(parcelsController.text) ?? 1,
         'sender_first_name': senderFirstName.text.trim(),
         'sender_last_name': senderLastName.text.trim(),
@@ -134,9 +265,10 @@ class MaritimeBookingController extends GetxController {
       };
 
   Future<void> submit() async {
-    final error = _validate();
-    if (error != null) {
-      Get.snackbar('maritime.error'.tr, error, backgroundColor: AppDesign.danger, colorText: Colors.white);
+    if (!_validate()) {
+      _scrollToFirstError();
+      Get.snackbar('maritime.error'.tr, 'Corrigez les champs signalés en rouge.',
+          backgroundColor: AppDesign.danger, colorText: Colors.white);
       return;
     }
     if (insurance.isQuoting.value) return;
@@ -177,9 +309,24 @@ class MaritimeBookingController extends GetxController {
       );
       _lastPayment = result.payment;
       return result.booking;
+    } on ApiValidationException catch (e) {
+      if (e.fieldErrors.isNotEmpty) {
+        _setErrors(e.fieldErrors);
+        _scrollToFirstError();
+        Get.snackbar('maritime.error'.tr, 'Corrigez les champs signalés en rouge.',
+            backgroundColor: AppDesign.danger, colorText: Colors.white);
+      } else {
+        Get.snackbar('maritime.error'.tr, e.message,
+            backgroundColor: AppDesign.danger,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5));
+      }
+      return null;
     } catch (e) {
       Get.snackbar('maritime.error'.tr, e.toString().replaceAll('Exception: ', ''),
-          backgroundColor: AppDesign.danger, colorText: Colors.white, duration: const Duration(seconds: 5));
+          backgroundColor: AppDesign.danger,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5));
       return null;
     } finally {
       isSubmitting.value = false;
