@@ -118,4 +118,22 @@ class MaritimeService extends GetxService {
       throw _error(e);
     }
   }
+
+  /// Enregistre la déclaration de perte, sans montant de remboursement fourni
+  /// par le client : l'éligibilité et l'indemnisation sont déterminées serveur.
+  Future<Map<String, dynamic>> reportLoss({
+    required int bookingId,
+    required String reason,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/v1/maritime/bookings/$bookingId/loss-reports',
+        data: {'reason': reason},
+      );
+      final data = response.data['data'];
+      return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    } catch (e) {
+      throw _error(e);
+    }
+  }
 }

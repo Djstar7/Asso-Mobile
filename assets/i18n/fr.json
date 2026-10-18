@@ -4272,7 +4272,11 @@
     "departures": "Départs",
     "my_shipments": "Mes envois"
   },
+  "search_hint": "Rechercher une ville ou un partenaire",
+  "filter_all": "Tous les départs",
+  "filter_bookable": "Réservables uniquement",
   "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
+  "no_departure_matches": "Aucun départ ne correspond à votre recherche ou à ce filtre.",
   "no_shipments": "Vous n'avez pas encore d'envoi maritime.",
   "departure_on": "Départ le @date",
   "kg_left": "@kg kg disponibles",
@@ -4298,6 +4302,13 @@
   },
   "form": {
     "title": "Envoi par bateau",
+    "insurance_fields_intro": "Indiquez la nature du colis et sa valeur déclarée. Ces informations restent nécessaires même si vous ne souscrivez pas à l’assurance.",
+    "insurance_opt_in": "Je souhaite assurer mon colis contre les risques de perte.",
+    "insurance_legal_disclosure": "Cette assurance permet de prendre en charge le dédommagement du client en cas de perte du colis, conformément aux conditions d’assurance de la plateforme.",
+    "insurance_line": "Assurance (devis serveur)",
+    "insurance_quote_not_charged": "Devis assurance (non facturé)",
+    "insurance_quote_unknown": "—",
+    "insurance_quote_unavailable": "Le devis d’assurance n’est pas disponible. Réessayez ou décochez l’assurance.",
     "parcel": "Colis",
     "kg": "Poids",
     "parcels": "Nombre de colis",
@@ -4342,6 +4353,23 @@
     "nature_required": "Sélectionnez la nature du colis.",
     "value_required": "Indiquez la valeur déclarée du colis."
   },
+  "insurance": {
+    "insured": "Assurance souscrite",
+    "status": "Statut de l’assurance : @status",
+    "paid": "Montant d’assurance payé : @amount",
+    "payout": "Indemnisation versée : @amount",
+    "history_item": "@status · @date"
+  },
+  "claim": {
+    "report_action": "Signaler une perte",
+    "report_title": "Déclarer une perte",
+    "reason": "Décrivez la perte",
+    "submit": "Envoyer la déclaration",
+    "report_success": "Votre déclaration a été transmise.",
+    "status": "Statut du dossier : @status",
+    "history_item": "@status · @date"
+  },
+  "contact_error": "Impossible d’ouvrir la conversation avec la plateforme.",
   "cbm_rate": "@price le m³ (1 m³ = @kg kg)"
 }
 }

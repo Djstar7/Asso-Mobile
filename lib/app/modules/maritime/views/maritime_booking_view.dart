@@ -5,8 +5,8 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
-import '../../diaspoBooking/widgets/parcel_insurance_form.dart';
 import '../controllers/maritime_booking_controller.dart';
+import 'maritime_insurance_section.dart';
 
 /// Formulaire d'envoi maritime : kilos et colis, coordonnées, nature et valeur
 /// du colis, récapitulatif avec la date limite de dépôt, puis paiement.
@@ -95,15 +95,19 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                           errorKey: 'recipient_phone', phone: true),
                     ]),
                     const SizedBox(height: 16),
-                    Obx(() => ParcelInsuranceCard(
-                          form: controller.insurance,
-                          formatAmount: controller.formatAmount,
-                          decoration: _cardDeco(isDark),
-                          natureError: controller.errorOf('parcel_nature_id'),
-                          valueError: controller.errorOf('declared_value'),
-                          natureKey: controller.fieldKeys['parcel_nature_id'],
-                          valueKey: controller.fieldKeys['declared_value'],
-                        )),
+                    Obx(
+                      () => MaritimeInsuranceSection(
+                        form: controller.insurance,
+                        optIn: controller.insuranceOptIn,
+                        formatAmount: controller.formatAmount,
+                        decoration: _cardDeco(isDark),
+                        mutedColor: _muted(isDark),
+                        natureError: controller.errorOf('parcel_nature_id'),
+                        valueError: controller.errorOf('declared_value'),
+                        natureKey: controller.fieldKeys['parcel_nature_id'],
+                        valueKey: controller.fieldKeys['declared_value'],
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _summary(isDark),
                   ],
@@ -262,7 +266,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                 ),
               ],
               const SizedBox(height: 8),
-              _row(isDark, 'parcel_insurance.supplement'.tr, controller.formatAmount(controller.insurance.insuranceAmount.value)),
+              _insuranceQuoteLine(isDark),
               const Divider(height: 24),
               _row(isDark, 'maritime.form.total'.tr, controller.formatAmount(controller.grandTotal), total: true),
               const SizedBox(height: 14),
@@ -295,6 +299,35 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
         ));
   }
 
+  Widget _insuranceQuoteLine(bool isDark) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              controller.insuranceOptIn.value
+                  ? 'maritime.form.insurance_line'.tr
+                  : 'maritime.form.insurance_quote_not_charged'.tr,
+              style: TextStyle(fontSize: 14, color: _muted(isDark)),
+            ),
+          ),
+          if (controller.insurance.isQuoting.value)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Text(
+              controller.insurance.quoteAvailable.value
+                  ? controller.formatAmount(
+                      controller.insurance.insuranceAmount.value,
+                    )
+                  : 'maritime.form.insurance_quote_unknown'.tr,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+        ],
+      );
+
   Widget _row(bool isDark, String label, String value, {bool total = false}) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -322,13 +355,19 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: controller.isSubmitting.value ? null : controller.submit,
+                onPressed: controller.isSubmitting.value ||
+                        (controller.insuranceOptIn.value &&
+                            controller.insurance.isQuoting.value)
+                    ? null
+                    : controller.submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                icon: controller.isSubmitting.value
+                icon: controller.isSubmitting.value ||
+                        (controller.insuranceOptIn.value &&
+                            controller.insurance.isQuoting.value)
                     ? const SizedBox(
                         width: 20, height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

@@ -10,6 +10,10 @@ import '../../../data/providers/currency_service.dart';
 import '../../../core/base/safe_controller_mixin.dart';
 
 class ChatdetailController extends GetxController with SafeControllerMixin {
+  static String? draftFromConversation(Map<String, dynamic> conversation) {
+    return conversation['default_message']?.toString();
+  }
+
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
@@ -57,8 +61,9 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
     }
 
     // Si un message par défaut est fourni, l'insérer dans le champ de texte
-    if (conversation['default_message'] != null) {
-      messageController.text = conversation['default_message'];
+    final draft = draftFromConversation(conversation);
+    if (draft != null) {
+      messageController.text = draft;
     }
 
     _loadMessages();

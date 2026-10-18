@@ -24,6 +24,7 @@ class MaritimeBookingController extends GetxController {
 
   final departure = Rx<MaritimeDeparture?>(null);
   final isSubmitting = false.obs;
+  final insuranceOptIn = false.obs;
 
   final kgController = TextEditingController(text: '10');
   final kg = 10.0.obs;
@@ -119,7 +120,11 @@ class MaritimeBookingController extends GetxController {
   /// À lire dans un Obx.
   double get freight =>
       double.parse((kg.value * pricePerKg).toStringAsFixed(2));
-  double get grandTotal => double.parse(freight.toStringAsFixed(2));
+  double get grandTotal => double.parse(
+        (freight +
+                (insuranceOptIn.value ? insurance.insuranceAmount.value : 0))
+            .toStringAsFixed(2),
+      );
 
   @override
   void onInit() {
@@ -270,7 +275,7 @@ class MaritimeBookingController extends GetxController {
     return errors.isEmpty;
   }
 
-  Map<String, dynamic> _payload(
+  Map<String, dynamic> bookingPayload(
     String method, {
     String? provider,
     String? phone,
@@ -292,6 +297,7 @@ class MaritimeBookingController extends GetxController {
     'parcel_nature_id': insurance.selectedNature.value!.id,
     'declared_value': insurance.declaredValue.value,
     'declared_value_currency': insurance.valueCurrency,
+    'insurance_opt_in': insuranceOptIn.value,
     'payment_method': method,
     if (provider != null) 'provider': provider,
     if (phone != null) 'phone_number': phone,
@@ -308,7 +314,16 @@ class MaritimeBookingController extends GetxController {
       );
       return;
     }
-    if (insurance.isQuoting.value) return;
+    if (insuranceOptIn.value && insurance.isQuoting.value) return;
+    if (insuranceOptIn.value && !insurance.quoteAvailable.value) {
+      Get.snackbar(
+        'maritime.error'.tr,
+        'maritime.form.insurance_quote_unavailable'.tr,
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
     final method = await PaymentMethodSelector.show(
       amount: grandTotal,
@@ -346,7 +361,7 @@ class MaritimeBookingController extends GetxController {
     try {
       final result = await _service.book(
         departureId: departure.value!.id,
-        data: _payload(method, provider: provider, phone: phone),
+        data: bookingPayload(method, provider: provider, phone: phone),
       );
       _lastPayment = result.payment;
       return result.booking;

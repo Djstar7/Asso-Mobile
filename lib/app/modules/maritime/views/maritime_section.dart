@@ -6,6 +6,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/segmented_tabs.dart';
 import '../../../data/models/maritime.dart';
 import '../controllers/maritime_controller.dart';
+import 'maritime_contact_button.dart';
 
 /// Rubrique Maritime affichée dans Diaspo Exchange à la place des offres avion.
 class MaritimeSection extends GetView<MaritimeController> {
@@ -72,32 +73,146 @@ class MaritimeSection extends GetView<MaritimeController> {
   );
 
   Widget _buildDepartures(BuildContext context, bool isDark) {
-    if (controller.isLoading.value && controller.departures.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (controller.error.value != null && controller.departures.isEmpty) {
-      return _empty(Icons.cloud_off, controller.error.value!, isDark);
-    }
-    if (controller.departures.isEmpty) {
-      return _empty(
-        Icons.directions_boat_outlined,
-        'maritime.no_departures'.tr,
-        isDark,
-      );
-    }
+    final departures = controller.filteredDepartures;
+    return Column(
+      children: [
+        _buildDepartureSearch(isDark),
+        _buildDepartureFilters(isDark),
+        Expanded(
+          child: controller.isLoading.value && controller.departures.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : controller.error.value != null &&
+                    controller.departures.isEmpty
+              ? _empty(Icons.cloud_off, controller.error.value!, isDark)
+              : controller.departures.isEmpty
+              ? _empty(
+                  Icons.directions_boat_outlined,
+                  'maritime.no_departures'.tr,
+                  isDark,
+                )
+              : departures.isEmpty
+              ? _empty(
+                  Icons.search_off,
+                  'maritime.no_departure_matches'.tr,
+                  isDark,
+                )
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n.metrics.pixels > n.metrics.maxScrollExtent - 200) {
+                      controller.loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount:
+                        departures.length +
+                        (controller.isLoadingMore.value ? 1 : 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) {
+                      if (i == departures.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      return _departureCard(departures[i], isDark);
+                    },
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (n) {
-        if (n.metrics.pixels > n.metrics.maxScrollExtent - 200)
-          controller.loadMore();
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: controller.departures.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) =>
-            _departureCard(controller.departures[i], isDark),
+  Widget _buildDepartureSearch(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: TextField(
+          onChanged: (value) => controller.departureSearchQuery.value = value,
+          decoration: InputDecoration(
+            hintText: 'maritime.search_hint'.tr,
+            hintStyle: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white54 : Colors.grey[500],
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: isDark ? Colors.white54 : Colors.grey[500],
+            ),
+            suffixIcon: Obx(
+              () => controller.departureSearchQuery.value.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () =>
+                          controller.departureSearchQuery.value = '',
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDepartureFilters(bool isDark) {
+    return SizedBox(
+      height: 54,
+      child: Obx(
+        () => ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          scrollDirection: Axis.horizontal,
+          children: [
+            _departureFilterChip(
+              label: 'maritime.filter_all'.tr,
+              selected: !controller.bookableDeparturesOnly.value,
+              isDark: isDark,
+              onTap: () => controller.bookableDeparturesOnly.value = false,
+            ),
+            const SizedBox(width: 8),
+            _departureFilterChip(
+              label: 'maritime.filter_bookable'.tr,
+              selected: controller.bookableDeparturesOnly.value,
+              isDark: isDark,
+              onTap: () => controller.bookableDeparturesOnly.value = true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _departureFilterChip({
+    required String label,
+    required bool selected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final color = selected
+        ? AppThemeSystem.primaryColor
+        : (isDark ? AppThemeSystem.darkCardColor : Colors.white);
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: color,
+      backgroundColor: color,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : _muted(isDark),
+        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: selected ? AppThemeSystem.primaryColor : AppDesign.neutral200,
       ),
     );
   }
@@ -286,6 +401,8 @@ class MaritimeSection extends GetView<MaritimeController> {
                   ),
                 ),
               ),
+              if (b.status == 'shipped')
+                MaritimeContactButton(booking: b, controller: controller),
             ],
           ),
           const SizedBox(height: 8),
@@ -300,6 +417,14 @@ class MaritimeSection extends GetView<MaritimeController> {
             }),
             style: TextStyle(fontSize: 12, color: _muted(isDark)),
           ),
+          if (b.insuranceOptIn ||
+              (b.insuranceStatus?.isNotEmpty ?? false) ||
+              b.claimSummary != null ||
+              b.claimHistory.isNotEmpty ||
+              b.insuranceHistory.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _insuranceDetails(b, isDark),
+          ],
           if (b.status == 'paid' &&
               d?.originHub != null &&
               b.dropoffDeadline != null) ...[
@@ -383,6 +508,118 @@ class MaritimeSection extends GetView<MaritimeController> {
                   'maritime.cancel_title'.tr,
                   style: const TextStyle(color: AppDesign.danger),
                 ),
+              ),
+            ),
+          if (b.canReportLoss)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => controller.reportLoss(b),
+                icon: const Icon(Icons.report_problem_outlined, size: 18),
+                label: Text('maritime.claim.report_action'.tr),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _insuranceDetails(MaritimeBooking booking, bool isDark) {
+    final summary = booking.claimSummary;
+    final payout = summary?['payout_amount'] ??
+        summary?['insurance_payout_amount'];
+    final claimStatus =
+        summary?['status_label'] ?? summary?['status'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : AppDesign.neutral50,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (booking.insuranceOptIn)
+            Text(
+              'maritime.insurance.insured'.tr,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          if (booking.insuranceStatus case final status?
+              when status.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.insurance.status'.trParams({'status': status}),
+                style: TextStyle(fontSize: 12, color: _muted(isDark)),
+              ),
+            ),
+          if (booking.insuranceOptIn)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.insurance.paid'.trParams({
+                  'amount': controller.formatAmount(
+                    booking.insuranceAmount,
+                    booking.currency,
+                  ),
+                }),
+                style: TextStyle(fontSize: 12, color: _muted(isDark)),
+              ),
+            ),
+          if (payout != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.insurance.payout'.trParams({
+                  'amount': controller.formatAmount(
+                    double.tryParse(payout.toString()) ?? 0,
+                    booking.currency,
+                  ),
+                }),
+                style: const TextStyle(
+                  color: AppDesign.success,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          if (claimStatus != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.claim.status'.trParams({
+                  'status': claimStatus.toString(),
+                }),
+                style: TextStyle(fontSize: 12, color: _muted(isDark)),
+              ),
+            ),
+          for (final claim in booking.claimHistory)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.claim.history_item'.trParams({
+                  'status': (claim['status_label'] ?? claim['status'] ?? '')
+                      .toString(),
+                  'date': (claim['created_at'] ?? '').toString(),
+                }),
+                style: TextStyle(fontSize: 12, color: _muted(isDark)),
+              ),
+            ),
+          for (final insurance in booking.insuranceHistory)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'maritime.insurance.history_item'.trParams({
+                  'status':
+                      (insurance['status_label'] ??
+                              insurance['status'] ??
+                              insurance['event'] ??
+                              '')
+                          .toString(),
+                  'date': (insurance['created_at'] ?? '').toString(),
+                }),
+                style: TextStyle(fontSize: 12, color: _muted(isDark)),
               ),
             ),
         ],

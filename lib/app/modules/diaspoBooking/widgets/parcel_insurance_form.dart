@@ -36,6 +36,7 @@ class ParcelInsuranceForm {
   final valueController = TextEditingController();
   final declaredValue = 0.0.obs;
   final insuranceAmount = 0.0.obs;
+  final quoteAvailable = false.obs;
   final isQuoting = false.obs;
   final airMaxKgHint = 23.0.obs;
 
@@ -56,13 +57,19 @@ class ParcelInsuranceForm {
   }
 
   void selectNature(ParcelNature? nature) {
+    _quoteSeq++;
+    quoteAvailable.value = false;
+    isQuoting.value = false;
     selectedNature.value = nature;
     _requestQuote();
   }
 
   void _onValueChanged() {
+    _quoteSeq++;
+    isQuoting.value = false;
     declaredValue.value =
         double.tryParse(valueController.text.replaceAll(',', '.')) ?? 0;
+    quoteAvailable.value = false;
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), _requestQuote);
   }
@@ -71,6 +78,7 @@ class ParcelInsuranceForm {
     final nature = selectedNature.value;
     if (nature == null || valueController.text.trim().isEmpty) {
       insuranceAmount.value = 0;
+      quoteAvailable.value = false;
       return;
     }
     final seq = ++_quoteSeq;
@@ -82,9 +90,15 @@ class ParcelInsuranceForm {
         declaredValueCurrency: valueCurrency,
         currency: currency(),
       );
-      if (seq == _quoteSeq) insuranceAmount.value = amount;
+      if (seq == _quoteSeq) {
+        insuranceAmount.value = amount;
+        quoteAvailable.value = true;
+      }
     } catch (_) {
-      if (seq == _quoteSeq) insuranceAmount.value = 0;
+      if (seq == _quoteSeq) {
+        insuranceAmount.value = 0;
+        quoteAvailable.value = false;
+      }
     } finally {
       if (seq == _quoteSeq) isQuoting.value = false;
     }
@@ -102,6 +116,8 @@ class ParcelInsuranceCard extends StatelessWidget {
     required this.form,
     required this.formatAmount,
     required this.decoration,
+    this.introKey = 'parcel_insurance.intro',
+    this.showQuote = true,
     this.natureError,
     this.valueError,
     this.natureKey,
@@ -113,6 +129,8 @@ class ParcelInsuranceCard extends StatelessWidget {
   /// Formate un montant exprimé dans la devise de l'offre.
   final String Function(double) formatAmount;
   final BoxDecoration decoration;
+  final String introKey;
+  final bool showQuote;
 
   /// Message d'erreur affiché sous le sélecteur de nature.
   final String? natureError;
@@ -169,7 +187,7 @@ class ParcelInsuranceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'parcel_insurance.intro'.tr,
+            introKey.tr,
             style: TextStyle(fontSize: 12, color: muted, height: 1.4),
           ),
           const SizedBox(height: 14),
@@ -205,25 +223,27 @@ class ParcelInsuranceCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Obx(
-            () => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('parcel_insurance.supplement'.tr, style: TextStyle(color: muted)),
-                form.isQuoting.value
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        formatAmount(form.insuranceAmount.value),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-              ],
+          if (showQuote) ...[
+            const SizedBox(height: 12),
+            Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('parcel_insurance.supplement'.tr, style: TextStyle(color: muted)),
+                  form.isQuoting.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          formatAmount(form.insuranceAmount.value),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

@@ -5,26 +5,66 @@ import '../../../core/utils/app_design.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/maritime_service.dart';
+import '../../../data/providers/conversation_service.dart';
+import '../../../data/providers/api_provider.dart';
 import '../../../routes/app_pages.dart';
+
+typedef MaritimeContactRequest = Future<ApiResponse> Function(int bookingId);
+typedef MaritimeConversationNavigator =
+    void Function(Map<String, dynamic> conversation);
 
 /// Rubrique Maritime de Diaspo Exchange : départs à venir et envois de
 /// l'utilisateur.
 class MaritimeController extends GetxController {
+  MaritimeController({
+    MaritimeContactRequest? contactRequest,
+    MaritimeConversationNavigator? conversationNavigator,
+  }) : _contactRequest =
+           contactRequest ?? ConversationService.contactMaritimeBooking,
+       _conversationNavigator = conversationNavigator;
+
   final MaritimeService _service = Get.find<MaritimeService>();
+  final MaritimeContactRequest _contactRequest;
+  final MaritimeConversationNavigator? _conversationNavigator;
 
   /// 0 = Départs, 1 = Mes envois.
   final selectedTab = 0.obs;
 
   final departures = <MaritimeDeparture>[].obs;
+  final departureSearchQuery = ''.obs;
+  final bookableDeparturesOnly = false.obs;
   final myBookings = <MaritimeBooking>[].obs;
   final isLoading = false.obs;
   final isLoadingMore = false.obs;
   final isLoadingBookings = false.obs;
   final error = RxnString();
+  final contactingBookingIds = <int>{}.obs;
+  final contactErrors = <int, String>{}.obs;
 
   int _page = 1;
   int _lastPage = 1;
   bool _loaded = false;
+
+  List<MaritimeDeparture> get filteredDepartures {
+    final query = departureSearchQuery.value.trim().toLowerCase();
+    return departures.where((departure) {
+      if (bookableDeparturesOnly.value && !departure.isBookable) return false;
+      if (query.isEmpty) return true;
+
+      final searchableText = [
+        departure.partnerName,
+        departure.originHub?.city,
+        departure.originHub?.countryName,
+        departure.originHub?.name,
+        departure.destinationHub?.city,
+        departure.destinationHub?.countryName,
+        departure.destinationHub?.name,
+      ].whereType<String>().join(' ').toLowerCase();
+      return searchableText.contains(query);
+    }).toList();
+  }
+
+  bool get hasMoreDepartures => _page < _lastPage;
 
   /// Chargé à la première ouverture de la rubrique, pas avant.
   void ensureLoaded() {
@@ -102,20 +142,145 @@ class MaritimeController extends GetxController {
         title: Text('maritime.cancel_title'.tr),
         content: Text('maritime.cancel_message'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: Text('maritime.keep'.tr)),
-          ElevatedButton(onPressed: () => Get.back(result: true), child: Text('maritime.cancel_confirm'.tr)),
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('maritime.keep'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('maritime.cancel_confirm'.tr),
+          ),
         ],
       ),
     );
     if (confirmed != true) return;
     try {
       await _service.cancel(booking.id);
-      Get.snackbar('maritime.cancelled_title'.tr, 'maritime.cancelled_message'.tr,
-          backgroundColor: AppDesign.success, colorText: Colors.white);
+      Get.snackbar(
+        'maritime.cancelled_title'.tr,
+        'maritime.cancelled_message'.tr,
+        backgroundColor: AppDesign.success,
+        colorText: Colors.white,
+      );
       loadMyBookings();
     } catch (e) {
-      Get.snackbar('maritime.error'.tr, e.toString().replaceAll('Exception: ', ''),
-          backgroundColor: AppDesign.danger, colorText: Colors.white);
+      Get.snackbar(
+        'maritime.error'.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> contactPlatform(MaritimeBooking booking) async {
+    if (booking.status != 'shipped' ||
+        contactingBookingIds.contains(booking.id)) {
+      return;
+    }
+    contactingBookingIds.add(booking.id);
+    contactErrors.remove(booking.id);
+    try {
+      final response = await _contactRequest(booking.id);
+      final body = response.data;
+      final data = body?['data'];
+      final conversationData = data is Map ? data['conversation'] : null;
+      if (!response.success) {
+        contactErrors[booking.id] = response.message;
+        return;
+      }
+      if (conversationData is! Map) {
+        contactErrors[booking.id] = 'maritime.contact_error'.tr;
+        return;
+      }
+
+      final conversation = Map<String, dynamic>.from(conversationData);
+      final conversationId = conversation['id'];
+      if (conversationId == null) {
+        contactErrors[booking.id] = 'maritime.contact_error'.tr;
+        return;
+      }
+      final otherUser = conversation['other_user'];
+      final otherUserData = otherUser is Map
+          ? Map<String, dynamic>.from(otherUser)
+          : <String, dynamic>{};
+      final name =
+          conversation['name']?.toString() ??
+          conversation['title']?.toString() ??
+          otherUserData['name']?.toString() ??
+          'chatdetail.default_user_name'.tr;
+      final args = <String, dynamic>{
+        ...conversation,
+        'id': conversationId,
+        'name': name,
+        'avatar':
+            otherUserData['avatar']?.toString() ??
+            (name.isNotEmpty ? name[0].toUpperCase() : 'A'),
+        'isOnline': false,
+        'is_support': true,
+        'default_message': data['prefill_message']?.toString() ?? '',
+      };
+      if (_conversationNavigator case final navigator?) {
+        navigator(args);
+      } else {
+        Get.toNamed(Routes.CHATDETAIL, arguments: args);
+      }
+    } catch (e) {
+      contactErrors[booking.id] = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      contactingBookingIds.remove(booking.id);
+    }
+  }
+
+  Future<void> reportLoss(MaritimeBooking booking) async {
+    if (!booking.canReportLoss) return;
+    final reasonController = TextEditingController();
+    final reason = await Get.dialog<String>(
+      AlertDialog(
+        title: Text('maritime.claim.report_title'.tr),
+        content: TextField(
+          controller: reasonController,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 5,
+          decoration: InputDecoration(
+            labelText: 'maritime.claim.reason'.tr,
+            alignLabelWithHint: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('common.cancel'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final value = reasonController.text.trim();
+              if (value.isNotEmpty) Get.back(result: value);
+            },
+            child: Text('maritime.claim.submit'.tr),
+          ),
+        ],
+      ),
+    );
+    reasonController.dispose();
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await _service.reportLoss(bookingId: booking.id, reason: reason);
+      Get.snackbar(
+        'maritime.claim.report_title'.tr,
+        'maritime.claim.report_success'.tr,
+        backgroundColor: AppDesign.success,
+        colorText: Colors.white,
+      );
+      await loadMyBookings();
+    } catch (e) {
+      Get.snackbar(
+        'maritime.error'.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
     }
   }
 

@@ -4272,7 +4272,11 @@
     "departures": "Departures",
     "my_shipments": "My shipments"
   },
+  "search_hint": "Search a city or partner",
+  "filter_all": "All departures",
+  "filter_bookable": "Bookable only",
   "no_departures": "No departures planned yet. Check back soon.",
+  "no_departure_matches": "No departures match your search or filter.",
   "no_shipments": "You have no sea shipments yet.",
   "departure_on": "Departs on @date",
   "kg_left": "@kg kg available",
@@ -4298,6 +4302,13 @@
   },
   "form": {
     "title": "Ship by boat",
+    "insurance_fields_intro": "Describe the parcel and its declared value. This information is still required even if you do not opt into insurance.",
+    "insurance_opt_in": "I want to purchase maritime insurance",
+    "insurance_legal_disclosure": "Insurance is optional. The quote is added to the price and charged only if you select this checkbox. In the event of a loss, compensation may be paid up to the declared value, subject to the applicable terms.",
+    "insurance_line": "Insurance (server quote)",
+    "insurance_quote_not_charged": "Insurance quote (not charged)",
+    "insurance_quote_unknown": "—",
+    "insurance_quote_unavailable": "The insurance quote is unavailable. Try again or opt out of insurance.",
     "parcel": "Parcel",
     "kg": "Weight",
     "parcels": "Number of parcels",
@@ -4342,6 +4353,23 @@
     "nature_required": "Select the nature of the parcel.",
     "value_required": "Enter the declared value of the parcel."
   },
+  "insurance": {
+    "insured": "Insurance purchased",
+    "status": "Insurance status: @status",
+    "paid": "Insurance amount paid: @amount",
+    "payout": "Compensation paid: @amount",
+    "history_item": "@status · @date"
+  },
+  "claim": {
+    "report_action": "Report a loss",
+    "report_title": "Report a loss",
+    "reason": "Describe the loss",
+    "submit": "Submit report",
+    "report_success": "Your report has been submitted.",
+    "status": "Claim status: @status",
+    "history_item": "@status · @date"
+  },
+  "contact_error": "Unable to open the platform conversation.",
   "cbm_rate": "@price per m³ (1 m³ = @kg kg)"
 }
 }

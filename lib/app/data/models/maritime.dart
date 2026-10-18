@@ -27,15 +27,15 @@ class MaritimeHub {
   });
 
   factory MaritimeHub.fromJson(Map<String, dynamic> json) => MaritimeHub(
-        id: json['id'] as int,
-        name: json['name']?.toString() ?? '',
-        country: json['country']?.toString() ?? '',
-        countryName: json['country_name']?.toString() ?? '',
-        city: json['city']?.toString() ?? '',
-        address: json['address']?.toString() ?? '',
-        phone: json['phone']?.toString(),
-        openingHours: json['opening_hours']?.toString(),
-      );
+    id: json['id'] as int,
+    name: json['name']?.toString() ?? '',
+    country: json['country']?.toString() ?? '',
+    countryName: json['country_name']?.toString() ?? '',
+    city: json['city']?.toString() ?? '',
+    address: json['address']?.toString() ?? '',
+    phone: json['phone']?.toString(),
+    openingHours: json['opening_hours']?.toString(),
+  );
 
   String get fullAddress => '$name, $address, $city';
 }
@@ -101,7 +101,9 @@ class MaritimeDeparture {
           ? MaritimeHub.fromJson(Map<String, dynamic>.from(json['origin_hub']))
           : null,
       destinationHub: json['destination_hub'] is Map
-          ? MaritimeHub.fromJson(Map<String, dynamic>.from(json['destination_hub']))
+          ? MaritimeHub.fromJson(
+              Map<String, dynamic>.from(json['destination_hub']),
+            )
           : null,
       departureDate: _date(json['departure_date']) ?? DateTime.now(),
       estimatedArrivalDate: _date(json['estimated_arrival_date']),
@@ -111,7 +113,9 @@ class MaritimeDeparture {
       isBookable: json['is_bookable'] == true,
       remainingKg: _d(json['remaining_kg']),
       pricePerKg: _d(json['price_per_kg']),
-      pricePerCbm: json['price_per_cbm'] == null ? null : _d(json['price_per_cbm']),
+      pricePerCbm: json['price_per_cbm'] == null
+          ? null
+          : _d(json['price_per_cbm']),
       kgPerCbm: json['kg_per_cbm'] == null ? null : _d(json['kg_per_cbm']),
       currency: json['currency']?.toString() ?? 'EUR',
       status: json['status']?.toString() ?? 'open',
@@ -130,7 +134,18 @@ class MaritimeBooking {
   final String recipientPhone;
   final ParcelNature? parcelNature;
   final double declaredValue;
+  final String declaredValueCurrency;
+  final bool insuranceOptIn;
+  final double insuranceRateApplied;
+  final double insuranceQuoteAmount;
+  final String? insuranceStatus;
+  final Map<String, dynamic>? claimSummary;
+  final List<Map<String, dynamic>> claimHistory;
+  final List<Map<String, dynamic>> insuranceHistory;
+  final bool canReportLoss;
   final double freightTotal;
+
+  /// Assurance réellement encaissée (et non le devis indicatif).
   final double insuranceAmount;
   final double totalPrice;
   final String currency;
@@ -150,6 +165,15 @@ class MaritimeBooking {
     required this.recipientPhone,
     this.parcelNature,
     required this.declaredValue,
+    this.declaredValueCurrency = 'EUR',
+    this.insuranceOptIn = false,
+    this.insuranceRateApplied = 0,
+    this.insuranceQuoteAmount = 0,
+    this.insuranceStatus,
+    this.claimSummary,
+    this.claimHistory = const [],
+    this.insuranceHistory = const [],
+    this.canReportLoss = false,
     required this.freightTotal,
     required this.insuranceAmount,
     required this.totalPrice,
@@ -162,31 +186,74 @@ class MaritimeBooking {
     this.cancelReason,
   });
 
-  factory MaritimeBooking.fromJson(Map<String, dynamic> json) => MaritimeBooking(
-        id: json['id'] as int,
-        departure: json['departure'] is Map
-            ? MaritimeDeparture.fromJson(Map<String, dynamic>.from(json['departure']))
-            : null,
-        kgBooked: _d(json['kg_booked']),
-        parcelsCount: (json['parcels_count'] as num?)?.toInt() ?? 1,
-        recipientName:
-            '${json['recipient_first_name'] ?? ''} ${json['recipient_last_name'] ?? ''}'.trim(),
-        recipientPhone: json['recipient_phone']?.toString() ?? '',
-        parcelNature: json['parcel_nature'] is Map
-            ? ParcelNature.fromJson(Map<String, dynamic>.from(json['parcel_nature']))
-            : null,
-        declaredValue: _d(json['declared_value']),
-        freightTotal: _d(json['freight_total']),
-        insuranceAmount: _d(json['insurance_amount']),
-        totalPrice: _d(json['total_price']),
-        currency: json['currency']?.toString() ?? 'EUR',
-        dropoffDeadline: _date(json['dropoff_deadline']),
-        confirmationCode: json['confirmation_code']?.toString() ?? '',
-        status: json['status']?.toString() ?? 'pending',
-        statusLabel: json['status_label']?.toString() ?? '',
-        refundedAmount: json['refunded_amount'] == null ? null : _d(json['refunded_amount']),
-        cancelReason: json['cancel_reason']?.toString(),
-      );
+  factory MaritimeBooking.fromJson(Map<String, dynamic> json) {
+    final summary =
+        json['claim_summary'] ?? json['claim'] ?? json['loss_report_summary'];
+    final history = json['claim_history'] ?? json['loss_reports'];
+    final insuranceHistory = json['insurance_history'];
+    final summaryMap = summary is Map
+        ? Map<String, dynamic>.from(summary)
+        : null;
+    final canReportLoss =
+        json['can_report_loss'] == true ||
+        json['loss_report_eligible'] == true ||
+        json['insurance_claim_eligible'] == true ||
+        summaryMap?['can_report_loss'] == true ||
+        summaryMap?['eligible'] == true;
+
+    return MaritimeBooking(
+      id: (json['id'] as num).toInt(),
+      departure: json['departure'] is Map
+          ? MaritimeDeparture.fromJson(
+              Map<String, dynamic>.from(json['departure']),
+            )
+          : null,
+      kgBooked: _d(json['kg_booked']),
+      parcelsCount: (json['parcels_count'] as num?)?.toInt() ?? 1,
+      recipientName:
+          '${json['recipient_first_name'] ?? ''} ${json['recipient_last_name'] ?? ''}'
+              .trim(),
+      recipientPhone: json['recipient_phone']?.toString() ?? '',
+      parcelNature: json['parcel_nature'] is Map
+          ? ParcelNature.fromJson(
+              Map<String, dynamic>.from(json['parcel_nature']),
+            )
+          : null,
+      declaredValue: _d(json['declared_value']),
+      declaredValueCurrency:
+          json['declared_value_currency']?.toString() ?? 'EUR',
+      insuranceOptIn: json['insurance_opt_in'] == true,
+      insuranceRateApplied: _d(json['insurance_rate_applied']),
+      insuranceQuoteAmount: _d(json['insurance_quote_amount']),
+      insuranceStatus: json['insurance_status']?.toString(),
+      claimSummary: summaryMap,
+      claimHistory: history is List
+          ? history
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
+          : const [],
+      insuranceHistory: insuranceHistory is List
+          ? insuranceHistory
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
+          : const [],
+      canReportLoss: canReportLoss,
+      freightTotal: _d(json['freight_total']),
+      insuranceAmount: _d(json['insurance_amount']),
+      totalPrice: _d(json['total_price']),
+      currency: json['currency']?.toString() ?? 'EUR',
+      dropoffDeadline: _date(json['dropoff_deadline']),
+      confirmationCode: json['confirmation_code']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      statusLabel: json['status_label']?.toString() ?? '',
+      refundedAmount: json['refunded_amount'] == null
+          ? null
+          : _d(json['refunded_amount']),
+      cancelReason: json['cancel_reason']?.toString(),
+    );
+  }
 
   /// Annulable par l'expéditeur tant que le colis n'est pas déposé.
   bool get canCancel => status == 'paid';

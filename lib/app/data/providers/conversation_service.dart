@@ -26,6 +26,15 @@ class ConversationService {
     return await ApiProvider.post(AppConstants.startConversationUrl, body: data);
   }
 
+  /// Starts or retrieves the official platform conversation for a maritime
+  /// booking. The backend selects the official account and supplies an
+  /// editable draft; this method deliberately does not send that draft.
+  static Future<ApiResponse> contactMaritimeBooking(int bookingId) async {
+    return ApiProvider.post(
+      '/v1/maritime/bookings/$bookingId/contact-platform',
+    );
+  }
+
   /// Get messages in a conversation
   static Future<ApiResponse> getMessages(int conversationId, {int page = 1}) async {
     return await ApiProvider.get(
