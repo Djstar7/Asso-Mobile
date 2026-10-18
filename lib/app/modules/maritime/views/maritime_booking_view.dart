@@ -93,7 +93,6 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                     ParcelInsuranceCard(
                       form: controller.insurance,
                       formatAmount: controller.formatAmount,
-                      currencySymbol: controller.currencySymbol,
                       decoration: _cardDeco(isDark),
                     ),
                     const SizedBox(height: 16),

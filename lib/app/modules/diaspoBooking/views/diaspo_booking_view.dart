@@ -48,7 +48,6 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                     ParcelInsuranceCard(
                       form: controller.insurance,
                       formatAmount: controller.formatOfferAmount,
-                      currencySymbol: controller.currencySymbol,
                       decoration: _cardDeco(isDark),
                     ),
                     const SizedBox(height: 16),

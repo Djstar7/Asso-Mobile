@@ -127,6 +127,7 @@ class MaritimeBookingController extends GetxController {
         'recipient_phone': recipientPhone.text.trim(),
         'parcel_nature_id': insurance.selectedNature.value!.id,
         'declared_value': insurance.declaredValue.value,
+        'declared_value_currency': insurance.valueCurrency,
         'payment_method': method,
         if (provider != null) 'provider': provider,
         if (phone != null) 'phone_number': phone,

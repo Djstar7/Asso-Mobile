@@ -180,6 +180,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: 'stripe',
       );
       final booking = result['booking'] as DiaspoBooking;
@@ -224,6 +225,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: 'kpay',
         provider: provider,
         phoneNumber: phone,
@@ -271,6 +273,7 @@ class DiaspoBookingController extends GetxController {
         kgBooked: kgBooked.value,
         parcelNatureId: insurance.selectedNature.value?.id,
         declaredValue: insurance.declaredValue.value,
+        declaredValueCurrency: insurance.valueCurrency,
         paymentMethod: method.code,
       );
       final booking = result['booking'] as DiaspoBooking;
