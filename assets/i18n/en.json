@@ -4320,7 +4320,9 @@
       "dropoff_warning": "We expect your parcel at @hub before @date. After that, your money will be returned, minus ASSO fees.",
       "fill_all": "Please fill in all contact details.",
       "kg_range": "The weight must be between 0.5 and @max kg.",
-      "payment_failed_released": "The payment did not go through: the kilos have been released."
-    }
+      "payment_failed_released": "The payment did not go through: the kilos have been released.",
+      "volume_line": "That is @volume m³ at @price per m³"
+    },
+    "cbm_rate": "@price per m³ (1 m³ = @kg kg)"
   }
 }

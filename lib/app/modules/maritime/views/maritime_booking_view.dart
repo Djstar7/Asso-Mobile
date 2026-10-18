@@ -229,6 +229,16 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
               const SizedBox(height: 12),
               _row(isDark, '${controller.kg.value.toStringAsFixed(1)} kg × ${controller.formatAmount(controller.pricePerKg)}',
                   controller.formatAmount(controller.freight)),
+              if (d.isPricedPerCbm) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'maritime.form.volume_line'.trParams({
+                    'volume': d.volumeForKg(controller.kg.value)!.toStringAsFixed(3),
+                    'price': controller.formatAmount(d.pricePerCbm!),
+                  }),
+                  style: TextStyle(fontSize: 12, color: _muted(isDark)),
+                ),
+              ],
               const SizedBox(height: 8),
               _row(isDark, 'parcel_insurance.supplement'.tr, controller.formatAmount(controller.insurance.insuranceAmount.value)),
               const Divider(height: 24),
