@@ -11,6 +11,9 @@ import '../../../core/utils/media_helper.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/iso_country_field.dart';
+import '../views/selfie_capture_view.dart';
+import 'package:dio/dio.dart' show DioException;
 
 class DiaspoListController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
@@ -40,12 +43,47 @@ class DiaspoListController extends GetxController {
   final Rx<XFile?> documentBackImage = Rx<XFile?>(null);
   final isUploadingDocument = false.obs;
 
+  // Vérification renforcée : nationalité et résidence fixent les pièces.
+  final nationality = RxnString();
+  final residenceCountry = RxnString();
+  final Rx<String?> residenceDocumentType = Rx<String?>(null); // residence_permit | visa
+  final Rx<XFile?> residenceImage = Rx<XFile?>(null);
+  final Rx<XFile?> selfieImage = Rx<XFile?>(null);
+
+  /// Vit hors de son pays de nationalité : passeport + titre de séjour ou visa.
+  bool get livesAbroad =>
+      nationality.value != null &&
+      residenceCountry.value != null &&
+      nationality.value != residenceCountry.value;
+
+  bool get canSubmitVerification {
+    if (nationality.value == null || residenceCountry.value == null) return false;
+    final type = selectedDocumentType.value;
+    if (type == null || documentFrontImage.value == null) return false;
+    if (type == 'cni' && documentBackImage.value == null) return false;
+    if (livesAbroad &&
+        (type != 'passport' || residenceDocumentType.value == null || residenceImage.value == null)) {
+      return false;
+    }
+    return selfieImage.value != null && !isUploadingDocument.value;
+  }
+
+  void _onCountriesChanged() {
+    if (livesAbroad) selectedDocumentType.value = 'passport';
+  }
+
   // Pagination
   int currentPage = 1;
   bool hasMore = true;
 
   // Selected tab: 0 = Tous, 1 = Mes Offres, 2 = Mes Achats, 3 = Mes Ventes
   final selectedTab = 0.obs;
+
+  /// Rubrique : 0 = Avion (voyageurs), 1 = Maritime (départs des partenaires).
+  final transportMode = 0.obs;
+
+  /// Seuil indicatif avion / maritime réglé par ASSO (kg).
+  final airMaxKgHint = 23.0.obs;
 
   // 🔍 Recherche (remplace les filtres)
   final searchQuery = ''.obs;
@@ -66,13 +104,25 @@ class DiaspoListController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Ouverture directe de la rubrique Maritime (ex. notification d'envoi).
+    final args = Get.arguments;
+    if (args is Map && args['mode'] == 'sea') transportMode.value = 1;
     loadVerificationStatus();
     loadOffers();
+    _loadAirHint();
   }
 
   @override
   void onClose() {
     super.onClose();
+  }
+
+  Future<void> _loadAirHint() async {
+    try {
+      airMaxKgHint.value = (await _diaspoService.getParcelNatures()).airMaxKgHint;
+    } catch (_) {
+      // Seuil par défaut.
+    }
   }
 
   /// Load verification status
@@ -491,6 +541,9 @@ class DiaspoListController extends GetxController {
     selectedDocumentType.value = null;
     documentFrontImage.value = null;
     documentBackImage.value = null;
+    residenceDocumentType.value = null;
+    residenceImage.value = null;
+    selfieImage.value = null;
 
     // Feuille haute (deux photos) : sans plafond, elle passait sous la barre
     // d'état. Le bouton d'envoi reste épinglé en bas, toujours visible.
@@ -501,13 +554,7 @@ class DiaspoListController extends GetxController {
           () => SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-                  (selectedDocumentType.value != null &&
-                      documentFrontImage.value != null &&
-                      documentBackImage.value != null &&
-                      !isUploadingDocument.value)
-                  ? _submitVerification
-                  : null,
+              onPressed: canSubmitVerification ? _submitVerification : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppThemeSystem.primaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -544,6 +591,41 @@ class DiaspoListController extends GetxController {
               'diaspo_list.verification.sheet_intro'.tr,
               style: TextStyle(color: Colors.grey[600]),
             ),
+            const SizedBox(height: 20),
+
+            // Nationalité et pays de résidence → pièces exigées.
+            Obx(
+              () => IsoCountryField(
+                label: 'diaspo_list.verification.nationality'.tr,
+                value: nationality.value,
+                onChanged: (code) {
+                  nationality.value = code;
+                  _onCountriesChanged();
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Obx(
+              () => IsoCountryField(
+                label: 'diaspo_list.verification.residence_country'.tr,
+                value: residenceCountry.value,
+                onChanged: (code) {
+                  residenceCountry.value = code;
+                  _onCountriesChanged();
+                },
+              ),
+            ),
+            Obx(
+              () => livesAbroad
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'diaspo_list.verification.abroad_note'.tr,
+                        style: const TextStyle(fontSize: 12, color: AppDesign.accentText),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             const SizedBox(height: 24),
 
             // Document type selection
@@ -555,8 +637,8 @@ class DiaspoListController extends GetxController {
             Obx(
               () => Row(
                 children: [
-                  // CNI option
-                  Expanded(
+                  // CNI option (pas pour un résident à l'étranger)
+                  if (!livesAbroad) Expanded(
                     child: GestureDetector(
                       onTap: () => selectedDocumentType.value = 'cni',
                       child: Container(
@@ -609,7 +691,7 @@ class DiaspoListController extends GetxController {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  if (!livesAbroad) const SizedBox(width: 12),
 
                   // Passport option
                   Expanded(
@@ -696,13 +778,65 @@ class DiaspoListController extends GetxController {
                         ),
                         const SizedBox(height: 16),
 
-                        // Verso
+                        // Verso : seulement pour une CNI.
+                        if (selectedDocumentType.value == 'cni')
+                          _buildDocumentUploadCard(
+                            title: 'diaspo_list.verification.back'.tr,
+                            icon: Icons.badge_outlined,
+                            image: documentBackImage.value,
+                            onUpload: () => _pickDocumentImage(isBack: true),
+                            onRemove: () => documentBackImage.value = null,
+                          ),
+
+                        // Titre de séjour ou visa pour un résident à l'étranger.
+                        if (livesAbroad) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'diaspo_list.verification.residence_document'.tr,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final t in const ['residence_permit', 'visa'])
+                                ChoiceChip(
+                                  label: Text('diaspo_list.verification.$t'.tr),
+                                  selected: residenceDocumentType.value == t,
+                                  onSelected: (_) => residenceDocumentType.value = t,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildDocumentUploadCard(
+                            title: residenceDocumentType.value == 'visa'
+                                ? 'diaspo_list.verification.visa'.tr
+                                : 'diaspo_list.verification.residence_permit'.tr,
+                            icon: Icons.description_outlined,
+                            image: residenceImage.value,
+                            onUpload: _pickResidenceImage,
+                            onRemove: () => residenceImage.value = null,
+                          ),
+                        ],
+
+                        // Selfie pris en direct, comparé à la pièce par ASSO.
+                        const SizedBox(height: 24),
+                        Text(
+                          'diaspo_list.verification.selfie'.tr,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'diaspo_list.verification.selfie_hint'.tr,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 12),
                         _buildDocumentUploadCard(
-                          title: 'diaspo_list.verification.back'.tr,
-                          icon: Icons.badge_outlined,
-                          image: documentBackImage.value,
-                          onUpload: () => _pickDocumentImage(isBack: true),
-                          onRemove: () => documentBackImage.value = null,
+                          title: 'diaspo_list.verification.selfie'.tr,
+                          icon: Icons.face_retouching_natural,
+                          image: selfieImage.value,
+                          onUpload: _takeSelfie,
+                          onRemove: () => selfieImage.value = null,
                         ),
                       ],
                     )
@@ -824,21 +958,36 @@ class DiaspoListController extends GetxController {
     }
   }
 
+  Future<void> _pickResidenceImage() async {
+    final image = await MediaHelper.pickBrandedImage(
+      title: 'diaspo_list.verification.residence_document'.tr,
+      subtitle: 'diaspo_list.verification.photo_hint'.tr,
+      imageQuality: 85,
+    );
+    if (image != null) residenceImage.value = image;
+  }
+
+  Future<void> _takeSelfie() async {
+    final image = await SelfieCaptureView.capture();
+    if (image != null) selfieImage.value = image;
+  }
+
   /// Submit verification documents
   Future<void> _submitVerification() async {
-    if (selectedDocumentType.value == null ||
-        documentFrontImage.value == null ||
-        documentBackImage.value == null) {
-      return;
-    }
+    if (!canSubmitVerification) return;
 
     isUploadingDocument.value = true;
 
     try {
       await _diaspoService.uploadVerificationDocument(
         frontImage: documentFrontImage.value!,
-        backImage: documentBackImage.value!,
+        backImage: selectedDocumentType.value == 'cni' ? documentBackImage.value : null,
         documentType: selectedDocumentType.value!,
+        nationality: nationality.value,
+        residenceCountry: residenceCountry.value,
+        residenceDocumentType: livesAbroad ? residenceDocumentType.value : null,
+        residenceImage: livesAbroad ? residenceImage.value : null,
+        selfie: selfieImage.value,
       );
 
       isUploadingDocument.value = false;
@@ -864,12 +1013,26 @@ class DiaspoListController extends GetxController {
       isUploadingDocument.value = false;
       Get.snackbar(
         'diaspo_list.error'.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        _serverMessage(e),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     }
+  }
+
+  /// Premier message de validation renvoyé par le serveur, sinon l'erreur brute.
+  String _serverMessage(Object e) {
+    if (e is DioException && e.response?.data is Map) {
+      final data = e.response!.data as Map;
+      final errors = data['errors'];
+      if (errors is Map && errors.isNotEmpty) {
+        final first = errors.values.first;
+        return first is List ? first.first.toString() : first.toString();
+      }
+      if (data['message'] != null) return data['message'].toString();
+    }
+    return e.toString().replaceAll('Exception: ', '');
   }
 
   // ================================

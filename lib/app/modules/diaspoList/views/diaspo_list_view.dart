@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../controllers/diaspo_list_controller.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/segmented_tabs.dart';
+import '../../maritime/views/maritime_section.dart';
 import '../../../routes/app_pages.dart';
 
 class DiaspoListView extends GetView<DiaspoListController> {
@@ -24,22 +26,35 @@ class DiaspoListView extends GetView<DiaspoListController> {
       ),
       body: Column(
         children: [
-          //  Zone de recherche
-          _buildSearchBar(context, isDark),
+          // Rubriques Avion / Maritime, avec le seuil indicatif de poids.
+          _buildTransportSwitch(context, isDark),
 
-          Obx(() => _buildVerificationBanner(context, isDark)),
+          Expanded(
+            child: Obx(
+              () => controller.transportMode.value == 1
+                  ? const MaritimeSection()
+                  : Column(
+                      children: [
+                        //  Zone de recherche
+                        _buildSearchBar(context, isDark),
 
-          // Tabs horizontaux (comme les catégories)
-          _buildTabs(context, isDark),
+                        _buildVerificationBanner(context, isDark),
 
-          // Contenu du tab sélectionné
-          Expanded(child: Obx(() => _buildTabContent(context, isDark))),
+                        // Tabs horizontaux (comme les catégories)
+                        _buildTabs(context, isDark),
+
+                        // Contenu du tab sélectionné
+                        Expanded(child: _buildTabContent(context, isDark)),
+                      ],
+                    ),
+            ),
+          ),
         ],
       ),
       // Masqué quand la liste est vide : l'état vide propose déjà la même
       // action, et deux boutons identiques à l'écran se concurrencent.
       floatingActionButton: Obx(
-        () => controller.offers.isEmpty
+        () => controller.offers.isEmpty || controller.transportMode.value == 1
             ? const SizedBox.shrink()
             : FloatingActionButton.extended(
                 onPressed: controller.handleCreateOffer,
@@ -49,6 +64,38 @@ class DiaspoListView extends GetView<DiaspoListController> {
                 label: Text('diaspo_list.create_my_offer'.tr),
               ),
       ),
+    );
+  }
+
+  /// Avion / Maritime : avion pour les petits colis, bateau au-delà du seuil.
+  Widget _buildTransportSwitch(BuildContext context, bool isDark) {
+    return Container(
+      color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Obx(() {
+        final kg = controller.airMaxKgHint.value;
+        final kgText = kg % 1 == 0 ? kg.toStringAsFixed(0) : kg.toStringAsFixed(1);
+        final isSea = controller.transportMode.value == 1;
+        return Column(
+          children: [
+            SegmentedTabs(
+              tabs: [
+                SegmentedTab(label: 'diaspo_list.mode.air'.tr, icon: Icons.flight),
+                SegmentedTab(label: 'diaspo_list.mode.sea'.tr, icon: Icons.directions_boat),
+              ],
+              selectedIndex: controller.transportMode.value,
+              onChanged: (i) => controller.transportMode.value = i,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              (isSea ? 'diaspo_list.mode.sea_hint' : 'diaspo_list.mode.air_hint')
+                  .trParams({'kg': kgText}),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : AppDesign.neutral500),
+            ),
+          ],
+        );
+      }),
     );
   }
 

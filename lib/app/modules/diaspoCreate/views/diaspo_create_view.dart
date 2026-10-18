@@ -528,9 +528,50 @@ class DiaspoCreateView extends GetView<DiaspoCreateController> {
               ),
             ),
           ),
+          SizedBox(height: sectionSpacing),
+          _buildTravelProof(context, isDark),
         ],
       ),
     );
+  }
+
+  /// Justificatif de voyage (billet, réservation), contrôlé par ASSO.
+  Widget _buildTravelProof(BuildContext context, bool isDark) {
+    return Obx(() {
+      final proof = controller.travelProof.value;
+      final color = proof != null ? AppDesign.success : AppDesign.accent;
+      return Material(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: controller.pickTravelProof,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(proof != null ? Icons.check_circle : Icons.confirmation_number_outlined, color: color),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('diaspo_create.travel_proof'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(
+                        proof != null ? 'diaspo_create.travel_proof_added'.tr : 'diaspo_create.travel_proof_hint'.tr,
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : AppDesign.neutral600),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(proof != null ? Icons.edit_outlined : Icons.add_a_photo_outlined, color: color),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   /// Summary row

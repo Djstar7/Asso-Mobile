@@ -12,6 +12,8 @@ import 'package:asso/app/modules/diaspoDetail/bindings/diaspo_detail_binding.dar
 import 'package:asso/app/modules/diaspoDetail/views/diaspo_detail_view.dart';
 import 'package:asso/app/modules/diaspoBooking/bindings/diaspo_booking_binding.dart';
 import 'package:asso/app/modules/diaspoBooking/views/diaspo_booking_view.dart';
+import '../modules/maritime/bindings/maritime_booking_binding.dart';
+import '../modules/maritime/views/maritime_booking_view.dart';
 import 'package:get/get.dart';
 
 import '../modules/about/bindings/about_binding.dart';
@@ -399,6 +401,11 @@ class AppPages {
       name: _Paths.DIASPO_BOOKING,
       page: () => const DiaspoBookingView(),
       binding: DiaspoBookingBinding(),
+    ),
+    GetPage(
+      name: _Paths.MARITIME_BOOKING,
+      page: () => const MaritimeBookingView(),
+      binding: MaritimeBookingBinding(),
     ),
     GetPage(
       name: _Paths.COUNTRY_SELECTION,

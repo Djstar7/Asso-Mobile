@@ -3427,7 +3427,15 @@
       "document_back": "Back of document",
       "document_front": "Front of document",
       "photo_hint": "Sharp, readable photo with no glare",
-      "submitted_message": "Your @document has been submitted for verification. You will receive a notification within 24-48h."
+      "submitted_message": "Your @document has been submitted for verification. You will receive a notification within 24-48h.",
+      "nationality": "Nationality",
+      "residence_country": "Country of residence",
+      "abroad_note": "You live outside your country of nationality: a passport and a residence permit (or visa) are required.",
+      "residence_document": "Residence permit or visa",
+      "residence_permit": "Residence permit",
+      "visa": "Visa",
+      "selfie": "Selfie",
+      "selfie_hint": "Taken live with the front camera, it is compared with the photo on your ID."
     },
     "ok": "OK",
     "cancel": "Cancel",
@@ -3509,6 +3517,12 @@
       "pending": "Awaiting payment",
       "cancelled": "Cancelled",
       "refunded": "Refunded"
+    },
+    "mode": {
+      "air": "Plane",
+      "sea": "Sea",
+      "air_hint": "Best for parcels under @kg kg",
+      "sea_hint": "Best for parcels over @kg kg"
     }
   },
   "diaspo_detail": {
@@ -3641,7 +3655,11 @@
     "available_kg": "Available kilos",
     "previous": "Previous",
     "next": "Next",
-    "publish": "Publish"
+    "publish": "Publish",
+    "travel_proof": "Travel document",
+    "travel_proof_hint": "Photo of your ticket or booking (departure and destination).",
+    "travel_proof_required": "Add your ticket or booking to publish the offer.",
+    "travel_proof_added": "Document added. Tap to replace it."
   },
   "diaspo_edit": {
     "error": "Error",
@@ -4224,6 +4242,85 @@
       "copied_message": "Paste it in a message to send it to a vendor.",
       "share_text": "Subscribe to a vendor plan on ASSO with my sales code: @code",
       "explanation": "Share this code with vendors: when they use it for their first subscription, you receive @rate% of the amount directly in your wallet."
+    }
+  },
+  "parcel_insurance": {
+    "title": "Parcel contents and value",
+    "intro": "Tell us what the parcel contains and its value: an insurance supplement is added to the price. If it is lost, ASSO compensates you up to the declared value.",
+    "nature": "Parcel contents",
+    "value": "Parcel value",
+    "supplement": "Insurance supplement",
+    "required": "Choose the parcel contents and enter its value."
+  },
+  "iso_country": {
+    "search": "Search for a country"
+  },
+  "selfie": {
+    "title": "Verification selfie",
+    "hint": "Place your face in the oval, look at the camera with your eyes open, then take the photo.",
+    "camera_unavailable": "Camera unavailable. Allow camera access in your settings.",
+    "retry": "The photo could not be analysed. Please try again.",
+    "no_face": "No face detected. Place your face in the oval.",
+    "several_faces": "Several faces detected: you must be alone in the photo.",
+    "too_far": "Come closer: your face must fill the oval.",
+    "eyes_closed": "Keep your eyes open and look at the camera."
+  },
+  "maritime": {
+    "trip_impossible_title": "Departure closed",
+    "trip_impossible": "This trip is no longer possible. Please check the next dates for this destination.",
+    "error": "Error",
+    "tabs": {
+      "departures": "Departures",
+      "my_shipments": "My shipments"
+    },
+    "no_departures": "No departures planned yet. Check back soon.",
+    "no_shipments": "You have no sea shipments yet.",
+    "departure_on": "Departs on @date",
+    "kg_left": "@kg kg available",
+    "last_day_to_book": "Last day to book",
+    "days_left_to_book": "@days days left to book",
+    "parcels": "@count parcels",
+    "recipient_line": "Recipient: @name (@phone)",
+    "dropoff_notice": "We expect your parcel at @hub before @date. After that, your money will be returned, minus ASSO fees.",
+    "pickup_notice": "Your parcel has arrived at @hub. The recipient must show the code below.",
+    "refunded_notice": "@amount has been credited to your Wallet.",
+    "code_label": "Handover code",
+    "code_hint": "Give this code to the recipient: they show it at the arrival hub to collect the parcel.",
+    "cancel_title": "Cancel shipment",
+    "cancel_message": "The amount paid will be credited to your Wallet. Confirm the cancellation?",
+    "keep": "Keep",
+    "cancel_confirm": "Cancel shipment",
+    "cancelled_title": "Shipment cancelled",
+    "cancelled_message": "The amount paid has been credited to your Wallet.",
+    "success": {
+      "title": "Shipment confirmed",
+      "message": "Drop off your parcel at @hub before @date. Your handover code: @code. ASSO will contact you shortly.",
+      "see_shipments": "See my shipments"
+    },
+    "form": {
+      "title": "Ship by boat",
+      "parcel": "Parcel",
+      "kg": "Weight",
+      "parcels": "Number of parcels",
+      "kg_available": "@kg kg available on this departure",
+      "sender": "Your details",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "your_phone": "Your phone number",
+      "emergency_phone": "Emergency phone number",
+      "recipient": "Recipient",
+      "destination_country": "Destination country",
+      "recipient_phone": "Phone number to call on arrival",
+      "dropoff_hub": "Parcel drop-off",
+      "pickup_hub": "Pick-up on arrival",
+      "summary": "Summary",
+      "total": "Total",
+      "total_to_pay": "Total to pay",
+      "pay": "Pay @amount",
+      "dropoff_warning": "We expect your parcel at @hub before @date. After that, your money will be returned, minus ASSO fees.",
+      "fill_all": "Please fill in all contact details.",
+      "kg_range": "The weight must be between 0.5 and @max kg.",
+      "payment_failed_released": "The payment did not go through: the kilos have been released."
     }
   }
 }
