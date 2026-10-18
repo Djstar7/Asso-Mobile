@@ -3,6 +3,7 @@ import 'package:get/get.dart' hide Response, FormData, MultipartFile;
 import 'package:image_picker/image_picker.dart' show XFile;
 import '../models/diaspo_offer.dart';
 import '../models/diaspo_booking.dart';
+import '../models/parcel_nature.dart';
 import '../../core/values/constants.dart';
 import 'storage_service.dart';
 import '../../core/services/locale_service.dart';
@@ -43,31 +44,43 @@ class DiaspoService extends GetxService {
   // VERIFICATION
   // ============================================
 
-  /// Upload verification document (CNI or Passport) - Recto/Verso
+  /// Envoie les pièces du voyageur.
+  ///
+  /// Parcours renforcé : [nationality] et [residenceCountry] (codes ISO) fixent
+  /// les pièces exigées par le serveur ; verso seulement pour une CNI, titre
+  /// de séjour ou visa s'il vit hors de son pays, selfie pris en direct.
   ///
   /// Utilise des [XFile] et un upload via octets (`fromBytes`) afin d'être
   /// compatible mobile ET web (Chrome), où `dart:io File` n'existe pas.
   Future<Map<String, dynamic>> uploadVerificationDocument({
     required XFile frontImage,
-    required XFile backImage,
+    XFile? backImage,
     String documentType = 'cni', // 'cni' or 'passport'
+    String? nationality,
+    String? residenceCountry,
+    String? residenceDocumentType, // 'residence_permit' | 'visa'
+    XFile? residenceImage,
+    XFile? selfie,
   }) async {
     try {
-      final frontFileName =
-          frontImage.name.isNotEmpty ? frontImage.name : 'document_front.jpg';
-      final backFileName =
-          backImage.name.isNotEmpty ? backImage.name : 'document_back.jpg';
+      Future<MultipartFile> part(XFile f, String fallback) async =>
+          MultipartFile.fromBytes(
+            await f.readAsBytes(),
+            filename: f.name.isNotEmpty ? f.name : fallback,
+          );
 
       FormData formData = FormData.fromMap({
-        'document_front': MultipartFile.fromBytes(
-          await frontImage.readAsBytes(),
-          filename: frontFileName,
-        ),
-        'document_back': MultipartFile.fromBytes(
-          await backImage.readAsBytes(),
-          filename: backFileName,
-        ),
+        'document_front': await part(frontImage, 'document_front.jpg'),
+        if (backImage != null)
+          'document_back': await part(backImage, 'document_back.jpg'),
         'document_type': documentType,
+        if (nationality != null) 'nationality': nationality,
+        if (residenceCountry != null) 'residence_country': residenceCountry,
+        if (residenceDocumentType != null)
+          'residence_document_type': residenceDocumentType,
+        if (residenceImage != null)
+          'residence_document': await part(residenceImage, 'residence.jpg'),
+        if (selfie != null) 'selfie': await part(selfie, 'selfie.jpg'),
       });
 
       final response = await _dio.post(
@@ -175,21 +188,29 @@ class DiaspoService extends GetxService {
     required double pricePerKg,
     required double availableKg,
     String currency = 'EUR',
+    XFile? travelProof, // billet ou réservation (départ et destination)
   }) async {
     try {
+      final fields = <String, dynamic>{
+        'departure_country': departureCountry,
+        'departure_city': departureCity,
+        'departure_datetime': departureDateTime.toIso8601String(),
+        'arrival_country': arrivalCountry,
+        'arrival_city': arrivalCity,
+        'arrival_datetime': arrivalDateTime.toIso8601String(),
+        'price_per_kg': pricePerKg,
+        'available_kg': availableKg,
+        'currency': currency,
+      };
+      if (travelProof != null) {
+        fields['travel_proof'] = MultipartFile.fromBytes(
+          await travelProof.readAsBytes(),
+          filename: travelProof.name.isNotEmpty ? travelProof.name : 'travel_proof.jpg',
+        );
+      }
       final response = await _dio.post(
         '/v1/diaspo/offers',
-        data: {
-          'departure_country': departureCountry,
-          'departure_city': departureCity,
-          'departure_datetime': departureDateTime.toIso8601String(),
-          'arrival_country': arrivalCountry,
-          'arrival_city': arrivalCity,
-          'arrival_datetime': arrivalDateTime.toIso8601String(),
-          'price_per_kg': pricePerKg,
-          'available_kg': availableKg,
-          'currency': currency,
-        },
+        data: travelProof != null ? FormData.fromMap(fields) : fields,
       );
 
       return DiaspoOffer.fromJson(response.data['data']);
@@ -275,6 +296,39 @@ class DiaspoService extends GetxService {
     }
   }
 
+  // ============================================
+  // ASSURANCE DES COLIS
+  // ============================================
+
+  /// Natures de colis assurables et seuil indicatif avion / maritime (kg).
+  Future<({List<ParcelNature> natures, double airMaxKgHint})>
+      getParcelNatures() async {
+    final response = await _dio.get('/v1/diaspo/parcel-natures');
+    final list = (response.data['data'] as List? ?? [])
+        .map((e) => ParcelNature.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final hint = double.tryParse(
+            response.data['meta']?['air_max_kg_hint']?.toString() ?? '') ??
+        23;
+    return (natures: list, airMaxKgHint: hint);
+  }
+
+  /// Supplément d'assurance calculé par le serveur, dans [currency].
+  Future<double> insuranceQuote({
+    required int natureId,
+    required double declaredValue,
+    required String currency,
+  }) async {
+    final response = await _dio.post('/v1/diaspo/insurance-quote', data: {
+      'parcel_nature_id': natureId,
+      'declared_value': declaredValue,
+      'currency': currency,
+    });
+    return double.tryParse(
+            response.data['data']?['insurance_amount']?.toString() ?? '') ??
+        0;
+  }
+
   /// Crée une réservation et initie l'encaissement selon le moyen choisi.
   ///
   /// [paymentMethod] ∈ kpay | paypal | stripe. Pour kpay, [provider] (code
@@ -288,6 +342,8 @@ class DiaspoService extends GetxService {
     String? provider,    // code opérateur KPay (ex. MTN_MOMO_CMR) — requis si kpay
     String? phoneNumber, // numéro international sans '+' — requis si kpay
     String? notes,
+    int? parcelNatureId,
+    double? declaredValue,
   }) async {
     try {
       final response = await _dio.post(
@@ -298,6 +354,8 @@ class DiaspoService extends GetxService {
           if (provider != null) 'provider': provider,
           if (phoneNumber != null) 'phone_number': phoneNumber,
           if (notes != null) 'notes': notes,
+          if (parcelNatureId != null) 'parcel_nature_id': parcelNatureId,
+          if (declaredValue != null) 'declared_value': declaredValue,
         },
       );
 

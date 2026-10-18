@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../controllers/diaspo_booking_controller.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../widgets/parcel_insurance_form.dart';
 
 class DiaspoBookingView extends GetView<DiaspoBookingController> {
   const DiaspoBookingView({super.key});
@@ -43,6 +44,13 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                     _buildRouteCard(context, isDark),
                     const SizedBox(height: 16),
                     _buildKgSelector(context, isDark),
+                    const SizedBox(height: 16),
+                    ParcelInsuranceCard(
+                      form: controller.insurance,
+                      formatAmount: controller.formatOfferAmount,
+                      currencySymbol: controller.currencySymbol,
+                      decoration: _cardDeco(isDark),
+                    ),
                     const SizedBox(height: 16),
                     _buildPriceBreakdown(context, isDark),
                     const SizedBox(height: 12),
@@ -260,11 +268,17 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 controller.formatOfferAmount(controller.totalPrice.value),
                 isDark,
               ),
+              const SizedBox(height: 10),
+              _priceRow(
+                'parcel_insurance.supplement'.tr,
+                controller.formatOfferAmount(controller.insurance.insuranceAmount.value),
+                isDark,
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
               ),
-              _priceRow('diaspo_booking.total'.tr, controller.formatOfferAmount(controller.totalPrice.value), isDark, isTotal: true),
+              _priceRow('diaspo_booking.total'.tr, controller.formatOfferAmount(controller.grandTotal), isDark, isTotal: true),
             ],
           ),
         ));
@@ -359,7 +373,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                         Text(
                           'diaspo_booking.pay'.trParams({
                             'amount': controller.formatOfferAmount(
-                              controller.totalPrice.value,
+                              controller.grandTotal,
                             ),
                           }),
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

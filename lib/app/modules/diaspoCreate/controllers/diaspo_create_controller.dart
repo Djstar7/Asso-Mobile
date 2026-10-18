@@ -7,6 +7,8 @@ import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/diaspo_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/utils/media_helper.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 class DiaspoCreateController extends GetxController {
   final DiaspoService _diaspoService = Get.find<DiaspoService>();
 
@@ -44,6 +46,18 @@ class DiaspoCreateController extends GetxController {
 
   // Loading
   final isSubmitting = false.obs;
+
+  /// Billet ou réservation justifiant le départ et la destination.
+  final Rx<XFile?> travelProof = Rx<XFile?>(null);
+
+  Future<void> pickTravelProof() async {
+    final image = await MediaHelper.pickBrandedImage(
+      title: 'diaspo_create.travel_proof'.tr,
+      subtitle: 'diaspo_create.travel_proof_hint'.tr,
+      imageQuality: 85,
+    );
+    if (image != null) travelProof.value = image;
+  }
 
   // Form keys
   final formKey1 = GlobalKey<FormState>();
@@ -246,6 +260,17 @@ class DiaspoCreateController extends GetxController {
       return;
     }
 
+    if (travelProof.value == null) {
+      Get.snackbar(
+        'diaspo_create.error'.tr,
+        'diaspo_create.travel_proof_required'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppDesign.danger,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     isSubmitting.value = true;
 
     try {
@@ -260,6 +285,7 @@ class DiaspoCreateController extends GetxController {
         availableKg: double.parse(availableKgController.text.trim()),
         // La devise suit le pays de départ sélectionné (composant pays+devise).
         currency: selectedCurrencyCode.value,
+        travelProof: travelProof.value,
       );
 
       Get.offNamed('/diaspo/detail', arguments: {'offer': createdOffer});

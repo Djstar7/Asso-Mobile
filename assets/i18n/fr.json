@@ -3427,7 +3427,15 @@
       "document_back": "Verso du document",
       "document_front": "Recto du document",
       "photo_hint": "Photo nette, lisible et sans reflet",
-      "submitted_message": "Votre @document a été soumis pour vérification. Vous recevrez une notification dans 24-48h."
+      "submitted_message": "Votre @document a été soumis pour vérification. Vous recevrez une notification dans 24-48h.",
+      "nationality": "Nationalité",
+      "residence_country": "Pays de résidence",
+      "abroad_note": "Vous vivez hors de votre pays de nationalité : passeport et titre de séjour (ou visa) sont demandés.",
+      "residence_document": "Titre de séjour ou visa",
+      "residence_permit": "Titre de séjour",
+      "visa": "Visa",
+      "selfie": "Selfie",
+      "selfie_hint": "Pris en direct avec la caméra frontale, il est comparé à la photo de votre pièce."
     },
     "ok": "OK",
     "cancel": "Annuler",
@@ -3509,6 +3517,12 @@
       "pending": "En attente de paiement",
       "cancelled": "Annulé",
       "refunded": "Remboursé"
+    },
+    "mode": {
+      "air": "Avion",
+      "sea": "Maritime",
+      "air_hint": "Idéal pour les colis de moins de @kg kg",
+      "sea_hint": "Idéal pour les colis de plus de @kg kg"
     }
   },
   "diaspo_detail": {
@@ -3641,7 +3655,11 @@
     "available_kg": "Kilos disponibles",
     "previous": "Précédent",
     "next": "Suivant",
-    "publish": "Publier"
+    "publish": "Publier",
+    "travel_proof": "Justificatif de voyage",
+    "travel_proof_hint": "Photo de votre billet ou de votre réservation (départ et destination).",
+    "travel_proof_required": "Ajoutez votre billet ou votre réservation pour publier l'offre.",
+    "travel_proof_added": "Justificatif ajouté. Touchez pour le remplacer."
   },
   "diaspo_edit": {
     "error": "Erreur",
@@ -4224,6 +4242,85 @@
       "copied_message": "Collez-le dans un message pour le transmettre à un vendeur.",
       "share_text": "Abonnez-vous à un forfait vendeur sur ASSO avec mon code commercial : @code",
       "explanation": "Communiquez ce code aux vendeurs : lorsqu'ils l'utilisent pour leur premier abonnement, vous recevez @rate % du montant directement dans votre wallet."
+    }
+  },
+  "parcel_insurance": {
+    "title": "Nature et valeur du colis",
+    "intro": "Indiquez ce que contient le colis et sa valeur : un supplément d'assurance est ajouté au prix. En cas de perte, ASSO vous indemnise jusqu'à la valeur déclarée.",
+    "nature": "Nature du colis",
+    "value": "Valeur du colis",
+    "supplement": "Supplément assurance",
+    "required": "Choisissez la nature du colis et indiquez sa valeur."
+  },
+  "iso_country": {
+    "search": "Rechercher un pays"
+  },
+  "selfie": {
+    "title": "Selfie de vérification",
+    "hint": "Placez votre visage dans l'ovale, regardez l'objectif, yeux ouverts, puis prenez la photo.",
+    "camera_unavailable": "Caméra indisponible. Autorisez l'accès à la caméra dans les réglages.",
+    "retry": "La photo n'a pas pu être analysée. Réessayez.",
+    "no_face": "Aucun visage détecté. Placez votre visage dans l'ovale.",
+    "several_faces": "Plusieurs visages détectés : vous devez être seul sur la photo.",
+    "too_far": "Rapprochez-vous : votre visage doit remplir l'ovale.",
+    "eyes_closed": "Gardez les yeux ouverts et regardez l'objectif."
+  },
+  "maritime": {
+    "trip_impossible_title": "Départ fermé",
+    "trip_impossible": "Trajet impossible à faire, veuillez consulter les prochaines dates pour cette destination.",
+    "error": "Erreur",
+    "tabs": {
+      "departures": "Départs",
+      "my_shipments": "Mes envois"
+    },
+    "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
+    "no_shipments": "Vous n'avez pas encore d'envoi maritime.",
+    "departure_on": "Départ le @date",
+    "kg_left": "@kg kg disponibles",
+    "last_day_to_book": "Dernier jour pour réserver",
+    "days_left_to_book": "Encore @days jours pour réserver",
+    "parcels": "@count colis",
+    "recipient_line": "Destinataire : @name (@phone)",
+    "dropoff_notice": "Nous attendons votre colis à @hub avant le @date. Passé ce délai, votre argent vous sera retourné, hors frais ASSO.",
+    "pickup_notice": "Votre colis est arrivé à @hub. Le destinataire doit présenter le code ci-dessous.",
+    "refunded_notice": "@amount ont été crédités sur votre Wallet.",
+    "code_label": "Code de remise",
+    "code_hint": "Communiquez ce code au destinataire : il le présente au QG d'arrivée pour récupérer le colis.",
+    "cancel_title": "Annuler l'envoi",
+    "cancel_message": "Le montant payé sera crédité sur votre Wallet. Confirmer l'annulation ?",
+    "keep": "Garder",
+    "cancel_confirm": "Annuler l'envoi",
+    "cancelled_title": "Envoi annulé",
+    "cancelled_message": "Le montant payé a été crédité sur votre Wallet.",
+    "success": {
+      "title": "Envoi confirmé",
+      "message": "Déposez votre colis à @hub avant le @date. Votre code de remise : @code. ASSO vous contacte rapidement.",
+      "see_shipments": "Voir mes envois"
+    },
+    "form": {
+      "title": "Envoi par bateau",
+      "parcel": "Colis",
+      "kg": "Poids",
+      "parcels": "Nombre de colis",
+      "kg_available": "@kg kg disponibles sur ce départ",
+      "sender": "Vos coordonnées",
+      "first_name": "Prénom",
+      "last_name": "Nom",
+      "your_phone": "Votre numéro",
+      "emergency_phone": "Numéro en cas d'urgence",
+      "recipient": "Destinataire",
+      "destination_country": "Pays de destination",
+      "recipient_phone": "Numéro à contacter à l'arrivée",
+      "dropoff_hub": "Dépôt du colis",
+      "pickup_hub": "Retrait à l'arrivée",
+      "summary": "Récapitulatif",
+      "total": "Total",
+      "total_to_pay": "Total à payer",
+      "pay": "Payer @amount",
+      "dropoff_warning": "Nous attendons votre colis à @hub avant le @date. Passé ce délai, votre argent vous sera retourné, hors frais ASSO.",
+      "fill_all": "Remplissez toutes les coordonnées.",
+      "kg_range": "Le poids doit être compris entre 0,5 et @max kg.",
+      "payment_failed_released": "Le paiement n'a pas abouti : les kilos ont été libérés."
     }
   }
 }

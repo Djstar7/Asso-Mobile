@@ -60,6 +60,7 @@ abstract class Routes {
   static const DIASPO_EDIT = _Paths.DIASPO_EDIT;
   static const DIASPO_DETAIL = _Paths.DIASPO_DETAIL;
   static const DIASPO_BOOKING = _Paths.DIASPO_BOOKING;
+  static const MARITIME_BOOKING = _Paths.MARITIME_BOOKING;
   static const COUNTRY_SELECTION = _Paths.COUNTRY_SELECTION;
 }
 
@@ -122,5 +123,6 @@ abstract class _Paths {
   static const DIASPO_EDIT = '/diaspo/edit';
   static const DIASPO_DETAIL = '/diaspo/detail';
   static const DIASPO_BOOKING = '/diaspo/booking';
+  static const MARITIME_BOOKING = '/diaspo/maritime/booking';
   static const COUNTRY_SELECTION = '/country-selection';
 }
