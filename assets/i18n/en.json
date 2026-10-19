@@ -802,6 +802,11 @@
       "take_photo": "Take a photo",
       "from_gallery": "Select from gallery"
     },
+    "video_source": {
+      "add_video": "Add a video",
+      "record": "Record a video now",
+      "choose_existing": "Choose an existing video"
+    },
     "location": {
       "service_disabled": "Location services on your phone are turned off.",
       "permission_denied": "Allow ASSO to access your location.",
@@ -4385,7 +4390,8 @@
   "support_chat_unavailable": "Unable to open the support conversation.",
   "contact_message": "Hello, I need help with my sea shipment no. @id (@route).",
   "contact_error": "Unable to open the platform conversation.",
-  "cbm_rate": "@price per m³ (1 m³ = @kg kg)",
+  "cbm_rate": "@price per m³ (1 m³ = @kg kg)"
+  },
   "immo": {
     "title": "Real estate",
     "feature": {
@@ -4545,6 +4551,8 @@
       "contact_short": "Contact",
       "reserve": "Book",
       "pay_deposit": "Pay the deposit",
+      "own_listing_notice": "You cannot book your own listing.",
+      "property_video": "Property video",
       "reference": "Reference: @reference"
     },
     "access": {
@@ -4693,6 +4701,9 @@
       "pay": "Pay",
       "pay_amount": "Pay @amount",
       "error": "Booking failed",
+      "own_listing_title": "Booking unavailable",
+      "own_listing_message": "You own this listing and cannot book it.",
+      "own_listing_back": "Back to listing",
       "pending_title": "Payment being checked",
       "pending_message": "Your booking will appear in \"My bookings\" once the payment is confirmed."
     },
@@ -4811,7 +4822,7 @@
       "proof_file": "Photo of the document",
       "video_title": "Verification video",
       "video_help": "Film yourself holding your ID and your proof of ownership while saying your name (15 to 30 seconds).",
-      "video_button": "Record the video",
+      "video_button": "Add or record the video",
       "tap_to_add": "Tap to add",
       "privacy": "Your documents are never shown to tenants.",
       "send": "Send my documents",
@@ -4934,5 +4945,4 @@
     },
     "received": "Bookings received"
   }
-}
 }

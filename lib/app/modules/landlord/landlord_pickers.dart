@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/widgets/image_source_sheet.dart';
@@ -19,8 +20,13 @@ class LandlordPickers {
 
   static Future<List<XFile>> photos() => _picker.pickMultiImage(imageQuality: 82, maxWidth: 2200, limit: 12);
 
-  static Future<XFile?> video(BuildContext context, {bool cameraOnly = false}) async {
-    final source = cameraOnly ? ImageSource.camera : await showImageSourceSheet(context);
+  static Future<XFile?> video(BuildContext context) async {
+    final source = await showImageSourceSheet(
+      context,
+      title: 'core.video_source.add_video'.tr,
+      cameraSubtitle: 'core.video_source.record'.tr,
+      gallerySubtitle: 'core.video_source.choose_existing'.tr,
+    );
     if (source == null) return null;
 
     return _picker.pickVideo(source: source, maxDuration: const Duration(minutes: 2));

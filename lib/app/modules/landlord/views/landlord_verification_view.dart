@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -142,7 +141,7 @@ class _LandlordVerificationViewState extends State<LandlordVerificationView> {
             file: _video,
             icon: Icons.videocam_outlined,
             onTap: () async {
-              final f = await LandlordPickers.video(context, cameraOnly: !kIsWeb);
+              final f = await LandlordPickers.video(context);
               if (f != null) setState(() => _video = f);
             },
           ),

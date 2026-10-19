@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/auth_guard.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/product_video_player.dart';
 import '../../../data/models/real_estate_models.dart';
 import '../../../data/providers/real_estate_service.dart';
 import '../immo_actions.dart';
@@ -48,18 +50,29 @@ class _ImmoListingViewState extends State<ImmoListingView> {
       _listing = listing;
       _loading = false;
       final units = listing?.units ?? const [];
-      final available = units.where((u) => u.isAvailable).toList()..sort((a, b) => a.price.compareTo(b.price));
-      _unitId = available.isNotEmpty ? available.first.id : (units.isNotEmpty ? units.first.id : null);
+      final available = units.where((u) => u.isAvailable).toList()
+        ..sort((a, b) => a.price.compareTo(b.price));
+      _unitId = available.isNotEmpty
+          ? available.first.id
+          : (units.isNotEmpty ? units.first.id : null);
     });
   }
 
-  RealEstateUnit? get _unit => _listing?.units.firstWhereOrNull((u) => u.id == _unitId);
+  RealEstateUnit? get _unit =>
+      _listing?.units.firstWhereOrNull((u) => u.id == _unitId);
 
   void _openTour({int roomIndex = 0}) {
     final listing = _listing!;
     final rooms = listing.roomsTour.where((r) => r.media.isNotEmpty).toList();
     if (rooms.isEmpty) return;
-    ImmoNav.push(ImmoNav.tour, arguments: ImmoRoomTourArgs(title: listing.title, rooms: rooms, initialIndex: roomIndex));
+    ImmoNav.push(
+      ImmoNav.tour,
+      arguments: ImmoRoomTourArgs(
+        title: listing.title,
+        rooms: rooms,
+        initialIndex: roomIndex,
+      ),
+    );
   }
 
   void _openGallery(int index) {
@@ -71,16 +84,35 @@ class _ImmoListingViewState extends State<ImmoListingView> {
     }
     final media = listing.media.where((m) => !m.isVideo).toList();
     if (media.isEmpty) return;
-    ImmoNav.push(ImmoNav.tour, arguments: ImmoRoomTourArgs(
-      title: listing.title,
-      rooms: [RealEstateTourRoom(id: 0, kind: 'other', label: 'immo.detail.photos'.tr, media: listing.media)],
-      initialIndex: 0,
-      initialMedia: index,
-    ));
+    ImmoNav.push(
+      ImmoNav.tour,
+      arguments: ImmoRoomTourArgs(
+        title: listing.title,
+        rooms: [
+          RealEstateTourRoom(
+            id: 0,
+            kind: 'other',
+            label: 'immo.detail.photos'.tr,
+            media: listing.media,
+          ),
+        ],
+        initialIndex: 0,
+        initialMedia: index,
+      ),
+    );
   }
 
   /// Récapitulatif des montants, puis parcours de réservation (compte requis).
   void _reserve(RealEstateListing listing, RealEstateUnit? unit) {
+    if (listing.isOwnListing) {
+      Get.snackbar(
+        'immo.reserve.own_listing_title'.tr,
+        'immo.reserve.own_listing_message'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     AuthGuard.requireAuth(
       context,
       featureName: 'immo.feature.reserve'.tr,
@@ -88,7 +120,10 @@ class _ImmoListingViewState extends State<ImmoListingView> {
         context,
         listing: listing,
         unit: unit,
-        onContinue: () => ImmoNav.push(ImmoNav.reserve, arguments: ImmoReserveArgs(listing: listing, unit: unit)),
+        onContinue: () => ImmoNav.push(
+          ImmoNav.reserve,
+          arguments: ImmoReserveArgs(listing: listing, unit: unit),
+        ),
       ),
     );
   }
@@ -98,7 +133,10 @@ class _ImmoListingViewState extends State<ImmoListingView> {
     final listing = _listing;
 
     if (_loading) {
-      return Scaffold(backgroundColor: context.ds.canvas, body: const Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: context.ds.canvas,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (listing == null) {
       return Scaffold(
@@ -113,6 +151,7 @@ class _ImmoListingViewState extends State<ImmoListingView> {
     }
 
     final gutter = context.ds.gutter;
+    final video = listing.presentationVideo;
 
     return Scaffold(
       backgroundColor: context.ds.canvas,
@@ -127,94 +166,219 @@ class _ImmoListingViewState extends State<ImmoListingView> {
         color: AppDesign.accent,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _Header(
-              listing: listing,
-              onTour: _openTour,
-              onPhoto: _openGallery,
-              onFavorite: () async {
-                await ImmoActions.toggleFavorite(context, listing);
-                if (mounted) setState(() {});
-              },
-            )),
+            SliverToBoxAdapter(
+              child: _Header(
+                listing: listing,
+                onTour: _openTour,
+                onPhoto: _openGallery,
+                onFavorite: () async {
+                  await ImmoActions.toggleFavorite(context, listing);
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(gutter, AppDesign.space4, gutter, AppDesign.space8),
-              sliver: SliverList.list(children: [
-                _Intro(listing: listing),
-                if (listing.promoText?.isNotEmpty ?? false) ...[
-                  const SizedBox(height: AppDesign.space4),
-                  _PromoCard(text: listing.promoText!),
-                ],
-                const SizedBox(height: AppDesign.space4),
-                AppCard(
-                  padding: const EdgeInsets.all(AppDesign.space4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (listing.highlights.isNotEmpty) ...[
-                        _SectionTitle('immo.detail.highlights'.tr),
-                        for (final a in listing.highlights) _HighlightTile(amenity: a),
-                        const Divider(height: AppDesign.space8),
-                      ],
-                      _SectionTitle('immo.detail.description'.tr),
-                      _Description(
-                        text: listing.description ?? '',
-                        expanded: _descriptionExpanded,
-                        onToggle: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
+              padding: EdgeInsets.fromLTRB(
+                gutter,
+                AppDesign.space4,
+                gutter,
+                AppDesign.space8,
+              ),
+              sliver: SliverList.list(
+                children: [
+                  _Intro(listing: listing),
+                  if (listing.isOwnListing) ...[
+                    const SizedBox(height: AppDesign.space3),
+                    AppCard(
+                      color: context.ds.surfaceMuted,
+                      padding: const EdgeInsets.all(AppDesign.space4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: context.ds.textSecondary,
+                          ),
+                          const SizedBox(width: AppDesign.space3),
+                          Expanded(
+                            child: Text(
+                              'immo.detail.own_listing_notice'.tr,
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                color: context.ds.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const Divider(height: AppDesign.space8),
-                      _SectionTitle(listing.isLand ? 'immo.detail.access_land'.tr : 'immo.detail.access'.tr),
-                      _AccessList(listing: listing),
-                      if (listing.equipments.isNotEmpty) ...[
+                    ),
+                  ],
+                  if (video != null) ...[
+                    const SizedBox(height: AppDesign.space4),
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppDesign.space4,
+                              AppDesign.space4,
+                              AppDesign.space4,
+                              AppDesign.space3,
+                            ),
+                            child: Text(
+                              'immo.detail.property_video'.tr,
+                              style: context.textStyle(
+                                FontSizeType.subtitle1,
+                                fontWeight: FontWeight.w700,
+                                color: context.ds.textPrimary,
+                              ),
+                            ),
+                          ),
+                          AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: ProductGalleryVideo(
+                              key: ValueKey(
+                                'immo-listing-video-${listing.id}-${video.id}',
+                              ),
+                              url: video.url,
+                              active: true,
+                              poster: video.posterUrl == null
+                                  ? ColoredBox(
+                                      color: context.ds.surfaceMuted,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.play_circle_outline_rounded,
+                                          size: 56,
+                                          color: AppDesign.accent,
+                                        ),
+                                      ),
+                                    )
+                                  : AppNetworkImage(
+                                      url: video.posterUrl!,
+                                      decodeSize: Size(
+                                        MediaQuery.sizeOf(context).width,
+                                        MediaQuery.sizeOf(context).width *
+                                            9 /
+                                            16,
+                                      ),
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (listing.promoText?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: AppDesign.space4),
+                    _PromoCard(text: listing.promoText!),
+                  ],
+                  const SizedBox(height: AppDesign.space4),
+                  AppCard(
+                    padding: const EdgeInsets.all(AppDesign.space4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (listing.highlights.isNotEmpty) ...[
+                          _SectionTitle('immo.detail.highlights'.tr),
+                          for (final a in listing.highlights)
+                            _HighlightTile(amenity: a),
+                          const Divider(height: AppDesign.space8),
+                        ],
+                        _SectionTitle('immo.detail.description'.tr),
+                        _Description(
+                          text: listing.description ?? '',
+                          expanded: _descriptionExpanded,
+                          onToggle: () => setState(
+                            () => _descriptionExpanded = !_descriptionExpanded,
+                          ),
+                        ),
                         const Divider(height: AppDesign.space8),
-                        _AmenityGroup(title: 'immo.detail.equipments'.tr, items: listing.equipments),
-                      ],
-                      if (listing.services.isNotEmpty) ...[
+                        _SectionTitle(
+                          listing.isLand
+                              ? 'immo.detail.access_land'.tr
+                              : 'immo.detail.access'.tr,
+                        ),
+                        _AccessList(listing: listing),
+                        if (listing.equipments.isNotEmpty) ...[
+                          const Divider(height: AppDesign.space8),
+                          _AmenityGroup(
+                            title: 'immo.detail.equipments'.tr,
+                            items: listing.equipments,
+                          ),
+                        ],
+                        if (listing.services.isNotEmpty) ...[
+                          const Divider(height: AppDesign.space8),
+                          _AmenityGroup(
+                            title: 'immo.detail.services'.tr,
+                            items: listing.services,
+                          ),
+                        ],
                         const Divider(height: AppDesign.space8),
-                        _AmenityGroup(title: 'immo.detail.services'.tr, items: listing.services),
+                        _SectionTitle('immo.detail.location'.tr),
+                        _Location(listing: listing),
                       ],
-                      const Divider(height: AppDesign.space8),
-                      _SectionTitle('immo.detail.location'.tr),
-                      _Location(listing: listing),
-                    ],
+                    ),
                   ),
-                ),
-                if (listing.units.length > 1 || listing.isLand && listing.units.isNotEmpty) ...[
-                  const SizedBox(height: AppDesign.space6),
-                  Text(
-                    listing.isLand ? 'immo.detail.lots'.tr : 'immo.detail.units'.tr,
-                    style: context.textStyle(FontSizeType.h6, fontWeight: FontWeight.w800, color: context.ds.textPrimary),
-                  ),
-                  const SizedBox(height: AppDesign.space3),
-                  for (final unit in listing.units) ...[
-                    _UnitCard(
-                      listing: listing,
-                      unit: unit,
-                      selected: unit.id == _unitId,
-                      onSelect: unit.isAvailable ? () => setState(() => _unitId = unit.id) : null,
-                      onReserve: unit.isAvailable
-                          ? () {
-                              setState(() => _unitId = unit.id);
-                              _reserve(listing, unit);
-                            }
-                          : null,
-                      onContact: () => ImmoActions.contactAsso(context, listing),
+                  if (listing.units.length > 1 ||
+                      listing.isLand && listing.units.isNotEmpty) ...[
+                    const SizedBox(height: AppDesign.space6),
+                    Text(
+                      listing.isLand
+                          ? 'immo.detail.lots'.tr
+                          : 'immo.detail.units'.tr,
+                      style: context.textStyle(
+                        FontSizeType.h6,
+                        fontWeight: FontWeight.w800,
+                        color: context.ds.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: AppDesign.space3),
+                    for (final unit in listing.units) ...[
+                      _UnitCard(
+                        listing: listing,
+                        unit: unit,
+                        selected: unit.id == _unitId,
+                        onSelect: unit.isAvailable
+                            ? () => setState(() => _unitId = unit.id)
+                            : null,
+                        onReserve: unit.isAvailable && !listing.isOwnListing
+                            ? () {
+                                setState(() => _unitId = unit.id);
+                                _reserve(listing, unit);
+                              }
+                            : null,
+                        onContact: () =>
+                            ImmoActions.contactAsso(context, listing),
+                      ),
+                      const SizedBox(height: AppDesign.space3),
+                    ],
                   ],
+                  const SizedBox(height: AppDesign.space4),
+                  _Protection(listing: listing),
+                  const SizedBox(height: AppDesign.space4),
+                  if (listing.isLand && listing.cabinet != null)
+                    _CabinetCard(listing: listing)
+                  else if (!listing.isLand)
+                    _OwnerCard(
+                      listing: listing,
+                      onContact: () =>
+                          ImmoActions.contactAsso(context, listing),
+                    ),
+                  const SizedBox(height: AppDesign.space4),
+                  Text(
+                    'immo.detail.reference'.trParams({
+                      'reference': listing.reference,
+                    }),
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
                 ],
-                const SizedBox(height: AppDesign.space4),
-                _Protection(listing: listing),
-                const SizedBox(height: AppDesign.space4),
-                if (listing.isLand && listing.cabinet != null)
-                  _CabinetCard(listing: listing)
-                else if (!listing.isLand)
-                  _OwnerCard(listing: listing, onContact: () => ImmoActions.contactAsso(context, listing)),
-                const SizedBox(height: AppDesign.space4),
-                Text(
-                  'immo.detail.reference'.trParams({'reference': listing.reference}),
-                  style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
-                ),
-              ]),
+              ),
             ),
           ],
         ),
@@ -232,13 +396,25 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesign.space3),
-      child: Text(text, style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary)),
+      child: Text(
+        text,
+        style: context.textStyle(
+          FontSizeType.subtitle1,
+          fontWeight: FontWeight.w700,
+          color: context.ds.textPrimary,
+        ),
+      ),
     );
   }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.listing, required this.onTour, required this.onPhoto, required this.onFavorite});
+  const _Header({
+    required this.listing,
+    required this.onTour,
+    required this.onPhoto,
+    required this.onFavorite,
+  });
 
   final RealEstateListing listing;
   final VoidCallback onTour;
@@ -247,7 +423,10 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final images = listing.media.where((m) => !m.isVideo).map((m) => m.url).toList();
+    final images = listing.media
+        .where((m) => !m.isVideo)
+        .map((m) => m.url)
+        .toList();
     final hasTour = listing.roomsTour.any((r) => r.media.isNotEmpty);
 
     return ImmoPhotoCarousel(
@@ -258,7 +437,10 @@ class _Header extends StatelessWidget {
         Positioned(
           top: AppDesign.space3,
           right: AppDesign.space3,
-          child: ImmoFavoriteButton(isFavorite: listing.isFavorite, onPressed: onFavorite),
+          child: ImmoFavoriteButton(
+            isFavorite: listing.isFavorite,
+            onPressed: onFavorite,
+          ),
         ),
         if (hasTour)
           Positioned(
@@ -273,15 +455,25 @@ class _Header extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppDesign.radiusPill),
                   onTap: onTour,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppDesign.space4, vertical: AppDesign.space2 + 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDesign.space4,
+                      vertical: AppDesign.space2 + 2,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.view_carousel_rounded, color: AppDesign.accent),
+                        const Icon(
+                          Icons.view_carousel_rounded,
+                          color: AppDesign.accent,
+                        ),
                         const SizedBox(width: AppDesign.space2),
                         Text(
                           'immo.detail.room_tour_cta'.tr,
-                          style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w700, color: AppDesign.neutral900),
+                          style: context.textStyle(
+                            FontSizeType.body1,
+                            fontWeight: FontWeight.w700,
+                            color: AppDesign.neutral900,
+                          ),
                         ),
                       ],
                     ),
@@ -294,7 +486,10 @@ class _Header extends StatelessWidget {
           Positioned(
             bottom: AppDesign.space2,
             right: AppDesign.space3,
-            child: ImmoPhotoTag(label: 'immo.card.video'.tr, icon: Icons.play_circle_outline_rounded),
+            child: ImmoPhotoTag(
+              label: 'immo.card.video'.tr,
+              icon: Icons.play_circle_outline_rounded,
+            ),
           ),
       ],
     );
@@ -309,8 +504,12 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = <String>[
-      if (!listing.isLand) listing.furnished ? 'immo.card.furnished'.tr : 'immo.card.unfurnished'.tr,
-      if (immoRoomsLabel(listing).isNotEmpty && !listing.isLand) immoRoomsLabel(listing),
+      if (!listing.isLand)
+        listing.furnished
+            ? 'immo.card.furnished'.tr
+            : 'immo.card.unfurnished'.tr,
+      if (immoRoomsLabel(listing).isNotEmpty && !listing.isLand)
+        immoRoomsLabel(listing),
       if (listing.surfaceLabel != null) listing.surfaceLabel!,
     ];
 
@@ -318,48 +517,99 @@ class _Intro extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          listing.isLand ? immoKindLabel(listing) : 'immo.detail.for_rent'.trParams({'kind': immoKindLabel(listing)}),
-          style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
+          listing.isLand
+              ? immoKindLabel(listing)
+              : 'immo.detail.for_rent'.trParams({
+                  'kind': immoKindLabel(listing),
+                }),
+          style: context.textStyle(
+            FontSizeType.body2,
+            color: context.ds.textSecondary,
+          ),
         ),
         const SizedBox(height: AppDesign.space1),
         Text(
           listing.title,
-          style: context.textStyle(FontSizeType.h5, fontWeight: FontWeight.w800, color: context.ds.textPrimary),
+          style: context.textStyle(
+            FontSizeType.h5,
+            fontWeight: FontWeight.w800,
+            color: context.ds.textPrimary,
+          ),
         ),
         const SizedBox(height: AppDesign.space1),
         Row(
           children: [
-            Icon(Icons.location_on_outlined, size: 18, color: context.ds.textSecondary),
+            Icon(
+              Icons.location_on_outlined,
+              size: 18,
+              color: context.ds.textSecondary,
+            ),
             const SizedBox(width: AppDesign.space1),
             Expanded(
-              child: Text(listing.place, style: context.textStyle(FontSizeType.body1, color: context.ds.textSecondary)),
+              child: Text(
+                listing.place,
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  color: context.ds.textSecondary,
+                ),
+              ),
             ),
           ],
         ),
         if (meta.isNotEmpty) ...[
           const SizedBox(height: AppDesign.space1),
-          Text(meta.join('  •  '), style: context.textStyle(FontSizeType.body2, color: context.ds.textPrimary)),
+          Text(
+            meta.join('  •  '),
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textPrimary,
+            ),
+          ),
         ],
         const SizedBox(height: AppDesign.space3),
         Wrap(
           spacing: AppDesign.space2,
           runSpacing: AppDesign.space2,
           children: [
-            if (listing.isPopular) AppBadge(label: 'immo.detail.popular'.tr, tone: AppBadgeTone.accent, icon: Icons.favorite_border_rounded),
-            if (listing.isFeatured) AppBadge(label: 'immo.card.featured'.tr, tone: AppBadgeTone.accent, icon: Icons.star_rounded),
+            if (listing.isPopular)
+              AppBadge(
+                label: 'immo.detail.popular'.tr,
+                tone: AppBadgeTone.accent,
+                icon: Icons.favorite_border_rounded,
+              ),
+            if (listing.isFeatured)
+              AppBadge(
+                label: 'immo.card.featured'.tr,
+                tone: AppBadgeTone.accent,
+                icon: Icons.star_rounded,
+              ),
             if (listing.owner?.isVerified ?? false)
-              AppBadge(label: 'immo.detail.verified_owner'.tr, tone: AppBadgeTone.success, icon: Icons.verified_rounded),
+              AppBadge(
+                label: 'immo.detail.verified_owner'.tr,
+                tone: AppBadgeTone.success,
+                icon: Icons.verified_rounded,
+              ),
             if (listing.isLand)
               AppBadge(
-                label: listing.landTitled ? 'immo.land.titled'.tr : 'immo.land.not_titled'.tr,
-                tone: listing.landTitled ? AppBadgeTone.success : AppBadgeTone.warning,
+                label: listing.landTitled
+                    ? 'immo.land.titled'.tr
+                    : 'immo.land.not_titled'.tr,
+                tone: listing.landTitled
+                    ? AppBadgeTone.success
+                    : AppBadgeTone.warning,
                 icon: Icons.description_outlined,
               ),
             if (listing.isLand && listing.serviced)
-              AppBadge(label: 'immo.land.serviced'.tr, tone: AppBadgeTone.success, icon: Icons.bolt_rounded),
+              AppBadge(
+                label: 'immo.land.serviced'.tr,
+                tone: AppBadgeTone.success,
+                icon: Icons.bolt_rounded,
+              ),
             if (listing.lowStock)
               AppBadge(
-                label: 'immo.card.places_left'.trParams({'count': '${listing.unitsAvailable}'}),
+                label: 'immo.card.places_left'.trParams({
+                  'count': '${listing.unitsAvailable}',
+                }),
                 tone: AppBadgeTone.danger,
                 icon: Icons.error_outline_rounded,
               ),
@@ -386,11 +636,24 @@ class _PromoCard extends StatelessWidget {
             children: [
               const Icon(Icons.bolt_rounded, color: AppDesign.info),
               const SizedBox(width: AppDesign.space1),
-              Text('immo.detail.offer'.tr, style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: AppDesign.info)),
+              Text(
+                'immo.detail.offer'.tr,
+                style: context.textStyle(
+                  FontSizeType.subtitle1,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesign.info,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppDesign.space2),
-          Text(text, style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary)),
+          Text(
+            text,
+            style: context.textStyle(
+              FontSizeType.body1,
+              color: context.ds.textPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -411,11 +674,26 @@ class _HighlightTile extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: AppDesign.accent, borderRadius: BorderRadius.circular(AppDesign.radiusSm)),
-            child: Icon(immoAmenityIcon(amenity.icon), color: Colors.white, size: 22),
+            decoration: BoxDecoration(
+              color: AppDesign.accent,
+              borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+            ),
+            child: Icon(
+              immoAmenityIcon(amenity.icon),
+              color: Colors.white,
+              size: 22,
+            ),
           ),
           const SizedBox(width: AppDesign.space3),
-          Expanded(child: Text(amenity.name, style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary))),
+          Expanded(
+            child: Text(
+              amenity.name,
+              style: context.textStyle(
+                FontSizeType.body1,
+                color: context.ds.textPrimary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -423,7 +701,11 @@ class _HighlightTile extends StatelessWidget {
 }
 
 class _Description extends StatelessWidget {
-  const _Description({required this.text, required this.expanded, required this.onToggle});
+  const _Description({
+    required this.text,
+    required this.expanded,
+    required this.onToggle,
+  });
 
   final String text;
   final bool expanded;
@@ -440,13 +722,22 @@ class _Description extends StatelessWidget {
           text,
           maxLines: expanded || !long ? null : 4,
           overflow: expanded || !long ? null : TextOverflow.ellipsis,
-          style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary, height: 1.5),
+          style: context.textStyle(
+            FontSizeType.body1,
+            color: context.ds.textPrimary,
+            height: 1.5,
+          ),
         ),
         if (long)
           TextButton(
-            style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: AppDesign.accent),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              foregroundColor: AppDesign.accent,
+            ),
             onPressed: onToggle,
-            child: Text(expanded ? 'immo.detail.see_less'.tr : 'immo.detail.see_more'.tr),
+            child: Text(
+              expanded ? 'immo.detail.see_less'.tr : 'immo.detail.see_more'.tr,
+            ),
           ),
       ],
     );
@@ -466,19 +757,41 @@ class _AccessList extends StatelessWidget {
       if (a.roadAccess == 'roadside')
         (Icons.add_road_rounded, 'immo.access.roadside'.tr)
       else if (a.distanceToRoadM != null)
-        (Icons.add_road_rounded, 'immo.access.distance'.trParams({'meters': '${a.distanceToRoadM}'})),
-      if (a.roadCondition != null) (Icons.route_outlined, 'immo.access.road_${a.roadCondition}'.tr),
-      (Icons.terrain_outlined, a.isLandlocked ? 'immo.access.landlocked'.tr : 'immo.access.not_landlocked'.tr),
-      if (a.waterSource != null) (Icons.water_drop_outlined, 'immo.access.water_${a.waterSource}'.tr),
-      if (a.electricity != null) (Icons.bolt_rounded, 'immo.access.electricity_${a.electricity}'.tr),
-      if (a.securityLevel != null) (Icons.shield_outlined, 'immo.access.security_${a.securityLevel}'.tr),
+        (
+          Icons.add_road_rounded,
+          'immo.access.distance'.trParams({'meters': '${a.distanceToRoadM}'}),
+        ),
+      if (a.roadCondition != null)
+        (Icons.route_outlined, 'immo.access.road_${a.roadCondition}'.tr),
+      (
+        Icons.terrain_outlined,
+        a.isLandlocked
+            ? 'immo.access.landlocked'.tr
+            : 'immo.access.not_landlocked'.tr,
+      ),
+      if (a.waterSource != null)
+        (Icons.water_drop_outlined, 'immo.access.water_${a.waterSource}'.tr),
+      if (a.electricity != null)
+        (Icons.bolt_rounded, 'immo.access.electricity_${a.electricity}'.tr),
+      if (a.securityLevel != null)
+        (Icons.shield_outlined, 'immo.access.security_${a.securityLevel}'.tr),
       if (a.hasParking) (Icons.local_parking_rounded, 'immo.access.parking'.tr),
       if (a.hasFence) (Icons.fence_rounded, 'immo.access.fence'.tr),
       if (a.hasGuard) (Icons.security_rounded, 'immo.access.guard'.tr),
       if (!listing.isLand && listing.minLeaseMonths != null)
-        (Icons.event_repeat_rounded, 'immo.access.min_lease'.trParams({'months': '${listing.minLeaseMonths}'})),
+        (
+          Icons.event_repeat_rounded,
+          'immo.access.min_lease'.trParams({
+            'months': '${listing.minLeaseMonths}',
+          }),
+        ),
       if (!listing.isLand && listing.advanceMonths != null)
-        (Icons.payments_outlined, 'immo.access.advance'.trParams({'months': '${listing.advanceMonths}'})),
+        (
+          Icons.payments_outlined,
+          'immo.access.advance'.trParams({
+            'months': '${listing.advanceMonths}',
+          }),
+        ),
       if (listing.isLand && listing.landTitleStatus != null)
         (Icons.description_outlined, listing.landTitleStatus!),
     ];
@@ -494,14 +807,23 @@ class _AccessList extends StatelessWidget {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(color: context.ds.surfaceMuted, borderRadius: BorderRadius.circular(AppDesign.radiusSm)),
+                  decoration: BoxDecoration(
+                    color: context.ds.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+                  ),
                   child: Icon(icon, size: 20, color: context.ds.textPrimary),
                 ),
                 const SizedBox(width: AppDesign.space3),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: AppDesign.space2),
-                    child: Text(text, style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary)),
+                    child: Text(
+                      text,
+                      style: context.textStyle(
+                        FontSizeType.body1,
+                        color: context.ds.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -519,20 +841,35 @@ class _AmenityGroup extends StatelessWidget {
   final List<RealEstateAmenity> items;
 
   Widget _tile(BuildContext context, RealEstateAmenity a) => Padding(
-        padding: const EdgeInsets.only(bottom: AppDesign.space3),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: context.ds.surfaceMuted, borderRadius: BorderRadius.circular(AppDesign.radiusSm)),
-              child: Icon(immoAmenityIcon(a.icon), color: context.ds.textPrimary, size: 22),
-            ),
-            const SizedBox(width: AppDesign.space3),
-            Expanded(child: Text(a.name, style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary))),
-          ],
+    padding: const EdgeInsets.only(bottom: AppDesign.space3),
+    child: Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: context.ds.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+          ),
+          child: Icon(
+            immoAmenityIcon(a.icon),
+            color: context.ds.textPrimary,
+            size: 22,
+          ),
         ),
-      );
+        const SizedBox(width: AppDesign.space3),
+        Expanded(
+          child: Text(
+            a.name,
+            style: context.textStyle(
+              FontSizeType.body1,
+              color: context.ds.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -543,14 +880,21 @@ class _AmenityGroup extends StatelessWidget {
         for (final a in items.take(4)) _tile(context, a),
         if (items.length > 4)
           AppButton(
-            label: 'immo.detail.see_all'.trParams({'count': '${items.length}', 'what': title.toLowerCase()}),
+            label: 'immo.detail.see_all'.trParams({
+              'count': '${items.length}',
+              'what': title.toLowerCase(),
+            }),
             variant: AppButtonVariant.secondary,
             size: AppButtonSize.small,
             expand: false,
-            onPressed: () => AppSheet.show(AppSheet(
-              title: '$title (${items.length})',
-              child: Column(children: [for (final a in items) _tile(context, a)]),
-            )),
+            onPressed: () => AppSheet.show(
+              AppSheet(
+                title: '$title (${items.length})',
+                child: Column(
+                  children: [for (final a in items) _tile(context, a)],
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -570,21 +914,37 @@ class _Location extends StatelessWidget {
         Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(color: context.ds.surfaceMuted, borderRadius: BorderRadius.circular(AppDesign.radiusSm)),
-          child: Icon(Icons.location_on_outlined, color: context.ds.textPrimary),
+          decoration: BoxDecoration(
+            color: context.ds.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+          ),
+          child: Icon(
+            Icons.location_on_outlined,
+            color: context.ds.textPrimary,
+          ),
         ),
         const SizedBox(width: AppDesign.space3),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(listing.place, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600, color: context.ds.textPrimary)),
+              Text(
+                listing.place,
+                style: context.textStyle(
+                  FontSizeType.body1,
+                  fontWeight: FontWeight.w600,
+                  color: context.ds.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppDesign.space1),
               Text(
                 listing.unlocked && listing.address != null
                     ? listing.address!
                     : 'immo.detail.address_hidden'.tr,
-                style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  color: context.ds.textSecondary,
+                ),
               ),
             ],
           ),
@@ -616,15 +976,30 @@ class _UnitCard extends StatelessWidget {
     final surface = unit.surfaceMin == null
         ? null
         : (unit.surfaceMax == null || unit.surfaceMax == unit.surfaceMin
-            ? '${unit.surfaceMin} m²'
-            : '${unit.surfaceMin} - ${unit.surfaceMax} m²');
+              ? '${unit.surfaceMin} m²'
+              : '${unit.surfaceMin} - ${unit.surfaceMax} m²');
     final features = <(IconData, String)>[
-      if (!listing.isLand) (Icons.weekend_outlined, unit.furnished ? 'immo.card.furnished'.tr : 'immo.card.unfurnished'.tr),
-      if (unit.capacity != null) (Icons.person_outline_rounded, 'immo.detail.capacity'.trParams({'count': '${unit.capacity}'})),
-      if (unit.kitchen != null) (Icons.kitchen_outlined, 'immo.detail.kitchen_${unit.kitchen}'.tr),
-      if (listing.isLand && unit.serviced) (Icons.bolt_rounded, 'immo.land.serviced'.tr),
+      if (!listing.isLand)
+        (
+          Icons.weekend_outlined,
+          unit.furnished
+              ? 'immo.card.furnished'.tr
+              : 'immo.card.unfurnished'.tr,
+        ),
+      if (unit.capacity != null)
+        (
+          Icons.person_outline_rounded,
+          'immo.detail.capacity'.trParams({'count': '${unit.capacity}'}),
+        ),
+      if (unit.kitchen != null)
+        (Icons.kitchen_outlined, 'immo.detail.kitchen_${unit.kitchen}'.tr),
+      if (listing.isLand && unit.serviced)
+        (Icons.bolt_rounded, 'immo.land.serviced'.tr),
     ];
-    final threshold = unit.unitsTotal > 1 && unit.unitsAvailable > 0 && unit.unitsAvailable <= 4;
+    final threshold =
+        unit.unitsTotal > 1 &&
+        unit.unitsAvailable > 0 &&
+        unit.unitsAvailable <= 4;
 
     return AppCard(
       onTap: onSelect,
@@ -642,29 +1017,58 @@ class _UnitCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(unit.label, style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary)),
+                    Text(
+                      unit.label,
+                      style: context.textStyle(
+                        FontSizeType.subtitle1,
+                        fontWeight: FontWeight.w700,
+                        color: context.ds.textPrimary,
+                      ),
+                    ),
                     if (surface != null && surface != unit.label)
-                      Text(surface, style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary)),
+                      Text(
+                        surface,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          color: context.ds.textSecondary,
+                        ),
+                      ),
                   ],
                 ),
               ),
-              Obx(() => Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        immoPrice(unit.price),
-                        style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w800, color: AppDesign.accent),
+              Obx(
+                () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      immoPrice(unit.price),
+                      style: context.textStyle(
+                        FontSizeType.subtitle1,
+                        fontWeight: FontWeight.w800,
+                        color: AppDesign.accent,
                       ),
-                      if (unit.oldPrice != null && unit.oldPrice! > unit.price)
-                        Text(
-                          immoPrice(unit.oldPrice!),
-                          style: context.textStyle(FontSizeType.caption, color: context.ds.textTertiary)
-                              .copyWith(decoration: TextDecoration.lineThrough),
+                    ),
+                    if (unit.oldPrice != null && unit.oldPrice! > unit.price)
+                      Text(
+                        immoPrice(unit.oldPrice!),
+                        style: context
+                            .textStyle(
+                              FontSizeType.caption,
+                              color: context.ds.textTertiary,
+                            )
+                            .copyWith(decoration: TextDecoration.lineThrough),
+                      ),
+                    if (!listing.isLand)
+                      Text(
+                        'immo.card.per_month'.tr,
+                        style: context.textStyle(
+                          FontSizeType.caption,
+                          color: context.ds.textSecondary,
                         ),
-                      if (!listing.isLand)
-                        Text('immo.card.per_month'.tr, style: context.textStyle(FontSizeType.caption, color: context.ds.textSecondary)),
-                    ],
-                  )),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
           if (features.isNotEmpty) ...[
@@ -674,40 +1078,85 @@ class _UnitCard extends StatelessWidget {
               runSpacing: AppDesign.space2,
               children: [
                 for (final (icon, text) in features)
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(icon, size: 18, color: context.ds.textSecondary),
-                    const SizedBox(width: AppDesign.space1),
-                    Text(text, style: context.textStyle(FontSizeType.body2, color: context.ds.textPrimary)),
-                  ]),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 18, color: context.ds.textSecondary),
+                      const SizedBox(width: AppDesign.space1),
+                      Text(
+                        text,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          color: context.ds.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ],
           const Divider(height: AppDesign.space6),
           if (!unit.isAvailable)
-            Text('immo.card.unavailable'.tr, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: AppDesign.danger))
+            Text(
+              'immo.card.unavailable'.tr,
+              style: context.textStyle(
+                FontSizeType.body2,
+                fontWeight: FontWeight.w700,
+                color: AppDesign.danger,
+              ),
+            )
           else ...[
             if (threshold)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppDesign.space1),
-                child: Row(children: [
-                  const Icon(Icons.error_rounded, size: 18, color: AppDesign.danger),
-                  const SizedBox(width: AppDesign.space1),
-                  Text(
-                    'immo.detail.last_places'.trParams({'count': '${unit.unitsAvailable}'}),
-                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: AppDesign.danger),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_rounded,
+                      size: 18,
+                      color: AppDesign.danger,
+                    ),
+                    const SizedBox(width: AppDesign.space1),
+                    Text(
+                      'immo.detail.last_places'.trParams({
+                        'count': '${unit.unitsAvailable}',
+                      }),
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesign.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppDesign.success,
+                    shape: BoxShape.circle,
                   ),
-                ]),
-              ),
-            Row(children: [
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppDesign.success, shape: BoxShape.circle)),
-              const SizedBox(width: AppDesign.space2),
-              Text(
-                unit.availableFrom == null || !unit.availableFrom!.isAfter(DateTime.now())
-                    ? (listing.isLand ? 'immo.card.land_available'.tr : 'immo.card.available_now'.tr)
-                    : 'immo.card.available_from'.trParams({'date': immoDate(unit.availableFrom!)}),
-                style: context.textStyle(FontSizeType.body2, color: context.ds.textPrimary),
-              ),
-            ]),
+                ),
+                const SizedBox(width: AppDesign.space2),
+                Text(
+                  unit.availableFrom == null ||
+                          !unit.availableFrom!.isAfter(DateTime.now())
+                      ? (listing.isLand
+                            ? 'immo.card.land_available'.tr
+                            : 'immo.card.available_now'.tr)
+                      : 'immo.card.available_from'.trParams({
+                          'date': immoDate(unit.availableFrom!),
+                        }),
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: AppDesign.space3),
           Row(
@@ -723,7 +1172,9 @@ class _UnitCard extends StatelessWidget {
               const SizedBox(width: AppDesign.space3),
               Expanded(
                 child: AppButton(
-                  label: listing.isLand ? 'immo.detail.pay_deposit'.tr : 'immo.detail.reserve'.tr,
+                  label: listing.isLand
+                      ? 'immo.detail.pay_deposit'.tr
+                      : 'immo.detail.reserve'.tr,
                   size: AppButtonSize.small,
                   onPressed: onReserve,
                 ),
@@ -747,20 +1198,42 @@ class _Protection extends StatelessWidget {
     final days = '${listing.visitWindowDays}';
     final items = <(IconData, String, String)>[
       if (listing.isLand)
-        (Icons.account_balance_outlined, 'immo.protection.partner_title'.tr, 'immo.protection.partner_body'.tr)
+        (
+          Icons.account_balance_outlined,
+          'immo.protection.partner_title'.tr,
+          'immo.protection.partner_body'.tr,
+        )
       else
-        (Icons.badge_outlined, 'immo.protection.verified_title'.tr, 'immo.protection.verified_body'.tr),
+        (
+          Icons.badge_outlined,
+          'immo.protection.verified_title'.tr,
+          'immo.protection.verified_body'.tr,
+        ),
       (
         Icons.verified_user_outlined,
         'immo.protection.payment_title'.tr,
-        (listing.isLand ? 'immo.protection.payment_body_land' : 'immo.protection.payment_body').trParams({'days': days}),
+        (listing.isLand
+                ? 'immo.protection.payment_body_land'
+                : 'immo.protection.payment_body')
+            .trParams({'days': days}),
       ),
-      (Icons.gavel_rounded, 'immo.protection.dispute_title'.tr, 'immo.protection.dispute_body'.tr),
-      (Icons.info_outline_rounded, 'immo.protection.fees_title'.tr, 'immo.protection.fees_body'.tr),
+      (
+        Icons.gavel_rounded,
+        'immo.protection.dispute_title'.tr,
+        'immo.protection.dispute_body'.tr,
+      ),
+      (
+        Icons.info_outline_rounded,
+        'immo.protection.fees_title'.tr,
+        'immo.protection.fees_body'.tr,
+      ),
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesign.space2, vertical: AppDesign.space3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesign.space2,
+        vertical: AppDesign.space3,
+      ),
       decoration: BoxDecoration(
         color: AppDesign.accentSubtle,
         borderRadius: BorderRadius.circular(AppDesign.radiusMd),
@@ -771,23 +1244,52 @@ class _Protection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppDesign.space2),
             child: Text(
-              listing.isLand ? 'immo.protection.title_land'.tr : 'immo.protection.title'.tr,
-              style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w800, color: AppDesign.accentText),
+              listing.isLand
+                  ? 'immo.protection.title_land'.tr
+                  : 'immo.protection.title'.tr,
+              style: context.textStyle(
+                FontSizeType.subtitle1,
+                fontWeight: FontWeight.w800,
+                color: AppDesign.accentText,
+              ),
             ),
           ),
           for (final (icon, title, body) in items)
             Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                tilePadding: const EdgeInsets.symmetric(horizontal: AppDesign.space2),
-                childrenPadding: const EdgeInsets.fromLTRB(48, 0, AppDesign.space2, AppDesign.space2),
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: AppDesign.space2,
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(
+                  48,
+                  0,
+                  AppDesign.space2,
+                  AppDesign.space2,
+                ),
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 leading: Icon(icon, color: AppDesign.accentText),
                 iconColor: AppDesign.accentText,
                 collapsedIconColor: AppDesign.accentText,
-                title: Text(title, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600, color: AppDesign.neutral900)),
+                title: Text(
+                  title,
+                  style: context.textStyle(
+                    FontSizeType.body1,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesign.neutral900,
+                  ),
+                ),
                 children: [
-                  Text(body, style: context.textStyle(FontSizeType.body2, color: AppDesign.neutral800, height: 1.45)),
+                  Text(
+                    body,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: AppDesign.neutral800,
+                      height: 1.45,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -807,7 +1309,12 @@ class _OwnerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final owner = listing.owner;
-    final name = listing.unlocked && (owner?.name?.isNotEmpty ?? false) ? owner!.name! : 'immo.owner.hidden_name'.tr;
+    final contactUnlocked =
+        listing.unlocked &&
+        !listing.isOwnListing &&
+        (owner?.name?.isNotEmpty ?? false) &&
+        (owner?.phone?.isNotEmpty ?? false);
+    final name = contactUnlocked ? owner!.name! : 'immo.owner.hidden_name'.tr;
 
     return AppCard(
       padding: EdgeInsets.zero,
@@ -827,7 +1334,11 @@ class _OwnerCard extends StatelessWidget {
                         CircleAvatar(
                           radius: 28,
                           backgroundColor: AppDesign.accentSubtle,
-                          child: const Icon(Icons.person_rounded, color: AppDesign.accent, size: 30),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: AppDesign.accent,
+                            size: 30,
+                          ),
                         ),
                         if (owner?.isVerified ?? false)
                           const Positioned(
@@ -836,7 +1347,11 @@ class _OwnerCard extends StatelessWidget {
                             child: CircleAvatar(
                               radius: 10,
                               backgroundColor: Colors.white,
-                              child: Icon(Icons.verified_rounded, size: 18, color: AppDesign.success),
+                              child: Icon(
+                                Icons.verified_rounded,
+                                size: 18,
+                                color: AppDesign.success,
+                              ),
                             ),
                           ),
                       ],
@@ -846,11 +1361,23 @@ class _OwnerCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary)),
+                          Text(
+                            name,
+                            style: context.textStyle(
+                              FontSizeType.subtitle1,
+                              fontWeight: FontWeight.w700,
+                              color: context.ds.textPrimary,
+                            ),
+                          ),
                           if (owner?.memberSince != null)
                             Text(
-                              'immo.owner.member_since'.trParams({'year': '${owner!.memberSince}'}),
-                              style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
+                              'immo.owner.member_since'.trParams({
+                                'year': '${owner!.memberSince}',
+                              }),
+                              style: context.textStyle(
+                                FontSizeType.body2,
+                                color: context.ds.textSecondary,
+                              ),
                             ),
                         ],
                       ),
@@ -858,17 +1385,37 @@ class _OwnerCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppDesign.space3),
-                if (owner?.isVerified ?? false) _bullet(context, 'immo.owner.identity_verified'.tr),
+                if (owner?.isVerified ?? false)
+                  _bullet(context, 'immo.owner.identity_verified'.tr),
                 _bullet(context, 'immo.owner.charter'.tr),
                 const SizedBox(height: AppDesign.space2),
-                if (listing.unlocked && owner?.phone != null)
-                  Row(children: [
-                    const Icon(Icons.phone_outlined, size: 18, color: AppDesign.success),
-                    const SizedBox(width: AppDesign.space2),
-                    Text(owner!.phone!, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w700, color: context.ds.textPrimary)),
-                  ])
+                if (contactUnlocked)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.phone_outlined,
+                        size: 18,
+                        color: AppDesign.success,
+                      ),
+                      const SizedBox(width: AppDesign.space2),
+                      Text(
+                        owner!.phone!,
+                        style: context.textStyle(
+                          FontSizeType.body1,
+                          fontWeight: FontWeight.w700,
+                          color: context.ds.textPrimary,
+                        ),
+                      ),
+                    ],
+                  )
                 else
-                  Text('immo.owner.hidden_help'.tr, style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary)),
+                  Text(
+                    'immo.owner.hidden_help'.tr,
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -896,19 +1443,27 @@ class _OwnerCard extends StatelessWidget {
   }
 
   Widget _bullet(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: AppDesign.space1),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 7),
-              child: Icon(Icons.circle, size: 6, color: AppDesign.accent),
-            ),
-            const SizedBox(width: AppDesign.space2),
-            Expanded(child: Text(text, style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary))),
-          ],
+    padding: const EdgeInsets.only(bottom: AppDesign.space1),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 7),
+          child: Icon(Icons.circle, size: 6, color: AppDesign.accent),
         ),
-      );
+        const SizedBox(width: AppDesign.space2),
+        Expanded(
+          child: Text(
+            text,
+            style: context.textStyle(
+              FontSizeType.body1,
+              color: context.ds.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Carte du cabinet partenaire d'un terrain.
@@ -936,18 +1491,38 @@ class _CabinetCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      Flexible(
-                        child: Text(cabinet.name, style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary)),
-                      ),
-                      if (cabinet.isVerified) ...[
-                        const SizedBox(width: AppDesign.space1),
-                        const Icon(Icons.verified_rounded, size: 18, color: AppDesign.success),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            cabinet.name,
+                            style: context.textStyle(
+                              FontSizeType.subtitle1,
+                              fontWeight: FontWeight.w700,
+                              color: context.ds.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (cabinet.isVerified) ...[
+                          const SizedBox(width: AppDesign.space1),
+                          const Icon(
+                            Icons.verified_rounded,
+                            size: 18,
+                            color: AppDesign.success,
+                          ),
+                        ],
                       ],
-                    ]),
+                    ),
                     if (cabinet.tagline != null)
-                      Text(cabinet.tagline!, maxLines: 2, overflow: TextOverflow.ellipsis,
-                          style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary)),
+                      Text(
+                        cabinet.tagline!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          color: context.ds.textSecondary,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -956,30 +1531,68 @@ class _CabinetCard extends StatelessWidget {
           ),
           const SizedBox(height: AppDesign.space3),
           if (cabinet.contactUnlocked && contact != null) ...[
-            if (contact['phone'] != null) _line(context, Icons.phone_outlined, contact['phone'].toString()),
-            if (contact['whatsapp'] != null) _line(context, Icons.chat_outlined, contact['whatsapp'].toString()),
-            if (contact['email'] != null) _line(context, Icons.mail_outline_rounded, contact['email'].toString()),
-            if (contact['address'] != null) _line(context, Icons.location_on_outlined, contact['address'].toString()),
+            if (contact['phone'] != null)
+              _line(context, Icons.phone_outlined, contact['phone'].toString()),
+            if (contact['whatsapp'] != null)
+              _line(
+                context,
+                Icons.chat_outlined,
+                contact['whatsapp'].toString(),
+              ),
+            if (contact['email'] != null)
+              _line(
+                context,
+                Icons.mail_outline_rounded,
+                contact['email'].toString(),
+              ),
+            if (contact['address'] != null)
+              _line(
+                context,
+                Icons.location_on_outlined,
+                contact['address'].toString(),
+              ),
           ] else
-            Text('immo.cabinet.contact_hidden'.tr, style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary)),
+            Text(
+              'immo.cabinet.contact_hidden'.tr,
+              style: context.textStyle(
+                FontSizeType.body2,
+                color: context.ds.textSecondary,
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _line(BuildContext context, IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: AppDesign.space1),
-        child: Row(children: [
-          Icon(icon, size: 18, color: AppDesign.success),
-          const SizedBox(width: AppDesign.space2),
-          Expanded(child: Text(text, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w600, color: context.ds.textPrimary))),
-        ]),
-      );
+    padding: const EdgeInsets.only(bottom: AppDesign.space1),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppDesign.success),
+        const SizedBox(width: AppDesign.space2),
+        Expanded(
+          child: Text(
+            text,
+            style: context.textStyle(
+              FontSizeType.body1,
+              fontWeight: FontWeight.w600,
+              color: context.ds.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Barre fixe : prix, « Contacter ASSO », « Réserver ».
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.listing, required this.unit, required this.onContact, required this.onReserve});
+  const _BottomBar({
+    required this.listing,
+    required this.unit,
+    required this.onContact,
+    required this.onReserve,
+  });
 
   final RealEstateListing listing;
   final RealEstateUnit? unit;
@@ -993,7 +1606,12 @@ class _BottomBar extends StatelessWidget {
     final available = unit?.isAvailable ?? listing.unitsAvailable > 0;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(context.ds.gutter, AppDesign.space3, context.ds.gutter, AppDesign.space3),
+      padding: EdgeInsets.fromLTRB(
+        context.ds.gutter,
+        AppDesign.space3,
+        context.ds.gutter,
+        AppDesign.space3,
+      ),
       decoration: BoxDecoration(
         color: context.ds.surface,
         border: Border(top: BorderSide(color: context.ds.border)),
@@ -1001,26 +1619,44 @@ class _BottomBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Obx(() => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (unit == null && listing.priceFrom)
-                      Text('immo.card.from'.tr, style: context.textStyle(FontSizeType.caption, color: context.ds.textSecondary)),
+            child: Obx(
+              () => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (unit == null && listing.priceFrom)
                     Text(
-                      listing.isLand ? immoPrice(price) : '${immoPrice(price)} ${'immo.card.per_month'.tr}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w800, color: context.ds.textPrimary),
-                    ),
-                    if (old != null && old > price)
-                      Text(
-                        immoPrice(old),
-                        style: context.textStyle(FontSizeType.caption, color: context.ds.textTertiary)
-                            .copyWith(decoration: TextDecoration.lineThrough),
+                      'immo.card.from'.tr,
+                      style: context.textStyle(
+                        FontSizeType.caption,
+                        color: context.ds.textSecondary,
                       ),
-                  ],
-                )),
+                    ),
+                  Text(
+                    listing.isLand
+                        ? immoPrice(price)
+                        : '${immoPrice(price)} ${'immo.card.per_month'.tr}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textStyle(
+                      FontSizeType.subtitle1,
+                      fontWeight: FontWeight.w800,
+                      color: context.ds.textPrimary,
+                    ),
+                  ),
+                  if (old != null && old > price)
+                    Text(
+                      immoPrice(old),
+                      style: context
+                          .textStyle(
+                            FontSizeType.caption,
+                            color: context.ds.textTertiary,
+                          )
+                          .copyWith(decoration: TextDecoration.lineThrough),
+                    ),
+                ],
+              ),
+            ),
           ),
           IconButton.outlined(
             tooltip: 'immo.detail.contact'.tr,
@@ -1029,9 +1665,11 @@ class _BottomBar extends StatelessWidget {
           ),
           const SizedBox(width: AppDesign.space2),
           AppButton(
-            label: listing.isLand ? 'immo.detail.pay_deposit'.tr : 'immo.detail.reserve'.tr,
+            label: listing.isLand
+                ? 'immo.detail.pay_deposit'.tr
+                : 'immo.detail.reserve'.tr,
             expand: false,
-            onPressed: available ? onReserve : null,
+            onPressed: available && !listing.isOwnListing ? onReserve : null,
           ),
         ],
       ),

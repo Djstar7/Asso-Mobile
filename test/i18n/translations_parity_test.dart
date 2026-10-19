@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:asso/app/core/i18n/app_translations.dart';
 
 Map<String, String> _read(String path) => AppTranslations.flatten(
-      jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>,
-    );
+  jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>,
+);
 
 /// Paramètres `@nom`, sans compter les adresses e-mail d'exemple.
 Set<String> _params(String value) =>
@@ -18,10 +18,16 @@ void main() {
   final en = _read('assets/i18n/en.json');
 
   test('le français et l\'anglais ont les mêmes clés', () {
-    expect(en.keys.toSet().difference(fr.keys.toSet()), isEmpty,
-        reason: 'clés absentes de fr.json');
-    expect(fr.keys.toSet().difference(en.keys.toSet()), isEmpty,
-        reason: 'clés absentes de en.json');
+    expect(
+      en.keys.toSet().difference(fr.keys.toSet()),
+      isEmpty,
+      reason: 'clés absentes de fr.json',
+    );
+    expect(
+      fr.keys.toSet().difference(en.keys.toSet()),
+      isEmpty,
+      reason: 'clés absentes de en.json',
+    );
   });
 
   test('aucun texte vide', () {
@@ -29,6 +35,65 @@ void main() {
       final empty = map.entries.where((e) => e.value.trim().isEmpty);
       expect(empty.map((e) => e.key), isEmpty);
     }
+  });
+
+  test('toutes les clés Immo utilisées par les écrans sont traduites', () {
+    final missingInFrench = <String>[];
+    final missingInEnglish = <String>[];
+    final keyPattern = RegExp(
+      r"""['"]((?:immo)\.[^'"]+)['"]\s*\.(?:tr|trParams)\b""",
+    );
+
+    for (final module in ['immo', 'landlord']) {
+      for (final entity
+          in Directory('lib/app/modules/$module')
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.dart'))) {
+        for (final match in keyPattern.allMatches(entity.readAsStringSync())) {
+          final key = match.group(1)!;
+          if (key.contains(r'$')) continue;
+          if (!fr.containsKey(key)) missingInFrench.add('${entity.path}: $key');
+          if (!en.containsKey(key))
+            missingInEnglish.add('${entity.path}: $key');
+        }
+      }
+    }
+
+    for (final kind in [
+      'house',
+      'villa',
+      'apartment',
+      'studio',
+      'room',
+      'duplex',
+      'residence',
+      'building_land',
+      'farm_land',
+      'commercial_land',
+    ]) {
+      final key = 'immo.kinds.$kind';
+      if (!fr.containsKey(key)) missingInFrench.add(key);
+      if (!en.containsKey(key)) missingInEnglish.add(key);
+    }
+
+    for (final room in [
+      'entrance',
+      'living',
+      'bedroom',
+      'kitchen',
+      'bathroom',
+      'outside',
+      'road',
+      'other',
+    ]) {
+      final key = 'immo.rooms.$room';
+      if (!fr.containsKey(key)) missingInFrench.add(key);
+      if (!en.containsKey(key)) missingInEnglish.add(key);
+    }
+
+    expect(missingInFrench, isEmpty, reason: 'clés absentes de fr.json');
+    expect(missingInEnglish, isEmpty, reason: 'clés absentes de en.json');
   });
 
   test('les paramètres @x sont les mêmes dans les deux langues', () {
@@ -41,7 +106,10 @@ void main() {
   test('aplatit les clés imbriquées en notation pointée', () {
     expect(
       AppTranslations.flatten({
-        'a': {'b': 'x', 'c': {'d': 'y'}},
+        'a': {
+          'b': 'x',
+          'c': {'d': 'y'},
+        },
       }),
       {'a.b': 'x', 'a.c.d': 'y'},
     );

@@ -321,6 +321,7 @@ class RealEstateListing {
   final bool unlocked;
   final RealEstateOwner? owner;
   final String? status;
+  final bool isOwnListing;
 
   RealEstateListing({
     required this.id,
@@ -377,9 +378,20 @@ class RealEstateListing {
     this.unlocked = false,
     this.owner,
     this.status,
+    this.isOwnListing = false,
   });
 
   bool get isLand => type == RealEstateType.land;
+
+  RealEstateMedia? get presentationVideo {
+    if (video != null) return video;
+
+    for (final item in media) {
+      if (item.isVideo) return item;
+    }
+
+    return null;
+  }
 
   String get place => district == null || district!.isEmpty ? city : '$city, $district';
 
@@ -442,6 +454,7 @@ class RealEstateListing {
       unlocked: _bool(j['unlocked']),
       owner: j['owner'] is Map ? RealEstateOwner.fromJson(Map<String, dynamic>.from(j['owner'])) : null,
       status: j['status']?.toString(),
+      isOwnListing: _bool(j['is_owner']),
     );
   }
 }

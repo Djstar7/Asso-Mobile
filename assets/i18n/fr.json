@@ -802,6 +802,11 @@
       "take_photo": "Prendre une photo",
       "from_gallery": "Sélectionner depuis la galerie"
     },
+    "video_source": {
+      "add_video": "Ajouter une vidéo",
+      "record": "Enregistrer une vidéo maintenant",
+      "choose_existing": "Choisir une vidéo existante"
+    },
     "location": {
       "service_disabled": "La localisation de votre téléphone est désactivée.",
       "permission_denied": "Autorisez ASSO à accéder à votre position.",
@@ -4384,7 +4389,8 @@
   "support_chat_unavailable": "Impossible d’ouvrir la conversation avec le support.",
   "contact_message": "Bonjour, j’ai besoin d’aide concernant mon envoi maritime n°@id (@route).",
   "contact_error": "Impossible d’ouvrir la conversation avec la plateforme.",
-  "cbm_rate": "@price le m³ (1 m³ = @kg kg)",
+  "cbm_rate": "@price le m³ (1 m³ = @kg kg)"
+  },
   "immo": {
     "title": "Immobilier",
     "feature": {
@@ -4544,6 +4550,8 @@
       "contact_short": "Contacter",
       "reserve": "Réserver",
       "pay_deposit": "Verser l'acompte",
+      "own_listing_notice": "Vous ne pouvez pas réserver votre propre annonce.",
+      "property_video": "Vidéo du logement",
       "reference": "Référence : @reference"
     },
     "access": {
@@ -4692,6 +4700,9 @@
       "pay": "Payer",
       "pay_amount": "Payer @amount",
       "error": "Réservation impossible",
+      "own_listing_title": "Réservation impossible",
+      "own_listing_message": "Vous êtes propriétaire de cette annonce et ne pouvez pas la réserver.",
+      "own_listing_back": "Retour à l'annonce",
       "pending_title": "Paiement en cours de vérification",
       "pending_message": "Votre réservation apparaîtra dans « Mes réservations » dès que le paiement sera confirmé."
     },
@@ -4810,7 +4821,7 @@
       "proof_file": "Photo du document",
       "video_title": "Vidéo de vérification",
       "video_help": "Filmez-vous en tenant votre pièce d'identité et votre preuve de propriété, en disant votre nom (15 à 30 secondes).",
-      "video_button": "Enregistrer la vidéo",
+      "video_button": "Ajouter ou enregistrer la vidéo",
       "tap_to_add": "Touchez pour ajouter",
       "privacy": "Vos documents ne sont jamais montrés aux locataires.",
       "send": "Envoyer mes pièces",
@@ -4933,5 +4944,4 @@
     },
     "received": "Réservations reçues"
   }
-}
 }
