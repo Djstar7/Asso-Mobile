@@ -24,6 +24,14 @@ class HomeController extends GetxController
 
   late TabController tabController;
   final RxInt currentTabIndex = 0.obs;
+
+  /// Rubrique Immobilier ouverte par-dessus les onglets (tuile de l'accueil),
+  /// avec la barre du bas toujours visible.
+  final RxBool realEstateOpen = false.obs;
+
+  /// Page à ouvrir dans la rubrique (lien profond, notification).
+  String? realEstateInitialRoute;
+  Object? realEstateInitialArguments;
   final ScrollController nestedScrollController = ScrollController();
 
   // Flag pour éviter d'utiliser des ressources disposées
@@ -671,8 +679,28 @@ class HomeController extends GetxController
     }
   }
 
+  /// Ouvre la rubrique Immobilier dans le corps de l'accueil.
+  void openRealEstate({String? initialRoute, Object? arguments}) {
+    if (_isDisposed) return;
+    realEstateInitialRoute = initialRoute;
+    realEstateInitialArguments = arguments;
+    if (tabController.index != 0) {
+      tabController.index = 0;
+      currentTabIndex.value = 0;
+    }
+    realEstateOpen.value = true;
+  }
+
+  void closeRealEstate() {
+    realEstateInitialRoute = null;
+    realEstateInitialArguments = null;
+    realEstateOpen.value = false;
+  }
+
   void handleTabTap(int index) {
     if (_isDisposed) return;
+    // Un onglet touché pendant la visite de la rubrique y met fin.
+    if (realEstateOpen.value) closeRealEstate();
 
     // Accueil (0), Recherche (1) et Grossiste (2) restent consultables sans
     // compte : ce sont les vitrines. Le suivi et le compte supposent une

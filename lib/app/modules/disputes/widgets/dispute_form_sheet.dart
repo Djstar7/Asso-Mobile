@@ -20,16 +20,26 @@ class DisputeFormResult {
 
 /// « Signaler un problème » : motif, explication libre et photos justificatives.
 /// Sert aussi au signalement d'un produit de remplacement ([withReason] = false).
+/// [reasons] remplace les motifs des commandes (clé, libellé), par exemple les
+/// motifs de l'Immobilier configurés par ASSO ; [notice] la mention du bas.
 class DisputeFormSheet extends StatefulWidget {
-  const DisputeFormSheet({super.key, required this.productName, this.withReason = true, this.title});
+  const DisputeFormSheet({super.key, required this.productName, this.withReason = true, this.title, this.reasons, this.notice});
 
   final String productName;
   final bool withReason;
   final String? title;
+  final List<(String, String)>? reasons;
+  final String? notice;
 
-  static Future<DisputeFormResult?> show({required String productName, bool withReason = true, String? title}) {
+  static Future<DisputeFormResult?> show({
+    required String productName,
+    bool withReason = true,
+    String? title,
+    List<(String, String)>? reasons,
+    String? notice,
+  }) {
     return AppSheet.show<DisputeFormResult>(
-      DisputeFormSheet(productName: productName, withReason: withReason, title: title),
+      DisputeFormSheet(productName: productName, withReason: withReason, title: title, reasons: reasons, notice: notice),
     );
   }
 
@@ -86,12 +96,12 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
             Wrap(
               spacing: AppDesign.space2,
               runSpacing: AppDesign.space2,
-              children: disputeReasons
+              children: (widget.reasons ?? [for (final r in disputeReasons) (r, 'disputes.reasons.$r'.tr)])
                   .map((reason) => ChoiceChip(
-                        label: Text('disputes.reasons.$reason'.tr),
-                        selected: _reason == reason,
+                        label: Text(reason.$2),
+                        selected: _reason == reason.$1,
                         selectedColor: AppDesign.accentSubtle,
-                        onSelected: (_) => setState(() => _reason = reason),
+                        onSelected: (_) => setState(() => _reason = reason.$1),
                       ))
                   .toList(),
             ),
@@ -139,7 +149,7 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
             ],
           ),
           const SizedBox(height: AppDesign.space2),
-          Text('disputes.form.funds_notice'.tr, style: context.caption.copyWith(color: ds.textSecondary)),
+          Text(widget.notice ?? 'disputes.form.funds_notice'.tr, style: context.caption.copyWith(color: ds.textSecondary)),
         ],
       ),
     );

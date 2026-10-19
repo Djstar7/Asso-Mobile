@@ -13,6 +13,9 @@ import '../providers/api_provider.dart';
 import '../providers/storage_service.dart';
 import '../../core/utils/app_navigation.dart';
 import 'deep_link_service.dart';
+import '../../modules/home/controllers/home_controller.dart';
+import '../../modules/immo/views/immo_reservation_view.dart';
+import '../../modules/landlord/views/landlord_dashboard_view.dart';
 
 /// Handler pour les messages en arrière-plan
 /// DOIT être une fonction top-level (en dehors de toute classe)
@@ -513,6 +516,24 @@ class FirebaseMessagingService extends GetxService {
         break;
 
       default:
+        // Immobilier : réservation (paiement, litige, déblocage), alerte de
+        // nouveaux biens, espace bailleur (vérification, annonce relue).
+        switch (data['action']) {
+          case 'open_real_estate_reservation':
+            final id = int.tryParse('${data['reservation_id'] ?? ''}');
+            if (id != null) Get.to(() => ImmoReservationView(reservationId: id, standalone: true));
+            return;
+          case 'open_real_estate':
+            if (Get.isRegistered<HomeController>()) {
+              Get.until((route) => route.isFirst);
+              Get.find<HomeController>().openRealEstate();
+            }
+            return;
+          case 'open_landlord_space':
+          case 'open_landlord_listing':
+            Get.to(() => const LandlordDashboardView());
+            return;
+        }
         // Réclamations / litiges : le dossier, côté client ou vendeur. « Paiement
         // de livraison requis » ouvre directement le paiement de la course.
         if (type.startsWith('dispute_') && data['dispute_id'] != null) {
