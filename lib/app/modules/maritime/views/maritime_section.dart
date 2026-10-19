@@ -81,8 +81,7 @@ class MaritimeSection extends GetView<MaritimeController> {
         Expanded(
           child: controller.isLoading.value && controller.departures.isEmpty
               ? const Center(child: CircularProgressIndicator())
-              : controller.error.value != null &&
-                    controller.departures.isEmpty
+              : controller.error.value != null && controller.departures.isEmpty
               ? _empty(Icons.cloud_off, controller.error.value!, isDark)
               : controller.departures.isEmpty
               ? _empty(
@@ -223,7 +222,7 @@ class MaritimeSection extends GetView<MaritimeController> {
     final to = d.destinationHub;
 
     return Opacity(
-      opacity: closed ? 0.55 : 1,
+      opacity: closed ? 0.85 : 1,
       child: Material(
         color: _card(isDark),
         borderRadius: BorderRadius.circular(16),
@@ -301,11 +300,35 @@ class MaritimeSection extends GetView<MaritimeController> {
                 ),
                 const SizedBox(height: 10),
                 closed
-                    ? Text(
-                        'maritime.trip_impossible'.tr,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppDesign.danger,
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : AppDesign.neutral100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 14,
+                              color: _muted(isDark),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'maritime.reservations_closed'.tr,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _muted(isDark),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : Text(
@@ -526,16 +549,17 @@ class MaritimeSection extends GetView<MaritimeController> {
 
   Widget _insuranceDetails(MaritimeBooking booking, bool isDark) {
     final summary = booking.claimSummary;
-    final payout = summary?['payout_amount'] ??
-        summary?['insurance_payout_amount'];
-    final claimStatus =
-        summary?['status_label'] ?? summary?['status'];
+    final payout =
+        summary?['payout_amount'] ?? summary?['insurance_payout_amount'];
+    final claimStatus = summary?['status_label'] ?? summary?['status'];
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : AppDesign.neutral50,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppDesign.neutral50,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -546,8 +570,7 @@ class MaritimeSection extends GetView<MaritimeController> {
               'maritime.insurance.insured'.tr,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-          if (booking.insuranceStatus case final status?
-              when status.isNotEmpty)
+          if (booking.insuranceStatus case final status? when status.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -617,9 +640,7 @@ class MaritimeSection extends GetView<MaritimeController> {
                               insurance['event'] ??
                               '')
                           .toString(),
-                  'date': controller.formatHistoryDate(
-                    insurance['created_at'],
-                  ),
+                  'date': controller.formatHistoryDate(insurance['created_at']),
                 }),
                 style: TextStyle(fontSize: 12, color: _muted(isDark)),
               ),

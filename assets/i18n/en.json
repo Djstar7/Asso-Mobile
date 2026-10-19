@@ -4275,6 +4275,7 @@
   "search_hint": "Search a city or partner",
   "filter_all": "All departures",
   "filter_bookable": "Bookable only",
+  "reservations_closed": "Bookings closed",
   "no_departures": "No departures planned yet. Check back soon.",
   "no_departure_matches": "No departures match your search or filter.",
   "no_shipments": "You have no sea shipments yet.",

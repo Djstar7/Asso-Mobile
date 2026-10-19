@@ -4275,6 +4275,7 @@
   "search_hint": "Rechercher une ville ou un partenaire",
   "filter_all": "Tous les départs",
   "filter_bookable": "Réservables uniquement",
+  "reservations_closed": "Réservations closes",
   "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
   "no_departure_matches": "Aucun départ ne correspond à votre recherche ou à ce filtre.",
   "no_shipments": "Vous n'avez pas encore d'envoi maritime.",
