@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/controllers/app_config_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/string_utils.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/maritime_service.dart';
@@ -10,6 +13,9 @@ import '../../../data/providers/api_provider.dart';
 import '../../../routes/app_pages.dart';
 
 typedef MaritimeContactRequest = Future<ApiResponse> Function(int bookingId);
+typedef MaritimeSupportUserIdLoader = Future<int?> Function();
+typedef MaritimeSupportConversationRequest =
+    Future<ApiResponse> Function(int supportUserId);
 typedef MaritimeConversationNavigator =
     void Function(Map<String, dynamic> conversation);
 
@@ -18,13 +24,22 @@ typedef MaritimeConversationNavigator =
 class MaritimeController extends GetxController {
   MaritimeController({
     MaritimeContactRequest? contactRequest,
+    MaritimeSupportUserIdLoader? supportUserIdLoader,
+    MaritimeSupportConversationRequest? supportConversationRequest,
     MaritimeConversationNavigator? conversationNavigator,
   }) : _contactRequest =
            contactRequest ?? ConversationService.contactMaritimeBooking,
+       _supportUserIdLoader = supportUserIdLoader ?? _loadSupportUserId,
+       _supportConversationRequest =
+           supportConversationRequest ??
+           ((supportUserId) =>
+               ConversationService.startConversation(userId: supportUserId)),
        _conversationNavigator = conversationNavigator;
 
   final MaritimeService _service = Get.find<MaritimeService>();
   final MaritimeContactRequest _contactRequest;
+  final MaritimeSupportUserIdLoader _supportUserIdLoader;
+  final MaritimeSupportConversationRequest _supportConversationRequest;
   final MaritimeConversationNavigator? _conversationNavigator;
 
   /// 0 = Départs, 1 = Mes envois.
@@ -174,13 +189,17 @@ class MaritimeController extends GetxController {
   }
 
   Future<void> contactPlatform(MaritimeBooking booking) async {
-    if (booking.status != 'shipped' ||
-        contactingBookingIds.contains(booking.id)) {
+    if (contactingBookingIds.contains(booking.id)) {
       return;
     }
     contactingBookingIds.add(booking.id);
     contactErrors.remove(booking.id);
     try {
+      if (booking.status != 'shipped') {
+        await _contactSupportForBooking(booking);
+        return;
+      }
+
       final response = await _contactRequest(booking.id);
       final body = response.data;
       final data = body?['data'];
@@ -230,6 +249,61 @@ class MaritimeController extends GetxController {
     } finally {
       contactingBookingIds.remove(booking.id);
     }
+  }
+
+  Future<void> _contactSupportForBooking(MaritimeBooking booking) async {
+    final supportUserId = await _supportUserIdLoader();
+    if (supportUserId == null) {
+      contactErrors[booking.id] = 'maritime.support_unavailable'.tr;
+      return;
+    }
+
+    final response = await _supportConversationRequest(supportUserId);
+    if (!response.success || response.data == null) {
+      contactErrors[booking.id] = response.message.isNotEmpty
+          ? response.message
+          : 'maritime.contact_error'.tr;
+      return;
+    }
+
+    final conversationData = response.data!['conversation'];
+    if (conversationData is! Map || conversationData['id'] == null) {
+      contactErrors[booking.id] = 'maritime.support_chat_unavailable'.tr;
+      return;
+    }
+
+    final conversation = Map<String, dynamic>.from(conversationData);
+    final appConfig = Get.isRegistered<AppConfigController>()
+        ? Get.find<AppConfigController>()
+        : null;
+    final name = appConfig?.supportName ?? 'chatdetail.default_user_name'.tr;
+    final route =
+        '${booking.departure?.originHub?.city ?? ''} → '
+        '${booking.departure?.destinationHub?.city ?? ''}';
+    final args = <String, dynamic>{
+      ...conversation,
+      'id': conversation['id'].toString(),
+      'name': name,
+      'avatar': StringUtils.getInitials(name),
+      'isOnline': false,
+      'is_support': true,
+      'default_message': 'maritime.contact_message'.trParams({
+        'id': '${booking.id}',
+        'route': route,
+      }),
+    };
+    if (_conversationNavigator case final navigator?) {
+      navigator(args);
+    } else {
+      Get.toNamed(Routes.CHATDETAIL, arguments: args);
+    }
+  }
+
+  static Future<int?> _loadSupportUserId() async {
+    final appConfig = Get.isRegistered<AppConfigController>()
+        ? Get.find<AppConfigController>()
+        : Get.put(AppConfigController(), permanent: true);
+    return appConfig.ensureSupportUserId();
   }
 
   Future<void> reportLoss(MaritimeBooking booking) async {
@@ -291,5 +365,20 @@ class MaritimeController extends GetxController {
   String formatDate(DateTime d) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(d.day)}/${two(d.month)}/${d.year}';
+  }
+
+  String formatHistoryDate(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return raw;
+
+    final date = DateTime.tryParse(raw);
+    if (date == null) return raw;
+
+    final includesTime = raw.contains('T') || raw.contains(' ');
+    final pattern = includesTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy';
+    return DateFormat(
+      pattern,
+      Get.locale?.toString() ?? 'fr_FR',
+    ).format(date.toLocal());
   }
 }

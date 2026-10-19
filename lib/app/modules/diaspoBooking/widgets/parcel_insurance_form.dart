@@ -197,9 +197,27 @@ class ParcelInsuranceCard extends StatelessWidget {
               () => DropdownButtonFormField<int>(
                 value: form.selectedNature.value?.id,
                 isExpanded: true,
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: muted,
+                ),
+                iconSize: 22,
+                dropdownColor:
+                    isDark ? AppThemeSystem.darkCardColor : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                menuMaxHeight: 320,
                 decoration: deco('parcel_insurance.nature'.tr, error: natureError),
                 items: form.natures
-                    .map((n) => DropdownMenuItem(value: n.id, child: Text(n.name)))
+                    .map(
+                      (n) => DropdownMenuItem(
+                        value: n.id,
+                        child: Text(
+                          n.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (id) => form.selectNature(
                   form.natures.firstWhereOrNull((n) => n.id == id),

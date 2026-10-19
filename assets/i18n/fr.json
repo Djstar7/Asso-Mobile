@@ -4369,6 +4369,11 @@
     "status": "Statut du dossier : @status",
     "history_item": "@status · @date"
   },
+  "contact_support": "Contacter le support ASSO",
+  "contact_support_opening": "Ouverture du support…",
+  "support_unavailable": "Le compte support ASSO est indisponible.",
+  "support_chat_unavailable": "Impossible d’ouvrir la conversation avec le support.",
+  "contact_message": "Bonjour, j’ai besoin d’aide concernant mon envoi maritime n°@id (@route).",
   "contact_error": "Impossible d’ouvrir la conversation avec la plateforme.",
   "cbm_rate": "@price le m³ (1 m³ = @kg kg)"
 }

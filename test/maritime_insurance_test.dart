@@ -171,9 +171,10 @@ void main() {
       ),
     );
 
-    expect(find.byTooltip('Contacter la plateforme'), findsOneWidget);
-    expect(find.bySemanticsLabel('Contacter la plateforme'), findsOneWidget);
-    await tester.tap(find.byTooltip('Contacter la plateforme'));
+    final contactLabel = 'maritime.contact_support'.tr;
+    expect(find.byTooltip(contactLabel), findsOneWidget);
+    expect(find.bySemanticsLabel(contactLabel), findsOneWidget);
+    await tester.tap(find.byTooltip(contactLabel));
     await tester.pump();
     expect(controller.contactingBookingIds, contains(booking.id));
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -234,6 +235,45 @@ void main() {
       );
     },
   );
+
+  test('insurance history timestamps are formatted for display', () {
+    final controller = MaritimeController();
+
+    expect(controller.formatHistoryDate('2026-10-18'), '18/10/2026');
+    expect(
+      controller.formatHistoryDate('2026-10-18T23:02:26+00:00'),
+      matches(RegExp(r'^\d{2}/\d{2}/2026 \d{2}:\d{2}$')),
+    );
+  });
+
+  test('paid booking can open a direct support conversation', () async {
+    Map<String, dynamic>? openedConversation;
+    var requestedSupportId = 0;
+    final controller = MaritimeController(
+      supportUserIdLoader: () async => 7,
+      supportConversationRequest: (supportUserId) async {
+        requestedSupportId = supportUserId;
+        return ApiResponse(
+          success: true,
+          message: 'OK',
+          statusCode: 200,
+          data: {
+            'conversation': {'id': 45},
+          },
+        );
+      },
+      conversationNavigator: (conversation) {
+        openedConversation = conversation;
+      },
+    );
+
+    await controller.contactPlatform(_booking(status: 'paid'));
+
+    expect(requestedSupportId, 7);
+    expect(openedConversation?['id'], '45');
+    expect(openedConversation?['is_support'], isTrue);
+    expect(openedConversation?['default_message'], isNotEmpty);
+  });
 }
 
 MaritimeBooking _booking({required String status}) => MaritimeBooking(

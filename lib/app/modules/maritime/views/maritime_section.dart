@@ -401,8 +401,6 @@ class MaritimeSection extends GetView<MaritimeController> {
                   ),
                 ),
               ),
-              if (b.status == 'shipped')
-                MaritimeContactButton(booking: b, controller: controller),
             ],
           ),
           const SizedBox(height: 8),
@@ -519,6 +517,8 @@ class MaritimeSection extends GetView<MaritimeController> {
                 label: Text('maritime.claim.report_action'.tr),
               ),
             ),
+          const SizedBox(height: 10),
+          MaritimeContactButton(booking: b, controller: controller),
         ],
       ),
     );
@@ -601,7 +601,7 @@ class MaritimeSection extends GetView<MaritimeController> {
                 'maritime.claim.history_item'.trParams({
                   'status': (claim['status_label'] ?? claim['status'] ?? '')
                       .toString(),
-                  'date': (claim['created_at'] ?? '').toString(),
+                  'date': controller.formatHistoryDate(claim['created_at']),
                 }),
                 style: TextStyle(fontSize: 12, color: _muted(isDark)),
               ),
@@ -617,7 +617,9 @@ class MaritimeSection extends GetView<MaritimeController> {
                               insurance['event'] ??
                               '')
                           .toString(),
-                  'date': (insurance['created_at'] ?? '').toString(),
+                  'date': controller.formatHistoryDate(
+                    insurance['created_at'],
+                  ),
                 }),
                 style: TextStyle(fontSize: 12, color: _muted(isDark)),
               ),

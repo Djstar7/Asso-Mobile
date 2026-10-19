@@ -2,6 +2,7 @@ import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../controllers/diaspo_booking_controller.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -15,7 +16,9 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : AppDesign.neutral50,
+      backgroundColor: isDark
+          ? AppThemeSystem.darkBackgroundColor
+          : AppDesign.neutral50,
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('diaspo_booking.title'.tr),
@@ -65,35 +68,38 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     );
   }
 
-  Color _card(bool isDark) => isDark ? AppThemeSystem.darkCardColor : Colors.white;
+  Color _card(bool isDark) =>
+      isDark ? AppThemeSystem.darkCardColor : Colors.white;
   Color _muted(bool isDark) => isDark ? Colors.white70 : AppDesign.neutral500;
   Color _title(bool isDark) => isDark ? Colors.white : AppDesign.neutral900;
 
   BoxDecoration _cardDeco(bool isDark) => BoxDecoration(
-        color: _card(isDark),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppDesign.neutral200,
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      );
+    color: _card(isDark),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : AppDesign.neutral200,
+    ),
+    boxShadow: isDark
+        ? null
+        : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+  );
 
   Widget _sectionTitle(String text, bool isDark) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: _title(isDark),
-        ),
-      );
+    text,
+    style: TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: _title(isDark),
+    ),
+  );
 
   /// Carte trajet départ → arrivée + prix/dispo
   Widget _buildRouteCard(BuildContext context, bool isDark) {
@@ -111,14 +117,22 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
             children: [
               Column(
                 children: [
-                  const Icon(Icons.flight_takeoff, color: AppDesign.success, size: 20),
+                  const Icon(
+                    Icons.flight_takeoff,
+                    color: AppDesign.success,
+                    size: 20,
+                  ),
                   Container(
                     width: 2,
                     height: 26,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     color: _muted(isDark).withValues(alpha: 0.3),
                   ),
-                  const Icon(Icons.flight_land, color: AppDesign.danger, size: 20),
+                  const Icon(
+                    Icons.flight_land,
+                    color: AppDesign.danger,
+                    size: 20,
+                  ),
                 ],
               ),
               const SizedBox(width: 14),
@@ -126,20 +140,56 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('diaspo_booking.departure'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text(
+                      'diaspo_booking.departure'.tr,
+                      style: TextStyle(fontSize: 11, color: _muted(isDark)),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '${offer.departureCity}, ${offer.departureCountry}',
-                      style: TextStyle(fontWeight: FontWeight.w600, color: _title(isDark)),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: _title(isDark),
+                      ),
                     ),
                     const SizedBox(height: 14),
-                    Text('diaspo_booking.arrival'.tr, style: TextStyle(fontSize: 11, color: _muted(isDark))),
+                    Text(
+                      'diaspo_booking.arrival'.tr,
+                      style: TextStyle(fontSize: 11, color: _muted(isDark)),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '${offer.arrivalCity}, ${offer.arrivalCountry}',
-                      style: TextStyle(fontWeight: FontWeight.w600, color: _title(isDark)),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: _title(isDark),
+                      ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTripDate(
+                  isDark,
+                  icon: Icons.flight_takeoff_rounded,
+                  label: 'diaspo_booking.departure'.tr,
+                  dateTime: offer.departureDateTime,
+                  accent: AppDesign.success,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildTripDate(
+                  isDark,
+                  icon: Icons.flight_land_rounded,
+                  label: 'diaspo_booking.arrival'.tr,
+                  dateTime: offer.arrivalDateTime,
+                  accent: AppDesign.danger,
                 ),
               ),
             ],
@@ -157,7 +207,11 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
                   valueColor: AppThemeSystem.primaryColor,
                 ),
               ),
-              Container(width: 1, height: 34, color: _muted(isDark).withValues(alpha: 0.15)),
+              Container(
+                width: 1,
+                height: 34,
+                color: _muted(isDark).withValues(alpha: 0.15),
+              ),
               Expanded(
                 child: _statTile(
                   isDark,
@@ -173,12 +227,84 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
     );
   }
 
-  Widget _statTile(bool isDark, {required String label, required String value, required Color valueColor}) {
+  Widget _buildTripDate(
+    bool isDark, {
+    required IconData icon,
+    required String label,
+    required DateTime dateTime,
+    required Color accent,
+  }) {
+    final locale = Get.locale?.toString() ?? 'fr_FR';
+    final localDateTime = dateTime.toLocal();
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 74),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: isDark ? 0.12 : 0.07),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 17, color: accent),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _muted(isDark),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('EEE d MMM y', locale).format(localDateTime),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _title(isDark),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormat('HH:mm', locale).format(localDateTime),
+                  style: TextStyle(fontSize: 11, color: _muted(isDark)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statTile(
+    bool isDark, {
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
     return Column(
       children: [
         Text(label, style: TextStyle(fontSize: 12, color: _muted(isDark))),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
+        ),
       ],
     );
   }
@@ -200,21 +326,34 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
               Expanded(
                 child: TextField(
                   controller: controller.kgController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: _title(isDark)),
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: _title(isDark),
+                  ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,1}'),
+                    ),
                   ],
                   decoration: InputDecoration(
                     suffixText: 'kg',
                     filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : AppDesign.neutral50,
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : AppDesign.neutral50,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -254,36 +393,53 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
 
   /// Détails du paiement
   Widget _buildPriceBreakdown(BuildContext context, bool isDark) {
-    return Obx(() => Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDeco(isDark),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _sectionTitle('diaspo_booking.payment_details'.tr, isDark),
-              const SizedBox(height: 16),
-              _priceRow(
-                '${controller.kgBooked.value.toStringAsFixed(controller.kgBooked.value % 1 == 0 ? 0 : 1)} kg × ${controller.formatOfferAmount(controller.pricePerKg)}',
-                controller.formatOfferAmount(controller.totalPrice.value),
-                isDark,
+    return Obx(
+      () => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: _cardDeco(isDark),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('diaspo_booking.payment_details'.tr, isDark),
+            const SizedBox(height: 16),
+            _priceRow(
+              '${controller.kgBooked.value.toStringAsFixed(controller.kgBooked.value % 1 == 0 ? 0 : 1)} kg × ${controller.formatOfferAmount(controller.pricePerKg)}',
+              controller.formatOfferAmount(controller.totalPrice.value),
+              isDark,
+            ),
+            const SizedBox(height: 10),
+            _priceRow(
+              'parcel_insurance.supplement'.tr,
+              controller.formatOfferAmount(
+                controller.insurance.insuranceAmount.value,
               ),
-              const SizedBox(height: 10),
-              _priceRow(
-                'parcel_insurance.supplement'.tr,
-                controller.formatOfferAmount(controller.insurance.insuranceAmount.value),
-                isDark,
+              isDark,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Divider(
+                color: _muted(isDark).withValues(alpha: 0.15),
+                height: 1,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Divider(color: _muted(isDark).withValues(alpha: 0.15), height: 1),
-              ),
-              _priceRow('diaspo_booking.total'.tr, controller.formatOfferAmount(controller.grandTotal), isDark, isTotal: true),
-            ],
-          ),
-        ));
+            ),
+            _priceRow(
+              'diaspo_booking.total'.tr,
+              controller.formatOfferAmount(controller.grandTotal),
+              isDark,
+              isTotal: true,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _priceRow(String label, String value, bool isDark, {bool isTotal = false}) {
+  Widget _priceRow(
+    String label,
+    String value,
+    bool isDark, {
+    bool isTotal = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -317,12 +473,20 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock_outline, size: 18, color: AppThemeSystem.primaryColor),
+          Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: AppThemeSystem.primaryColor,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'diaspo_booking.escrow_note'.tr,
-              style: TextStyle(fontSize: 12, color: _muted(isDark), height: 1.4),
+              style: TextStyle(
+                fontSize: 12,
+                color: _muted(isDark),
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -333,7 +497,12 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
   /// Bouton de confirmation (ouvre le sélecteur de paiement)
   Widget _buildConfirmButton(BuildContext context, bool isDark) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        12 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         color: _card(isDark),
         boxShadow: [
@@ -344,43 +513,52 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
           ),
         ],
       ),
-      child: Obx(() => SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: controller.isSubmitting.value ? null : controller.submitBooking,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeSystem.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Obx(
+        () => SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: controller.isSubmitting.value
+                ? null
+                : controller.submitBooking,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: controller.isSubmitting.value
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.lock_outline, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'diaspo_booking.pay'.trParams({
-                            'amount': controller.formatOfferAmount(
-                              controller.grandTotal,
-                            ),
-                          }),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
             ),
-          )),
+            child: controller.isSubmitting.value
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.lock_outline, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'diaspo_booking.pay'.trParams({
+                          'amount': controller.formatOfferAmount(
+                            controller.grandTotal,
+                          ),
+                        }),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -4369,6 +4369,11 @@
     "status": "Claim status: @status",
     "history_item": "@status · @date"
   },
+  "contact_support": "Contact ASSO support",
+  "contact_support_opening": "Opening support…",
+  "support_unavailable": "The ASSO support account is unavailable.",
+  "support_chat_unavailable": "Unable to open the support conversation.",
+  "contact_message": "Hello, I need help with my sea shipment no. @id (@route).",
   "contact_error": "Unable to open the platform conversation.",
   "cbm_rate": "@price per m³ (1 m³ = @kg kg)"
 }
