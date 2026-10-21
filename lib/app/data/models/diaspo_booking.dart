@@ -39,11 +39,18 @@ class DiaspoBooking {
   // Computed
   final String formattedTotal;
 
+  /// Les anciennes réservations peuvent n'avoir ni devise ni offre associée.
+  String? get totalCurrency {
+    if (currency.trim().isNotEmpty) return currency.trim();
+    final code = diaspoOffer?.currency.trim();
+    return code != null && code.isNotEmpty ? code : null;
+  }
+
   /// Total dans la devise de l'utilisateur (converti depuis celle de l'offre).
-  /// À afficher dans un Obx.
+  /// À observer seulement avec une devise connue et un service de devises actif.
   String get displayTotal {
-    final code = currency.isNotEmpty ? currency : diaspoOffer?.currency;
-    if (code == null || code.isEmpty) return formattedTotal;
+    final code = totalCurrency;
+    if (code == null) return formattedTotal;
     return CurrencyService.formatFromCurrency(totalPrice, code);
   }
   final bool isCompleted;

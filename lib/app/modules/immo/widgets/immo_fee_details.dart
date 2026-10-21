@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/utils/app_design.dart';
-import '../../../core/utils/app_theme_system.dart';
 import 'immo_widgets.dart';
+import 'immo_summary_row.dart';
 
 /// Ventilation fournie par l'API ; aucun calcul financier côté mobile.
 class ImmoFeeDetails extends StatelessWidget {
@@ -36,20 +35,18 @@ class ImmoFeeDetails extends StatelessWidget {
         if (beneficiary != null)
           _row(context, 'immo.quote.net_beneficiary'.tr, beneficiary),
         if (platformAmount != null)
-          _row(context, 'immo.quote.platform_share'.tr, immoPrice(platformAmount!)),
+          ImmoSummaryRow(
+            label: 'immo.quote.platform_share'.tr,
+            value: immoPrice(platformAmount!),
+            secondary: true,
+            help: (platformAmount ?? 0) > 0
+                ? 'immo.quote.commission_help'.tr
+                : null,
+          ),
       ],
     );
   }
 
-  Widget _row(BuildContext context, String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: AppDesign.space2),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: Text(label, style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary))),
-        const SizedBox(width: AppDesign.space3),
-        Flexible(child: Text(value, textAlign: TextAlign.end, style: context.textStyle(FontSizeType.body2, color: context.ds.textPrimary))),
-      ],
-    ),
-  );
+  Widget _row(BuildContext context, String label, String value) =>
+      ImmoSummaryRow(label: label, value: value, secondary: true);
 }

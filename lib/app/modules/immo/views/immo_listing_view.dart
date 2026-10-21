@@ -120,9 +120,9 @@ class _ImmoListingViewState extends State<ImmoListingView> {
         context,
         listing: listing,
         unit: unit,
-        onContinue: () => ImmoNav.push(
+        onContinue: (advanceMonths) => ImmoNav.push(
           ImmoNav.reserve,
-          arguments: ImmoReserveArgs(listing: listing, unit: unit),
+          arguments: ImmoReserveArgs(listing: listing, unit: unit, advanceMonths: advanceMonths),
         ),
       ),
     );

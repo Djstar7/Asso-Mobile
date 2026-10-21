@@ -193,7 +193,6 @@ class SearchController extends GetxController {
   final RxList<DiaspoOffer> passcolisOffers = <DiaspoOffer>[].obs;
   final RxBool isLoadingPasscolis = false.obs;
   final RxBool passcolisLoadFailed = false.obs;
-  bool _passcolisLoaded = false;
 
   /// Onglet actif : produits ou passcolis.
   final Rx<SearchScope> scope = SearchScope.products.obs;
@@ -342,22 +341,15 @@ class SearchController extends GetxController {
     }).toList();
   }
 
-  /// Bascule d'onglet. Les passcolis ne sont chargés qu'à la première
-  /// ouverture de leur onglet : inutile d'appeler l'API pour quelqu'un qui
-  /// ne cherche que des produits.
+  /// Le contenu Passcolis partage l'écran et le chargement de Diaspo Exchange.
   void changeScope(SearchScope value) {
     if (scope.value == value) return;
     scope.value = value;
     chromeVisible.value = true;
-
-    if (value == SearchScope.passcolis && !_passcolisLoaded) {
-      loadPasscolisOffers();
-    }
   }
 
   Future<void> loadPasscolisOffers({bool isRefresh = false}) async {
     if (isLoadingPasscolis.value) return;
-    if (isRefresh) _passcolisLoaded = false;
 
     isLoadingPasscolis.value = true;
     passcolisLoadFailed.value = false;
@@ -374,7 +366,6 @@ class SearchController extends GetxController {
         passcolisOffers.value = list
             .map((json) => DiaspoOffer.fromJson(json))
             .toList();
-        _passcolisLoaded = true;
       } else {
         passcolisLoadFailed.value = true;
       }
@@ -406,7 +397,6 @@ class SearchController extends GetxController {
       // Ouverture directe sur l'onglet Passcolis (« Voir tout » de l'accueil).
       if (args['tab'] == 'passcolis') {
         scope.value = SearchScope.passcolis;
-        loadPasscolisOffers();
       }
 
       final categoryId = args['categoryId'] as int?;

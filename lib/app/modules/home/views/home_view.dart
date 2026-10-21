@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -1069,43 +1070,15 @@ class HomeItemView extends GetView<HomeController> {
                     ),
                   ),
 
-                  // Grille de produits récents
-                  controller.isLoadingRecent.value
-                      ? SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(
-                              context,
-                            ),
+                  // Les offres récentes se parcourent dans les deux sens.
+                  SliverToBoxAdapter(
+                    child: controller.isLoadingRecent.value
+                        ? ShimmerWidgets.horizontalProductListShimmer(context)
+                        : _buildHorizontalProductList(
+                            context,
+                            controller.recentProducts,
                           ),
-                          sliver: SliverGrid(
-                            gridDelegate: ProductCard.gridDelegate(context),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) =>
-                                  ShimmerWidgets.productCardShimmer(context),
-                              childCount: 6,
-                            ),
-                          ),
-                        )
-                      : SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: AppThemeSystem.getHorizontalPadding(
-                              context,
-                            ),
-                          ),
-                          sliver: SliverGrid(
-                            gridDelegate: ProductCard.gridDelegate(context),
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final product = controller.recentProducts[index];
-                              return _FadeInProduct(
-                                delay: Duration(milliseconds: index * 50),
-                                child: _buildProductCard(context, product),
-                              );
-                            }, childCount: controller.recentProducts.length),
-                          ),
-                        ),
+                  ),
 
                   // Sortie de l'accueil : les six derniers produits vus, on
                   // passe la main au catalogue complet.
@@ -1859,21 +1832,29 @@ class HomeItemView extends GetView<HomeController> {
 
     return SizedBox(
       height: ProductCard.totalHeight(context, cardWidth),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
-        itemCount: products.length,
-        separatorBuilder: (_, __) => SizedBox(width: AppDesign.space3),
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return _FadeInProduct(
-            delay: Duration(milliseconds: index * 50),
-            child: SizedBox(
-              width: cardWidth,
-              child: _buildProductCard(context, product),
-            ),
-          );
-        },
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: {
+            ...ScrollConfiguration.of(context).dragDevices,
+            PointerDeviceKind.mouse,
+          },
+        ),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+          itemCount: products.length,
+          separatorBuilder: (_, __) => SizedBox(width: AppDesign.space3),
+          itemBuilder: (context, index) {
+            final product = products[index];
+            return _FadeInProduct(
+              delay: Duration(milliseconds: index * 50),
+              child: SizedBox(
+                width: cardWidth,
+                child: _buildProductCard(context, product),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

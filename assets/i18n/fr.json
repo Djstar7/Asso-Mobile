@@ -4645,7 +4645,7 @@
       "dispute_title": "Litiges",
       "dispute_body": "Le bien ne correspond pas à l'annonce ? Signalez-le avant la fin du délai : ASSO examine le litige et peut vous rembourser.",
       "fees_title": "Frais de service",
-      "fees_body": "La commission ASSO est payée en plus du montant et n'est pas remboursable."
+      "fees_body": "L’avance affichée revient entièrement au bailleur ou au cabinet bénéficiaire. La part ASSO et la commission du cabinet s’ajoutent à cette avance et ne sont pas remboursables."
     },
     "owner": {
       "hidden_name": "Bailleur ASSO",
@@ -4662,8 +4662,8 @@
       "headquarters": "Siège social : @city",
       "why_us": "Pourquoi nous choisir ?",
       "contact_title": "Coordonnées",
-      "contact_hidden": "Les coordonnées du cabinet vous sont communiquées dès le versement de l'acompte.",
-      "contact_us": "Contactez-nous",
+      "contact_hidden": "Les coordonnées utiles à votre bien sont disponibles dans la réservation payée correspondante. Les autres biens restent masqués.",
+      "contact_us": "Contacter ASSO",
       "no_lands": "Aucun terrain disponible pour le moment"
     },
     "contact": {
@@ -4673,7 +4673,7 @@
     },
     "quote": {
       "legacy_commission": "Commission ASSO",
-      "net_amount": "Montant net",
+      "net_amount": "Montant à verser",
       "net_beneficiary": "Bénéficiaire du net",
       "platform_share": "Part ASSO",
       "cabinet": "Cabinet partenaire",
@@ -4691,7 +4691,8 @@
       "escrow": "Le montant du loyer est bloqué pendant @days jours, le temps de visiter. Vous confirmez sur ASSO que le logement est conforme, puis le bailleur est payé.",
       "escrow_land": "L'acompte est bloqué pendant @days jours. Vous rencontrez le cabinet, confirmez sur ASSO, puis le cabinet est payé.",
       "continue": "Continuer",
-      "error": "Impossible de calculer le montant"
+      "error": "Impossible de calculer le montant",
+      "non_refundable_note": "Pour votre information, la part ASSO et la commission du cabinet ne sont pas remboursables."
     },
     "tour": {
       "title": "Visite pièce par pièce",
@@ -4748,12 +4749,12 @@
       "strength": "Force du dossier : @percent %",
       "strength_help": "Plus votre dossier est complet, plus le bailleur vous fait confiance.",
       "contract_title": "Contrat de réservation",
-      "contract_1": "Le loyer d'avance est bloqué par ASSO pendant @days jours, le temps de visiter le logement.",
-      "contract_2": "La commission ASSO est encaissée tout de suite et n'est pas remboursable.",
+      "contract_1": "Le montant net du bailleur reste bloqué par ASSO pendant @days jours, le temps de visiter le logement.",
+      "contract_2": "La part ASSO et la commission du cabinet sont acquises au paiement et ne sont pas remboursables.",
       "contract_3": "En cas de problème avant la fin du délai, signalez-le sur ASSO : le montant reste bloqué jusqu'à la décision d'ASSO.",
-      "contract_land_1": "L'acompte est bloqué par ASSO pendant @days jours, le temps de rencontrer le cabinet.",
+      "contract_land_1": "Le montant net du cabinet reste bloqué par ASSO pendant @days jours, le temps de vérifier le terrain.",
       "contract_land_4": "ASSO vous met en relation avec le cabinet ; la vente se conclut directement avec lui.",
-      "accept": "Je valide le contrat et je comprends que la commission ASSO n'est pas remboursable.",
+      "accept": "J'accepte le contrat et les conditions des frais non remboursables.",
       "edit": "Modifier",
       "continue": "Continuer",
       "pay": "Payer",
@@ -4808,7 +4809,9 @@
       "see_listing": "Voir l'annonce",
       "tenant": "Locataire",
       "buyer": "Acheteur",
-      "your_share": "Votre part (bloquée)"
+      "your_share": "Votre part (bloquée)",
+      "documents_title": "Vos documents",
+      "documents_help": "Le contrat et la facture de ce bien sont disponibles dès le paiement, avant toute confirmation."
     },
     "dispute": {
       "title": "Litige",
@@ -4964,12 +4967,12 @@
       "units_help": "Pour une cité ou une résidence, ajoutez chaque type de logement avec son nombre de places.",
       "add_unit": "Ajouter un type de logement",
       "unit_label": "Libellé (ex. Chambre simple)",
-      "unit_price": "Loyer net",
+      "unit_price": "Loyer de référence",
       "unit_total": "Places",
       "unit_surface": "Surface (m²)",
       "unit_capacity": "Personnes",
-      "net_price": "Loyer mensuel que vous voulez toucher (FCFA)",
-      "net_price_help": "ASSO ajoute ses frais au prix affiché ; vous touchez ce montant.",
+      "net_price": "Loyer mensuel de référence (FCFA)",
+      "net_price_help": "Vous recevez toute l’avance calculée sur le loyer affiché. Les frais ASSO et du cabinet sont payés en plus par le locataire.",
       "advance": "Mois d'avance demandés",
       "min_lease": "Durée minimale (mois)",
       "available_from": "Disponible à partir du",

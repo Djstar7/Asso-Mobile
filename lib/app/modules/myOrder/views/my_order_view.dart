@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../core/widgets/order_progress_timeline.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
 import '../../../data/models/order_progress.dart';
@@ -277,18 +278,27 @@ class MyOrderList extends GetView<MyOrderController> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          // Image placeholder
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppThemeSystem.grey200,
-              borderRadius: context.borderRadius(BorderRadiusType.small),
-            ),
-            child: Icon(
-              Icons.shopping_bag,
-              color: context.secondaryTextColor,
-              size: 24,
+          ClipRRect(
+            borderRadius: context.borderRadius(BorderRadiusType.small),
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: (item.productImage ?? '').trim().isNotEmpty
+                  ? AppNetworkImage(
+                      url: item.productImage!.trim(),
+                      decodeSize: const Size(50, 50),
+                      fit: BoxFit.cover,
+                      width: 50,
+                      height: 50,
+                      errorBuilder: (context) => ColoredBox(
+                        color: AppThemeSystem.grey200,
+                        child: Icon(Icons.shopping_bag, color: context.secondaryTextColor, size: 24),
+                      ),
+                    )
+                  : ColoredBox(
+                      color: AppThemeSystem.grey200,
+                      child: Icon(Icons.shopping_bag, color: context.secondaryTextColor, size: 24),
+                    ),
             ),
           ),
           const SizedBox(width: 12),

@@ -6,6 +6,9 @@ import 'package:asso/app/data/providers/diaspo_service.dart';
 import 'package:asso/app/data/providers/maritime_service.dart';
 import 'package:asso/app/modules/diaspoList/controllers/diaspo_list_controller.dart';
 import 'package:asso/app/modules/diaspoList/views/diaspo_list_view.dart';
+import 'package:asso/app/modules/search/views/search_view.dart';
+import 'package:asso/app/modules/search/controllers/search_controller.dart'
+    as search;
 import 'package:asso/app/modules/maritime/controllers/maritime_controller.dart';
 import 'package:asso/app/modules/maritime/views/maritime_section.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +16,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+
+class _SearchController extends search.SearchController {
+  @override
+  // ignore: must_call_super
+  void onInit() {}
+}
 
 class _DiaspoController extends DiaspoListController {
   int refreshes = 0;
@@ -116,6 +125,49 @@ void main() {
         );
     await GetStorage.init();
   });
+
+  testWidgets(
+    'Passcolis embeds the complete Diaspo flow without another app bar',
+    (tester) async {
+      Get.testMode = true;
+      addTearDown(Get.reset);
+      Get.put(DiaspoService());
+      Get.put(MaritimeService());
+      Get.put(CurrencyService());
+      final diaspo = Get.put<DiaspoListController>(_DiaspoController());
+      diaspo.verificationStatus.value = 'verified';
+      diaspo.offers.add(_offer());
+      final freight = Get.put<MaritimeController>(_FreightController());
+      final searchController = Get.put<search.SearchController>(
+        _SearchController(),
+      );
+      searchController.scope.value = search.SearchScope.passcolis;
+      await tester.pumpWidget(
+        const GetMaterialApp(home: Scaffold(body: SearchTabView())),
+      );
+
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('diaspo_list.mode.air'.tr), findsOneWidget);
+      expect(find.text('diaspo_list.mode.sea'.tr), findsOneWidget);
+      for (final tab in ['all', 'my_offers', 'my_purchases', 'my_sales']) {
+        expect(find.text('diaspo_list.tabs.$tab'.tr), findsOneWidget);
+      }
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Lyon');
+      await tester.pump();
+      expect(diaspo.searchQuery.value, 'Lyon');
+      await tester.tap(find.text('diaspo_list.mode.sea'.tr));
+      await tester.pump();
+      expect(find.byType(MaritimeSection), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(Get.find<DiaspoListController>(), same(diaspo));
+      expect(Get.find<MaritimeController>(), same(freight));
+    },
+  );
 
   testWidgets('Fully booked offers are not labelled published', (tester) async {
     Get.testMode = true;

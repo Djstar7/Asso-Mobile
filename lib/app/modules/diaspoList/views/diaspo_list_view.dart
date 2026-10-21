@@ -9,10 +9,14 @@ import '../../maritime/views/maritime_section.dart';
 import '../../maritime/controllers/maritime_controller.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/models/diaspo_offer.dart';
+import '../../../data/models/diaspo_booking.dart';
+import '../../../data/providers/currency_service.dart';
 import '../../../routes/app_pages.dart';
 
 class DiaspoListView extends GetView<DiaspoListController> {
-  const DiaspoListView({super.key});
+  const DiaspoListView({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +26,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
       backgroundColor: isDark
           ? AppThemeSystem.darkBackgroundColor
           : Colors.grey[100],
-      appBar: AppBar(
+      appBar: embedded ? null : AppBar(
         leading: const AppBackButton(),
         title: const Text('DIASPO EXCHANGE'),
         centerTitle: true,
@@ -1045,10 +1049,27 @@ class DiaspoListView extends GetView<DiaspoListController> {
     );
   }
 
+  Widget _buildBookingTotal(DiaspoBooking booking) {
+    Widget total() => Text(
+      booking.displayTotal,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: AppThemeSystem.primaryColor,
+      ),
+    );
+
+    // Le montant de secours ne dépend d'aucune valeur observable.
+    if (booking.totalCurrency == null || !Get.isRegistered<CurrencyService>()) {
+      return total();
+    }
+    return Obx(total);
+  }
+
   /// Carte de réservation
   Widget _buildBookingCard(
     BuildContext context,
-    booking,
+    DiaspoBooking booking,
     bool isDark, {
     required String role,
   }) {
@@ -1145,16 +1166,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         color: isDark ? Colors.white70 : Colors.grey[600],
                       ),
                     ),
-                    Obx(
-                      () => Text(
-                        booking.displayTotal,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeSystem.primaryColor,
-                        ),
-                      ),
-                    ),
+                    _buildBookingTotal(booking),
                   ],
                 ),
               ],

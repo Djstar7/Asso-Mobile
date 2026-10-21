@@ -1,3 +1,4 @@
+import '../widgets/immo_summary_row.dart';
 import 'package:flutter/material.dart';
 import '../widgets/immo_fee_details.dart';
 import 'package:get/get.dart';
@@ -30,17 +31,17 @@ DateTime immoMoveInPickerInitialDate(DateTime? selectedDate, DateTime today) {
   return selected;
 }
 
-String immoMoveInSummary(DateTime? date) =>
-    date == null ? '-' : immoDate(date);
+String immoMoveInSummary(DateTime? date) => date == null ? '-' : immoDate(date);
 
 String? immoMoveInApiValue(DateTime? date) =>
     date?.toIso8601String().substring(0, 10);
 
 class ImmoReserveArgs {
-  const ImmoReserveArgs({required this.listing, this.unit});
+  const ImmoReserveArgs({required this.listing, this.unit, this.advanceMonths});
 
   final RealEstateListing listing;
   final RealEstateUnit? unit;
+  final int? advanceMonths;
 }
 
 /// Parcours « Réserver » (captures Studapart 22 à 26) : seul ou accompagné,
@@ -67,7 +68,9 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
   final _message = TextEditingController();
   DateTime? _moveIn;
   int? _months;
-  late int _advance = widget.args.listing.advanceMonths ?? 1;
+  late int _advance =
+      widget.args.advanceMonths ?? widget.args.listing.advanceMonths ?? 1;
+  int _quoteRequest = 0;
   RealEstateQuote? _quote;
   bool _accepted = false;
   bool _paying = false;
@@ -101,12 +104,17 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
   }
 
   Future<void> _loadQuote() async {
+    final request = ++_quoteRequest;
+    setState(() {
+      _quote = null;
+      _accepted = false;
+    });
     final q = await RealEstateService.quote(
       _listing.id,
       unitId: widget.args.unit?.id,
       advanceMonths: _isLand ? null : _advance,
     );
-    if (mounted) setState(() => _quote = q);
+    if (mounted && request == _quoteRequest) setState(() => _quote = q);
   }
 
   /// Écarts avec les conditions du bailleur (bandeau « Attention »).
@@ -182,6 +190,7 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
               if (c.text.trim().isNotEmpty) {'name': c.text.trim()},
           ],
         'contract_accepted': true,
+        'expected_total': q.total,
       },
     );
     if (!mounted) return;
@@ -750,7 +759,7 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
                         }),
                   immoPrice(q.baseAmount),
                 ),
-ImmoFeeDetails(
+                ImmoFeeDetails(
                   netAmount: q.netAmount,
                   platformAmount: q.platformAmount,
                   cabinetName: q.commissionCabinet?.name,
@@ -759,8 +768,9 @@ ImmoFeeDetails(
                 if (q.commission > 0)
                   _row(
                     context,
-                    '${'immo.quote.commission'.tr} (${'immo.quote.commission_help'.tr})',
+                    'immo.quote.commission'.tr,
                     immoPrice(q.commission),
+                    help: 'immo.quote.commission_help'.tr,
                   ),
                 const Divider(height: AppDesign.space6),
                 _row(
@@ -842,29 +852,6 @@ ImmoFeeDetails(
     String label,
     String value, {
     bool bold = false,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: AppDesign.space2),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: context.textStyle(
-              bold ? FontSizeType.subtitle1 : FontSizeType.body1,
-              fontWeight: bold ? FontWeight.w800 : FontWeight.w400,
-              color: context.ds.textPrimary,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: context.textStyle(
-            bold ? FontSizeType.subtitle1 : FontSizeType.body1,
-            fontWeight: FontWeight.w700,
-            color: bold ? AppDesign.accent : context.ds.textPrimary,
-          ),
-        ),
-      ],
-    ),
-  );
+    String? help,
+  }) => ImmoSummaryRow(label: label, value: value, bold: bold, help: help);
 }

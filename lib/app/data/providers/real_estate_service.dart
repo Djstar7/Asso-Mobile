@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/locale_service.dart';
@@ -257,8 +254,8 @@ class RealEstateService {
         mediaFileLists: photos.isEmpty ? null : {'photos[]': photos},
       );
 
-  /// Contrat ou facture en PDF, dans un fichier temporaire (null sur le web).
-  static Future<File?> downloadDocument(RealEstateReservation r, String kind) async {
+  /// PDF authentifié en mémoire, téléchargeable sur le web et partageable sur mobile.
+  static Future<XFile?> downloadDocument(RealEstateReservation r, String kind) async {
     final token = StorageService.getToken();
     final response = await http.get(
       Uri.parse('${AppConstants.baseUrl}$_base/reservations/${r.id}/documents/$kind'),
@@ -267,12 +264,12 @@ class RealEstateService {
         'Accept-Language': LocaleService.currentLanguage,
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       },
-    );
+    ).timeout(AppConstants.apiTimeout);
     if (response.statusCode != 200 || response.bodyBytes.isEmpty) return null;
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/${r.reference}-$kind.pdf');
-    await file.writeAsBytes(response.bodyBytes, flush: true);
-
-    return file;
+    return XFile.fromData(
+      response.bodyBytes,
+      mimeType: 'application/pdf',
+      name: '${r.reference}-$kind.pdf',
+    );
   }
 }

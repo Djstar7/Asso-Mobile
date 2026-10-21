@@ -4646,7 +4646,7 @@
       "dispute_title": "Disputes",
       "dispute_body": "The property does not match the listing? Report it before the period ends: ASSO reviews the dispute and can refund you.",
       "fees_title": "Service fee",
-      "fees_body": "The ASSO commission is paid on top of the amount and is non-refundable."
+      "fees_body": "The displayed advance goes entirely to the landlord or beneficiary firm. The ASSO share and firm commission are added to this advance and are non-refundable."
     },
     "owner": {
       "hidden_name": "ASSO landlord",
@@ -4663,8 +4663,8 @@
       "headquarters": "Head office: @city",
       "why_us": "Why choose us?",
       "contact_title": "Contact details",
-      "contact_hidden": "The firm's contact details are shared with you as soon as you pay the deposit.",
-      "contact_us": "Contact us",
+      "contact_hidden": "Contact details for your property are available in its paid reservation. Other properties remain hidden.",
+      "contact_us": "Contact ASSO",
       "no_lands": "No plot available right now"
     },
     "contact": {
@@ -4674,7 +4674,7 @@
     },
     "quote": {
       "legacy_commission": "ASSO commission",
-      "net_amount": "Net amount",
+      "net_amount": "Beneficiary payout",
       "net_beneficiary": "Net recipient",
       "platform_share": "ASSO share",
       "cabinet": "Partner agency",
@@ -4692,7 +4692,8 @@
       "escrow": "The rent is held for @days days so you can visit. You confirm on ASSO that the home matches, then the landlord is paid.",
       "escrow_land": "The deposit is held for @days days. You meet the firm, confirm on ASSO, then the firm is paid.",
       "continue": "Continue",
-      "error": "Unable to calculate the amount"
+      "error": "Unable to calculate the amount",
+      "non_refundable_note": "Please note: the ASSO share and the partner firm commission are non-refundable."
     },
     "tour": {
       "title": "Room-by-room tour",
@@ -4749,12 +4750,12 @@
       "strength": "Application strength: @percent %",
       "strength_help": "The more complete your application, the more the landlord trusts you.",
       "contract_title": "Booking contract",
-      "contract_1": "The rent in advance is held by ASSO for @days days, giving you time to visit.",
-      "contract_2": "The ASSO commission is collected immediately and is non-refundable.",
+      "contract_1": "The landlord's net amount is held by ASSO for @days days so you can visit the home.",
+      "contract_2": "The ASSO share and the partner firm commission are retained upon payment and are non-refundable.",
       "contract_3": "If something is wrong before the deadline, report it on ASSO: the amount stays held until ASSO decides.",
-      "contract_land_1": "The deposit is held by ASSO for @days days, giving you time to meet the agency.",
+      "contract_land_1": "The firm's net amount is held by ASSO for @days days so you can check the plot.",
       "contract_land_4": "ASSO puts you in touch with the agency; the sale is concluded directly with it.",
-      "accept": "I accept the contract and understand the ASSO commission is non-refundable.",
+      "accept": "I accept the contract and the terms for non-refundable fees.",
       "edit": "Edit",
       "continue": "Continue",
       "pay": "Pay",
@@ -4809,7 +4810,9 @@
       "see_listing": "View listing",
       "tenant": "Tenant",
       "buyer": "Buyer",
-      "your_share": "Your share (held)"
+      "your_share": "Your share (held)",
+      "documents_title": "Your documents",
+      "documents_help": "The contract and invoice for this property are available as soon as payment is confirmed, before you confirm conformity."
     },
     "dispute": {
       "title": "Dispute",
@@ -4965,12 +4968,12 @@
       "units_help": "For a residence, add each type of home with its number of places.",
       "add_unit": "Add a type of home",
       "unit_label": "Label (e.g. Single room)",
-      "unit_price": "Net rent",
+      "unit_price": "Reference rent",
       "unit_total": "Places",
       "unit_surface": "Size (m²)",
       "unit_capacity": "People",
-      "net_price": "Monthly rent you want to receive (FCFA)",
-      "net_price_help": "ASSO adds its fees to the displayed price; you receive this amount.",
+      "net_price": "Reference monthly rent (FCFA)",
+      "net_price_help": "You receive the entire advance based on the displayed rent. The tenant pays ASSO and firm fees separately.",
       "advance": "Months paid in advance",
       "min_lease": "Minimum lease (months)",
       "available_from": "Available from",

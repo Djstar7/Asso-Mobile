@@ -8,7 +8,7 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/masonry_grid.dart';
 import '../../../core/widgets/masonry_product_tile.dart';
-import '../../../core/widgets/passcolis_card.dart';
+import '../../diaspoList/views/passcolis_section.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../import/views/wholesale_product_view.dart';
@@ -106,7 +106,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     final body = Column(
       children: [
         // Barre de recherche fixe
-        _buildSearchHeader(context, isDark),
+        Obx(() => _buildSearchHeader(context, isDark)),
 
         // Contenu scrollable
         Expanded(child: Obx(() => _buildContent(context, isDark))),
@@ -123,6 +123,19 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
 
   /// Header avec barre de recherche
   Widget _buildSearchHeader(BuildContext context, bool isDark) {
+    if (controller.scope.value == search_ctrl.SearchScope.passcolis) {
+      return Container(
+        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+        child: Row(
+          children: [
+            if (!embedded) const AppBackButton(),
+            Expanded(child: _buildScopeTabs(context)),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
       decoration: BoxDecoration(
@@ -413,7 +426,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       child: KeyedSubtree(
         key: ValueKey(controller.scope.value),
         child: isPasscolis
-            ? _buildPasscolisContent(context, isDark)
+            ? const PasscolisSection()
             : _buildProductsContent(context, isDark),
       ),
     );
@@ -445,85 +458,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
     return isSearching
         ? _buildEmptyState(context, isDark)
         : _buildSearchHistory(context, isDark);
-  }
-
-  /// Onglet « Passcolis » : les trajets proposés par la diaspora.
-  Widget _buildPasscolisContent(BuildContext context, bool isDark) {
-    if (controller.isLoadingPasscolis.value &&
-        controller.passcolisOffers.isEmpty) {
-      return ListView.separated(
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-        itemCount: 4,
-        separatorBuilder: (_, _) => SizedBox(height: AppDesign.space3),
-        itemBuilder: (context, index) => const PasscolisCardShimmer(),
-      );
-    }
-
-    if (controller.passcolisLoadFailed.value &&
-        controller.passcolisOffers.isEmpty) {
-      return AppEmptyState(
-        icon: Icons.wifi_off_rounded,
-        title: 'search.trips_unavailable_title'.tr,
-        message: 'search.trips_unavailable_message'.tr,
-        actionLabel: 'search.retry'.tr,
-        onAction: () => controller.loadPasscolisOffers(isRefresh: true),
-      );
-    }
-
-    final offers = controller.filteredPasscolis;
-
-    if (offers.isEmpty) {
-      final hasQuery = controller.searchQuery.value.isNotEmpty;
-      return AppEmptyState(
-        icon: Icons.flight_takeoff_rounded,
-        title: hasQuery
-            ? 'search.no_trip_found'.tr
-            : 'search.no_trip_available'.tr,
-        message: hasQuery
-            ? 'search.no_trip_found_message'.trParams({
-                'query': controller.searchQuery.value,
-              })
-            : 'search.no_trip_available_message'.tr,
-        actionLabel: hasQuery ? 'search.clear_search'.tr : 'search.refresh'.tr,
-        onAction: hasQuery
-            ? controller.clearSearch
-            : () => controller.loadPasscolisOffers(isRefresh: true),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => controller.loadPasscolisOffers(isRefresh: true),
-      color: AppThemeSystem.primaryColor,
-      child: NotificationListener<UserScrollNotification>(
-        onNotification: _onUserScroll,
-        child: ListView.separated(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
-          // +1 : l'en-tête reprend le décompte affiché côté produits.
-          itemCount: offers.length + 1,
-          separatorBuilder: (_, _) => SizedBox(height: AppDesign.space3),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: AppDesign.space1),
-                child: Text(
-                  (offers.length > 1
-                          ? 'search.trips_count_plural'
-                          : 'search.trips_count')
-                      .trParams({'count': '${offers.length}'}),
-                  style: context.textStyle(
-                    FontSizeType.body1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }
-
-            return PasscolisCard(offer: offers[index - 1]);
-          },
-        ),
-      ),
-    );
   }
 
   /// État de chargement : le squelette annonce le décalage du mur qui va le
