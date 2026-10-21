@@ -30,6 +30,7 @@ class OrderModel {
   final String deliveryPhone;
   final String? addressDetails;
   final String paymentStatus;
+
   /// Montant versé au vendeur : ses propres prix (la commission ASSO est payée
   /// en plus par le client).
   final double vendorAmount;
@@ -59,10 +60,15 @@ class OrderModel {
 
   /// Le vendeur peut remettre le colis au transporteur.
   bool get canHandToCarrier =>
-      isCarrier && (rawStatus == 'confirmed' || rawStatus == 'preparing');
+      isCarrier &&
+      delivery?.importLeg == null &&
+      (rawStatus == 'confirmed' || rawStatus == 'preparing');
 
   /// Le vendeur peut ajouter une étape de suivi transporteur.
-  bool get canAddTrackingStep => isCarrier && rawStatus == 'shipped';
+  bool get canAddTrackingStep =>
+      rawStatus == 'shipped' &&
+      DeliveryInfo.trackingStepsFor(delivery).isNotEmpty &&
+      isCarrier;
 
   String get displayNumber => orderNumber.isNotEmpty ? orderNumber : '#$id';
   bool get isPaid => paymentStatus == 'paid';

@@ -4944,5 +4944,16 @@
       "error": "Unable to save"
     },
     "received": "Bookings received"
-  }
+  },
+  "data.delivery.steps.pickup_requested": "Pickup request sent to partner",
+  "data.delivery.steps.pickup_accepted": "Pickup accepted by partner",
+  "data.delivery.steps.collected_by_carrier": "Parcel collected from ASSO by partner",
+  "data.delivery.steps.partner_in_transit": "In transit with partner",
+  "data.delivery.steps.agency_assigned": "Pickup agency assigned",
+  "data.delivery.steps.collected_at_agency": "Agency collection recorded by ASSO",
+  "data.delivery.steps.reception_confirmed": "Receipt confirmed by customer",
+  "core.delivery.pickup_agency": "Pickup agency",
+  "core.delivery.agency_address": "Address",
+  "core.delivery.agency_phone": "Agency phone",
+  "core.delivery.agency_pickup_instructions": "Your parcel is ready. Present your order reference at the agency for collection."
 }
