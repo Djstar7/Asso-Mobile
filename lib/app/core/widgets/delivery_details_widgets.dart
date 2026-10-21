@@ -628,7 +628,9 @@ Future<void> showDeliveryQuoteDetails(
                           color: deliveryCategoryColor(quote.serviceType),
                         ),
                         DeliveryChip(
-                          quote.isAgencyToAgency ? 'core.delivery.agency_to_agency'.tr : 'core.delivery.home_delivery'.tr,
+                          quote.isTerritorialNetwork
+                              ? quote.serviceModeLabel
+                              : quote.isAgencyToAgency ? 'core.delivery.agency_to_agency'.tr : 'core.delivery.home_delivery'.tr,
                           color: AppThemeSystem.grey700,
                           icon: quote.isAgencyToAgency
                               ? Icons.store_mall_directory_outlined

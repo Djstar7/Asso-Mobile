@@ -733,6 +733,7 @@
       },
       "category": {
         "urban": "Urbain",
+        "regional": "Urbain · régional",
         "intercity": "Interurbain",
         "international": "International"
       },
@@ -741,6 +742,7 @@
       "home_delivery": "Livraison à domicile",
       "agency_pickup": "Retrait en agence",
       "pickup_notice": "Vous retirerez votre colis à l’agence @company.",
+      "pickup_notice_address": "Collecte en boutique comprise. Retrait : @name, @address, @city.",
       "pickup_notice_city": "Vous retirerez votre colis à l’agence @company de @city."
     },
     "wallet": {
@@ -2033,6 +2035,7 @@
       "couriers_here": "Livreurs présents dans cette zone",
       "agency_pickup_here": "Retrait en agence possible ici",
       "no_courier_here": "Aucun livreur ne dessert ce point",
+      "covered_quote_unavailable": "Zone couverte, livraison de cet article à vérifier",
       "offers_depend_on_shop": "Les offres et les prix dépendent de la boutique : ils s’affichent à l’étape suivante.",
       "move_to_zone_hint": "Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison."
     },

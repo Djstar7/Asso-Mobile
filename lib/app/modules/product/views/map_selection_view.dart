@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/utils/address_search.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/device_location.dart';
+import '../../../core/utils/location_label.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/map_search_results.dart';
 import '../../../data/providers/delivery_service.dart';
@@ -37,6 +38,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
   LatLng _selectedPosition = LatLng(4.0511, 9.7679); // Douala par défaut
   String _selectedAddress = 'product.map.default_address'.tr;
+  String? _selectedCity;
+  String? _selectedCountry;
   bool _isLoadingAddress = false;
   bool _isLocating = false;
   bool _isSearching = false;
@@ -55,6 +58,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   void _moveSelection(LatLng position) {
     _selection++;
     _selectedPosition = position;
+    _selectedCity = null;
+    _selectedCountry = null;
     _isLocating = false;
   }
 
@@ -108,8 +113,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         _isLoadingCoverage = false;
         final coverage = response.data?['coverage'];
         _coverageFailed = !(response.success && coverage is Map);
-        if (!_coverageFailed)
+        if (!_coverageFailed) {
           _coverage = Map<String, dynamic>.from(coverage as Map);
+        }
       });
     });
   }
@@ -234,8 +240,18 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     );
     if (!mounted || selection != _selection) return;
     setState(() {
-      _selectedAddress =
-          data?['display_name']?.toString() ?? _coordinatesLabel(position);
+      if (data != null) {
+        final location = LocationLabel.fromNominatim(
+          data,
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
+        _selectedAddress = location.address;
+        _selectedCity = location.city;
+        _selectedCountry = location.country;
+      } else {
+        _selectedAddress = _coordinatesLabel(position);
+      }
       _isLoadingAddress = false;
     });
   }
@@ -337,7 +353,14 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
     setState(() {
       _moveSelection(position);
-      _selectedAddress = result['display_name'];
+      final location = LocationLabel.fromNominatim(
+        result,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      _selectedAddress = location.address;
+      _selectedCity = location.city;
+      _selectedCountry = location.country;
       _isLoadingAddress = false;
       _showSearchResults = false;
       _searchController.clear();
@@ -854,8 +877,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                             SizedBox(width: 8),
                                             Text(
                                               _isLoadingAddress
-                                                  ? 'product.map.fetching_address'.tr
-                                                  : 'product.map.detecting_position'.tr,
+                                                  ? 'product.map.fetching_address'
+                                                        .tr
+                                                  : 'product.map.detecting_position'
+                                                        .tr,
                                               style: context.textStyle(
                                                 FontSizeType.body2,
                                                 color: AppThemeSystem.grey600,
@@ -929,18 +954,18 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () {
-                                Get.back(
-                                  result: {
-                                    // Adresse encore en chargement : les
-                                    // coordonnées plutôt que celle du point
-                                    // précédent.
-                                    'address': _isLoadingAddress
-                                        ? _coordinatesLabel(_selectedPosition)
-                                        : _selectedAddress,
-                                    'latitude': _selectedPosition.latitude,
-                                    'longitude': _selectedPosition.longitude,
-                                  },
-                                );
+                                Navigator.of(context).pop({
+                                  // Adresse encore en chargement : les
+                                  // coordonnées plutôt que celle du point
+                                  // précédent.
+                                  'address': _isLoadingAddress
+                                      ? _coordinatesLabel(_selectedPosition)
+                                      : _selectedAddress,
+                                  'latitude': _selectedPosition.latitude,
+                                  'longitude': _selectedPosition.longitude,
+                                  'city': _selectedCity,
+                                  'country': _selectedCountry,
+                                });
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppThemeSystem.primaryColor,
@@ -1036,6 +1061,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     final servedBy = _coverageList('served_by');
     final agencies = _coverageList('agencies');
     final served = servedBy.isNotEmpty;
+    final geographicallyServed = _coverage?['geographically_served'] == true;
+    final quoteUnavailable =
+        geographicallyServed && _coverage?['quote_available'] == false;
     final color = served ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
 
     final lines = <Widget>[
@@ -1103,6 +1131,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                       ? 'product.map.couriers_here'.tr
                       : agencies.isNotEmpty
                       ? 'product.map.agency_pickup_here'.tr
+                      : quoteUnavailable
+                      ? 'product.map.covered_quote_unavailable'.tr
                       : 'product.map.no_courier_here'.tr,
                   style: context.textStyle(
                     FontSizeType.body2,

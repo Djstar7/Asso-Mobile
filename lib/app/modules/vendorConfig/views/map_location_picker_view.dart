@@ -344,8 +344,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
   }
 
   void _confirmLocation() {
-    Get.back(
-      result: {
+    Navigator.of(context).pop({
         'latitude': selectedPosition.latitude,
         'longitude': selectedPosition.longitude,
         'address': selectedAddress.isEmpty
@@ -353,8 +352,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
             : selectedAddress,
         'city': selectedCity,
         'country': selectedCountry,
-      },
-    );
+      });
   }
 
   Future<void> _getCurrentLocation() async {

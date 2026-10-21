@@ -357,13 +357,17 @@ class ProductController extends GetxController {
     final base = CurrencyService.productPriceXaf(product) ?? 0;
     // `price_adjustment` est dans la devise du produit : utilisable tel quel
     // seulement si le produit est lui-même en FCFA.
-    final productInPivot = CurrencyService.productPriceXaf(
-          {'price': 0, 'currency': product['currency']},
-        ) !=
+    final productInPivot =
+        CurrencyService.productPriceXaf({
+          'price': 0,
+          'currency': product['currency'],
+        }) !=
         null;
     final adjustment =
         (variant?['price_adjustment_xaf'] as num?)?.toDouble() ??
-        (productInPivot ? (variant?['price_adjustment'] as num?)?.toDouble() : null) ??
+        (productInPivot
+            ? (variant?['price_adjustment'] as num?)?.toDouble()
+            : null) ??
         0;
     return base + adjustment;
   }
@@ -385,9 +389,9 @@ class ProductController extends GetxController {
       max <= 0
           ? 'product.stock.option_sold_out'.tr
           : (max > 1
-                ? 'product.stock.only_left_plural'
-                : 'product.stock.only_left_singular')
-              .trParams({'count': '$max'}),
+                    ? 'product.stock.only_left_plural'
+                    : 'product.stock.only_left_singular')
+                .trParams({'count': '$max'}),
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -476,13 +480,17 @@ class ProductController extends GetxController {
       'product.order.step_partner'.tr,
   ];
 
+  int _positionRevision = 0;
+
   Future<void> fetchCurrentLocation() async {
+    final revision = _positionRevision;
     isLoadingLocation.value = true;
     locationIssue.value = LocationIssue.none;
     try {
       // Fix précis, puis position réseau, puis dernière position connue :
       // la lecture est bornée dans le temps (voir DeviceLocation).
       final result = await DeviceLocation.current();
+      if (revision != _positionRevision) return;
       final position = result.position;
       if (position == null) {
         locationIssue.value = switch (result.failure) {
@@ -505,9 +513,30 @@ class ProductController extends GetxController {
     double longitude, {
     String? fallbackAddress,
   }) async {
+    final revision = ++_positionRevision;
     clientLatitude.value = latitude;
     clientLongitude.value = longitude;
     locationIssue.value = LocationIssue.none;
+    // A quote from the previous address must never remain payable or return
+    // late and replace the offers for this position.
+    _partnersRequest++;
+    isLoadingPartners.value = false;
+    selectedPartner.value = null;
+    deliveryPartners.clear();
+    deliveryQuote.value = null;
+    deliveryQuarter.value = null;
+    deliveryPrice.value = 0;
+    withDelivery.value = false;
+    final fallback = fallbackAddress?.trim();
+    currentLocation.value = fallback?.isNotEmpty == true
+        ? fallback!
+        : 'product.location.gps_position'.trParams({
+            'lat': latitude.toStringAsFixed(4),
+            'lng': longitude.toStringAsFixed(4),
+          });
+    // The map already resolved this exact point. Keep its label and avoid a
+    // second geocoder delaying checkout or overwriting the user's selection.
+    if (fallback?.isNotEmpty == true) return;
 
     String? label;
     try {
@@ -535,6 +564,7 @@ class ProductController extends GetxController {
       }
     } catch (_) {}
 
+    if (revision != _positionRevision) return;
     currentLocation.value =
         label ??
         (fallbackAddress?.trim().isNotEmpty == true
@@ -604,10 +634,10 @@ class ProductController extends GetxController {
               quote['message']?.toString() ??
               response.data?['message']?.toString() ??
               (products.isNotEmpty
-                      ? 'product.delivery.weight_missing_products'.trParams({
-                          'products': products,
-                        })
-                      : 'product.delivery.weight_missing_product'.tr);
+                  ? 'product.delivery.weight_missing_products'.trParams({
+                      'products': products,
+                    })
+                  : 'product.delivery.weight_missing_product'.tr);
           return;
         }
       }
@@ -761,7 +791,8 @@ class ProductController extends GetxController {
             {
               'product_id': productId,
               'quantity': line.quantity,
-              if (line.variant?['id'] != null) 'variant_id': line.variant!['id'],
+              if (line.variant?['id'] != null)
+                'variant_id': line.variant!['id'],
             },
         ],
         deliveryCompanyId: deliveryCompanyId,
@@ -844,7 +875,9 @@ class ProductController extends GetxController {
           Get.snackbar(
             'product.payment.failed_title'.tr,
             switch (state.failure) {
-              final String failure => MobileMoneyWaiting.failureMessage(failure),
+              final String failure => MobileMoneyWaiting.failureMessage(
+                failure,
+              ),
               _ => 'product.payment.failed_message'.tr,
             },
             snackPosition: SnackPosition.BOTTOM,
@@ -932,12 +965,11 @@ class ProductController extends GetxController {
           'userId': sellerId,
           'productId': productId,
           'isOnline': false,
-          'default_message':
-              'product.chat.default_message'.trParams({
-                'product':
-                    '${product['name']}'
-                    '${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''}',
-              }),
+          'default_message': 'product.chat.default_message'.trParams({
+            'product':
+                '${product['name']}'
+                '${variantLabel.isNotEmpty ? ' ($variantLabel)' : ''}',
+          }),
         },
       );
     } catch (_) {

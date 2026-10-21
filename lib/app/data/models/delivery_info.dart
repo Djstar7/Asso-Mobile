@@ -358,6 +358,9 @@ class DeliveryPartnerQuote {
 
   /// Catégorie courte affichée en puce : Urbain / Interurbain / International.
   String get categoryLabel {
+    if (isTerritorialNetwork && raw['network_level'] == 'intraregional') {
+      return 'data.delivery.category.regional'.tr;
+    }
     switch (serviceType) {
       case 'intercity':
         return 'data.delivery.category.intercity'.tr;
@@ -380,6 +383,9 @@ class DeliveryPartnerQuote {
   /// Libellé du trajet : route transporteur, sinon zone urbaine.
   String? get routeOrZone => routeLabel ?? zoneName;
 
+  bool get isTerritorialNetwork => raw['pricing_type'] == 'territorial_network';
+  PickupAgency? get pickupAgency => PickupAgency.fromMap(raw['pickup_agency']);
+
   /// Option choisie : retrait en agence ou livraison à domicile.
   bool get isAgencyPickup =>
       raw['delivery_option']?.toString() == 'agency_pickup';
@@ -392,6 +398,12 @@ class DeliveryPartnerQuote {
   /// Avis explicite quand le colis est à retirer en agence.
   String? get pickupNotice {
     if (!isAgencyPickup) return null;
+    final agency = pickupAgency;
+    if (agency != null && agency.address.isNotEmpty) {
+      return 'data.delivery.pickup_notice_address'.trParams({
+        'name': agency.name, 'address': agency.address, 'city': agency.city,
+      });
+    }
     return city != null
         ? 'data.delivery.pickup_notice_city'.trParams({
             'company': companyName,

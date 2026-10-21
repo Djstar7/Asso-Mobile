@@ -14,7 +14,7 @@ import '../../../data/providers/deliverer_service.dart';
 import '../../../data/models/category_model.dart';
 import '../../../data/models/deliverer_model.dart';
 import '../../../core/utils/app_theme_system.dart';
-import '../views/map_location_picker_view.dart';
+import '../../product/views/map_selection_view.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../../core/utils/app_navigation.dart';
 
@@ -565,7 +565,8 @@ class VendorConfigController extends GetxController {
       print(stackTrace.toString().split('\n').take(3).join('\n'));
 
       isDeliveryAvailable.value = false;
-      deliveryAvailabilityMessage.value = 'vendor_config.delivery_check_error'.tr;
+      deliveryAvailabilityMessage.value =
+          'vendor_config.delivery_check_error'.tr;
     } finally {
       isCheckingDeliveryAvailability.value = false;
       print('========================================');
@@ -625,29 +626,6 @@ class VendorConfigController extends GetxController {
       barrierDismissible: false,
     );
 
-    // Attendre que les partenaires soient chargés si nécessaire
-    if (deliveryPartners.isNotEmpty) {
-      print('📋 Partners to display on map:');
-      for (var partner in deliveryPartners) {
-        print('  ├─ ${partner.name} (${partner.zone.name})');
-        print(
-          '  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})',
-        );
-      }
-    } else if (isLoadingDeliveryPartners.value) {
-      print('⏳ Partners are still loading... waiting...');
-      // Attendre que les partenaires soient chargés (max 5 secondes)
-      int waitCount = 0;
-      while (isLoadingDeliveryPartners.value && waitCount < 10) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        waitCount++;
-      }
-      print('  └─ After wait, partners count: ${deliveryPartners.length}');
-    } else {
-      print('⚠️ No partners loaded and not loading!');
-    }
-    print('========================================');
-
     try {
       // Préparer la position initiale
       LatLng? initialPosition;
@@ -681,12 +659,10 @@ class VendorConfigController extends GetxController {
 
       // Ouvrir la carte avec les partenaires de livraison
       final result = await Get.to<Map<String, dynamic>>(
-        () => MapLocationPickerView(
-          initialPosition: initialPosition,
-          initialAddress: shopLocation.value.isEmpty
-              ? null
-              : shopLocation.value,
-          deliveryPartners: deliveryPartners.toList(),
+        () => MapSelectionView(
+          initialLatitude: initialPosition?.latitude,
+          initialLongitude: initialPosition?.longitude,
+          locationName: shopLocation.value.isEmpty ? null : shopLocation.value,
         ),
       );
 
@@ -897,7 +873,10 @@ class VendorConfigController extends GetxController {
                 icon: const Icon(Icons.edit_location),
                 label: Text(
                   'vendor_config.no_zone.change_location'.tr,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -923,7 +902,10 @@ class VendorConfigController extends GetxController {
                 icon: const Icon(Icons.home),
                 label: Text(
                   'vendor_config.no_zone.back_home'.tr,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),

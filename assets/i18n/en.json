@@ -733,6 +733,7 @@
       },
       "category": {
         "urban": "Urban",
+        "regional": "Urban · regional",
         "intercity": "Intercity",
         "international": "International"
       },
@@ -741,6 +742,7 @@
       "home_delivery": "Home delivery",
       "agency_pickup": "Agency pickup",
       "pickup_notice": "You will collect your parcel at the @company agency.",
+      "pickup_notice_address": "Shop collection included. Pickup: @name, @address, @city.",
       "pickup_notice_city": "You will collect your parcel at the @company agency in @city."
     },
     "wallet": {
@@ -2033,6 +2035,7 @@
       "couriers_here": "Couriers available in this area",
       "agency_pickup_here": "Branch pickup available here",
       "no_courier_here": "No courier serves this location",
+      "covered_quote_unavailable": "Covered area, delivery for this item needs checking",
       "offers_depend_on_shop": "Offers and prices depend on the shop: they're shown in the next step.",
       "move_to_zone_hint": "Move the pin to a colored zone, or choose another delivery method."
     },
