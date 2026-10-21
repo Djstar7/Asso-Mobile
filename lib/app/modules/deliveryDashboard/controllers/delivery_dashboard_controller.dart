@@ -23,7 +23,8 @@ class DeliveryDashboardController extends GetxController {
   final MapController mapController = MapController();
 
   // Statut du livreur
-  final isOnline = false.obs;
+  final isOnline = true.obs;
+  final isUpdatingAvailability = false.obs;
 
   // Position affichée sur la carte : GPS si disponible, sinon centre de la zone.
   final currentPosition = Rx<LatLng?>(null);
@@ -148,6 +149,7 @@ class DeliveryDashboardController extends GetxController {
 
       if (response.success && response.data != null) {
         final data = response.data!;
+        isOnline.value = data['is_online'] as bool? ?? true;
 
         if (data['company'] != null) {
           company.value = DelivererCompany.fromJson(
@@ -565,8 +567,25 @@ class DeliveryDashboardController extends GetxController {
   }
 
   /// Toggle le statut online/offline
-  void toggleOnlineStatus() {
-    isOnline.value = !isOnline.value;
+  Future<void> toggleOnlineStatus() async {
+    if (isUpdatingAvailability.value || isLoadingCompany.value) return;
+    isUpdatingAvailability.value = true;
+    try {
+      final response = await DelivererService.updateAvailability(
+        !isOnline.value,
+      );
+      if (!response.success) throw Exception(response.message);
+      isOnline.value = response.data?['is_online'] as bool? ?? isOnline.value;
+    } catch (_) {
+      Get.snackbar(
+        'delivery_dashboard.errors.error'.tr,
+        'delivery_dashboard.errors.generic'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    } finally {
+      isUpdatingAvailability.value = false;
+    }
 
     Get.snackbar(
       isOnline.value ? 'delivery_dashboard.online.title_on'.tr : 'delivery_dashboard.online.title_off'.tr,

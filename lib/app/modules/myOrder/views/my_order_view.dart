@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
+import '../../../core/widgets/order_progress_timeline.dart';
 import '../controllers/my_order_controller.dart';
 import '../models/customer_order_models.dart';
+import '../../../data/models/order_progress.dart';
 import '../../../core/utils/app_design.dart';
 import 'order_delivery_section.dart';
 import 'order_deposit_section.dart';
@@ -61,12 +63,8 @@ class MyOrderList extends GetView<MyOrderController> {
   Widget _buildStatusFilters(BuildContext context) {
     final filters = [
       {'label': 'my_order.filters.all'.tr, 'value': 'all'},
-      {'label': 'my_order.filters.pending'.tr, 'value': 'pending'},
-      {'label': 'my_order.filters.confirmed'.tr, 'value': 'confirmed'},
-      {'label': 'my_order.filters.preparing'.tr, 'value': 'preparing'},
-      {'label': 'my_order.filters.shipped'.tr, 'value': 'shipped'},
-      {'label': 'my_order.filters.delivered'.tr, 'value': 'delivered'},
-      {'label': 'my_order.filters.cancelled'.tr, 'value': 'cancelled'},
+      for (final stage in OrderProgress.filters)
+        {'label': OrderProgress.labelFor(stage), 'value': stage},
     ];
 
     return Container(
@@ -177,6 +175,12 @@ class MyOrderList extends GetView<MyOrderController> {
           // Commande avec acompte : suivi jusqu'au solde, puis paiement du solde
           CustomerOrderDepositSection(order: order),
 
+          if (order.progress != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: OrderProgressTimeline(progress: order.progress!),
+            ),
+
           // Livraison P4 : transporteur, suivi daté, détail du prix
           CustomerOrderDeliverySection(order: order),
 
@@ -206,7 +210,7 @@ class MyOrderList extends GetView<MyOrderController> {
               borderRadius: context.borderRadius(BorderRadiusType.small),
             ),
             child: Icon(
-              order.status.icon,
+              order.statusIcon,
               size: 22,
               color: _getStatusColor(order.status),
             ),
@@ -225,17 +229,19 @@ class MyOrderList extends GetView<MyOrderController> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(order.status).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        order.status.label,
-                        style: context.caption.copyWith(
-                          color: _getStatusColor(order.status),
-                          fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          order.statusLabel,
+                          style: context.caption.copyWith(
+                            color: _getStatusColor(order.status),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

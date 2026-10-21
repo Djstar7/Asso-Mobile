@@ -8,13 +8,15 @@ import '../../../data/models/maritime.dart';
 import '../controllers/maritime_controller.dart';
 import 'maritime_contact_button.dart';
 
-/// Rubrique Maritime affichée dans Diaspo Exchange à la place des offres avion.
+/// Offres des partenaires, filtrées par transport aérien ou maritime.
 class MaritimeSection extends GetView<MaritimeController> {
-  const MaritimeSection({super.key});
+  const MaritimeSection({super.key, this.transportMode = 'sea'});
+
+  final String transportMode;
 
   @override
   Widget build(BuildContext context) {
-    controller.ensureLoaded();
+    controller.ensureLoaded(transportMode: transportMode);
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Column(
@@ -26,7 +28,9 @@ class MaritimeSection extends GetView<MaritimeController> {
               tabs: [
                 SegmentedTab(
                   label: 'maritime.tabs.departures'.tr,
-                  icon: Icons.directions_boat_outlined,
+                  icon: transportMode == 'air'
+                      ? Icons.flight_takeoff
+                      : Icons.directions_boat_outlined,
                 ),
                 SegmentedTab(
                   label: 'maritime.tabs.my_shipments'.tr,
@@ -73,7 +77,9 @@ class MaritimeSection extends GetView<MaritimeController> {
   );
 
   Widget _buildDepartures(BuildContext context, bool isDark) {
-    final departures = controller.filteredDepartures;
+    final departures = controller.filteredDepartures
+        .where((d) => d.transportMode == transportMode)
+        .toList();
     return Column(
       children: [
         _buildDepartureSearch(isDark),
@@ -234,10 +240,17 @@ class MaritimeSection extends GetView<MaritimeController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  d.commercialSummary,
+                  style: TextStyle(color: _muted(isDark), fontSize: 12),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
-                      Icons.directions_boat,
+                      d.transportMode == 'air'
+                          ? Icons.flight
+                          : Icons.directions_boat,
                       color: AppThemeSystem.primaryColor,
                     ),
                     const SizedBox(width: 8),
@@ -261,7 +274,7 @@ class MaritimeSection extends GetView<MaritimeController> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  d.partnerName,
+                  'Diaspo Exchange',
                   style: TextStyle(fontSize: 12, color: _muted(isDark)),
                 ),
                 if (d.isPricedPerCbm)
@@ -361,10 +374,16 @@ class MaritimeSection extends GetView<MaritimeController> {
   );
 
   Widget _buildMyBookings(BuildContext context, bool isDark) {
-    if (controller.isLoadingBookings.value && controller.myBookings.isEmpty) {
+    final bookings = controller.myBookings
+        .where(
+          (booking) =>
+              (booking.departure?.transportMode ?? 'sea') == transportMode,
+        )
+        .toList();
+    if (controller.isLoadingBookings.value && bookings.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (controller.myBookings.isEmpty) {
+    if (bookings.isEmpty) {
       return _empty(
         Icons.inventory_2_outlined,
         'maritime.no_shipments'.tr,
@@ -373,14 +392,13 @@ class MaritimeSection extends GetView<MaritimeController> {
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: controller.myBookings.length,
+      itemCount: bookings.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, i) =>
-          _bookingCard(controller.myBookings[i], isDark),
+      itemBuilder: (context, i) => buildBookingCard(bookings[i], isDark),
     );
   }
 
-  Widget _bookingCard(MaritimeBooking b, bool isDark) {
+  Widget buildBookingCard(MaritimeBooking b, bool isDark) {
     final d = b.departure;
     final color = switch (b.status) {
       'completed' => AppDesign.success,

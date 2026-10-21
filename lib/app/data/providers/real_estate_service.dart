@@ -185,7 +185,7 @@ class RealEstateService {
   static Future<Map<String, dynamic>?> pricePreview(int netPrice, int? advanceMonths) async {
     final res = await ApiProvider.post('$_landlord/price-preview', body: {
       'net_price': netPrice,
-      if (advanceMonths != null) 'advance_months': advanceMonths,
+      if (advanceMonths != null)  'advance_months': advanceMonths,
     });
     final data = res.data?['data'];
 

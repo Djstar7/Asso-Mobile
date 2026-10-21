@@ -135,7 +135,7 @@ class DiaspoDetailController extends GetxController {
 
     Get.toNamed('/diaspo/edit', arguments: {
       'offer': offer.value,
-    })?.then((result) {
+    })?.then((result) async {
       // Refresh offer if edited
       if (result == true && offer.value != null) {
         _fetchOffer(offer.value!.id);
@@ -143,7 +143,10 @@ class DiaspoDetailController extends GetxController {
         // Notify DiaspoListController to refresh
         try {
           final diaspoListController = Get.find<DiaspoListController>();
-          diaspoListController.refresh();
+          await diaspoListController.loadOffers(refresh: true);
+          if (!diaspoListController.isClosed) {
+            await diaspoListController.loadMyOffers();
+          }
         } catch (e) {
           // DiaspoListController not found, ignore
         }

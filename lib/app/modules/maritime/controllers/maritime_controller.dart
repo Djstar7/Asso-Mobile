@@ -59,6 +59,8 @@ class MaritimeController extends GetxController {
   int _page = 1;
   int _lastPage = 1;
   bool _loaded = false;
+  String _transportMode = 'sea';
+  int _generation = 0;
 
   List<MaritimeDeparture> get filteredDepartures {
     final query = departureSearchQuery.value.trim().toLowerCase();
@@ -82,32 +84,44 @@ class MaritimeController extends GetxController {
   bool get hasMoreDepartures => _page < _lastPage;
 
   /// Chargé à la première ouverture de la rubrique, pas avant.
-  void ensureLoaded() {
-    if (_loaded) return;
+  void ensureLoaded({String transportMode = 'sea'}) {
+    if (_loaded && _transportMode == transportMode) return;
     _loaded = true;
-    loadDepartures();
+    _transportMode = transportMode;
+    Future.microtask(loadDepartures);
   }
 
   Future<void> loadDepartures() async {
+    final generation = ++_generation;
     isLoading.value = true;
     error.value = null;
     try {
-      final result = await _service.getDepartures();
+      final result = await _service.getDepartures(
+        transportMode: _transportMode,
+      );
+      if (generation != _generation) return;
       departures.assignAll(result.items);
       _page = 1;
       _lastPage = result.lastPage;
     } catch (e) {
-      error.value = e.toString().replaceAll('Exception: ', '');
+      if (generation == _generation) {
+        error.value = e.toString().replaceAll('Exception: ', '');
+      }
     } finally {
-      isLoading.value = false;
+      if (generation == _generation) isLoading.value = false;
     }
   }
 
   Future<void> loadMore() async {
     if (isLoadingMore.value || _page >= _lastPage) return;
     isLoadingMore.value = true;
+    final generation = _generation;
     try {
-      final result = await _service.getDepartures(page: _page + 1);
+      final result = await _service.getDepartures(
+        page: _page + 1,
+        transportMode: _transportMode,
+      );
+      if (generation != _generation) return;
       departures.addAll(result.items);
       _page++;
       _lastPage = result.lastPage;

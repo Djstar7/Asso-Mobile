@@ -14,6 +14,7 @@ class MapSelectionView extends StatefulWidget {
   final double? initialLatitude;
   final double? initialLongitude;
   final bool readOnly;
+  final List<Map<String, int>>? deliveryItems;
   final String? locationName;
 
   const MapSelectionView({
@@ -21,6 +22,7 @@ class MapSelectionView extends StatefulWidget {
     this.initialLatitude,
     this.initialLongitude,
     this.readOnly = false,
+    this.deliveryItems,
     this.locationName,
   });
 
@@ -90,12 +92,16 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   void _loadCoverage(LatLng position) {
     if (widget.readOnly) return;
     _coverageDebounce?.cancel();
-    setState(() => _isLoadingCoverage = true);
+    final request = ++_coverageRequest;
+    setState(() {
+      _isLoadingCoverage = true;
+      _coverage = null;
+    });
     _coverageDebounce = Timer(const Duration(milliseconds: 400), () async {
-      final request = ++_coverageRequest;
       final response = await DeliveryService.getCoverage(
         latitude: position.latitude,
         longitude: position.longitude,
+        items: widget.deliveryItems,
       );
       if (!mounted || request != _coverageRequest) return;
       setState(() {
@@ -1137,7 +1143,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
           ] else ...[
             const SizedBox(height: 4),
             Text(
-              'product.map.move_to_zone_hint'.tr,
+              _coverage?['message']?.toString() ??
+                  'product.map.move_to_zone_hint'.tr,
               style: context.textStyle(
                 FontSizeType.caption,
                 color: AppThemeSystem.grey600,

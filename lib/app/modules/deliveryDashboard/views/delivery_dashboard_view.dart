@@ -45,6 +45,9 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   pinned: true,
                   delegate: _TabsHeaderDelegate(
                     backgroundColor: context.backgroundColor,
+                    height: (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 32)
+                        .clamp(64.0, double.infinity)
+                        .toDouble(),
                     child: _buildTabs(context),
                   ),
                 ),
@@ -961,7 +964,10 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
   /// Onglets de filtre (épinglés en haut pendant le défilement)
   Widget _buildTabs(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(context.horizontalPadding),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.horizontalPadding,
+        vertical: 8,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -1671,18 +1677,19 @@ class _TabsHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _TabsHeaderDelegate({
     required this.child,
     required this.backgroundColor,
+    required this.height,
   });
 
   final Widget child;
   final Color backgroundColor;
 
-  static const double _height = 64;
+  final double height;
 
   @override
-  double get minExtent => _height;
+  double get minExtent => height;
 
   @override
-  double get maxExtent => _height;
+  double get maxExtent => height;
 
   @override
   Widget build(
@@ -1690,11 +1697,12 @@ class _TabsHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(color: backgroundColor, height: _height, child: child);
+    return Container(color: backgroundColor, height: height, child: child);
   }
 
   @override
   bool shouldRebuild(_TabsHeaderDelegate oldDelegate) =>
       oldDelegate.child != child ||
+      oldDelegate.height != height ||
       oldDelegate.backgroundColor != backgroundColor;
 }

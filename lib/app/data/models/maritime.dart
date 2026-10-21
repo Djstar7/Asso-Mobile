@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import 'parcel_nature.dart';
 
 double _d(dynamic v) => double.tryParse(v?.toString() ?? '') ?? 0;
@@ -37,7 +39,8 @@ class MaritimeHub {
     openingHours: json['opening_hours']?.toString(),
   );
 
-  String get fullAddress => '$name, $address, $city';
+  String get fullAddress =>
+      [name, address, city].where((part) => part.trim().isNotEmpty).join(', ');
 }
 
 /// Départ maritime d'un partenaire entre deux QG.
@@ -63,6 +66,25 @@ class MaritimeDeparture {
   final double? kgPerCbm;
   final String currency;
   final String status;
+  final String transportMode;
+  final String cargoCategory;
+  final int? transitDaysMin;
+  final int? transitDaysMax;
+  final int? frequencyDays;
+  final bool meetingDetailsAvailable;
+
+  String get commercialSummary => [
+    'partner_freight.$transportMode'.tr,
+    'partner_freight.$cargoCategory'.tr,
+    if (transitDaysMin != null && transitDaysMax != null)
+      'partner_freight.transit_days'.trParams({
+        'min': '$transitDaysMin',
+        'max': '$transitDaysMax',
+      }),
+    frequencyDays == null
+        ? 'partner_freight.occasional'.tr
+        : 'partner_freight.frequency'.trParams({'days': '$frequencyDays'}),
+  ].join(' · ');
   final String? notes;
 
   MaritimeDeparture({
@@ -83,6 +105,12 @@ class MaritimeDeparture {
     this.kgPerCbm,
     required this.currency,
     required this.status,
+    this.transportMode = 'sea',
+    this.cargoCategory = 'general',
+    this.transitDaysMin,
+    this.transitDaysMax,
+    this.frequencyDays,
+    this.meetingDetailsAvailable = false,
     this.notes,
   });
 
@@ -92,19 +120,31 @@ class MaritimeDeparture {
   double? volumeForKg(double kg) => isPricedPerCbm ? kg / kgPerCbm! : null;
 
   factory MaritimeDeparture.fromJson(Map<String, dynamic> json) {
-    final partner = json['partner'] as Map?;
+    final meetingVisible = json['meeting_details_available'] == true;
+    MaritimeHub? hub(dynamic value) {
+      if (value is! Map) return null;
+      final data = Map<String, dynamic>.from(value);
+      if (!meetingVisible) {
+        for (final field in [
+          'name',
+          'address',
+          'phone',
+          'opening_hours',
+          'latitude',
+          'longitude',
+        ]) {
+          data[field] = null;
+        }
+      }
+      return MaritimeHub.fromJson(data);
+    }
+
     return MaritimeDeparture(
       id: json['id'] as int,
-      partnerName: partner?['name']?.toString() ?? '',
-      partnerLogo: partner?['logo']?.toString(),
-      originHub: json['origin_hub'] is Map
-          ? MaritimeHub.fromJson(Map<String, dynamic>.from(json['origin_hub']))
-          : null,
-      destinationHub: json['destination_hub'] is Map
-          ? MaritimeHub.fromJson(
-              Map<String, dynamic>.from(json['destination_hub']),
-            )
-          : null,
+      partnerName: 'Diaspo Exchange',
+      partnerLogo: null,
+      originHub: hub(json['origin_hub']),
+      destinationHub: hub(json['destination_hub']),
       departureDate: _date(json['departure_date']) ?? DateTime.now(),
       estimatedArrivalDate: _date(json['estimated_arrival_date']),
       bookingClosesOn: _date(json['booking_closes_on']) ?? DateTime.now(),
@@ -119,7 +159,13 @@ class MaritimeDeparture {
       kgPerCbm: json['kg_per_cbm'] == null ? null : _d(json['kg_per_cbm']),
       currency: json['currency']?.toString() ?? 'EUR',
       status: json['status']?.toString() ?? 'open',
-      notes: json['notes']?.toString(),
+      transportMode: json['transport_mode']?.toString() ?? 'sea',
+      cargoCategory: json['cargo_category']?.toString() ?? 'general',
+      transitDaysMin: int.tryParse('${json['transit_days_min']}'),
+      transitDaysMax: int.tryParse('${json['transit_days_max']}'),
+      frequencyDays: int.tryParse('${json['frequency_days']}'),
+      meetingDetailsAvailable: meetingVisible,
+      notes: meetingVisible ? json['notes']?.toString() : null,
     );
   }
 }

@@ -1,4 +1,49 @@
 {
+  "partner_freight": {
+    "air_travellers": "Travellers",
+    "air_partners": "Partners",
+    "occasional": "Occasional departures",
+    "frequency": "Every @days days",
+    "meeting_after_payment": "Exact meeting locations will be shown after payment.",
+    "air_offers": "Air freight",
+    "sea": "Sea freight",
+    "air": "Air freight",
+    "general": "General cargo",
+    "sensitive": "Sensitive cargo",
+    "transit_days": "@min–@max days"
+  },
+  "landlord_upload": {
+    "id_document_type": "Choose an ID card or passport.",
+    "id_front": "Add the front of your identity document (image up to 8 MB).",
+    "id_back": "Add the back of your ID card (image up to 8 MB).",
+    "ownership_proof_type": "Choose a proof of ownership type.",
+    "ownership_proof": "Add proof of ownership (JPG, PNG, WebP or PDF, up to 10 MB).",
+    "video": "Add an MP4, MOV, 3GP or WebM video up to 100 MB.",
+    "id_size": "This photo exceeds 8 MB. Choose a smaller image.",
+    "proof_size": "This document exceeds 10 MB. Choose a smaller file.",
+    "video_size": "This video exceeds 100 MB. Reduce its size or record a shorter video.",
+    "read_failed": "This file could not be read. Select it again.",
+    "store_failed": "The server could not store this file. Please try again.",
+    "server": "The server could not save your documents. Your files remain in this form; please try again shortly.",
+    "network": "The upload did not complete. Check your connection and try again.",
+    "too_large": "The server rejected the combined file size. Reduce the video and photo sizes and try again."
+  },
+  "order_progress": {
+    "awaiting_payment": "Awaiting payment",
+    "to_confirm": "Awaiting confirmation",
+    "to_confirm_seller": "Awaiting seller confirmation",
+    "to_validate": "Awaiting validation",
+    "to_ship": "To be shipped",
+    "preparing": "Preparing",
+    "shipped": "Out for delivery",
+    "in_transit": "In transit",
+    "last_mile": "Local delivery",
+    "ready_for_pickup": "Ready for agency pickup",
+    "to_agency": "On the way to the agency",
+    "delivered": "Delivered",
+    "collected_at_agency": "Collected at agency",
+    "cancelled": "Cancelled"
+  },
   "common": {
     "coming_soon": "Coming soon",
     "error": "Error",
@@ -1291,7 +1336,8 @@
       "service_unavailable": "The bank transfer service is temporarily unavailable. Check your connection and try again in a few moments.",
       "iban_seems_invalid": "The IBAN entered seems invalid. Check it and try again.",
       "save_error_later": "An error occurred while saving. Please try again later.",
-      "fix_fields": "Some details need fixing: see the red messages under the fields."
+      "fix_fields": "Some details need fixing: see the red messages under the fields.",
+      "account_already_validated": "Your IBAN is already approved. Unlink it before saving another one."
     },
     "birth_date_required_title": "Date of birth required",
     "birth_date_required_message": "Choose your date of birth: our banking partner requires it to enable transfers.",
@@ -1316,10 +1362,15 @@
       "iban_too_long": "The IBAN is too long (34 characters max).",
       "iban_checksum": "This IBAN contains a mistake (wrong check digits): copy it again from your bank details.",
       "holder_too_short": "The account holder's name is too short.",
+      "holder_too_long": "The account holder's name cannot exceed 255 characters.",
       "phone_international": "Start with the country code (e.g. +33 6 12 34 56 78).",
       "phone_too_long": "Number too long: please check it.",
       "address_too_short": "Address too short: enter the number and street.",
-      "postal_invalid": "Invalid postal code (letters, digits, 3 to 10 characters)."
+      "address_too_long": "The address cannot exceed 255 characters.",
+      "city_too_long": "The city name cannot exceed 120 characters.",
+      "postal_invalid": "The postal code is not valid.",
+      "postal_too_long": "The postal code cannot exceed 20 characters.",
+      "country_unsupported": "Bank transfers are not available for this country. Choose a country supported by Stripe."
     },
     "view": {
       "title": "Payout account",
@@ -3493,6 +3544,8 @@
     "unverified_profile": "Unverified profile",
     "status_badge": {
       "rejected": "Offer rejected",
+      "expired": "Departure passed · Removed from catalogue",
+      "full": "Fully booked · No kilos available",
       "unverified_deadline": "Published · Unverified profile — to resolve before @date",
       "unverified": "Published · Unverified profile",
       "pending": "Awaiting approval",
@@ -4286,7 +4339,7 @@
     "departures": "Departures",
     "my_shipments": "My shipments"
   },
-  "search_hint": "Search a city or partner",
+  "search_hint": "Search a city or country",
   "filter_all": "All departures",
   "filter_bookable": "Bookable only",
   "reservations_closed": "Bookings closed",

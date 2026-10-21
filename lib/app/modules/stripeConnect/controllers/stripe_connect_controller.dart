@@ -54,7 +54,9 @@ class StripeConnectController extends GetxController {
 
   /// L'utilisateur corrige un champ : son erreur serveur disparaît.
   void clearFieldError(String field) {
-    if (fieldErrors.remove(field) != null) formError.value = null;
+    fieldErrors.remove(field);
+    formError.value = null;
+    if (submitAttempted.value) formKey.currentState?.validate();
   }
 
   bool get isApproved => status.value == 'approved';
@@ -226,17 +228,15 @@ class StripeConnectController extends GetxController {
   }
 
   Future<void> submit() async {
+    if (isSubmitting.value) return;
     submitAttempted.value = true;
     fieldErrors.clear();
     formError.value = null;
     final fieldsValid = formKey.currentState?.validate() ?? false;
-    if (!fieldsValid || birthDate.value == null) {
-      formError.value = 'stripe_connect.errors.fix_fields'.tr;
-      return;
-    }
+    if (!fieldsValid || birthDate.value == null) return;
 
+    isSubmitting.value = true;
     try {
-      isSubmitting.value = true;
       final res = await StripeConnectService.submit(
         country: countryController.text.trim().toUpperCase(),
         iban: ibanController.text.replaceAll(' ', '').toUpperCase(),
@@ -250,25 +250,27 @@ class StripeConnectController extends GetxController {
 
       if (res.success) {
         if (res.data != null) _applyStatus(res.data!);
-        ibanController.clear();
         Get.snackbar(
           'stripe_connect.submitted_title'.tr,
-          res.message.isNotEmpty
-              ? res.message
-              : 'stripe_connect.submitted_message'.tr,
+          'stripe_connect.submitted_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
         _applyServerErrors(res.data?['errors']);
-        formError.value = fieldErrors.isNotEmpty
-            ? 'stripe_connect.errors.fix_fields'.tr
-            : _friendlyError(res.message);
+        if (fieldErrors.isEmpty) {
+          formError.value = _friendlyError(
+            res.message,
+            statusCode: res.statusCode,
+          );
+        }
       }
     } catch (_) {
       formError.value = 'stripe_connect.errors.generic_retry'.tr;
     } finally {
+      // Do not retain the bank identifier in the form after sending it to the API.
+      ibanController.clear();
       isSubmitting.value = false;
     }
   }
@@ -287,8 +289,11 @@ class StripeConnectController extends GetxController {
   /// Nettoie un message d'erreur venant du serveur : si du texte technique brut
   /// (erreur Stripe, hôte réseau, code errno…) fuit encore, on le remplace par un
   /// message clair. Filet de sécurité pour les backends pas encore à jour.
-  String _friendlyError(String message) {
+  String _friendlyError(String message, {int? statusCode}) {
     final raw = message.trim();
+    if (statusCode == 503 || statusCode == 0) {
+      return 'stripe_connect.errors.service_unavailable'.tr;
+    }
     if (raw.isEmpty) return 'stripe_connect.errors.save_failed'.tr;
 
     final low = raw.toLowerCase();
@@ -321,8 +326,17 @@ class StripeConnectController extends GetxController {
       return 'stripe_connect.errors.save_error_later'.tr;
     }
 
-    // Message déjà propre (renvoyé par le backend à jour) : on l'affiche tel quel.
-    return raw;
+    // Backend messages are localized and curated; unexpected messages remain hidden.
+    if (raw == 'payments.stripe_connect.already_validated'.tr ||
+        raw == 'stripe_connect.errors.account_already_validated'.tr) {
+      return 'stripe_connect.errors.account_already_validated'.tr;
+    }
+    if (raw == 'payments.stripe_connect.error_country_unsupported'.tr) {
+      return 'stripe_connect.validation.country_unsupported'.tr;
+    }
+    if (statusCode == 422) return raw;
+
+    return 'stripe_connect.errors.save_failed'.tr;
   }
 
   // ---- Validateurs ----
@@ -341,7 +355,7 @@ class StripeConnectController extends GetxController {
   }
 
   String? validateIban(String? v) {
-    final iban = (v ?? '').replaceAll(' ', '').toUpperCase();
+    final iban = (v ?? '').replaceAll(RegExp(r'\s+'), '').toUpperCase();
     if (iban.isEmpty) return 'stripe_connect.validation.iban_required'.tr;
     if (!RegExp(r'^[A-Z]{2}').hasMatch(iban)) return 'stripe_connect.validation.iban_country'.tr;
     if (!RegExp(r'^[A-Z]{2}[0-9]{2}').hasMatch(iban)) return 'stripe_connect.validation.iban_key'.tr;
@@ -368,7 +382,7 @@ class StripeConnectController extends GetxController {
   String? validateHolder(String? v) {
     final holder = (v ?? '').trim();
     if (holder.isEmpty) return 'stripe_connect.validation.holder_required'.tr;
-    if (holder.length < 3) return 'stripe_connect.validation.holder_too_short'.tr;
+    if (holder.length > 255) return 'stripe_connect.validation.holder_too_long'.tr;
     return fieldErrors['account_holder_name'];
   }
 
@@ -383,7 +397,9 @@ class StripeConnectController extends GetxController {
   String? validatePhone(String? v) {
     final phone = (v ?? '').trim();
     if (phone.isEmpty) return 'stripe_connect.validation.phone_required'.tr;
-    if (!phone.startsWith('+')) return 'stripe_connect.validation.phone_international'.tr;
+    if (!RegExp(r'^\+[1-9][0-9\s().-]*$').hasMatch(phone)) {
+      return 'stripe_connect.validation.phone_international'.tr;
+    }
     final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.length < 8) return 'stripe_connect.validation.phone_incomplete'.tr;
     if (digits.length > 15) return 'stripe_connect.validation.phone_too_long'.tr;
@@ -393,19 +409,20 @@ class StripeConnectController extends GetxController {
   String? validateAddressLine(String? v) {
     final address = (v ?? '').trim();
     if (address.isEmpty) return 'stripe_connect.validation.address_required'.tr;
-    if (address.length < 4) return 'stripe_connect.validation.address_too_short'.tr;
+    if (address.length > 255) return 'stripe_connect.validation.address_too_long'.tr;
     return fieldErrors['address_line1'];
   }
 
   String? validateCity(String? v) {
     if (v == null || v.trim().isEmpty) return 'stripe_connect.validation.city_required'.tr;
+    if (v.trim().length > 120) return 'stripe_connect.validation.city_too_long'.tr;
     return fieldErrors['address_city'];
   }
 
   String? validatePostalCode(String? v) {
     final postal = (v ?? '').trim();
     if (postal.isEmpty) return 'stripe_connect.validation.postal_required'.tr;
-    if (!RegExp(r'^[A-Za-z0-9 -]{3,10}$').hasMatch(postal)) return 'stripe_connect.validation.postal_invalid'.tr;
+    if (postal.length > 20) return 'stripe_connect.validation.postal_too_long'.tr;
     return fieldErrors['address_postal_code'];
   }
 }

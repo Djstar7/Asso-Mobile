@@ -11,6 +11,7 @@ import '../../../data/services/fcm_service.dart';
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../data/models/delivery_info.dart';
+import '../../../data/models/order_progress.dart';
 import '../../../core/widgets/deposit_widgets.dart';
 import '../../payment/deposit_balance_payment.dart';
 
@@ -29,10 +30,7 @@ class TrackingController extends GetxController {
   // Clés de traduction : l'affichage passe par .tr, le filtrage compare statusKey.
   final List<String> filters = [
     'tracking.filters.all',
-    'tracking.status.awaiting_courier',
-    'tracking.status.shipped',
-    'tracking.status.delivered',
-    'tracking.status.cancelled',
+    for (final stage in OrderProgress.filters) 'order_progress.$stage',
   ];
 
   StreamSubscription? _orderFcmSubscription;
@@ -132,48 +130,16 @@ class TrackingController extends GetxController {
     final deliveredAt = order['delivered_at'] != null ? DateTime.tryParse(order['delivered_at']) : null;
     final cancelledAt = order['cancelled_at'] != null ? DateTime.tryParse(order['cancelled_at']) : null;
 
-    // Déterminer le statut display + couleur
-    String displayStatus;
-    String statusKey;
-    int statusColor;
-    // Couleurs prises aux tokens sémantiques : la palette écrite en dur ici
-    // introduisait un second orange, concurrent de l'accent de marque.
-    switch (status) {
-      case 'pending':
-        statusKey = 'tracking.status.pending';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.warning.toARGB32();
-        break;
-      case 'confirmed':
-        statusKey = 'tracking.status.awaiting_courier';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.info.toARGB32();
-        break;
-      case 'preparing':
-        statusKey = 'tracking.status.preparing';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.info.toARGB32();
-        break;
-      case 'shipped':
-        statusKey = 'tracking.status.shipped';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.accent.toARGB32();
-        break;
-      case 'delivered':
-        statusKey = 'tracking.status.delivered';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.success.toARGB32();
-        break;
-      case 'cancelled':
-        statusKey = 'tracking.status.cancelled';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.danger.toARGB32();
-        break;
-      default:
-        statusKey = 'tracking.status.pending';
-        displayStatus = statusKey.tr;
-        statusColor = AppDesign.warning.toARGB32();
-    }
+    final progress = OrderProgress.fromOrder(order);
+    final displayStatus = progress.label;
+    final statusKey = 'order_progress.${progress.stage}';
+    final statusColor = switch (progress.stage) {
+      'cancelled' => AppDesign.danger.toARGB32(),
+      'delivered' => AppDesign.success.toARGB32(),
+      'awaiting_payment' || 'to_validate' || 'to_confirm' => AppDesign.warning.toARGB32(),
+      'to_ship' || 'preparing' => AppDesign.info.toARGB32(),
+      _ => AppDesign.accent.toARGB32(),
+    };
 
     // Items info
     final items = order['items'] as List? ?? [];
@@ -275,32 +241,13 @@ class TrackingController extends GetxController {
     // Suivi daté (P4) : remplace les étapes calculées quand il est fourni.
     final delivery = DeliveryInfo.fromMap(order['delivery']);
 
-    // Localisation courante
-    String currentLocation;
-    if (status == 'delivered') {
-      currentLocation = 'tracking.location.delivered'.tr;
-    } else if (delivery != null &&
-        delivery.isCarrier &&
-        delivery.trackingStatusLabel != null &&
-        status != 'cancelled') {
-      final last = delivery.timeline.isNotEmpty ? delivery.timeline.last : null;
-      currentLocation = [
-        delivery.trackingStatusLabel!,
-        if (last?.location != null) last!.location!,
-      ].join(' — ');
-    } else if (status == 'shipped') {
-      currentLocation = deliveryPerson != null
-          ? 'tracking.location.shipped_by'.trParams({'name': '${deliveryPerson['name']}'})
-          : 'tracking.location.shipped'.tr;
-    } else if (status == 'confirmed') {
-      currentLocation = 'tracking.location.awaiting_courier'.tr;
-    } else if (status == 'preparing') {
-      currentLocation = 'tracking.location.preparing'.tr;
-    } else if (status == 'cancelled') {
-      currentLocation = 'tracking.location.cancelled'.tr;
-    } else {
-      currentLocation = 'tracking.location.pending'.tr;
-    }
+    final lastLocation = delivery != null && delivery.timeline.isNotEmpty
+        ? delivery.timeline.last.location
+        : null;
+    final currentLocation = [
+      progress.label,
+      ?lastLocation,
+    ].join(' — ');
 
     final total = double.tryParse(order['total']?.toString() ?? '0') ?? 0;
 
@@ -310,6 +257,7 @@ class TrackingController extends GetxController {
       'productName': productName,
       'productImage': productImage,
       'status': displayStatus,
+      'progress': progress,
       'statusKey': statusKey,
       'statusColor': statusColor,
       'orderDate': fmtDate.format(createdAt),

@@ -3271,6 +3271,10 @@ class ProductView extends GetView<ProductController> {
     final hasPosition = controller.hasValidLocation;
     final result = await Get.to<Map<String, dynamic>>(
       () => MapSelectionView(
+        deliveryItems: controller.currentProductId.value == 0 ? null : [{
+          'product_id': controller.currentProductId.value,
+          'quantity': controller.orderQuantity.value < 1 ? 1 : controller.orderQuantity.value,
+        }],
         initialLatitude: hasPosition ? controller.clientLatitude.value : null,
         initialLongitude: hasPosition ? controller.clientLongitude.value : null,
         locationName: hasPosition ? controller.currentLocation.value : null,

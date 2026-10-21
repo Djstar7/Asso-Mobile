@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/widgets/deposit_widgets.dart';
 import '../../../data/models/delivery_info.dart';
+import '../../../data/models/order_progress.dart';
 import '../../disputes/models/dispute_models.dart';
 
 /// Statut de commande client
@@ -117,6 +118,10 @@ class CustomerOrder {
   final String id;
   final String? orderNumber;
   final CustomerOrderStatus status;
+  final OrderProgress? progress;
+
+  String get statusLabel => progress?.label ?? status.label;
+  IconData get statusIcon => progress?.icon ?? status.icon;
   final List<CustomerOrderItem> items;
   final double subtotal;
   final double deliveryFee;
@@ -154,6 +159,7 @@ class CustomerOrder {
     required this.id,
     this.orderNumber,
     required this.status,
+    this.progress,
     required this.items,
     required this.subtotal,
     required this.deliveryFee,
@@ -182,6 +188,7 @@ class CustomerOrder {
       id: (map['id'] ?? '').toString(),
       orderNumber: map['order_number'],
       status: _parseStatus(statusStr),
+      progress: OrderProgress.fromOrder(map),
       items: (map['items'] as List?)?.map((i) => CustomerOrderItem.fromMap(Map<String, dynamic>.from(i))).toList() ?? [],
       subtotal: double.tryParse(map['subtotal']?.toString() ?? '0') ?? 0,
       deliveryFee: double.tryParse(map['delivery_fee']?.toString() ?? '0') ?? 0,

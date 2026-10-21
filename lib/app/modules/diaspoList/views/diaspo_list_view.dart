@@ -6,6 +6,9 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/segmented_tabs.dart';
 import '../../maritime/views/maritime_section.dart';
+import '../../maritime/controllers/maritime_controller.dart';
+import '../../../data/models/maritime.dart';
+import '../../../data/models/diaspo_offer.dart';
 import '../../../routes/app_pages.dart';
 
 class DiaspoListView extends GetView<DiaspoListController> {
@@ -33,28 +36,15 @@ class DiaspoListView extends GetView<DiaspoListController> {
             child: Obx(
               () => controller.transportMode.value == 1
                   ? const MaritimeSection()
-                  : Column(
-                      children: [
-                        //  Zone de recherche
-                        _buildSearchBar(context, isDark),
-
-                        _buildVerificationBanner(context, isDark),
-
-                        // Tabs horizontaux (comme les catégories)
-                        _buildTabs(context, isDark),
-
-                        // Contenu du tab sélectionné
-                        Expanded(child: _buildTabContent(context, isDark)),
-                      ],
-                    ),
+                  : _buildAirSection(context, isDark),
             ),
           ),
         ],
       ),
-      // Masqué quand la liste est vide : l'état vide propose déjà la même
-      // action, et deux boutons identiques à l'écran se concurrencent.
       floatingActionButton: Obx(
-        () => controller.offers.isEmpty || controller.transportMode.value == 1
+        () =>
+            (controller.offers.isEmpty && _airDepartures.isEmpty) ||
+                controller.transportMode.value == 1
             ? const SizedBox.shrink()
             : FloatingActionButton.extended(
                 onPressed: controller.handleCreateOffer,
@@ -67,6 +57,37 @@ class DiaspoListView extends GetView<DiaspoListController> {
     );
   }
 
+  MaritimeController? get _freight => Get.isRegistered<MaritimeController>()
+      ? Get.find<MaritimeController>()
+      : null;
+
+  List<MaritimeDeparture> get _airDepartures {
+    final query = controller.searchQuery.value.trim().toLowerCase();
+    return _freight?.departures.where((departure) {
+          if (departure.transportMode != 'air') return false;
+          if (query.isEmpty) return true;
+          return [
+            departure.originHub?.city,
+            departure.originHub?.countryName,
+            departure.destinationHub?.city,
+            departure.destinationHub?.countryName,
+          ].whereType<String>().join(' ').toLowerCase().contains(query);
+        }).toList() ??
+        [];
+  }
+
+  Widget _buildAirSection(BuildContext context, bool isDark) {
+    _freight?.ensureLoaded(transportMode: 'air');
+    return Column(
+      children: [
+        _buildSearchBar(context, isDark),
+        _buildVerificationBanner(context, isDark),
+        _buildTabs(context, isDark),
+        Expanded(child: _buildTabContent(context, isDark)),
+      ],
+    );
+  }
+
   /// Avion / Maritime : avion pour les petits colis, bateau au-delà du seuil.
   Widget _buildTransportSwitch(BuildContext context, bool isDark) {
     return Container(
@@ -74,24 +95,37 @@ class DiaspoListView extends GetView<DiaspoListController> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Obx(() {
         final kg = controller.airMaxKgHint.value;
-        final kgText = kg % 1 == 0 ? kg.toStringAsFixed(0) : kg.toStringAsFixed(1);
+        final kgText = kg % 1 == 0
+            ? kg.toStringAsFixed(0)
+            : kg.toStringAsFixed(1);
         final isSea = controller.transportMode.value == 1;
         return Column(
           children: [
             SegmentedTabs(
               tabs: [
-                SegmentedTab(label: 'diaspo_list.mode.air'.tr, icon: Icons.flight),
-                SegmentedTab(label: 'diaspo_list.mode.sea'.tr, icon: Icons.directions_boat),
+                SegmentedTab(
+                  label: 'diaspo_list.mode.air'.tr,
+                  icon: Icons.flight,
+                ),
+                SegmentedTab(
+                  label: 'diaspo_list.mode.sea'.tr,
+                  icon: Icons.directions_boat,
+                ),
               ],
-              selectedIndex: controller.transportMode.value,
+              selectedIndex: controller.transportMode.value == 1 ? 1 : 0,
               onChanged: (i) => controller.transportMode.value = i,
             ),
             const SizedBox(height: 6),
             Text(
-              (isSea ? 'diaspo_list.mode.sea_hint' : 'diaspo_list.mode.air_hint')
+              (isSea
+                      ? 'diaspo_list.mode.sea_hint'
+                      : 'diaspo_list.mode.air_hint')
                   .trParams({'kg': kgText}),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : AppDesign.neutral500),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white70 : AppDesign.neutral500,
+              ),
             ),
           ],
         );
@@ -303,81 +337,232 @@ class DiaspoListView extends GetView<DiaspoListController> {
   /// Tab 1: Tous (toutes les offres) - With lazy loading
   Widget _buildAllOffers(BuildContext context, bool isDark) {
     return RefreshIndicator(
-      onRefresh: controller.refresh,
+      onRefresh: () async {
+        await Future.wait([
+          controller.refresh(),
+          if (_freight != null) _freight!.loadDepartures(),
+        ]);
+      },
       child: Obx(() {
-        final displayedOffers = controller.filteredOffers;
-        final isInitialOrRefresh =
-            controller.isLoading.value && controller.offers.isEmpty;
-
-        if (isInitialOrRefresh) {
+        final entries = <({DateTime date, Object offer})>[
+          for (final offer in controller.filteredOffers)
+            (date: offer.departureDateTime, offer: offer),
+          for (final departure in _airDepartures)
+            (date: departure.departureDate, offer: departure),
+        ]..sort((a, b) => a.date.compareTo(b.date));
+        final freightLoading = _freight?.isLoading.value ?? false;
+        if (entries.isEmpty && (controller.isLoading.value || freightLoading)) {
           return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             itemCount: 5,
             itemBuilder: (context, index) => _buildSkeletonCard(isDark),
           );
         }
-
-        if (displayedOffers.isEmpty) {
+        if (entries.isEmpty) {
           final searching = controller.searchQuery.value.isNotEmpty;
-          return AppEmptyState(
-            icon: searching
-                ? Icons.search_off_rounded
-                : Icons.flight_takeoff_rounded,
-            title: searching
-                ? 'diaspo_list.empty.no_results'.trParams({
-                    'query': controller.searchQuery.value,
-                  })
-                : 'diaspo_list.empty.no_offers'.tr,
-            message: searching
-                ? 'diaspo_list.empty.try_other'.tr
-                : 'diaspo_list.empty.be_first'.tr,
-            actionLabel: searching
-                ? 'diaspo_list.empty.clear_search'.tr
-                : 'diaspo_list.create_my_offer'.tr,
-            onAction: searching
-                ? () => controller.searchQuery.value = ''
-                : controller.handleCreateOffer,
+          final error = _freight?.error.value;
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              if (error != null)
+                Padding(padding: const EdgeInsets.all(16), child: Text(error)),
+              AppEmptyState(
+                icon: searching
+                    ? Icons.search_off_rounded
+                    : Icons.flight_takeoff_rounded,
+                title: searching
+                    ? 'diaspo_list.empty.no_results'.trParams({
+                        'query': controller.searchQuery.value,
+                      })
+                    : 'diaspo_list.empty.no_offers'.tr,
+                message: searching
+                    ? 'diaspo_list.empty.try_other'.tr
+                    : 'diaspo_list.empty.be_first'.tr,
+                actionLabel: searching
+                    ? 'diaspo_list.empty.clear_search'.tr
+                    : 'diaspo_list.create_my_offer'.tr,
+                onAction: searching
+                    ? () => controller.searchQuery.value = ''
+                    : controller.handleCreateOffer,
+              ),
+            ],
           );
         }
-
+        final loadingMore =
+            controller.isLoadingMore.value ||
+            (_freight?.isLoadingMore.value ?? false);
         return NotificationListener<ScrollNotification>(
           onNotification: (scrollInfo) {
             if (scrollInfo.metrics.pixels >=
-                scrollInfo.metrics.maxScrollExtent - 200) {
-              if (controller.hasMore &&
-                  !controller.isLoadingMore.value &&
-                  controller.searchQuery.value.isEmpty) {
-                controller.loadMore();
-              }
+                    scrollInfo.metrics.maxScrollExtent - 200 &&
+                controller.searchQuery.value.isEmpty) {
+              controller.loadMore();
+              _freight?.loadMore();
             }
             return false;
           },
           child: ListView.builder(
-            // Parcourir les résultats referme le clavier de la recherche, qui
-            // masquait la moitié de la liste.
+            physics: const AlwaysScrollableScrollPhysics(),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.all(16),
-            itemCount:
-                displayedOffers.length +
-                (controller.hasMore && controller.searchQuery.value.isEmpty
-                    ? 1
-                    : 0),
+            itemCount: entries.length + (loadingMore ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == displayedOffers.length) {
-                return Obx(
-                  () => controller.isLoadingMore.value
-                      ? const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : const SizedBox(),
+              if (index == entries.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
                 );
               }
-              return _buildOfferCard(context, displayedOffers[index], isDark);
+              return switch (entries[index].offer) {
+                MaritimeDeparture departure => _buildAirDepartureCard(
+                  departure,
+                  isDark,
+                ),
+                DiaspoOffer offer => _buildOfferCard(context, offer, isDark),
+                _ => const SizedBox.shrink(),
+              };
             },
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildAirDepartureCard(MaritimeDeparture departure, bool isDark) {
+    final muted = isDark ? Colors.white70 : AppDesign.neutral500;
+    final from = departure.originHub;
+    final to = departure.destinationHub;
+    return Container(
+      key: ValueKey('air-departure-${departure.id}'),
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: .06)
+              : AppDesign.neutral200,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _freight?.openDeparture(departure),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final stop in [
+                  (
+                    icon: Icons.flight_takeoff,
+                    color: AppDesign.success,
+                    hub: from,
+                  ),
+                  (icon: Icons.flight_land, color: AppDesign.danger, hub: to),
+                ]) ...[
+                  Row(
+                    children: [
+                      Icon(stop.icon, color: stop.color, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          [stop.hub?.city, stop.hub?.countryName]
+                              .whereType<String>()
+                              .where((value) => value.isNotEmpty)
+                              .join(', '),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppDesign.neutral900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Text(
+                  'Diaspo Exchange · ${departure.commercialSummary}',
+                  style: TextStyle(fontSize: 12, color: muted),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'maritime.departure_on'.trParams({
+                    'date': _freight!.formatDate(departure.departureDate),
+                  }),
+                  style: TextStyle(fontSize: 12, color: muted),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Divider(
+                    color: muted.withValues(alpha: .15),
+                    height: 1,
+                  ),
+                ),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'diaspo_list.card.price_per_kg'.tr,
+                          style: TextStyle(fontSize: 12, color: muted),
+                        ),
+                        Text(
+                          '${_freight!.formatAmount(departure.pricePerKg, departure.currency)}/kg',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppThemeSystem.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'diaspo_list.card.kg_available'.trParams({
+                        'kg': departure.remainingKg.toStringAsFixed(1),
+                      }),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppDesign.success,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  !departure.isBookable
+                      ? 'maritime.reservations_closed'.tr
+                      : departure.daysLeftToBook == 0
+                      ? 'maritime.last_day_to_book'.tr
+                      : 'maritime.days_left_to_book'.trParams({
+                          'days': '${departure.daysLeftToBook}',
+                        }),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: departure.isBookable ? AppDesign.success : muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -435,10 +620,22 @@ class DiaspoListView extends GetView<DiaspoListController> {
   /// Tab 3: Mes Achats
   Widget _buildMyBookingsAsBuyer(BuildContext context, bool isDark) {
     return RefreshIndicator(
-      onRefresh: controller.refresh,
+      onRefresh: () async {
+        await Future.wait([
+          controller.refresh(),
+          if (_freight != null) _freight!.loadMyBookings(),
+        ]);
+      },
       child: Obx(() {
-        if (controller.isLoading.value &&
-            controller.myBookingsAsBuyer.isEmpty) {
+        final shipments =
+            _freight?.myBookings
+                .where((booking) => booking.departure?.transportMode == 'air')
+                .toList() ??
+            <MaritimeBooking>[];
+        if ((controller.isLoading.value ||
+                (_freight?.isLoadingBookings.value ?? false)) &&
+            controller.myBookingsAsBuyer.isEmpty &&
+            shipments.isEmpty) {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: 3,
@@ -446,7 +643,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
           );
         }
 
-        if (controller.myBookingsAsBuyer.isEmpty) {
+        if (controller.myBookingsAsBuyer.isEmpty && shipments.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -468,8 +665,18 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: controller.myBookingsAsBuyer.length,
+          itemCount: controller.myBookingsAsBuyer.length + shipments.length,
           itemBuilder: (context, index) {
+            if (index >= controller.myBookingsAsBuyer.length) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: const MaritimeSection(transportMode: 'air')
+                    .buildBookingCard(
+                      shipments[index - controller.myBookingsAsBuyer.length],
+                      isDark,
+                    ),
+              );
+            }
             final booking = controller.myBookingsAsBuyer[index];
             return _buildBookingCard(context, booking, isDark, role: 'buyer');
           },
@@ -778,6 +985,16 @@ class DiaspoListView extends GetView<DiaspoListController> {
       color = AppDesign.danger;
       icon = Icons.cancel_outlined;
       label = 'diaspo_list.status_badge.rejected'.tr;
+    } else if (offer.status == 'expired' ||
+        !offer.departureDateTime.isAfter(DateTime.now())) {
+      color = Colors.grey;
+      icon = Icons.event_busy_outlined;
+      label = 'diaspo_list.status_badge.expired'.tr;
+    } else if ((offer.status == 'approved' || offer.status == 'active') &&
+        offer.remainingKg <= 0) {
+      color = Colors.grey;
+      icon = Icons.inventory_2_outlined;
+      label = 'diaspo_list.status_badge.full'.tr;
     } else if (offer.verificationStatus != 'verified') {
       final deadline = offer.formattedVerificationDeadline;
       color = AppDesign.accent;

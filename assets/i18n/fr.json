@@ -1,4 +1,49 @@
 {
+  "partner_freight": {
+    "air_travellers": "Voyageurs",
+    "air_partners": "Partenaires",
+    "occasional": "Par occasion",
+    "frequency": "Tous les @days jours",
+    "meeting_after_payment": "Les lieux précis de rendez-vous seront affichés après le paiement.",
+    "air_offers": "Fret aérien",
+    "sea": "Maritime",
+    "air": "Aérien",
+    "general": "Colis général",
+    "sensitive": "Colis sensible",
+    "transit_days": "@min–@max jours"
+  },
+  "landlord_upload": {
+    "id_document_type": "Choisissez une CNI ou un passeport.",
+    "id_front": "Ajoutez le recto de votre pièce d’identité (image de 8 Mo maximum).",
+    "id_back": "Ajoutez le verso de votre CNI (image de 8 Mo maximum).",
+    "ownership_proof_type": "Choisissez un type de preuve de propriété.",
+    "ownership_proof": "Ajoutez votre preuve de propriété (JPG, PNG, WebP ou PDF, 10 Mo maximum).",
+    "video": "Ajoutez une vidéo MP4, MOV, 3GP ou WebM de 100 Mo maximum.",
+    "id_size": "Cette photo dépasse 8 Mo. Choisissez une image plus légère.",
+    "proof_size": "Ce document dépasse 10 Mo. Choisissez un fichier plus léger.",
+    "video_size": "Cette vidéo dépasse 100 Mo. Réduisez sa taille ou enregistrez une vidéo plus courte.",
+    "read_failed": "Impossible de lire ce fichier. Sélectionnez-le à nouveau.",
+    "store_failed": "Impossible d’enregistrer ce fichier sur le serveur. Réessayez.",
+    "server": "Le serveur n’a pas pu enregistrer vos pièces. Vos fichiers sont conservés dans ce formulaire ; réessayez dans quelques instants.",
+    "network": "L’envoi n’a pas abouti. Vérifiez votre connexion puis réessayez.",
+    "too_large": "Le serveur refuse la taille totale des fichiers. Réduisez la taille de la vidéo et des photos puis réessayez."
+  },
+  "order_progress": {
+    "awaiting_payment": "Paiement en attente",
+    "to_confirm": "À confirmer",
+    "to_confirm_seller": "À confirmer par le vendeur",
+    "to_validate": "À valider",
+    "to_ship": "À expédier",
+    "preparing": "En préparation",
+    "shipped": "En livraison",
+    "in_transit": "En transit",
+    "last_mile": "Livraison locale",
+    "ready_for_pickup": "Disponible au retrait en agence",
+    "to_agency": "En acheminement vers l’agence",
+    "delivered": "Livrée",
+    "collected_at_agency": "Retirée en agence",
+    "cancelled": "Annulée"
+  },
   "common": {
     "coming_soon": "Bientôt disponible",
     "error": "Erreur",
@@ -1291,7 +1336,8 @@
       "service_unavailable": "Le service de virement bancaire est momentanément indisponible. Vérifiez votre connexion et réessayez dans quelques instants.",
       "iban_seems_invalid": "L'IBAN saisi semble invalide. Vérifiez-le puis réessayez.",
       "save_error_later": "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer plus tard.",
-      "fix_fields": "Certaines informations sont à corriger : voyez les messages en rouge sous les champs."
+      "fix_fields": "Certaines informations sont à corriger : voyez les messages en rouge sous les champs.",
+      "account_already_validated": "Votre IBAN est déjà validé. Désynchronisez-le avant d'en enregistrer un autre."
     },
     "birth_date_required_title": "Date de naissance requise",
     "birth_date_required_message": "Choisissez votre date de naissance : notre partenaire bancaire l’exige pour activer les virements.",
@@ -1316,10 +1362,15 @@
       "iban_too_long": "L’IBAN est trop long (34 caractères au plus).",
       "iban_checksum": "Cet IBAN contient une erreur (clé de contrôle fausse) : recopiez-le depuis votre RIB.",
       "holder_too_short": "Le nom du titulaire est trop court.",
+      "holder_too_long": "Le nom du titulaire ne peut pas dépasser 255 caractères.",
       "phone_international": "Commencez par l’indicatif du pays (ex. +33 6 12 34 56 78).",
       "phone_too_long": "Numéro trop long : vérifiez-le.",
       "address_too_short": "Adresse trop courte : indiquez le numéro et la rue.",
-      "postal_invalid": "Code postal non valide (lettres, chiffres, 3 à 10 caractères)."
+      "address_too_long": "L’adresse ne peut pas dépasser 255 caractères.",
+      "city_too_long": "Le nom de la ville ne peut pas dépasser 120 caractères.",
+      "postal_invalid": "Le code postal n’est pas valide.",
+      "postal_too_long": "Le code postal ne peut pas dépasser 20 caractères.",
+      "country_unsupported": "Les virements ne sont pas disponibles pour ce pays. Choisissez un pays pris en charge par Stripe."
     },
     "view": {
       "title": "Compte de virement",
@@ -3493,6 +3544,8 @@
     "unverified_profile": "Profil non vérifié",
     "status_badge": {
       "rejected": "Offre refusée",
+      "expired": "Départ passé · Retirée du catalogue",
+      "full": "Complet · Aucun kilo disponible",
       "unverified_deadline": "Publiée · Profil non vérifié — à régulariser avant le @date",
       "unverified": "Publiée · Profil non vérifié",
       "pending": "En attente d'approbation",
@@ -4285,13 +4338,13 @@
     "departures": "Départs",
     "my_shipments": "Mes envois"
   },
-  "search_hint": "Rechercher une ville ou un partenaire",
+  "search_hint": "Rechercher une ville ou un pays",
   "filter_all": "Tous les départs",
   "filter_bookable": "Réservables uniquement",
   "reservations_closed": "Réservations closes",
   "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
   "no_departure_matches": "Aucun départ ne correspond à votre recherche ou à ce filtre.",
-  "no_shipments": "Vous n'avez pas encore d'envoi maritime.",
+  "no_shipments": "Vous n'avez pas encore d'envoi international.",
   "departure_on": "Départ le @date",
   "kg_left": "@kg kg disponibles",
   "last_day_to_book": "Dernier jour pour réserver",
@@ -4315,7 +4368,7 @@
     "see_shipments": "Voir mes envois"
   },
   "form": {
-    "title": "Envoi par bateau",
+    "title": "Envoi international",
     "insurance_fields_intro": "Indiquez la nature du colis et sa valeur déclarée. Ces informations restent nécessaires même si vous ne souscrivez pas à l’assurance.",
     "insurance_opt_in": "Je souhaite assurer mon colis contre les risques de perte.",
     "insurance_legal_disclosure": "Cette assurance permet de prendre en charge le dédommagement du client en cas de perte du colis, conformément aux conditions d’assurance de la plateforme.",

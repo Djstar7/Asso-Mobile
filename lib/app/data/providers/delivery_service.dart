@@ -99,11 +99,19 @@ class DeliveryService {
   static Future<ApiResponse> getCoverage({
     required double latitude,
     required double longitude,
+    List<Map<String, int>>? items,
   }) async {
-    return await ApiProvider.get('/v1/delivery/coverage', queryParams: {
-      'latitude': latitude,
-      'longitude': longitude,
-    });
+    return await ApiProvider.get(
+      '/v1/delivery/coverage',
+      queryParams: {
+        if (items != null)
+          for (final (i, line) in items.indexed)
+            for (final field in line.entries)
+              'items[$i][${field.key}]': field.value,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
   }
 
   /// Check if delivery is available at a location

@@ -13,6 +13,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/iso_country_field.dart';
 import '../views/selfie_capture_view.dart';
+import '../../maritime/controllers/maritime_controller.dart';
 import 'package:dio/dio.dart' show DioException;
 
 class DiaspoListController extends GetxController {
@@ -79,7 +80,7 @@ class DiaspoListController extends GetxController {
   // Selected tab: 0 = Tous, 1 = Mes Offres, 2 = Mes Achats, 3 = Mes Ventes
   final selectedTab = 0.obs;
 
-  /// Rubrique : 0 = Avion (voyageurs), 1 = Maritime (départs des partenaires).
+  /// Deux rubriques : 0 = Avion, 1 = Maritime.
   final transportMode = 0.obs;
 
   /// Seuil indicatif avion / maritime réglé par ASSO (kg).
@@ -366,6 +367,9 @@ class DiaspoListController extends GetxController {
         if (myOffers.isEmpty) loadMyOffers();
         break;
       case 2:
+        if (Get.isRegistered<MaritimeController>()) {
+          Get.find<MaritimeController>().loadMyBookings();
+        }
         if (myBookingsAsBuyer.isEmpty) loadMyBookingsAsBuyer();
         break;
       case 3:
@@ -416,10 +420,14 @@ class DiaspoListController extends GetxController {
   }
 
   /// Handle create offer button
-  void handleCreateOffer() {
+  Future<void> handleCreateOffer() async {
     // L'identité n'empêche pas la publication : l'offre est en ligne avec la
     // mention « Profil non vérifié » jusqu'à la validation de l'identité.
-    Get.toNamed('/diaspo/create');
+    await Get.toNamed('/diaspo/create');
+    if (isClosed) return;
+    await loadOffers(refresh: true);
+    if (isClosed) return;
+    await loadMyOffers();
   }
 
   /// Ouvre le parcours de vérification sans bloquer la création d'une offre.

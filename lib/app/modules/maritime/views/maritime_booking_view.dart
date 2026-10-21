@@ -39,6 +39,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _routeCard(isDark),
+                    Obx(() => Text(controller.departure.value?.commercialSummary ?? '', style: TextStyle(color: AppThemeSystem.grey600))),
                     const SizedBox(height: 16),
                     _section(isDark, 'maritime.form.parcel'.tr, Icons.scale_outlined, [
                       Row(
@@ -219,13 +220,17 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.directions_boat, color: AppThemeSystem.primaryColor),
+            Icon(d.transportMode == 'air' ? Icons.flight : Icons.directions_boat, color: AppThemeSystem.primaryColor),
             const SizedBox(width: 8),
-            Expanded(child: Text(d.partnerName, style: const TextStyle(fontWeight: FontWeight.w700))),
+            Expanded(child: Text('Diaspo Exchange', style: const TextStyle(fontWeight: FontWeight.w700))),
             Text('${controller.formatAmount(d.pricePerKg)}/kg',
                 style: TextStyle(fontWeight: FontWeight.w700, color: AppThemeSystem.primaryColor)),
           ]),
           const SizedBox(height: 14),
+          if (!d.meetingDetailsAvailable) ...[
+            Text('partner_freight.meeting_after_payment'.tr, style: TextStyle(color: _muted(isDark))),
+            const SizedBox(height: 10),
+          ],
           hub(Icons.warehouse_outlined, AppDesign.success, 'maritime.form.dropoff_hub'.tr, from?.fullAddress),
           const SizedBox(height: 10),
           hub(Icons.place_outlined, AppDesign.danger, 'maritime.form.pickup_hub'.tr, to?.fullAddress),

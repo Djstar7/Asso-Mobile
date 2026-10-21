@@ -7,6 +7,13 @@ import 'package:get/get.dart';
 
 /// Service pour la gestion de la synchronisation des livreurs
 class DelivererService {
+  static Future<ApiResponse> updateAvailability(bool isOnline) {
+    return ApiProvider.put(
+      '/v1/delivery/availability',
+      body: {'is_online': isOnline},
+    );
+  }
+
   /// Vérifie la validité d'un code de synchronisation
   ///
   /// Paramètres:

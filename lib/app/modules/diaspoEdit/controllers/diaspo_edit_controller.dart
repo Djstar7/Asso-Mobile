@@ -202,11 +202,17 @@ class DiaspoEditController extends GetxController {
 
   /// Pick departure date
   Future<void> pickDepartureDate(BuildContext context) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final lastDate = today.add(const Duration(days: 365));
     final date = await showDatePicker(
       context: context,
-      initialDate: departureDateTime.value ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: _initialPickerDate(
+        departureDateTime.value ?? today.add(const Duration(days: 1)),
+        today,
+        lastDate,
+      ),
+      firstDate: today,
+      lastDate: lastDate,
     );
 
     if (date != null && context.mounted) {
@@ -230,12 +236,20 @@ class DiaspoEditController extends GetxController {
   /// Pick arrival date
   Future<void> pickArrivalDate(BuildContext context) async {
     final minDate = departureDateTime.value ?? DateTime.now().add(const Duration(days: 1));
+    final today = DateUtils.dateOnly(DateTime.now());
+    final departureDay = DateUtils.dateOnly(minDate.toLocal());
+    final firstDate = departureDay.isBefore(today) ? today : departureDay;
+    final lastDate = firstDate.add(const Duration(days: 30));
 
     final date = await showDatePicker(
       context: context,
-      initialDate: arrivalDateTime.value ?? minDate.add(const Duration(hours: 2)),
-      firstDate: minDate,
-      lastDate: minDate.add(const Duration(days: 30)),
+      initialDate: _initialPickerDate(
+        arrivalDateTime.value ?? minDate.add(const Duration(hours: 2)),
+        firstDate,
+        lastDate,
+      ),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (date != null && context.mounted) {
@@ -269,6 +283,15 @@ class DiaspoEditController extends GetxController {
         arrivalDateTime.value = selectedArrivalDateTime;
       }
     }
+  }
+
+  // Une ancienne date, ou une arrivée antérieure au nouveau départ, ne doit
+  // jamais empêcher l'ouverture du calendrier. Le modèle change à confirmation.
+  DateTime _initialPickerDate(DateTime selected, DateTime first, DateTime last) {
+    final day = DateUtils.dateOnly(selected.toLocal());
+    if (day.isBefore(first)) return first;
+    if (day.isAfter(last)) return last;
+    return day;
   }
 
   /// Format date time

@@ -112,6 +112,7 @@ class WholesaleDelivery extends ChangeNotifier {
   Future<void> pickOnMap() async {
     final result = await Get.to<Map<String, dynamic>>(
       () => MapSelectionView(
+        deliveryItems: items(),
         initialLatitude: latitude,
         initialLongitude: longitude,
         locationName: hasLocation ? address : null,
