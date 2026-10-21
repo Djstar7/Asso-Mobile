@@ -4619,6 +4619,12 @@
       "default_message": "Bonjour, je suis intéressé(e) par « @title » (réf. @reference)."
     },
     "quote": {
+      "legacy_commission": "Commission ASSO",
+      "net_amount": "Montant net",
+      "net_beneficiary": "Bénéficiaire du net",
+      "platform_share": "Part ASSO",
+      "cabinet": "Cabinet partenaire",
+      "landlord": "Bailleur",
       "title": "Récapitulatif",
       "title_land": "Acompte",
       "advance_months": "Mois d'avance",
@@ -4626,7 +4632,7 @@
       "lot_price": "Prix du lot",
       "advance": "Avance (@months mois)",
       "deposit": "Acompte (@percent %)",
-      "commission": "Commission ASSO",
+      "commission": "Commission du cabinet",
       "commission_help": "Non remboursable",
       "total": "Total à payer",
       "escrow": "Le montant du loyer est bloqué pendant @days jours, le temps de visiter. Vous confirmez sur ASSO que le logement est conforme, puis le bailleur est payé.",

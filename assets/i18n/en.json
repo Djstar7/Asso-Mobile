@@ -4620,6 +4620,12 @@
       "default_message": "Hello, I am interested in \"@title\" (ref. @reference)."
     },
     "quote": {
+      "legacy_commission": "ASSO commission",
+      "net_amount": "Net amount",
+      "net_beneficiary": "Net recipient",
+      "platform_share": "ASSO share",
+      "cabinet": "Partner agency",
+      "landlord": "Landlord",
       "title": "Summary",
       "title_land": "Deposit",
       "advance_months": "Months in advance",
@@ -4627,7 +4633,7 @@
       "lot_price": "Plot price",
       "advance": "Advance (@months months)",
       "deposit": "Deposit (@percent %)",
-      "commission": "ASSO commission",
+      "commission": "Partner agency commission",
       "commission_help": "Non-refundable",
       "total": "Total to pay",
       "escrow": "The rent is held for @days days so you can visit. You confirm on ASSO that the home matches, then the landlord is paid.",

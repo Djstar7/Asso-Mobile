@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'immo_fee_details.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
@@ -12,7 +13,7 @@ import 'immo_sheets.dart';
 import 'immo_widgets.dart';
 
 /// Récapitulatif des montants avant de réserver : loyer × mois d'avance (ou
-/// acompte du terrain), commission ASSO non remboursable, total.
+/// acompte du terrain), parts ASSO et cabinet partenaire, total.
 Future<void> showImmoQuoteSheet(
   BuildContext context, {
   required RealEstateListing listing,
@@ -112,6 +113,12 @@ class _QuoteSheetState extends State<_QuoteSheet> {
                           'immo.quote.advance'.trParams({'months': '${q.advanceMonths ?? _months}'}),
                           immoPrice(q.baseAmount),
                         ),
+ImmoFeeDetails(
+                  netAmount: q.netAmount,
+                  platformAmount: q.platformAmount,
+                  cabinetName: q.commissionCabinet?.name,
+                  netPayeeKind: q.netPayeeKind,
+                ),
                       if (q.commission > 0)
                         _row(context, 'immo.quote.commission'.tr, immoPrice(q.commission), help: 'immo.quote.commission_help'.tr),
                       const Divider(height: AppDesign.space6),

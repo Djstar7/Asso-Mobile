@@ -359,9 +359,9 @@ class _ImmoListingViewState extends State<ImmoListingView> {
                   const SizedBox(height: AppDesign.space4),
                   _Protection(listing: listing),
                   const SizedBox(height: AppDesign.space4),
-                  if (listing.isLand && listing.cabinet != null)
-                    _CabinetCard(listing: listing)
-                  else if (!listing.isLand)
+                  if (listing.cabinet != null || listing.commissionCabinet != null)
+                    _CabinetCard(listing: listing),
+                  if (!listing.isLand && listing.netPayeeKind != 'cabinet')
                     _OwnerCard(
                       listing: listing,
                       onContact: () =>
@@ -1474,7 +1474,7 @@ class _CabinetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cabinet = listing.cabinet!;
+    final cabinet = (listing.cabinet ?? listing.commissionCabinet)!;
     final contact = cabinet.contact;
 
     return AppCard(

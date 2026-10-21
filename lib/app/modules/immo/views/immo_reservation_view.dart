@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../widgets/immo_fee_details.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -116,7 +117,7 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
       );
     }
     final gutter = context.ds.gutter;
-    final contact = r.contact;
+    final contact = r.hasVisibleContact ? r.contact : null;
     final (Color tone, Color bg, String statusLabel) = switch (r.status) {
       'paid' => (AppDesign.warningText, AppDesign.warningSubtle, 'immo.booking.status_paid'.tr),
       'released' || 'confirmed' => (AppDesign.successText, AppDesign.successSubtle, 'immo.booking.status_released'.tr),
@@ -178,7 +179,7 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.isLand ? 'immo.booking.cabinet_contact'.tr : 'immo.booking.owner_contact'.tr,
+                    Text(r.isLand || r.netPayeeKind == 'cabinet' ? 'immo.booking.cabinet_contact'.tr : 'immo.booking.owner_contact'.tr,
                         style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w800, color: context.ds.textPrimary)),
                     const SizedBox(height: AppDesign.space2),
                     for (final (IconData icon, String key) in [
@@ -219,7 +220,13 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
                     children: [
                       _row(context, r.isLand ? 'immo.quote.lot_price'.tr : 'immo.quote.monthly_rent'.tr, immoPrice(r.unitPrice)),
                       _row(context, r.isLand ? 'immo.booking.deposit'.tr : 'immo.quote.advance'.trParams({'months': '${r.advanceMonths ?? 1}'}), immoPrice(r.baseAmount)),
-                      if (r.commissionAmount > 0) _row(context, 'immo.quote.commission'.tr, immoPrice(r.commissionAmount)),
+                      ImmoFeeDetails(
+                        netAmount: r.netAmount,
+                        platformAmount: r.platformAmount,
+                        cabinetName: r.commissionCabinet?.name,
+                        netPayeeKind: r.netPayeeKind,
+                      ),
+                      if (r.commissionAmount > 0) _row(context, (r.partnerCommissionAmount != null && r.partnerCommissionAmount! > 0 ? 'immo.quote.commission' : 'immo.quote.legacy_commission').tr, immoPrice(r.commissionAmount)),
                       const Divider(),
                       _row(context, 'immo.booking.paid'.tr, immoPrice(r.totalAmount), bold: true),
                     ],

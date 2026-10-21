@@ -296,6 +296,8 @@ class RealEstateListing {
   final bool lowStock;
   final List<String> amenityNames;
   final RealEstateCabinet? cabinet;
+  final RealEstateCabinet? commissionCabinet;
+  final String? netPayeeKind;
   bool isFavorite;
 
   // Fiche détaillée.
@@ -355,6 +357,8 @@ class RealEstateListing {
     this.lowStock = false,
     this.amenityNames = const [],
     this.cabinet,
+    this.commissionCabinet,
+    this.netPayeeKind,
     this.isFavorite = false,
     this.description,
     this.access = const RealEstateAccess(),
@@ -431,6 +435,8 @@ class RealEstateListing {
       lowStock: _bool(j['low_stock']),
       amenityNames: amenities is List ? amenities.map((e) => e.toString()).toList() : const [],
       cabinet: j['cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['cabinet'])) : null,
+      commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
+      netPayeeKind: j['net_payee_kind']?.toString(),
       isFavorite: _bool(j['is_favorite']),
       description: j['description']?.toString(),
       access: RealEstateAccess.fromJson(j['access'] is Map ? Map<String, dynamic>.from(j['access']) : null),
@@ -468,6 +474,10 @@ class RealEstateQuote {
   final int commission;
   final int total;
   final int? unitId;
+  final int? netAmount;
+  final int? platformAmount;
+  final RealEstateCabinet? commissionCabinet;
+  final String? netPayeeKind;
 
   const RealEstateQuote({
     required this.unitPrice,
@@ -477,6 +487,10 @@ class RealEstateQuote {
     required this.commission,
     required this.total,
     this.unitId,
+    this.netAmount,
+    this.platformAmount,
+    this.commissionCabinet,
+    this.netPayeeKind,
   });
 
   factory RealEstateQuote.fromJson(Map<String, dynamic> j) => RealEstateQuote(
@@ -487,6 +501,10 @@ class RealEstateQuote {
         commission: _int(j['commission']),
         total: _int(j['total']),
         unitId: _intOrNull(j['unit_id']),
+        netAmount: _intOrNull(j['net_amount']),
+        platformAmount: _intOrNull(j['platform_amount']),
+        commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
+        netPayeeKind: j['net_payee_kind']?.toString(),
       );
 }
 
@@ -584,6 +602,11 @@ class RealEstateReservation {
   final int commissionAmount;
   final int totalAmount;
   final int? ownerAmount;
+  final int? netAmount;
+  final int? platformAmount;
+  final int? partnerCommissionAmount;
+  final RealEstateCabinet? commissionCabinet;
+  final String? netPayeeKind;
   final String? paymentMethod;
   final DateTime? paidAt;
   final DateTime? visitDeadlineAt;
@@ -618,6 +641,11 @@ class RealEstateReservation {
     this.commissionAmount = 0,
     this.totalAmount = 0,
     this.ownerAmount,
+    this.netAmount,
+    this.platformAmount,
+    this.partnerCommissionAmount,
+    this.commissionCabinet,
+    this.netPayeeKind,
     this.paymentMethod,
     this.paidAt,
     this.visitDeadlineAt,
@@ -640,6 +668,7 @@ class RealEstateReservation {
 
   bool get isLand => kind == 'land';
   bool get isPaid => const ['paid', 'disputed', 'released', 'confirmed'].contains(status);
+  bool get hasVisibleContact => isPaid && contact != null;
   String get title => listing?['title']?.toString() ?? reference;
   int? get listingId => _intOrNull(listing?['id']);
 
@@ -658,6 +687,11 @@ class RealEstateReservation {
         commissionAmount: _int(j['commission_amount']),
         totalAmount: _int(j['total_amount']),
         ownerAmount: _intOrNull(j['owner_amount']),
+        netAmount: _intOrNull(j['net_amount']),
+        platformAmount: _intOrNull(j['platform_amount']),
+        partnerCommissionAmount: _intOrNull(j['partner_commission_amount']),
+        commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
+        netPayeeKind: j['net_payee_kind']?.toString(),
         paymentMethod: j['payment_method']?.toString(),
         paidAt: _date(j['paid_at']),
         visitDeadlineAt: _date(j['visit_deadline_at']),
