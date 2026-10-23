@@ -45,9 +45,10 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   pinned: true,
                   delegate: _TabsHeaderDelegate(
                     backgroundColor: context.backgroundColor,
-                    height: (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 32)
-                        .clamp(64.0, double.infinity)
-                        .toDouble(),
+                    height:
+                        (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 32)
+                            .clamp(64.0, double.infinity)
+                            .toDouble(),
                     child: _buildTabs(context),
                   ),
                 ),
@@ -976,7 +977,11 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildTabChip(context, null, 'delivery_dashboard.filters.all'.tr),
+                    _buildTabChip(
+                      context,
+                      null,
+                      'delivery_dashboard.filters.all'.tr,
+                    ),
                     const SizedBox(width: 8),
                     _buildTabChip(
                       context,
@@ -990,9 +995,17 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                       'delivery_dashboard.status.in_progress'.tr,
                     ),
                     const SizedBox(width: 8),
-                    _buildTabChip(context, DeliveryStatus.delivered, 'delivery_dashboard.status.delivered_plural'.tr),
+                    _buildTabChip(
+                      context,
+                      DeliveryStatus.delivered,
+                      'delivery_dashboard.status.delivered_plural'.tr,
+                    ),
                     const SizedBox(width: 8),
-                    _buildTabChip(context, DeliveryStatus.cancelled, 'delivery_dashboard.status.cancelled_plural'.tr),
+                    _buildTabChip(
+                      context,
+                      DeliveryStatus.cancelled,
+                      'delivery_dashboard.status.cancelled_plural'.tr,
+                    ),
                   ],
                 ),
               ),
@@ -1310,7 +1323,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${request.customerName} • ${request.distance.toStringAsFixed(1)} km',
+                      '${request.customerName} • ${request.distance == null ? 'delivery_dashboard.distance_unavailable'.tr : '${request.distance!.toStringAsFixed(1)} km${request.distanceType == 'straight_line' ? ' (${'delivery_dashboard.straight_line'.tr})' : ''}'}',
                       style: context.body2.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1563,7 +1576,10 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   side: BorderSide(color: AppThemeSystem.errorColor),
                 ),
-                child: Text('delivery_dashboard.actions.decline'.tr, style: const TextStyle(fontSize: 12)),
+                child: Text(
+                  'delivery_dashboard.actions.decline'.tr,
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -1578,7 +1594,9 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
                 child: Text(
-                  full ? 'delivery_dashboard.actions.round_full'.tr : 'delivery_dashboard.actions.accept'.tr,
+                  full
+                      ? 'delivery_dashboard.actions.round_full'.tr
+                      : 'delivery_dashboard.actions.accept'.tr,
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
@@ -1589,6 +1607,18 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
     } else if (request.status == DeliveryStatus.inProgress) {
       return Column(
         children: [
+          for (final step in request.carrierSteps) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () =>
+                    controller.advanceCarrier(request, step['key']!),
+                icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                label: Text(step['label']!),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           // Trace le trajet boutique -> client sur la carte, en haut de l'écran.
           SizedBox(
             width: double.infinity,
@@ -1622,7 +1652,10 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                     request.dropoff?.phone ?? request.customerPhone,
                   ),
                   icon: const Icon(Icons.phone, size: 16),
-                  label: Text('delivery_dashboard.actions.call'.tr, style: const TextStyle(fontSize: 12)),
+                  label: Text(
+                    'delivery_dashboard.actions.call'.tr,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -1631,12 +1664,20 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => controller.markAsDelivered(request.id),
+                  onPressed: request.canComplete
+                      ? () => controller.markAsDelivered(request.id)
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppThemeSystem.successColor,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: Text('delivery_dashboard.actions.delivered'.tr, style: const TextStyle(fontSize: 12)),
+                  child: Text(
+                    (request.completionKind == 'agency'
+                            ? 'delivery_dashboard.actions.hand_to_agency'
+                            : 'delivery_dashboard.actions.delivered')
+                        .tr,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ],
@@ -1649,10 +1690,14 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
     return Text(
       request.deliveredDate != null
           ? 'delivery_dashboard.delivered_on'.trParams({
-              'date': DateFormat('delivery_dashboard.date_time_format'.tr).format(request.deliveredDate!),
+              'date': DateFormat(
+                'delivery_dashboard.date_time_format'.tr,
+              ).format(request.deliveredDate!),
             })
           : 'delivery_dashboard.cancelled_on'.trParams({
-              'date': DateFormat('delivery_dashboard.date_time_format'.tr).format(request.requestDate),
+              'date': DateFormat(
+                'delivery_dashboard.date_time_format'.tr,
+              ).format(request.requestDate),
             }),
       style: context.caption.copyWith(color: context.secondaryTextColor),
     );

@@ -44,11 +44,15 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
   @override
   Widget build(BuildContext context) {
     final id = int.tryParse('${course['id']}') ?? 0;
-    final isReturn = course['type'] == 'return';
+    final isReturn = course['type'] != 'replacement';
     final isMine = course['is_mine'] == true;
     final pickedUp = course['picked_up'] == true;
-    final pickup = Map<String, dynamic>.from(course['pickup'] as Map? ?? const {});
-    final dropoff = Map<String, dynamic>.from(course['dropoff'] as Map? ?? const {});
+    final pickup = Map<String, dynamic>.from(
+      course['pickup'] as Map? ?? const {},
+    );
+    final dropoff = Map<String, dynamic>.from(
+      course['dropoff'] as Map? ?? const {},
+    );
     final commission = double.tryParse('${course['commission'] ?? 0}') ?? 0;
 
     return Container(
@@ -65,7 +69,9 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
           Row(
             children: [
               Icon(
-                isReturn ? Icons.assignment_return_outlined : Icons.swap_horiz_rounded,
+                isReturn
+                    ? Icons.assignment_return_outlined
+                    : Icons.swap_horiz_rounded,
                 size: 20,
                 color: AppDesign.warning,
               ),
@@ -78,11 +84,15 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
                       isReturn
                           ? 'delivery_dashboard.dispute.return_title'.tr
                           : 'delivery_dashboard.dispute.replacement_title'.tr,
-                      style: context.body2.copyWith(fontWeight: FontWeight.bold),
+                      style: context.body2.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '${course['product_name'] ?? ''} · ${course['dispute_number'] ?? ''}',
-                      style: context.caption.copyWith(color: context.secondaryTextColor),
+                      style: context.caption.copyWith(
+                        color: context.secondaryTextColor,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -101,9 +111,19 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
             ],
           ),
           const SizedBox(height: 10),
-          _stop(context, '1. ${'delivery_dashboard.dispute.pickup'.tr}', pickup, AppDesign.accent),
+          _stop(
+            context,
+            '1. ${'delivery_dashboard.dispute.pickup'.tr}',
+            pickup,
+            AppDesign.accent,
+          ),
           const SizedBox(height: 6),
-          _stop(context, '2. ${'delivery_dashboard.dispute.dropoff'.tr}', dropoff, AppDesign.success),
+          _stop(
+            context,
+            '2. ${'delivery_dashboard.dispute.dropoff'.tr}',
+            dropoff,
+            AppDesign.success,
+          ),
           const SizedBox(height: 6),
           Text(
             isReturn
@@ -115,17 +135,36 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
           Obx(() {
             final busy = controller.disputeCourseBusyId.value == id;
             final (label, icon, onPressed) = !isMine
-                ? ('delivery_dashboard.actions.accept'.tr, Icons.check_rounded, () => controller.acceptDisputeCourse(id))
+                ? (
+                    'delivery_dashboard.actions.accept'.tr,
+                    Icons.check_rounded,
+                    () => controller.acceptDisputeCourse(id),
+                  )
                 : !pickedUp
-                    ? ('delivery_dashboard.dispute.picked_up'.tr, Icons.inventory_2_outlined, () => controller.pickUpDisputeCourse(id))
-                    : ('delivery_dashboard.dispute.hand_over'.tr, Icons.pin_outlined, () => controller.completeDisputeCourse(id, isReturn: isReturn));
+                ? (
+                    'delivery_dashboard.dispute.picked_up'.tr,
+                    Icons.inventory_2_outlined,
+                    () => controller.pickUpDisputeCourse(id),
+                  )
+                : (
+                    'delivery_dashboard.dispute.hand_over'.tr,
+                    Icons.pin_outlined,
+                    () => controller.completeDisputeCourse(
+                      id,
+                      isReturn: isReturn,
+                    ),
+                  );
 
             return SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: busy ? null : onPressed,
                 icon: busy
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : Icon(icon, size: 18),
                 label: Text(label),
               ),
@@ -137,7 +176,12 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
   }
 
   /// Point de retrait ou de remise, avec le bouton d'appel.
-  Widget _stop(BuildContext context, String step, Map<String, dynamic> stop, Color color) {
+  Widget _stop(
+    BuildContext context,
+    String step,
+    Map<String, dynamic> stop,
+    Color color,
+  ) {
     final phone = stop['phone']?.toString() ?? '';
     final address = stop['address']?.toString() ?? '';
 
@@ -156,7 +200,11 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
               children: [
                 Text(
                   step,
-                  style: context.caption.copyWith(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+                  style: context.caption.copyWith(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
                   '${stop['name'] ?? ''}',
@@ -167,7 +215,9 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
                 if (address.isNotEmpty)
                   Text(
                     address,
-                    style: context.caption.copyWith(color: context.secondaryTextColor),
+                    style: context.caption.copyWith(
+                      color: context.secondaryTextColor,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

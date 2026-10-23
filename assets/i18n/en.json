@@ -3302,7 +3302,7 @@
     },
     "sheet_title": "Order tracking",
     "confirmation_code": "Confirmation code",
-    "code_hint": "Give this code to the courier",
+    "code_hint": "Give this code to the courier only when the parcel is handed to you.",
     "your_courier": "Your courier",
     "delivery": "Delivery",
     "received_parcel": "I received my parcel",
@@ -3371,6 +3371,7 @@
       "order_value": "Order value"
     },
     "actions": {
+      "hand_to_agency": "Hand over to agency",
       "call": "Call",
       "decline": "Decline",
       "round_full": "Round full",
@@ -3408,6 +3409,7 @@
       "failed": "Unable to decline the request"
     },
     "confirm": {
+      "agency_prompt": "Enter the handover code provided by ASSO to the agency recipient. The customer will collect the parcel at the agency later.",
       "title": "Confirm delivery",
       "prompt": "Enter the 6-digit secret code given by the customer:",
       "success_title": "Delivery confirmed!",
@@ -3857,6 +3859,10 @@
       "available_elsewhere": "Available elsewhere:"
     },
     "delivery": {
+      "calculate": "Calculate delivery offers",
+      "street_address": "Street address and landmark",
+      "quarter": "Neighbourhood",
+      "city": "City",
       "missing_address": "Enter your delivery address.",
       "missing_details": "Add address details: landmark, building, gate…",
       "missing_phone": "Enter a valid contact number.",
@@ -4148,6 +4154,7 @@
       "other": "Other"
     },
     "form": {
+      "quantity": "Disputed quantity",
       "title": "Report a problem",
       "replacement_title": "Problem with the replacement product",
       "submit": "Send my claim",
@@ -4174,6 +4181,7 @@
       "unfounded": "Claim not upheld"
     },
     "shipment": {
+      "collection_title": "Collection for exchange",
       "return_title": "Product return",
       "replacement_title": "Replacement product",
       "paid_by_asso": "Delivery covered by ASSO",
@@ -4181,7 +4189,7 @@
       "free_for_you": "No delivery fees for you",
       "tracking": "Tracking no.: @number",
       "code_client": "Your delivery code, to give the courier only when they hand you the product:",
-      "code_vendor": "Your return code, to give the courier when they bring the product back (the customer is then refunded):",
+      "code_vendor": "Shop reception code: share it with the courier only when the item is handed over.",
       "courier": "Courier: @name",
       "call_courier": "Call the courier"
     },
@@ -4215,6 +4223,7 @@
       "replacement_subtitle": "Shipping the replacement to the customer, at your expense"
     },
     "vendor": {
+      "response_due": "Response expected by @date",
       "list_title": "Claims",
       "dashboard_subtitle": "Customer disputes, replacements and returns",
       "filter_open": "Open",
@@ -5020,5 +5029,7 @@
   "core.delivery.pickup_agency": "Pickup agency",
   "core.delivery.agency_address": "Address",
   "core.delivery.agency_phone": "Agency phone",
-  "core.delivery.agency_pickup_instructions": "Your parcel is ready. Present your order reference at the agency for collection."
+  "core.delivery.agency_pickup_instructions": "Your parcel is ready. Present your order reference at the agency for collection.",
+  "delivery_dashboard.distance_unavailable": "Distance unavailable",
+  "delivery_dashboard.straight_line": "straight line"
 }

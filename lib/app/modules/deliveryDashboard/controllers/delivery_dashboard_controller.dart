@@ -127,6 +127,8 @@ class DeliveryDashboardController extends GetxController {
   final isLoadingCompany = false.obs;
 
   StreamSubscription? _orderFcmSubscription;
+  Timer? _deliveryRefresh;
+  bool _fetchingDeliveries = false;
 
   @override
   void onInit() {
@@ -134,6 +136,9 @@ class DeliveryDashboardController extends GetxController {
     loadCompanyInfo();
     loadDeliveries();
     _listenToDeliveryNotifications();
+    _deliveryRefresh = Timer.periodic(const Duration(seconds: 30), (_) {
+      loadDeliveries(silent: true);
+    });
     // Position réelle dès l'ouverture, sans déplacer la carte de force.
     locateMe(zoom: false);
 
@@ -202,6 +207,7 @@ class DeliveryDashboardController extends GetxController {
   @override
   void onClose() {
     _orderFcmSubscription?.cancel();
+    _deliveryRefresh?.cancel();
     super.onClose();
   }
 
@@ -226,8 +232,10 @@ class DeliveryDashboardController extends GetxController {
   }
 
   /// Charge les demandes de livraison depuis l'API
-  Future<void> loadDeliveries() async {
-    isLoading.value = true;
+  Future<void> loadDeliveries({bool silent = false}) async {
+    if (_fetchingDeliveries) return;
+    _fetchingDeliveries = true;
+    if (!silent) isLoading.value = true;
     try {
       print('🚚 Chargement des livraisons depuis l\'API...');
       final response = await VendorService.getDeliveryDashboard();
@@ -287,6 +295,7 @@ class DeliveryDashboardController extends GetxController {
         colorText: Colors.white,
       );
     } finally {
+      _fetchingDeliveries = false;
       isLoading.value = false;
     }
     await loadDisputeCourses();
@@ -347,12 +356,21 @@ class DeliveryDashboardController extends GetxController {
     try {
       final response = await action();
       Get.snackbar(
-        response.success ? 'delivery_dashboard.dispute.title'.tr : 'delivery_dashboard.errors.error'.tr,
         response.success
-            ? (success ?? (response.message.isNotEmpty ? response.message : 'delivery_dashboard.dispute.updated'.tr))
-            : (response.message.isNotEmpty ? response.message : 'delivery_dashboard.errors.generic'.tr),
+            ? 'delivery_dashboard.dispute.title'.tr
+            : 'delivery_dashboard.errors.error'.tr,
+        response.success
+            ? (success ??
+                  (response.message.isNotEmpty
+                      ? response.message
+                      : 'delivery_dashboard.dispute.updated'.tr))
+            : (response.message.isNotEmpty
+                  ? response.message
+                  : 'delivery_dashboard.errors.generic'.tr),
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: response.success ? AppDesign.success : AppDesign.danger,
+        backgroundColor: response.success
+            ? AppDesign.success
+            : AppDesign.danger,
         colorText: Colors.white,
       );
     } catch (_) {
@@ -399,7 +417,9 @@ class DeliveryDashboardController extends GetxController {
       // Le backend peut retourner 'customer' comme objet ou des champs plats
       final customer = request['customer'] as Map<String, dynamic>?;
       final customerName =
-          request['customer_name'] ?? customer?['name'] ?? 'delivery_dashboard.customer'.tr;
+          request['customer_name'] ??
+          customer?['name'] ??
+          'delivery_dashboard.customer'.tr;
       final customerPhone =
           request['customer_phone']?.toString() ??
           customer?['phone']?.toString() ??
@@ -447,7 +467,8 @@ class DeliveryDashboardController extends GetxController {
         deliveryLocation: deliveryLat != null && deliveryLng != null
             ? LatLng(deliveryLat, deliveryLng)
             : const LatLng(4.0511, 9.7679),
-        distance: (request['distance'] ?? 0).toDouble(),
+        distance: double.tryParse(request['distance']?.toString() ?? ''),
+        distanceType: request['distance_type'] as String?,
         commission: commission,
         requestDate: _parseDate(request['created_at']),
         acceptedDate: request['shipped_at'] != null
@@ -457,6 +478,19 @@ class DeliveryDashboardController extends GetxController {
             ? _parseDate(request['delivered_at'])
             : null,
         notes: request['notes'] ?? '',
+        carrierManaged: request['carrier_managed'] == true,
+        canComplete:
+            request['can_complete'] == true ||
+            (request['can_complete'] == null &&
+                request['carrier_managed'] != true &&
+                (request['delivery'] as Map?)?['is_carrier'] != true),
+        completionKind: request['completion_kind']?.toString() ?? 'client',
+        carrierSteps: ((request['carrier_steps'] as List?) ?? const [])
+            .whereType<Map>()
+            .map(
+              (step) => {'key': '${step['key']}', 'label': '${step['label']}'},
+            )
+            .toList(),
         orderNumber: request['order_number']?.toString(),
         orderTotal: double.tryParse((request['total'] ?? 0).toString()) ?? 0,
         items:
@@ -588,7 +622,9 @@ class DeliveryDashboardController extends GetxController {
     }
 
     Get.snackbar(
-      isOnline.value ? 'delivery_dashboard.online.title_on'.tr : 'delivery_dashboard.online.title_off'.tr,
+      isOnline.value
+          ? 'delivery_dashboard.online.title_on'.tr
+          : 'delivery_dashboard.online.title_off'.tr,
       isOnline.value
           ? 'delivery_dashboard.online.message_on'.tr
           : 'delivery_dashboard.online.message_off'.tr,
@@ -661,6 +697,7 @@ class DeliveryDashboardController extends GetxController {
         deliveryAddress: request.deliveryAddress,
         deliveryLocation: request.deliveryLocation,
         distance: request.distance,
+        distanceType: request.distanceType,
         commission: request.commission,
         requestDate: request.requestDate,
         acceptedDate: request.acceptedDate,
@@ -738,9 +775,28 @@ class DeliveryDashboardController extends GetxController {
     return confirm == true && code.length == 6 ? code : null;
   }
 
+  Future<void> advanceCarrier(DeliveryRequest request, String step) async {
+    final id = int.tryParse(request.id);
+    if (id == null) return;
+    final response = await DeliveryService.advanceCarrier(id, step);
+    if (response.success) {
+      await loadDeliveries();
+    } else {
+      Get.snackbar('delivery_dashboard.errors.error'.tr, response.message);
+    }
+  }
+
   /// Complète une livraison avec le code secret du client
   Future<void> markAsDelivered(String requestId) async {
-    final code = await _askConfirmationCode('delivery_dashboard.confirm.prompt'.tr);
+    final request = allRequests.firstWhereOrNull(
+      (item) => item.id == requestId,
+    );
+    if (request != null && !request.canComplete) return;
+    final code = await _askConfirmationCode(
+      request?.completionKind == 'agency'
+          ? 'delivery_dashboard.confirm.agency_prompt'.tr
+          : 'delivery_dashboard.confirm.prompt'.tr,
+    );
     if (code == null) return;
 
     try {
@@ -764,7 +820,9 @@ class DeliveryDashboardController extends GetxController {
       } else {
         Get.snackbar(
           'delivery_dashboard.errors.error'.tr,
-          response.message.isNotEmpty ? response.message : 'delivery_dashboard.confirm.wrong_code'.tr,
+          response.message.isNotEmpty
+              ? response.message
+              : 'delivery_dashboard.confirm.wrong_code'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
@@ -987,9 +1045,7 @@ class DeliveryDashboardController extends GetxController {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         title: Text('delivery_dashboard.unsync.title'.tr),
-        content: Text(
-          'delivery_dashboard.unsync.message'.tr,
-        ),
+        content: Text('delivery_dashboard.unsync.message'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),

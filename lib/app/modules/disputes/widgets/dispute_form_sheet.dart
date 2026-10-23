@@ -11,11 +11,17 @@ import '../models/dispute_models.dart';
 
 /// Ce que le client a saisi dans « Signaler un problème ».
 class DisputeFormResult {
+  final int? quantity;
   final String reason;
   final String description;
   final List<XFile> photos;
 
-  const DisputeFormResult({required this.reason, required this.description, required this.photos});
+  const DisputeFormResult({
+    this.quantity,
+    required this.reason,
+    required this.description,
+    required this.photos,
+  });
 }
 
 /// « Signaler un problème » : motif, explication libre et photos justificatives.
@@ -23,8 +29,17 @@ class DisputeFormResult {
 /// [reasons] remplace les motifs des commandes (clé, libellé), par exemple les
 /// motifs de l'Immobilier configurés par ASSO ; [notice] la mention du bas.
 class DisputeFormSheet extends StatefulWidget {
-  const DisputeFormSheet({super.key, required this.productName, this.withReason = true, this.title, this.reasons, this.notice});
+  const DisputeFormSheet({
+    super.key,
+    required this.productName,
+    this.withReason = true,
+    this.title,
+    this.reasons,
+    this.notice,
+    this.maxQuantity,
+  });
 
+  final int? maxQuantity;
   final String productName;
   final bool withReason;
   final String? title;
@@ -34,12 +49,20 @@ class DisputeFormSheet extends StatefulWidget {
   static Future<DisputeFormResult?> show({
     required String productName,
     bool withReason = true,
+    int? maxQuantity,
     String? title,
     List<(String, String)>? reasons,
     String? notice,
   }) {
     return AppSheet.show<DisputeFormResult>(
-      DisputeFormSheet(productName: productName, withReason: withReason, title: title, reasons: reasons, notice: notice),
+      DisputeFormSheet(
+        maxQuantity: maxQuantity,
+        productName: productName,
+        withReason: withReason,
+        title: title,
+        reasons: reasons,
+        notice: notice,
+      ),
     );
   }
 
@@ -54,6 +77,7 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
   final _picker = ImagePicker();
   final List<XFile> _photos = [];
   String? _reason;
+  int _quantity = 1;
 
   @override
   void dispose() {
@@ -61,10 +85,15 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
     super.dispose();
   }
 
-  bool get _valid => (!widget.withReason || _reason != null) && _description.text.trim().length >= 10;
+  bool get _valid =>
+      (!widget.withReason || _reason != null) &&
+      _description.text.trim().length >= 10;
 
   Future<void> _addPhotos() async {
-    final picked = await _picker.pickMultiImage(imageQuality: 80, maxWidth: 1600);
+    final picked = await _picker.pickMultiImage(
+      imageQuality: 80,
+      maxWidth: 1600,
+    );
     if (picked.isEmpty) return;
     setState(() => _photos.addAll(picked.take(_maxPhotos - _photos.length)));
   }
@@ -80,34 +109,77 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
         label: 'disputes.form.submit'.tr,
         icon: Icons.send_rounded,
         onPressed: _valid
-            ? () => Navigator.of(context).pop(DisputeFormResult(
+            ? () => Navigator.of(context).pop(
+                DisputeFormResult(
+                  quantity: widget.maxQuantity == null ? null : _quantity,
                   reason: _reason ?? 'other',
                   description: _description.text.trim(),
                   photos: List.of(_photos),
-                ))
+                ),
+              )
             : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (widget.maxQuantity != null) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'disputes.form.quantity'.tr,
+                    style: context.body2,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _quantity > 1
+                      ? () => setState(() => _quantity--)
+                      : null,
+                  icon: const Icon(Icons.remove),
+                ),
+                Text('$_quantity / ${widget.maxQuantity}'),
+                IconButton(
+                  onPressed: _quantity < widget.maxQuantity!
+                      ? () => setState(() => _quantity++)
+                      : null,
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDesign.space3),
+          ],
           if (widget.withReason) ...[
-            Text('disputes.form.reason'.tr, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              'disputes.form.reason'.tr,
+              style: context.body2.copyWith(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: AppDesign.space2),
             Wrap(
               spacing: AppDesign.space2,
               runSpacing: AppDesign.space2,
-              children: (widget.reasons ?? [for (final r in disputeReasons) (r, 'disputes.reasons.$r'.tr)])
-                  .map((reason) => ChoiceChip(
-                        label: Text(reason.$2),
-                        selected: _reason == reason.$1,
-                        selectedColor: AppDesign.accentSubtle,
-                        onSelected: (_) => setState(() => _reason = reason.$1),
-                      ))
-                  .toList(),
+              children:
+                  (widget.reasons ??
+                          [
+                            for (final r in disputeReasons)
+                              (r, 'disputes.reasons.$r'.tr),
+                          ])
+                      .map(
+                        (reason) => ChoiceChip(
+                          label: Text(reason.$2),
+                          selected: _reason == reason.$1,
+                          selectedColor: AppDesign.accentSubtle,
+                          onSelected: (_) =>
+                              setState(() => _reason = reason.$1),
+                        ),
+                      )
+                      .toList(),
             ),
             const SizedBox(height: AppDesign.space4),
           ],
-          Text('disputes.form.explain'.tr, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'disputes.form.explain'.tr,
+            style: context.body2.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AppDesign.space2),
           TextField(
             controller: _description,
@@ -117,20 +189,27 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: 'disputes.form.explain_hint'.tr,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDesign.radiusSm)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              ),
             ),
           ),
           const SizedBox(height: AppDesign.space3),
-          Text('disputes.form.photos'.tr, style: context.body2.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'disputes.form.photos'.tr,
+            style: context.body2.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AppDesign.space2),
           Wrap(
             spacing: AppDesign.space2,
             runSpacing: AppDesign.space2,
             children: [
-              ..._photos.asMap().entries.map((entry) => _PhotoThumb(
-                    file: entry.value,
-                    onRemove: () => setState(() => _photos.removeAt(entry.key)),
-                  )),
+              ..._photos.asMap().entries.map(
+                (entry) => _PhotoThumb(
+                  file: entry.value,
+                  onRemove: () => setState(() => _photos.removeAt(entry.key)),
+                ),
+              ),
               if (_photos.length < _maxPhotos)
                 InkWell(
                   onTap: _addPhotos,
@@ -143,13 +222,19 @@ class _DisputeFormSheetState extends State<DisputeFormSheet> {
                       borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                       border: Border.all(color: ds.border),
                     ),
-                    child: Icon(Icons.add_a_photo_outlined, color: ds.textSecondary),
+                    child: Icon(
+                      Icons.add_a_photo_outlined,
+                      color: ds.textSecondary,
+                    ),
                   ),
                 ),
             ],
           ),
           const SizedBox(height: AppDesign.space2),
-          Text(widget.notice ?? 'disputes.form.funds_notice'.tr, style: context.caption.copyWith(color: ds.textSecondary)),
+          Text(
+            widget.notice ?? 'disputes.form.funds_notice'.tr,
+            style: context.caption.copyWith(color: ds.textSecondary),
+          ),
         ],
       ),
     );
@@ -172,7 +257,12 @@ class _PhotoThumb extends StatelessWidget {
           child: FutureBuilder<Uint8List>(
             future: file.readAsBytes(),
             builder: (context, snapshot) => snapshot.hasData
-                ? Image.memory(snapshot.data!, width: 72, height: 72, fit: BoxFit.cover)
+                ? Image.memory(
+                    snapshot.data!,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  )
                 : const SizedBox(width: 72, height: 72),
           ),
         ),

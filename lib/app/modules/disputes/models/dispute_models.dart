@@ -1,13 +1,21 @@
 import 'package:get/get.dart';
 
 /// Motifs d'une réclamation, dans l'ordre affiché au client.
-const disputeReasons = ['different', 'damaged', 'defective', 'incomplete', 'wrong_variant', 'other'];
+const disputeReasons = [
+  'different',
+  'damaged',
+  'defective',
+  'incomplete',
+  'wrong_variant',
+  'other',
+];
 
 double _double(dynamic value) => double.tryParse('${value ?? 0}') ?? 0;
 
 int _int(dynamic value) => int.tryParse('${value ?? 0}') ?? 0;
 
-DateTime? _date(dynamic value) => value == null ? null : DateTime.tryParse('$value')?.toLocal();
+DateTime? _date(dynamic value) =>
+    value == null ? null : DateTime.tryParse('$value')?.toLocal();
 
 /// Fenêtre de contrôle de 48 h d'une commande livrée.
 class OrderControlInfo {
@@ -15,7 +23,11 @@ class OrderControlInfo {
   final DateTime? until;
   final bool validated;
 
-  const OrderControlInfo({this.windowOpen = false, this.until, this.validated = false});
+  const OrderControlInfo({
+    this.windowOpen = false,
+    this.until,
+    this.validated = false,
+  });
 
   static OrderControlInfo? fromMap(dynamic map) {
     if (map is! Map) return null;
@@ -32,16 +44,22 @@ class OrderItemDisputeRef {
   final int id;
   final String number;
   final String status;
+  final String? serverStatusLabel;
 
   /// Produit de remplacement livré : 48 h pour le vérifier, avec les mêmes
   /// choix qu'à la première réception.
   final DateTime? replacementControlUntil;
+  final bool? canConfirmReplacement;
+  final bool? canReportReplacement;
 
   const OrderItemDisputeRef({
     required this.id,
     required this.number,
     required this.status,
+    this.serverStatusLabel,
     this.replacementControlUntil,
+    this.canConfirmReplacement,
+    this.canReportReplacement,
   });
 
   static OrderItemDisputeRef? fromMap(dynamic map) {
@@ -50,26 +68,44 @@ class OrderItemDisputeRef {
       id: _int(map['id']),
       number: '${map['number'] ?? ''}',
       status: '${map['status'] ?? ''}',
+      serverStatusLabel: map['status_label']?.toString(),
       replacementControlUntil: _date(map['replacement_control_until']),
+      canConfirmReplacement: map['can_confirm_replacement'] as bool?,
+      canReportReplacement: map['can_report_replacement'] as bool?,
     );
   }
 
   bool get inReplacementControl =>
-      replacementControlUntil != null && replacementControlUntil!.isAfter(DateTime.now());
+      canConfirmReplacement ??
+      (replacementControlUntil != null &&
+          replacementControlUntil!.isAfter(DateTime.now()));
 
-  String get statusLabel => 'disputes.status.$status'.tr;
+  String get statusLabel => serverStatusLabel ?? 'disputes.status.$status'.tr;
 }
 
 class DisputeEventInfo {
   final String label;
+  final List<String> attachments;
   final String? note;
   final String actorType;
   final DateTime? occurredAt;
 
-  const DisputeEventInfo({required this.label, this.note, required this.actorType, this.occurredAt});
+  const DisputeEventInfo({
+    required this.label,
+    this.attachments = const [],
+    this.note,
+    required this.actorType,
+    this.occurredAt,
+  });
 
-  factory DisputeEventInfo.fromMap(Map<String, dynamic> map) => DisputeEventInfo(
+  factory DisputeEventInfo.fromMap(Map<String, dynamic> map) =>
+      DisputeEventInfo(
         label: '${map['label'] ?? ''}',
+        attachments: ((map['attachments'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((photo) => '${photo['url'] ?? ''}')
+            .where((url) => url.isNotEmpty)
+            .toList(),
         note: map['note']?.toString(),
         actorType: '${map['actor_type'] ?? ''}',
         occurredAt: _date(map['occurred_at']),
@@ -111,7 +147,8 @@ class DisputeShipmentInfo {
     this.courierPhone,
   });
 
-  bool get isReturn => type == 'return';
+  bool get isReturn => type != 'replacement';
+  bool get isCollection => type == 'collection';
   bool get isPaid => paymentStatus == 'paid';
 
   /// Index de l'étape courante dans [steps] (-1 si inconnue).
@@ -161,9 +198,12 @@ class Dispute {
   final DateTime? replacementControlUntil;
   final List<String> attachments;
   final List<DisputeEventInfo> events;
+  final DisputeShipmentInfo? collection;
   final DisputeShipmentInfo? replacement;
   final DisputeShipmentInfo? returnShipment;
   final Map<String, dynamic> actions;
+  final String? serverStatusLabel;
+  final DateTime? vendorResponseDueAt;
   final DateTime? createdAt;
 
   const Dispute({
@@ -190,10 +230,15 @@ class Dispute {
     this.returnShipment,
     this.actions = const {},
     this.createdAt,
+    this.collection,
+    this.serverStatusLabel,
+    this.vendorResponseDueAt,
   });
 
   factory Dispute.fromMap(Map<String, dynamic> map) {
-    final product = Map<String, dynamic>.from(map['product'] as Map? ?? const {});
+    final product = Map<String, dynamic>.from(
+      map['product'] as Map? ?? const {},
+    );
     return Dispute(
       id: _int(map['id']),
       number: '${map['number'] ?? ''}',
@@ -209,8 +254,12 @@ class Dispute {
       decision: map['decision']?.toString(),
       decisionNote: map['decision_note']?.toString(),
       replacementCount: _int(map['replacement_count']),
-      heldAmount: map['held_amount'] == null ? null : _double(map['held_amount']),
-      refundAmount: map['refund_amount'] == null ? null : _double(map['refund_amount']),
+      heldAmount: map['held_amount'] == null
+          ? null
+          : _double(map['held_amount']),
+      refundAmount: map['refund_amount'] == null
+          ? null
+          : _double(map['refund_amount']),
       replacementControlUntil: _date(map['replacement_control_until']),
       attachments: ((map['attachments'] as List?) ?? const [])
           .whereType<Map>()
@@ -221,6 +270,9 @@ class Dispute {
           .whereType<Map>()
           .map((e) => DisputeEventInfo.fromMap(Map<String, dynamic>.from(e)))
           .toList(),
+      collection: DisputeShipmentInfo.fromMap(map['collection']),
+      serverStatusLabel: map['status_label']?.toString(),
+      vendorResponseDueAt: _date(map['vendor_response_due_at']),
       replacement: DisputeShipmentInfo.fromMap(map['replacement']),
       returnShipment: DisputeShipmentInfo.fromMap(map['return']),
       actions: Map<String, dynamic>.from(map['actions'] as Map? ?? const {}),
@@ -228,7 +280,7 @@ class Dispute {
     );
   }
 
-  String get statusLabel => 'disputes.status.$status'.tr;
+  String get statusLabel => serverStatusLabel ?? 'disputes.status.$status'.tr;
   String get reasonLabel => 'disputes.reasons.$reason'.tr;
 
   bool action(String key) => actions[key] == true;
@@ -239,5 +291,11 @@ class Dispute {
     return id == null ? null : _int(id);
   }
 
-  bool get isOpen => const ['new', 'in_review', 'vendor_contacted', 'replacement', 'return'].contains(status);
+  bool get isOpen => const [
+    'new',
+    'in_review',
+    'vendor_contacted',
+    'replacement',
+    'return',
+  ].contains(status);
 }

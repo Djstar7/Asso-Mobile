@@ -17,6 +17,7 @@ import '../../../core/widgets/segmented_tabs.dart';
 import '../../myOrder/controllers/my_order_controller.dart';
 import '../../myOrder/models/customer_order_models.dart';
 import '../../myOrder/views/my_order_view.dart';
+import '../../myOrder/views/order_control_section.dart';
 import '../../../core/utils/app_design.dart';
 
 /// Les deux vues de la page Suivi, côte à côte comme « Produits / PassColis »
@@ -466,6 +467,9 @@ class TrackingView extends GetView<TrackingController> {
   }
 
   void _showTrackingDetails(BuildContext context, Map<String, dynamic> shipment) {
+    if (!Get.isRegistered<MyOrderController>()) {
+      Get.put(MyOrderController());
+    }
     final delivery = shipment['delivery'] is DeliveryInfo ? shipment['delivery'] as DeliveryInfo : null;
     final progress = shipment['progress'] as OrderProgress?;
     final deposit = shipment['deposit'] is DepositOrderInfo ? shipment['deposit'] as DepositOrderInfo : null;
@@ -593,39 +597,33 @@ class TrackingView extends GetView<TrackingController> {
                   children: [
                     Text('tracking.delivery'.tr, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    OrderDeliveryDetails(
-                      delivery: delivery,
-                      deliveryFee: shipment['deliveryFee'] as double?,
-                      freeDeliveryAmount:
-                          shipment['freeDeliveryAmount'] as double? ?? 0,
-                      formatPrice: (v) => controller.formatPrice(v),
-                      showTimeline: false,
+                    Material(
+                      type: MaterialType.transparency,
+                      child: OrderDeliveryDetails(
+                        delivery: delivery,
+                        deliveryFee: shipment['deliveryFee'] as double?,
+                        freeDeliveryAmount:
+                            shipment['freeDeliveryAmount'] as double? ?? 0,
+                        formatPrice: (v) => controller.formatPrice(v),
+                        showTimeline: false,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
 
-            // Commande avec acompte : la remise suit le paiement du solde.
-            if (delivery?.canConfirmReception == true && (deposit == null || deposit.balancePaid)) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final done = await controller.confirmReception(shipment);
-                    if (done) Get.back();
-                  },
-                  icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                  label: Text('tracking.received_parcel'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ],
+            Obx(() {
+              final latest = controller.shipments.firstWhereOrNull(
+                (item) => item['orderId'] == shipment['orderId'],
+              );
+              final order = (latest ?? shipment)['customerOrder'] as CustomerOrder?;
+              if (order == null) return const SizedBox.shrink();
+              return CustomerOrderControlSection(
+                order: order,
+                onUpdated: () => controller.loadOrders(silent: true),
+              );
+            }),
 
             const SizedBox(height: 24),
             Text('tracking.delivery_tracking'.tr, style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.bold)),

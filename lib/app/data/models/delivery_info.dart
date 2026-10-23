@@ -173,6 +173,7 @@ class DeliveryInfo {
   final DeliveryBreakdown? breakdown;
   final String? carrierTrackingNumber;
   final String? carrierTrackingUrl;
+  final bool showTrackingPending;
   final String? trackingStatus;
   final String? trackingStatusLabel;
   final bool canConfirmReception;
@@ -201,6 +202,7 @@ class DeliveryInfo {
     this.breakdown,
     this.carrierTrackingNumber,
     this.carrierTrackingUrl,
+    this.showTrackingPending = false,
     this.trackingStatus,
     this.trackingStatusLabel,
     this.canConfirmReception = false,
@@ -231,6 +233,7 @@ class DeliveryInfo {
       breakdown: DeliveryBreakdown.fromMap(raw['breakdown']),
       carrierTrackingNumber: _toText(raw['carrier_tracking_number']),
       carrierTrackingUrl: _toText(raw['carrier_tracking_url']),
+      showTrackingPending: raw['show_tracking_pending'] == true,
       trackingStatus: _toText(raw['tracking_status']),
       trackingStatusLabel: _toText(raw['tracking_status_label']),
       canConfirmReception: raw['can_confirm_reception'] == true,

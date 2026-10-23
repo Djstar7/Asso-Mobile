@@ -3164,7 +3164,7 @@
     "confirmation_code": "Code de confirmation",
     "copied_title": "Copie",
     "code_copied": "Code copie dans le presse-papiers",
-    "code_hint": "Communiquez ce code au livreur pour confirmer la reception",
+    "code_hint": "Communiquez ce code au livreur uniquement à la remise effective du colis.",
     "cancel": "Annuler",
     "rate": "Noter",
     "your_rating": "Votre note "
@@ -3371,6 +3371,7 @@
       "order_value": "Valeur commande"
     },
     "actions": {
+      "hand_to_agency": "Remettre à l’agence",
       "call": "Appeler",
       "decline": "Refuser",
       "round_full": "Tournée pleine",
@@ -3408,6 +3409,7 @@
       "failed": "Impossible de refuser la demande"
     },
     "confirm": {
+      "agency_prompt": "Saisissez le code de remise communiqué par ASSO au réceptionnaire de l’agence. Le client retirera ensuite son colis à l’agence.",
       "title": "Confirmer la livraison",
       "prompt": "Entrez le code secret à 6 chiffres communiqué par le client :",
       "success_title": "Livraison confirmée !",
@@ -3857,6 +3859,10 @@
       "available_elsewhere": "Disponible ailleurs :"
     },
     "delivery": {
+      "calculate": "Calculer les offres de livraison",
+      "street_address": "Adresse précise et repère",
+      "quarter": "Quartier",
+      "city": "Ville",
       "missing_address": "Indiquez votre adresse de livraison.",
       "missing_details": "Précisez l’adresse : repère, immeuble, portail…",
       "missing_phone": "Renseignez un numéro à contacter valide.",
@@ -4148,6 +4154,7 @@
       "other": "Autre"
     },
     "form": {
+      "quantity": "Quantité concernée",
       "title": "Signaler un problème",
       "replacement_title": "Problème sur le produit de remplacement",
       "submit": "Envoyer ma réclamation",
@@ -4174,6 +4181,7 @@
       "unfounded": "Réclamation non fondée"
     },
     "shipment": {
+      "collection_title": "Collecte pour échange",
       "return_title": "Retour du produit",
       "replacement_title": "Produit de remplacement",
       "paid_by_asso": "Course prise en charge par ASSO",
@@ -4181,7 +4189,7 @@
       "free_for_you": "Aucun frais de livraison pour vous",
       "tracking": "N° de suivi : @number",
       "code_client": "Votre code de réception, à donner au livreur seulement quand il vous remet le produit :",
-      "code_vendor": "Votre code de réception du retour, à donner au livreur quand il vous rapporte le produit (le client est alors remboursé) :",
+      "code_vendor": "Code de réception boutique : à communiquer au livreur uniquement à la remise du produit.",
       "courier": "Livreur : @name",
       "call_courier": "Appeler le livreur"
     },
@@ -4215,6 +4223,7 @@
       "replacement_subtitle": "Envoi du produit de remplacement au client, à vos frais"
     },
     "vendor": {
+      "response_due": "Réponse attendue avant le @date",
       "list_title": "Réclamations",
       "dashboard_subtitle": "Litiges clients, remplacements et retours",
       "filter_open": "En cours",
@@ -5019,5 +5028,7 @@
   "core.delivery.pickup_agency": "Agence de retrait",
   "core.delivery.agency_address": "Adresse",
   "core.delivery.agency_phone": "Téléphone de l’agence",
-  "core.delivery.agency_pickup_instructions": "Votre colis est disponible. Présentez votre référence de commande à l’agence pour le retrait."
+  "core.delivery.agency_pickup_instructions": "Votre colis est disponible. Présentez votre référence de commande à l’agence pour le retrait.",
+  "delivery_dashboard.distance_unavailable": "Distance indisponible",
+  "delivery_dashboard.straight_line": "à vol d’oiseau"
 }

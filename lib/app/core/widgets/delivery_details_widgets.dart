@@ -524,7 +524,8 @@ class OrderDeliveryDetails extends StatelessWidget {
               ),
             ),
         ],
-        if (delivery.isCarrier) ...[
+        if (delivery.isCarrier && (delivery.showTrackingPending ||
+            delivery.carrierTrackingNumber != null || delivery.carrierTrackingUrl != null)) ...[
           const SizedBox(height: 8),
           CarrierTrackingCard(
             companyName: delivery.companyName,

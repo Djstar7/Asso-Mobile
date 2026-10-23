@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,21 +20,54 @@ class MyOrderController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
   int _currentPage = 1;
+  Timer? _controlRefresh;
+  bool _fetchingOrders = false;
 
   @override
   void onInit() {
     super.onInit();
     // Visiteur sans compte : rien à charger (et pas d'alerte d'erreur).
-    if (StorageService.isAuthenticated) loadOrders();
+    if (StorageService.isAuthenticated) {
+      loadOrders();
+      _controlRefresh = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (!isLoading.value &&
+            controlBusyOrderId.value == null &&
+            allOrders.any(
+              (order) =>
+                  order.status == CustomerOrderStatus.shipped ||
+                  order.items.any(
+                    (item) =>
+                        item.dispute != null &&
+                        const [
+                          'new',
+                          'in_review',
+                          'vendor_contacted',
+                          'replacement',
+                          'return',
+                        ].contains(item.dispute!.status),
+                  ),
+            )) {
+          loadOrders(refresh: true, silent: true);
+        }
+      });
+    }
   }
 
-  Future<void> loadOrders({bool refresh = false}) async {
+  @override
+  void onClose() {
+    _controlRefresh?.cancel();
+    super.onClose();
+  }
+
+  Future<void> loadOrders({bool refresh = false, bool silent = false}) async {
+    if (_fetchingOrders) return;
+    _fetchingOrders = true;
     if (refresh) {
       _currentPage = 1;
       hasMore.value = true;
     }
 
-    isLoading.value = true;
+    if (!silent) isLoading.value = true;
 
     try {
       final response = await OrderService.getOrders(
@@ -43,7 +77,8 @@ class MyOrderController extends GetxController {
 
       if (response.success && response.data != null) {
         final ordersList = response.data!['orders'] as List? ?? [];
-        final pagination = response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>? ?? {};
 
         final convertedOrders = ordersList
             .map((o) => CustomerOrder.fromMap(Map<String, dynamic>.from(o)))
@@ -59,14 +94,19 @@ class MyOrderController extends GetxController {
         hasMore.value = pagination['has_more'] ?? false;
       }
     } catch (e) {
-      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.load_orders'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+      if (!silent) {
+        Get.snackbar(
+          'my_order.errors.title'.tr,
+          'my_order.errors.load_orders'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+      }
     } finally {
+      _fetchingOrders = false;
       isLoading.value = false;
     }
   }
@@ -78,9 +118,14 @@ class MyOrderController extends GetxController {
 
   Future<void> cancelOrder(String orderId, {String? reason}) async {
     try {
-      final response = await OrderService.cancelOrder(int.parse(orderId), reason: reason);
+      final response = await OrderService.cancelOrder(
+        int.parse(orderId),
+        reason: reason,
+      );
       if (response.success) {
-        Get.snackbar('my_order.success_title'.tr, 'my_order.cancelled_message'.tr,
+        Get.snackbar(
+          'my_order.success_title'.tr,
+          'my_order.cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -89,7 +134,9 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('my_order.errors.title'.tr, response.message,
+        Get.snackbar(
+          'my_order.errors.title'.tr,
+          response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -98,7 +145,9 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.cancel_order'.tr,
+      Get.snackbar(
+        'my_order.errors.title'.tr,
+        'my_order.errors.cancel_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -112,7 +161,9 @@ class MyOrderController extends GetxController {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.call_number'.tr,
+        Get.snackbar(
+          'my_order.errors.title'.tr,
+          'my_order.errors.call_number'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -121,7 +172,9 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.contact_deliverer'.tr,
+      Get.snackbar(
+        'my_order.errors.title'.tr,
+        'my_order.errors.contact_deliverer'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -139,7 +192,9 @@ class MyOrderController extends GetxController {
     try {
       final response = await WalletService.confirmDelivery(int.parse(orderId));
       if (response.success) {
-        Get.snackbar('my_order.success_title'.tr, 'my_order.delivery_confirmed'.tr,
+        Get.snackbar(
+          'my_order.success_title'.tr,
+          'my_order.delivery_confirmed'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
@@ -148,7 +203,9 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('my_order.errors.title'.tr, response.message,
+        Get.snackbar(
+          'my_order.errors.title'.tr,
+          response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -157,7 +214,9 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.confirm_delivery'.tr,
+      Get.snackbar(
+        'my_order.errors.title'.tr,
+        'my_order.errors.confirm_delivery'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -193,9 +252,11 @@ class MyOrderController extends GetxController {
     if (id == null) return;
     final response = await OrderService.confirmReception(id);
     if (response.success) {
-      Get.snackbar('my_order.thanks_title'.tr, response.message.isNotEmpty && response.message != 'Succès'
-              ? response.message
-              : 'my_order.reception_confirmed'.tr,
+      Get.snackbar(
+        'my_order.thanks_title'.tr,
+        response.message.isNotEmpty && response.message != 'Succès'
+            ? response.message
+            : 'my_order.reception_confirmed'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
@@ -204,7 +265,11 @@ class MyOrderController extends GetxController {
       );
       await loadOrders(refresh: true);
     } else {
-      Get.snackbar('my_order.errors.title'.tr, response.message.isNotEmpty ? response.message : 'my_order.errors.confirm_reception'.tr,
+      Get.snackbar(
+        'my_order.errors.title'.tr,
+        response.message.isNotEmpty
+            ? response.message
+            : 'my_order.errors.confirm_reception'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -222,7 +287,9 @@ class MyOrderController extends GetxController {
   Future<void> payBalance(CustomerOrder order) async {
     final info = order.deposit;
     final id = int.tryParse(order.id);
-    if (info == null || id == null || payingBalanceOrderId.value != null) return;
+    if (info == null || id == null || payingBalanceOrderId.value != null) {
+      return;
+    }
 
     payingBalanceOrderId.value = order.id;
     try {
@@ -245,14 +312,22 @@ class MyOrderController extends GetxController {
   Future<void> confirmConformity(CustomerOrder order) async {
     final id = int.tryParse(order.id);
     if (id == null || controlBusyOrderId.value != null) return;
-    final ok = await Get.dialog<bool>(AlertDialog(
-      title: Text('disputes.control.conform_title'.tr),
-      content: Text('disputes.control.conform_confirm'.tr),
-      actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
-        TextButton(onPressed: () => Get.back(result: true), child: Text('common.confirm'.tr)),
-      ],
-    ));
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('disputes.control.conform_title'.tr),
+        content: Text('disputes.control.conform_confirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
     if (ok != true) return;
 
     controlBusyOrderId.value = order.id;
@@ -266,12 +341,20 @@ class MyOrderController extends GetxController {
   }
 
   /// « Faire une réclamation » sur un article : motif, explication, photos.
-  Future<void> reportProblem(CustomerOrder order, CustomerOrderItem item) async {
+  Future<void> reportProblem(
+    CustomerOrder order,
+    CustomerOrderItem item,
+  ) async {
     final orderId = int.tryParse(order.id);
     final itemId = item.orderItemId;
-    if (orderId == null || itemId == null || controlBusyOrderId.value != null) return;
+    if (orderId == null || itemId == null || controlBusyOrderId.value != null) {
+      return;
+    }
 
-    final form = await DisputeFormSheet.show(productName: item.displayName);
+    final form = await DisputeFormSheet.show(
+      productName: item.displayName,
+      maxQuantity: item.quantity,
+    );
     if (form == null) return;
 
     controlBusyOrderId.value = order.id;
@@ -282,6 +365,7 @@ class MyOrderController extends GetxController {
         reason: form.reason,
         description: form.description,
         photos: form.photos,
+        quantity: form.quantity,
       );
       _controlSnack(response.message, error: !response.success);
       final disputeId = int.tryParse('${response.data?['dispute']?['id']}');
@@ -295,17 +379,28 @@ class MyOrderController extends GetxController {
   }
 
   /// Produit de remplacement conforme : la vente est conclue.
-  Future<void> confirmReplacement(CustomerOrder order, CustomerOrderItem item) async {
+  Future<void> confirmReplacement(
+    CustomerOrder order,
+    CustomerOrderItem item,
+  ) async {
     final disputeId = item.dispute?.id;
     if (disputeId == null || controlBusyOrderId.value != null) return;
-    final ok = await Get.dialog<bool>(AlertDialog(
-      title: Text('disputes.control.conform_title'.tr),
-      content: Text('disputes.control.replacement_conform_confirm'.tr),
-      actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
-        TextButton(onPressed: () => Get.back(result: true), child: Text('common.confirm'.tr)),
-      ],
-    ));
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('disputes.control.conform_title'.tr),
+        content: Text('disputes.control.replacement_conform_confirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
     if (ok != true) return;
 
     controlBusyOrderId.value = order.id;
@@ -319,7 +414,10 @@ class MyOrderController extends GetxController {
   }
 
   /// Problème sur le produit de remplacement : la réclamation est rouverte.
-  Future<void> reportReplacement(CustomerOrder order, CustomerOrderItem item) async {
+  Future<void> reportReplacement(
+    CustomerOrder order,
+    CustomerOrderItem item,
+  ) async {
     final disputeId = item.dispute?.id;
     if (disputeId == null || controlBusyOrderId.value != null) return;
     final form = await DisputeFormSheet.show(
@@ -344,7 +442,10 @@ class MyOrderController extends GetxController {
   }
 
   Future<void> openDispute(int disputeId) async {
-    await Get.toNamed(Routes.DISPUTE_DETAIL, arguments: {'id': disputeId, 'role': 'client'});
+    await Get.toNamed(
+      Routes.DISPUTE_DETAIL,
+      arguments: {'id': disputeId, 'role': 'client'},
+    );
     await loadOrders(refresh: true);
   }
 
@@ -362,7 +463,11 @@ class MyOrderController extends GetxController {
   }
 
   /// Client rate une commande livrée
-  Future<void> rateOrder(String orderId, {required int rating, String? comment}) async {
+  Future<void> rateOrder(
+    String orderId, {
+    required int rating,
+    String? comment,
+  }) async {
     try {
       final response = await OrderService.rateOrder(
         int.parse(orderId),
@@ -371,7 +476,9 @@ class MyOrderController extends GetxController {
       );
 
       if (response.success) {
-        Get.snackbar('my_order.thanks_title'.tr, 'my_order.rating_dialog.sent'.tr,
+        Get.snackbar(
+          'my_order.thanks_title'.tr,
+          'my_order.rating_dialog.sent'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.success,
           colorText: Colors.white,
@@ -380,7 +487,11 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar('my_order.errors.title'.tr, response.message.isNotEmpty ? response.message : 'my_order.errors.rate'.tr,
+        Get.snackbar(
+          'my_order.errors.title'.tr,
+          response.message.isNotEmpty
+              ? response.message
+              : 'my_order.errors.rate'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Get.theme.colorScheme.error,
           colorText: Get.theme.colorScheme.onError,
@@ -389,7 +500,9 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('my_order.errors.title'.tr, 'my_order.errors.send_rating'.tr,
+      Get.snackbar(
+        'my_order.errors.title'.tr,
+        'my_order.errors.send_rating'.tr,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -418,20 +531,29 @@ class MyOrderController extends GetxController {
               }),
             ),
             const SizedBox(height: 16),
-            Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (i) => GestureDetector(
-                onTap: () => selectedRating.value = i + 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    i < selectedRating.value ? Icons.star_rounded : Icons.star_border_rounded,
-                    color: i < selectedRating.value ? AppDesign.warning : Colors.grey,
-                    size: 40,
+            Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (i) => GestureDetector(
+                    onTap: () => selectedRating.value = i + 1,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        i < selectedRating.value
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: i < selectedRating.value
+                            ? AppDesign.warning
+                            : Colors.grey,
+                        size: 40,
+                      ),
+                    ),
                   ),
                 ),
-              )),
-            )),
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: commentController,
@@ -448,19 +570,23 @@ class MyOrderController extends GetxController {
             onPressed: () => Get.back(),
             child: Text('my_order.rating_dialog.later'.tr),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: selectedRating.value > 0
-                ? () {
-                    Get.back();
-                    rateOrder(
-                      order.id,
-                      rating: selectedRating.value,
-                      comment: commentController.text.isNotEmpty ? commentController.text : null,
-                    );
-                  }
-                : null,
-            child: Text('my_order.rating_dialog.send'.tr),
-          )),
+          Obx(
+            () => ElevatedButton(
+              onPressed: selectedRating.value > 0
+                  ? () {
+                      Get.back();
+                      rateOrder(
+                        order.id,
+                        rating: selectedRating.value,
+                        comment: commentController.text.isNotEmpty
+                            ? commentController.text
+                            : null,
+                      );
+                    }
+                  : null,
+              child: Text('my_order.rating_dialog.send'.tr),
+            ),
+          ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +19,8 @@ class DisputeDetailController extends GetxController {
   late final int disputeId;
   late final bool isVendor;
   bool _payOnOpen = false;
+  Timer? _refresh;
+  bool _loading = false;
 
   final dispute = Rxn<Dispute>();
   final isLoading = true.obs;
@@ -32,24 +35,43 @@ class DisputeDetailController extends GetxController {
     isVendor = args['role'] == 'vendor';
     _payOnOpen = args['pay'] == true;
     load();
+    _refresh = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!isBusy.value && (dispute.value?.isOpen ?? false)) load();
+    });
+  }
+
+  @override
+  void onClose() {
+    _refresh?.cancel();
+    super.onClose();
   }
 
   Future<void> load() async {
-    isLoading.value = dispute.value == null;
-    error.value = null;
-    final response = isVendor
-        ? await DisputeService.vendorDispute(disputeId)
-        : await DisputeService.clientDispute(disputeId);
-    if (response.success && response.data?['dispute'] is Map) {
-      dispute.value = Dispute.fromMap(Map<String, dynamic>.from(response.data!['dispute']));
-    } else {
-      error.value = response.message;
-    }
-    isLoading.value = false;
+    if (_loading) return;
+    _loading = true;
+    try {
+      isLoading.value = dispute.value == null;
+      error.value = null;
+      final response = isVendor
+          ? await DisputeService.vendorDispute(disputeId)
+          : await DisputeService.clientDispute(disputeId);
+      if (response.success && response.data?['dispute'] is Map) {
+        dispute.value = Dispute.fromMap(
+          Map<String, dynamic>.from(response.data!['dispute']),
+        );
+      } else {
+        error.value = response.message;
+      }
+      isLoading.value = false;
 
-    if (_payOnOpen && isVendor && dispute.value?.action('pay_shipment') == true) {
-      _payOnOpen = false;
-      await payShipment();
+      if (_payOnOpen &&
+          isVendor &&
+          dispute.value?.action('pay_shipment') == true) {
+        _payOnOpen = false;
+        await payShipment();
+      }
+    } finally {
+      _loading = false;
     }
   }
 
@@ -57,7 +79,8 @@ class DisputeDetailController extends GetxController {
 
   // ── Client ──────────────────────────────────────────────────────────────
 
-  Future<void> confirmReplacement() => _run(() => DisputeService.confirmReplacement(disputeId));
+  Future<void> confirmReplacement() =>
+      _run(() => DisputeService.confirmReplacement(disputeId));
 
   Future<void> reportReplacement() async {
     final current = dispute.value;
@@ -67,15 +90,18 @@ class DisputeDetailController extends GetxController {
       title: 'disputes.form.replacement_title'.tr,
     );
     if (form == null) return;
-    await _run(() => DisputeService.reportReplacement(
-          disputeId,
-          description: form.description,
-          reason: form.reason,
-          photos: form.photos,
-        ));
+    await _run(
+      () => DisputeService.reportReplacement(
+        disputeId,
+        description: form.description,
+        reason: form.reason,
+        photos: form.photos,
+      ),
+    );
   }
 
-  void openSimilarProducts() => Get.toNamed(Routes.DISPUTE_SIMILAR, arguments: {'id': disputeId});
+  void openSimilarProducts() =>
+      Get.toNamed(Routes.DISPUTE_SIMILAR, arguments: {'id': disputeId});
 
   // ── Vendeur ─────────────────────────────────────────────────────────────
 
@@ -88,7 +114,13 @@ class DisputeDetailController extends GetxController {
       title: 'disputes.vendor.evidence_title'.tr,
     );
     if (form == null) return;
-    await _run(() => DisputeService.sendEvidence(disputeId, note: form.description, files: form.photos));
+    await _run(
+      () => DisputeService.sendEvidence(
+        disputeId,
+        note: form.description,
+        files: form.photos,
+      ),
+    );
   }
 
   Future<void> replace() async {
@@ -118,7 +150,8 @@ class DisputeDetailController extends GetxController {
     }
   }
 
-  Future<void> markShipped() => _shipmentStep(dispute.value?.replacement?.id, 'shipped');
+  Future<void> markShipped() =>
+      _shipmentStep(dispute.value?.replacement?.id, 'shipped');
 
   /// Appelle le livreur de la course.
   Future<void> callCourier(String phone) =>
@@ -141,7 +174,9 @@ class DisputeDetailController extends GetxController {
         return false;
       }
       if (response.data?['dispute'] is Map) {
-        dispute.value = Dispute.fromMap(Map<String, dynamic>.from(response.data!['dispute']));
+        dispute.value = Dispute.fromMap(
+          Map<String, dynamic>.from(response.data!['dispute']),
+        );
       } else {
         await load();
       }
@@ -153,23 +188,31 @@ class DisputeDetailController extends GetxController {
   }
 
   Future<bool> _confirm(String message) async {
-    final ok = await Get.dialog<bool>(AlertDialog(
-      content: Text(message),
-      actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
-        TextButton(onPressed: () => Get.back(result: true), child: Text('common.confirm'.tr)),
-      ],
-    ));
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
     return ok == true;
   }
 
   void _snack(String message, {bool error = false}) => Get.snackbar(
-        error ? 'my_order.errors.title'.tr : 'disputes.title'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: error ? AppDesign.danger : AppDesign.success,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+    error ? 'my_order.errors.title'.tr : 'disputes.title'.tr,
+    message,
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: error ? AppDesign.danger : AppDesign.success,
+    colorText: Colors.white,
+    margin: const EdgeInsets.all(16),
+    borderRadius: 12,
+  );
 }

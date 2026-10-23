@@ -17,11 +17,22 @@ class DeliveryService {
     return await ApiProvider.post('/v1/delivery/$orderId/accept', body: {});
   }
 
+  static Future<ApiResponse> advanceCarrier(int orderId, String step) {
+    return ApiProvider.post(
+      '/v1/delivery/$orderId/carrier-step',
+      body: {'step': step},
+    );
+  }
+
   /// Complete a delivery with confirmation code
-  static Future<ApiResponse> completeDelivery(int orderId, {required String confirmationCode}) async {
-    return await ApiProvider.post('/v1/delivery/$orderId/complete', body: {
-      'confirmation_code': confirmationCode,
-    });
+  static Future<ApiResponse> completeDelivery(
+    int orderId, {
+    required String confirmationCode,
+  }) async {
+    return await ApiProvider.post(
+      '/v1/delivery/$orderId/complete',
+      body: {'confirmation_code': confirmationCode},
+    );
   }
 
   // ── Courses de litige (produit de remplacement, retour) ────────────────
@@ -32,19 +43,29 @@ class DeliveryService {
   }
 
   static Future<ApiResponse> acceptDisputeCourse(int id) {
-    return ApiProvider.post('/v1/delivery/dispute-courses/$id/accept', body: {});
+    return ApiProvider.post(
+      '/v1/delivery/dispute-courses/$id/accept',
+      body: {},
+    );
   }
 
   /// Colis récupéré (à la boutique pour un remplacement, chez le client pour un retour).
   static Future<ApiResponse> pickUpDisputeCourse(int id) {
-    return ApiProvider.post('/v1/delivery/dispute-courses/$id/pickup', body: {});
+    return ApiProvider.post(
+      '/v1/delivery/dispute-courses/$id/pickup',
+      body: {},
+    );
   }
 
   /// Remise au destinataire contre son code à 6 chiffres.
-  static Future<ApiResponse> completeDisputeCourse(int id, {required String confirmationCode}) {
-    return ApiProvider.post('/v1/delivery/dispute-courses/$id/complete', body: {
-      'confirmation_code': confirmationCode,
-    });
+  static Future<ApiResponse> completeDisputeCourse(
+    int id, {
+    required String confirmationCode,
+  }) {
+    return ApiProvider.post(
+      '/v1/delivery/dispute-courses/$id/complete',
+      body: {'confirmation_code': confirmationCode},
+    );
   }
 
   /// Get delivery partners with calculated pricing for a product
@@ -81,15 +102,18 @@ class DeliveryService {
     double? longitude,
     String? city,
     String? address,
+    String? quarter,
   }) async {
     final params = <String, dynamic>{
       for (final (i, line) in items.indexed)
-        for (final field in line.entries) 'items[$i][${field.key}]': field.value,
+        for (final field in line.entries)
+          'items[$i][${field.key}]': field.value,
     };
     if (latitude != null) params['latitude'] = latitude;
     if (longitude != null) params['longitude'] = longitude;
     if (city != null && city.isNotEmpty) params['city'] = city;
     if (address != null && address.isNotEmpty) params['address'] = address;
+    if (quarter != null && quarter.isNotEmpty) params['quarter'] = quarter;
 
     return await ApiProvider.get('/v1/delivery/partners', queryParams: params);
   }
@@ -121,10 +145,7 @@ class DeliveryService {
   }) async {
     return await ApiProvider.post(
       '/v1/delivery/check-availability',
-      body: {
-        'latitude': latitude,
-        'longitude': longitude,
-      },
+      body: {'latitude': latitude, 'longitude': longitude},
     );
   }
 }

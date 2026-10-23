@@ -13,6 +13,7 @@ import '../../../core/utils/string_utils.dart';
 import '../../../data/models/delivery_info.dart';
 import '../../../data/models/order_progress.dart';
 import '../../../core/widgets/deposit_widgets.dart';
+import '../../myOrder/models/customer_order_models.dart';
 import '../../payment/deposit_balance_payment.dart';
 
 class TrackingController extends GetxController {
@@ -34,6 +35,8 @@ class TrackingController extends GetxController {
   ];
 
   StreamSubscription? _orderFcmSubscription;
+  Timer? _deliveryRefresh;
+  bool _fetchingOrders = false;
 
   @override
   void onInit() {
@@ -45,6 +48,13 @@ class TrackingController extends GetxController {
     if (StorageService.isAuthenticated) {
       loadOrders();
       _listenToOrderNotifications();
+      _deliveryRefresh = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (shipments.any((shipment) => shipment['rawStatus'] == 'shipped' ||
+            (shipment['customerOrder'] as CustomerOrder?)?.control?.windowOpen == true ||
+            (shipment['customerOrder'] as CustomerOrder?)?.items.any((item) => item.dispute != null) == true)) {
+          loadOrders(silent: true);
+        }
+      });
     }
     searchController.addListener(() {
       searchQuery.value = searchController.text;
@@ -58,6 +68,7 @@ class TrackingController extends GetxController {
   @override
   void onClose() {
     _orderFcmSubscription?.cancel();
+    _deliveryRefresh?.cancel();
     searchController.dispose();
     super.onClose();
   }
@@ -79,8 +90,10 @@ class TrackingController extends GetxController {
   }
 
   /// Charge les commandes confirmées+ depuis l'API
-  Future<void> loadOrders() async {
-    isLoading.value = true;
+  Future<void> loadOrders({bool silent = false}) async {
+    if (_fetchingOrders) return;
+    _fetchingOrders = true;
+    if (!silent) isLoading.value = true;
     try {
       final response = await OrderService.getOrders(perPage: 50);
 
@@ -95,7 +108,7 @@ class TrackingController extends GetxController {
         // Force update pour déclencher la réactivité
         shipments.value = [];
         shipments.value = newShipments;
-      } else {
+      } else if (!silent) {
         Get.snackbar(
           'tracking.errors.error'.tr,
           response.message.isNotEmpty ? response.message : 'tracking.errors.load_failed'.tr,
@@ -104,13 +117,16 @@ class TrackingController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'tracking.errors.connection'.tr,
-        'tracking.errors.refresh_failed'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
+      if (!silent) {
+        Get.snackbar(
+          'tracking.errors.connection'.tr,
+          'tracking.errors.refresh_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      }
     } finally {
+      _fetchingOrders = false;
       isLoading.value = false;
     }
   }
@@ -254,6 +270,7 @@ class TrackingController extends GetxController {
     return {
       'id': order['order_number'] ?? 'CMD-${order['id']}',
       'orderId': order['id'],
+      'customerOrder': CustomerOrder.fromMap(order),
       'productName': productName,
       'productImage': productImage,
       'status': displayStatus,

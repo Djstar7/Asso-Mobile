@@ -54,22 +54,16 @@ class CustomerOrderDeliverySection extends StatelessWidget {
               ],
             ),
           ),
-          // Commande avec acompte : la remise suit le paiement du solde.
-          if (delivery.canConfirmReception &&
-              (order.deposit == null || order.deposit!.balancePaid))
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => controller.confirmReception(order),
-                icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                label: Text('my_order.delivery.received'.tr),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
+          if (order.confirmationCode != null) ...[
+            const SizedBox(height: 12),
+            Text('tracking.confirmation_code'.tr, style: context.body2),
+            SelectableText(
+              order.confirmationCode!,
+              style: context.h5.copyWith(fontWeight: FontWeight.w700),
             ),
+            const SizedBox(height: 8),
+            Text('tracking.code_hint'.tr, style: context.caption),
+          ],
         ],
       ),
     );

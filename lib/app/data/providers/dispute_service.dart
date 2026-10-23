@@ -13,7 +13,10 @@ class DisputeService {
 
   /// « Tout est conforme » : la commande est validée, le vendeur payé.
   static Future<ApiResponse> confirmConformity(int orderId) {
-    return ApiProvider.post('${AppConstants.ordersUrl}/$orderId/conform', body: {});
+    return ApiProvider.post(
+      '${AppConstants.ordersUrl}/$orderId/conform',
+      body: {},
+    );
   }
 
   /// Réclamation sur un article (motif, explication, photos).
@@ -21,6 +24,7 @@ class DisputeService {
     required int orderId,
     required int orderItemId,
     required String reason,
+    int? quantity,
     required String description,
     List<XFile> photos = const [],
   }) {
@@ -28,6 +32,7 @@ class DisputeService {
       '${AppConstants.ordersUrl}/$orderId/disputes',
       fields: {
         'order_item_id': '$orderItemId',
+        if (quantity != null) 'quantity': '$quantity',
         'reason': reason,
         'description': description,
       },
@@ -37,7 +42,8 @@ class DisputeService {
 
   static Future<ApiResponse> clientDisputes() => ApiProvider.get(_clientUrl);
 
-  static Future<ApiResponse> clientDispute(int id) => ApiProvider.get('$_clientUrl/$id');
+  static Future<ApiResponse> clientDispute(int id) =>
+      ApiProvider.get('$_clientUrl/$id');
 
   static Future<ApiResponse> confirmReplacement(int id) {
     return ApiProvider.post('$_clientUrl/$id/confirm-replacement', body: {});
@@ -45,7 +51,12 @@ class DisputeService {
 
   /// Problème sur le produit de remplacement : le dossier est rouvert (réponse
   /// du vendeur, décision ASSO).
-  static Future<ApiResponse> reportReplacement(int id, {required String description, String? reason, List<XFile> photos = const []}) {
+  static Future<ApiResponse> reportReplacement(
+    int id, {
+    required String description,
+    String? reason,
+    List<XFile> photos = const [],
+  }) {
     return ApiProvider.multipart(
       '$_clientUrl/$id/report-replacement',
       fields: {'description': description, 'reason': ?reason},
@@ -64,9 +75,14 @@ class DisputeService {
     return ApiProvider.get(_vendorUrl, queryParams: {'status': ?status});
   }
 
-  static Future<ApiResponse> vendorDispute(int id) => ApiProvider.get('$_vendorUrl/$id');
+  static Future<ApiResponse> vendorDispute(int id) =>
+      ApiProvider.get('$_vendorUrl/$id');
 
-  static Future<ApiResponse> sendEvidence(int id, {String? note, List<XFile> files = const []}) {
+  static Future<ApiResponse> sendEvidence(
+    int id, {
+    String? note,
+    List<XFile> files = const [],
+  }) {
     return ApiProvider.multipart(
       '$_vendorUrl/$id/evidence',
       fields: {'note': ?note},
@@ -74,30 +90,46 @@ class DisputeService {
     );
   }
 
-  static Future<ApiResponse> replace(int id) => ApiProvider.post('$_vendorUrl/$id/replace', body: {});
+  static Future<ApiResponse> replace(int id) =>
+      ApiProvider.post('$_vendorUrl/$id/replace', body: {});
 
-  static Future<ApiResponse> organizeReturn(int id) => ApiProvider.post('$_vendorUrl/$id/return', body: {});
+  static Future<ApiResponse> organizeReturn(int id) =>
+      ApiProvider.post('$_vendorUrl/$id/return', body: {});
 
   static Future<ApiResponse> shipmentPartners(int shipmentId) {
     return ApiProvider.get('$_vendorUrl/shipments/$shipmentId/partners');
   }
 
-  static Future<ApiResponse> choosePartner(int shipmentId, Map<String, dynamic> partner) {
-    return ApiProvider.post('$_vendorUrl/shipments/$shipmentId/partner', body: {
-      'company_id': partner['company_id'],
-      'zone_id': ?partner['zone_id'],
-      'route_id': ?partner['route_id'],
-      'grid_id': ?partner['grid_id'],
-      'vehicle': ?partner['vehicle'],
-    });
+  static Future<ApiResponse> choosePartner(
+    int shipmentId,
+    Map<String, dynamic> partner,
+  ) {
+    return ApiProvider.post(
+      '$_vendorUrl/shipments/$shipmentId/partner',
+      body: {
+        'company_id': partner['company_id'],
+        'zone_id': ?partner['zone_id'],
+        'route_id': ?partner['route_id'],
+        'grid_id': ?partner['grid_id'],
+        'vehicle': ?partner['vehicle'],
+      },
+    );
   }
 
-  static Future<ApiResponse> payShipment(int shipmentId, {required String paymentMode, String? provider, String? phone}) {
-    return ApiProvider.post('$_vendorUrl/shipments/$shipmentId/pay', body: {
-      'payment_mode': paymentMode,
-      'provider': ?provider,
-      'phone_number': ?phone,
-    });
+  static Future<ApiResponse> payShipment(
+    int shipmentId, {
+    required String paymentMode,
+    String? provider,
+    String? phone,
+  }) {
+    return ApiProvider.post(
+      '$_vendorUrl/shipments/$shipmentId/pay',
+      body: {
+        'payment_mode': paymentMode,
+        'provider': ?provider,
+        'phone_number': ?phone,
+      },
+    );
   }
 
   static Future<ApiResponse> shipmentPaymentStatus(int shipmentId) {
@@ -106,10 +138,14 @@ class DisputeService {
 
   /// Le vendeur remet le remplacement au livreur (un retour se valide en donnant
   /// son code au livreur).
-  static Future<ApiResponse> shipmentStep(int shipmentId, String step, {String? trackingNumber}) {
-    return ApiProvider.post('$_vendorUrl/shipments/$shipmentId/step', body: {
-      'step': step,
-      'carrier_tracking_number': ?trackingNumber,
-    });
+  static Future<ApiResponse> shipmentStep(
+    int shipmentId,
+    String step, {
+    String? trackingNumber,
+  }) {
+    return ApiProvider.post(
+      '$_vendorUrl/shipments/$shipmentId/step',
+      body: {'step': step, 'carrier_tracking_number': ?trackingNumber},
+    );
   }
 }

@@ -98,7 +98,8 @@ class DeliveryItem {
   final int quantity;
 
   factory DeliveryItem.fromMap(Map<String, dynamic> map) => DeliveryItem(
-    name: (map['product_name'] ?? map['name'] ?? 'delivery_dashboard.item'.tr).toString(),
+    name: (map['product_name'] ?? map['name'] ?? 'delivery_dashboard.item'.tr)
+        .toString(),
     quantity: int.tryParse('${map['quantity'] ?? 1}') ?? 1,
   );
 }
@@ -113,12 +114,17 @@ class DeliveryRequest {
   final LatLng pickupLocation;
   final String deliveryAddress;
   final LatLng deliveryLocation;
-  final double distance; // en km
+  final double? distance; // en km ; null si coordonnées indisponibles
+  final String? distanceType;
   final double commission; // Commission en XAF
   final DateTime requestDate;
   final DateTime? acceptedDate;
   final DateTime? deliveredDate;
   final String? notes;
+  final bool carrierManaged;
+  final bool canComplete;
+  final String completionKind;
+  final List<Map<String, String>> carrierSteps;
 
   /// Détails que le livreur doit connaître AVANT d'accepter la course.
   final String? orderNumber;
@@ -142,11 +148,16 @@ class DeliveryRequest {
     required this.deliveryAddress,
     required this.deliveryLocation,
     required this.distance,
+    this.distanceType,
     required this.commission,
     required this.requestDate,
     this.acceptedDate,
     this.deliveredDate,
     this.notes,
+    this.carrierManaged = false,
+    this.canComplete = true,
+    this.completionKind = 'client',
+    this.carrierSteps = const [],
     this.orderNumber,
     this.orderTotal = 0,
     this.items = const [],
@@ -175,7 +186,8 @@ class DeliveryRequest {
         json['deliveryLatitude'] as double,
         json['deliveryLongitude'] as double,
       ),
-      distance: (json['distance'] as num).toDouble(),
+      distance: double.tryParse(json['distance']?.toString() ?? ''),
+      distanceType: json['distanceType'] as String?,
       commission: (json['commission'] as num).toDouble(),
       requestDate: DateTime.parse(json['requestDate'] as String),
       acceptedDate: json['acceptedDate'] != null
@@ -202,6 +214,7 @@ class DeliveryRequest {
       'deliveryLatitude': deliveryLocation.latitude,
       'deliveryLongitude': deliveryLocation.longitude,
       'distance': distance,
+      'distanceType': distanceType,
       'commission': commission,
       'requestDate': requestDate.toIso8601String(),
       'acceptedDate': acceptedDate?.toIso8601String(),
