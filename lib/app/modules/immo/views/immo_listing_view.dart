@@ -359,8 +359,6 @@ class _ImmoListingViewState extends State<ImmoListingView> {
                   const SizedBox(height: AppDesign.space4),
                   _Protection(listing: listing),
                   const SizedBox(height: AppDesign.space4),
-                  if (listing.cabinet != null || listing.commissionCabinet != null)
-                    _CabinetCard(listing: listing),
                   if (!listing.isLand && listing.netPayeeKind != 'cabinet')
                     _OwnerCard(
                       listing: listing,
@@ -1457,125 +1455,6 @@ class _OwnerCard extends StatelessWidget {
             text,
             style: context.textStyle(
               FontSizeType.body1,
-              color: context.ds.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-/// Carte du cabinet partenaire d'un terrain.
-class _CabinetCard extends StatelessWidget {
-  const _CabinetCard({required this.listing});
-
-  final RealEstateListing listing;
-
-  @override
-  Widget build(BuildContext context) {
-    final cabinet = (listing.cabinet ?? listing.commissionCabinet)!;
-    final contact = cabinet.contact;
-
-    return AppCard(
-      onTap: () => ImmoNav.push(ImmoNav.cabinet, arguments: cabinet.id),
-      padding: const EdgeInsets.all(AppDesign.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              ImmoCabinetLogo(url: cabinet.logoUrl, size: 52),
-              const SizedBox(width: AppDesign.space3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            cabinet.name,
-                            style: context.textStyle(
-                              FontSizeType.subtitle1,
-                              fontWeight: FontWeight.w700,
-                              color: context.ds.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (cabinet.isVerified) ...[
-                          const SizedBox(width: AppDesign.space1),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 18,
-                            color: AppDesign.success,
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (cabinet.tagline != null)
-                      Text(
-                        cabinet.tagline!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textStyle(
-                          FontSizeType.body2,
-                          color: context.ds.textSecondary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: context.ds.textTertiary),
-            ],
-          ),
-          const SizedBox(height: AppDesign.space3),
-          if (cabinet.contactUnlocked && contact != null) ...[
-            if (contact['phone'] != null)
-              _line(context, Icons.phone_outlined, contact['phone'].toString()),
-            if (contact['whatsapp'] != null)
-              _line(
-                context,
-                Icons.chat_outlined,
-                contact['whatsapp'].toString(),
-              ),
-            if (contact['email'] != null)
-              _line(
-                context,
-                Icons.mail_outline_rounded,
-                contact['email'].toString(),
-              ),
-            if (contact['address'] != null)
-              _line(
-                context,
-                Icons.location_on_outlined,
-                contact['address'].toString(),
-              ),
-          ] else
-            Text(
-              'immo.cabinet.contact_hidden'.tr,
-              style: context.textStyle(
-                FontSizeType.body2,
-                color: context.ds.textSecondary,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _line(BuildContext context, IconData icon, String text) => Padding(
-    padding: const EdgeInsets.only(bottom: AppDesign.space1),
-    child: Row(
-      children: [
-        Icon(icon, size: 18, color: AppDesign.success),
-        const SizedBox(width: AppDesign.space2),
-        Expanded(
-          child: Text(
-            text,
-            style: context.textStyle(
-              FontSizeType.body1,
-              fontWeight: FontWeight.w600,
               color: context.ds.textPrimary,
             ),
           ),

@@ -762,7 +762,6 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
                 ImmoFeeDetails(
                   netAmount: q.netAmount,
                   platformAmount: q.platformAmount,
-                  cabinetName: q.commissionCabinet?.name,
                   netPayeeKind: q.netPayeeKind,
                 ),
                 if (q.commission > 0)

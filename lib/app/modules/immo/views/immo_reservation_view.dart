@@ -397,7 +397,7 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
                     ImmoFeeDetails(
                       netAmount: r.netAmount,
                       platformAmount: r.platformAmount,
-                      cabinetName: r.commissionCabinet?.name,
+                      cabinetName: r.isPaid ? r.commissionCabinet?.name : null,
                       netPayeeKind: r.netPayeeKind,
                     ),
                     if (r.commissionAmount > 0)

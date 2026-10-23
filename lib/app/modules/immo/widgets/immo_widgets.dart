@@ -421,8 +421,6 @@ class ImmoLandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cabinet = listing.cabinet;
-
     return AppCard(
       padding: EdgeInsets.zero,
       clipContent: true,
@@ -491,28 +489,6 @@ class ImmoLandCard extends StatelessWidget {
                   ].where((e) => e.isNotEmpty).join('  ·  '),
                   highlighted: true,
                 ),
-                if (cabinet != null) ...[
-                  const SizedBox(height: AppDesign.space3),
-                  InkWell(
-                    onTap: onCabinet,
-                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-                    child: Row(
-                      children: [
-                        ImmoCabinetLogo(url: cabinet.logoUrl, size: 36),
-                        const SizedBox(width: AppDesign.space2),
-                        Expanded(
-                          child: Text(
-                            cabinet.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: context.ds.textPrimary),
-                          ),
-                        ),
-                        Icon(Icons.chevron_right_rounded, color: context.ds.textTertiary),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
