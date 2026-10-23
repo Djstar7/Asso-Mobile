@@ -153,6 +153,10 @@ class MaritimeController extends GetxController {
   }
 
   void openDeparture(MaritimeDeparture departure) {
+    if (departure.requiresQuote) {
+      selectedTab.value = 2;
+      return;
+    }
     if (!departure.isBookable) {
       Get.snackbar(
         'maritime.trip_impossible_title'.tr,

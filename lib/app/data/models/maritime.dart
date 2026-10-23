@@ -45,6 +45,7 @@ class MaritimeHub {
 
 /// Départ maritime d'un partenaire entre deux QG.
 class MaritimeDeparture {
+  final bool requiresQuote;
   final int id;
   final String partnerName;
   final String? partnerLogo;
@@ -88,6 +89,7 @@ class MaritimeDeparture {
   final String? notes;
 
   MaritimeDeparture({
+    this.requiresQuote = false,
     required this.id,
     required this.partnerName,
     this.partnerLogo,
@@ -152,6 +154,7 @@ class MaritimeDeparture {
       daysLeftToBook: (json['days_left_to_book'] as num?)?.toInt() ?? -1,
       isBookable: json['is_bookable'] == true,
       remainingKg: _d(json['remaining_kg']),
+      requiresQuote: json['requires_quote'] == true,
       pricePerKg: _d(json['price_per_kg']),
       pricePerCbm: json['price_per_cbm'] == null
           ? null

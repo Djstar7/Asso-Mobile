@@ -1,4 +1,31 @@
 {
+  "freight_quote": {
+    "tab": "Devis",
+    "intro": "Maritime depuis la Chine vers un autre pays que le Cameroun : discutez du prix avec ASSO avant de payer.",
+    "request": "Demander un devis maritime",
+    "empty": "Aucune demande de devis.",
+    "accept": "Accepter et réserver",
+    "accept_message": "Accepter un fret de @amount pour @kg kg ? L’assurance facultative s’ajoute au paiement.",
+    "unavailable": "Ce devis est indisponible.",
+    "expiry": "Valable jusqu’au @date",
+    "discuss": "Discuter avec ASSO",
+    "destination": "Pays de destination",
+    "weight": "Poids (kg)",
+    "volume": "Volume en m³ (facultatif)",
+    "general": "Colis général",
+    "sensitive": "Colis sensible",
+    "description": "Description du colis et ville de destination",
+    "country_error": "Choisissez un pays autre que la Chine et le Cameroun.",
+    "on_request": "Sur devis",
+    "chat_message": "Bonjour, je souhaite discuter du devis maritime #@id.",
+    "status": {
+      "pending": "En discussion",
+      "quoted": "Devis proposé",
+      "accepted": "Devis accepté",
+      "booked": "Réservation créée",
+      "cancelled": "Annulé"
+    }
+  },
   "partner_freight": {
     "air_travellers": "Voyageurs",
     "air_partners": "Partenaires",

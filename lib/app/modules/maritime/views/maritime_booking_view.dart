@@ -162,6 +162,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
             key: controller.fieldKeys[errorKey],
             child: TextField(
               controller: c,
+              readOnly: errorKey == 'kg_booked' && controller.freightInquiry != null,
               keyboardType: phone
                   ? TextInputType.phone
                   : number
@@ -223,7 +224,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
             Icon(d.transportMode == 'air' ? Icons.flight : Icons.directions_boat, color: AppThemeSystem.primaryColor),
             const SizedBox(width: 8),
             Expanded(child: Text('Diaspo Exchange', style: const TextStyle(fontWeight: FontWeight.w700))),
-            Text('${controller.formatAmount(d.pricePerKg)}/kg',
+            Text('${controller.formatAmount(controller.pricePerKg)}/kg',
                 style: TextStyle(fontWeight: FontWeight.w700, color: AppThemeSystem.primaryColor)),
           ]),
           const SizedBox(height: 14),

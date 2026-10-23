@@ -23,6 +23,7 @@ class MaritimeBookingController extends GetxController {
   final MaritimeService _service = Get.find<MaritimeService>();
 
   final departure = Rx<MaritimeDeparture?>(null);
+  Map<String, dynamic>? freightInquiry;
   final isSubmitting = false.obs;
   final insuranceOptIn = false.obs;
 
@@ -114,17 +115,20 @@ class MaritimeBookingController extends GetxController {
   }
 
   String get currency => departure.value?.currency ?? 'EUR';
-  double get pricePerKg => departure.value?.pricePerKg ?? 0;
+  double get pricePerKg => freightInquiry != null
+      ? (freightInquiry!['freight_amount'] as num).toDouble() /
+            (freightInquiry!['kg'] as num).toDouble()
+      : departure.value?.pricePerKg ?? 0;
   double get remainingKg => departure.value?.remainingKg ?? 0;
 
   /// À lire dans un Obx.
-  double get freight =>
-      double.parse((kg.value * pricePerKg).toStringAsFixed(2));
+  double get freight => freightInquiry != null
+      ? (freightInquiry!['freight_amount'] as num).toDouble()
+      : double.parse((kg.value * pricePerKg).toStringAsFixed(2));
   double get grandTotal => double.parse(
-        (freight +
-                (insuranceOptIn.value ? insurance.insuranceAmount.value : 0))
-            .toStringAsFixed(2),
-      );
+    (freight + (insuranceOptIn.value ? insurance.insuranceAmount.value : 0))
+        .toStringAsFixed(2),
+  );
 
   @override
   void onInit() {
@@ -132,6 +136,11 @@ class MaritimeBookingController extends GetxController {
     final args = Get.arguments;
     if (args is Map && args['departure'] is MaritimeDeparture) {
       departure.value = args['departure'] as MaritimeDeparture;
+      if (args['freight_inquiry'] is Map) {
+        freightInquiry = Map<String, dynamic>.from(args['freight_inquiry']);
+        kg.value = (freightInquiry!['kg'] as num).toDouble();
+        kgController.text = kg.value.toString();
+      }
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => AppNavigation.pop());
       return;
@@ -144,14 +153,15 @@ class MaritimeBookingController extends GetxController {
       senderPhone.text = user.phone;
     }
 
-    if (remainingKg < kg.value) {
+    if (freightInquiry == null && remainingKg < kg.value) {
       kg.value = remainingKg;
       kgController.text = remainingKg.toStringAsFixed(1);
     }
     kgController.addListener(() {
       final value =
           double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
-      if (value > 0 && value <= remainingKg) kg.value = value;
+      if (freightInquiry == null && value > 0 && value <= remainingKg)
+        kg.value = value;
     });
 
     _bindErrorClearing();
@@ -280,8 +290,10 @@ class MaritimeBookingController extends GetxController {
     String? provider,
     String? phone,
   }) => {
-    'kg_booked':
-        double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
+    if (freightInquiry != null) 'freight_inquiry_id': freightInquiry!['id'],
+    'kg_booked': freightInquiry != null
+        ? freightInquiry!['kg']
+        : double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
     'parcels_count': int.tryParse(parcelsController.text) ?? 1,
     'sender_first_name': senderFirstName.text.trim(),
     'sender_last_name': senderLastName.text.trim(),

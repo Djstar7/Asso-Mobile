@@ -7,6 +7,7 @@ import '../../../core/widgets/segmented_tabs.dart';
 import '../../../data/models/maritime.dart';
 import '../controllers/maritime_controller.dart';
 import 'maritime_contact_button.dart';
+import 'freight_inquiries_view.dart';
 
 /// Offres des partenaires, filtrées par transport aérien ou maritime.
 class MaritimeSection extends GetView<MaritimeController> {
@@ -36,8 +37,16 @@ class MaritimeSection extends GetView<MaritimeController> {
                   label: 'maritime.tabs.my_shipments'.tr,
                   icon: Icons.inventory_2_outlined,
                 ),
+                if (transportMode == 'sea')
+                  SegmentedTab(
+                    label: 'freight_quote.tab'.tr,
+                    icon: Icons.request_quote_outlined,
+                  ),
               ],
-              selectedIndex: controller.selectedTab.value,
+              selectedIndex:
+                  transportMode == 'air' && controller.selectedTab.value == 2
+                  ? 0
+                  : controller.selectedTab.value,
               onChanged: controller.changeTab,
             ),
           ),
@@ -46,7 +55,11 @@ class MaritimeSection extends GetView<MaritimeController> {
           child: RefreshIndicator(
             onRefresh: controller.refreshAll,
             child: Obx(
-              () => controller.selectedTab.value == 0
+              () => controller.selectedTab.value == 2 && transportMode == 'sea'
+                  ? const FreightInquiriesView()
+                  : (controller.selectedTab.value == 0 ||
+                        transportMode == 'air' &&
+                            controller.selectedTab.value == 2)
                   ? _buildDepartures(context, isDark)
                   : _buildMyBookings(context, isDark),
             ),
@@ -264,7 +277,9 @@ class MaritimeSection extends GetView<MaritimeController> {
                       ),
                     ),
                     Text(
-                      '${controller.formatAmount(d.pricePerKg, d.currency)}/kg',
+                      d.requiresQuote
+                          ? 'freight_quote.on_request'.tr
+                          : '${controller.formatAmount(d.pricePerKg, d.currency)}/kg',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppThemeSystem.primaryColor,

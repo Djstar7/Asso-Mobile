@@ -1,4 +1,31 @@
 {
+  "freight_quote": {
+    "tab": "Quotes",
+    "intro": "Sea freight from China to countries other than Cameroon: agree on a price with ASSO before payment.",
+    "request": "Request a sea freight quote",
+    "empty": "No quote requests yet.",
+    "accept": "Accept and book",
+    "accept_message": "Accept freight of @amount for @kg kg? Optional insurance is added at payment.",
+    "unavailable": "This quote is unavailable.",
+    "expiry": "Valid until @date",
+    "discuss": "Chat with ASSO",
+    "destination": "Destination country",
+    "weight": "Weight (kg)",
+    "volume": "Volume in m³ (optional)",
+    "general": "General cargo",
+    "sensitive": "Sensitive cargo",
+    "description": "Parcel description and destination city",
+    "country_error": "Choose a country other than China or Cameroon.",
+    "on_request": "Request a quote",
+    "chat_message": "Hello, I would like to discuss sea freight quote #@id.",
+    "status": {
+      "pending": "In discussion",
+      "quoted": "Quote proposed",
+      "accepted": "Quote accepted",
+      "booked": "Booking created",
+      "cancelled": "Cancelled"
+    }
+  },
   "partner_freight": {
     "air_travellers": "Travellers",
     "air_partners": "Partners",

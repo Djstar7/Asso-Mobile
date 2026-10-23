@@ -93,6 +93,43 @@ class MaritimeService extends GetxService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getInquiries() async {
+    try {
+      final response = await _dio.get('/v1/maritime/inquiries');
+      return (response.data['data'] as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      throw _error(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> createInquiry(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/v1/maritime/inquiries', data: data);
+      return Map<String, dynamic>.from(response.data['data']);
+    } catch (e) {
+      throw _error(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> acceptInquiry(
+    Map<String, dynamic> inquiry,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/v1/maritime/inquiries/${inquiry['id']}/accept',
+        data: {
+          'expected_amount': inquiry['freight_amount'],
+          'expected_currency': inquiry['currency'],
+        },
+      );
+      return Map<String, dynamic>.from(response.data['data']);
+    } catch (e) {
+      throw _error(e);
+    }
+  }
+
   /// Crée l'envoi et lance l'encaissement. Renvoie l'envoi et le bloc `payment`.
   Future<({MaritimeBooking booking, Map<String, dynamic> payment})> book({
     required int departureId,
