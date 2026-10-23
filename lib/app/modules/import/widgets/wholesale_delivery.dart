@@ -33,6 +33,9 @@ class WholesaleDelivery extends ChangeNotifier {
   final detailsController = TextEditingController();
   final phoneController = TextEditingController();
 
+  final cityController = TextEditingController();
+  final quarterController = TextEditingController();
+  final addressController = TextEditingController();
   String address = '';
   String? city;
   double? latitude;
@@ -48,7 +51,10 @@ class WholesaleDelivery extends ChangeNotifier {
   String _quotedItems = '';
 
   bool get hasLocation =>
-      address.trim().isNotEmpty && latitude != null && longitude != null;
+      address.trim().isNotEmpty &&
+      (city?.trim().isNotEmpty ?? false) &&
+      (quarterController.text.trim().isNotEmpty ||
+          (latitude != null && longitude != null));
 
   DeliveryPartnerQuote? get selected =>
       _selected == null ? null : DeliveryPartnerQuote(_selected!);
@@ -135,6 +141,10 @@ class WholesaleDelivery extends ChangeNotifier {
   }
 
   Future<void> _setPosition(double lat, double lng, {String? fallback}) async {
+    _request++;
+    _selected = null;
+    offers = const [];
+    quote = null;
     latitude = lat;
     longitude = lng;
     locationFailure = null;
@@ -155,6 +165,22 @@ class WholesaleDelivery extends ChangeNotifier {
                 'lat': lat.toStringAsFixed(4),
                 'lng': lng.toStringAsFixed(4),
               }));
+    cityController.text = city ?? '';
+    addressController.text = address;
+    quarterController.clear();
+  }
+
+  void editAddress() {
+    ++_request;
+    latitude = null;
+    longitude = null;
+    city = cityController.text.trim();
+    address = addressController.text.trim();
+    _selected = null;
+    offers = const [];
+    quote = null;
+    loading = false;
+    notifyListeners();
   }
 
   /// Recalcule les offres si les quantités ont changé depuis le dernier devis.
@@ -171,6 +197,7 @@ class WholesaleDelivery extends ChangeNotifier {
 
     final request = ++_request;
     final previousKey = selected?.key;
+    _selected = null;
     _quotedItems = _itemsKey();
     loading = true;
     notifyListeners();
@@ -182,6 +209,7 @@ class WholesaleDelivery extends ChangeNotifier {
         longitude: longitude,
         city: city ?? address,
         address: address,
+        quarter: quarterController.text.trim(),
       );
       if (request != _request) return; // devis périmé
 
@@ -230,6 +258,8 @@ class WholesaleDelivery extends ChangeNotifier {
       if (offer.gridId != null) 'delivery_grid_id': offer.gridId,
       if (offer.vehicle != null) 'delivery_vehicle': offer.vehicle,
       'delivery_city': city ?? address,
+      if (quarterController.text.trim().isNotEmpty)
+        'delivery_quarter': quarterController.text.trim(),
       if (country != null && country.isNotEmpty) 'delivery_country': country,
       'delivery_address': address,
       if (details.isNotEmpty) 'delivery_address_details': details,
@@ -243,6 +273,9 @@ class WholesaleDelivery extends ChangeNotifier {
   void dispose() {
     detailsController.removeListener(notifyListeners);
     phoneController.removeListener(notifyListeners);
+    cityController.dispose();
+    quarterController.dispose();
+    addressController.dispose();
     detailsController.dispose();
     phoneController.dispose();
     super.dispose();

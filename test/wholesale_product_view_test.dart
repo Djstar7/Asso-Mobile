@@ -270,7 +270,7 @@ void main() {
     await openOrderSheet(tester);
 
     expect(find.text('Indiquez votre adresse de livraison.'), findsOneWidget);
-    expect(find.text('Précisions (obligatoire)'), findsOneWidget);
+    expect(find.text('import.delivery.details_label'.tr), findsOneWidget);
   });
 
   testWidgets('la feuille mène au récapitulatif avant le paiement', (
