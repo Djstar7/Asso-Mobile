@@ -449,12 +449,15 @@ Future<void> showImmoSortSheet(ImmoHomeController c) {
 
 /// « Vos critères, nos meilleurs logements » (captures Studapart 1 à 5).
 Future<void> showImmoCriteriaSheet(ImmoHomeController c) {
-  final initial = c.criteria.value ?? RealEstateCriteria();
+  final isLand = c.type.value == RealEstateType.land;
+  final initial = c.criteria.value?.type == c.type.value
+      ? c.criteria.value!
+      : RealEstateCriteria(type: c.type.value);
   String? status = initial.applicantStatus;
   DateTime? moveIn = initial.moveInDate;
   int? months = initial.leaseMonths;
   bool undetermined = initial.leaseMonths == 0;
-  const max = 1000000.0;
+  final max = isLand ? 200000000.0 : 1000000.0;
   var budget = RangeValues(
     (initial.budgetMin ?? 0).toDouble().clamp(0, max).toDouble(),
     (initial.budgetMax ?? max).toDouble().clamp(0, max).toDouble(),
@@ -466,11 +469,11 @@ Future<void> showImmoCriteriaSheet(ImmoHomeController c) {
   return AppSheet.show(
     StatefulBuilder(
       builder: (context, setState) {
-        final canSubmit = city.text.trim().isNotEmpty && moveIn != null && (months != null || undetermined);
+        final canSubmit = city.text.trim().isNotEmpty && (isLand || (moveIn != null && (months != null || undetermined)));
 
         return AppSheet(
-          title: 'immo.criteria.title'.tr,
-          subtitle: 'immo.criteria.subtitle'.tr,
+          title: (isLand ? 'immo.criteria.land_title' : 'immo.criteria.title').tr,
+          subtitle: (isLand ? 'immo.criteria.land_subtitle' : 'immo.criteria.subtitle').tr,
           footer: AppButton(
             label: 'immo.criteria.submit'.tr,
             onPressed: !canSubmit
@@ -478,11 +481,12 @@ Future<void> showImmoCriteriaSheet(ImmoHomeController c) {
                 : () async {
                     AppNavigation.pop();
                     await c.saveCriteria(RealEstateCriteria(
-                      applicantStatus: status,
-                      school: status == 'student' ? school.text.trim() : null,
+                      type: c.type.value,
+                      applicantStatus: isLand ? null : status,
+                      school: !isLand && status == 'student' ? school.text.trim() : null,
                       city: city.text.trim(),
-                      moveInDate: moveIn,
-                      leaseMonths: undetermined ? 0 : months,
+                      moveInDate: isLand ? null : moveIn,
+                      leaseMonths: isLand ? null : (undetermined ? 0 : months),
                       budgetMin: budget.start > 0 ? budget.start.toInt() : null,
                       budgetMax: budget.end < max ? budget.end.toInt() : null,
                     ));
@@ -491,27 +495,29 @@ Future<void> showImmoCriteriaSheet(ImmoHomeController c) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionTitle(context, 'immo.criteria.you_are'.tr),
-              Wrap(
-                spacing: AppDesign.space2,
-                runSpacing: AppDesign.space2,
-                children: [
-                  for (final s in statuses)
-                    ImmoFilterChip(
-                      label: 'immo.criteria.status_$s'.tr,
-                      selected: status == s,
-                      trailing: null,
-                      onTap: () => setState(() => status = status == s ? null : s),
-                    ),
-                ],
-              ),
-              if (status == 'student') ...[
-                const SizedBox(height: AppDesign.space3),
-                AppTextField(
-                  hint: 'immo.criteria.school'.tr,
-                  controller: school,
-                  prefixIcon: const Icon(Icons.school_outlined),
+              if (!isLand) ...[
+                _sectionTitle(context, 'immo.criteria.you_are'.tr),
+                Wrap(
+                  spacing: AppDesign.space2,
+                  runSpacing: AppDesign.space2,
+                  children: [
+                    for (final s in statuses)
+                      ImmoFilterChip(
+                        label: 'immo.criteria.status_$s'.tr,
+                        selected: status == s,
+                        trailing: null,
+                        onTap: () => setState(() => status = status == s ? null : s),
+                      ),
+                  ],
                 ),
+                if (status == 'student') ...[
+                  const SizedBox(height: AppDesign.space3),
+                  AppTextField(
+                    hint: 'immo.criteria.school'.tr,
+                    controller: school,
+                    prefixIcon: const Icon(Icons.school_outlined),
+                  ),
+                ],
               ],
               const SizedBox(height: AppDesign.space4),
               AppTextField(
@@ -522,47 +528,49 @@ Future<void> showImmoCriteriaSheet(ImmoHomeController c) {
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: AppDesign.space3),
-              _DateField(
-                label: 'immo.criteria.move_in'.tr,
-                value: moveIn,
-                onChanged: (d) => setState(() => moveIn = d),
-              ),
-              const SizedBox(height: AppDesign.space3),
-              ImmoMonthsStepper(
-                label: 'immo.criteria.duration'.tr,
-                value: undetermined ? null : months,
-                onChanged: (v) => setState(() {
-                  undetermined = false;
-                  months = v;
-                }),
-              ),
-              const SizedBox(height: AppDesign.space2),
-              Wrap(
-                spacing: AppDesign.space2,
-                runSpacing: AppDesign.space2,
-                children: [
-                  for (final m in [6, 12, 24])
+              if (!isLand) ...[
+                _DateField(
+                  label: 'immo.criteria.move_in'.tr,
+                  value: moveIn,
+                  onChanged: (d) => setState(() => moveIn = d),
+                ),
+                const SizedBox(height: AppDesign.space3),
+                ImmoMonthsStepper(
+                  label: 'immo.criteria.duration'.tr,
+                  value: undetermined ? null : months,
+                  onChanged: (v) => setState(() {
+                    undetermined = false;
+                    months = v;
+                  }),
+                ),
+                const SizedBox(height: AppDesign.space2),
+                Wrap(
+                  spacing: AppDesign.space2,
+                  runSpacing: AppDesign.space2,
+                  children: [
+                    for (final m in [6, 12, 24])
+                      ImmoFilterChip(
+                        label: 'immo.criteria.months'.trParams({'count': '$m'}),
+                        selected: !undetermined && months == m,
+                        trailing: null,
+                        onTap: () => setState(() {
+                          undetermined = false;
+                          months = m;
+                        }),
+                      ),
                     ImmoFilterChip(
-                      label: 'immo.criteria.months'.trParams({'count': '$m'}),
-                      selected: !undetermined && months == m,
+                      label: 'immo.criteria.undetermined'.tr,
+                      selected: undetermined,
                       trailing: null,
-                      onTap: () => setState(() {
-                        undetermined = false;
-                        months = m;
-                      }),
+                      onTap: () => setState(() => undetermined = !undetermined),
                     ),
-                  ImmoFilterChip(
-                    label: 'immo.criteria.undetermined'.tr,
-                    selected: undetermined,
-                    trailing: null,
-                    onTap: () => setState(() => undetermined = !undetermined),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               _sectionTitle(context, 'immo.criteria.budget'.tr),
               ImmoRangeField(
                 max: max,
-                step: 5000,
+                step: isLand ? 100000 : 5000,
                 values: budget,
                 unit: 'FCFA',
                 minLabel: 'immo.filters.minimum'.tr,

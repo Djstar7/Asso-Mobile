@@ -4564,6 +4564,8 @@
       "featured": "Featured"
     },
     "criteria": {
+      "land_title": "Your land search criteria",
+      "land_subtitle": "Get alerts for new land listings matching your city and budget.",
       "title": "Your criteria, our best homes",
       "subtitle": "Your rent, your dates, your wishes: we filter everything for you.",
       "you_are": "You are:",

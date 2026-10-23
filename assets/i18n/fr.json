@@ -4563,6 +4563,8 @@
       "featured": "À la une"
     },
     "criteria": {
+      "land_title": "Vos critères pour un terrain",
+      "land_subtitle": "Recevez une alerte pour les nouveaux terrains correspondant à votre ville et à votre budget.",
       "title": "Vos critères, nos meilleurs logements",
       "subtitle": "Votre loyer, vos dates, vos envies : on filtre tout pour vous.",
       "you_are": "Vous êtes :",

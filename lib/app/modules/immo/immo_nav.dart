@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../chatdetail/views/chatdetail_view.dart';
+import '../../data/models/real_estate_models.dart';
 import 'views/immo_cabinet_view.dart';
 import 'views/immo_favorites_view.dart';
 import 'views/immo_home_view.dart';
@@ -89,7 +90,7 @@ class ImmoNav {
         Get.routing.args = args;
         page = const ChatdetailPage();
       default:
-        page = const ImmoHomeView();
+        page = ImmoHomeView(initialType: args == 'land' ? RealEstateType.land : RealEstateType.rent);
     }
 
     return GetPageRoute(settings: settings, page: () => page);
@@ -109,7 +110,10 @@ class ImmoShell extends StatelessWidget {
       key: Get.nestedKey(ImmoNav.id),
       observers: [_ImmoRouteObserver()],
       onGenerateInitialRoutes: (navigator, _) => [
-        ImmoNav.onGenerateRoute(const RouteSettings(name: ImmoNav.home)),
+        ImmoNav.onGenerateRoute(RouteSettings(
+          name: ImmoNav.home,
+          arguments: initialRoute == ImmoNav.home ? initialArguments : null,
+        )),
         if (initialRoute != null && initialRoute != ImmoNav.home)
           ImmoNav.onGenerateRoute(RouteSettings(name: initialRoute, arguments: initialArguments)),
       ],

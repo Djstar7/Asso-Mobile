@@ -16,7 +16,9 @@ import '../widgets/immo_widgets.dart';
 /// bien ») : onglets Maisons à louer / Terrains à vendre, recherche,
 /// filtres, tri, critères enregistrés et liste.
 class ImmoHomeView extends StatefulWidget {
-  const ImmoHomeView({super.key});
+  const ImmoHomeView({super.key, this.initialType = RealEstateType.rent});
+
+  final RealEstateType initialType;
 
   @override
   State<ImmoHomeView> createState() => _ImmoHomeViewState();
@@ -28,7 +30,7 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
   @override
   void initState() {
     super.initState();
-    c = Get.put(ImmoHomeController());
+    c = Get.put(ImmoHomeController(initialType: widget.initialType));
   }
 
   @override

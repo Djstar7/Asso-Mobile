@@ -13,7 +13,10 @@ const List<String> kImmoSorts = ['recent', 'price_asc', 'price_desc', 'featured'
 /// Page d'entrée de la rubrique : onglets Maisons à louer / Terrains à
 /// vendre, recherche, filtres, tri et liste paginée.
 class ImmoHomeController extends GetxController {
-  final Rx<RealEstateType> type = RealEstateType.rent.obs;
+  ImmoHomeController({RealEstateType initialType = RealEstateType.rent})
+      : type = initialType.obs;
+
+  final Rx<RealEstateType> type;
   final RxString sort = 'recent'.obs;
 
   /// Filtres actifs, aux noms des paramètres de l'API.
@@ -165,6 +168,7 @@ class ImmoHomeController extends GetxController {
 
   /// Critères enregistrés : on les applique tout de suite à la liste.
   Future<bool> saveCriteria(RealEstateCriteria value) async {
+    value.type = type.value;
     criteria.value = value;
     applyFilters({
       'city': value.city,

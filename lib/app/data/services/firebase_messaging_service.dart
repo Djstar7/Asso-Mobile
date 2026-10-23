@@ -15,6 +15,9 @@ import '../../core/utils/app_navigation.dart';
 import 'deep_link_service.dart';
 import '../../modules/home/controllers/home_controller.dart';
 import '../../modules/immo/views/immo_reservation_view.dart';
+import '../../modules/immo/immo_nav.dart';
+import '../../modules/immo/controllers/immo_home_controller.dart';
+import '../models/real_estate_models.dart';
 import '../../modules/landlord/views/landlord_dashboard_view.dart';
 
 /// Handler pour les messages en arrière-plan
@@ -526,7 +529,23 @@ class FirebaseMessagingService extends GetxService {
           case 'open_real_estate':
             if (Get.isRegistered<HomeController>()) {
               Get.until((route) => route.isFirst);
-              Get.find<HomeController>().openRealEstate();
+              final home = Get.find<HomeController>();
+              final listingId = int.tryParse('${data['listing_id'] ?? ''}');
+              if (home.realEstateOpen.value) {
+                ImmoNav.popToRoot();
+                if (listingId != null) {
+                  ImmoNav.push(ImmoNav.listing, arguments: listingId);
+                } else if (Get.isRegistered<ImmoHomeController>()) {
+                  Get.find<ImmoHomeController>().switchType(
+                    data['property_type'] == 'land' ? RealEstateType.land : RealEstateType.rent,
+                  );
+                }
+              } else {
+                home.openRealEstate(
+                  initialRoute: listingId == null ? ImmoNav.home : ImmoNav.listing,
+                  arguments: listingId ?? data['property_type'],
+                );
+              }
             }
             return;
           case 'open_landlord_space':

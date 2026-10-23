@@ -510,6 +510,7 @@ class RealEstateQuote {
 
 /// Critères enregistrés (« Vos critères »).
 class RealEstateCriteria {
+  RealEstateType type;
   String? applicantStatus;
   String? school;
   String? city;
@@ -519,6 +520,7 @@ class RealEstateCriteria {
   int? budgetMax;
 
   RealEstateCriteria({
+    this.type = RealEstateType.rent,
     this.applicantStatus,
     this.school,
     this.city,
@@ -529,6 +531,7 @@ class RealEstateCriteria {
   });
 
   factory RealEstateCriteria.fromJson(Map<String, dynamic> j) => RealEstateCriteria(
+        type: j['type'] == 'land' ? RealEstateType.land : RealEstateType.rent,
         applicantStatus: j['applicant_status']?.toString(),
         school: j['school']?.toString(),
         city: j['city']?.toString(),
@@ -539,6 +542,7 @@ class RealEstateCriteria {
       );
 
   Map<String, dynamic> toJson() => {
+        'type': type.api,
         'applicant_status': applicantStatus,
         'school': school,
         'city': city,
