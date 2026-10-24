@@ -19,8 +19,13 @@ String? _toText(dynamic value) {
 class DeliveryPriceGridRow {
   final String label;
   final double price;
+  final double? distanceKm;
 
-  const DeliveryPriceGridRow({required this.label, required this.price});
+  const DeliveryPriceGridRow({
+    required this.label,
+    required this.price,
+    this.distanceKm,
+  });
 
   static List<DeliveryPriceGridRow> listFrom(dynamic raw) {
     if (raw is! List) return const [];
@@ -30,6 +35,7 @@ class DeliveryPriceGridRow {
           (row) => DeliveryPriceGridRow(
             label: row['label']?.toString() ?? '',
             price: _toDouble(row['price']) ?? 0,
+            distanceKm: _toDouble(row['distance_km']),
           ),
         )
         .where((row) => row.label.isNotEmpty)
@@ -178,6 +184,8 @@ class DeliveryInfo {
   final String? trackingStatusLabel;
   final bool canConfirmReception;
   final PickupAgency? pickupAgency;
+  final bool isInternationalExport;
+  final PickupAgency? solexAgency;
   final String? deliveryOption;
   final String? agencyCollectedAt;
   final String? receptionConfirmedAt;
@@ -207,6 +215,8 @@ class DeliveryInfo {
     this.trackingStatusLabel,
     this.canConfirmReception = false,
     this.pickupAgency,
+    this.isInternationalExport = false,
+    this.solexAgency,
     this.deliveryOption,
     this.agencyCollectedAt,
     this.receptionConfirmedAt,
@@ -238,6 +248,8 @@ class DeliveryInfo {
       trackingStatusLabel: _toText(raw['tracking_status_label']),
       canConfirmReception: raw['can_confirm_reception'] == true,
       pickupAgency: PickupAgency.fromMap(raw['pickup_agency']),
+      isInternationalExport: raw['international_export'] == true,
+      solexAgency: PickupAgency.fromMap(raw['solex_agency']),
       deliveryOption: _toText(raw['delivery_option']),
       agencyCollectedAt: _toText(raw['agency_collected_at']),
       receptionConfirmedAt: _toText(raw['reception_confirmed_at']),
@@ -296,6 +308,11 @@ class DeliveryInfo {
         return 'data.delivery.steps.collected_at_agency'.tr;
       case 'reception_confirmed':
         return 'data.delivery.steps.reception_confirmed'.tr;
+      case 'export_pickup_requested':
+      case 'export_collected':
+      case 'export_at_solex':
+      case 'shipment_issue':
+        return 'data.delivery.steps.$step'.tr;
       case 'handed_to_carrier':
         return 'data.delivery.steps.handed_to_carrier'.tr;
       case 'in_transit':
@@ -387,6 +404,9 @@ class DeliveryPartnerQuote {
   String? get routeOrZone => routeLabel ?? zoneName;
 
   bool get isTerritorialNetwork => raw['pricing_type'] == 'territorial_network';
+  bool get isInternationalExport => raw['international_export'] == true;
+  PickupAgency? get solexAgency => PickupAgency.fromMap(raw['solex_agency']);
+
   PickupAgency? get pickupAgency => PickupAgency.fromMap(raw['pickup_agency']);
 
   /// Option choisie : retrait en agence ou livraison à domicile.
@@ -404,7 +424,9 @@ class DeliveryPartnerQuote {
     final agency = pickupAgency;
     if (agency != null && agency.address.isNotEmpty) {
       return 'data.delivery.pickup_notice_address'.trParams({
-        'name': agency.name, 'address': agency.address, 'city': agency.city,
+        'name': agency.name,
+        'address': agency.address,
+        'city': agency.city,
       });
     }
     return city != null
@@ -423,10 +445,9 @@ class DeliveryPartnerQuote {
 /// Formatage commun du poids (« 6 kg », « 2,5 kg »).
 String formatKg(double? kg) {
   if (kg == null) return '—';
-  final rounded = kg == kg.roundToDouble()
-      ? kg.toStringAsFixed(0)
-      : kg.toStringAsFixed(kg * 10 == (kg * 10).roundToDouble() ? 1 : 2);
-  return '${rounded.replaceAll('.', ',')} kg';
+  if (kg > 0 && kg < 0.001) return '< 0,001 kg';
+  final text = kg.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+  return '${text.replaceAll('.', ',')} kg';
 }
 
 /// Formatage du taux de TVA (« 19,25 % »).

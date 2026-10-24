@@ -745,6 +745,10 @@
     },
     "delivery": {
       "steps": {
+        "export_pickup_requested": "Collecte Solex programmée",
+        "export_collected": "Colis récupéré chez le vendeur par Solex",
+        "export_at_solex": "Colis reçu à l’agence Solex",
+        "shipment_issue": "Incident d’acheminement",
         "pending": "Commande passée",
         "confirmed": "Validée par le vendeur",
         "preparing": "En préparation",
@@ -894,6 +898,11 @@
       "skip": "Passer"
     },
     "delivery": {
+      "export_path": "Vendeur → collecte Solex → @agency → @carrier → destinataire",
+      "asso_fee": "Frais de service ASSO",
+      "excl_tax_short": "HT",
+      "collection_distance": "Distance de collecte estimée",
+      "straight_line": "à vol d’oiseau",
       "total_weight": "Poids total du colis",
       "applied_range": "Tranche appliquée",
       "included": "Inclus",
@@ -1962,6 +1971,9 @@
       "only_left_plural": "Il ne reste que @count articles disponibles."
     },
     "order": {
+      "recipient_name": "Nom du destinataire",
+      "postal_code": "Code postal (si applicable)",
+      "recipient_required": "Renseignez le nom du destinataire.",
       "step_option_quantity": "Indiquer la quantité d’au moins une option",
       "step_quantity": "Indiquer une quantité",
       "step_address": "Indiquer l’adresse de livraison",
@@ -2043,6 +2055,8 @@
     },
     "retry": "Réessayer",
     "map": {
+      "international_destinations": "DHL / FedEx · @count destinations",
+      "search_destination": "Rechercher un pays ou un transporteur…",
       "default_address": "Douala, Cameroun",
       "locate_failed_hint": "Déplacez le repère sur la carte ou recherchez votre adresse.",
       "title_readonly": "Localisation du produit",
@@ -2064,7 +2078,12 @@
       "no_courier_here": "Aucun livreur ne dessert ce point",
       "covered_quote_unavailable": "Zone couverte, livraison de cet article à vérifier",
       "offers_depend_on_shop": "Les offres et les prix dépendent de la boutique : ils s’affichent à l’étape suivante.",
-      "move_to_zone_hint": "Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison."
+      "move_to_zone_hint": "Déplacez le repère vers une zone colorée, ou choisissez un autre mode de livraison.",
+      "choose_country_address": "Choisissez votre adresse en @country",
+      "select_actual_address": "Touchez la carte ou recherchez votre adresse",
+      "country_covered": "Livraison internationale dans tout le pays",
+      "approximate_agency_position": "Position approximative dans la rue",
+      "provisional_reference": "Repère provisoire — agence à confirmer"
     },
     "not_found": {
       "title": "Produit introuvable",
@@ -3473,6 +3492,8 @@
       "return_title": "Retour au vendeur",
       "pickup": "Retrait",
       "dropoff": "Remise",
+      "code_hint_agency": "Remise à Solex contre le code à 6 chiffres du réceptionnaire de l’agence.",
+      "code_prompt_agency": "Code de dépôt communiqué par l’agence Solex",
       "code_hint_client": "Remise contre le code à 6 chiffres du client.",
       "code_hint_vendor": "Remise contre le code à 6 chiffres du vendeur.",
       "picked_up": "Colis récupéré",
@@ -4208,6 +4229,8 @@
       "unfounded": "Réclamation non fondée"
     },
     "shipment": {
+      "international_return_route": "Client → @carrier → Solex → vendeur",
+      "international_replacement_route": "Vendeur → Solex → @carrier → client",
       "collection_title": "Collecte pour échange",
       "return_title": "Retour du produit",
       "replacement_title": "Produit de remplacement",
@@ -4263,15 +4286,39 @@
       "pay_shipment": "Choisir le livreur et payer",
       "replace": "Remplacer le produit",
       "organize_return": "Organiser le retour",
+      "prepare_replacement": "Remplacement prêt — confirmer et financer le transport",
+      "prepare_confirm": "Confirmez-vous avoir reçu le produit retourné et préparé son remplacement ?",
+      "confirm_exchange_received": "Cas A — Confirmer la réception pour échange",
+      "received_exchange_confirm": "Cas A — Confirmez-vous avoir reçu le produit pour échange ? Vous pourrez ensuite préparer son remplacement. Les fonds restent bloqués pendant l’échange ; le client n’est pas remboursé à cette étape.",
+      "confirm_received": "Cas B — Réceptionner le retour et rembourser",
+      "received_confirm": "Cas B — Confirmez-vous avoir reçu le retour définitif ? Cette confirmation rembourse immédiatement le montant de l’article réclamé sur le Wallet du client.",
       "mark_shipped": "Produit remis au livreur",
       "send_evidence": "Envoyer mes explications / preuves",
       "evidence_title": "Vos explications pour ASSO",
       "asso_decides": "ASSO décide de l'issue du dossier ; vous ne pouvez pas le clôturer vous-même.",
-      "replace_confirm": "Vous enverrez un produit de remplacement au client et paierez la livraison. Un seul remplacement est possible. Continuer ?",
+      "international_replace_confirm": "Le produit doit d’abord revenir du client par DHL/FedEx puis Solex. Après réception et préparation, vous financerez l’envoi du remplacement par Solex puis DHL/FedEx. Les transports sont à votre charge. Continuer ?",
+      "international_pay_notice": "Les frais comprennent le transit international et le trajet Solex. Le client ne paie pas le retour.",
+      "pay_transport": "Choisir le transport et payer",
+      "replace_confirm": "Le produit défectueux sera récupéré avant de préparer le remplacement. Vous financez les transports. Continuer ?",
       "return_confirm": "Le produit sera récupéré chez le client et retourné à vos frais ; le client sera remboursé. Continuer ?",
       "todo_pay": "À faire : payer la livraison",
       "todo_choose": "À faire : remplacer ou organiser le retour",
       "todo_ship": "À faire : remettre le remplacement au livreur"
+    },
+    "delivery_claim": {
+      "button": "Commande non reçue : signaler ou suivre",
+      "title": "Problème avant livraison",
+      "notice": "Décrivez le retard, la préparation ou la livraison manquante. ASSO vérifiera les preuves et vous communiquera sa décision.",
+      "status": {
+        "open": "Enquête ASSO en cours",
+        "refunded": "Commande remboursée",
+        "rejected": "Réclamation examinée et rejetée"
+      }
+    },
+    "receipt": {
+      "contest": "Contester la preuve de réception",
+      "proof_required": "Joignez au moins une photo justificative et expliquez précisément votre contestation.",
+      "notice": "Réception vérifiée à @location. Contestation possible jusqu’au @date."
     }
   },
   "package_details": {
@@ -4369,7 +4416,8 @@
     "several_faces": "Plusieurs visages détectés : vous devez être seul sur la photo.",
     "too_far": "Rapprochez-vous : votre visage doit remplir l'ovale.",
     "eyes_closed": "Gardez les yeux ouverts et regardez l'objectif."
-  },"maritime": {
+  },
+  "maritime": {
   "trip_impossible_title": "Départ fermé",
   "trip_impossible": "Trajet impossible à faire, veuillez consulter les prochaines dates pour cette destination.",
   "error": "Erreur",

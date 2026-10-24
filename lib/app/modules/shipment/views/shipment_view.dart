@@ -258,7 +258,7 @@ class ShipmentView extends GetView<MyOrderController> {
           CustomerOrderDepositSection(order: order),
 
           // Livraison P4 : transporteur, suivi daté, détail du prix
-          CustomerOrderDeliverySection(order: order),
+          CustomerOrderDeliverySection(order: order, showConfirmationCode: false),
 
           // 48 h après la livraison : « Tout est conforme » ou réclamation par article
           CustomerOrderControlSection(order: order),

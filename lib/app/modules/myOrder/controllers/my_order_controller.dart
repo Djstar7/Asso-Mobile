@@ -340,6 +340,55 @@ class MyOrderController extends GetxController {
     }
   }
 
+  Future<void> reportDeliveryProblem(CustomerOrder order) async {
+    final id = int.tryParse(order.id);
+    if (id == null || controlBusyOrderId.value != null) return;
+    controlBusyOrderId.value = order.id;
+    try {
+      final existing = await DisputeService.deliveryClaim(id);
+      if (!existing.success) {
+        _controlSnack(existing.message, error: true);
+        return;
+      }
+      final claim = existing.data?['claim'];
+      if (claim is Map) {
+        await Get.dialog<void>(
+          AlertDialog(
+            title: Text('disputes.delivery_claim.title'.tr),
+            content: Text(
+              [
+                'disputes.delivery_claim.status.${claim['status']}'.tr,
+                if (claim['decision_note'] != null) '${claim['decision_note']}',
+              ].join('\n\n'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back<void>(),
+                child: Text('common.close'.tr),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      final form = await DisputeFormSheet.show(
+        productName: order.orderNumber ?? order.id,
+        title: 'disputes.delivery_claim.title'.tr,
+        withReason: false,
+        notice: 'disputes.delivery_claim.notice'.tr,
+      );
+      if (form == null) return;
+      final response = await DisputeService.openDeliveryClaim(
+        id,
+        form.description,
+      );
+      _controlSnack(response.message, error: !response.success);
+    } finally {
+      controlBusyOrderId.value = null;
+      await loadOrders(refresh: true);
+    }
+  }
+
   /// « Faire une réclamation » sur un article : motif, explication, photos.
   Future<void> reportProblem(
     CustomerOrder order,

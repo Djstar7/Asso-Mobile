@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../data/models/delivery_info.dart';
 import '../../../data/providers/dispute_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/services/stripe_native_service.dart';
@@ -221,12 +223,17 @@ class _PartnerPickerSheet extends StatelessWidget {
                         '${partner['company_name'] ?? ''}',
                         style: context.body1.copyWith(fontWeight: FontWeight.w600),
                       ),
-                      subtitle: Text(
+                      subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(
                         [partner['route_label'], partner['lead_time']]
                             .where((v) => v != null && '$v'.isNotEmpty)
                             .join(' · '),
                         style: context.caption,
                       ),
+                        if (partner['international_dispute'] == true && DeliveryBreakdown.fromMap(partner['breakdown']) != null)
+                          ExportDeliveryCostLines(breakdown: DeliveryBreakdown.fromMap(partner['breakdown'])!, formatPrice: DisputeShipmentPayment._price),
+                        if (partner['international_dispute'] == true && '${partner['conditions'] ?? ''}'.isNotEmpty)
+                          Text('${partner['conditions']}', style: context.caption),
+                      ]),
                       trailing: Text(
                         DisputeShipmentPayment._price(double.tryParse('${partner['delivery_price']}') ?? 0),
                         style: context.body2.copyWith(fontWeight: FontWeight.w700),

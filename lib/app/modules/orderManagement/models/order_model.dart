@@ -61,6 +61,7 @@ class OrderModel {
   /// Le vendeur peut remettre le colis au transporteur.
   bool get canHandToCarrier =>
       isCarrier &&
+      delivery?.isInternationalExport != true &&
       delivery?.importLeg == null &&
       (rawStatus == 'confirmed' || rawStatus == 'preparing');
 

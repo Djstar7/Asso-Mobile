@@ -201,7 +201,9 @@ class TrackingController extends GetxController {
 
     // Delivery company
     final deliveryCompany = order['delivery_company'] as Map<String, dynamic>?;
-    final deliveryPerson = order['delivery_person'] as Map<String, dynamic>?;
+    final delivery = DeliveryInfo.fromMap(order['delivery']);
+    final isExport = delivery?.isInternationalExport == true;
+    final deliveryPerson = isExport ? null : order['delivery_person'] as Map<String, dynamic>?;
 
     // Construire la timeline de tracking
     final trackingSteps = <Map<String, dynamic>>[];
@@ -255,7 +257,6 @@ class TrackingController extends GetxController {
     }
 
     // Suivi daté (P4) : remplace les étapes calculées quand il est fourni.
-    final delivery = DeliveryInfo.fromMap(order['delivery']);
 
     final lastLocation = delivery != null && delivery.timeline.isNotEmpty
         ? delivery.timeline.last.location
@@ -290,7 +291,7 @@ class TrackingController extends GetxController {
       'deliveryCompany': deliveryCompany?['name'] ?? '',
       'deliveryPersonName': deliveryPerson?['name'],
       'deliveryPersonPhone': deliveryPerson?['phone'],
-      'confirmationCode': order['confirmation_code'],
+      'confirmationCode': isExport ? null : order['confirmation_code'],
       'canRate': order['can_rate'] == true,
       'cancelReason': order['cancel_reason'],
       'deliveredDate': deliveredAt != null ? fmtDate.format(deliveredAt) : null,

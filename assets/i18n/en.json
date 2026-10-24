@@ -745,6 +745,10 @@
     },
     "delivery": {
       "steps": {
+        "export_pickup_requested": "Solex collection scheduled",
+        "export_collected": "Collected from seller by Solex",
+        "export_at_solex": "Received at Solex agency",
+        "shipment_issue": "Shipment incident",
         "pending": "Order placed",
         "confirmed": "Confirmed by the seller",
         "preparing": "Being prepared",
@@ -894,6 +898,11 @@
       "skip": "Skip"
     },
     "delivery": {
+      "export_path": "Seller → Solex collection → @agency → @carrier → recipient",
+      "asso_fee": "ASSO service fee",
+      "excl_tax_short": "excl. tax",
+      "collection_distance": "Estimated pickup distance",
+      "straight_line": "straight-line",
       "total_weight": "Total parcel weight",
       "applied_range": "Applied bracket",
       "included": "Included",
@@ -1962,6 +1971,9 @@
       "only_left_plural": "Only @count items left."
     },
     "order": {
+      "recipient_name": "Recipient name",
+      "postal_code": "Postal code (if applicable)",
+      "recipient_required": "Enter the recipient name.",
       "step_option_quantity": "Enter the quantity for at least one option",
       "step_quantity": "Enter a quantity",
       "step_address": "Enter the delivery address",
@@ -2043,6 +2055,8 @@
     },
     "retry": "Retry",
     "map": {
+      "international_destinations": "DHL / FedEx · @count destinations",
+      "search_destination": "Search for a country or carrier…",
       "default_address": "Douala, Cameroon",
       "locate_failed_hint": "Move the pin on the map or search for your address.",
       "title_readonly": "Product location",
@@ -2064,7 +2078,12 @@
       "no_courier_here": "No courier serves this location",
       "covered_quote_unavailable": "Covered area, delivery for this item needs checking",
       "offers_depend_on_shop": "Offers and prices depend on the shop: they're shown in the next step.",
-      "move_to_zone_hint": "Move the pin to a colored zone, or choose another delivery method."
+      "move_to_zone_hint": "Move the pin to a colored zone, or choose another delivery method.",
+      "choose_country_address": "Choose your address in @country",
+      "select_actual_address": "Tap the map or search for your address",
+      "country_covered": "International delivery across the whole country",
+      "approximate_agency_position": "Approximate location on this street",
+      "provisional_reference": "Provisional reference — agency to confirm"
     },
     "not_found": {
       "title": "Product not found",
@@ -3473,6 +3492,8 @@
       "return_title": "Return to the seller",
       "pickup": "Pickup",
       "dropoff": "Drop-off",
+      "code_hint_agency": "Hand over to Solex against the agency recipient’s 6-digit code.",
+      "code_prompt_agency": "Handover code provided by the Solex agency",
       "code_hint_client": "Hand over against the customer's 6-digit code.",
       "code_hint_vendor": "Hand over against the seller's 6-digit code.",
       "picked_up": "Parcel collected",
@@ -4208,6 +4229,8 @@
       "unfounded": "Claim not upheld"
     },
     "shipment": {
+      "international_return_route": "Customer → @carrier → Solex → seller",
+      "international_replacement_route": "Seller → Solex → @carrier → customer",
       "collection_title": "Collection for exchange",
       "return_title": "Product return",
       "replacement_title": "Replacement product",
@@ -4263,15 +4286,39 @@
       "pay_shipment": "Choose courier and pay",
       "replace": "Replace the product",
       "organize_return": "Organize the return",
+      "prepare_replacement": "Replacement ready — confirm and fund transport",
+      "prepare_confirm": "Have you received the returned product and prepared its replacement?",
+      "confirm_exchange_received": "Case A — Confirm receipt for exchange",
+      "received_exchange_confirm": "Case A — Have you received the product for exchange? You can then prepare its replacement. The funds remain held during the exchange; the customer is not refunded at this step.",
+      "confirm_received": "Case B — Receive the return and refund",
+      "received_confirm": "Case B — Have you received the final return? Confirming immediately refunds the claimed item amount to the customer’s Wallet.",
       "mark_shipped": "Product handed to the courier",
       "send_evidence": "Send my explanations / evidence",
       "evidence_title": "Your explanations for ASSO",
       "asso_decides": "ASSO decides the outcome; you can't close the case yourself.",
-      "replace_confirm": "You'll send a replacement product to the customer and pay for the delivery. Only one replacement is allowed. Continue?",
+      "international_replace_confirm": "The product must first return from the customer via DHL/FedEx and Solex. After receipt and preparation, you will fund the replacement shipment via Solex and DHL/FedEx. You pay for transport. Continue?",
+      "international_pay_notice": "The fees include international transit and the Solex leg. The customer does not pay for the return.",
+      "pay_transport": "Choose transport and pay",
+      "replace_confirm": "The defective item will be collected before preparing the replacement. You fund the transport. Continue?",
       "return_confirm": "The product will be collected from the customer and returned at your expense; the customer will be refunded. Continue?",
       "todo_pay": "To do: pay for the delivery",
       "todo_choose": "To do: replace or organize the return",
       "todo_ship": "To do: hand the replacement to the courier"
+    },
+    "delivery_claim": {
+      "button": "Order not received: report or track",
+      "title": "Problem before delivery",
+      "notice": "Describe the delay or missing preparation or delivery. ASSO will check the evidence and communicate its decision.",
+      "status": {
+        "open": "ASSO investigation in progress",
+        "refunded": "Order refunded",
+        "rejected": "Claim reviewed and rejected"
+      }
+    },
+    "receipt": {
+      "contest": "Dispute receipt evidence",
+      "proof_required": "Attach at least one supporting photo and explain your objection.",
+      "notice": "Receipt verified at @location. Objections accepted until @date."
     }
   },
   "package_details": {
@@ -4349,7 +4396,6 @@
       "explanation": "Share this code with vendors: when they use it for their first subscription, you receive @rate% of the amount directly in your wallet."
     }
   },
-
   "parcel_insurance": {
     "title": "Parcel contents and value",
     "intro": "Tell us what the parcel contains and its value: an insurance supplement is added to the price. If it is lost, ASSO compensates you up to the declared value.",
@@ -4370,7 +4416,8 @@
     "several_faces": "Several faces detected: you must be alone in the photo.",
     "too_far": "Come closer: your face must fill the oval.",
     "eyes_closed": "Keep your eyes open and look at the camera."
-  },"maritime": {
+  },
+  "maritime": {
   "trip_impossible_title": "Departure closed",
   "trip_impossible": "This trip is no longer possible. Please check the next dates for this destination.",
   "error": "Error",

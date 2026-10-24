@@ -47,6 +47,7 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
     final isReturn = course['type'] != 'replacement';
     final isMine = course['is_mine'] == true;
     final pickedUp = course['picked_up'] == true;
+    final isAgency = course['completion_kind'] == 'agency';
     final pickup = Map<String, dynamic>.from(
       course['pickup'] as Map? ?? const {},
     );
@@ -126,7 +127,7 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
           ),
           const SizedBox(height: 6),
           Text(
-            isReturn
+            isAgency ? 'delivery_dashboard.dispute.code_hint_agency'.tr : isReturn
                 ? 'delivery_dashboard.dispute.code_hint_vendor'.tr
                 : 'delivery_dashboard.dispute.code_hint_client'.tr,
             style: context.caption.copyWith(color: context.secondaryTextColor),
@@ -152,6 +153,7 @@ class _CourseCard extends GetView<DeliveryDashboardController> {
                     () => controller.completeDisputeCourse(
                       id,
                       isReturn: isReturn,
+                      isAgency: isAgency,
                     ),
                   );
 

@@ -41,7 +41,12 @@ class CustomerOrderControlSection extends StatelessWidget {
         'refunded',
       ].contains(item.dispute!.status),
     );
-    if (!windowOpen && disputed.isEmpty) return const SizedBox.shrink();
+    if (!windowOpen &&
+        disputed.isEmpty &&
+        !order.canReportDelivery &&
+        order.deliveryClaim == null) {
+      return const SizedBox.shrink();
+    }
 
     final controller = Get.find<MyOrderController>();
     final ds = context.ds;
@@ -57,6 +62,25 @@ class CustomerOrderControlSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (order.canReportDelivery || order.deliveryClaim != null) ...[
+              AppButton(
+                label: 'disputes.delivery_claim.button'.tr,
+                icon: Icons.local_shipping_outlined,
+                isLoading: busy,
+                onPressed: busy
+                    ? null
+                    : () => _perform(
+                        () => controller.reportDeliveryProblem(order),
+                      ),
+              ),
+              if (order.deliveryClaim != null)
+                Text(
+                  'disputes.delivery_claim.status.${order.deliveryClaim!['status']}'
+                      .tr,
+                  style: context.caption,
+                ),
+              const SizedBox(height: AppDesign.space3),
+            ],
             if (windowOpen &&
                 (canConfirmOrder ||
                     order.items.any((item) => item.canReport))) ...[

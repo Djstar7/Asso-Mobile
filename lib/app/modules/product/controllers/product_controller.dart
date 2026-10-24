@@ -76,6 +76,9 @@ class ProductController extends GetxController {
 
   /// Texte saisi, observé pour activer/désactiver le bouton de paiement.
   final customerPhone = ''.obs;
+  final recipientName = ''.obs;
+  final deliveryCity = RxnString();
+  final deliveryCountry = RxnString();
   final addressDetails = ''.obs;
   final PageController imagePageController = PageController();
 
@@ -103,6 +106,8 @@ class ProductController extends GetxController {
   final TextEditingController addressDetailsController =
       TextEditingController();
   final TextEditingController customerPhoneController = TextEditingController();
+  final recipientNameController = TextEditingController();
+  final postalCodeController = TextEditingController();
 
   /// Produits dont la consultation a déjà été signalée (statistiques vendeur).
   final Set<String> _trackedProductIds = {};
@@ -289,7 +294,9 @@ class ProductController extends GetxController {
       }
     }, time: const Duration(milliseconds: 500));
 
+    recipientNameController.addListener(() => recipientName.value = recipientNameController.text.trim());
     final user = StorageService.getUser();
+    recipientNameController.text = user?.name ?? '';
     final rawPhone = (user?.phone ?? '').trim();
     if (rawPhone.isNotEmpty) {
       customerPhoneController.text = rawPhone;
@@ -301,6 +308,8 @@ class ProductController extends GetxController {
     imagePageController.dispose();
     addressDetailsController.dispose();
     customerPhoneController.dispose();
+    recipientNameController.dispose();
+    postalCodeController.dispose();
     super.onClose();
   }
 
@@ -472,6 +481,8 @@ class ProductController extends GetxController {
     else if (orderQuantity.value < 1)
       'product.order.step_quantity'.tr,
     if (!hasValidLocation) 'product.order.step_address'.tr,
+    if (selectedPartner.value?['international_export'] == true && recipientName.value.isEmpty)
+      'product.order.recipient_required'.tr,
     if (addressDetails.value.isEmpty) 'product.order.step_address_details'.tr,
     if (!hasValidPhone) 'product.order.step_phone'.tr,
     if (deliveryBlockedMessage.value != null)
@@ -512,8 +523,14 @@ class ProductController extends GetxController {
     double latitude,
     double longitude, {
     String? fallbackAddress,
+    String? city,
+    String? country,
+    String? postalCode,
   }) async {
     final revision = ++_positionRevision;
+    deliveryCity.value = city;
+    deliveryCountry.value = country;
+    postalCodeController.text = postalCode ?? '';
     clientLatitude.value = latitude;
     clientLongitude.value = longitude;
     locationIssue.value = LocationIssue.none;
@@ -548,13 +565,18 @@ class ProductController extends GetxController {
       ).timeout(const Duration(seconds: 8));
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
+        if (revision != _positionRevision) return;
+        deliveryCountry.value = placemark.isoCountryCode;
+        postalCodeController.text = placemark.postalCode ?? '';
         final city = [
           placemark.locality,
           placemark.subAdministrativeArea,
           placemark.administrativeArea,
         ].firstWhereOrNull((part) => part != null && part.isNotEmpty);
+        deliveryCity.value = city;
         final parts = <String>[
           if (city != null) city,
+          if (placemark.country?.isNotEmpty == true) placemark.country!,
           if (placemark.subLocality?.isNotEmpty == true) placemark.subLocality!,
           if (placemark.street?.isNotEmpty == true &&
               !(placemark.street!.contains('+')))
@@ -600,7 +622,9 @@ class ProductController extends GetxController {
         ? null
         : DeliveryPartnerQuote(selectedPartner.value!).key;
     _quotedQuantity = quantity;
-    _quotedCity = currentLocation.value.trim();
+    _quotedCity = deliveryCity.value?.trim().isNotEmpty == true
+        ? deliveryCity.value!.trim()
+        : currentLocation.value.trim();
 
     isLoadingPartners.value = true;
     deliveryPartners.clear();
@@ -617,6 +641,7 @@ class ProductController extends GetxController {
         latitude: clientLatitude.value,
         longitude: clientLongitude.value,
         city: _quotedCity,
+        country: deliveryCountry.value,
         quarter: deliveryQuarter.value,
       );
       if (request != _partnersRequest) return; // réponse périmée
@@ -814,6 +839,8 @@ class ProductController extends GetxController {
         deliveryAddress: currentLocation.value,
         deliveryAddressDetails: details.isEmpty ? null : details,
         customerPhone: customerPhone.value,
+        recipientName: recipientNameController.text.trim(),
+        deliveryPostalCode: postalCodeController.text.trim(),
         deliveryLatitude: clientLatitude.value,
         deliveryLongitude: clientLongitude.value,
         notes: variantNote.isEmpty ? null : 'Variantes : $variantNote',

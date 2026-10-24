@@ -5,8 +5,16 @@ class LocationLabel {
   final String address;
   final String? city;
   final String? country;
+  final String? countryCode;
+  final String? postalCode;
 
-  const LocationLabel({required this.address, this.city, this.country});
+  const LocationLabel({
+    required this.address,
+    this.city,
+    this.country,
+    this.countryCode,
+    this.postalCode,
+  });
 
   /// « Ville, Pays », ou null si aucun des deux n'est connu.
   String? get label => format(city, country);
@@ -46,6 +54,8 @@ class LocationLabel {
                 'Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}'),
       city: city,
       country: country,
+      countryCode: pick(['country_code'])?.toUpperCase(),
+      postalCode: pick(['postcode']),
     );
   }
 

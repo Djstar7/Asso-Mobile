@@ -6,6 +6,7 @@ import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/delivery_details_widgets.dart';
 import '../controllers/dispute_detail_controller.dart';
 import '../models/dispute_models.dart';
 import '../../../core/widgets/product_image_viewer.dart';
@@ -201,7 +202,8 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
         );
       }
     } else {
-      if (dispute.vendorResponseDueAt != null) {
+      if (dispute.vendorResponseDueAt != null &&
+          ['new', 'in_review', 'vendor_contacted'].contains(dispute.status)) {
         buttons.add(
           _notice(
             context,
@@ -227,13 +229,20 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
         buttons.add(
           _notice(
             context,
-            'disputes.vendor.pay_notice'.tr,
+            (dispute.internationalExport
+                    ? 'disputes.vendor.international_pay_notice'
+                    : 'disputes.vendor.pay_notice')
+                .tr,
             AppDesign.accentSubtle,
           ),
         );
         buttons.add(
           AppButton(
-            label: 'disputes.vendor.pay_shipment'.tr,
+            label:
+                (dispute.internationalExport
+                        ? 'disputes.vendor.pay_transport'
+                        : 'disputes.vendor.pay_shipment')
+                    .tr,
             icon: Icons.payments_outlined,
             isLoading: busy,
             onPressed: controller.payShipment,
@@ -268,6 +277,57 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
             label: 'disputes.vendor.mark_shipped'.tr,
             icon: Icons.local_shipping_outlined,
             onPressed: busy ? null : controller.markShipped,
+          ),
+        );
+        buttons.add(const SizedBox(height: AppDesign.space2));
+      }
+      if (dispute.action('prepare_replacement')) {
+        buttons.add(
+          AppButton(
+            label: 'disputes.vendor.prepare_replacement'.tr,
+            icon: Icons.inventory_2_outlined,
+            onPressed: busy ? null : controller.prepareReplacement,
+          ),
+        );
+        buttons.add(const SizedBox(height: AppDesign.space2));
+      }
+      if (dispute.action('confirm_return_received')) {
+        buttons.add(
+          AppButton(
+            label:
+                (dispute.isExchangeReceipt
+                        ? 'disputes.vendor.confirm_exchange_received'
+                        : 'disputes.vendor.confirm_received')
+                    .tr,
+            icon: Icons.task_alt,
+            onPressed: busy ? null : controller.confirmReturnReceived,
+          ),
+        );
+        buttons.add(const SizedBox(height: AppDesign.space2));
+      }
+      for (final receipt in dispute.receipts.where(
+        (r) =>
+            r['accepted_at'] == null &&
+            r['contested_at'] == null &&
+            (DateTime.tryParse(
+                  '${r['contest_until']}',
+                )?.isAfter(DateTime.now()) ??
+                false),
+      )) {
+        buttons.add(
+          Text(
+            'disputes.receipt.notice'.trParams({
+              'location': '${receipt['location']}',
+              'date': '${receipt['contest_until']}',
+            }),
+          ),
+        );
+        buttons.add(
+          AppButton(
+            label: 'disputes.receipt.contest'.tr,
+            icon: Icons.report_problem_outlined,
+            variant: AppButtonVariant.secondary,
+            onPressed: busy ? null : () => controller.contestReceipt(receipt),
           ),
         );
         buttons.add(const SizedBox(height: AppDesign.space2));
@@ -348,6 +408,20 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (shipment.international) ...[
+            Text(
+              (shipment.isReturn
+                      ? 'disputes.shipment.international_return_route'
+                      : 'disputes.shipment.international_replacement_route')
+                  .trParams({'carrier': shipment.companyName ?? 'DHL/FedEx'}),
+              style: context.body2,
+            ),
+            if (controller.isVendor && shipment.breakdown != null)
+              ExportDeliveryCostLines(
+                breakdown: shipment.breakdown!,
+                formatPrice: controller.formatPrice,
+              ),
+          ],
           if (shipment.companyName != null)
             Text(
               '${shipment.companyName}'

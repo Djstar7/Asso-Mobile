@@ -17,6 +17,36 @@ class _HandoverController extends MyOrderController {
 }
 
 void main() {
+  testWidgets('international customer sees carrier tracking without a Solex handover code', (tester) async {
+    addTearDown(Get.reset);
+    Get.put<MyOrderController>(_HandoverController());
+    final order = CustomerOrder.fromMap({
+      'id': 41,
+      'status': 'shipped',
+      'confirmation_code': '373738',
+      'delivery_person': {'name': 'Collecteur Solex', 'phone': '237600000000'},
+      'delivery': {
+        'mode': 'carrier',
+        'is_carrier': true,
+        'international_export': true,
+        'company_name': 'DHL Express',
+        'carrier_tracking_number': 'DHL123456',
+        'tracking_status': 'out_for_delivery',
+      },
+    });
+    expect(order.confirmationCode, isNull);
+    expect(order.deliveryPersonName, isNull);
+    expect(order.deliveryPersonPhone, isNull);
+    await tester.pumpWidget(GetMaterialApp(home: Scaffold(
+      body: SingleChildScrollView(child: CustomerOrderDeliverySection(order: order)),
+    )));
+    await tester.pumpAndSettle();
+    expect(find.text('373738'), findsNothing);
+    expect(find.text('Collecteur Solex'), findsNothing);
+    expect(find.text('DHL123456'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   for (final handedOver in [false, true]) {
     testWidgets(
       'carrier customer sees handover code or quality controls ($handedOver)',

@@ -10,8 +10,13 @@ import '../models/customer_order_models.dart';
 /// chronologie datée, détail du prix et confirmation de réception.
 class CustomerOrderDeliverySection extends StatelessWidget {
   final CustomerOrder order;
+  final bool showConfirmationCode;
 
-  const CustomerOrderDeliverySection({super.key, required this.order});
+  const CustomerOrderDeliverySection({
+    super.key,
+    required this.order,
+    this.showConfirmationCode = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +59,7 @@ class CustomerOrderDeliverySection extends StatelessWidget {
               ],
             ),
           ),
-          if (order.confirmationCode != null) ...[
+          if (showConfirmationCode && order.confirmationCode != null) ...[
             const SizedBox(height: 12),
             Text('tracking.confirmation_code'.tr, style: context.body2),
             SelectableText(

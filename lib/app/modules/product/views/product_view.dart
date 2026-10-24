@@ -1836,6 +1836,17 @@ class ProductView extends GetView<ProductController> {
             SizedBox(height: 12),
 
             TextField(
+              controller: controller.recipientNameController,
+              maxLength: 150,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: 'product.order.recipient_name'.tr,
+                prefixIcon: Icon(Icons.person_outline),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            SizedBox(height: 8),
+            TextField(
               controller: controller.addressDetailsController,
               maxLines: 2,
               maxLength: 500,
@@ -2453,6 +2464,10 @@ class ProductView extends GetView<ProductController> {
                   icon: Icons.store_mall_directory_outlined,
                 ),
               ],
+              if (partner.isInternationalExport && partner.breakdown != null) ...[
+                const Divider(height: 16),
+                ExportDeliveryCostLines(breakdown: partner.breakdown!, formatPrice: controller.formatPrice),
+              ],
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
@@ -2891,6 +2906,7 @@ class ProductView extends GetView<ProductController> {
             ]),
             section(Icons.local_shipping_rounded, 'product.summary.delivery'.tr, [
               line('product.summary.address'.tr, controller.currentLocation.value),
+              if (controller.deliveryWeightKg != null) line('core.delivery.total_weight'.tr, formatKg(controller.deliveryWeightKg)),
               if (details.isNotEmpty) line('product.summary.address_details'.tr, details),
               line(
                 'product.summary.contact_phone'.tr,
@@ -2924,6 +2940,8 @@ class ProductView extends GetView<ProductController> {
                   controller.orderSubtotal(product),
                 ),
               ),
+              if (quote?.isInternationalExport == true && quote?.breakdown != null)
+                ExportDeliveryCostLines(breakdown: quote!.breakdown!, formatPrice: controller.formatPrice),
               if (controller.deliveryIsFree)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
@@ -3296,6 +3314,9 @@ class ProductView extends GetView<ProductController> {
         lat,
         lon,
         fallbackAddress: result['address']?.toString(),
+        city: result['city']?.toString(),
+        country: result['country']?.toString(),
+        postalCode: result['postal_code']?.toString(),
       );
     } finally {
       controller.isLoadingLocation.value = false;

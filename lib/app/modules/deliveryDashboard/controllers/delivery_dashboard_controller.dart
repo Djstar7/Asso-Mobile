@@ -332,9 +332,9 @@ class DeliveryDashboardController extends GetxController {
 
   /// Remise au destinataire : le client (remplacement) ou le vendeur (retour)
   /// donne son code à 6 chiffres.
-  Future<void> completeDisputeCourse(int id, {required bool isReturn}) async {
+  Future<void> completeDisputeCourse(int id, {required bool isReturn, bool isAgency = false}) async {
     final code = await _askConfirmationCode(
-      isReturn
+      isAgency ? 'delivery_dashboard.dispute.code_prompt_agency'.tr : isReturn
           ? 'delivery_dashboard.dispute.code_prompt_vendor'.tr
           : 'delivery_dashboard.dispute.code_prompt_client'.tr,
     );

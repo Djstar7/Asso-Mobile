@@ -122,6 +122,7 @@ class DeliveryBreakdownView extends StatelessWidget {
   final List<DeliveryPriceGridRow> priceGrid;
   final String? conditions;
   final double? weightKg;
+  final bool showLegPrices;
   final double? fallbackTotal;
   final PriceFormatter formatPrice;
 
@@ -132,6 +133,7 @@ class DeliveryBreakdownView extends StatelessWidget {
     this.priceGrid = const [],
     this.conditions,
     this.weightKg,
+    this.showLegPrices = false,
     this.fallbackTotal,
   });
 
@@ -147,10 +149,12 @@ class DeliveryBreakdownView extends StatelessWidget {
       children: [
         if (weight != null) DeliveryInfoLine('core.delivery.total_weight'.tr, formatKg(weight)),
         if (b?.rangeLabel != null) DeliveryInfoLine('core.delivery.applied_range'.tr, b!.rangeLabel!),
-        // Transport + livraison à domicile : les deux volets, sans leur prix.
         if (b != null && b.legs.length > 1)
-          for (final leg in b.legs) DeliveryInfoLine('core.delivery.included'.tr, leg.label),
-        if (total != null && vat > 0) ...[
+          if (showLegPrices)
+            ExportDeliveryCostLines(breakdown: b, formatPrice: formatPrice)
+          else
+            for (final leg in b.legs) DeliveryInfoLine('core.delivery.included'.tr, leg.label),
+        if (!showLegPrices && total != null && vat > 0) ...[
           DeliveryInfoLine('core.delivery.price_excl_tax'.tr, formatPrice(total - vat)),
           DeliveryInfoLine('core.delivery.vat'.tr, formatPrice(vat)),
         ],
@@ -174,6 +178,33 @@ class DeliveryBreakdownView extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Parts of an export price, always visible before payment.
+class ExportDeliveryCostLines extends StatelessWidget {
+  final DeliveryBreakdown breakdown;
+  final PriceFormatter formatPrice;
+  const ExportDeliveryCostLines({super.key, required this.breakdown, required this.formatPrice});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (final leg in breakdown.legs) ...[
+        DeliveryInfoLine(
+          '${leg.label}${breakdown.pricesExcludeVat ? ' (${'core.delivery.excl_tax_short'.tr})' : ''}',
+          formatPrice(leg.price),
+        ),
+        if (leg.distanceKm != null)
+          DeliveryInfoLine('core.delivery.collection_distance'.tr,
+            '${leg.distanceKm!.toStringAsFixed(2)} km · ${'core.delivery.straight_line'.tr}'),
+      ],
+      if (breakdown.vatAmount > 0)
+        DeliveryInfoLine('core.delivery.vat'.tr, formatPrice(breakdown.vatAmount)),
+      if (breakdown.assoCommission > 0)
+        DeliveryInfoLine('core.delivery.asso_fee'.tr, formatPrice(breakdown.assoCommission)),
+    ],
+  );
 }
 
 /// Bloc d'identité du service : partenaire, catégorie, mode, trajet, délai.
@@ -506,6 +537,13 @@ class OrderDeliveryDetails extends StatelessWidget {
         ),
         if (delivery.trackingStatusLabel != null)
           DeliveryInfoLine('core.delivery.status'.tr, delivery.trackingStatusLabel!),
+        if (delivery.isInternationalExport && delivery.solexAgency != null) ...[
+          const SizedBox(height: 8),
+          DeliveryNotice('core.delivery.export_path'.trParams({
+            'agency': delivery.solexAgency!.name,
+            'carrier': delivery.companyName ?? '',
+          })),
+        ],
         if (delivery.pickupAgency case final agency?) ...[
           const SizedBox(height: 8),
           DeliveryInfoLine('core.delivery.pickup_agency'.tr, agency.name),
@@ -555,6 +593,7 @@ class OrderDeliveryDetails extends StatelessWidget {
             children: [
               DeliveryBreakdownView(
                 breakdown: delivery.breakdown,
+                showLegPrices: delivery.isInternationalExport,
                 priceGrid: delivery.priceGrid,
                 conditions: delivery.conditions,
                 weightKg: delivery.weightKg,
@@ -646,6 +685,13 @@ Future<void> showDeliveryQuoteDetails(
                       routeLabel: quote.routeOrZone,
                       leadTime: quote.leadTime,
                     ),
+                    if (quote.isInternationalExport && quote.solexAgency != null) ...[
+                      const SizedBox(height: 8),
+                      DeliveryNotice('core.delivery.export_path'.trParams({
+                        'agency': quote.solexAgency!.name,
+                        'carrier': quote.companyName,
+                      })),
+                    ],
                     if (quote.pickupNotice != null) ...[
                       const SizedBox(height: 8),
                       DeliveryNotice(
@@ -656,6 +702,7 @@ Future<void> showDeliveryQuoteDetails(
                     const Divider(height: 24),
                     DeliveryBreakdownView(
                       breakdown: quote.breakdown,
+                      showLegPrices: quote.isInternationalExport,
                       priceGrid: quote.priceGrid,
                       conditions: quote.conditions,
                       weightKg: weightKg,

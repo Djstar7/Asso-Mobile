@@ -98,7 +98,9 @@ class CustomerOrderItem {
     return CustomerOrderItem(
       productId: (map['product_id'] ?? map['id'] ?? '').toString(),
       productName:
-          map['product']?['name'] ?? map['product_name']?.toString() ?? 'my_order.default_product'.tr,
+          map['product']?['name'] ??
+          map['product_name']?.toString() ??
+          'my_order.default_product'.tr,
       productImage: map['product']?['main_image'] ?? map['product_image'],
       quantity: map['quantity'] ?? 1,
       unitPrice: double.tryParse(map['unit_price']?.toString() ?? '0') ?? 0,
@@ -106,7 +108,9 @@ class CustomerOrderItem {
       variantLabel: attributes is Map
           ? attributes.values.map((v) => v.toString()).join(' · ')
           : '',
-      orderItemId: map.containsKey('product_id') ? int.tryParse('${map['id']}') : null,
+      orderItemId: map.containsKey('product_id')
+          ? int.tryParse('${map['id']}')
+          : null,
       dispute: OrderItemDisputeRef.fromMap(map['dispute']),
       canReport: map['can_report'] == true,
     );
@@ -153,6 +157,9 @@ class CustomerOrder {
   /// Fenêtre de contrôle de 48 h après la livraison (null si absente).
   final OrderControlInfo? control;
 
+  final bool canReportDelivery;
+  final Map<String, dynamic>? deliveryClaim;
+
   bool get isCarrier => delivery?.isCarrier == true;
 
   CustomerOrder({
@@ -180,16 +187,26 @@ class CustomerOrder {
     this.ratingComment,
     this.deposit,
     this.control,
+    this.canReportDelivery = false,
+    this.deliveryClaim,
   });
 
   factory CustomerOrder.fromMap(Map<String, dynamic> map) {
     final statusStr = map['status']?.toString() ?? 'pending';
+    final delivery = DeliveryInfo.fromMap(map['delivery']);
+    final isExport = delivery?.isInternationalExport == true;
     return CustomerOrder(
       id: (map['id'] ?? '').toString(),
       orderNumber: map['order_number'],
       status: _parseStatus(statusStr),
       progress: OrderProgress.fromOrder(map),
-      items: (map['items'] as List?)?.map((i) => CustomerOrderItem.fromMap(Map<String, dynamic>.from(i))).toList() ?? [],
+      items:
+          (map['items'] as List?)
+              ?.map(
+                (i) => CustomerOrderItem.fromMap(Map<String, dynamic>.from(i)),
+              )
+              .toList() ??
+          [],
       subtotal: double.tryParse(map['subtotal']?.toString() ?? '0') ?? 0,
       deliveryFee: double.tryParse(map['delivery_fee']?.toString() ?? '0') ?? 0,
       freeDeliveryAmount: map['free_delivery'] == true
@@ -197,17 +214,21 @@ class CustomerOrder {
           : 0,
       total: double.tryParse(map['total']?.toString() ?? '0') ?? 0,
       orderDate: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
-      deliveryDate: map['delivered_at'] != null ? DateTime.tryParse(map['delivered_at']) : null,
+      deliveryDate: map['delivered_at'] != null
+          ? DateTime.tryParse(map['delivered_at'])
+          : null,
       deliveryAddress: map['delivery_address'] ?? '',
       trackingNumber: map['tracking_number'],
-      confirmationCode: map['confirmation_code'],
+      confirmationCode: isExport ? null : map['confirmation_code'],
       canRate: map['can_rate'] == true,
       ratedAt: map['rated_at'],
-      deliveryPersonName: map['delivery_person'] != null ? '${map['delivery_person']['name'] ?? ''}' : null,
-      deliveryPersonPhone: map['delivery_person']?['phone'],
-      deliveryCompanyName: map['delivery_company']?['name'] ??
-          map['delivery']?['company_name'],
-      delivery: DeliveryInfo.fromMap(map['delivery']),
+      deliveryPersonName: !isExport && map['delivery_person'] != null
+          ? '${map['delivery_person']['name'] ?? ''}'
+          : null,
+      deliveryPersonPhone: isExport ? null : map['delivery_person']?['phone'],
+      deliveryCompanyName:
+          map['delivery_company']?['name'] ?? map['delivery']?['company_name'],
+      delivery: delivery,
       ratingValue: map['rating'] is Map
           ? int.tryParse('${(map['rating'] as Map)['rating']}')
           : null,
@@ -216,18 +237,29 @@ class CustomerOrder {
           : null,
       deposit: DepositOrderInfo.fromOrder(map),
       control: OrderControlInfo.fromMap(map['control']),
+      canReportDelivery: map['can_report_delivery'] == true,
+      deliveryClaim: map['delivery_claim'] is Map
+          ? Map<String, dynamic>.from(map['delivery_claim'])
+          : null,
     );
   }
 
   static CustomerOrderStatus _parseStatus(String status) {
     switch (status) {
-      case 'pending': return CustomerOrderStatus.pending;
-      case 'confirmed': return CustomerOrderStatus.confirmed;
-      case 'preparing': return CustomerOrderStatus.preparing;
-      case 'shipped': return CustomerOrderStatus.shipped;
-      case 'delivered': return CustomerOrderStatus.delivered;
-      case 'cancelled': return CustomerOrderStatus.cancelled;
-      default: return CustomerOrderStatus.pending;
+      case 'pending':
+        return CustomerOrderStatus.pending;
+      case 'confirmed':
+        return CustomerOrderStatus.confirmed;
+      case 'preparing':
+        return CustomerOrderStatus.preparing;
+      case 'shipped':
+        return CustomerOrderStatus.shipped;
+      case 'delivered':
+        return CustomerOrderStatus.delivered;
+      case 'cancelled':
+        return CustomerOrderStatus.cancelled;
+      default:
+        return CustomerOrderStatus.pending;
     }
   }
 }

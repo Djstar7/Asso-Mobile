@@ -7,6 +7,7 @@ import '../../../core/utils/address_search.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/device_location.dart';
 import '../../../core/utils/location_label.dart';
+import '../../../core/values/country_catalog.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/map_search_results.dart';
 import '../../../data/providers/delivery_service.dart';
@@ -40,6 +41,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   String _selectedAddress = 'product.map.default_address'.tr;
   String? _selectedCity;
   String? _selectedCountry;
+  String? _selectedPostalCode;
+  bool _awaitingInternationalAddress = false;
   bool _isLoadingAddress = false;
   bool _isLocating = false;
   bool _isSearching = false;
@@ -57,9 +60,11 @@ class _MapSelectionViewState extends State<MapSelectionView> {
 
   void _moveSelection(LatLng position) {
     _selection++;
+    _awaitingInternationalAddress = false;
     _selectedPosition = position;
     _selectedCity = null;
     _selectedCountry = null;
+    _selectedPostalCode = null;
     _isLocating = false;
   }
 
@@ -72,6 +77,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
   Map<String, dynamic>? _coverage;
   bool _isLoadingCoverage = false;
   bool _coverageFailed = false;
+  double _mapZoom = 15;
+  List<Map<String, dynamic>> _internationalAreas = [];
   Timer? _coverageDebounce;
   int _coverageRequest = 0;
 
@@ -107,6 +114,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         latitude: position.latitude,
         longitude: position.longitude,
         items: widget.deliveryItems,
+        city: _selectedCity,
+        country: _selectedCountry,
       );
       if (!mounted || request != _coverageRequest) return;
       setState(() {
@@ -115,13 +124,17 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         _coverageFailed = !(response.success && coverage is Map);
         if (!_coverageFailed) {
           _coverage = Map<String, dynamic>.from(coverage as Map);
+          _internationalAreas = _coverageList('international_areas');
         }
       });
     });
   }
 
   List<Map<String, dynamic>> _coverageList(String key) =>
-      ((_coverage?[key] as List?) ?? const [])
+      ((key == 'international_areas' && _coverage == null
+                  ? _internationalAreas
+                  : _coverage?[key] as List?) ??
+              const [])
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
@@ -137,6 +150,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
     final points = [
       ..._coverageList('quarters').map(_latLng),
       ..._coverageList('zones').map(_latLng),
+      ..._coverageList('international_areas').map(_latLng),
     ];
     if (points.isEmpty) return;
     if (points.length == 1) {
@@ -150,6 +164,190 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         maxZoom: 15,
       ),
     );
+  }
+
+  List<LatLng> _internationalRing(dynamic ring) => ring is List
+      ? [
+          for (final point in ring)
+            if (point is List && point.length >= 2)
+              LatLng(_toDouble(point[0]), _toDouble(point[1])),
+        ]
+      : [];
+
+  List<String> _internationalCompanies(Map<String, dynamic> area) =>
+      (area['companies'] as List? ?? const [])
+          .map((name) => name.toString())
+          .toList();
+
+  Widget _internationalMarker(Map<String, dynamic> area) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          '${CountryCatalog.flagForIsoCode('${area['country'] ?? ''}')} ${area['label']}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+          ),
+        ),
+      ),
+      const SizedBox(height: 2),
+      Wrap(
+        spacing: 3,
+        alignment: WrapAlignment.center,
+        children: [
+          for (final company in _internationalCompanies(area))
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: company.toLowerCase().contains('dhl')
+                    ? const Color(0xFFFFCC00)
+                    : const Color(0xFF4D148C),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Text(
+                company,
+                maxLines: 1,
+                style: TextStyle(
+                  color: company.toLowerCase().contains('dhl')
+                      ? Colors.black87
+                      : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+        ],
+      ),
+    ],
+  );
+
+  void _focusInternationalArea(Map<String, dynamic> area) {
+    // Navigate to the country without choosing a delivery address on the user's behalf.
+    final polygons = area['polygons'] as List? ?? const [];
+    if (polygons.isEmpty) {
+      _mapController.move(_latLng(area), 9);
+      return;
+    }
+    // Overseas islands must not force the camera to zoom out to the whole world.
+    final rings = [
+      for (final polygon in polygons)
+        if (polygon is List && polygon.isNotEmpty)
+          _internationalRing(polygon.first),
+    ];
+    // A small island can be nearer to the country's center than the first
+    // vertex of its mainland. Use the largest landmass for the overview.
+    double ringArea(List<LatLng> ring) {
+      var area = 0.0;
+      for (var i = 0; i < ring.length; i++) {
+        final next = ring[(i + 1) % ring.length];
+        area +=
+            ring[i].longitude * next.latitude -
+            next.longitude * ring[i].latitude;
+      }
+      return area.abs();
+    }
+
+    rings.sort((a, b) => ringArea(b).compareTo(ringArea(a)));
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(rings.first),
+        padding: const EdgeInsets.fromLTRB(30, 170, 30, 290),
+        maxZoom: 9,
+      ),
+    );
+  }
+
+  void _chooseInternationalCountry(Map<String, dynamic> area) {
+    _searchFocusNode.unfocus();
+    final reference = area['reference_point'];
+    final point = reference is Map
+        ? _latLng(Map<String, dynamic>.from(reference))
+        : _latLng(area);
+    setState(() {
+      _moveSelection(point);
+      _selectedCountry = area['country']?.toString();
+      _isLoadingAddress = false;
+      _awaitingInternationalAddress = true;
+      _selectedAddress = 'product.map.choose_country_address'.trParams({
+        'country': area['label'].toString(),
+      });
+    });
+    _loadCoverage(point);
+    _focusInternationalArea(area);
+  }
+
+  Future<void> _showInternationalDestinations() async {
+    final areas = _coverageList('international_areas');
+    var query = '';
+    final area = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, update) {
+          final visible = areas
+              .where(
+                (a) => '${a['label']} ${_internationalCompanies(a).join(' ')}'
+                    .toLowerCase()
+                    .contains(query.toLowerCase()),
+              )
+              .toList();
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * 0.72,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        autofocus: false,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search),
+                          hintText: 'product.map.search_destination'.tr,
+                        ),
+                        onChanged: (value) => update(() => query = value),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: visible.length,
+                        itemBuilder: (context, index) {
+                          final entry = visible[index];
+                          return ListTile(
+                            title: Text('${entry['label']}'),
+                            subtitle: Text(
+                              _internationalCompanies(entry).join(' · '),
+                            ),
+                            trailing: Text(
+                              CountryCatalog.flagForIsoCode('${entry['country'] ?? ''}'),
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                            onTap: () => Navigator.of(sheetContext).pop(entry),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (area != null && mounted) _chooseInternationalCountry(area);
   }
 
   @override
@@ -248,12 +446,14 @@ class _MapSelectionViewState extends State<MapSelectionView> {
         );
         _selectedAddress = location.address;
         _selectedCity = location.city;
-        _selectedCountry = location.country;
+        _selectedCountry = location.countryCode ?? location.country;
+        _selectedPostalCode = location.postalCode;
       } else {
         _selectedAddress = _coordinatesLabel(position);
       }
       _isLoadingAddress = false;
     });
+    if (data != null) _loadCoverage(position);
   }
 
   static String _coordinatesLabel(LatLng position) =>
@@ -360,7 +560,8 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       );
       _selectedAddress = location.address;
       _selectedCity = location.city;
-      _selectedCountry = location.country;
+      _selectedCountry = location.countryCode ?? location.country;
+      _selectedPostalCode = location.postalCode;
       _isLoadingAddress = false;
       _showSearchResults = false;
       _searchController.clear();
@@ -402,6 +603,12 @@ class _MapSelectionViewState extends State<MapSelectionView> {
             options: MapOptions(
               initialCenter: _selectedPosition,
               initialZoom: 15.0,
+              onPositionChanged: (camera, _) {
+                if ((_mapZoom >= 7) != (camera.zoom >= 7) ||
+                    (_mapZoom >= 4.5) != (camera.zoom >= 4.5)) {
+                  setState(() => _mapZoom = camera.zoom);
+                }
+              },
               onTap: widget.readOnly
                   ? null
                   : (tapPosition, point) {
@@ -425,6 +632,28 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.asso.app',
                 maxZoom: 19,
+              ),
+              PolygonLayer(
+                polygons: [
+                  for (final area in _coverageList('international_areas'))
+                    for (final rawPolygon
+                        in (area['polygons'] as List? ?? const []))
+                      if (rawPolygon is List && rawPolygon.isNotEmpty)
+                        Polygon(
+                          points: _internationalRing(rawPolygon.first),
+                          holePointsList: [
+                            for (final hole in rawPolygon.skip(1))
+                              _internationalRing(hole),
+                          ],
+                          color: const Color(
+                            0xFFFFCC00,
+                          ).withValues(alpha: 0.12),
+                          borderColor: const Color(
+                            0xFF6B2C91,
+                          ).withValues(alpha: 0.6),
+                          borderStrokeWidth: 1,
+                        ),
+                ],
               ),
               // Surface de chaque zone urbaine (ex. SOLEX Douala), couleur de la zone.
               CircleLayer(
@@ -478,93 +707,150 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                     .toList(),
               ),
               // Quartiers desservis, colorés par zone (ex. SOLEX Douala).
-              MarkerLayer(
-                markers: _coverageList('quarters')
-                    .map(
-                      (q) => Marker(
-                        width: 16,
-                        height: 16,
-                        point: LatLng(
-                          _toDouble(q['latitude']),
-                          _toDouble(q['longitude']),
+              if (_mapZoom >= 7)
+                MarkerLayer(
+                  markers: _coverageList('quarters')
+                      .map(
+                        (q) => Marker(
+                          width: 16,
+                          height: 16,
+                          point: LatLng(
+                            _toDouble(q['latitude']),
+                            _toDouble(q['longitude']),
+                          ),
+                          child: Tooltip(
+                            message:
+                                '${q['name']} · ${q['zone_label']} (${q['company_name']})',
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _zoneColor(
+                                  q['zone'],
+                                ).withValues(alpha: 0.85),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Tooltip(
-                          message:
-                              '${q['name']} · ${q['zone_label']} (${q['company_name']})',
+                      )
+                      .toList(),
+                ),
+              if (_mapZoom >= 7)
+                MarkerLayer(
+                  markers: [
+                    for (final a in _coverageList('zone_areas'))
+                      Marker(
+                        width: 120,
+                        height: 26,
+                        point: _latLng(a),
+                        child: Center(
                           child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: _zoneColor(
-                                q['zone'],
-                              ).withValues(alpha: 0.85),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              color: _zoneColor(a['zone']),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              '${a['label']} · ${a['company_name']}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    )
-                    .toList(),
-              ),
+                    for (final z in _coverageList('zones'))
+                      Marker(
+                        width: 140,
+                        height: 26,
+                        point: _latLng(z),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3B82F6),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              '${z['name']} · ${z['company_name']}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               MarkerLayer(
                 markers: [
-                  for (final a in _coverageList('zone_areas'))
-                    Marker(
-                      width: 120,
-                      height: 26,
-                      point: _latLng(a),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _zoneColor(a['zone']),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          child: Text(
-                            '${a['label']} · ${a['company_name']}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                  if (_mapZoom >= 6)
+                    for (final area in _coverageList('international_areas'))
+                      for (final raw
+                          in (area['reference_agencies'] as List? ?? const []))
+                        if (raw is Map)
+                          Marker(
+                            point: _latLng(Map<String, dynamic>.from(raw)),
+                            width: 38,
+                            height: 38,
+                            child: Tooltip(
+                              triggerMode: TooltipTriggerMode.tap,
+                              message:
+                                  '${raw['name']}\n${raw['address']}\n${raw['coordinate_precision'] == 'street' ? '${'product.map.approximate_agency_position'.tr}\n' : ''}${raw['is_provisional'] == true ? 'product.map.provisional_reference'.tr : raw['source_url'] ?? ''}',
+                              child: Icon(
+                                Icons.warehouse_rounded,
+                                size: 26,
+                                color: raw['is_provisional'] == true
+                                    ? Colors.grey
+                                    : const Color(0xFF7C3AED),
+                              ),
                             ),
                           ),
+                  for (final area in _coverageList('international_areas'))
+                    if (_mapZoom >= 4.5 ||
+                        const {
+                          'FR',
+                          'US',
+                          'BR',
+                          'ZA',
+                          'AE',
+                          'JP',
+                          'AU',
+                        }.contains(area['country']))
+                      Marker(
+                        width: 160,
+                        height: 64,
+                        point: _latLng(area),
+                        child: GestureDetector(
+                          onTap: () => _chooseInternationalCountry(area),
+                          child: _internationalMarker(area),
                         ),
                       ),
-                    ),
-                  for (final z in _coverageList('zones'))
-                    Marker(
-                      width: 140,
-                      height: 26,
-                      point: _latLng(z),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3B82F6),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          child: Text(
-                            '${z['name']} · ${z['company_name']}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
               MarkerLayer(
@@ -673,11 +959,47 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               ),
             ),
 
+          if (!widget.readOnly &&
+              !_isSearchMode &&
+              _coverageList('international_areas').isNotEmpty)
+            Positioned(
+              top: 120,
+              left: 16,
+              child: Material(
+                color: const Color(0xFFFFCC00),
+                elevation: 3,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  key: const Key('international-destinations'),
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: _showInternationalDestinations,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'product.map.international_destinations'.trParams({
+                        'count':
+                            '${_coverageList('international_areas').map((a) => a['country']).toSet().length}',
+                      }),
+                      style: const TextStyle(
+                        color: Color(0xFF4D148C),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Voir toutes les zones de livraison d'un coup.
           if (!widget.readOnly &&
               !_isSearchMode &&
               (_coverageList('zone_areas').isNotEmpty ||
-                  _coverageList('zones').isNotEmpty))
+                  _coverageList('zones').isNotEmpty ||
+                  _coverageList('international_areas').isNotEmpty))
             Positioned(
               top: 76,
               left: 16,
@@ -705,7 +1027,7 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                         Text(
                           'product.map.all_zones'.trParams({
                             'count':
-                                '${_coverageList('zone_areas').length + _coverageList('zones').length}',
+                                '${_coverageList('zone_areas').length + _coverageList('zones').length + _coverageList('international_areas').length}',
                           }),
                           style: context.textStyle(
                             FontSizeType.caption,
@@ -953,20 +1275,29 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop({
-                                  // Adresse encore en chargement : les
-                                  // coordonnées plutôt que celle du point
-                                  // précédent.
-                                  'address': _isLoadingAddress
-                                      ? _coordinatesLabel(_selectedPosition)
-                                      : _selectedAddress,
-                                  'latitude': _selectedPosition.latitude,
-                                  'longitude': _selectedPosition.longitude,
-                                  'city': _selectedCity,
-                                  'country': _selectedCountry,
-                                });
-                              },
+                              onPressed: _awaitingInternationalAddress
+                                  ? null
+                                  : () {
+                                      Navigator.of(context).pop({
+                                        // Adresse encore en chargement : les
+                                        // coordonnées plutôt que celle du point
+                                        // précédent.
+                                        'address': _isLoadingAddress
+                                            ? _coordinatesLabel(
+                                                _selectedPosition,
+                                              )
+                                            : _selectedAddress,
+                                        'latitude': _selectedPosition.latitude,
+                                        'longitude':
+                                            _selectedPosition.longitude,
+                                        'city':
+                                            _selectedCity ?? _coverage?['city'],
+                                        'country':
+                                            _selectedCountry ??
+                                            _coverage?['country'],
+                                        'postal_code': _selectedPostalCode,
+                                      });
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppThemeSystem.primaryColor,
                                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -976,7 +1307,10 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                                 elevation: 4,
                               ),
                               child: Text(
-                                'product.map.confirm_position'.tr,
+                                (_awaitingInternationalAddress
+                                        ? 'product.map.select_actual_address'
+                                        : 'product.map.confirm_position')
+                                    .tr,
                                 style: context.textStyle(
                                   FontSizeType.body1,
                                   fontWeight: FontWeight.bold,
@@ -1058,7 +1392,16 @@ class _MapSelectionViewState extends State<MapSelectionView> {
       );
     }
 
-    final servedBy = _coverageList('served_by');
+    final geographicInternational = _coverageList('geographic_served_by')
+        .where(
+          (s) =>
+              s['type'] == 'international' && s['coverage_scope'] == 'country',
+        )
+        .toList();
+    final servedBy = _coverageList('served_by').isNotEmpty
+        ? _coverageList('served_by')
+        : geographicInternational;
+    final countryWide = geographicInternational.isNotEmpty;
     final agencies = _coverageList('agencies');
     final served = servedBy.isNotEmpty;
     final geographicallyServed = _coverage?['geographically_served'] == true;
@@ -1127,7 +1470,9 @@ class _MapSelectionViewState extends State<MapSelectionView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  served
+                  countryWide
+                      ? 'product.map.country_covered'.tr
+                      : served
                       ? 'product.map.couriers_here'.tr
                       : agencies.isNotEmpty
                       ? 'product.map.agency_pickup_here'.tr
@@ -1151,6 +1496,15 @@ class _MapSelectionViewState extends State<MapSelectionView> {
                 ),
             ],
           ),
+          if (quoteUnavailable &&
+              lines.isNotEmpty &&
+              _coverage?['message'] != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _coverage!['message'].toString(),
+              style: context.textStyle(FontSizeType.caption),
+            ),
+          ],
           if (lines.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(

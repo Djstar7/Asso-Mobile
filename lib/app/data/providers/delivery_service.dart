@@ -124,6 +124,8 @@ class DeliveryService {
     required double latitude,
     required double longitude,
     List<Map<String, int>>? items,
+    String? city,
+    String? country,
   }) async {
     return await ApiProvider.get(
       '/v1/delivery/coverage',
@@ -134,6 +136,8 @@ class DeliveryService {
               'items[$i][${field.key}]': field.value,
         'latitude': latitude,
         'longitude': longitude,
+        'city': ?city,
+        'country': ?country,
       },
     );
   }

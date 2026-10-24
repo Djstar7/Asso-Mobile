@@ -69,6 +69,28 @@ class DisputeService {
     return ApiProvider.get('$_clientUrl/$id/similar-products');
   }
 
+  static Future<ApiResponse> deliveryClaim(int orderId) =>
+      ApiProvider.get('${AppConstants.ordersUrl}/$orderId/delivery-claim');
+
+  static Future<ApiResponse> openDeliveryClaim(
+    int orderId,
+    String description, {
+    List<XFile> photos = const [],
+  }) => ApiProvider.multipart(
+    '${AppConstants.ordersUrl}/$orderId/delivery-claim',
+    fields: {'reason': 'not_received', 'description': description},
+    mediaFileLists: photos.isEmpty ? null : {'photos[]': photos},
+  );
+
+  static Future<ApiResponse> contestReceipt(
+    int receiptId, {
+    required int attachmentId,
+    required String note,
+  }) => ApiProvider.post(
+    '$_vendorUrl/receipts/$receiptId/contest',
+    body: {'attachment_id': attachmentId, 'note': note},
+  );
+
   // ── Vendeur ─────────────────────────────────────────────────────────────
 
   static Future<ApiResponse> vendorDisputes({String? status}) {

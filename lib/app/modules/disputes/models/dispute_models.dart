@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../data/models/delivery_info.dart';
 
 /// Motifs d'une réclamation, dans l'ordre affiché au client.
 const disputeReasons = [
@@ -130,6 +131,9 @@ class DisputeShipmentInfo {
   final String? confirmationCode;
   final String? courierName;
   final String? courierPhone;
+  final bool international;
+  final String? routeLabel;
+  final DeliveryBreakdown? breakdown;
 
   const DisputeShipmentInfo({
     required this.id,
@@ -145,6 +149,9 @@ class DisputeShipmentInfo {
     this.confirmationCode,
     this.courierName,
     this.courierPhone,
+    this.international = false,
+    this.routeLabel,
+    this.breakdown,
   });
 
   bool get isReturn => type != 'replacement';
@@ -173,6 +180,9 @@ class DisputeShipmentInfo {
       confirmationCode: map['confirmation_code']?.toString(),
       courierName: (map['delivery_person'] as Map?)?['name']?.toString(),
       courierPhone: (map['delivery_person'] as Map?)?['phone']?.toString(),
+      international: map['international'] == true,
+      routeLabel: map['route_label']?.toString(),
+      breakdown: DeliveryBreakdown.fromMap(map['breakdown']),
     );
   }
 }
@@ -192,6 +202,7 @@ class Dispute {
   final String status;
   final String? decision;
   final String? decisionNote;
+  final List<Map<String, dynamic>> receipts;
   final int replacementCount;
   final double? heldAmount;
   final double? refundAmount;
@@ -203,6 +214,7 @@ class Dispute {
   final DisputeShipmentInfo? returnShipment;
   final Map<String, dynamic> actions;
   final String? serverStatusLabel;
+  final bool internationalExport;
   final DateTime? vendorResponseDueAt;
   final DateTime? createdAt;
 
@@ -220,6 +232,7 @@ class Dispute {
     required this.status,
     this.decision,
     this.decisionNote,
+    this.receipts = const [],
     this.replacementCount = 0,
     this.heldAmount,
     this.refundAmount,
@@ -232,6 +245,7 @@ class Dispute {
     this.createdAt,
     this.collection,
     this.serverStatusLabel,
+    this.internationalExport = false,
     this.vendorResponseDueAt,
   });
 
@@ -253,7 +267,12 @@ class Dispute {
       status: '${map['status'] ?? 'new'}',
       decision: map['decision']?.toString(),
       decisionNote: map['decision_note']?.toString(),
+      internationalExport: map['international_export'] == true,
       replacementCount: _int(map['replacement_count']),
+      receipts: (map['receipts'] as List? ?? const [])
+          .whereType<Map>()
+          .map((r) => Map<String, dynamic>.from(r))
+          .toList(),
       heldAmount: map['held_amount'] == null
           ? null
           : _double(map['held_amount']),
@@ -284,6 +303,11 @@ class Dispute {
   String get reasonLabel => 'disputes.reasons.$reason'.tr;
 
   bool action(String key) => actions[key] == true;
+
+  int? get receiptShipmentId =>
+      int.tryParse('${actions['receipt_shipment_id']}');
+  bool get isExchangeReceipt =>
+      receiptShipmentId != null && collection?.id == receiptShipmentId;
 
   /// Course que le vendeur doit encore payer (null sinon).
   int? get pendingShipmentId {
