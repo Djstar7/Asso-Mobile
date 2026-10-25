@@ -44,9 +44,13 @@ class AppDesign {
   // L'orange ASSO, décliné. `accent` est la seule couleur autorisée pour
   // guider l'action principale ; les autres nuances servent de fonds discrets.
 
-  static const Color accent = Color(0xFFE87722); // Orange marque, assombri
-  static const Color accentHover = Color(0xFFD06714);
-  static const Color accentPressed = Color(0xFFB4570E);
+  /// Orange identitaire, réservé aux illustrations et éléments décoratifs.
+  static const Color brandAccent = Color(0xFFE87722);
+
+  /// Orange interactif : contraste supérieur à 4,5:1 avec le blanc.
+  static const Color accent = Color(0xFFA64F0F);
+  static const Color accentHover = Color(0xFF97460B);
+  static const Color accentPressed = Color(0xFF8F430B);
   static const Color accentSubtle = Color(0xFFFDF3EA); // Fond de badge/chip
   static const Color accentBorder = Color(0xFFF6D9C0);
   static const Color accentText = Color(0xFF9C4A0A); // Texte sur accentSubtle
@@ -104,7 +108,8 @@ class AppDesign {
   // COULEURS RÉSOLUES SELON LE THÈME
   // ================================
 
-  static bool _isDark(BuildContext context) => AppThemeSystem.isDarkMode(context);
+  static bool _isDark(BuildContext context) =>
+      AppThemeSystem.isDarkMode(context);
 
   /// Fond général de l'écran.
   static Color canvas(BuildContext context) =>
@@ -136,7 +141,7 @@ class AppDesign {
 
   /// Texte tertiaire : mentions légères, aides à la saisie.
   static Color textTertiary(BuildContext context) =>
-      _isDark(context) ? const Color(0xFF85857F) : neutral500;
+      _isDark(context) ? neutral400 : neutral600;
 
   /// Couleur d'une icône neutre.
   static Color icon(BuildContext context) =>

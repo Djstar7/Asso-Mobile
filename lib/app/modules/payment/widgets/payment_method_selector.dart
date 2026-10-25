@@ -201,6 +201,18 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     );
   }
 
+  Widget _buildAmount(BuildContext context) => Text(
+    'payment.selector.amount_line'.trParams({
+      'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
+      'amount': _amountLine(),
+    }),
+    style: context.textStyle(
+      FontSizeType.body2,
+      fontWeight: FontWeight.w600,
+      color: AppThemeSystem.primaryColor,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     // Pas de marge pour le clavier ici : la route de la feuille s'en charge
@@ -211,19 +223,10 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Obx(
-            () => Text(
-              'payment.selector.amount_line'.trParams({
-                'label': widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
-                'amount': _amountLine(),
-              }),
-              style: context.textStyle(
-                FontSizeType.body2,
-                fontWeight: FontWeight.w600,
-                color: AppThemeSystem.primaryColor,
-              ),
-            ),
-          ),
+          if (Get.isRegistered<CurrencyService>())
+            Obx(() => _buildAmount(context))
+          else
+            _buildAmount(context),
           const SizedBox(height: AppDesign.space4),
           Obx(() {
             if (_loading.value) {
@@ -273,9 +276,14 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             });
     }
     if (hint == null) {
-      if (!canPay && m.unavailableReason == 'below_min' && m.minAmount != null) {
+      if (!canPay &&
+          m.unavailableReason == 'below_min' &&
+          m.minAmount != null) {
         hint = 'payment.selector.minimum'.trParams({
-          'amount': CurrencyService.formatFromCurrency(m.minAmount!, m.minCurrency),
+          'amount': CurrencyService.formatFromCurrency(
+            m.minAmount!,
+            m.minCurrency,
+          ),
         });
       } else if (!canPay && m.unavailableReason == 'disabled') {
         hint = 'wallet.recharge.unavailable_title'.tr;
@@ -319,12 +327,16 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: canPay ? color.withValues(alpha: 0.1) : AppThemeSystem.getBorderColor(context),
+                  color: canPay
+                      ? color.withValues(alpha: 0.1)
+                      : AppThemeSystem.getBorderColor(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   _iconFor(m.code),
-                  color: canPay ? color : AppThemeSystem.getSecondaryTextColor(context),
+                  color: canPay
+                      ? color
+                      : AppThemeSystem.getSecondaryTextColor(context),
                   size: 26,
                 ),
               ),
@@ -365,7 +377,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               ),
               Icon(
                 canPay ? Icons.chevron_right_rounded : Icons.block,
-                color: canPay ? color : AppThemeSystem.getSecondaryTextColor(context),
+                color: canPay
+                    ? color
+                    : AppThemeSystem.getSecondaryTextColor(context),
               ),
             ],
           ),

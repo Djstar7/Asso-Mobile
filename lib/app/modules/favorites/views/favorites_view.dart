@@ -24,14 +24,11 @@ class FavoritesView extends GetView<FavoritesController> {
       appBar: AppBar(
         backgroundColor: isDark ? AppThemeSystem.darkCardColor : Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         leading: const AppBackButton(),
         title: Text(
           'favorites.title'.tr,
-          style: context.textStyle(
-            deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
         actions: [
           Obx(() {
@@ -63,7 +60,8 @@ class FavoritesView extends GetView<FavoritesController> {
           color: AppThemeSystem.primaryColor,
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+              if (scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent - 200) {
                 controller.loadMore();
               }
               return false;
@@ -71,7 +69,9 @@ class FavoritesView extends GetView<FavoritesController> {
             child: GridView.builder(
               padding: EdgeInsets.all(context.ds.gutter),
               gridDelegate: ProductCard.gridDelegate(context),
-              itemCount: controller.favoriteProducts.length + (controller.isLoadingMore.value ? 2 : 0),
+              itemCount:
+                  controller.favoriteProducts.length +
+                  (controller.isLoadingMore.value ? 2 : 0),
               itemBuilder: (context, index) {
                 if (index >= controller.favoriteProducts.length) {
                   return ShimmerWidgets.productCardShimmer(context);
@@ -99,91 +99,20 @@ class FavoritesView extends GetView<FavoritesController> {
   }
 
   Widget _buildEmptyState(BuildContext context, DeviceType deviceType) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context) * 2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                    AppThemeSystem.tertiaryColor.withValues(alpha: 0.1),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.favorite_border_rounded,
-                size: deviceType == DeviceType.mobile ? 80 : 100,
-                color: AppThemeSystem.primaryColor.withValues(alpha: 0.6),
-              ),
-            ),
-
-            SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 1.5),
-
-            Text(
-              'favorites.empty_title'.tr,
-              style: context.textStyle(
-                deviceType == DeviceType.mobile ? FontSizeType.h4 : FontSizeType.h3,
-                fontWeight: FontWeight.bold,
-                color: AppThemeSystem.getPrimaryTextColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
-
-            Text(
-              'favorites.empty_message'.tr,
-              style: context.textStyle(
-                FontSizeType.body1,
-                color: isDark ? AppThemeSystem.grey400 : AppThemeSystem.grey600,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            SizedBox(height: AppThemeSystem.getVerticalPadding(context) * 2),
-
-            ElevatedButton.icon(
-              // Sans écran derrière, ramène à l'accueil plutôt que de ne rien faire.
-              onPressed: () => AppNavigation.back(context),
-              icon: Icon(Icons.explore_rounded, color: Colors.white),
-              label: Text(
-                'favorites.explore_products'.tr,
-                style: context.textStyle(
-                  FontSizeType.body1,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeSystem.primaryColor,
-                padding: EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.favorite_border_rounded,
+      title: 'favorites.empty_title'.tr,
+      message: 'favorites.empty_message'.tr,
+      actionLabel: 'favorites.explore_products'.tr,
+      onAction: () => AppNavigation.back(context),
     );
   }
 
-  Widget _buildProductCard(BuildContext context, Map<String, dynamic> product, DeviceType deviceType) {
+  Widget _buildProductCard(
+    BuildContext context,
+    Map<String, dynamic> product,
+    DeviceType deviceType,
+  ) {
     final productId = product['id'] is int
         ? product['id'] as int
         : int.tryParse('${product['id']}') ?? 0;
@@ -198,8 +127,9 @@ class FavoritesView extends GetView<FavoritesController> {
       isCertified: shop?['is_certified'] == true,
       imageBuilder: (context) => _buildProductImage(context, product),
       onTap: () => Get.toNamed('/product', arguments: product),
-      onFavoriteTap:
-          productId > 0 ? () => controller.toggleFavorite(productId) : null,
+      onFavoriteTap: productId > 0
+          ? () => controller.toggleFavorite(productId)
+          : null,
     );
   }
 
@@ -258,6 +188,8 @@ class FavoritesView extends GetView<FavoritesController> {
   }
 
   String _getLocation(Map<String, dynamic> product) {
-    return product['location']?.toString() ?? product['shop']?['address']?.toString() ?? '';
+    return product['location']?.toString() ??
+        product['shop']?['address']?.toString() ??
+        '';
   }
 }

@@ -227,7 +227,7 @@ class AddProductView extends GetView<AddProductController> {
             Row(
               children: [
                 const Icon(Icons.history_rounded,
-                    size: 18, color: AppDesign.accentText),
+                    size: 18, color: AppDesign.accent),
                 SizedBox(width: AppDesign.space2),
                 Expanded(
                   child: Text(
@@ -1189,7 +1189,7 @@ class AddProductView extends GetView<AddProductController> {
                       style: context.caption.copyWith(
                         fontSize: 10,
                         color: isCurrent
-                            ? AppDesign.accentText
+                            ? AppDesign.accent
                             : ds.textTertiary,
                         fontWeight:
                             isCurrent ? FontWeight.w700 : FontWeight.w400,
@@ -2697,9 +2697,9 @@ class AddProductView extends GetView<AddProductController> {
     });
   }
 
-  
-  
-  
+
+
+
   Future<void> _openVariantEditor(BuildContext context) async {
     FocusScope.of(context).unfocus();
     await Navigator.of(context).push(
@@ -3093,23 +3093,6 @@ class _SelectionDot extends StatelessWidget {
   final bool isSelected;
 
   @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isSelected ? AppDesign.accent : Colors.transparent,
-        border: Border.all(
-          color: isSelected ? AppDesign.accent : ds.borderStrong,
-          width: isSelected ? 0 : 1.5,
-        ),
-      ),
-      child: isSelected
-          ? const Icon(Icons.check_rounded, size: 14, color: AppDesign.neutral0)
-          : null,
-    );
-  }
+  Widget build(BuildContext context) => AppSelectionDot(isSelected: isSelected);
+
 }

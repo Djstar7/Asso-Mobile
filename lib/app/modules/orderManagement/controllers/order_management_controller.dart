@@ -11,7 +11,10 @@ import '../../../core/utils/string_utils.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_ui.dart';
+import '../../../core/utils/app_navigation.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../data/models/delivery_info.dart';
 
@@ -80,7 +83,7 @@ class OrderManagementController extends GetxController {
       allOrders.value = [];
       applyFilters();
 
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.errors.title'.tr,
         'order_management.errors.load_orders'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -97,15 +100,18 @@ class OrderManagementController extends GetxController {
     return rawOrders.map((item) {
       final order = item as Map<String, dynamic>;
       // L'API retourne 'user' (objet) pour le client, pas des champs plats
-      final customer = order['customer'] as Map<String, dynamic>?
-          ?? order['user'] as Map<String, dynamic>?;
+      final customer =
+          order['customer'] as Map<String, dynamic>? ??
+          order['user'] as Map<String, dynamic>?;
       final delivery = DeliveryInfo.fromMap(order['delivery']);
 
       return OrderModel(
         id: (order['id'] ?? '').toString(),
         clientId: (customer?['id'] ?? order['user_id'] ?? '').toString(),
-        clientName: customer?['name']
-            ?? '${customer?['first_name'] ?? ''} ${customer?['last_name'] ?? ''}'.trim(),
+        clientName:
+            customer?['name'] ??
+            '${customer?['first_name'] ?? ''} ${customer?['last_name'] ?? ''}'
+                .trim(),
         clientPhone: (customer?['phone'] ?? '').toString(),
         clientAvatar: (customer?['avatar'] ?? '').toString(),
         items: _parseOrderItems(order['items'] ?? []),
@@ -114,17 +120,23 @@ class OrderManagementController extends GetxController {
         city: order['city'] ?? '',
         address: order['delivery_address'] ?? '',
         orderDate: _parseDate(order['created_at']),
-        validatedDate: order['confirmed_at'] != null ? _parseDate(order['confirmed_at']) : null,
-        cancelledDate: order['cancelled_at'] != null ? _parseDate(order['cancelled_at']) : null,
+        validatedDate: order['confirmed_at'] != null
+            ? _parseDate(order['confirmed_at'])
+            : null,
+        cancelledDate: order['cancelled_at'] != null
+            ? _parseDate(order['cancelled_at'])
+            : null,
         cancelReason: order['cancel_reason'],
         deliveryPersonId: order['delivery_person_id']?.toString(),
         deliveryPersonName: order['delivery_person'] != null
-            ? (order['delivery_person']['name'] ?? '${order['delivery_person']['first_name'] ?? ''} ${order['delivery_person']['last_name'] ?? ''}'.trim())
+            ? (order['delivery_person']['name'] ??
+                  '${order['delivery_person']['first_name'] ?? ''} ${order['delivery_person']['last_name'] ?? ''}'
+                      .trim())
             : null,
         notes: order['notes'],
         orderNumber: order['order_number']?.toString() ?? '',
-        deliveryPhone:
-            (order['customer_phone'] ?? customer?['phone'] ?? '').toString(),
+        deliveryPhone: (order['customer_phone'] ?? customer?['phone'] ?? '')
+            .toString(),
         addressDetails: order['delivery_address_details']?.toString(),
         paymentStatus: order['payment_status']?.toString() ?? 'paid',
         // Prix du vendeur (hors majoration ASSO payée par le client).
@@ -136,9 +148,13 @@ class OrderManagementController extends GetxController {
             ) ??
             0,
         freeDeliveryAmount: order['free_delivery'] == true
-            ? double.tryParse(order['free_delivery_amount']?.toString() ?? '') ?? 0
+            ? double.tryParse(
+                    order['free_delivery_amount']?.toString() ?? '',
+                  ) ??
+                  0
             : 0,
-        deliveryCompanyName: order['delivery_company']?['name']?.toString() ??
+        deliveryCompanyName:
+            order['delivery_company']?['name']?.toString() ??
             delivery?.companyName,
         // Transporteur : « preparing » ne signifie pas qu'un livreur est assigné.
         deliveryAssigned:
@@ -160,10 +176,15 @@ class OrderManagementController extends GetxController {
 
       return OrderItem(
         productId: (orderItem['product_id'] ?? '').toString(),
-        productName: orderItem['product_name'] ?? product?['name'] ?? 'order_management.default_product'.tr,
+        productName:
+            orderItem['product_name'] ??
+            product?['name'] ??
+            'order_management.default_product'.tr,
         quantity: orderItem['quantity'] ?? 1,
-        unitPrice: double.tryParse(orderItem['unit_price']?.toString() ?? '0') ?? 0,
-        totalPrice: double.tryParse(orderItem['total_price']?.toString() ?? '0') ?? 0,
+        unitPrice:
+            double.tryParse(orderItem['unit_price']?.toString() ?? '0') ?? 0,
+        totalPrice:
+            double.tryParse(orderItem['total_price']?.toString() ?? '0') ?? 0,
         productImage: orderItem['product_image']?.toString() ?? '',
         variantLabel: orderItem['variant_label']?.toString(),
         tierLabel: orderItem['tier_label']?.toString(),
@@ -210,20 +231,24 @@ class OrderManagementController extends GetxController {
 
     // Filtre par statut
     if (selectedStatus.value != null) {
-      orders = orders.where((order) => order.status == selectedStatus.value).toList();
+      orders = orders
+          .where((order) => order.status == selectedStatus.value)
+          .toList();
     }
 
     // Filtre par ville
     if (selectedCity.value != 'Toutes les villes') {
-      orders = orders.where((order) => order.city == selectedCity.value).toList();
+      orders = orders
+          .where((order) => order.city == selectedCity.value)
+          .toList();
     }
 
     // Filtre par date
     if (selectedDate.value != null) {
       orders = orders.where((order) {
         return order.orderDate.year == selectedDate.value!.year &&
-               order.orderDate.month == selectedDate.value!.month &&
-               order.orderDate.day == selectedDate.value!.day;
+            order.orderDate.month == selectedDate.value!.month &&
+            order.orderDate.day == selectedDate.value!.day;
       }).toList();
     }
 
@@ -232,8 +257,8 @@ class OrderManagementController extends GetxController {
       final query = searchQuery.value.toLowerCase();
       orders = orders.where((order) {
         return order.clientName.toLowerCase().contains(query) ||
-               order.id.toLowerCase().contains(query) ||
-               order.clientPhone.contains(query);
+            order.id.toLowerCase().contains(query) ||
+            order.clientPhone.contains(query);
       }).toList();
     }
 
@@ -255,19 +280,52 @@ class OrderManagementController extends GetxController {
       final confirm = await Get.dialog<bool>(
         AlertDialog(
           title: Text('order_management.validate_dialog.title'.tr),
-          content: Text(
-            'order_management.validate_dialog.message'.trParams({
-              'id': order.id,
-              'name': order.clientName,
-            }),
+          scrollable: true,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'order_management.validate_dialog.message'.trParams({
+                  'id': order.id,
+                  'name': order.clientName,
+                }),
+              ),
+              const SizedBox(height: AppDesign.space4),
+              AppCard(
+                elevated: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final item in order.items)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppDesign.space2,
+                        ),
+                        child: Text('${item.productName} ×${item.quantity}'),
+                      ),
+                    Text(
+                      'order_management.details.total_paid'.trParams({
+                        'amount': formatPrice(order.totalAmount),
+                      }),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    if (order.address.isNotEmpty) ...[
+                      const SizedBox(height: AppDesign.space2),
+                      Text(order.address),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Get.back(result: false),
+              onPressed: () => AppNavigation.pop(false),
               child: Text('order_management.actions.cancel'.tr),
             ),
             ElevatedButton(
-              onPressed: () => Get.back(result: true),
+              onPressed: () => AppNavigation.pop(true),
               child: Text('order_management.actions.validate'.tr),
             ),
           ],
@@ -284,11 +342,12 @@ class OrderManagementController extends GetxController {
 
         if (response.success) {
           await loadOrders(); // Recharger depuis l'API
-          Get.snackbar(
+          AppFeedback.show(
             'order_management.validate_dialog.success_title'.tr,
             order.isCarrier
                 ? 'order_management.validate_dialog.success_carrier'.trParams({
-                    'agency': order.delivery?.companyName ??
+                    'agency':
+                        order.delivery?.companyName ??
                         'order_management.validate_dialog.default_carrier'.tr,
                   })
                 : 'order_management.validate_dialog.success_message'.tr,
@@ -297,9 +356,11 @@ class OrderManagementController extends GetxController {
             colorText: Colors.white,
           );
         } else {
-          Get.snackbar(
+          AppFeedback.show(
             'order_management.errors.title'.tr,
-            response.message.isNotEmpty ? response.message : 'order_management.errors.validate_order'.tr,
+            response.message.isNotEmpty
+                ? response.message
+                : 'order_management.errors.validate_order'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -307,7 +368,7 @@ class OrderManagementController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.errors.title'.tr,
         'order_management.errors.validate_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -352,13 +413,18 @@ class OrderManagementController extends GetxController {
           ),
           actions: [
             TextButton(
-              onPressed: () => Get.back(result: false),
+              onPressed: () => AppNavigation.pop(false),
               child: Text('order_management.actions.no'.tr),
             ),
             ElevatedButton(
-              onPressed: () => Get.back(result: true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppDesign.danger),
-              child: Text('order_management.reject_dialog.confirm'.tr, style: const TextStyle(color: Colors.white)),
+              onPressed: () => AppNavigation.pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppDesign.danger,
+              ),
+              child: Text(
+                'order_management.reject_dialog.confirm'.tr,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -372,12 +438,14 @@ class OrderManagementController extends GetxController {
 
         final response = await VendorService.rejectOrder(
           orderId,
-          reason: reasonController.text.isNotEmpty ? reasonController.text : null,
+          reason: reasonController.text.isNotEmpty
+              ? reasonController.text
+              : null,
         );
 
         if (response.success) {
           await loadOrders();
-          Get.snackbar(
+          AppFeedback.show(
             'order_management.reject_dialog.success_title'.tr,
             'order_management.reject_dialog.success_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -385,9 +453,11 @@ class OrderManagementController extends GetxController {
             colorText: Colors.white,
           );
         } else {
-          Get.snackbar(
+          AppFeedback.show(
             'order_management.errors.title'.tr,
-            response.message.isNotEmpty ? response.message : 'order_management.errors.reject_order'.tr,
+            response.message.isNotEmpty
+                ? response.message
+                : 'order_management.errors.reject_order'.tr,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppDesign.danger,
             colorText: Colors.white,
@@ -395,7 +465,7 @@ class OrderManagementController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.errors.title'.tr,
         'order_management.errors.reject_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -415,25 +485,33 @@ class OrderManagementController extends GetxController {
   Future<void> openChat(OrderModel order) async {
     final clientId = int.tryParse(order.clientId);
     if (clientId == null || clientId <= 0) {
-      Get.snackbar('common.error'.tr, 'order_management.chat.no_client'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show(
+        'common.error'.tr,
+        'order_management.chat.no_client'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     if (openingChatOrderId.value.isNotEmpty) return;
 
     openingChatOrderId.value = order.id;
     try {
-      final productId =
-          order.items.isNotEmpty ? int.tryParse(order.items.first.productId) : null;
+      final productId = order.items.isNotEmpty
+          ? int.tryParse(order.items.first.productId)
+          : null;
       final response = await ConversationService.startConversation(
         userId: clientId,
         productId: productId,
       );
       final conversation = response.data?['conversation'] ?? response.data;
-      final conversationId = conversation?['id'] ?? conversation?['conversation_id'];
+      final conversationId =
+          conversation?['id'] ?? conversation?['conversation_id'];
       if (!response.success || conversationId == null) {
-        Get.snackbar('common.error'.tr, 'order_management.chat.failed'.tr,
-            snackPosition: SnackPosition.BOTTOM);
+        AppFeedback.show(
+          'common.error'.tr,
+          'order_management.chat.failed'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
         return;
       }
 
@@ -441,17 +519,24 @@ class OrderManagementController extends GetxController {
       final name = otherUser?['name']?.toString().isNotEmpty == true
           ? otherUser!['name'].toString()
           : order.clientName;
-      Get.toNamed('/chatdetail', arguments: {
-        'id': conversationId.toString(),
-        'name': name,
-        'avatar': StringUtils.getInitials(name),
-        'isOnline': false,
-        'default_message': 'order_management.chat.default_message'
-            .trParams({'order': order.orderNumber}),
-      });
+      Get.toNamed(
+        '/chatdetail',
+        arguments: {
+          'id': conversationId.toString(),
+          'name': name,
+          'avatar': StringUtils.getInitials(name),
+          'isOnline': false,
+          'default_message': 'order_management.chat.default_message'.trParams({
+            'order': order.orderNumber,
+          }),
+        },
+      );
     } catch (_) {
-      Get.snackbar('common.error'.tr, 'order_management.chat.failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show(
+        'common.error'.tr,
+        'order_management.chat.failed'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       openingChatOrderId.value = '';
     }
@@ -468,7 +553,9 @@ class OrderManagementController extends GetxController {
       final orderId = int.tryParse(order.id);
       if (orderId == null) return;
 
-      final response = await VendorService.getAvailableDeliveryPersons(orderId: orderId);
+      final response = await VendorService.getAvailableDeliveryPersons(
+        orderId: orderId,
+      );
 
       if (response.success && response.data != null) {
         final data = response.data!['data'] ?? response.data!;
@@ -477,16 +564,18 @@ class OrderManagementController extends GetxController {
 
         _showDeliverersSheet(company, persons);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'order_management.errors.title'.tr,
-          response.message.isNotEmpty ? response.message : 'order_management.errors.load_deliverers'.tr,
+          response.message.isNotEmpty
+              ? response.message
+              : 'order_management.errors.load_deliverers'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.errors.title'.tr,
         'order_management.errors.load_deliverers'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -498,12 +587,13 @@ class OrderManagementController extends GetxController {
     }
   }
 
-  void _showDeliverersSheet(Map<String, dynamic>? company, List<dynamic> persons) {
+  void _showDeliverersSheet(
+    Map<String, dynamic>? company,
+    List<dynamic> persons,
+  ) {
     Get.bottomSheet(
       Container(
-        constraints: BoxConstraints(
-          maxHeight: Get.height * 0.7,
-        ),
+        constraints: BoxConstraints(maxHeight: Get.height * 0.7),
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -531,12 +621,17 @@ class OrderManagementController extends GetxController {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                    backgroundColor: AppThemeSystem.primaryColor.withValues(
+                      alpha: 0.1,
+                    ),
                     backgroundImage: company['logo'] != null
                         ? NetworkImage(company['logo'] as String)
                         : null,
                     child: company['logo'] == null
-                        ? Icon(Icons.local_shipping, color: AppThemeSystem.primaryColor)
+                        ? Icon(
+                            Icons.local_shipping,
+                            color: AppThemeSystem.primaryColor,
+                          )
                         : null,
                   ),
                   const SizedBox(width: 12),
@@ -545,16 +640,16 @@ class OrderManagementController extends GetxController {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          company['name'] ?? 'order_management.deliverers.default_company'.tr,
+                          company['name'] ??
+                              'order_management.deliverers.default_company'.tr,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'order_management.deliverers.available_count'.trParams({
-                            'count': '${persons.length}',
-                          }),
+                          'order_management.deliverers.available_count'
+                              .trParams({'count': '${persons.length}'}),
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -570,10 +665,7 @@ class OrderManagementController extends GetxController {
             // Title
             Text(
               'order_management.deliverers.title'.tr,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -618,7 +710,8 @@ class OrderManagementController extends GetxController {
   }
 
   Widget _buildDelivererTile(Map<String, dynamic> person) {
-    final name = person['name'] ?? 'order_management.deliverers.default_name'.tr;
+    final name =
+        person['name'] ?? 'order_management.deliverers.default_name'.tr;
     final phone = person['phone']?.toString() ?? '';
     final avatar = person['avatar'] as String?;
     final address = person['address']?.toString() ?? '';
@@ -628,7 +721,9 @@ class OrderManagementController extends GetxController {
       leading: CircleAvatar(
         radius: 22,
         backgroundColor: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-        backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+        backgroundImage: avatar != null && avatar.isNotEmpty
+            ? NetworkImage(avatar)
+            : null,
         child: avatar == null || avatar.isEmpty
             ? Icon(Icons.person, color: AppThemeSystem.primaryColor)
             : null,
@@ -641,12 +736,15 @@ class OrderManagementController extends GetxController {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (address.isNotEmpty)
-            Text(address, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+            Text(
+              address,
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
           if (phone.isNotEmpty)
             GestureDetector(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: phone));
-                Get.snackbar(
+                AppFeedback.show(
                   'order_management.deliverers.copied_title'.tr,
                   'order_management.deliverers.copied_message'.trParams({
                     'phone': phone,
@@ -659,7 +757,10 @@ class OrderManagementController extends GetxController {
               },
               child: Container(
                 margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -667,7 +768,11 @@ class OrderManagementController extends GetxController {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.phone, size: 14, color: AppThemeSystem.primaryColor),
+                    Icon(
+                      Icons.phone,
+                      size: 14,
+                      color: AppThemeSystem.primaryColor,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       phone,
@@ -678,7 +783,11 @@ class OrderManagementController extends GetxController {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Icon(Icons.copy, size: 14, color: AppThemeSystem.primaryColor),
+                    Icon(
+                      Icons.copy,
+                      size: 14,
+                      color: AppThemeSystem.primaryColor,
+                    ),
                   ],
                 ),
               ),
@@ -694,13 +803,16 @@ class OrderManagementController extends GetxController {
 
   final RxBool isSubmittingTracking = false.obs;
 
-  InputDecoration _fieldDecoration(String label, {String? hint, IconData? icon}) =>
-      InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: icon != null ? Icon(icon) : null,
-        border: const OutlineInputBorder(),
-      );
+  InputDecoration _fieldDecoration(
+    String label, {
+    String? hint,
+    IconData? icon,
+  }) => InputDecoration(
+    labelText: label,
+    hintText: hint,
+    prefixIcon: icon != null ? Icon(icon) : null,
+    border: const OutlineInputBorder(),
+  );
 
   /// Remise du colis au transporteur : numéro de suivi obligatoire.
   Future<void> handToCarrier(OrderModel order) async {
@@ -710,13 +822,16 @@ class OrderManagementController extends GetxController {
     final locationCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
     final error = RxnString();
-    final company = order.delivery?.companyName ??
+    final company =
+        order.delivery?.companyName ??
         'order_management.hand_to_carrier.default_carrier'.tr;
 
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         title: Text(
-          'order_management.hand_to_carrier.title'.trParams({'company': company}),
+          'order_management.hand_to_carrier.title'.trParams({
+            'company': company,
+          }),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -734,19 +849,26 @@ class OrderManagementController extends GetxController {
                   'order_management.hand_to_carrier.route'.trParams({
                     'route': '${order.delivery!.routeLabel}',
                   }),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
               const SizedBox(height: 14),
-              Obx(() => TextField(
-                    controller: numberCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: _fieldDecoration(
-                      'order_management.hand_to_carrier.tracking_number'.tr,
-                      hint: 'order_management.hand_to_carrier.tracking_number_hint'.tr,
-                      icon: Icons.qr_code_2_rounded,
-                    ).copyWith(errorText: error.value),
-                  )),
+              Obx(
+                () => TextField(
+                  controller: numberCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: _fieldDecoration(
+                    'order_management.hand_to_carrier.tracking_number'.tr,
+                    hint:
+                        'order_management.hand_to_carrier.tracking_number_hint'
+                            .tr,
+                    icon: Icons.qr_code_2_rounded,
+                  ).copyWith(errorText: error.value),
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: locationCtrl,
@@ -760,26 +882,35 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: noteCtrl,
                 maxLines: 2,
-                decoration: _fieldDecoration('order_management.tracking_form.note'.tr, icon: Icons.notes_rounded),
+                decoration: _fieldDecoration(
+                  'order_management.tracking_form.note'.tr,
+                  icon: Icons.notes_rounded,
+                ),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(result: false),
+            onPressed: () => AppNavigation.pop(false),
             child: Text('order_management.actions.cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () {
               if (numberCtrl.text.trim().isEmpty) {
-                error.value = 'order_management.hand_to_carrier.tracking_required'.tr;
+                error.value =
+                    'order_management.hand_to_carrier.tracking_required'.tr;
                 return;
               }
-              Get.back(result: true);
+              AppNavigation.pop(true);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
-            child: Text('order_management.hand_to_carrier.confirm'.tr, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+            ),
+            child: Text(
+              'order_management.hand_to_carrier.confirm'.tr,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -824,19 +955,28 @@ class OrderManagementController extends GetxController {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
-              Obx(() => DropdownButtonFormField<String>(
-                    initialValue: step.value,
-                    isExpanded: true,
-                    decoration: _fieldDecoration('order_management.tracking_form.step'.tr, icon: Icons.timeline_rounded)
-                        .copyWith(errorText: error.value),
-                    items: DeliveryInfo.trackingStepsFor(order.delivery).entries
-                        .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                        .toList(),
-                    onChanged: (value) {
-                      step.value = value;
-                      error.value = null;
-                    },
-                  )),
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  initialValue: step.value,
+                  isExpanded: true,
+                  decoration: _fieldDecoration(
+                    'order_management.tracking_form.step'.tr,
+                    icon: Icons.timeline_rounded,
+                  ).copyWith(errorText: error.value),
+                  items: DeliveryInfo.trackingStepsFor(order.delivery).entries
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    step.value = value;
+                    error.value = null;
+                  },
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: locationCtrl,
@@ -850,14 +990,17 @@ class OrderManagementController extends GetxController {
               TextField(
                 controller: noteCtrl,
                 maxLines: 2,
-                decoration: _fieldDecoration('order_management.tracking_form.note'.tr, icon: Icons.notes_rounded),
+                decoration: _fieldDecoration(
+                  'order_management.tracking_form.note'.tr,
+                  icon: Icons.notes_rounded,
+                ),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(result: false),
+            onPressed: () => AppNavigation.pop(false),
             child: Text('order_management.actions.cancel'.tr),
           ),
           ElevatedButton(
@@ -866,10 +1009,15 @@ class OrderManagementController extends GetxController {
                 error.value = 'order_management.tracking_form.step_required'.tr;
                 return;
               }
-              Get.back(result: true);
+              AppNavigation.pop(true);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppThemeSystem.primaryColor),
-            child: Text('order_management.tracking_form.submit'.tr, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeSystem.primaryColor,
+            ),
+            child: Text(
+              'order_management.tracking_form.submit'.tr,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -884,9 +1032,12 @@ class OrderManagementController extends GetxController {
         note: noteCtrl.text.trim(),
       ),
       successTitle: 'order_management.tracking_form.success_title'.tr,
-      successMessage: 'order_management.tracking_form.success_message'.trParams({
-        'step': '${DeliveryInfo.trackingStepsFor(order.delivery)[step.value]}',
-      }),
+      successMessage: 'order_management.tracking_form.success_message'.trParams(
+        {
+          'step':
+              '${DeliveryInfo.trackingStepsFor(order.delivery)[step.value]}',
+        },
+      ),
     );
   }
 
@@ -901,28 +1052,30 @@ class OrderManagementController extends GetxController {
       final response = await call();
       if (response.success) {
         await loadOrders();
-        Get.snackbar(
+        AppFeedback.show(
           successTitle,
           successMessage,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
+          backgroundColor: AppDesign.success,
           colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'order_management.errors.title'.tr,
-          response.message.isNotEmpty ? response.message : 'order_management.errors.action_failed'.tr,
+          response.message.isNotEmpty
+              ? response.message
+              : 'order_management.errors.action_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
+          backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       }
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.errors.title'.tr,
         'order_management.errors.action_failed_now'.tr,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: AppDesign.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -961,12 +1114,11 @@ class OrderManagementController extends GetxController {
           const SizedBox(width: 8),
           Expanded(child: Text(text, style: context.body2)),
           if (onCopy != null)
-            InkWell(
-              onTap: onCopy,
-              child: const Padding(
-                padding: EdgeInsets.all(2),
-                child: Icon(Icons.copy_rounded, size: 18),
-              ),
+            AppIconButton(
+              onPressed: onCopy,
+              icon: Icons.copy_rounded,
+              tooltip: 'order_management.details.copy'.tr,
+              size: 18,
             ),
         ],
       ),
@@ -974,7 +1126,7 @@ class OrderManagementController extends GetxController {
 
     void copy(String value, String message) {
       Clipboard.setData(ClipboardData(text: value));
-      Get.snackbar(
+      AppFeedback.show(
         'order_management.details.copied_title'.tr,
         message,
         snackPosition: SnackPosition.BOTTOM,
@@ -1062,9 +1214,7 @@ class OrderManagementController extends GetxController {
                       ),
                       Text(
                         '×${item.quantity}',
-                        style: context.h6.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: context.h6.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -1077,10 +1227,8 @@ class OrderManagementController extends GetxController {
                 line(
                   Icons.phone_outlined,
                   phone,
-                  onCopy: () => copy(
-                    phone,
-                    'order_management.details.phone_copied'.tr,
-                  ),
+                  onCopy: () =>
+                      copy(phone, 'order_management.details.phone_copied'.tr),
                 ),
               if (order.address.isNotEmpty)
                 line(
@@ -1123,7 +1271,7 @@ class OrderManagementController extends GetxController {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Get.back();
+                          AppNavigation.pop();
                           order.canHandToCarrier
                               ? handToCarrier(order)
                               : addTrackingStep(order);
@@ -1188,8 +1336,18 @@ class OrderManagementController extends GetxController {
   /// Génère des commandes de test
   List<OrderModel> _generateMockOrders() {
     final cities = ['Yaoundé', 'Douala', 'Bafoussam', 'Garoua', 'Bamenda'];
-    final statuses = [OrderStatus.pending, OrderStatus.validated, OrderStatus.cancelled];
-    final names = ['Jean Dupont', 'Marie Claire', 'Paul Kamga', 'Fatima Bello', 'André Tchuente'];
+    final statuses = [
+      OrderStatus.pending,
+      OrderStatus.validated,
+      OrderStatus.cancelled,
+    ];
+    final names = [
+      'Jean Dupont',
+      'Marie Claire',
+      'Paul Kamga',
+      'Fatima Bello',
+      'André Tchuente',
+    ];
 
     return List.generate(20, (index) {
       final city = cities[index % cities.length];
@@ -1224,9 +1382,15 @@ class OrderManagementController extends GetxController {
         city: city,
         address: '${index + 1} Avenue de la République, $city',
         orderDate: date,
-        validatedDate: status == OrderStatus.validated ? date.add(const Duration(hours: 2)) : null,
-        cancelledDate: status == OrderStatus.cancelled ? date.add(const Duration(hours: 1)) : null,
-        cancelReason: status == OrderStatus.cancelled ? 'Produit non disponible' : null,
+        validatedDate: status == OrderStatus.validated
+            ? date.add(const Duration(hours: 2))
+            : null,
+        cancelledDate: status == OrderStatus.cancelled
+            ? date.add(const Duration(hours: 1))
+            : null,
+        cancelReason: status == OrderStatus.cancelled
+            ? 'Produit non disponible'
+            : null,
       );
     });
   }

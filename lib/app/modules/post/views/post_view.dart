@@ -13,13 +13,12 @@ class PostView extends GetView<PostController> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('post.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
       ),
-      body: Center(
-        child: Text(
-          'post.working'.tr,
-          style: const TextStyle(fontSize: 20),
-        ),
+      body: AppEmptyState(
+        icon: Icons.edit_note_rounded,
+        title: 'common.coming_soon'.tr,
+        message: 'post.working'.tr,
       ),
     );
   }

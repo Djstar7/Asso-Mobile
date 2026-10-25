@@ -25,82 +25,95 @@ class ProfileView extends GetView<ProfileController> {
               leading: const AppBackButton(),
               title: Text(
                 'profile.title'.tr,
-                style: context.h5.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).appBarTheme.titleTextStyle,
               ),
             ),
       body: Obx(() {
         if (controller.userProfile.isEmpty) {
-          return Center(child: CircularProgressIndicator());
+          if (controller.hasLoadError.value) {
+            return AppEmptyState(
+              icon: Icons.cloud_off_rounded,
+              title: 'profile.load_error'.tr,
+              actionLabel: 'common.retry'.tr,
+              onAction: controller.reloadProfile,
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
         }
 
-      return SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header avec profil
-            _buildProfileHeader(context, isDark, deviceType),
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header avec profil
+              _buildProfileHeader(context, isDark, deviceType),
 
-            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
+              SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-            // Menu principal (plus de Obx : aucune variable réactive à observer ici)
-            _buildMenuSection(context, 'profile.sections.my_account'.tr, [
-              _MenuItem(
-                icon: Icons.account_balance_wallet_rounded,
-                title: 'profile.menu.wallet'.tr,
-                subtitle: 'profile.menu.wallet_subtitle'.tr,
-                onTap: controller.goToWallet,
+              // Menu principal (plus de Obx : aucune variable réactive à observer ici)
+              _buildMenuSection(context, 'profile.sections.my_account'.tr, [
+                _MenuItem(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'profile.menu.wallet'.tr,
+                  subtitle: 'profile.menu.wallet_subtitle'.tr,
+                  onTap: controller.goToWallet,
+                ),
+                _MenuItem(
+                  icon: Icons.favorite_outline_rounded,
+                  title: 'profile.menu.favorites'.tr,
+                  subtitle: 'profile.menu.favorites_subtitle'.tr,
+                  onTap: controller.goToFavorites,
+                ),
+                _MenuItem(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'profile.menu.orders'.tr,
+                  subtitle: 'profile.menu.orders_subtitle'.tr,
+                  onTap: controller.goToOrders,
+                ),
+              ]),
+
+              SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+
+              // Support & Paramètres
+              _buildMenuSection(
+                context,
+                'profile.sections.support_settings'.tr,
+                [
+                  _MenuItem(
+                    icon: Icons.tune_rounded,
+                    title: 'profile.menu.preferences'.tr,
+                    subtitle: 'profile.menu.preferences_subtitle'.tr,
+                    onTap: controller.goToPreferences,
+                  ),
+                  _MenuItem(
+                    icon: Icons.help_outline_rounded,
+                    title: 'profile.menu.help'.tr,
+                    subtitle: 'profile.menu.help_subtitle'.tr,
+                    onTap: controller.goToHelp,
+                  ),
+                  _MenuItem(
+                    icon: Icons.settings_outlined,
+                    title: 'profile.menu.settings'.tr,
+                    subtitle: 'profile.menu.settings_subtitle'.tr,
+                    onTap: controller.goToSettings,
+                  ),
+                ],
               ),
-              _MenuItem(
-                icon: Icons.favorite_outline_rounded,
-                title: 'profile.menu.favorites'.tr,
-                subtitle: 'profile.menu.favorites_subtitle'.tr,
-                onTap: controller.goToFavorites,
-              ),
-              _MenuItem(
-                icon: Icons.receipt_long_rounded,
-                title: 'profile.menu.orders'.tr,
-                subtitle: 'profile.menu.orders_subtitle'.tr,
-                onTap: controller.goToOrders,
-              ),
-            ]),
 
-            SizedBox(height: AppThemeSystem.getElementSpacing(context)),
+              SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
 
-            // Support & Paramètres
-            _buildMenuSection(context, 'profile.sections.support_settings'.tr, [
-              _MenuItem(
-                icon: Icons.tune_rounded,
-                title: 'profile.menu.preferences'.tr,
-                subtitle: 'profile.menu.preferences_subtitle'.tr,
-                onTap: controller.goToPreferences,
+              // Bouton déconnexion
+              _buildLogoutButton(context, deviceType),
+
+              // Espacement pour la barre de navigation native du téléphone
+              SizedBox(
+                height:
+                    MediaQuery.of(context).viewPadding.bottom +
+                    AppThemeSystem.getVerticalPadding(context),
               ),
-              _MenuItem(
-                icon: Icons.help_outline_rounded,
-                title: 'profile.menu.help'.tr,
-                subtitle: 'profile.menu.help_subtitle'.tr,
-                onTap: controller.goToHelp,
-              ),
-              _MenuItem(
-                icon: Icons.settings_outlined,
-                title: 'profile.menu.settings'.tr,
-                subtitle: 'profile.menu.settings_subtitle'.tr,
-                onTap: controller.goToSettings,
-              ),
-            ]),
-
-            SizedBox(height: AppThemeSystem.getSectionSpacing(context)),
-
-            // Bouton déconnexion
-            _buildLogoutButton(context, deviceType),
-
-            // Espacement pour la barre de navigation native du téléphone
-            SizedBox(
-              height:
-                  MediaQuery.of(context).viewPadding.bottom +
-                  AppThemeSystem.getVerticalPadding(context),
-            ),
-          ],
-        ),
-      );}),
+            ],
+          ),
+        );
+      }),
     );
   }
 

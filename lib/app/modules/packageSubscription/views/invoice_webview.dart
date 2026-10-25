@@ -223,7 +223,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Stack(
         children: [

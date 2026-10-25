@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../utils/app_theme_system.dart';
+import '../utils/app_design.dart';
 
 /// Shimmer loading widgets for various UI components
 class ShimmerWidgets {
@@ -8,7 +9,9 @@ class ShimmerWidgets {
   static Widget productCardShimmer(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
-    final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
+    final highlightColor = isDark
+        ? AppThemeSystem.grey700
+        : AppThemeSystem.grey100;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -16,9 +19,11 @@ class ShimmerWidgets {
       child: Container(
         decoration: BoxDecoration(
           color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
           border: Border.all(
-            color: AppThemeSystem.getBorderColor(context).withValues(alpha: 0.5),
+            color: AppThemeSystem.getBorderColor(
+              context,
+            ).withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -31,8 +36,8 @@ class ShimmerWidgets {
                 decoration: BoxDecoration(
                   color: baseColor,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                    topLeft: Radius.circular(AppDesign.radiusMd),
+                    topRight: Radius.circular(AppDesign.radiusMd),
                   ),
                 ),
               ),
@@ -94,7 +99,9 @@ class ShimmerWidgets {
   static Widget horizontalProductCardShimmer(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
-    final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
+    final highlightColor = isDark
+        ? AppThemeSystem.grey700
+        : AppThemeSystem.grey100;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -104,7 +111,7 @@ class ShimmerWidgets {
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           color: AppThemeSystem.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDesign.radiusMd),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -180,14 +187,16 @@ class ShimmerWidgets {
   static Widget bannerShimmer(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
-    final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
+    final highlightColor = isDark
+        ? AppThemeSystem.grey700
+        : AppThemeSystem.grey100;
 
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: AppThemeSystem.getHorizontalPadding(context),
       ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
         boxShadow: [
           BoxShadow(
             color: AppThemeSystem.primaryColor.withValues(alpha: 0.15),
@@ -198,7 +207,7 @@ class ShimmerWidgets {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
         child: Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
@@ -216,7 +225,9 @@ class ShimmerWidgets {
   static Widget categoryChipShimmer(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final baseColor = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
-    final highlightColor = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
+    final highlightColor = isDark
+        ? AppThemeSystem.grey700
+        : AppThemeSystem.grey100;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -228,11 +239,7 @@ class ShimmerWidgets {
           color: baseColor,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Container(
-          width: 80,
-          height: 16,
-          color: baseColor,
-        ),
+        child: Container(width: 80, height: 16, color: baseColor),
       ),
     );
   }
@@ -245,7 +252,10 @@ class ShimmerWidgets {
       ),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: AppThemeSystem.getDeviceType(context) == DeviceType.mobile ? 2 : 3,
+          crossAxisCount:
+              AppThemeSystem.getDeviceType(context) == DeviceType.mobile
+              ? 2
+              : 3,
           childAspectRatio: 0.75,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
@@ -259,7 +269,10 @@ class ShimmerWidgets {
   }
 
   /// Horizontal list of product card shimmers
-  static Widget horizontalProductListShimmer(BuildContext context, {int itemCount = 5}) {
+  static Widget horizontalProductListShimmer(
+    BuildContext context, {
+    int itemCount = 5,
+  }) {
     return Container(
       height: 280,
       margin: const EdgeInsets.only(bottom: 8),

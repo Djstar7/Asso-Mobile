@@ -22,7 +22,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('maritime.form.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Obx(() {
         final d = controller.departure.value;

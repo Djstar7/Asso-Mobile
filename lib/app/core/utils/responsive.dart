@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'app_design.dart';
+import 'app_theme_system.dart';
+
 class Responsive {
   static double width(BuildContext context) =>
       MediaQuery.of(context).size.width;
@@ -7,10 +10,13 @@ class Responsive {
       MediaQuery.of(context).size.height;
 
   // Breakpoints
-  static bool isMobile(BuildContext context) => width(context) < 600;
+  static bool isMobile(BuildContext context) =>
+      width(context) < AppThemeSystem.mobileBreakpoint;
   static bool isTablet(BuildContext context) =>
-      width(context) >= 600 && width(context) < 900;
-  static bool isDesktop(BuildContext context) => width(context) >= 900;
+      width(context) >= AppThemeSystem.mobileBreakpoint &&
+      width(context) < AppThemeSystem.desktopBreakpoint;
+  static bool isDesktop(BuildContext context) =>
+      width(context) >= AppThemeSystem.desktopBreakpoint;
 
   // Spacing
   static double sp(BuildContext context, double value) {
@@ -30,10 +36,10 @@ class Responsive {
   static const double paddingXL = 32;
 
   // Border radius
-  static const double radiusSM = 8;
-  static const double radiusMD = 12;
-  static const double radiusLG = 16;
-  static const double radiusXL = 24;
+  static const double radiusSM = AppDesign.radiusSm;
+  static const double radiusMD = AppDesign.radiusMd;
+  static const double radiusLG = AppDesign.radiusLg;
+  static const double radiusXL = AppDesign.radiusXl;
 
   // Icon sizes
   static const double iconSM = 16;

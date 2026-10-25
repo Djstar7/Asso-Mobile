@@ -21,45 +21,48 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
       // Le clavier du dialogue « code de confirmation » ne doit pas comprimer
       // le tableau de bord derrière lui (sinon la liste déborde).
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Obx(() {
-          if (controller.isLoading.value && controller.stats.value == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: AppContentWidth(
+        child: SafeArea(
+          child: Obx(() {
+            if (controller.isLoading.value && controller.stats.value == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          // L'en-tête (carte, société, statistiques) défile AVEC la liste :
-          // en colonne fixe il mangeait la hauteur et ne laissait qu'une
-          // fenêtre de défilement minuscule aux livraisons. Les onglets
-          // restent épinglés en haut pendant le défilement.
-          return RefreshIndicator(
-            onRefresh: controller.loadDeliveries,
-            child: CustomScrollView(
-              // La carte en tête capte les gestes verticaux : sans cela le
-              // « tirer pour rafraîchir » ne se déclenche jamais.
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(child: _buildMapSection(context)),
-                SliverToBoxAdapter(child: _buildCompanySection(context)),
-                SliverToBoxAdapter(child: _buildStatsSection(context)),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _TabsHeaderDelegate(
-                    backgroundColor: context.backgroundColor,
-                    height:
-                        (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 32)
-                            .clamp(64.0, double.infinity)
-                            .toDouble(),
-                    child: _buildTabs(context),
+            // L'en-tête (carte, société, statistiques) défile AVEC la liste :
+            // en colonne fixe il mangeait la hauteur et ne laissait qu'une
+            // fenêtre de défilement minuscule aux livraisons. Les onglets
+            // restent épinglés en haut pendant le défilement.
+            return RefreshIndicator(
+              onRefresh: controller.loadDeliveries,
+              child: CustomScrollView(
+                // La carte en tête capte les gestes verticaux : sans cela le
+                // « tirer pour rafraîchir » ne se déclenche jamais.
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(child: _buildMapSection(context)),
+                  SliverToBoxAdapter(child: _buildCompanySection(context)),
+                  SliverToBoxAdapter(child: _buildStatsSection(context)),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabsHeaderDelegate(
+                      backgroundColor: context.backgroundColor,
+                      height:
+                          (MediaQuery.textScalerOf(context).scale(12) * 1.5 +
+                                  32)
+                              .clamp(64.0, double.infinity)
+                              .toDouble(),
+                      child: _buildTabs(context),
+                    ),
                   ),
-                ),
-                // Courses de litige (remplacement, retour) à prendre ou en cours.
-                const SliverToBoxAdapter(child: DisputeCoursesSection()),
-                SliverToBoxAdapter(child: _buildTourSummary(context)),
-                _buildDeliveriesSliver(context),
-              ],
-            ),
-          );
-        }),
+                  // Courses de litige (remplacement, retour) à prendre ou en cours.
+                  const SliverToBoxAdapter(child: DisputeCoursesSection()),
+                  SliverToBoxAdapter(child: _buildTourSummary(context)),
+                  _buildDeliveriesSliver(context),
+                ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -103,12 +106,11 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
       child: Row(
         children: [
           if (onPrevious != null)
-            GestureDetector(
-              onTap: onPrevious,
-              child: const Padding(
-                padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.chevron_left, size: 20),
-              ),
+            AppIconButton(
+              onPressed: onPrevious,
+              icon: Icons.chevron_left_rounded,
+              tooltip: 'common.previous'.tr,
+              size: 20,
             ),
           leading,
           const SizedBox(width: 8),
@@ -121,17 +123,18 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
             ),
           ),
           if (onNext != null)
-            GestureDetector(
-              onTap: onNext,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(Icons.chevron_right, size: 20),
-              ),
+            AppIconButton(
+              onPressed: onNext,
+              icon: Icons.chevron_right_rounded,
+              tooltip: 'common.next'.tr,
+              size: 20,
             ),
           if (onClose != null)
-            GestureDetector(
-              onTap: onClose,
-              child: const Icon(Icons.close, size: 16),
+            AppIconButton(
+              onPressed: onClose,
+              icon: Icons.close_rounded,
+              tooltip: 'common.close'.tr,
+              size: 20,
             ),
         ],
       ),
@@ -511,7 +514,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                               'delivery_dashboard.depot.current'.tr,
                               style: context.caption.copyWith(
                                 color: context.secondaryTextColor,
-                                fontSize: 10,
+                                fontSize: 12,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -572,7 +575,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                           'delivery_dashboard.depot.select'.tr,
                           style: context.caption.copyWith(
                             color: context.secondaryTextColor,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -731,7 +734,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                     'delivery_dashboard.company.delivering_for'.tr,
                     style: context.caption.copyWith(
                       color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 11,
+                      fontSize: 12,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -751,7 +754,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                       companyData.description!,
                       style: context.caption.copyWith(
                         color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -793,7 +796,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                           'delivery_dashboard.company.active'.tr,
                           style: context.caption.copyWith(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -831,7 +834,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                           'delivery_dashboard.company.unsync'.tr,
                           style: context.caption.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -951,7 +954,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                   label,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
-                    fontSize: 10,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -1096,7 +1099,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                 'delivery_dashboard.tour.full_hint'.tr,
                 style: context.caption.copyWith(
                   color: AppThemeSystem.warningColor,
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1138,7 +1141,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
               child: Text(
                 '$position',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: isActive ? Colors.white : AppThemeSystem.primaryColor,
                 ),
@@ -1164,7 +1167,7 @@ class DeliveryDashboardView extends GetView<DeliveryDashboardController> {
                         : run.deliveryAddress,
                     style: context.caption.copyWith(
                       color: context.secondaryTextColor,
-                      fontSize: 10,
+                      fontSize: 12,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1275,173 +1278,155 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(context.horizontalPadding),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: context.borderRadius(BorderRadiusType.medium),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              // Statut en toutes lettres : une icône seule dans un carré
-              // vert passait pour un emoji « coche ».
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(request.status).withValues(alpha: 0.1),
-                  borderRadius: context.borderRadius(BorderRadiusType.small),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      request.status.icon,
-                      size: 16,
-                      color: _getStatusColor(request.status),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      request.status.label,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _getStatusColor(request.status),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesign.space3),
+      child: AppCard(
+        elevated: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppBadge(
+              label: request.status.label,
+              icon: request.status.icon,
+              tone: switch (request.status) {
+                DeliveryStatus.pending => AppBadgeTone.warning,
+                DeliveryStatus.inProgress => AppBadgeTone.accent,
+                DeliveryStatus.delivered => AppBadgeTone.success,
+                DeliveryStatus.cancelled => AppBadgeTone.danger,
+              },
+            ),
+            const SizedBox(height: AppDesign.space2),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${request.customerName} • ${request.distance == null ? 'delivery_dashboard.distance_unavailable'.tr : '${request.distance!.toStringAsFixed(1)} km${request.distanceType == 'straight_line' ? ' (${'delivery_dashboard.straight_line'.tr})' : ''}'}',
+                        style: context.body2.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${request.customerName} • ${request.distance == null ? 'delivery_dashboard.distance_unavailable'.tr : '${request.distance!.toStringAsFixed(1)} km${request.distanceType == 'straight_line' ? ' (${'delivery_dashboard.straight_line'.tr})' : ''}'}',
-                      style: context.body2.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Builder(
-                      builder: (context) {
-                        // Course d'une tournée : on rappelle son rang pour
-                        // que le coursier situe la commande d'un coup d'œil.
-                        final runs = controller.ongoingDeliveries;
-                        final position = runs.indexWhere(
-                          (r) => r.id == request.id,
-                        );
-                        final prefix = position >= 0 && runs.length > 1
-                            ? 'delivery_dashboard.route.step_prefix'.trParams({
-                                'step': '${position + 1}',
-                                'total': '${runs.length}',
-                              })
-                            : '';
+                      Builder(
+                        builder: (context) {
+                          // Course d'une tournée : on rappelle son rang pour
+                          // que le coursier situe la commande d'un coup d'œil.
+                          final runs = controller.ongoingDeliveries;
+                          final position = runs.indexWhere(
+                            (r) => r.id == request.id,
+                          );
+                          final prefix = position >= 0 && runs.length > 1
+                              ? 'delivery_dashboard.route.step_prefix'.trParams(
+                                  {
+                                    'step': '${position + 1}',
+                                    'total': '${runs.length}',
+                                  },
+                                )
+                              : '';
 
-                        return Text(
-                          '$prefix${'delivery_dashboard.order_number'.trParams({'order': '${request.orderId}'})}',
-                          style: context.caption.copyWith(
-                            color: context.secondaryTextColor,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.successColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  controller.formatPrice(request.commission),
-                  style: TextStyle(
-                    color: AppThemeSystem.successColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                          return Text(
+                            '$prefix${'delivery_dashboard.order_number'.trParams({'order': '${request.orderId}'})}',
+                            style: context.caption.copyWith(
+                              color: context.secondaryTextColor,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppThemeSystem.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    controller.formatPrice(request.commission),
+                    style: TextStyle(
+                      color: AppThemeSystem.successColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // La course se joue en deux temps : retirer chez le vendeur, puis
+            // livrer chez le client. Les deux bouts sont détaillés (qui, où,
+            // quel téléphone) pour que le livreur décide en connaissance de cause.
+            _buildStopBlock(
+              context,
+              icon: Icons.storefront_outlined,
+              step: 'delivery_dashboard.steps.pickup'.tr,
+              color: AppThemeSystem.infoColor,
+              name: request.pickup?.name,
+              phone: request.pickup?.phone,
+              address: request.pickup?.fullAddress.isNotEmpty == true
+                  ? request.pickup!.fullAddress
+                  : request.pickupAddress,
+            ),
+            const SizedBox(height: 10),
+            _buildStopBlock(
+              context,
+              icon: Icons.person_pin_circle_outlined,
+              step: 'delivery_dashboard.steps.dropoff'.tr,
+              color: AppThemeSystem.successColor,
+              name: request.dropoff?.name ?? request.customerName,
+              phone: request.dropoff?.phone ?? request.customerPhone,
+              address: request.dropoff?.fullAddress.isNotEmpty == true
+                  ? request.dropoff!.fullAddress
+                  : [request.deliveryAddress, request.addressDetails]
+                        .where((e) => e != null && e.trim().isNotEmpty)
+                        .join(' — '),
+            ),
+
+            // Contenu du colis : nature et quantité des articles à transporter.
+            if (request.items.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _buildAddressRow(
+                context,
+                Icons.inventory_2_outlined,
+                request.items.map((i) => '${i.name} x${i.quantity}').join(', '),
+                label: 'delivery_dashboard.details.parcel'.tr,
               ),
             ],
-          ),
 
-          const SizedBox(height: 12),
+            if (request.leadTime != null &&
+                request.leadTime!.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _buildAddressRow(
+                context,
+                Icons.schedule_outlined,
+                request.leadTime!,
+                label: 'delivery_dashboard.details.lead_time'.tr,
+              ),
+            ],
 
-          // La course se joue en deux temps : retirer chez le vendeur, puis
-          // livrer chez le client. Les deux bouts sont détaillés (qui, où,
-          // quel téléphone) pour que le livreur décide en connaissance de cause.
-          _buildStopBlock(
-            context,
-            icon: Icons.storefront_outlined,
-            step: 'delivery_dashboard.steps.pickup'.tr,
-            color: AppThemeSystem.infoColor,
-            name: request.pickup?.name,
-            phone: request.pickup?.phone,
-            address: request.pickup?.fullAddress.isNotEmpty == true
-                ? request.pickup!.fullAddress
-                : request.pickupAddress,
-          ),
-          const SizedBox(height: 10),
-          _buildStopBlock(
-            context,
-            icon: Icons.person_pin_circle_outlined,
-            step: 'delivery_dashboard.steps.dropoff'.tr,
-            color: AppThemeSystem.successColor,
-            name: request.dropoff?.name ?? request.customerName,
-            phone: request.dropoff?.phone ?? request.customerPhone,
-            address: request.dropoff?.fullAddress.isNotEmpty == true
-                ? request.dropoff!.fullAddress
-                : [
-                    request.deliveryAddress,
-                    request.addressDetails,
-                  ].where((e) => e != null && e.trim().isNotEmpty).join(' — '),
-          ),
+            // Valeur de la commande : le livreur transporte ce montant de marchandise.
+            if (request.orderTotal > 0) ...[
+              const SizedBox(height: 8),
+              _buildAddressRow(
+                context,
+                Icons.receipt_long_outlined,
+                controller.formatPrice(request.orderTotal),
+                label: 'delivery_dashboard.details.order_value'.tr,
+              ),
+            ],
 
-          // Contenu du colis : nature et quantité des articles à transporter.
-          if (request.items.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildAddressRow(
-              context,
-              Icons.inventory_2_outlined,
-              request.items.map((i) => '${i.name} x${i.quantity}').join(', '),
-              label: 'delivery_dashboard.details.parcel'.tr,
-            ),
+            const SizedBox(height: 12),
+
+            // Actions
+            _buildActions(context),
           ],
-
-          if (request.leadTime != null &&
-              request.leadTime!.trim().isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _buildAddressRow(
-              context,
-              Icons.schedule_outlined,
-              request.leadTime!,
-              label: 'delivery_dashboard.details.lead_time'.tr,
-            ),
-          ],
-
-          // Valeur de la commande : le livreur transporte ce montant de marchandise.
-          if (request.orderTotal > 0) ...[
-            const SizedBox(height: 8),
-            _buildAddressRow(
-              context,
-              Icons.receipt_long_outlined,
-              controller.formatPrice(request.orderTotal),
-              label: 'delivery_dashboard.details.order_value'.tr,
-            ),
-          ],
-
-          const SizedBox(height: 12),
-
-          // Actions
-          _buildActions(context),
-        ],
+        ),
       ),
     );
   }
@@ -1478,7 +1463,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   step,
                   style: context.caption.copyWith(
                     color: color,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1540,7 +1525,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                   label,
                   style: context.caption.copyWith(
                     color: context.secondaryTextColor,
-                    fontSize: 10,
+                    fontSize: 12,
                   ),
                 ),
               Text(
@@ -1589,7 +1574,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                     ? null
                     : () => controller.acceptRequest(request.id),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppThemeSystem.successColor,
+                  backgroundColor: AppThemeSystem.primaryColor,
                   disabledBackgroundColor: AppThemeSystem.grey300,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
@@ -1668,7 +1653,7 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
                       ? () => controller.markAsDelivered(request.id)
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppThemeSystem.successColor,
+                    backgroundColor: AppThemeSystem.primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                   child: Text(
@@ -1701,19 +1686,6 @@ class _DeliveryCard extends GetView<DeliveryDashboardController> {
             }),
       style: context.caption.copyWith(color: context.secondaryTextColor),
     );
-  }
-
-  Color _getStatusColor(DeliveryStatus status) {
-    switch (status) {
-      case DeliveryStatus.pending:
-        return AppThemeSystem.warningColor;
-      case DeliveryStatus.inProgress:
-        return AppThemeSystem.primaryColor;
-      case DeliveryStatus.delivered:
-        return AppThemeSystem.successColor;
-      case DeliveryStatus.cancelled:
-        return AppThemeSystem.errorColor;
-    }
   }
 }
 

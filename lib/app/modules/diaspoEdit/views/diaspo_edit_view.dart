@@ -14,11 +14,11 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
+      backgroundColor: AppDesign.canvas(context),
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('diaspo_edit.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Column(
         children: [

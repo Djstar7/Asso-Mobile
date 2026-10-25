@@ -20,88 +20,84 @@ class OrderManagementView extends GetView<OrderManagementController> {
         leading: const AppBackButton(),
         title: Text(
           'order_management.title'.tr,
-          style: context.h5.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
       ),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.allOrders.isEmpty) {
-          return _buildLoadingState(context);
-        }
+      body: AppContentWidth(
+        child: Obx(() {
+          if (controller.isLoading.value && controller.allOrders.isEmpty) {
+            return _buildLoadingState(context);
+          }
 
-        return RefreshIndicator(
-          onRefresh: controller.loadOrders,
-          child: CustomScrollView(
-            // La recherche est dans la liste : faire défiler les résultats
-            // referme le clavier qui les masquait.
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            slivers: [
-              // Statistiques rapides
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(context.horizontalPadding),
-                  child: _buildQuickStats(context),
-                ),
-              ),
-
-              // Section de filtres
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.horizontalPadding,
+          return RefreshIndicator(
+            onRefresh: controller.loadOrders,
+            child: CustomScrollView(
+              // La recherche est dans la liste : faire défiler les résultats
+              // referme le clavier qui les masquait.
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                // Statistiques rapides
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(context.horizontalPadding),
+                    child: _buildQuickStats(context),
                   ),
-                  child: const FiltersSection(),
                 ),
-              ),
 
-              SliverToBoxAdapter(
-                child: SizedBox(height: context.sectionSpacing),
-              ),
-
-              // Liste des commandes
-              Obx(() {
-                if (controller.filteredOrders.isEmpty) {
-                  // `hasScrollBody: false` laisse le bloc prendre sa hauteur
-                  // naturelle et défiler avec la page. Sans cela, il était
-                  // contraint à l'espace restant et débordait sous les
-                  // filtres déployés.
-                  return SliverToBoxAdapter(
-                    child: _buildEmptyState(context),
-                  );
-                }
-
-                return SliverPadding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.horizontalPadding,
+                // Section de filtres
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.horizontalPadding,
+                    ),
+                    child: const FiltersSection(),
                   ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                ),
+
+                SliverToBoxAdapter(
+                  child: SizedBox(height: context.sectionSpacing),
+                ),
+
+                // Liste des commandes
+                Obx(() {
+                  if (controller.filteredOrders.isEmpty) {
+                    // `hasScrollBody: false` laisse le bloc prendre sa hauteur
+                    // naturelle et défiler avec la page. Sans cela, il était
+                    // contraint à l'espace restant et débordait sous les
+                    // filtres déployés.
+                    return SliverToBoxAdapter(child: _buildEmptyState(context));
+                  }
+
+                  return SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
                         final order = controller.filteredOrders[index];
                         return OrderCard(
                           order: order,
                           onValidate: () => controller.validateOrder(order),
                           onCancel: () => controller.cancelOrder(order),
                           onChat: () => controller.openChat(order),
-                          onContactDelivery: () => controller.contactDelivery(order),
+                          onContactDelivery: () =>
+                              controller.contactDelivery(order),
                           onTap: () => controller.showOrderDetails(order),
                         );
-                      },
-                      childCount: controller.filteredOrders.length,
+                      }, childCount: controller.filteredOrders.length),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
 
-              // Espace en bas
-              SliverToBoxAdapter(
-                child: SizedBox(height: context.sectionSpacing),
-              ),
-            ],
-          ),
-        );
-      }),
+                // Espace en bas
+                SliverToBoxAdapter(
+                  child: SizedBox(height: context.sectionSpacing),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -128,36 +124,30 @@ class OrderManagementView extends GetView<OrderManagementController> {
                 value: controller.allOrders.length.toString(),
               ),
             ),
-            Container(
-              width: 1,
-              height: 36,
-              color: context.ds.border,
-            ),
+            Container(width: 1, height: 36, color: context.ds.border),
             Expanded(
               child: _buildStatItem(
                 context,
                 icon: Icons.access_time,
                 label: 'order_management.stats.pending'.tr,
-                value: controller
-                    .allOrders
-                    .where((order) => order.status.toString().contains('pending'))
+                value: controller.allOrders
+                    .where(
+                      (order) => order.status.toString().contains('pending'),
+                    )
                     .length
                     .toString(),
               ),
             ),
-            Container(
-              width: 1,
-              height: 36,
-              color: context.ds.border,
-            ),
+            Container(width: 1, height: 36, color: context.ds.border),
             Expanded(
               child: _buildStatItem(
                 context,
                 icon: Icons.check_circle_outline,
                 label: 'order_management.stats.validated'.tr,
-                value: controller
-                    .allOrders
-                    .where((order) => order.status.toString().contains('validated'))
+                value: controller.allOrders
+                    .where(
+                      (order) => order.status.toString().contains('validated'),
+                    )
                     .length
                     .toString(),
               ),
@@ -176,11 +166,7 @@ class OrderManagementView extends GetView<OrderManagementController> {
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: context.ds.textSecondary,
-          size: 20,
-        ),
+        Icon(icon, color: context.ds.textSecondary, size: 20),
         const SizedBox(height: 8),
         Text(
           value,
@@ -212,15 +198,11 @@ class OrderManagementView extends GetView<OrderManagementController> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: AppThemeSystem.primaryColor,
-          ),
+          CircularProgressIndicator(color: AppThemeSystem.primaryColor),
           SizedBox(height: context.elementSpacing),
           Text(
             'order_management.loading'.tr,
-            style: context.body1.copyWith(
-              color: context.secondaryTextColor,
-            ),
+            style: context.body1.copyWith(color: context.secondaryTextColor),
           ),
         ],
       ),
@@ -229,7 +211,8 @@ class OrderManagementView extends GetView<OrderManagementController> {
 
   /// État vide
   Widget _buildEmptyState(BuildContext context) {
-    final hasFilters = controller.selectedStatus.value != null ||
+    final hasFilters =
+        controller.selectedStatus.value != null ||
         controller.selectedCity.value != 'Toutes les villes' ||
         controller.selectedDate.value != null ||
         controller.searchQuery.value.isNotEmpty;
@@ -245,7 +228,9 @@ class OrderManagementView extends GetView<OrderManagementController> {
       message: hasFilters
           ? 'order_management.empty.filtered_message'.tr
           : 'order_management.empty.message'.tr,
-      actionLabel: hasFilters ? 'order_management.empty.reset_filters'.tr : null,
+      actionLabel: hasFilters
+          ? 'order_management.empty.reset_filters'.tr
+          : null,
       onAction: hasFilters ? controller.resetFilters : null,
     );
   }

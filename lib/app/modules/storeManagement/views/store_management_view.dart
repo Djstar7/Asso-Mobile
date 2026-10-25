@@ -41,7 +41,11 @@ class StoreManagementView extends GetView<StoreManagementController> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: ds.textSecondary, size: 20),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: ds.textSecondary,
+              size: 20,
+            ),
             tooltip: 'store_management.refresh'.tr,
             onPressed: controller.loadData,
           ),
@@ -70,7 +74,8 @@ class StoreManagementView extends GetView<StoreManagementController> {
                     ds.gutter,
                     AppDesign.space2,
                     ds.gutter,
-                    MediaQuery.of(context).viewPadding.bottom + AppDesign.space8,
+                    MediaQuery.of(context).viewPadding.bottom +
+                        AppDesign.space8,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,20 +165,11 @@ class _Card extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppDesign.space5),
-      decoration: BoxDecoration(
-        color: ds.surface,
-        borderRadius: BorderRadius.circular(AppDesign.radiusLg),
-        border: Border.all(color: ds.border),
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => AppCard(
+    elevated: false,
+    padding: const EdgeInsets.all(AppDesign.space5),
+    child: child,
+  );
 }
 
 /// Bouton d'action principal, pleine largeur.
@@ -184,31 +180,11 @@ class _PrimaryButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    final style = ElevatedButton.styleFrom(
-      backgroundColor: AppDesign.accent,
-      foregroundColor: AppDesign.neutral0,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
-      ),
-    );
-    // La couleur est forcée dans le TextStyle : le thème global écrase
-    // autrement le foregroundColor et le libellé passe en noir sur l'orange.
-    final text = Text(
-      label,
-      style: context.button.copyWith(
-        color: AppDesign.neutral0,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
-    return SizedBox(
-      width: double.infinity,
-      height: context.buttonHeight,
-      child: ElevatedButton(onPressed: onPressed, style: style, child: text),
-    );
-  }
+  Widget build(BuildContext context) => AppButton(
+    label: label,
+    onPressed: onPressed,
+    variant: AppButtonVariant.primary,
+  );
 }
 
 /// Bouton secondaire, en contour neutre.
@@ -219,29 +195,11 @@ class _SecondaryButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-    final style = OutlinedButton.styleFrom(
-      foregroundColor: ds.textPrimary,
-      side: BorderSide(color: ds.borderStrong),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
-      ),
-    );
-    final text = Text(
-      label,
-      style: context.button.copyWith(
-        color: ds.textPrimary,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
-    return SizedBox(
-      width: double.infinity,
-      height: context.buttonHeight,
-      child: OutlinedButton(onPressed: onPressed, style: style, child: text),
-    );
-  }
+  Widget build(BuildContext context) => AppButton(
+    label: label,
+    onPressed: onPressed,
+    variant: AppButtonVariant.secondary,
+  );
 }
 
 /// Bandeau d'information sémantique (alerte, attente, erreur).
@@ -291,10 +249,7 @@ class _Notice extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                 ],
-                Text(
-                  message,
-                  style: context.body2.copyWith(color: foreground),
-                ),
+                Text(message, style: context.body2.copyWith(color: foreground)),
               ],
             ),
           ),
@@ -352,8 +307,9 @@ class _BannerCarousel extends GetView<StoreManagementController> {
                         color: isActive
                             ? AppDesign.accent
                             : context.ds.borderStrong,
-                        borderRadius:
-                            BorderRadius.circular(AppDesign.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppDesign.radiusPill,
+                        ),
                       ),
                     );
                   }),
@@ -399,7 +355,11 @@ class _BannerItem extends StatelessWidget {
                     color: ds.surfaceMuted,
                     borderRadius: BorderRadius.circular(AppDesign.radiusSm),
                   ),
-                  child: Icon(banner.type.icon, size: 20, color: ds.textSecondary),
+                  child: Icon(
+                    banner.type.icon,
+                    size: 20,
+                    color: ds.textSecondary,
+                  ),
                 ),
                 SizedBox(width: AppDesign.space3),
                 Expanded(
@@ -421,7 +381,9 @@ class _BannerItem extends StatelessWidget {
                       Flexible(
                         child: Text(
                           banner.description,
-                          style: context.caption.copyWith(color: ds.textSecondary),
+                          style: context.caption.copyWith(
+                            color: ds.textSecondary,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -437,7 +399,11 @@ class _BannerItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: ds.textTertiary,
+                ),
               ],
             ),
           ),
@@ -489,8 +455,8 @@ class _StorageCard extends GetView<StoreManagementController> {
       final gaugeColor = percent > 90
           ? AppDesign.danger
           : percent > 75
-              ? AppDesign.warning
-              : AppDesign.accent;
+          ? AppDesign.warning
+          : AppDesign.accent;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +489,9 @@ class _StorageCard extends GetView<StoreManagementController> {
                       Expanded(
                         child: Text(
                           'store_management.storage.used_space'.tr,
-                          style: context.body2.copyWith(color: ds.textSecondary),
+                          style: context.body2.copyWith(
+                            color: ds.textSecondary,
+                          ),
                         ),
                       ),
                       Text(
@@ -539,7 +507,9 @@ class _StorageCard extends GetView<StoreManagementController> {
                         storage.isUnlimited
                             ? ' · ${'core.storage.unlimited'.tr}'
                             : 'store_management.storage.total_gb'.trParams({
-                                'value': storage.totalSpaceGB.toStringAsFixed(1),
+                                'value': storage.totalSpaceGB.toStringAsFixed(
+                                  1,
+                                ),
                               }),
                         style: context.body2.copyWith(color: ds.textTertiary),
                       ),
@@ -648,7 +618,11 @@ class _CertificationCard extends GetView<StoreManagementController> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.verified_outlined, size: 20, color: AppDesign.info),
+                  Icon(
+                    Icons.verified_outlined,
+                    size: 20,
+                    color: AppDesign.info,
+                  ),
                   SizedBox(width: AppDesign.space3),
                   Expanded(
                     child: Column(
@@ -663,8 +637,11 @@ class _CertificationCard extends GetView<StoreManagementController> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'store_management.certification.certified_subtitle'.tr,
-                          style: context.caption.copyWith(color: ds.textSecondary),
+                          'store_management.certification.certified_subtitle'
+                              .tr,
+                          style: context.caption.copyWith(
+                            color: ds.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -703,10 +680,9 @@ class _CertificationCard extends GetView<StoreManagementController> {
                       isExpired
                           ? 'store_management.certification.expired'.tr
                           : daysRemaining == 1
-                              ? 'store_management.certification.expires_tomorrow'.tr
-                              : 'store_management.certification.expires_in_days'.trParams({
-                                  'days': '$daysRemaining',
-                                }),
+                          ? 'store_management.certification.expires_tomorrow'.tr
+                          : 'store_management.certification.expires_in_days'
+                                .trParams({'days': '$daysRemaining'}),
                       style: context.body2.copyWith(color: ds.textSecondary),
                     ),
                   ),
@@ -752,12 +728,17 @@ class _CertificationCard extends GetView<StoreManagementController> {
                 style: context.body2.copyWith(color: ds.textSecondary),
               ),
               SizedBox(height: AppDesign.space4),
-              _CertificationBenefit(text: 'store_management.certification.benefit_visibility'.tr),
-              SizedBox(height: AppDesign.space3),
-              _CertificationBenefit(text: 'store_management.certification.benefit_badge'.tr),
+              _CertificationBenefit(
+                text: 'store_management.certification.benefit_visibility'.tr,
+              ),
               SizedBox(height: AppDesign.space3),
               _CertificationBenefit(
-                  text: 'store_management.certification.benefit_search'.tr),
+                text: 'store_management.certification.benefit_badge'.tr,
+              ),
+              SizedBox(height: AppDesign.space3),
+              _CertificationBenefit(
+                text: 'store_management.certification.benefit_search'.tr,
+              ),
               SizedBox(height: AppDesign.space5),
               _PrimaryButton(
                 label: 'store_management.certification.request'.tr,
@@ -838,7 +819,9 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
                       Expanded(
                         child: _StatBox(
                           label: 'store_management.audience.products_viewed'.tr,
-                          value: NumberFormat('#,###').format(stats.totalClicks),
+                          value: NumberFormat(
+                            '#,###',
+                          ).format(stats.totalClicks),
                         ),
                       ),
                     ],
@@ -885,9 +868,9 @@ class _AudienceStatsCard extends GetView<StoreManagementController> {
 class _StatDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
-        child: VerticalDivider(width: 1, color: context.ds.border),
-      );
+    padding: EdgeInsets.symmetric(horizontal: AppDesign.space4),
+    child: VerticalDivider(width: 1, color: context.ds.border),
+  );
 }
 
 class _StatBox extends StatelessWidget {
@@ -943,7 +926,9 @@ class _InventoryCard extends GetView<StoreManagementController> {
           return _SectionHeader(
             'store_management.inventory.title'.tr,
             action: entries.length > 3
-                ? 'store_management.inventory.see_all'.trParams({'count': '${entries.length}'})
+                ? 'store_management.inventory.see_all'.trParams({
+                    'count': '${entries.length}',
+                  })
                 : null,
             onAction: entries.length > 3 ? controller.viewAllInventory : null,
           );
@@ -952,33 +937,37 @@ class _InventoryCard extends GetView<StoreManagementController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Obx(() => Wrap(
-                    spacing: AppDesign.space2,
-                    runSpacing: AppDesign.space2,
-                    children: [
-                      _FilterChip(
-                        label: 'store_management.inventory.filter_all'.tr,
-                        isSelected:
-                            controller.selectedInventoryFilter.value == null,
-                        onTap: () =>
-                            controller.selectedInventoryFilter.value = null,
-                      ),
-                      _FilterChip(
-                        label: 'store_management.inventory.filter_entries'.tr,
-                        isSelected: controller.selectedInventoryFilter.value ==
-                            InventoryType.entry,
-                        onTap: () => controller.selectedInventoryFilter.value =
-                            InventoryType.entry,
-                      ),
-                      _FilterChip(
-                        label: 'store_management.inventory.filter_exits'.tr,
-                        isSelected: controller.selectedInventoryFilter.value ==
-                            InventoryType.exit,
-                        onTap: () => controller.selectedInventoryFilter.value =
-                            InventoryType.exit,
-                      ),
-                    ],
-                  )),
+              Obx(
+                () => Wrap(
+                  spacing: AppDesign.space2,
+                  runSpacing: AppDesign.space2,
+                  children: [
+                    _FilterChip(
+                      label: 'store_management.inventory.filter_all'.tr,
+                      isSelected:
+                          controller.selectedInventoryFilter.value == null,
+                      onTap: () =>
+                          controller.selectedInventoryFilter.value = null,
+                    ),
+                    _FilterChip(
+                      label: 'store_management.inventory.filter_entries'.tr,
+                      isSelected:
+                          controller.selectedInventoryFilter.value ==
+                          InventoryType.entry,
+                      onTap: () => controller.selectedInventoryFilter.value =
+                          InventoryType.entry,
+                    ),
+                    _FilterChip(
+                      label: 'store_management.inventory.filter_exits'.tr,
+                      isSelected:
+                          controller.selectedInventoryFilter.value ==
+                          InventoryType.exit,
+                      onTap: () => controller.selectedInventoryFilter.value =
+                          InventoryType.exit,
+                    ),
+                  ],
+                ),
+              ),
               SizedBox(height: AppDesign.space4),
               Obx(() {
                 final entries = controller.filteredInventory;
@@ -988,8 +977,9 @@ class _InventoryCard extends GetView<StoreManagementController> {
                     child: Center(
                       child: Text(
                         'store_management.inventory.empty'.tr,
-                        style: context.body2
-                            .copyWith(color: context.ds.textSecondary),
+                        style: context.body2.copyWith(
+                          color: context.ds.textSecondary,
+                        ),
                       ),
                     ),
                   );
@@ -999,8 +989,7 @@ class _InventoryCard extends GetView<StoreManagementController> {
                 return Column(
                   children: [
                     for (var i = 0; i < visible.length; i++) ...[
-                      if (i > 0)
-                        Divider(height: 1, color: context.ds.border),
+                      if (i > 0) Divider(height: 1, color: context.ds.border),
                       _InventoryItem(entry: visible[i]),
                     ],
                   ],
@@ -1159,7 +1148,9 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            store.name.isNotEmpty ? store.name : 'store_management.info.unnamed'.tr,
+                            store.name.isNotEmpty
+                                ? store.name
+                                : 'store_management.info.unnamed'.tr,
                             style: context.subtitle1.copyWith(
                               fontWeight: FontWeight.w700,
                               color: ds.textPrimary,
@@ -1170,7 +1161,9 @@ class _StoreEditorCard extends GetView<StoreManagementController> {
                           const SizedBox(height: 2),
                           Text(
                             'store_management.info.tap_logo'.tr,
-                            style: context.caption.copyWith(color: ds.textTertiary),
+                            style: context.caption.copyWith(
+                              color: ds.textTertiary,
+                            ),
                           ),
                         ],
                       ),
@@ -1258,8 +1251,11 @@ class _StoreLogo extends GetView<StoreManagementController> {
                   ),
                 );
               }
-              return Icon(Icons.storefront_outlined,
-                  size: 26, color: ds.textTertiary);
+              return Icon(
+                Icons.storefront_outlined,
+                size: 26,
+                color: ds.textTertiary,
+              );
             }),
           ),
           Positioned(
@@ -1272,8 +1268,11 @@ class _StoreLogo extends GetView<StoreManagementController> {
                 shape: BoxShape.circle,
                 border: Border.all(color: ds.surface, width: 2),
               ),
-              child: const Icon(Icons.camera_alt_rounded,
-                  color: AppDesign.neutral0, size: 11),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: AppDesign.neutral0,
+                size: 11,
+              ),
             ),
           ),
         ],
@@ -1349,8 +1348,7 @@ class _LocationRequestNotification extends GetView<StoreManagementController> {
         child: _Notice(
           icon: Icons.schedule_outlined,
           title: 'store_management.location_pending.title'.tr,
-          message:
-              'store_management.location_pending.message'.tr,
+          message: 'store_management.location_pending.message'.tr,
           background: AppDesign.warningSubtle,
           foreground: AppDesign.warningText,
         ),

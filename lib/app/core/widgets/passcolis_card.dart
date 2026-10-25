@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/models/diaspo_offer.dart';
+import '../../data/providers/currency_service.dart';
 import '../utils/app_design.dart';
 import '../utils/app_theme_system.dart';
 import 'app_ui.dart';
@@ -37,6 +38,9 @@ class PasscolisCard extends StatelessWidget {
   /// Hauteur fixe du carrousel, pour que le `SizedBox` parent n'ait pas à
   /// mesurer ses enfants. Deux lignes de contenu et les marges de la carte.
   static const double compactHeight = 96;
+
+  Widget _observeCurrency(Widget Function() builder) =>
+      Get.isRegistered<CurrencyService>() ? Obx(builder) : builder();
 
   void _open() {
     if (onTap != null) {
@@ -111,7 +115,7 @@ class PasscolisCard extends StatelessWidget {
           ),
         ),
         SizedBox(width: AppDesign.space2),
-        Obx(
+        _observeCurrency(
           () => Text(
             '${offer.displayPricePerKg}/kg',
             maxLines: 1,
@@ -285,7 +289,7 @@ class PasscolisCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Obx(
+              _observeCurrency(
                 () => Text(
                   '${offer.displayPricePerKg}/kg',
                   maxLines: 1,

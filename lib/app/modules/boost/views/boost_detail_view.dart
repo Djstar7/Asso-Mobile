@@ -194,7 +194,7 @@ class _BoostDetailViewState extends State<BoostDetailView> {
               Text(
                 '${c.progressPercent.toStringAsFixed(1)} %',
                 style: TextStyle(
-                  color: AppDesign.accentText,
+                  color: AppDesign.accent,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),

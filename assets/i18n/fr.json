@@ -72,6 +72,8 @@
     "cancelled": "Annulée"
   },
   "common": {
+    "previous": "Étape précédente",
+    "next": "Étape suivante",
     "coming_soon": "Bientôt disponible",
     "error": "Erreur",
     "success": "Succès",
@@ -1916,8 +1918,8 @@
     }
   },
   "post": {
-    "title": "PostView",
-    "working": "PostView is working"
+    "title": "Publication",
+    "working": "La création de publications sera disponible prochainement."
   },
   "post_detail": {
     "title": "Discussion",
@@ -5155,5 +5157,7 @@
   "core.delivery.agency_phone": "Téléphone de l’agence",
   "core.delivery.agency_pickup_instructions": "Votre colis est disponible. Présentez votre référence de commande à l’agence pour le retrait.",
   "delivery_dashboard.distance_unavailable": "Distance indisponible",
-  "delivery_dashboard.straight_line": "à vol d’oiseau"
+  "delivery_dashboard.straight_line": "à vol d’oiseau",
+  "profile.load_error": "Impossible de charger votre profil.",
+  "order_management.details.copy": "Copier"
 }

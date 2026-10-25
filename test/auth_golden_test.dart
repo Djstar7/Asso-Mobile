@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'helpers/themed_app.dart';
 
 import 'package:asso/app/modules/login/controllers/login_controller.dart';
 import 'package:asso/app/modules/login/views/login_view.dart';
@@ -21,11 +22,17 @@ import 'package:asso/app/modules/welcomer/views/welcomer_view.dart';
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    await (FontLoader(
+      'SF-Pro',
+    )..addFont(rootBundle.load('assets/fonts/SF-Pro/SF-Pro.ttf'))).load();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (call) async => '.',
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (call) async => '.',
+        );
     await GetStorage.init();
   });
 
@@ -36,7 +43,7 @@ void main() {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(GetMaterialApp(home: view));
+    await tester.pumpWidget(themedApp(view));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -63,7 +70,11 @@ void main() {
 
   testWidgets('préférences, avec sélection', (tester) async {
     final c = Get.put(PreferencesController());
-    c.selectedSubcategories.addAll(['fashion_women', 'fashion_shoes', 'food_fresh']);
+    c.selectedSubcategories.addAll([
+      'fashion_women',
+      'fashion_shoes',
+      'food_fresh',
+    ]);
     await render(tester, const PreferencesView(), 'preferences_selected');
   });
 }

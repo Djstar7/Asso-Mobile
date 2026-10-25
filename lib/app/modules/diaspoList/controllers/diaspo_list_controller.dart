@@ -629,7 +629,7 @@ class DiaspoListController extends GetxController {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         'diaspo_list.verification.abroad_note'.tr,
-                        style: const TextStyle(fontSize: 12, color: AppDesign.accentText),
+                        style: const TextStyle(fontSize: 12, color: AppDesign.accent),
                       ),
                     )
                   : const SizedBox.shrink(),

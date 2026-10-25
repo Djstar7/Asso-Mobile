@@ -249,7 +249,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                   ? 'wallet.webview.title_card'.tr
                   : 'wallet.webview.title_mobile_money'.tr,
         ),
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: AppThemeSystem.primaryColor,
         foregroundColor: AppThemeSystem.whiteColor,
         leading: AppBackButton(

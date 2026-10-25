@@ -23,7 +23,7 @@ class PostDetailView extends GetView<PostDetailController> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: isDark ? AppThemeSystem.darkBackgroundColor : Colors.grey[100],
+        backgroundColor: AppDesign.canvas(context),
         appBar: AppBar(
           title: Text('post_detail.title'.tr),
           backgroundColor: isDark ? AppThemeSystem.darkCardColor : AppThemeSystem.primaryColor,

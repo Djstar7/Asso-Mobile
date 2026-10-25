@@ -31,45 +31,48 @@ class SegmentedTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     Widget tab(int index) {
       final item = tabs[index];
-      final isSelected = index == selectedIndex;
-      final color = isSelected
-          ? Colors.white
-          : AppThemeSystem.getSecondaryTextColor(context);
-
+      final selected = index == selectedIndex;
+      final color = selected ? Colors.white : context.ds.textSecondary;
       return Expanded(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => onChanged(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected ? AppThemeSystem.primaryColor : Colors.transparent,
+        child: Semantics(
+          button: true,
+          selected: selected,
+          child: Material(
+            color: selected ? AppDesign.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+            child: InkWell(
+              onTap: () => onChanged(index),
               borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(item.icon, size: 17, color: color),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textStyle(
-                      FontSizeType.body2,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: color,
-                    ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: AppDesign.minTapTarget,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppDesign.space2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(item.icon, size: 18, color: color),
+                      const SizedBox(width: AppDesign.space2),
+                      Flexible(
+                        child: Text(
+                          item.label,
+                          textAlign: TextAlign.center,
+                          style: context.textStyle(
+                            FontSizeType.body2,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -79,12 +82,10 @@ class SegmentedTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
+        color: context.ds.surfaceMuted,
         borderRadius: BorderRadius.circular(AppDesign.radiusMd),
       ),
-      child: Row(
-        children: [for (var i = 0; i < tabs.length; i++) tab(i)],
-      ),
+      child: Row(children: [for (var i = 0; i < tabs.length; i++) tab(i)]),
     );
   }
 }

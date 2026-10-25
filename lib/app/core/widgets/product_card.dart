@@ -80,9 +80,16 @@ class ProductCard extends StatelessWidget {
 
   /// Hauteur réservée au bloc texte, selon la densité typographique.
   static double textBlockHeight(BuildContext context) {
-    final titleSize = AppThemeSystem.getFontSize(context, FontSizeType.caption);
-    final priceSize = AppThemeSystem.getFontSize(context, FontSizeType.subtitle1);
-    final metaSize = AppThemeSystem.getFontSize(context, FontSizeType.overline);
+    final scaler = MediaQuery.textScalerOf(context);
+    final titleSize = scaler.scale(
+      AppThemeSystem.getFontSize(context, FontSizeType.caption),
+    );
+    final priceSize = scaler.scale(
+      AppThemeSystem.getFontSize(context, FontSizeType.subtitle1),
+    );
+    final metaSize = scaler.scale(
+      AppThemeSystem.getFontSize(context, FontSizeType.overline),
+    );
 
     // 2 lignes de titre + prix + ligne de lieu, leurs deux interlignes, et
     // les paddings réellement appliqués par `build` (space3 en haut,
@@ -127,7 +134,8 @@ class ProductCard extends StatelessWidget {
   /// Largeur d'une carte dans une grille occupant toute la largeur utile.
   static double widthInGrid(BuildContext context, {int? columns}) {
     final cols = columns ?? AppDesign.productColumns(context);
-    final available = MediaQuery.sizeOf(context).width - AppDesign.gutter(context) * 2;
+    final available =
+        MediaQuery.sizeOf(context).width - AppDesign.gutter(context) * 2;
     return (available - AppDesign.space3 * (cols - 1)) / cols;
   }
 
@@ -140,26 +148,22 @@ class ProductCard extends StatelessWidget {
     final columns = AppDesign.productColumns(context);
     return SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: columns,
-      mainAxisExtent:
-          totalHeight(context, widthInGrid(context, columns: columns)),
+      mainAxisExtent: totalHeight(
+        context,
+        widthInGrid(context, columns: columns),
+      ),
       crossAxisSpacing: AppDesign.space3,
       mainAxisSpacing: AppDesign.space3,
     );
   }
 
   Widget _buildVisual(BuildContext context) {
-    final image = imageBuilder?.call(context) ??
-        Icon(
-          Icons.image_outlined,
-          color: context.ds.textTertiary,
-          size: 28,
-        );
+    final image =
+        imageBuilder?.call(context) ??
+        Icon(Icons.image_outlined, color: context.ds.textTertiary, size: 28);
     final clip = video;
     if (clip == null) return image;
-    return AutoplayVideo(
-      url: resolveMediaUrl(clip.previewUrl),
-      poster: image,
-    );
+    return AutoplayVideo(url: resolveMediaUrl(clip.previewUrl), poster: image);
   }
 
   @override

@@ -20,7 +20,7 @@ class SettingsView extends GetView<SettingsController> {
         leading: const AppBackButton(),
         title: Text(
           'settings.title'.tr,
-          style: context.h5.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
       ),
       body: SingleChildScrollView(

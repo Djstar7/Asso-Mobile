@@ -22,7 +22,7 @@ class DiaspoBookingView extends GetView<DiaspoBookingController> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('diaspo_booking.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: isDark ? Colors.white : Colors.black,

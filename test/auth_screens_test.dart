@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'helpers/themed_app.dart';
 
 import 'package:asso/app/core/widgets/app_ui.dart';
 import 'package:asso/app/core/widgets/auth_scaffold.dart';
@@ -36,7 +37,7 @@ void main() {
     setUp(() => Get.put(LoginController()));
 
     testWidgets('propose la visite sans compte', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
+      await tester.pumpWidget(themedApp(const LoginView()));
       await settle(tester);
 
       // C'est la demande explicite : pouvoir passer depuis la connexion,
@@ -45,7 +46,7 @@ void main() {
     });
 
     testWidgets('affiche titre, champs et action principale', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
+      await tester.pumpWidget(themedApp(const LoginView()));
       await settle(tester);
 
       expect(find.text('Bon retour'), findsOneWidget);
@@ -56,7 +57,7 @@ void main() {
     });
 
     testWidgets('renvoie vers la création de compte', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
+      await tester.pumpWidget(themedApp(const LoginView()));
       await settle(tester);
 
       // AuthSwitchLink rend un Text.rich : la question et l'action sont
@@ -68,7 +69,7 @@ void main() {
     });
 
     testWidgets('ne déborde pas à la mise en page', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
+      await tester.pumpWidget(themedApp(const LoginView()));
       await settle(tester);
 
       expect(tester.takeException(), isNull);
@@ -78,7 +79,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: 600);
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
+      await tester.pumpWidget(themedApp(const LoginView()));
       await settle(tester);
 
       // Le bandeau se replie sous le clavier ; la sortie sans compte ne
@@ -92,14 +93,14 @@ void main() {
     setUp(() => Get.put(WelcomerController()));
 
     testWidgets('propose aussi la visite sans compte', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+      await tester.pumpWidget(themedApp(const WelcomerView()));
       await settle(tester);
 
       expect(find.text('Passer'), findsOneWidget);
     });
 
     testWidgets('affiche le formulaire complet', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+      await tester.pumpWidget(themedApp(const WelcomerView()));
       await settle(tester);
 
       expect(find.text('Créer votre compte'), findsOneWidget);
@@ -112,7 +113,7 @@ void main() {
     });
 
     testWidgets('ne déborde pas à la mise en page', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+      await tester.pumpWidget(themedApp(const WelcomerView()));
       await settle(tester);
 
       expect(tester.takeException(), isNull);
@@ -125,7 +126,7 @@ void main() {
     testWidgets(
       'bloque la création tant que la politique n\'est pas acceptée',
       (tester) async {
-        await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+        await tester.pumpWidget(themedApp(const WelcomerView()));
         await settle(tester);
 
         // Formulaire valide, case décochée : le bouton doit rester inactif.
@@ -138,6 +139,7 @@ void main() {
         expect(controller.isFormValid.value, isTrue);
         expect(submitButton(tester).onPressed, isNull);
 
+        await tester.ensureVisible(find.byType(Checkbox));
         await tester.tap(find.byType(Checkbox));
         await settle(tester);
 
@@ -147,7 +149,7 @@ void main() {
     );
 
     testWidgets('coche la politique en touchant le libellé', (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: WelcomerView()));
+      await tester.pumpWidget(themedApp(const WelcomerView()));
       await settle(tester);
 
       final controller = Get.find<WelcomerController>();

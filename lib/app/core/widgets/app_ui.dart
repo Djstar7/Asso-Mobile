@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../utils/app_design.dart';
+import '../utils/semantic_tone.dart';
 import '../utils/app_navigation.dart';
 import '../utils/app_theme_system.dart';
 
@@ -144,7 +145,7 @@ class AppButton extends StatelessWidget {
   double get _height {
     switch (size) {
       case AppButtonSize.small:
-        return 40;
+        return AppDesign.minTapTarget;
       case AppButtonSize.medium:
         return AppDesign.minTapTarget;
       case AppButtonSize.large:
@@ -195,64 +196,75 @@ class AppButton extends StatelessWidget {
       color: effectiveForeground,
     );
 
-    final child = isLoading
-        // Le spinner reprend la couleur du texte et garde la hauteur du
-        // libellé pour que le bouton ne change pas de dimension.
-        ? SizedBox(
-            height: 18,
+    final labelContent = Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(
+            icon,
+            size: size == AppButtonSize.small ? 16 : 18,
+            color: effectiveForeground,
+          ),
+          SizedBox(width: AppDesign.space2),
+        ],
+        Flexible(
+          child: Text(label, style: textStyle, textAlign: TextAlign.center),
+        ),
+      ],
+    );
+    final child = Stack(
+      alignment: Alignment.center,
+      children: [
+        Visibility(
+          visible: !isLoading,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: true,
+          child: labelContent,
+        ),
+        if (isLoading)
+          SizedBox(
             width: 18,
+            height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(effectiveForeground),
             ),
-          )
-        : Row(
-            mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: size == AppButtonSize.small ? 16 : 18,
-                  color: effectiveForeground,
-                ),
-                SizedBox(width: AppDesign.space2),
-              ],
-              Flexible(
-                child: Text(
-                  label,
-                  style: textStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          );
+          ),
+      ],
+    );
 
-    return SizedBox(
-      height: _height,
-      width: expand ? double.infinity : null,
-      child: Material(
-        color: effectiveBackground,
-        borderRadius: radius,
-        child: InkWell(
-          onTap: disabled ? null : onPressed,
+    return Semantics(
+      button: true,
+      enabled: !disabled,
+      liveRegion: isLoading,
+      label: isLoading ? label : null,
+      child: SizedBox(
+        width: expand ? double.infinity : null,
+        child: Material(
+          color: effectiveBackground,
           borderRadius: radius,
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              border: borderColor != null
-                  ? Border.all(color: borderColor)
-                  : null,
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: size == AppButtonSize.small
-                    ? AppDesign.space3
-                    : AppDesign.space5,
+          child: InkWell(
+            onTap: disabled ? null : onPressed,
+            borderRadius: radius,
+            child: Ink(
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                border: borderColor != null
+                    ? Border.all(color: borderColor)
+                    : null,
               ),
-              child: Center(child: child),
+              child: Container(
+                constraints: BoxConstraints(minHeight: _height),
+                padding: EdgeInsets.symmetric(
+                  horizontal: size == AppButtonSize.small
+                      ? AppDesign.space3
+                      : AppDesign.space5,
+                  vertical: AppDesign.space3,
+                ),
+                child: child,
+              ),
             ),
           ),
         ),
@@ -285,29 +297,16 @@ class AppBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    late final Color background;
-    late final Color foreground;
-
-    switch (tone) {
-      case AppBadgeTone.neutral:
-        background = context.ds.surfaceMuted;
-        foreground = context.ds.textSecondary;
-      case AppBadgeTone.accent:
-        background = AppDesign.accentSubtle;
-        foreground = AppDesign.accentText;
-      case AppBadgeTone.success:
-        background = AppDesign.successSubtle;
-        foreground = AppDesign.successText;
-      case AppBadgeTone.warning:
-        background = AppDesign.warningSubtle;
-        foreground = AppDesign.warningText;
-      case AppBadgeTone.danger:
-        background = AppDesign.dangerSubtle;
-        foreground = AppDesign.dangerText;
-      case AppBadgeTone.info:
-        background = AppDesign.infoSubtle;
-        foreground = AppDesign.infoText;
-    }
+    final colors = switch (tone) {
+      AppBadgeTone.neutral => null,
+      AppBadgeTone.accent => ToneColors.accent(context),
+      AppBadgeTone.success => ToneColors.success(context),
+      AppBadgeTone.warning => ToneColors.warning(context),
+      AppBadgeTone.danger => ToneColors.danger(context),
+      AppBadgeTone.info => ToneColors.info(context),
+    };
+    final background = colors?.background ?? context.ds.surfaceMuted;
+    final foreground = colors?.foreground ?? context.ds.textSecondary;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -680,43 +679,16 @@ class AppTextField extends StatelessWidget {
             errorBorder: outline(AppDesign.danger),
             focusedErrorBorder: outline(AppDesign.danger, width: 1.5),
             disabledBorder: outline(context.ds.border),
-            // L'erreur est rendue sous le champ par nos soins pour garder
-            // une typographie homogène avec le reste du formulaire.
-            errorStyle: const TextStyle(height: 0, fontSize: 0),
+            errorText: errorText,
+            errorMaxLines: 4,
+            errorStyle: context.textStyle(
+              FontSizeType.caption,
+              color: AppDesign.danger,
+            ),
+            helperText: helperText,
+            helperMaxLines: 4,
           ),
         ),
-        if (hasError) ...[
-          SizedBox(height: AppDesign.space1 + 2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                size: 14,
-                color: AppDesign.danger,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  errorText!,
-                  style: context.textStyle(
-                    FontSizeType.overline,
-                    color: AppDesign.dangerText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ] else if (helperText != null) ...[
-          SizedBox(height: AppDesign.space1 + 2),
-          Text(
-            helperText!,
-            style: context.textStyle(
-              FontSizeType.overline,
-              color: context.ds.textTertiary,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -768,53 +740,25 @@ class AppIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = SizedBox(
-      width: AppDesign.minTapTarget,
-      height: AppDesign.minTapTarget,
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onPressed,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(icon, size: size, color: color ?? context.ds.textPrimary),
-              if (badgeCount != null && badgeCount! > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16),
-                    decoration: BoxDecoration(
-                      color: AppDesign.danger,
-                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
-                      border: Border.all(color: context.ds.surface, width: 1.5),
-                    ),
-                    child: Text(
-                      badgeCount! > 99 ? '99+' : '$badgeCount',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      iconSize: size,
+      color: color ?? context.ds.textPrimary,
+      disabledColor: context.ds.textTertiary.withValues(alpha: 0.5),
+      constraints: const BoxConstraints(
+        minWidth: AppDesign.minTapTarget,
+        minHeight: AppDesign.minTapTarget,
       ),
+      icon: badgeCount != null && badgeCount! > 0
+          ? Badge(
+              label: Text(badgeCount! > 99 ? '99+' : '$badgeCount'),
+              backgroundColor: AppDesign.danger,
+              textColor: Colors.white,
+              child: Icon(icon),
+            )
+          : Icon(icon),
     );
-
-    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 

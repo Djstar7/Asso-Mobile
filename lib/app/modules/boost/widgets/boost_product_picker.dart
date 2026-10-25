@@ -244,7 +244,7 @@ class BoostProductPicker extends GetView<BoostController> {
                           : _price(product),
                       style: TextStyle(
                         color: boosted
-                            ? AppDesign.accentText
+                            ? AppDesign.accent
                             : AppDesign.textSecondary(context),
                         fontSize: 12.5,
                         fontWeight: boosted ? FontWeight.w600 : FontWeight.w400,

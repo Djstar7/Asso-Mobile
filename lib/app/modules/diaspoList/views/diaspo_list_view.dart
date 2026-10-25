@@ -23,13 +23,11 @@ class DiaspoListView extends GetView<DiaspoListController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppThemeSystem.darkBackgroundColor
-          : Colors.grey[100],
+      backgroundColor: AppDesign.canvas(context),
       appBar: embedded ? null : AppBar(
         leading: const AppBackButton(),
         title: const Text('DIASPO EXCHANGE'),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Column(
         children: [

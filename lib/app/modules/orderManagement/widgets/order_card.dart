@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/deposit_widgets.dart';
 import '../controllers/order_management_controller.dart';
@@ -30,35 +31,24 @@ class OrderCard extends StatelessWidget {
     final dateFormat = DateFormat('order_management.card.date_time_format'.tr);
     final controller = Get.find<OrderManagementController>();
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: context.borderRadius(BorderRadiusType.medium),
-      child: Container(
-        margin: EdgeInsets.only(bottom: context.elementSpacing),
-        padding: EdgeInsets.all(context.horizontalPadding),
-        decoration: BoxDecoration(
-          color: context.surfaceColor,
-          borderRadius: context.borderRadius(BorderRadiusType.medium),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesign.space3),
+      child: AppCard(
+        onTap: onTap,
+        elevated: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Numéro de commande + Badge statut
-            Row(
+            Wrap(
+              spacing: AppDesign.space3,
+              runSpacing: AppDesign.space2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    'order_management.card.order_number'.trParams({
-                      'number': order.displayNumber,
-                    }),
-                    style: context.h6.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                Text(
+                  'order_management.card.order_number'.trParams({
+                    'number': order.displayNumber,
+                  }),
+                  style: context.h6.copyWith(fontWeight: FontWeight.w600),
                 ),
                 _buildStatusBadge(context),
               ],
@@ -74,7 +64,8 @@ class OrderCard extends StatelessWidget {
                   'order_management.card.carrier'.trParams({
                     'name': order.delivery?.companyName ?? '',
                   }).trim(),
-                  if (order.delivery?.routeLabel != null) order.delivery!.routeLabel!,
+                  if (order.delivery?.routeLabel != null)
+                    order.delivery!.routeLabel!,
                   if (order.delivery?.carrierTrackingNumber != null)
                     'order_management.card.tracking'.trParams({
                       'number': '${order.delivery!.carrierTrackingNumber}',
@@ -101,9 +92,10 @@ class OrderCard extends StatelessWidget {
                 text: !order.isPaid
                     ? 'order_management.card.payment_pending'.tr
                     : order.deliveryPersonName != null
-                        ? 'order_management.card.deliverer_assigned_named'
-                            .trParams({'name': order.deliveryPersonName!})
-                        : 'order_management.card.deliverer_assigned'.tr,
+                    ? 'order_management.card.deliverer_assigned_named'.trParams(
+                        {'name': order.deliveryPersonName!},
+                      )
+                    : 'order_management.card.deliverer_assigned'.tr,
               ),
             ],
 
@@ -163,15 +155,15 @@ class OrderCard extends StatelessWidget {
                 color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
                 borderRadius: context.borderRadius(BorderRadiusType.small),
               ),
-              child: Row(
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: AppDesign.space3,
+                runSpacing: AppDesign.space2,
                 children: [
                   Text(
                     'order_management.card.for_you'.tr,
-                    style: context.body2.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: context.body2.copyWith(fontWeight: FontWeight.w500),
                   ),
-                  const Spacer(),
                   Text(
                     controller.formatPrice(order.vendorAmount),
                     style: context.h6.copyWith(
@@ -203,7 +195,9 @@ class OrderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'order_management.card.free_delivery_deducted'.trParams({
-                        'amount': controller.formatPrice(order.freeDeliveryAmount),
+                        'amount': controller.formatPrice(
+                          order.freeDeliveryAmount,
+                        ),
                       }),
                       style: context.caption.copyWith(
                         color: AppDesign.successText,
@@ -257,19 +251,12 @@ class OrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.1),
         borderRadius: context.borderRadius(BorderRadiusType.small),
-        border: Border.all(
-          color: badgeColor,
-          width: 1,
-        ),
+        border: Border.all(color: badgeColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: badgeColor,
-          ),
+          Icon(icon, size: 14, color: badgeColor),
           const SizedBox(width: 4),
           Text(
             order.status.shortLabel,
@@ -328,16 +315,13 @@ class OrderCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
-                      Icons.person,
-                      color: AppThemeSystem.primaryColor,
-                    );
+                        Icons.person,
+                        color: AppThemeSystem.primaryColor,
+                      );
                     },
                   ),
                 )
-              : Icon(
-                  Icons.person,
-                  color: AppThemeSystem.primaryColor,
-                ),
+              : Icon(Icons.person, color: AppThemeSystem.primaryColor),
         ),
         const SizedBox(width: 12),
         // Nom et téléphone
@@ -347,9 +331,7 @@ class OrderCard extends StatelessWidget {
             children: [
               Text(
                 order.clientName,
-                style: context.body1.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: context.body1.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 2),
               Text(
@@ -374,45 +356,48 @@ class OrderCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...displayItems.map((item) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.secondaryTextColor,
-                  shape: BoxShape.circle,
+        ...displayItems.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.secondaryTextColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${item.productName} x${item.quantity}',
-                      style: context.body2,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (item.variantLabel != null || item.tierLabel != null)
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        [item.variantLabel, item.tierLabel]
-                            .whereType<String>()
-                            .join(' · '),
-                        style: context.caption.copyWith(
-                          color: AppThemeSystem.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        '${item.productName} x${item.quantity}',
+                        style: context.body2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
+                      if (item.variantLabel != null || item.tierLabel != null)
+                        Text(
+                          [
+                            item.variantLabel,
+                            item.tierLabel,
+                          ].whereType<String>().join(' · '),
+                          style: context.caption.copyWith(
+                            color: AppThemeSystem.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        )),
+        ),
         if (hasMore)
           Padding(
             padding: const EdgeInsets.only(left: 12, top: 4),
@@ -432,12 +417,18 @@ class OrderCard extends StatelessWidget {
 
   Widget _buildActionButtons(BuildContext context) {
     final isTablet = AppThemeSystem.isTabletOrLarger(context);
+    final stackActions =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(15) > 20;
 
     // Boutons selon le statut
     if (order.status == OrderStatus.pending) {
-      return Row(
+      return Flex(
+        direction: stackActions ? Axis.vertical : Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: _buildCompactButton(
               context,
               icon: Icons.check,
@@ -447,8 +438,9 @@ class OrderCard extends StatelessWidget {
               isTablet: isTablet,
             ),
           ),
-          const SizedBox(width: 6),
-          Expanded(
+          SizedBox(width: 8, height: stackActions ? 8 : 0),
+          Flexible(
+            fit: FlexFit.loose,
             child: _buildCompactButton(
               context,
               icon: Icons.close,
@@ -458,8 +450,9 @@ class OrderCard extends StatelessWidget {
               isTablet: isTablet,
             ),
           ),
-          const SizedBox(width: 6),
-          Expanded(
+          SizedBox(width: 8, height: stackActions ? 8 : 0),
+          Flexible(
+            fit: FlexFit.loose,
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
@@ -474,9 +467,12 @@ class OrderCard extends StatelessWidget {
     } else if (order.canHandToCarrier || order.canAddTrackingStep) {
       // Commande transporteur : pas de livreur, remise en agence puis suivi.
       final controller = Get.find<OrderManagementController>();
-      return Row(
+      return Flex(
+        direction: stackActions ? Axis.vertical : Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             flex: 2,
             child: _buildCompactButton(
               context,
@@ -493,8 +489,9 @@ class OrderCard extends StatelessWidget {
               isTablet: isTablet,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
+          SizedBox(width: 8, height: stackActions ? 8 : 0),
+          Flexible(
+            fit: FlexFit.loose,
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
@@ -508,34 +505,39 @@ class OrderCard extends StatelessWidget {
       );
     } else if (order.status == OrderStatus.validated && !order.isCarrier) {
       final controller = Get.find<OrderManagementController>();
-      return Row(
+      return Flex(
+        direction: stackActions ? Axis.vertical : Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Obx(() => controller.isLoadingDeliverers.value
-                ? Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppThemeSystem.infoColor,
+          Flexible(
+            fit: FlexFit.loose,
+            child: Obx(
+              () => controller.isLoadingDeliverers.value
+                  ? Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppThemeSystem.infoColor,
+                        ),
                       ),
+                    )
+                  : _buildCompactButton(
+                      context,
+                      icon: Icons.delivery_dining,
+                      label: isTablet
+                          ? 'order_management.card.contact_deliverer'.tr
+                          : 'order_management.card.deliverer'.tr,
+                      color: AppThemeSystem.infoColor,
+                      onPressed: onContactDelivery,
+                      isTablet: isTablet,
                     ),
-                  )
-                : _buildCompactButton(
-                    context,
-                    icon: Icons.delivery_dining,
-                    label: isTablet
-                        ? 'order_management.card.contact_deliverer'.tr
-                        : 'order_management.card.deliverer'.tr,
-                    color: AppThemeSystem.infoColor,
-                    onPressed: onContactDelivery,
-                    isTablet: isTablet,
-                  ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
+          SizedBox(width: 8, height: stackActions ? 8 : 0),
+          Flexible(
+            fit: FlexFit.loose,
             child: _buildCompactButton(
               context,
               icon: Icons.chat_bubble_outline,
@@ -569,33 +571,17 @@ class OrderCard extends StatelessWidget {
     required VoidCallback onPressed,
     required bool isTablet,
   }) {
-    // Sur mobile, réduire le padding et la taille de police
-    final fontSize = isTablet ? 14.0 : 12.0;
-    final iconSize = isTablet ? 18.0 : 16.0;
-    final horizontalPadding = isTablet ? 12.0 : 8.0;
-    final verticalPadding = isTablet ? 10.0 : 8.0;
-
-    return ElevatedButton.icon(
+    return AppButton(
+      label: label,
+      icon: icon,
       onPressed: onPressed,
-      icon: Icon(icon, size: iconSize),
-      label: Text(
-        label,
-        style: TextStyle(fontSize: fontSize),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: verticalPadding,
-        ),
-        minimumSize: Size.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: context.borderRadius(BorderRadiusType.small),
-        ),
-      ),
+      size: AppButtonSize.small,
+      variant: color == AppThemeSystem.errorColor
+          ? AppButtonVariant.danger
+          : color == AppThemeSystem.successColor ||
+                color == AppThemeSystem.primaryColor
+          ? AppButtonVariant.primary
+          : AppButtonVariant.secondary,
     );
   }
 }

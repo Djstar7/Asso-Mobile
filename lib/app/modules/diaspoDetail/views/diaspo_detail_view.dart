@@ -38,7 +38,7 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text('diaspo_detail.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: isDark ? Colors.white : Colors.black,

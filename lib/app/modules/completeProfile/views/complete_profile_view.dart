@@ -21,13 +21,9 @@ class CompleteProfileView extends GetView<CompleteProfileController> {
         backgroundColor: context.backgroundColor,
         title: Text(
           'complete_profile.title'.tr,
-          style: context.textStyle(
-            deviceType == DeviceType.mobile ? FontSizeType.h5 : FontSizeType.h4,
-            fontWeight: FontWeight.w600,
-            color: context.primaryTextColor,
-          ),
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
-        centerTitle: true,
+        centerTitle: false,
         // Retour propre à l'écran : sans écran précédent, il ramène à la
         // destination prévue plutôt qu'à l'accueil.
         leading: AppBackButton(onPressed: controller.navigateBack),

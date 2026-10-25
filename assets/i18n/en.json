@@ -72,6 +72,8 @@
     "cancelled": "Cancelled"
   },
   "common": {
+    "previous": "Previous step",
+    "next": "Next step",
     "coming_soon": "Coming soon",
     "error": "Error",
     "success": "Success",
@@ -1917,7 +1919,7 @@
   },
   "post": {
     "title": "Post",
-    "working": "Post screen is working"
+    "working": "Creating posts will be available soon."
   },
   "post_detail": {
     "title": "Discussion",
@@ -5155,5 +5157,7 @@
   "core.delivery.agency_phone": "Agency phone",
   "core.delivery.agency_pickup_instructions": "Your parcel is ready. Present your order reference at the agency for collection.",
   "delivery_dashboard.distance_unavailable": "Distance unavailable",
-  "delivery_dashboard.straight_line": "straight line"
+  "delivery_dashboard.straight_line": "straight line",
+  "profile.load_error": "Unable to load your profile.",
+  "order_management.details.copy": "Copy"
 }

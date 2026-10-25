@@ -15,15 +15,12 @@ class WalletHistoryView extends GetView<WalletController> {
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
       appBar: AppBar(
         title: Text('wallet.history.title'.tr),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
-        backgroundColor: AppThemeSystem.primaryColor,
-        foregroundColor: AppThemeSystem.whiteColor,
-        leading: const AppBackButton(color: AppThemeSystem.whiteColor),
-        actions: [
-          _buildTypeFilter(context),
-          const SizedBox(width: 8),
-        ],
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        leading: const AppBackButton(),
+        actions: [_buildTypeFilter(context), const SizedBox(width: 8)],
       ),
       body: RefreshIndicator(
         onRefresh: () => controller.loadTransactions(),
@@ -34,34 +31,10 @@ class WalletHistoryView extends GetView<WalletController> {
           }
 
           if (controller.transactions.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.history_rounded,
-                    size: 80,
-                    color: AppThemeSystem.getSecondaryTextColor(context),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'wallet.history.empty_title'.tr,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppThemeSystem.getPrimaryTextColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'wallet.history.empty_subtitle'.tr,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppThemeSystem.getSecondaryTextColor(context),
-                    ),
-                  ),
-                ],
-              ),
+            return AppEmptyState(
+              icon: Icons.history_rounded,
+              title: 'wallet.history.empty_title'.tr,
+              message: 'wallet.history.empty_subtitle'.tr,
             );
           }
 
@@ -228,7 +201,9 @@ class WalletHistoryView extends GetView<WalletController> {
         : AppThemeSystem.errorColor;
 
     return Container(
-      margin: EdgeInsets.only(bottom: index == controller.transactions.length - 1 ? 0 : 12),
+      margin: EdgeInsets.only(
+        bottom: index == controller.transactions.length - 1 ? 0 : 12,
+      ),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppThemeSystem.getSurfaceColor(context),
@@ -325,14 +300,18 @@ class WalletHistoryView extends GetView<WalletController> {
                             Icon(
                               Icons.access_time_rounded,
                               size: 14,
-                              color: AppThemeSystem.getSecondaryTextColor(context),
+                              color: AppThemeSystem.getSecondaryTextColor(
+                                context,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               _formatDate(transaction.createdAt),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppThemeSystem.getSecondaryTextColor(context),
+                                color: AppThemeSystem.getSecondaryTextColor(
+                                  context,
+                                ),
                               ),
                             ),
                           ],
@@ -425,16 +404,15 @@ class WalletHistoryView extends GetView<WalletController> {
     if (difference.inDays == 0) {
       return 'wallet.history.today_at'.trParams({
         'time':
-            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
       });
     } else if (difference.inDays == 1) {
       return 'wallet.history.yesterday_at'.trParams({
         'time':
-            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
       });
     } else if (difference.inDays < 7) {
-      return 'wallet.history.days'
-          .trParams({'days': '${difference.inDays}'});
+      return 'wallet.history.days'.trParams({'days': '${difference.inDays}'});
     } else {
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     }

@@ -17,7 +17,7 @@ import '../../../core/widgets/app_ui.dart';
   import '../../../data/models/payment_method_option.dart';
   import '../../immo/views/immo_reservation_view.dart';
   import '../../immo/widgets/immo_widgets.dart';
-  
+
 
   class WalletView extends GetView<WalletController> {
     const WalletView({super.key});
@@ -972,7 +972,7 @@ import '../../../core/widgets/app_ui.dart';
             controller.refresh();
           },
         ),
-        barrierDismissible: true,
+        barrierDismissible: false,
       );
     }
 
@@ -1028,7 +1028,7 @@ import '../../../core/widgets/app_ui.dart';
             }),
 
             const SizedBox(height: 12),
-            
+
 
             // Virement bancaire (IBAN) : le montant est exprimé dans la devise du
             // compte bancaire, pas en FCFA — il vient de la conversion du portefeuille.
