@@ -4,24 +4,30 @@
 /// l'affichage passe par `CurrencyService.formatFromPivot`.
 library;
 
-int _int(dynamic v, [int fallback = 0]) =>
-    v is int ? v : int.tryParse(v?.toString() ?? '') ?? (v is num ? v.toInt() : fallback);
+int _int(dynamic v, [int fallback = 0]) => v is int
+    ? v
+    : int.tryParse(v?.toString() ?? '') ?? (v is num ? v.toInt() : fallback);
 
-int? _intOrNull(dynamic v) => v == null ? null : (v is int ? v : int.tryParse(v.toString()));
+int? _intOrNull(dynamic v) =>
+    v == null ? null : (v is int ? v : int.tryParse(v.toString()));
 
-double? _doubleOrNull(dynamic v) => v == null ? null : (v is num ? v.toDouble() : double.tryParse(v.toString()));
+double? _doubleOrNull(dynamic v) => v == null
+    ? null
+    : (v is num ? v.toDouble() : double.tryParse(v.toString()));
 
 bool _bool(dynamic v) => v == true || v == 1 || v == '1' || v == 'true';
 
-DateTime? _date(dynamic v) => v == null ? null : DateTime.tryParse(v.toString());
+DateTime? _date(dynamic v) =>
+    v == null ? null : DateTime.tryParse(v.toString());
 
-List<Map<String, dynamic>> _maps(dynamic v) =>
-    v is List ? v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : const [];
+List<Map<String, dynamic>> _maps(dynamic v) => v is List
+    ? v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+    : const [];
 
-enum RealEstateType { rent, land }
+enum RealEstateType { rent, sale, land }
 
 extension RealEstateTypeApi on RealEstateType {
-  String get api => this == RealEstateType.land ? 'land' : 'rent';
+  String get api => name;
 }
 
 class RealEstateAmenity {
@@ -39,7 +45,8 @@ class RealEstateAmenity {
     this.icon,
   });
 
-  factory RealEstateAmenity.fromJson(Map<String, dynamic> j) => RealEstateAmenity(
+  factory RealEstateAmenity.fromJson(Map<String, dynamic> j) =>
+      RealEstateAmenity(
         id: _int(j['id']),
         kind: j['kind']?.toString() ?? 'equipment',
         code: j['code']?.toString() ?? '',
@@ -66,12 +73,12 @@ class RealEstateMedia {
   bool get isVideo => type == 'video';
 
   factory RealEstateMedia.fromJson(Map<String, dynamic> j) => RealEstateMedia(
-        id: _int(j['id']),
-        type: j['type']?.toString() ?? 'image',
-        url: j['url']?.toString() ?? '',
-        posterUrl: j['poster_url']?.toString(),
-        roomId: _intOrNull(j['room_id']),
-      );
+    id: _int(j['id']),
+    type: j['type']?.toString() ?? 'image',
+    url: j['url']?.toString() ?? '',
+    posterUrl: j['poster_url']?.toString(),
+    roomId: _intOrNull(j['room_id']),
+  );
 }
 
 /// Pièce de la visite pièce par pièce.
@@ -88,7 +95,8 @@ class RealEstateTourRoom {
     this.media = const [],
   });
 
-  factory RealEstateTourRoom.fromJson(Map<String, dynamic> j) => RealEstateTourRoom(
+  factory RealEstateTourRoom.fromJson(Map<String, dynamic> j) =>
+      RealEstateTourRoom(
         id: _int(j['id']),
         kind: j['kind']?.toString() ?? 'other',
         label: j['label']?.toString(),
@@ -103,6 +111,8 @@ class RealEstateUnit {
   final int? surfaceMin;
   final int? surfaceMax;
   final int price;
+  final double? pricePerM2;
+  final double? oldPricePerM2;
   final int? oldPrice;
   final int? capacity;
   final String? kitchen;
@@ -118,6 +128,8 @@ class RealEstateUnit {
     this.surfaceMin,
     this.surfaceMax,
     required this.price,
+    this.pricePerM2,
+    this.oldPricePerM2,
     this.oldPrice,
     this.capacity,
     this.kitchen,
@@ -131,20 +143,22 @@ class RealEstateUnit {
   bool get isAvailable => unitsAvailable > 0;
 
   factory RealEstateUnit.fromJson(Map<String, dynamic> j) => RealEstateUnit(
-        id: _int(j['id']),
-        label: j['label']?.toString() ?? '',
-        surfaceMin: _intOrNull(j['surface_min']),
-        surfaceMax: _intOrNull(j['surface_max']),
-        price: _int(j['price']),
-        oldPrice: _intOrNull(j['old_price']),
-        capacity: _intOrNull(j['capacity']),
-        kitchen: j['kitchen']?.toString(),
-        furnished: _bool(j['furnished']),
-        serviced: _bool(j['serviced']),
-        unitsTotal: _int(j['units_total'], 1),
-        unitsAvailable: _int(j['units_available'], 1),
-        availableFrom: _date(j['available_from']),
-      );
+    id: _int(j['id']),
+    label: j['label']?.toString() ?? '',
+    surfaceMin: _intOrNull(j['surface_min']),
+    surfaceMax: _intOrNull(j['surface_max']),
+    price: _int(j['price']),
+    pricePerM2: _doubleOrNull(j['price_per_m2']),
+    oldPricePerM2: _doubleOrNull(j['old_price_per_m2']),
+    oldPrice: _intOrNull(j['old_price']),
+    capacity: _intOrNull(j['capacity']),
+    kitchen: j['kitchen']?.toString(),
+    furnished: _bool(j['furnished']),
+    serviced: _bool(j['serviced']),
+    unitsTotal: _int(j['units_total'], 1),
+    unitsAvailable: _int(j['units_available'], 1),
+    availableFrom: _date(j['available_from']),
+  );
 }
 
 /// Questionnaire d'accès et de quartier.
@@ -227,7 +241,8 @@ class RealEstateCabinet {
     this.listings = const [],
   });
 
-  factory RealEstateCabinet.fromJson(Map<String, dynamic> j) => RealEstateCabinet(
+  factory RealEstateCabinet.fromJson(Map<String, dynamic> j) =>
+      RealEstateCabinet(
         id: _int(j['id']),
         name: j['name']?.toString() ?? '',
         tagline: j['tagline']?.toString(),
@@ -236,13 +251,17 @@ class RealEstateCabinet {
         headquartersCity: j['headquarters_city']?.toString(),
         specialties: j['specialties']?.toString(),
         description: j['description']?.toString(),
-        whyChooseUs: (j['why_choose_us'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        whyChooseUs:
+            (j['why_choose_us'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
         ownersMessage: j['owners_message']?.toString(),
         bannerUrl: j['banner_url']?.toString(),
         region: j['region']?.toString(),
         listingsCount: _int(j['listings_count']),
         contactUnlocked: _bool(j['contact_unlocked']),
-        contact: j['contact'] is Map ? Map<String, dynamic>.from(j['contact']) : null,
+        contact: j['contact'] is Map
+            ? Map<String, dynamic>.from(j['contact'])
+            : null,
         listings: _maps(j['listings']).map(RealEstateListing.fromJson).toList(),
       );
 }
@@ -254,14 +273,19 @@ class RealEstateOwner {
   final String? name;
   final String? phone;
 
-  const RealEstateOwner({this.isVerified = false, this.memberSince, this.name, this.phone});
+  const RealEstateOwner({
+    this.isVerified = false,
+    this.memberSince,
+    this.name,
+    this.phone,
+  });
 
   factory RealEstateOwner.fromJson(Map<String, dynamic> j) => RealEstateOwner(
-        isVerified: _bool(j['is_verified']),
-        memberSince: _intOrNull(j['member_since']),
-        name: j['name']?.toString(),
-        phone: j['phone']?.toString(),
-      );
+    isVerified: _bool(j['is_verified']),
+    memberSince: _intOrNull(j['member_since']),
+    name: j['name']?.toString(),
+    phone: j['phone']?.toString(),
+  );
 }
 
 class RealEstateListing {
@@ -281,6 +305,8 @@ class RealEstateListing {
   final bool landTitled;
   final bool serviced;
   final int price;
+  final double? pricePerM2;
+  final double? oldPricePerM2;
   final int? oldPrice;
   final bool priceFrom;
   final List<String> images;
@@ -342,6 +368,8 @@ class RealEstateListing {
     this.landTitled = false,
     this.serviced = false,
     required this.price,
+    this.pricePerM2,
+    this.oldPricePerM2,
     this.oldPrice,
     this.priceFrom = false,
     this.images = const [],
@@ -386,6 +414,8 @@ class RealEstateListing {
   });
 
   bool get isLand => type == RealEstateType.land;
+  bool get isSale => type == RealEstateType.sale;
+  bool get isRent => type == RealEstateType.rent;
 
   RealEstateMedia? get presentationVideo {
     if (video != null) return video;
@@ -397,16 +427,22 @@ class RealEstateListing {
     return null;
   }
 
-  String get place => district == null || district!.isEmpty ? city : '$city, $district';
+  String get place =>
+      district == null || district!.isEmpty ? city : '$city, $district';
 
   factory RealEstateListing.fromJson(Map<String, dynamic> j) {
-    final location = j['location'] is Map ? Map<String, dynamic>.from(j['location']) : const <String, dynamic>{};
+    final location = j['location'] is Map
+        ? Map<String, dynamic>.from(j['location'])
+        : const <String, dynamic>{};
     final amenities = j['amenities'];
 
     return RealEstateListing(
       id: _int(j['id']),
       reference: j['reference']?.toString() ?? '',
-      type: j['type'] == 'land' ? RealEstateType.land : RealEstateType.rent,
+      type: RealEstateType.values.firstWhere(
+        (t) => t.api == j['type'],
+        orElse: () => RealEstateType.rent,
+      ),
       propertyKind: j['property_kind']?.toString(),
       title: j['title']?.toString() ?? '',
       city: j['city']?.toString() ?? '',
@@ -420,9 +456,12 @@ class RealEstateListing {
       landTitled: _bool(j['land_titled']),
       serviced: _bool(j['serviced']),
       price: _int(j['price']),
+      pricePerM2: _doubleOrNull(j['price_per_m2']),
+      oldPricePerM2: _doubleOrNull(j['old_price_per_m2']),
       oldPrice: _intOrNull(j['old_price']),
       priceFrom: _bool(j['price_from']),
-      images: (j['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      images:
+          (j['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       photosCount: _int(j['photos_count']),
       hasVideo: _bool(j['has_video']),
       hasRoomTour: _bool(j['has_room_tour']),
@@ -430,35 +469,57 @@ class RealEstateListing {
       isPopular: _bool(j['is_popular']),
       promoText: j['promo_text']?.toString(),
       availableFrom: _date(j['available_from']),
-      availableNow: j['available_now'] == null ? true : _bool(j['available_now']),
+      availableNow: j['available_now'] == null
+          ? true
+          : _bool(j['available_now']),
       unitsAvailable: _int(j['units_available'], 1),
       lowStock: _bool(j['low_stock']),
-      amenityNames: amenities is List ? amenities.map((e) => e.toString()).toList() : const [],
-      cabinet: j['cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['cabinet'])) : null,
-      commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
+      amenityNames: amenities is List
+          ? amenities.map((e) => e.toString()).toList()
+          : const [],
+      cabinet: j['cabinet'] is Map
+          ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['cabinet']))
+          : null,
+      commissionCabinet: j['commission_cabinet'] is Map
+          ? RealEstateCabinet.fromJson(
+              Map<String, dynamic>.from(j['commission_cabinet']),
+            )
+          : null,
       netPayeeKind: j['net_payee_kind']?.toString(),
       isFavorite: _bool(j['is_favorite']),
       description: j['description']?.toString(),
-      access: RealEstateAccess.fromJson(j['access'] is Map ? Map<String, dynamic>.from(j['access']) : null),
+      access: RealEstateAccess.fromJson(
+        j['access'] is Map ? Map<String, dynamic>.from(j['access']) : null,
+      ),
       landTitleStatus: j['land_title_status']?.toString(),
       depositPercent: _doubleOrNull(j['deposit_percent']),
       minLeaseMonths: _intOrNull(j['min_lease_months']),
       advanceMonths: _intOrNull(j['advance_months']),
       commissionRate: _doubleOrNull(j['commission_rate']) ?? 0,
       visitWindowDays: _int(j['visit_window_days'], 7),
-      highlights: _maps(j['highlights']).map(RealEstateAmenity.fromJson).toList(),
-      equipments: _maps(j['equipments']).map(RealEstateAmenity.fromJson).toList(),
+      highlights: _maps(
+        j['highlights'],
+      ).map(RealEstateAmenity.fromJson).toList(),
+      equipments: _maps(
+        j['equipments'],
+      ).map(RealEstateAmenity.fromJson).toList(),
       services: _maps(j['services']).map(RealEstateAmenity.fromJson).toList(),
       units: _maps(j['units']).map(RealEstateUnit.fromJson).toList(),
-      roomsTour: _maps(j['rooms_tour']).map(RealEstateTourRoom.fromJson).toList(),
+      roomsTour: _maps(
+        j['rooms_tour'],
+      ).map(RealEstateTourRoom.fromJson).toList(),
       media: _maps(j['media']).map(RealEstateMedia.fromJson).toList(),
-      video: j['video'] is Map ? RealEstateMedia.fromJson(Map<String, dynamic>.from(j['video'])) : null,
+      video: j['video'] is Map
+          ? RealEstateMedia.fromJson(Map<String, dynamic>.from(j['video']))
+          : null,
       viewsCount: _int(j['views_count']),
       address: location['address']?.toString(),
       latitude: _doubleOrNull(location['latitude']),
       longitude: _doubleOrNull(location['longitude']),
       unlocked: _bool(j['unlocked']),
-      owner: j['owner'] is Map ? RealEstateOwner.fromJson(Map<String, dynamic>.from(j['owner'])) : null,
+      owner: j['owner'] is Map
+          ? RealEstateOwner.fromJson(Map<String, dynamic>.from(j['owner']))
+          : null,
       status: j['status']?.toString(),
       isOwnListing: _bool(j['is_owner']),
     );
@@ -494,18 +555,22 @@ class RealEstateQuote {
   });
 
   factory RealEstateQuote.fromJson(Map<String, dynamic> j) => RealEstateQuote(
-        unitPrice: _int(j['unit_price']),
-        advanceMonths: _intOrNull(j['advance_months']),
-        depositPercent: _doubleOrNull(j['deposit_percent']),
-        baseAmount: _int(j['base_amount']),
-        commission: _int(j['commission']),
-        total: _int(j['total']),
-        unitId: _intOrNull(j['unit_id']),
-        netAmount: _intOrNull(j['net_amount']),
-        platformAmount: _intOrNull(j['platform_amount']),
-        commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
-        netPayeeKind: j['net_payee_kind']?.toString(),
-      );
+    unitPrice: _int(j['unit_price']),
+    advanceMonths: _intOrNull(j['advance_months']),
+    depositPercent: _doubleOrNull(j['deposit_percent']),
+    baseAmount: _int(j['base_amount']),
+    commission: _int(j['commission']),
+    total: _int(j['total']),
+    unitId: _intOrNull(j['unit_id']),
+    netAmount: _intOrNull(j['net_amount']),
+    platformAmount: _intOrNull(j['platform_amount']),
+    commissionCabinet: j['commission_cabinet'] is Map
+        ? RealEstateCabinet.fromJson(
+            Map<String, dynamic>.from(j['commission_cabinet']),
+          )
+        : null,
+    netPayeeKind: j['net_payee_kind']?.toString(),
+  );
 }
 
 /// Critères enregistrés (« Vos critères »).
@@ -530,7 +595,8 @@ class RealEstateCriteria {
     this.budgetMax,
   });
 
-  factory RealEstateCriteria.fromJson(Map<String, dynamic> j) => RealEstateCriteria(
+  factory RealEstateCriteria.fromJson(Map<String, dynamic> j) =>
+      RealEstateCriteria(
         type: j['type'] == 'land' ? RealEstateType.land : RealEstateType.rent,
         applicantStatus: j['applicant_status']?.toString(),
         school: j['school']?.toString(),
@@ -542,15 +608,15 @@ class RealEstateCriteria {
       );
 
   Map<String, dynamic> toJson() => {
-        'type': type.api,
-        'applicant_status': applicantStatus,
-        'school': school,
-        'city': city,
-        'move_in_date': moveInDate?.toIso8601String().substring(0, 10),
-        'lease_months': leaseMonths,
-        'budget_min': budgetMin,
-        'budget_max': budgetMax,
-      }..removeWhere((_, v) => v == null);
+    'type': type.api,
+    'applicant_status': applicantStatus,
+    'school': school,
+    'city': city,
+    'move_in_date': moveInDate?.toIso8601String().substring(0, 10),
+    'lease_months': leaseMonths,
+    'budget_min': budgetMin,
+    'budget_max': budgetMax,
+  }..removeWhere((_, v) => v == null);
 }
 
 class RealEstatePage {
@@ -576,18 +642,25 @@ class LandlordStatus {
   final bool canPublish;
   final List<String> proofTypes;
 
-  const LandlordStatus({required this.status, this.rejectionReason, this.canPublish = false, this.proofTypes = const []});
+  const LandlordStatus({
+    required this.status,
+    this.rejectionReason,
+    this.canPublish = false,
+    this.proofTypes = const [],
+  });
 
   bool get isVerified => status == 'verified';
   bool get isPending => status == 'pending';
   bool get isRejected => status == 'rejected';
 
   factory LandlordStatus.fromJson(Map<String, dynamic> j) => LandlordStatus(
-        status: j['status']?.toString() ?? 'none',
-        rejectionReason: j['rejection_reason']?.toString(),
-        canPublish: _bool(j['can_publish']),
-        proofTypes: (j['proof_types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-      );
+    status: j['status']?.toString() ?? 'none',
+    rejectionReason: j['rejection_reason']?.toString(),
+    canPublish: _bool(j['can_publish']),
+    proofTypes:
+        (j['proof_types'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+  );
 }
 
 /// Réservation d'une maison ou acompte d'un terrain.
@@ -671,53 +744,66 @@ class RealEstateReservation {
   });
 
   bool get isLand => kind == 'land';
-  bool get isPaid => const ['paid', 'disputed', 'released', 'confirmed'].contains(status);
+  bool get isPaid =>
+      const ['paid', 'disputed', 'released', 'confirmed'].contains(status);
   bool get hasVisibleContact => isPaid && contact != null;
   String get title => listing?['title']?.toString() ?? reference;
   int? get listingId => _intOrNull(listing?['id']);
 
-  factory RealEstateReservation.fromJson(Map<String, dynamic> j) => RealEstateReservation(
-        id: _int(j['id']),
-        reference: j['reference']?.toString() ?? '',
-        kind: j['kind']?.toString() ?? 'rent',
-        status: j['status']?.toString() ?? 'pending_payment',
-        listing: j['listing'] is Map ? Map<String, dynamic>.from(j['listing']) : null,
-        unitLabel: j['unit_label']?.toString(),
-        moveInDate: _date(j['move_in_date']),
-        months: _intOrNull(j['months']),
-        advanceMonths: _intOrNull(j['advance_months']),
-        unitPrice: _int(j['unit_price']),
-        baseAmount: _int(j['base_amount']),
-        commissionAmount: _int(j['commission_amount']),
-        totalAmount: _int(j['total_amount']),
-        ownerAmount: _intOrNull(j['owner_amount']),
-        netAmount: _intOrNull(j['net_amount']),
-        platformAmount: _intOrNull(j['platform_amount']),
-        partnerCommissionAmount: _intOrNull(j['partner_commission_amount']),
-        commissionCabinet: j['commission_cabinet'] is Map ? RealEstateCabinet.fromJson(Map<String, dynamic>.from(j['commission_cabinet'])) : null,
-        netPayeeKind: j['net_payee_kind']?.toString(),
-        paymentMethod: j['payment_method']?.toString(),
-        paidAt: _date(j['paid_at']),
-        visitDeadlineAt: _date(j['visit_deadline_at']),
-        releasedAt: _date(j['released_at']),
-        hasDocuments: _bool(j['has_documents']),
-        canConfirm: _bool(j['can_confirm']),
-        canDispute: _bool(j['can_dispute']),
-        contact: j['contact'] is Map ? Map<String, dynamic>.from(j['contact']) : null,
-        tenant: j['tenant'] is Map ? Map<String, dynamic>.from(j['tenant']) : null,
-        clientSecret: j['client_secret']?.toString(),
-        publishableKey: j['stripe_publishable_key']?.toString(),
-        isPayee: _bool(j['is_payee']),
-        canRespond: _bool(j['can_respond']),
-        occupants: (j['occupants'] as List? ?? const [])
-            .map((o) => o is Map ? o['name']?.toString() ?? '' : o.toString())
-            .where((n) => n.isNotEmpty)
-            .toList(),
-        applicantStatus: j['applicant_status']?.toString(),
-        schoolOrEmployer: j['school_or_employer']?.toString(),
-        message: j['message']?.toString(),
-        dispute: j['dispute'] is Map ? RealEstateDispute.fromJson(Map<String, dynamic>.from(j['dispute'])) : null,
-      );
+  factory RealEstateReservation.fromJson(
+    Map<String, dynamic> j,
+  ) => RealEstateReservation(
+    id: _int(j['id']),
+    reference: j['reference']?.toString() ?? '',
+    kind: j['kind']?.toString() ?? 'rent',
+    status: j['status']?.toString() ?? 'pending_payment',
+    listing: j['listing'] is Map
+        ? Map<String, dynamic>.from(j['listing'])
+        : null,
+    unitLabel: j['unit_label']?.toString(),
+    moveInDate: _date(j['move_in_date']),
+    months: _intOrNull(j['months']),
+    advanceMonths: _intOrNull(j['advance_months']),
+    unitPrice: _int(j['unit_price']),
+    baseAmount: _int(j['base_amount']),
+    commissionAmount: _int(j['commission_amount']),
+    totalAmount: _int(j['total_amount']),
+    ownerAmount: _intOrNull(j['owner_amount']),
+    netAmount: _intOrNull(j['net_amount']),
+    platformAmount: _intOrNull(j['platform_amount']),
+    partnerCommissionAmount: _intOrNull(j['partner_commission_amount']),
+    commissionCabinet: j['commission_cabinet'] is Map
+        ? RealEstateCabinet.fromJson(
+            Map<String, dynamic>.from(j['commission_cabinet']),
+          )
+        : null,
+    netPayeeKind: j['net_payee_kind']?.toString(),
+    paymentMethod: j['payment_method']?.toString(),
+    paidAt: _date(j['paid_at']),
+    visitDeadlineAt: _date(j['visit_deadline_at']),
+    releasedAt: _date(j['released_at']),
+    hasDocuments: _bool(j['has_documents']),
+    canConfirm: _bool(j['can_confirm']),
+    canDispute: _bool(j['can_dispute']),
+    contact: j['contact'] is Map
+        ? Map<String, dynamic>.from(j['contact'])
+        : null,
+    tenant: j['tenant'] is Map ? Map<String, dynamic>.from(j['tenant']) : null,
+    clientSecret: j['client_secret']?.toString(),
+    publishableKey: j['stripe_publishable_key']?.toString(),
+    isPayee: _bool(j['is_payee']),
+    canRespond: _bool(j['can_respond']),
+    occupants: (j['occupants'] as List? ?? const [])
+        .map((o) => o is Map ? o['name']?.toString() ?? '' : o.toString())
+        .where((n) => n.isNotEmpty)
+        .toList(),
+    applicantStatus: j['applicant_status']?.toString(),
+    schoolOrEmployer: j['school_or_employer']?.toString(),
+    message: j['message']?.toString(),
+    dispute: j['dispute'] is Map
+        ? RealEstateDispute.fromJson(Map<String, dynamic>.from(j['dispute']))
+        : null,
+  );
 }
 
 /// Motif de litige configuré par ASSO.
@@ -728,7 +814,10 @@ class RealEstateDisputeReason {
   const RealEstateDisputeReason({required this.id, required this.label});
 
   factory RealEstateDisputeReason.fromJson(Map<String, dynamic> j) =>
-      RealEstateDisputeReason(id: _int(j['id']), label: j['label']?.toString() ?? '');
+      RealEstateDisputeReason(
+        id: _int(j['id']),
+        label: j['label']?.toString() ?? '',
+      );
 }
 
 /// Litige ouvert sur une réservation : motif, échanges et décision d'ASSO.
@@ -755,7 +844,8 @@ class RealEstateDispute {
 
   bool get isOpen => status == 'open';
 
-  factory RealEstateDispute.fromJson(Map<String, dynamic> j) => RealEstateDispute(
+  factory RealEstateDispute.fromJson(Map<String, dynamic> j) =>
+      RealEstateDispute(
         id: _int(j['id']),
         status: j['status']?.toString() ?? 'open',
         reason: j['reason']?.toString() ?? '',
@@ -765,7 +855,12 @@ class RealEstateDispute {
         decidedAt: _date(j['decided_at']),
         attachments: (j['attachments'] as List? ?? const [])
             .whereType<Map>()
-            .map((a) => (author: a['author']?.toString() ?? 'tenant', url: a['url']?.toString() ?? ''))
+            .map(
+              (a) => (
+                author: a['author']?.toString() ?? 'tenant',
+                url: a['url']?.toString() ?? '',
+              ),
+            )
             .where((a) => a.url.isNotEmpty)
             .toList(),
       );

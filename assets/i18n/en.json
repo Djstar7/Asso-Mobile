@@ -4603,6 +4603,10 @@
       "reservations": "your bookings"
     },
     "home": {
+      "tab_houses": "Houses",
+      "transaction_rent": "For rent",
+      "transaction_sale": "For sale",
+      "count_houses": "@count house(s)",
       "subtitle": "Find your next home",
       "tab_rent": "Homes to rent",
       "tab_land": "Land for sale",
@@ -4639,6 +4643,7 @@
       "other": "Other"
     },
     "card": {
+      "price_on_request": "Price per m² on request",
       "rooms": "@count rooms",
       "bedrooms": "@count bedrooms",
       "furnished": "Furnished",
@@ -4663,6 +4668,7 @@
       "serviced": "Serviced"
     },
     "filters": {
+      "price_per_m2": "Price per m²",
       "all": "All",
       "price": "Price",
       "budget": "Budget",
@@ -4725,6 +4731,7 @@
       "banner_update": "Update my alert"
     },
     "detail": {
+      "for_sale": "@kind for sale",
       "not_found": "This property is no longer available",
       "for_rent": "@kind for rent",
       "photos": "Photos",

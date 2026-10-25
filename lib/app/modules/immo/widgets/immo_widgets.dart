@@ -11,14 +11,57 @@ import '../../../data/models/real_estate_models.dart';
 import '../../../data/providers/currency_service.dart';
 
 /// Montant FCFA affiché dans la devise de l'utilisateur.
-String immoPrice(int amount) => CurrencyService.formatFromPivot(amount.toDouble());
+String immoPrice(num amount) =>
+    CurrencyService.formatFromPivot(amount.toDouble());
+
+bool immoHasDiscount(RealEstateListing listing, {RealEstateUnit? unit}) {
+  final price = listing.isLand
+      ? (unit == null ? listing.pricePerM2 : unit.pricePerM2)
+      : (unit?.price ?? listing.price);
+  final old = listing.isLand
+      ? (unit == null ? listing.oldPricePerM2 : unit.oldPricePerM2)
+      : (unit == null ? listing.oldPrice : unit.oldPrice);
+  return price != null && old != null && old > price;
+}
+
+/// Land prices are displayed per m². Totals remain in the payment quote.
+String immoOfferPrice(
+  RealEstateListing listing, {
+  RealEstateUnit? unit,
+  bool old = false,
+}) {
+  if (listing.isLand) {
+    final rate = unit == null
+        ? (old ? listing.oldPricePerM2 : listing.pricePerM2)
+        : (old ? unit.oldPricePerM2 : unit.pricePerM2);
+    final surface = unit?.surfaceMin ?? listing.surfaceM2;
+    final exact = unit == null
+        ? listing.units.isEmpty
+        : unit.surfaceMax == null || unit.surfaceMax == surface;
+    final total = unit == null
+        ? (old ? listing.oldPrice : listing.price)
+        : (old ? unit.oldPrice : unit.price);
+    final amount =
+        rate ??
+        (exact && surface != null && surface > 0 && total != null
+            ? total / surface
+            : null);
+    final formatted = immoPrice(amount ?? 0);
+    return amount == null ? 'immo.card.price_on_request'.tr : '$formatted / m²';
+  }
+  final amount = unit == null
+      ? (old ? listing.oldPrice : listing.price)
+      : (old ? unit.oldPrice : unit.price);
+  return '${immoPrice(amount ?? 0)}${listing.isRent ? ' ${'immo.card.per_month'.tr}' : ''}';
+}
 
 String immoDate(DateTime date) =>
     DateFormat.yMMMd(Get.locale?.languageCode ?? 'fr').format(date);
 
 /// « Maison », « Villa », « Terrain constructible »…
 String immoKindLabel(RealEstateListing listing) {
-  final kind = listing.propertyKind ?? (listing.isLand ? 'building_land' : 'house');
+  final kind =
+      listing.propertyKind ?? (listing.isLand ? 'building_land' : 'house');
 
   return 'immo.kinds.$kind'.tr;
 }
@@ -26,9 +69,12 @@ String immoKindLabel(RealEstateListing listing) {
 /// « 3 pièces · 2 chambres ».
 String immoRoomsLabel(RealEstateListing listing) {
   final parts = <String>[
-    if (listing.rooms != null) 'immo.card.rooms'.trParams({'count': '${listing.rooms}'}),
-    if (listing.bedrooms != null) 'immo.card.bedrooms'.trParams({'count': '${listing.bedrooms}'}),
-    if (listing.rooms == null && listing.surfaceLabel != null) listing.surfaceLabel!,
+    if (listing.rooms != null)
+      'immo.card.rooms'.trParams({'count': '${listing.rooms}'}),
+    if (listing.bedrooms != null)
+      'immo.card.bedrooms'.trParams({'count': '${listing.bedrooms}'}),
+    if (listing.rooms == null && listing.surfaceLabel != null)
+      listing.surfaceLabel!,
   ];
 
   return parts.join(' · ');
@@ -107,7 +153,11 @@ class _ImmoPhotoCarouselState extends State<ImmoPhotoCarousel> {
             if (images.isEmpty)
               ColoredBox(
                 color: context.ds.surfaceMuted,
-                child: Icon(Icons.home_work_outlined, size: 48, color: context.ds.textTertiary),
+                child: Icon(
+                  Icons.home_work_outlined,
+                  size: 48,
+                  color: context.ds.textTertiary,
+                ),
               )
             else
               PageView.builder(
@@ -137,7 +187,9 @@ class _ImmoPhotoCarouselState extends State<ImmoPhotoCarousel> {
                       height: 6,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: active ? 1 : 0.6),
-                        borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                        borderRadius: BorderRadius.circular(
+                          AppDesign.radiusPill,
+                        ),
                       ),
                     );
                   }),
@@ -153,7 +205,11 @@ class _ImmoPhotoCarouselState extends State<ImmoPhotoCarousel> {
 
 /// Bouton cœur rond, sur fond blanc, posé sur une photo.
 class ImmoFavoriteButton extends StatelessWidget {
-  const ImmoFavoriteButton({super.key, required this.isFavorite, required this.onPressed});
+  const ImmoFavoriteButton({
+    super.key,
+    required this.isFavorite,
+    required this.onPressed,
+  });
 
   final bool isFavorite;
   final VoidCallback onPressed;
@@ -182,7 +238,13 @@ class ImmoFavoriteButton extends StatelessWidget {
 
 /// Pastille posée sur une photo (À la une, Réduction, Visite pièce par pièce).
 class ImmoPhotoTag extends StatelessWidget {
-  const ImmoPhotoTag({super.key, required this.label, this.icon, this.color, this.textColor});
+  const ImmoPhotoTag({
+    super.key,
+    required this.label,
+    this.icon,
+    this.color,
+    this.textColor,
+  });
 
   final String label;
   final IconData? icon;
@@ -194,7 +256,10 @@ class ImmoPhotoTag extends StatelessWidget {
     final fg = textColor ?? Colors.white;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesign.space2, vertical: AppDesign.space1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesign.space2,
+        vertical: AppDesign.space1,
+      ),
       decoration: BoxDecoration(
         color: color ?? AppDesign.neutral900.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(AppDesign.radiusPill),
@@ -208,7 +273,11 @@ class ImmoPhotoTag extends StatelessWidget {
           ],
           Text(
             label,
-            style: context.textStyle(FontSizeType.caption, fontWeight: FontWeight.w600, color: fg),
+            style: context.textStyle(
+              FontSizeType.caption,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
           ),
         ],
       ),
@@ -226,12 +295,18 @@ class ImmoAvailability extends StatelessWidget {
   Widget build(BuildContext context) {
     final soldOut = listing.unitsAvailable <= 0;
     final now = listing.availableNow || listing.availableFrom == null;
-    final color = soldOut ? AppDesign.danger : (now ? AppDesign.success : AppDesign.info);
+    final color = soldOut
+        ? AppDesign.danger
+        : (now ? AppDesign.success : AppDesign.info);
     final label = soldOut
         ? 'immo.card.unavailable'.tr
         : now
-            ? (listing.isLand ? 'immo.card.land_available'.tr : 'immo.card.available_now'.tr)
-            : 'immo.card.available_from'.trParams({'date': immoDate(listing.availableFrom!)});
+        ? (listing.isLand
+              ? 'immo.card.land_available'.tr
+              : 'immo.card.available_now'.tr)
+        : 'immo.card.available_from'.trParams({
+            'date': immoDate(listing.availableFrom!),
+          });
 
     return Row(
       children: [
@@ -246,12 +321,18 @@ class ImmoAvailability extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: context.ds.textPrimary),
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w600,
+              color: context.ds.textPrimary,
+            ),
           ),
         ),
         if (listing.lowStock && !soldOut)
           AppBadge(
-            label: 'immo.card.places_left'.trParams({'count': '${listing.unitsAvailable}'}),
+            label: 'immo.card.places_left'.trParams({
+              'count': '${listing.unitsAvailable}',
+            }),
             tone: AppBadgeTone.danger,
             icon: Icons.error_outline_rounded,
           ),
@@ -270,32 +351,42 @@ class ImmoPriceText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final price = immoPrice(listing.price);
-      final suffix = listing.isLand ? '' : ' ${'immo.card.per_month'.tr}';
+      final price = immoOfferPrice(listing);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (listing.priceFrom)
-            Text('immo.card.from'.tr, style: context.textStyle(FontSizeType.caption, color: context.ds.textSecondary)),
+            Text(
+              'immo.card.from'.tr,
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: context.ds.textSecondary,
+              ),
+            ),
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.end,
             spacing: AppDesign.space2,
             children: [
               Text(
-                '$price$suffix',
+                price,
                 style: context.textStyle(
                   large ? FontSizeType.h5 : FontSizeType.subtitle1,
                   fontWeight: FontWeight.w800,
-                  color: listing.isLand ? context.ds.textPrimary : AppDesign.accent,
+                  color: listing.isLand
+                      ? context.ds.textPrimary
+                      : AppDesign.accent,
                 ),
               ),
-              if (listing.oldPrice != null && listing.oldPrice! > listing.price)
+              if (immoHasDiscount(listing))
                 Text(
-                  immoPrice(listing.oldPrice!),
+                  immoOfferPrice(listing, old: true),
                   style: context
-                      .textStyle(FontSizeType.body2, color: context.ds.textTertiary)
+                      .textStyle(
+                        FontSizeType.body2,
+                        color: context.ds.textTertiary,
+                      )
                       .copyWith(decoration: TextDecoration.lineThrough),
                 ),
             ],
@@ -306,9 +397,14 @@ class ImmoPriceText extends StatelessWidget {
   }
 }
 
-/// Carte d'une maison à louer (maquette ASSO + Studapart).
+/// Carte d'une maison à louer ou à vendre (maquette ASSO + Studapart).
 class ImmoHouseCard extends StatelessWidget {
-  const ImmoHouseCard({super.key, required this.listing, required this.onTap, required this.onFavorite});
+  const ImmoHouseCard({
+    super.key,
+    required this.listing,
+    required this.onTap,
+    required this.onFavorite,
+  });
 
   final RealEstateListing listing;
   final VoidCallback onTap;
@@ -342,25 +438,50 @@ class ImmoHouseCard extends StatelessWidget {
                   spacing: AppDesign.space1,
                   runSpacing: AppDesign.space1,
                   children: [
+                    ImmoPhotoTag(
+                      label:
+                          (listing.isSale
+                                  ? 'immo.home.transaction_sale'
+                                  : 'immo.home.transaction_rent')
+                              .tr,
+                    ),
                     if (listing.isFeatured)
-                      ImmoPhotoTag(label: 'immo.card.featured'.tr, color: AppDesign.accent, icon: Icons.star_rounded),
-                    if (listing.oldPrice != null || (listing.promoText?.isNotEmpty ?? false))
-                      ImmoPhotoTag(label: 'immo.card.discount'.tr, color: AppDesign.info, icon: Icons.bolt_rounded),
+                      ImmoPhotoTag(
+                        label: 'immo.card.featured'.tr,
+                        color: AppDesign.accent,
+                        icon: Icons.star_rounded,
+                      ),
+                    if (listing.oldPrice != null ||
+                        (listing.promoText?.isNotEmpty ?? false))
+                      ImmoPhotoTag(
+                        label: 'immo.card.discount'.tr,
+                        color: AppDesign.info,
+                        icon: Icons.bolt_rounded,
+                      ),
                     if (listing.hasRoomTour)
-                      ImmoPhotoTag(label: 'immo.card.room_tour'.tr, icon: Icons.view_carousel_outlined),
+                      ImmoPhotoTag(
+                        label: 'immo.card.room_tour'.tr,
+                        icon: Icons.view_carousel_outlined,
+                      ),
                   ],
                 ),
               ),
               Positioned(
                 top: AppDesign.space2,
                 right: AppDesign.space2,
-                child: ImmoFavoriteButton(isFavorite: listing.isFavorite, onPressed: onFavorite),
+                child: ImmoFavoriteButton(
+                  isFavorite: listing.isFavorite,
+                  onPressed: onFavorite,
+                ),
               ),
               if (listing.hasVideo)
                 Positioned(
                   bottom: AppDesign.space2,
                   right: AppDesign.space2,
-                  child: ImmoPhotoTag(label: 'immo.card.video'.tr, icon: Icons.play_circle_outline_rounded),
+                  child: ImmoPhotoTag(
+                    label: 'immo.card.video'.tr,
+                    icon: Icons.play_circle_outline_rounded,
+                  ),
                 ),
             ],
           ),
@@ -373,21 +494,31 @@ class ImmoHouseCard extends StatelessWidget {
                   listing.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary),
+                  style: context.textStyle(
+                    FontSizeType.subtitle1,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
                 ),
                 if (details.isNotEmpty) ...[
                   const SizedBox(height: AppDesign.space1),
                   _IconLine(icon: Icons.bed_outlined, text: details),
                 ],
                 const SizedBox(height: AppDesign.space1),
-                _IconLine(icon: Icons.location_on_outlined, text: listing.place),
+                _IconLine(
+                  icon: Icons.location_on_outlined,
+                  text: listing.place,
+                ),
                 if (extras.isNotEmpty) ...[
                   const SizedBox(height: AppDesign.space1),
                   Text(
                     extras,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      color: context.ds.textSecondary,
+                    ),
                   ),
                 ],
                 const SizedBox(height: AppDesign.space2),
@@ -397,7 +528,10 @@ class ImmoHouseCard extends StatelessWidget {
           ),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3, vertical: AppDesign.space2 + 2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDesign.space3,
+              vertical: AppDesign.space2 + 2,
+            ),
             decoration: BoxDecoration(
               color: context.ds.surfaceMuted,
               border: Border(top: BorderSide(color: context.ds.border)),
@@ -412,7 +546,13 @@ class ImmoHouseCard extends StatelessWidget {
 
 /// Carte d'un terrain à vendre (SeLoger Construire + affiche du cabinet).
 class ImmoLandCard extends StatelessWidget {
-  const ImmoLandCard({super.key, required this.listing, required this.onTap, required this.onFavorite, this.onCabinet});
+  const ImmoLandCard({
+    super.key,
+    required this.listing,
+    required this.onTap,
+    required this.onFavorite,
+    this.onCabinet,
+  });
 
   final RealEstateListing listing;
   final VoidCallback onTap;
@@ -446,13 +586,19 @@ class ImmoLandCard extends StatelessWidget {
               Positioned(
                 top: AppDesign.space2,
                 right: AppDesign.space2,
-                child: ImmoFavoriteButton(isFavorite: listing.isFavorite, onPressed: onFavorite),
+                child: ImmoFavoriteButton(
+                  isFavorite: listing.isFavorite,
+                  onPressed: onFavorite,
+                ),
               ),
               if (listing.photosCount > 0)
                 Positioned(
                   bottom: AppDesign.space2,
                   right: AppDesign.space2,
-                  child: ImmoPhotoTag(label: '${listing.photosCount}', icon: Icons.photo_camera_outlined),
+                  child: ImmoPhotoTag(
+                    label: '${listing.photosCount}',
+                    icon: Icons.photo_camera_outlined,
+                  ),
                 ),
             ],
           ),
@@ -463,20 +609,29 @@ class ImmoLandCard extends StatelessWidget {
               children: [
                 Text(
                   immoKindLabel(listing),
-                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: context.ds.textPrimary),
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w700,
+                    color: context.ds.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: AppDesign.space1),
                 ImmoPriceText(listing: listing, large: true),
                 const SizedBox(height: AppDesign.space1),
                 Text(
                   listing.place,
-                  style: context.textStyle(FontSizeType.body1, color: context.ds.textPrimary),
+                  style: context.textStyle(
+                    FontSizeType.body1,
+                    color: context.ds.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: AppDesign.space3),
                 _LandRow(
                   icon: Icons.description_outlined,
                   label: 'immo.land.title_deed'.tr,
-                  value: listing.landTitled ? 'immo.land.titled'.tr : 'immo.land.not_titled'.tr,
+                  value: listing.landTitled
+                      ? 'immo.land.titled'.tr
+                      : 'immo.land.not_titled'.tr,
                   highlighted: listing.landTitled,
                 ),
                 const SizedBox(height: AppDesign.space2),
@@ -499,7 +654,12 @@ class ImmoLandCard extends StatelessWidget {
 }
 
 class _LandRow extends StatelessWidget {
-  const _LandRow({required this.icon, required this.label, required this.value, this.highlighted = false});
+  const _LandRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.highlighted = false,
+  });
 
   final IconData icon;
   final String label;
@@ -511,7 +671,10 @@ class _LandRow extends StatelessWidget {
     final fg = highlighted ? AppDesign.successText : context.ds.textSecondary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3, vertical: AppDesign.space2 + 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesign.space3,
+        vertical: AppDesign.space2 + 2,
+      ),
       decoration: BoxDecoration(
         color: highlighted ? AppDesign.successSubtle : context.ds.surfaceMuted,
         borderRadius: BorderRadius.circular(AppDesign.radiusSm),
@@ -520,7 +683,14 @@ class _LandRow extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: fg),
           const SizedBox(width: AppDesign.space2),
-          Text(label, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: fg)),
+          Text(
+            label,
+            style: context.textStyle(
+              FontSizeType.body2,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
           const SizedBox(width: AppDesign.space2),
           Expanded(
             child: Text(
@@ -528,7 +698,11 @@ class _LandRow extends StatelessWidget {
               textAlign: TextAlign.end,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: fg),
+              style: context.textStyle(
+                FontSizeType.body2,
+                fontWeight: FontWeight.w700,
+                color: fg,
+              ),
             ),
           ),
         ],
@@ -554,7 +728,10 @@ class _IconLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary),
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textSecondary,
+            ),
           ),
         ),
       ],
@@ -581,8 +758,16 @@ class ImmoCabinetLogo extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: url == null || url!.isEmpty
-          ? Icon(Icons.account_balance_outlined, size: size * 0.5, color: context.ds.textSecondary)
-          : AppNetworkImage(url: url!, decodeSize: Size(size, size), fit: BoxFit.contain),
+          ? Icon(
+              Icons.account_balance_outlined,
+              size: size * 0.5,
+              color: context.ds.textSecondary,
+            )
+          : AppNetworkImage(
+              url: url!,
+              decodeSize: Size(size, size),
+              fit: BoxFit.contain,
+            ),
     );
   }
 }
@@ -615,11 +800,21 @@ class ImmoFilterChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDesign.radiusPill),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3, vertical: AppDesign.space2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesign.space3,
+            vertical: AppDesign.space2,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label, style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: fg)),
+              Text(
+                label,
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+              ),
               if (icon != null || trailing != null) ...[
                 const SizedBox(width: AppDesign.space1),
                 Icon(icon ?? trailing, size: 18, color: fg),
@@ -642,10 +837,13 @@ class ImmoCardSkeleton extends StatelessWidget {
     final base = isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey200;
     final highlight = isDark ? AppThemeSystem.grey700 : AppThemeSystem.grey100;
     Widget block(double height, {double? width}) => Container(
-          height: height,
-          width: width,
-          decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(AppDesign.radiusXs)),
-        );
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(AppDesign.radiusXs),
+      ),
+    );
 
     return Shimmer.fromColors(
       baseColor: base,

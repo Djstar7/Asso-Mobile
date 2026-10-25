@@ -12,6 +12,44 @@ void main() {
     'price': 100000,
   };
 
+  test('preserves a house sale and its total selling price', () {
+    final listing = RealEstateListing.fromJson({
+      ...baseListing,
+      'type': 'sale',
+      'price': 35000000,
+    });
+    expect(listing.isSale, isTrue);
+    expect(listing.isRent, isFalse);
+    expect(listing.isLand, isFalse);
+    expect(listing.type.api, 'sale');
+    expect(listing.price, 35000000);
+  });
+
+  test('preserves land unit rates separately from payment totals', () {
+    final listing = RealEstateListing.fromJson({
+      ...baseListing,
+      'type': 'land',
+      'price': 4000000,
+      'price_per_m2': '10000.5',
+      'old_price_per_m2': 12000,
+      'units': [
+        {
+          'id': 1,
+          'label': '400 m²',
+          'surface_min': 400,
+          'price': 4000000,
+          'price_per_m2': 10000,
+          'old_price_per_m2': 12000,
+        },
+      ],
+    });
+    expect(listing.price, 4000000);
+    expect(listing.pricePerM2, 10000.5);
+    expect(listing.oldPricePerM2, 12000);
+    expect(listing.units.single.pricePerM2, 10000);
+    expect(listing.units.single.oldPricePerM2, 12000);
+  });
+
   test('parses the API ownership flag for the current viewer', () {
     final listing = RealEstateListing.fromJson({
       ...baseListing,
@@ -75,40 +113,43 @@ void main() {
     expect(paid.hasVisibleContact, isTrue);
     expect(paid.contact?['phone'], '+237 600 000 000');
   });
-  test('preserves the API fee amounts and recipients without recalculation', () {
-    final quote = RealEstateQuote.fromJson({
-      'unit_price': 110,
-      'base_amount': 110,
-      'net_amount': 100,
-      'platform_amount': 10,
-      'commission': 5,
-      'total': 115,
-      'net_payee_kind': 'landlord',
-      'commission_cabinet': {'id': 1, 'name': 'Cabinet Gwoda et Associés'},
-    });
-    final reservation = RealEstateReservation.fromJson({
-      'id': 1,
-      'reference': 'IMMO-1',
-      'net_amount': 100,
-      'platform_amount': 10,
-      'commission_amount': 5,
-      'partner_commission_amount': 5,
-      'total_amount': 115,
-      'net_payee_kind': 'cabinet',
-      'commission_cabinet': {'id': 1, 'name': 'Cabinet Gwoda et Associés'},
-    });
-    expect(quote.netAmount, 100);
-    expect(quote.platformAmount, 10);
-    expect(quote.commission, 5);
-    expect(quote.total, 115);
-    expect(quote.netPayeeKind, 'landlord');
-    expect(quote.commissionCabinet?.name, 'Cabinet Gwoda et Associés');
-    expect(reservation.netAmount, 100);
-    expect(reservation.platformAmount, 10);
-    expect(reservation.partnerCommissionAmount, 5);
-    expect(reservation.netPayeeKind, 'cabinet');
-    expect(reservation.commissionCabinet?.id, 1);
-  });
+  test(
+    'preserves the API fee amounts and recipients without recalculation',
+    () {
+      final quote = RealEstateQuote.fromJson({
+        'unit_price': 110,
+        'base_amount': 110,
+        'net_amount': 100,
+        'platform_amount': 10,
+        'commission': 5,
+        'total': 115,
+        'net_payee_kind': 'landlord',
+        'commission_cabinet': {'id': 1, 'name': 'Cabinet Gwoda et Associés'},
+      });
+      final reservation = RealEstateReservation.fromJson({
+        'id': 1,
+        'reference': 'IMMO-1',
+        'net_amount': 100,
+        'platform_amount': 10,
+        'commission_amount': 5,
+        'partner_commission_amount': 5,
+        'total_amount': 115,
+        'net_payee_kind': 'cabinet',
+        'commission_cabinet': {'id': 1, 'name': 'Cabinet Gwoda et Associés'},
+      });
+      expect(quote.netAmount, 100);
+      expect(quote.platformAmount, 10);
+      expect(quote.commission, 5);
+      expect(quote.total, 115);
+      expect(quote.netPayeeKind, 'landlord');
+      expect(quote.commissionCabinet?.name, 'Cabinet Gwoda et Associés');
+      expect(reservation.netAmount, 100);
+      expect(reservation.platformAmount, 10);
+      expect(reservation.partnerCommissionAmount, 5);
+      expect(reservation.netPayeeKind, 'cabinet');
+      expect(reservation.commissionCabinet?.id, 1);
+    },
+  );
 
   test('historical reservations do not invent a partner commission', () {
     final reservation = RealEstateReservation.fromJson({
@@ -122,5 +163,4 @@ void main() {
     expect(reservation.commissionAmount, 20);
     expect(reservation.totalAmount, 130);
   });
-
 }

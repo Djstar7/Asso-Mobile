@@ -40,7 +40,8 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
   }
 
   // Le favori posé sur la fiche revient à la carte par ImmoActions.
-  void _openListing(RealEstateListing listing) => ImmoNav.push(ImmoNav.listing, arguments: listing.id);
+  void _openListing(RealEstateListing listing) =>
+      ImmoNav.push(ImmoNav.listing, arguments: listing.id);
 
   void _toggleFavorite(RealEstateListing listing) {
     AuthGuard.requireAuth(
@@ -56,20 +57,22 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
 
     return Scaffold(
       backgroundColor: context.ds.canvas,
-      floatingActionButton: Obx(() => c.type.value == RealEstateType.land
-          ? FloatingActionButton.extended(
-              heroTag: 'immo-project',
-              backgroundColor: AppDesign.neutral900,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.architecture_rounded),
-              label: Text('immo.project.cta'.tr),
-              onPressed: () => AuthGuard.requireAuth(
-                context,
-                featureName: 'immo.feature.project'.tr,
-                onAuthenticated: () => ImmoNav.push(ImmoNav.project),
-              ),
-            )
-          : const SizedBox.shrink()),
+      floatingActionButton: Obx(
+        () => c.type.value == RealEstateType.land
+            ? FloatingActionButton.extended(
+                heroTag: 'immo-project',
+                backgroundColor: AppDesign.neutral900,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.architecture_rounded),
+                label: Text('immo.project.cta'.tr),
+                onPressed: () => AuthGuard.requireAuth(
+                  context,
+                  featureName: 'immo.feature.project'.tr,
+                  onAuthenticated: () => ImmoNav.push(ImmoNav.project),
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
       body: RefreshIndicator(
         color: AppDesign.accent,
         onRefresh: c.load,
@@ -79,23 +82,59 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
           slivers: [
             SliverPadding(
               padding: EdgeInsets.fromLTRB(gutter, AppDesign.space3, gutter, 0),
-              sliver: SliverList.list(children: [
-                Text(
-                  'immo.home.subtitle'.tr,
-                  style: context.textStyle(FontSizeType.body1, color: context.ds.textSecondary),
-                ),
-                const SizedBox(height: AppDesign.space3),
-                _TypeSwitch(c: c),
-                const SizedBox(height: AppDesign.space3),
-                _SearchRow(c: c),
-                const SizedBox(height: AppDesign.space3),
-                _FilterChips(c: c),
-                const SizedBox(height: AppDesign.space3),
-                _CriteriaBanner(c: c),
-                _PublishBanner(c: c),
-                _CountRow(c: c),
-                const SizedBox(height: AppDesign.space2),
-              ]),
+              sliver: SliverList.list(
+                children: [
+                  Text(
+                    'immo.home.subtitle'.tr,
+                    style: context.textStyle(
+                      FontSizeType.body1,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppDesign.space3),
+                  _TypeSwitch(c: c),
+                  Obx(
+                    () => c.type.value == RealEstateType.land
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(
+                              top: AppDesign.space2,
+                            ),
+                            child: Wrap(
+                              spacing: AppDesign.space2,
+                              children: [
+                                for (final transaction in <RealEstateType?>[
+                                  null,
+                                  RealEstateType.rent,
+                                  RealEstateType.sale,
+                                ])
+                                  ImmoFilterChip(
+                                    label:
+                                        (transaction == null
+                                                ? 'immo.filters.all'
+                                                : 'immo.home.transaction_${transaction.api}')
+                                            .tr,
+                                    selected:
+                                        c.houseTransaction.value == transaction,
+                                    trailing: null,
+                                    onTap: () =>
+                                        c.setHouseTransaction(transaction),
+                                  ),
+                              ],
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: AppDesign.space3),
+                  _SearchRow(c: c),
+                  const SizedBox(height: AppDesign.space3),
+                  _FilterChips(c: c),
+                  const SizedBox(height: AppDesign.space3),
+                  _CriteriaBanner(c: c),
+                  _PublishBanner(c: c),
+                  _CountRow(c: c),
+                  const SizedBox(height: AppDesign.space2),
+                ],
+              ),
             ),
             Obx(() {
               if (c.isLoading.value) {
@@ -103,24 +142,34 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
                   padding: EdgeInsets.symmetric(horizontal: gutter),
                   sliver: SliverList.separated(
                     itemCount: 3,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppDesign.space4),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppDesign.space4),
                     itemBuilder: (_, _) => const ImmoCardSkeleton(),
                   ),
                 );
               }
               if (c.items.isEmpty) {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
+                return SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: gutter),
                     child: AppEmptyState(
-                      icon: c.hasError.value ? Icons.wifi_off_rounded : Icons.home_work_outlined,
-                      title: c.hasError.value ? 'immo.home.error'.tr : 'immo.home.empty_title'.tr,
-                      message: c.hasError.value ? null : 'immo.home.empty_message'.tr,
+                      icon: c.hasError.value
+                          ? Icons.wifi_off_rounded
+                          : Icons.home_work_outlined,
+                      title: c.hasError.value
+                          ? 'immo.home.error'.tr
+                          : 'immo.home.empty_title'.tr,
+                      message: c.hasError.value
+                          ? null
+                          : 'immo.home.empty_message'.tr,
                       actionLabel: c.hasError.value
                           ? 'immo.home.retry'.tr
-                          : (c.filters.isNotEmpty ? 'immo.filters.clear'.tr : null),
-                      onAction: c.hasError.value ? c.load : (c.filters.isNotEmpty ? c.clearFilters : null),
+                          : (c.filters.isNotEmpty
+                                ? 'immo.filters.clear'.tr
+                                : null),
+                      onAction: c.hasError.value
+                          ? c.load
+                          : (c.filters.isNotEmpty ? c.clearFilters : null),
                     ),
                   ),
                 );
@@ -130,13 +179,16 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
                 padding: EdgeInsets.fromLTRB(gutter, 0, gutter, 96),
                 sliver: SliverList.separated(
                   itemCount: c.items.length + (c.isLoadingMore.value ? 1 : 0),
-                  separatorBuilder: (_, _) => const SizedBox(height: AppDesign.space4),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppDesign.space4),
                   itemBuilder: (context, i) {
                     if (i >= c.items.length) {
-                      return const Center(child: Padding(
-                        padding: EdgeInsets.all(AppDesign.space4),
-                        child: CircularProgressIndicator(),
-                      ));
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(AppDesign.space4),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
                     }
                     final listing = c.items[i];
 
@@ -147,7 +199,10 @@ class _ImmoHomeViewState extends State<ImmoHomeView> {
                             onFavorite: () => _toggleFavorite(listing),
                             onCabinet: listing.cabinet == null
                                 ? null
-                                : () => ImmoNav.push(ImmoNav.cabinet, arguments: listing.cabinet!.id),
+                                : () => ImmoNav.push(
+                                    ImmoNav.cabinet,
+                                    arguments: listing.cabinet!.id,
+                                  ),
                           )
                         : ImmoHouseCard(
                             listing: listing,
@@ -176,7 +231,9 @@ class _TypeSwitch extends StatelessWidget {
     Widget item(RealEstateType type, IconData icon, String label) {
       return Expanded(
         child: Obx(() {
-          final selected = c.type.value == type;
+          final selected = type == RealEstateType.land
+              ? c.type.value == RealEstateType.land
+              : c.type.value != RealEstateType.land;
           final fg = selected ? Colors.white : context.ds.textPrimary;
 
           return Material(
@@ -186,7 +243,10 @@ class _TypeSwitch extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppDesign.radiusMd),
               onTap: () => c.switchType(type),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppDesign.space3 + 2, horizontal: AppDesign.space1),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppDesign.space3 + 2,
+                  horizontal: AppDesign.space1,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -197,7 +257,11 @@ class _TypeSwitch extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: fg),
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                        ),
                       ),
                     ),
                   ],
@@ -211,9 +275,17 @@ class _TypeSwitch extends StatelessWidget {
 
     return Row(
       children: [
-        item(RealEstateType.rent, Icons.home_rounded, 'immo.home.tab_rent'.tr),
+        item(
+          RealEstateType.rent,
+          Icons.home_rounded,
+          'immo.home.tab_houses'.tr,
+        ),
         const SizedBox(width: AppDesign.space2),
-        item(RealEstateType.land, Icons.landscape_outlined, 'immo.home.tab_land'.tr),
+        item(
+          RealEstateType.land,
+          Icons.landscape_outlined,
+          'immo.home.tab_land'.tr,
+        ),
       ],
     );
   }
@@ -239,20 +311,33 @@ class _SearchRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppDesign.space2),
-        Obx(() => Material(
-              color: c.filters.isEmpty ? context.ds.surface : AppDesign.accentSubtle,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-                side: BorderSide(color: c.filters.isEmpty ? context.ds.border : AppDesign.accentBorder),
+        Obx(
+          () => Material(
+            color: c.filters.isEmpty
+                ? context.ds.surface
+                : AppDesign.accentSubtle,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+              side: BorderSide(
+                color: c.filters.isEmpty
+                    ? context.ds.border
+                    : AppDesign.accentBorder,
               ),
-              child: IconButton(
-                tooltip: 'immo.filters.more'.tr,
-                icon: Icon(Icons.tune_rounded, color: c.filters.isEmpty ? context.ds.textPrimary : AppDesign.accent),
-                onPressed: () => c.type.value == RealEstateType.land
-                    ? showImmoLandFiltersSheet(c)
-                    : showImmoMoreFiltersSheet(c),
+            ),
+            child: IconButton(
+              tooltip: 'immo.filters.more'.tr,
+              icon: Icon(
+                Icons.tune_rounded,
+                color: c.filters.isEmpty
+                    ? context.ds.textPrimary
+                    : AppDesign.accent,
               ),
-            )),
+              onPressed: () => c.type.value == RealEstateType.land
+                  ? showImmoLandFiltersSheet(c)
+                  : showImmoMoreFiltersSheet(c),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -270,9 +355,16 @@ class _FilterChips extends StatelessWidget {
       child: Obx(() {
         final isLand = c.type.value == RealEstateType.land;
         final chips = <Widget>[
-          ImmoFilterChip(label: 'immo.filters.all'.tr, selected: c.filters.isEmpty, trailing: null, onTap: c.clearFilters),
           ImmoFilterChip(
-            label: isLand ? 'immo.filters.budget'.tr : 'immo.filters.price'.tr,
+            label: 'immo.filters.all'.tr,
+            selected: c.filters.isEmpty,
+            trailing: null,
+            onTap: c.clearFilters,
+          ),
+          ImmoFilterChip(
+            label: isLand
+                ? 'immo.filters.price_per_m2'.tr
+                : 'immo.filters.price'.tr,
             selected: c.hasAny(['price_min', 'price_max']),
             onTap: () => showImmoPriceSheet(c),
           ),
@@ -284,14 +376,25 @@ class _FilterChips extends StatelessWidget {
           if (isLand)
             ImmoFilterChip(
               label: 'immo.filters.land'.tr,
-              selected: c.hasAny(['surface_min', 'surface_max', 'serviced', 'titled']),
+              selected: c.hasAny([
+                'surface_min',
+                'surface_max',
+                'serviced',
+                'titled',
+              ]),
               onTap: () => showImmoLandFiltersSheet(c),
             )
           else
             ImmoFilterChip(
               label: 'immo.filters.more'.tr,
               icon: Icons.tune_rounded,
-              selected: c.hasAny(['rooms_min', 'bedrooms_min', 'furnished', 'not_landlocked', 'roadside']),
+              selected: c.hasAny([
+                'rooms_min',
+                'bedrooms_min',
+                'furnished',
+                'not_landlocked',
+                'roadside',
+              ]),
               onTap: () => showImmoMoreFiltersSheet(c),
             ),
         ];
@@ -317,7 +420,10 @@ class _CriteriaBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (c.type.value != RealEstateType.rent) return const SizedBox.shrink();
+      if (c.type.value == RealEstateType.land ||
+          c.houseTransaction.value != RealEstateType.rent) {
+        return const SizedBox.shrink();
+      }
       final saved = c.criteria.value;
 
       return Padding(
@@ -330,7 +436,11 @@ class _CriteriaBanner extends StatelessWidget {
           padding: const EdgeInsets.all(AppDesign.space3),
           child: Row(
             children: [
-              const Icon(Icons.manage_search_rounded, color: AppDesign.accent, size: 28),
+              const Icon(
+                Icons.manage_search_rounded,
+                color: AppDesign.accent,
+                size: 28,
+              ),
               const SizedBox(width: AppDesign.space3),
               Expanded(
                 child: Column(
@@ -339,17 +449,31 @@ class _CriteriaBanner extends StatelessWidget {
                     Text(
                       saved == null
                           ? 'immo.criteria.banner_title'.tr
-                          : 'immo.criteria.banner_matches'.trParams({'count': '${c.total.value}'}),
-                      style: context.textStyle(FontSizeType.body1, fontWeight: FontWeight.w700, color: AppDesign.accentText),
+                          : 'immo.criteria.banner_matches'.trParams({
+                              'count': '${c.total.value}',
+                            }),
+                      style: context.textStyle(
+                        FontSizeType.body1,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesign.accentText,
+                      ),
                     ),
                     Text(
-                      saved == null ? 'immo.criteria.banner_message'.tr : 'immo.criteria.banner_update'.tr,
-                      style: context.textStyle(FontSizeType.body2, color: AppDesign.accentText),
+                      saved == null
+                          ? 'immo.criteria.banner_message'.tr
+                          : 'immo.criteria.banner_update'.tr,
+                      style: context.textStyle(
+                        FontSizeType.body2,
+                        color: AppDesign.accentText,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppDesign.accentText),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppDesign.accentText,
+              ),
             ],
           ),
         ),
@@ -366,14 +490,22 @@ class _CountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final key = c.type.value == RealEstateType.land ? 'immo.home.count_land' : 'immo.home.count_rent';
+      final key = c.type.value == RealEstateType.land
+          ? 'immo.home.count_land'
+          : 'immo.home.count_houses';
 
       return Row(
         children: [
           Expanded(
             child: Text(
-              c.isLoading.value ? '' : key.trParams({'count': '${c.total.value}'}),
-              style: context.textStyle(FontSizeType.subtitle1, fontWeight: FontWeight.w700, color: context.ds.textPrimary),
+              c.isLoading.value
+                  ? ''
+                  : key.trParams({'count': '${c.total.value}'}),
+              style: context.textStyle(
+                FontSizeType.subtitle1,
+                fontWeight: FontWeight.w700,
+                color: context.ds.textPrimary,
+              ),
             ),
           ),
           TextButton(
@@ -381,12 +513,26 @@ class _CountRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${'immo.sort.label'.tr} ', style: context.textStyle(FontSizeType.body2, color: context.ds.textSecondary)),
+                Text(
+                  '${'immo.sort.label'.tr} ',
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    color: context.ds.textSecondary,
+                  ),
+                ),
                 Text(
                   'immo.sort.${c.sort.value}'.tr,
-                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: context.ds.textPrimary),
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                    color: context.ds.textPrimary,
+                  ),
                 ),
-                Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: context.ds.textPrimary),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: context.ds.textPrimary,
+                ),
               ],
             ),
           ),
@@ -410,7 +556,10 @@ class _PublishBanner extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(bottom: AppDesign.space3),
         child: AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: AppDesign.space3, vertical: AppDesign.space2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesign.space3,
+            vertical: AppDesign.space2,
+          ),
           onTap: () => AuthGuard.requireAuth(
             context,
             featureName: 'home.feature.landlord_mode'.tr,
@@ -418,14 +567,29 @@ class _PublishBanner extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.real_estate_agent_outlined, color: AppDesign.accent),
+              const Icon(
+                Icons.real_estate_agent_outlined,
+                color: AppDesign.accent,
+              ),
               const SizedBox(width: AppDesign.space3),
               Expanded(
-                child: Text('immo.home.publish'.tr,
-                    style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w600, color: context.ds.textPrimary)),
+                child: Text(
+                  'immo.home.publish'.tr,
+                  style: context.textStyle(
+                    FontSizeType.body2,
+                    fontWeight: FontWeight.w600,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
               ),
-              Text('immo.home.publish_cta'.tr,
-                  style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: AppDesign.accent)),
+              Text(
+                'immo.home.publish_cta'.tr,
+                style: context.textStyle(
+                  FontSizeType.body2,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesign.accent,
+                ),
+              ),
             ],
           ),
         ),

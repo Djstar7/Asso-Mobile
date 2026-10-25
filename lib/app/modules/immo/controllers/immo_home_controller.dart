@@ -8,16 +8,22 @@ import '../../../data/models/real_estate_models.dart';
 import '../../../data/providers/real_estate_service.dart';
 
 /// Tri de la liste, dans l'ordre du menu « Trier par ».
-const List<String> kImmoSorts = ['recent', 'price_asc', 'price_desc', 'featured'];
+const List<String> kImmoSorts = [
+  'recent',
+  'price_asc',
+  'price_desc',
+  'featured',
+];
 
 /// Page d'entrée de la rubrique : onglets Maisons à louer / Terrains à
 /// vendre, recherche, filtres, tri et liste paginée.
 class ImmoHomeController extends GetxController {
   ImmoHomeController({RealEstateType initialType = RealEstateType.rent})
-      : type = initialType.obs;
+    : type = initialType.obs;
 
   final Rx<RealEstateType> type;
   final RxString sort = 'recent'.obs;
+  final Rxn<RealEstateType> houseTransaction = Rxn<RealEstateType>();
 
   /// Filtres actifs, aux noms des paramètres de l'API.
   final RxMap<String, dynamic> filters = <String, dynamic>{}.obs;
@@ -42,6 +48,9 @@ class ImmoHomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (type.value == RealEstateType.sale) {
+      houseTransaction.value = RealEstateType.sale;
+    }
     scrollController.addListener(_onScroll);
     load();
     _loadSideData();
@@ -74,7 +83,10 @@ class ImmoHomeController extends GetxController {
 
   Map<String, dynamic> _query(int page) {
     final q = <String, dynamic>{
-      'type': type.value.api,
+      'type': type.value == RealEstateType.land
+          ? 'land'
+          : houseTransaction.value?.api ?? 'house',
+      if (type.value == RealEstateType.land) 'price_basis': 'per_m2',
       'sort': sort.value,
       'page': page,
       'per_page': 15,
@@ -92,6 +104,7 @@ class ImmoHomeController extends GetxController {
   Future<void> load() async {
     final requestId = ++_requestId;
     isLoading.value = true;
+    isLoadingMore.value = false;
     hasError.value = false;
 
     final page = await RealEstateService.listings(_query(1));
@@ -133,6 +146,13 @@ class ImmoHomeController extends GetxController {
     filters.clear();
     sort.value = 'recent';
     if (scrollController.hasClients) scrollController.jumpTo(0);
+    load();
+  }
+
+  void setHouseTransaction(RealEstateType? value) {
+    if (houseTransaction.value == value) return;
+    houseTransaction.value = value;
+    filters.clear();
     load();
   }
 

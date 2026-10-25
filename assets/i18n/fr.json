@@ -4603,6 +4603,10 @@
       "reservations": "vos réservations"
     },
     "home": {
+      "tab_houses": "Maisons",
+      "transaction_rent": "À louer",
+      "transaction_sale": "À vendre",
+      "count_houses": "@count maison(s)",
       "subtitle": "Trouvez votre prochain bien",
       "tab_rent": "Maisons à louer",
       "tab_land": "Terrains à vendre",
@@ -4639,6 +4643,7 @@
       "other": "Autre"
     },
     "card": {
+      "price_on_request": "Prix au m² sur demande",
       "rooms": "@count pièces",
       "bedrooms": "@count chambres",
       "furnished": "Meublé",
@@ -4663,6 +4668,7 @@
       "serviced": "Viabilisé"
     },
     "filters": {
+      "price_per_m2": "Prix au m²",
       "all": "Tous",
       "price": "Prix",
       "budget": "Budget",
@@ -4725,6 +4731,7 @@
       "banner_update": "Actualiser mon alerte"
     },
     "detail": {
+      "for_sale": "@kind à vendre",
       "not_found": "Ce bien n'est plus disponible",
       "for_rent": "@kind à louer",
       "photos": "Photos",
