@@ -84,7 +84,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                         ds.gutter,
                         AppDesign.space2,
                         ds.gutter,
-                        MediaQuery.of(context).viewPadding.bottom + AppDesign.space8,
+                        MediaQuery.of(context).viewPadding.bottom +
+                            AppDesign.space8,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,25 +139,32 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 Row(
                   children: [
                     Flexible(
-                      child: Obx(() => Text(
-                            controller.shopName.value,
-                            style: context.h6.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: ds.textPrimary,
-                              height: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          )),
+                      child: Obx(
+                        () => Text(
+                          controller.shopName.value,
+                          style: context.h6.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: ds.textPrimary,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                     // Certification : un pictogramme suffit, sans halo coloré.
-                    Obx(() => controller.isCertified.value
-                        ? Padding(
-                            padding: EdgeInsets.only(left: AppDesign.space1),
-                            child: Icon(Icons.verified_rounded,
-                                color: AppDesign.info, size: 16),
-                          )
-                        : const SizedBox.shrink()),
+                    Obx(
+                      () => controller.isCertified.value
+                          ? Padding(
+                              padding: EdgeInsets.only(left: AppDesign.space1),
+                              child: Icon(
+                                Icons.verified_rounded,
+                                color: AppDesign.info,
+                                size: 16,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                   ],
                 ),
                 Obx(() {
@@ -167,14 +175,20 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     padding: EdgeInsets.only(top: AppDesign.space1),
                     child: Row(
                       children: [
-                        Icon(Icons.place_outlined, size: 13, color: ds.textTertiary),
+                        Icon(
+                          Icons.place_outlined,
+                          size: 13,
+                          color: ds.textTertiary,
+                        ),
                         SizedBox(width: AppDesign.space1),
                         Flexible(
                           child: Text(
                             controller.shopLocation.value,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.caption.copyWith(color: ds.textTertiary),
+                            style: context.caption.copyWith(
+                              color: ds.textTertiary,
+                            ),
                           ),
                         ),
                       ],
@@ -211,8 +225,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             child: Image.network(
               controller.shopLogoUrl.value!,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Icon(Icons.storefront_outlined, color: ds.textTertiary, size: size * 0.4),
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.storefront_outlined,
+                color: ds.textTertiary,
+                size: size * 0.4,
+              ),
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return Center(
@@ -238,8 +255,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             ),
           );
         }
-        return Icon(Icons.storefront_outlined,
-            color: ds.textTertiary, size: size * 0.4);
+        return Icon(
+          Icons.storefront_outlined,
+          color: ds.textTertiary,
+          size: size * 0.4,
+        );
       }),
     );
   }
@@ -331,18 +351,20 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         SizedBox(height: AppDesign.space3),
 
         // Chiffre d'affaires : la donnée maîtresse de l'écran.
-        Obx(() => _buildPrimaryStat(
-              context,
-              label: 'vendor_dashboard.stats.sales_collected'.tr,
-              value: controller.formatPrice(controller.totalSales.value),
-              caption: (controller.totalOrders.value > 1
-                      ? 'vendor_dashboard.stats.orders_total_plural'
-                      : 'vendor_dashboard.stats.orders_total_singular')
-                  .trParams({'count': '${controller.totalOrders.value}'}),
-              onTap: controller.onlineOnly(
-                () => Get.to(() => const WalletView(), binding: WalletBinding()),
-              ),
-            )),
+        Obx(
+          () => _buildPrimaryStat(
+            context,
+            label: 'vendor_dashboard.stats.sales_collected'.tr,
+            value: controller.formatPrice(controller.totalSales.value),
+            caption:
+                (controller.totalOrders.value > 1
+                        ? 'vendor_dashboard.stats.orders_total_plural'
+                        : 'vendor_dashboard.stats.orders_total_singular')
+                    .trParams({'count': '${controller.totalOrders.value}'}),
+            onTap: () =>
+                Get.to(() => const WalletView(), binding: WalletBinding()),
+          ),
+        ),
 
         SizedBox(height: AppDesign.space3),
 
@@ -352,24 +374,32 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Obx(() => _buildStatCard(
-                      context,
-                      icon: Icons.storefront_outlined,
-                      label: 'vendor_dashboard.stats.shop_visits'.tr,
-                      value: formatter.format(controller.totalVisits.value),
-                      caption: 'vendor_dashboard.stats.last_7_days'.trParams({'count': formatter.format(controller.visitsLast7Days.value)}),
-                      onTap: controller.navigateToStatistics,
-                    )),
+                child: Obx(
+                  () => _buildStatCard(
+                    context,
+                    icon: Icons.storefront_outlined,
+                    label: 'vendor_dashboard.stats.shop_visits'.tr,
+                    value: formatter.format(controller.totalVisits.value),
+                    caption: 'vendor_dashboard.stats.last_7_days'.trParams({
+                      'count': formatter.format(
+                        controller.visitsLast7Days.value,
+                      ),
+                    }),
+                    onTap: controller.navigateToStatistics,
+                  ),
+                ),
               ),
               SizedBox(width: AppDesign.space3),
               Expanded(
-                child: Obx(() => _buildStatCard(
-                      context,
-                      icon: Icons.visibility_outlined,
-                      label: 'vendor_dashboard.stats.product_views'.tr,
-                      value: formatter.format(controller.totalProductViews.value),
-                      onTap: controller.navigateToStatistics,
-                    )),
+                child: Obx(
+                  () => _buildStatCard(
+                    context,
+                    icon: Icons.visibility_outlined,
+                    label: 'vendor_dashboard.stats.product_views'.tr,
+                    value: formatter.format(controller.totalProductViews.value),
+                    onTap: controller.navigateToStatistics,
+                  ),
+                ),
               ),
             ],
           ),
@@ -380,24 +410,28 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Obx(() => _buildStatCard(
-                      context,
-                      icon: Icons.inventory_2_outlined,
-                      label: 'vendor_dashboard.stats.products_online'.tr,
-                      value: '${controller.totalProducts.value}',
-                      onTap: controller.navigateToProductManagement,
-                    )),
+                child: Obx(
+                  () => _buildStatCard(
+                    context,
+                    icon: Icons.inventory_2_outlined,
+                    label: 'vendor_dashboard.stats.products_online'.tr,
+                    value: '${controller.totalProducts.value}',
+                    onTap: controller.navigateToProductManagement,
+                  ),
+                ),
               ),
               SizedBox(width: AppDesign.space3),
               Expanded(
-                child: Obx(() => _buildStatCard(
-                      context,
-                      icon: Icons.star_outline_rounded,
-                      label: 'vendor_dashboard.stats.average_rating'.tr,
-                      value: controller.rating.value > 0
-                          ? controller.rating.value.toStringAsFixed(1)
-                          : '—',
-                    )),
+                child: Obx(
+                  () => _buildStatCard(
+                    context,
+                    icon: Icons.star_outline_rounded,
+                    label: 'vendor_dashboard.stats.average_rating'.tr,
+                    value: controller.rating.value > 0
+                        ? controller.rating.value.toStringAsFixed(1)
+                        : '—',
+                  ),
+                ),
               ),
             ],
           ),
@@ -439,7 +473,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   ),
                 ),
                 if (onTap != null)
-                  Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: ds.textTertiary,
+                  ),
               ],
             ),
             SizedBox(height: AppDesign.space2),
@@ -556,7 +594,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline_rounded, size: 18, color: AppDesign.warningText),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: AppDesign.warningText,
+              ),
               SizedBox(width: AppDesign.space2),
               Expanded(
                 child: Text(
@@ -579,7 +621,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
             width: double.infinity,
             height: context.buttonHeight,
             child: ElevatedButton(
-              onPressed: controller.onlineOnly(() => Get.toNamed('/package-subscription')),
+              onPressed: controller.onlineOnly(
+                () => Get.toNamed('/package-subscription'),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppDesign.accent,
                 foregroundColor: AppDesign.neutral0,
@@ -605,9 +649,12 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   Widget _buildActivePackageCard(BuildContext context) {
     final ds = context.ds;
     final packageData = controller.packageInfo.value;
-    final packageName = packageData?['package']?['name'] ?? 'vendor_dashboard.package.default_name'.tr;
+    final packageName =
+        packageData?['package']?['name'] ??
+        'vendor_dashboard.package.default_name'.tr;
     final packagePriceRaw =
-        double.tryParse(packageData?['package']?['price']?.toString() ?? '0') ?? 0.0;
+        double.tryParse(packageData?['package']?['price']?.toString() ?? '0') ??
+        0.0;
     final packagePrice = packagePriceRaw > 0
         ? controller.formatPrice(packagePriceRaw)
         : (packageData?['package']?['formatted_price'] ?? '');
@@ -619,8 +666,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
     final gaugeColor = percentUsed > 90
         ? AppDesign.danger
         : percentUsed > 75
-            ? AppDesign.warning
-            : AppDesign.accent;
+        ? AppDesign.warning
+        : AppDesign.accent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,7 +676,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
           context,
           'vendor_dashboard.package.my_plan'.tr,
           action: 'vendor_dashboard.package.change'.tr,
-          onAction: controller.onlineOnly(() => Get.toNamed('/package-subscription')),
+          onAction: controller.onlineOnly(
+            () => Get.toNamed('/package-subscription'),
+          ),
         ),
         SizedBox(height: AppDesign.space3),
         Container(
@@ -660,7 +709,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                           SizedBox(height: 2),
                           Text(
                             packagePrice,
-                            style: context.body2.copyWith(color: ds.textSecondary),
+                            style: context.body2.copyWith(
+                              color: ds.textSecondary,
+                            ),
                           ),
                         ],
                       ],
@@ -701,7 +752,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     ),
                   ),
                   Text(
-                    'vendor_dashboard.package.storage_used'.trParams({'used': controller.storageUsedMb.value.toStringAsFixed(1)}),
+                    'vendor_dashboard.package.storage_used'.trParams({
+                      'used': controller.storageUsedMb.value.toStringAsFixed(1),
+                    }),
                     style: context.body2.copyWith(
                       color: ds.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -710,7 +763,10 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   Text(
                     controller.storageUnlimited.value
                         ? ' · ${'core.storage.unlimited'.tr}'
-                        : 'vendor_dashboard.package.storage_total'.trParams({'total': controller.storageTotalMb.value.toStringAsFixed(0)}),
+                        : 'vendor_dashboard.package.storage_total'.trParams({
+                            'total': controller.storageTotalMb.value
+                                .toStringAsFixed(0),
+                          }),
                     style: context.body2.copyWith(color: ds.textTertiary),
                   ),
                 ],
@@ -731,7 +787,8 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 Text(
                   'vendor_dashboard.package.storage_usage'.trParams({
                     'percent': percentUsed.toStringAsFixed(0),
-                    'remaining': controller.storageRemainingMb.value.toStringAsFixed(1),
+                    'remaining': controller.storageRemainingMb.value
+                        .toStringAsFixed(1),
                   }),
                   style: context.caption.copyWith(color: ds.textTertiary),
                 ),
@@ -749,7 +806,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   Expanded(
                     child: Text(
                       expiresAt != null
-                          ? 'vendor_dashboard.package.valid_until'.trParams({'date': DateFormat('d MMMM yyyy').format(DateTime.parse(expiresAt))})
+                          ? 'vendor_dashboard.package.valid_until'.trParams({
+                              'date': DateFormat(
+                                'd MMMM yyyy',
+                              ).format(DateTime.parse(expiresAt)),
+                            })
                           : 'vendor_dashboard.package.unknown_expiry'.tr,
                       style: context.body2.copyWith(color: ds.textSecondary),
                     ),
@@ -783,9 +844,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                           daysRemaining <= 0
                               ? 'vendor_dashboard.package.expired'.tr
                               : (daysRemaining > 1
-                                      ? 'vendor_dashboard.package.expires_in_days'
-                                      : 'vendor_dashboard.package.expires_in_day')
-                                  .trParams({'days': '$daysRemaining'}),
+                                        ? 'vendor_dashboard.package.expires_in_days'
+                                        : 'vendor_dashboard.package.expires_in_day')
+                                    .trParams({'days': '$daysRemaining'}),
                           style: context.body2.copyWith(
                             color: daysRemaining <= 3
                                 ? AppDesign.dangerText
@@ -883,23 +944,27 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 );
               }),
               _buildRowDivider(context),
-              Obx(() => _buildActionRow(
-                    context,
-                    icon: Icons.receipt_long_outlined,
-                    title: 'vendor_dashboard.actions.orders'.tr,
-                    subtitle: controller.pendingOrders.value > 0
-                        ? 'vendor_dashboard.actions.orders_pending'.trParams({'count': '${controller.pendingOrders.value}'})
-                        : 'vendor_dashboard.actions.orders_subtitle'.tr,
-                    badge: controller.pendingOrders.value,
-                    isUrgent: true,
-                    onTap: controller.onlineOnly(() async {
-                      await Get.to(
-                        () => const OrderManagementView(),
-                        binding: OrderManagementBinding(),
-                      );
-                      await controller.refreshData();
-                    }),
-                  )),
+              Obx(
+                () => _buildActionRow(
+                  context,
+                  icon: Icons.receipt_long_outlined,
+                  title: 'vendor_dashboard.actions.orders'.tr,
+                  subtitle: controller.pendingOrders.value > 0
+                      ? 'vendor_dashboard.actions.orders_pending'.trParams({
+                          'count': '${controller.pendingOrders.value}',
+                        })
+                      : 'vendor_dashboard.actions.orders_subtitle'.tr,
+                  badge: controller.pendingOrders.value,
+                  isUrgent: true,
+                  onTap: controller.onlineOnly(() async {
+                    await Get.to(
+                      () => const OrderManagementView(),
+                      binding: OrderManagementBinding(),
+                    );
+                    await controller.refreshData();
+                  }),
+                ),
+              ),
               _buildRowDivider(context),
               // Réclamations clients : répondre, remplacer ou organiser le retour.
               _buildActionRow(
@@ -907,7 +972,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.gavel_rounded,
                 title: 'disputes.vendor.list_title'.tr,
                 subtitle: 'disputes.vendor.dashboard_subtitle'.tr,
-                onTap: controller.onlineOnly(() => Get.toNamed(Routes.VENDOR_DISPUTES)),
+                onTap: controller.onlineOnly(
+                  () => Get.toNamed(Routes.VENDOR_DISPUTES),
+                ),
               ),
               _buildRowDivider(context),
               _buildActionRow(
@@ -931,7 +998,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.account_balance_wallet_outlined,
                 title: 'vendor_dashboard.actions.wallet'.tr,
                 subtitle: 'vendor_dashboard.actions.wallet_subtitle'.tr,
-                onTap: controller.onlineOnly(() => Get.toNamed('/wallet')),
+                onTap: () => Get.toNamed('/wallet'),
               ),
               _buildRowDivider(context),
               _buildActionRow(
@@ -939,7 +1006,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 icon: Icons.account_balance_outlined,
                 title: 'vendor_dashboard.actions.payout_account'.tr,
                 subtitle: 'vendor_dashboard.actions.payout_account_subtitle'.tr,
-                onTap: controller.onlineOnly(() => Get.toNamed('/stripe-connect')),
+                onTap: controller.onlineOnly(
+                  () => Get.toNamed('/stripe-connect'),
+                ),
                 isLast: true,
               ),
             ],
@@ -963,9 +1032,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   }
 
   Widget _buildRowDivider(BuildContext context) => Padding(
-        padding: EdgeInsets.only(left: AppDesign.space4 + 20 + AppDesign.space3),
-        child: Divider(height: 1, color: context.ds.border),
-      );
+    padding: EdgeInsets.only(left: AppDesign.space4 + 20 + AppDesign.space3),
+    child: Divider(height: 1, color: context.ds.border),
+  );
 
   Widget _buildActionRow(
     BuildContext context, {
@@ -1044,7 +1113,11 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                 ),
               ],
               SizedBox(width: AppDesign.space1),
-              Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: ds.textTertiary,
+              ),
             ],
           ),
         ),
@@ -1116,7 +1189,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
     } else if (failed > 0) {
       subtitle = failed == 1
           ? 'vendor_dashboard.pending.rejected_one'.tr
-          : 'vendor_dashboard.pending.rejected_many'.trParams({'count': '$failed'});
+          : 'vendor_dashboard.pending.rejected_many'.trParams({
+              'count': '$failed',
+            });
     } else if (!controller.isOnline.value) {
       subtitle = 'vendor_dashboard.pending.publish_when_online'.tr;
     } else {
@@ -1163,7 +1238,9 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     Text(
                       waiting + failed == 1
                           ? 'vendor_dashboard.pending.waiting_one'.tr
-                          : 'vendor_dashboard.pending.waiting_many'.trParams({'count': '${waiting + failed}'}),
+                          : 'vendor_dashboard.pending.waiting_many'.trParams({
+                              'count': '${waiting + failed}',
+                            }),
                       style: context.body1.copyWith(
                         fontWeight: FontWeight.w600,
                         color: ds.textPrimary,
@@ -1173,13 +1250,19 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     Text(
                       subtitle,
                       style: context.caption.copyWith(
-                        color: failed > 0 ? AppDesign.dangerText : ds.textTertiary,
+                        color: failed > 0
+                            ? AppDesign.dangerText
+                            : ds.textTertiary,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, size: 18, color: ds.textTertiary),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: ds.textTertiary,
+              ),
             ],
           ),
         ),
@@ -1287,9 +1370,7 @@ class _PendingProductsSheet extends StatelessWidget {
           );
         }
         return Column(
-          children: [
-            for (final item in items) _buildItem(context, sync, item),
-          ],
+          children: [for (final item in items) _buildItem(context, sync, item)],
         );
       }),
     );
@@ -1324,9 +1405,7 @@ class _PendingProductsSheet extends StatelessWidget {
                 width: 48,
                 height: 48,
                 child: FutureBuilder<Uint8List?>(
-                  future: thumbnail == null
-                      ? null
-                      : sync.imageBytes(thumbnail),
+                  future: thumbnail == null ? null : sync.imageBytes(thumbnail),
                   builder: (context, snapshot) {
                     final bytes = snapshot.data;
                     if (bytes != null && bytes.isNotEmpty) {
@@ -1361,15 +1440,18 @@ class _PendingProductsSheet extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     item.isFailed
-                        ? (item.error ?? 'vendor_dashboard.pending.rejected_by_server'.tr)
+                        ? (item.error ??
+                              'vendor_dashboard.pending.rejected_by_server'.tr)
                         : syncing
-                            ? 'vendor_dashboard.pending.sending'.tr
-                            : 'vendor_dashboard.pending.entered_on'.trParams({
-                                'date': DateFormat('dd/MM').format(item.createdAt),
-                                'time': DateFormat('HH:mm').format(item.createdAt),
-                              }),
+                        ? 'vendor_dashboard.pending.sending'.tr
+                        : 'vendor_dashboard.pending.entered_on'.trParams({
+                            'date': DateFormat('dd/MM').format(item.createdAt),
+                            'time': DateFormat('HH:mm').format(item.createdAt),
+                          }),
                     style: context.caption.copyWith(
-                      color: item.isFailed ? AppDesign.dangerText : ds.textTertiary,
+                      color: item.isFailed
+                          ? AppDesign.dangerText
+                          : ds.textTertiary,
                     ),
                   ),
                   if (!syncing)
@@ -1407,7 +1489,9 @@ class _PendingProductsSheet extends StatelessWidget {
       AlertDialog(
         title: Text('vendor_dashboard.pending.remove_title'.tr),
         content: Text(
-          'vendor_dashboard.pending.remove_message'.trParams({'name': item.name}),
+          'vendor_dashboard.pending.remove_message'.trParams({
+            'name': item.name,
+          }),
         ),
         actions: [
           TextButton(

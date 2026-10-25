@@ -230,7 +230,6 @@ class ShopService {
       print('✅ SHOP SERVICE: API call completed');
       print('  └─ Success: ${response.success}');
       print('  └─ Status: ${response.statusCode}');
-      print('  └─ Pending count: ${response.data?['pending_count']}');
       print('========================================');
 
       return response;

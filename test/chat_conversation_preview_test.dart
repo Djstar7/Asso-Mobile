@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,8 +18,11 @@ import 'helpers/themed_app.dart';
 void main() {
   late Directory storage;
   dynamic lastMessage;
-  final client = MockClient(
-    (_) async => http.Response(
+  var unreadCount = 0;
+  Future<http.Response> Function(http.Request)? handler;
+  final client = MockClient((request) async {
+    if (handler != null) return handler!(request);
+    return http.Response(
       jsonEncode({
         'success': true,
         'conversations': [
@@ -27,13 +31,13 @@ void main() {
             'other_user': {'id': 2, 'name': 'Boutique Baleng'},
             'product': {'id': 12, 'image': 'https://example.test/product.jpg'},
             'last_message': lastMessage,
-            'unread_count': 0,
+            'unread_count': unreadCount,
           },
         ],
       }),
       200,
-    ),
-  );
+    );
+  });
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,8 +49,91 @@ void main() {
         );
     await GetStorage.init();
   });
+  setUp(() {
+    handler = null;
+    unreadCount = 0;
+  });
   tearDown(Get.reset);
   tearDownAll(() => storage.delete(recursive: true));
+
+  test('une réponse ancienne ne remplace pas la liste rafraîchie', () async {
+    final pending = Completer<http.Response>();
+    final started = Completer<void>();
+    var calls = 0;
+    handler = (_) async {
+      if (++calls == 1) {
+        started.complete();
+        return pending.future;
+      }
+      return http.Response(
+        jsonEncode({
+          'success': true,
+          'conversations': [
+            {'id': 2, 'last_message': 'Réponse récente'},
+          ],
+        }),
+        200,
+      );
+    };
+    await http.runWithClient(() async {
+      final controller = Get.put(ChatController());
+      final oldLoad = controller.refreshConversations();
+      await started.future;
+      await controller.loadConversations(refresh: true);
+      pending.complete(
+        http.Response(jsonEncode({'success': true, 'conversations': []}), 200),
+      );
+      await oldLoad;
+      expect(controller.conversations.single['lastMessage'], 'Réponse récente');
+      expect(controller.isLoading.value, isFalse);
+    }, () => client);
+  });
+
+  test('un échec réseau conserve la liste déjà affichée', () async {
+    final controller = Get.put(ChatController());
+    lastMessage = 'Message conservé';
+    await http.runWithClient(controller.refreshConversations, () => client);
+    handler = (_) async => http.Response('{}', 503);
+    await http.runWithClient(controller.refreshConversations, () => client);
+    expect(controller.conversations.single['lastMessage'], 'Message conservé');
+    expect(controller.isLoading.value, isFalse);
+  });
+
+  testWidgets('le retour actualise le dernier message et les non lus', (
+    tester,
+  ) async {
+    await http.runWithClient(() async {
+      lastMessage = 'Ancien message';
+      unreadCount = 1;
+      final controller = Get.put(ChatController());
+      await controller.refreshConversations();
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: const ChatView(),
+          getPages: [
+            GetPage(
+              name: '/chatdetail',
+              page: () => const Scaffold(body: Text('Discussion ouverte')),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(controller.totalUnreadCount, 1);
+      await tester.tap(find.text('Boutique Baleng'));
+      await tester.pumpAndSettle();
+      expect(find.text('Discussion ouverte'), findsOneWidget);
+      lastMessage = 'Nouveau message envoyé';
+      unreadCount = 0;
+      Get.back();
+      await tester.pumpAndSettle();
+      expect(find.text('Nouveau message envoyé'), findsOneWidget);
+      expect(controller.totalUnreadCount, 0);
+      expect(controller.isLoading.value, isFalse);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }, () => client);
+  });
 
   final cases = [
     (

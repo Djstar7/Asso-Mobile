@@ -1358,14 +1358,8 @@ class ProductView extends GetView<ProductController> {
     print('🗺️ OUVERTURE DES OPTIONS DE CARTE');
     print('🗺️ ════════════════════════════════════════════════════════════');
     print('📍 Location: $location');
-    print('📌 Latitude brute: $latitude (type: ${latitude?.runtimeType})');
-    print('📌 Longitude brute: $longitude (type: ${longitude?.runtimeType})');
     print('');
     print('🔍 Vérification des sources:');
-    print('   product[latitude]: ${product['latitude']}');
-    print('   product[longitude]: ${product['longitude']}');
-    print('   product[shop][latitude]: ${product['shop']?['latitude']}');
-    print('   product[shop][longitude]: ${product['shop']?['longitude']}');
     print('🗺️ ════════════════════════════════════════════════════════════');
     print('');
 

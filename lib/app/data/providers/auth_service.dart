@@ -1,10 +1,10 @@
-import 'dart:developer' as developer;
 import 'package:image_picker/image_picker.dart';
 import '../../core/values/constants.dart';
 import '../models/user_model.dart';
 import 'api_provider.dart';
 import 'storage_service.dart';
 import '../../core/utils/session_reset.dart';
+import '../../core/utils/session_scope.dart';
 
 /// Authentication service with OTP support
 class AuthService {
@@ -30,44 +30,10 @@ class AuthService {
     required String phone,
     String countryCode = '+237',
   }) async {
-    developer.log(
-      '========== SEND OTP ==========',
-      name: 'AuthService',
-      error: 'Phone: $countryCode$phone',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.sendOtpUrl,
       body: {'phone': phone, 'country_code': countryCode},
     );
-
-    developer.log(
-      'OTP sent response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
-    // Check if bypass is enabled
-    if (response.success && response.data != null) {
-      final bypassEnabled = response.data!['bypass_enabled'] ?? false;
-
-      if (bypassEnabled) {
-        developer.log(
-          '🔓 OTP BYPASS DETECTED IN RESPONSE',
-          name: 'AuthService',
-          error:
-              'Phone: $countryCode$phone, Channel: ${response.data!['channel']}',
-        );
-      }
-
-      // Log OTP code in development mode (only if not bypass)
-      if (!bypassEnabled && response.data!.containsKey('otp_code')) {
-        developer.log(
-          '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
-          name: 'AuthService',
-        );
-      }
-    }
 
     return response;
   }
@@ -77,109 +43,25 @@ class AuthService {
     required String fullPhone,
     required String otpCode,
   }) async {
-    developer.log(
-      '========== VERIFY OTP ==========',
-      name: 'AuthService',
-      error: 'Phone: $fullPhone, OTP: $otpCode',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.verifyOtpUrl,
       body: {'phone': fullPhone, 'otp_code': otpCode},
     );
 
-    developer.log(
-      'OTP verification response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
     if (response.success && response.data != null) {
-      final bypassMode = response.data!['bypass_mode'] ?? false;
-
-      print('');
-      print('========================================');
-      print('✅ OTP VERIFICATION SUCCESS${bypassMode ? ' (BYPASS MODE)' : ''}');
-      developer.log(
-        '✓ OTP Verification SUCCESS${bypassMode ? ' (BYPASS MODE)' : ''}',
-        name: 'AuthService',
-        error: 'Bypass: $bypassMode',
-      );
-
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;
-      final isNewUser = response.data!['is_new_user'] as bool? ?? false;
-
-      print(
-        '📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
-      );
-      developer.log(
-        'Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
-        name: 'AuthService',
-      );
 
       if (token != null && userData != null) {
-        print('💾 Saving auth session to storage (isNewUser: $isNewUser)');
-        developer.log(
-          '→ Saving auth session to storage',
-          name: 'AuthService',
-          error: 'Is new user: $isNewUser',
-        );
-
         final user = UserModel.fromJson(userData);
-        print(
-          '👤 User created from JSON: ID=${user.id}, Phone=${user.phone}, ProfileComplete=${user.isProfileComplete}',
-        );
-        developer.log(
-          'User created from JSON: ID=${user.id}, Phone=${user.phone}, ProfileComplete=${user.isProfileComplete}',
-          name: 'AuthService',
-        );
 
-        StorageService.saveAuthSession(token, user);
+        await StorageService.saveAuthSession(token, user);
 
         // Le mode invité laisse des controllers permanents et un cache anonymes :
         // les purger ici, une fois le token écrit, pour que l'app recharge tout
         // sous l'identité du compte qui vient de se connecter.
         SessionReset.onLogin();
-
-        print('✅ Session saved successfully');
-        developer.log(
-          '✓ Session saved successfully',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
-
-        // Verify it was actually saved
-        final savedToken = StorageService.getToken();
-        final savedUser = StorageService.getUser();
-        print(
-          '🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
-        );
-        developer.log(
-          'Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
-          name: 'AuthService',
-        );
-        print('========================================');
-        print('');
-      } else {
-        print('❌ Invalid response data - missing token or user');
-        print('   Token: ${token != null}, User: ${userData != null}');
-        developer.log(
-          '✗ Invalid response data - missing token or user',
-          name: 'AuthService',
-          error: 'Token: ${token != null}, User: ${userData != null}',
-        );
-        print('========================================');
-        print('');
       }
-    } else {
-      print('❌ OTP verification failed');
-      print('   Success: ${response.success}, Message: ${response.message}');
-      developer.log(
-        '✗ OTP verification failed',
-        name: 'AuthService',
-        error: 'Success: ${response.success}, Message: ${response.message}',
-      );
     }
 
     return response;
@@ -191,21 +73,9 @@ class AuthService {
     required String password,
     String countryCode = '+237',
   }) async {
-    developer.log(
-      '========== LOGIN ==========',
-      name: 'AuthService',
-      error: 'Phone: $countryCode$phone',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.loginUrl,
       body: {'phone': countryCode + phone, 'password': password},
-    );
-
-    developer.log(
-      'Login response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
     );
 
     if (response.success && response.data != null) {
@@ -213,34 +83,14 @@ class AuthService {
       final userData = response.data!['user'] as Map<String, dynamic>?;
 
       if (token != null && userData != null) {
-        developer.log('Login successful - saving session', name: 'AuthService');
-
         final user = UserModel.fromJson(userData);
-        StorageService.saveAuthSession(token, user);
+        await StorageService.saveAuthSession(token, user);
 
         // Le mode invité laisse des controllers permanents et un cache anonymes :
         // les purger ici, une fois le token écrit, pour que l'app recharge tout
         // sous l'identité du compte qui vient de se connecter.
         SessionReset.onLogin();
-
-        developer.log(
-          'Session saved',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
-      } else {
-        developer.log(
-          'Invalid response data - missing token or user',
-          name: 'AuthService',
-          error: 'Token: ${token != null}, User: ${userData != null}',
-        );
       }
-    } else {
-      developer.log(
-        'Login failed',
-        name: 'AuthService',
-        error: 'Message: ${response.message}',
-      );
     }
 
     return response;
@@ -254,12 +104,6 @@ class AuthService {
     String? firstName,
     String? lastName,
   }) async {
-    developer.log(
-      '========== REGISTER WITH EMAIL ==========',
-      name: 'AuthService',
-      error: 'Email: $email',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.registerEmailUrl,
       body: {
@@ -271,22 +115,6 @@ class AuthService {
       },
     );
 
-    developer.log(
-      'Register with email response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
-    // Log OTP code in development mode
-    if (response.success &&
-        response.data != null &&
-        response.data!.containsKey('otp_code')) {
-      developer.log(
-        '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
-        name: 'AuthService',
-      );
-    }
-
     return response;
   }
 
@@ -295,21 +123,9 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    developer.log(
-      '========== LOGIN WITH EMAIL ==========',
-      name: 'AuthService',
-      error: 'Email: $email',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.loginEmailUrl,
       body: {'email': email, 'password': password},
-    );
-
-    developer.log(
-      'Login with email response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
     );
 
     if (response.success && response.data != null) {
@@ -317,37 +133,14 @@ class AuthService {
       final userData = response.data!['user'] as Map<String, dynamic>?;
 
       if (token != null && userData != null) {
-        developer.log(
-          'Email login successful - saving session',
-          name: 'AuthService',
-        );
-
         final user = UserModel.fromJson(userData);
-        StorageService.saveAuthSession(token, user);
+        await StorageService.saveAuthSession(token, user);
 
         // Le mode invité laisse des controllers permanents et un cache anonymes :
         // les purger ici, une fois le token écrit, pour que l'app recharge tout
         // sous l'identité du compte qui vient de se connecter.
         SessionReset.onLogin();
-
-        developer.log(
-          'Session saved',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
-      } else {
-        developer.log(
-          'Invalid response data - missing token or user',
-          name: 'AuthService',
-          error: 'Token: ${token != null}, User: ${userData != null}',
-        );
       }
-    } else {
-      developer.log(
-        'Email login failed',
-        name: 'AuthService',
-        error: 'Message: ${response.message}',
-      );
     }
 
     return response;
@@ -358,103 +151,25 @@ class AuthService {
     required String email,
     required String otpCode,
   }) async {
-    developer.log(
-      '========== VERIFY EMAIL OTP ==========',
-      name: 'AuthService',
-      error: 'Email: $email, OTP: $otpCode',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.verifyEmailOtpUrl,
       body: {'email': email, 'otp_code': otpCode},
     );
 
-    developer.log(
-      'Email OTP verification response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
     if (response.success && response.data != null) {
-      print('');
-      print('========================================');
-      print('✅ EMAIL OTP VERIFICATION SUCCESS');
-      developer.log('✓ Email OTP Verification SUCCESS', name: 'AuthService');
-
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;
-      final isNewUser = response.data!['is_new_user'] as bool? ?? false;
-
-      print(
-        '📦 Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
-      );
-      developer.log(
-        'Response data: Token=${token != null ? "EXISTS (${token.substring(0, 20)}...)" : "NULL"}, User=${userData != null ? "EXISTS" : "NULL"}',
-        name: 'AuthService',
-      );
 
       if (token != null && userData != null) {
-        print('💾 Saving auth session to storage (isNewUser: $isNewUser)');
-        developer.log(
-          '→ Saving auth session to storage',
-          name: 'AuthService',
-          error: 'Is new user: $isNewUser',
-        );
-
         final user = UserModel.fromJson(userData);
-        print(
-          '👤 User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}',
-        );
-        developer.log(
-          'User created from JSON: ID=${user.id}, Email=${user.email}, ProfileComplete=${user.isProfileComplete}',
-          name: 'AuthService',
-        );
 
-        StorageService.saveAuthSession(token, user);
+        await StorageService.saveAuthSession(token, user);
 
         // Le mode invité laisse des controllers permanents et un cache anonymes :
         // les purger ici, une fois le token écrit, pour que l'app recharge tout
         // sous l'identité du compte qui vient de se connecter.
         SessionReset.onLogin();
-
-        print('✅ Session saved successfully');
-        developer.log(
-          '✓ Session saved successfully',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
-
-        // Verify it was actually saved
-        final savedToken = StorageService.getToken();
-        final savedUser = StorageService.getUser();
-        print(
-          '🔍 Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
-        );
-        developer.log(
-          'Verification: Token saved=${savedToken != null}, User saved=${savedUser != null}',
-          name: 'AuthService',
-        );
-        print('========================================');
-        print('');
-      } else {
-        print('❌ Invalid response data - missing token or user');
-        print('   Token: ${token != null}, User: ${userData != null}');
-        developer.log(
-          '✗ Invalid response data - missing token or user',
-          name: 'AuthService',
-          error: 'Token: ${token != null}, User: ${userData != null}',
-        );
-        print('========================================');
-        print('');
       }
-    } else {
-      print('❌ Email OTP verification failed');
-      print('   Success: ${response.success}, Message: ${response.message}');
-      developer.log(
-        '✗ Email OTP verification failed',
-        name: 'AuthService',
-        error: 'Success: ${response.success}, Message: ${response.message}',
-      );
     }
 
     return response;
@@ -462,27 +177,13 @@ class AuthService {
 
   /// Get user profile from API
   static Future<ApiResponse> getProfile() async {
-    developer.log('========== GET PROFILE ==========', name: 'AuthService');
-
     final response = await ApiProvider.get(AppConstants.profileUrl);
-
-    developer.log(
-      'Profile fetch response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
-    );
 
     if (response.success && response.data != null) {
       final userData = response.data!['user'] as Map<String, dynamic>?;
       if (userData != null) {
         final user = UserModel.fromJson(userData);
-        StorageService.saveUser(user);
-
-        developer.log(
-          'Profile updated',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
+        await StorageService.saveUser(user);
       }
     }
 
@@ -498,12 +199,6 @@ class AuthService {
     Map<String, dynamic> data, {
     XFile? avatar,
   }) async {
-    developer.log(
-      '========== UPDATE PROFILE ==========',
-      name: 'AuthService',
-      error: 'Data: $data, Avatar: ${avatar?.name}',
-    );
-
     final response = avatar == null
         ? await ApiProvider.put(AppConstants.profileUrl, body: data)
         : await ApiProvider.multipart(
@@ -516,23 +211,11 @@ class AuthService {
             mediaFiles: {'avatar': avatar},
           );
 
-    developer.log(
-      'Profile update response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
-    );
-
     if (response.success && response.data != null) {
       final userData = response.data!['user'] as Map<String, dynamic>?;
       if (userData != null) {
         final user = UserModel.fromJson(userData);
-        StorageService.saveUser(user);
-
-        developer.log(
-          'Profile saved',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
+        await StorageService.saveUser(user);
       }
     }
 
@@ -541,15 +224,7 @@ class AuthService {
 
   /// Get user preferences from backend
   static Future<ApiResponse> getPreferences() async {
-    developer.log('========== GET PREFERENCES ==========', name: 'AuthService');
-
     final response = await ApiProvider.get(AppConstants.getPreferencesUrl);
-
-    developer.log(
-      'Preferences fetch response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
-    );
 
     return response;
   }
@@ -558,21 +233,9 @@ class AuthService {
   static Future<ApiResponse> updatePreferences(
     Map<String, dynamic> preferences,
   ) async {
-    developer.log(
-      '========== UPDATE PREFERENCES ==========',
-      name: 'AuthService',
-      error: 'Preferences: $preferences',
-    );
-
     final response = await ApiProvider.put(
       AppConstants.updatePreferencesUrl,
       body: {'preferences': preferences},
-    );
-
-    developer.log(
-      'Preferences update response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
     );
 
     if (response.success) {
@@ -582,7 +245,7 @@ class AuthService {
       final currentUser = StorageService.getUser();
       if (currentUser != null) {
         final updatedUser = currentUser.copyWith(preferences: preferences);
-        StorageService.saveUser(updatedUser);
+        await StorageService.saveUser(updatedUser);
       }
     }
 
@@ -594,32 +257,10 @@ class AuthService {
     required String newPhone,
     String countryCode = '+237',
   }) async {
-    developer.log(
-      '========== REQUEST PHONE CHANGE ==========',
-      name: 'AuthService',
-      error: 'New phone: $countryCode$newPhone',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.requestPhoneChangeUrl,
       body: {'new_phone': newPhone, 'country_code': countryCode},
     );
-
-    developer.log(
-      'Phone change request response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
-    // Log OTP code in development mode
-    if (response.success &&
-        response.data != null &&
-        response.data!.containsKey('otp_code')) {
-      developer.log(
-        '⚠️ DEV MODE - OTP CODE: ${response.data!['otp_code']}',
-        name: 'AuthService',
-      );
-    }
 
     return response;
   }
@@ -630,12 +271,6 @@ class AuthService {
     required String otpCode,
     String countryCode = '+237',
   }) async {
-    developer.log(
-      '========== CONFIRM PHONE CHANGE ==========',
-      name: 'AuthService',
-      error: 'New phone: $newPhone, OTP: $otpCode',
-    );
-
     final response = await ApiProvider.post(
       AppConstants.confirmPhoneChangeUrl,
       body: {
@@ -645,30 +280,13 @@ class AuthService {
       },
     );
 
-    developer.log(
-      'Phone change confirmation response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}, Message: ${response.message}',
-    );
-
     if (response.success && response.data != null) {
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;
 
       if (token != null && userData != null) {
-        developer.log(
-          'Phone changed successfully - saving new session',
-          name: 'AuthService',
-        );
-
         final user = UserModel.fromJson(userData);
-        StorageService.saveAuthSession(token, user);
-
-        developer.log(
-          'New session saved',
-          name: 'AuthService',
-          error: 'User: ${user.toString()}',
-        );
+        await StorageService.saveAuthSession(token, user);
       }
     }
 
@@ -677,23 +295,12 @@ class AuthService {
 
   /// Delete account
   static Future<ApiResponse> deleteAccount() async {
-    developer.log('========== DELETE ACCOUNT ==========', name: 'AuthService');
-
+    final session = SessionScope.current;
     final response = await ApiProvider.post(AppConstants.deleteAccountUrl);
 
-    developer.log(
-      'Delete account response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
-    );
-
-    if (response.success) {
+    if (response.success && SessionScope.isCurrent(session)) {
       // Clear local session
-      StorageService.clearAuth();
-      developer.log(
-        'Account deleted - local session cleared',
-        name: 'AuthService',
-      );
+      await StorageService.clearAuth();
     }
 
     return response;
@@ -701,30 +308,23 @@ class AuthService {
 
   /// Logout
   static Future<ApiResponse> logout() async {
-    developer.log('========== LOGOUT ==========', name: 'AuthService');
-
+    final session = SessionScope.current;
     // Remove this session's device without disconnecting the other devices.
     final response = await ApiProvider.post(
       AppConstants.logoutUrl,
       body: {'fcm_token': StorageService.registeredFcmToken},
     );
 
-    developer.log(
-      'Logout response',
-      name: 'AuthService',
-      error: 'Success: ${response.success}',
-    );
+    if (!SessionScope.isCurrent(session)) return response;
 
     // Clear local session regardless of API response
-    StorageService.clearAuth();
+    await StorageService.clearAuth();
 
     // Réinitialiser l'état applicatif lié à l'ancien compte (controllers GetX
     // permanents, WebSocket) pour éviter que les données d'un utilisateur
     // ne persistent au logout ou au changement de compte.
     // `clearAuth` vide déjà le cache ; `clearControllers` suffit donc ici.
     SessionReset.clearControllers();
-
-    developer.log('Local session cleared', name: 'AuthService');
 
     return response;
   }
@@ -734,18 +334,12 @@ class AuthService {
   /// Check if user is logged in
   static bool get isLoggedIn {
     final loggedIn = StorageService.isAuthenticated;
-    developer.log('Is logged in: $loggedIn', name: 'AuthService');
     return loggedIn;
   }
 
   /// Get cached user
   static UserModel? get currentUser {
     final user = StorageService.getUser();
-    developer.log(
-      'Get current user',
-      name: 'AuthService',
-      error: user != null ? 'User: ${user.toString()}' : 'No user cached',
-    );
     return user;
   }
 

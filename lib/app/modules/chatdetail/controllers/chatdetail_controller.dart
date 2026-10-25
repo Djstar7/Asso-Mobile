@@ -332,8 +332,6 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         print('📥 [CHAT] API Response received:');
         print('   └─ Success: ${response.success}');
         print('   └─ Status Code: ${response.statusCode}');
-        print('   └─ Message: ${response.message}');
-        print('   └─ Data: ${response.data}');
 
         if (!response.success) {
           print('❌ [CHAT] Message sending failed!');

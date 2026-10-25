@@ -143,8 +143,6 @@ class PackageService {
       print('✅ PACKAGE SERVICE: API call completed');
       print('  └─ Success: ${response.success}');
       print('  └─ Status: ${response.statusCode}');
-      print('  └─ Subscription ID: ${response.data?['subscription_id']}');
-      print('  └─ Approval URL: ${response.data?['approval_url']}');
       print('========================================');
 
       return response;

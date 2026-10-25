@@ -1,5 +1,12 @@
-import 'dart:developer' as developer;
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:get/get.dart';
+import '../../core/utils/session_scope.dart';
+import 'secure_vault.dart';
+import 'offline_store.dart';
+import 'private_exports.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../core/values/constants.dart';
 import '../models/user_model.dart';
@@ -8,6 +15,78 @@ import 'cache_manager.dart';
 /// Service for managing local storage (tokens, user data, preferences)
 class StorageService {
   static final GetStorage _storage = GetStorage();
+  static const _sessionKey = 'asso_session_v1';
+  static const _revokedKey = 'session_revoked_v1';
+  static String? _token;
+  static UserModel? _user;
+
+  /// Called before any authenticated request or background service starts.
+  static Future<void> initSecureStorage() async {
+    final revoked = _storage.read<bool>(_revokedKey) == true;
+    if (revoked) {
+      _token = null;
+      _user = null;
+      await SecureVault.write(_sessionKey, null);
+    }
+    final encoded = revoked
+        ? null
+        : await SecureVault.storage.read(key: _sessionKey);
+    if (encoded != null) {
+      final data = jsonDecode(encoded) as Map<String, dynamic>;
+      _token = data['token'] as String?;
+      _user = data['user'] is Map
+          ? UserModel.fromJson(Map<String, dynamic>.from(data['user']))
+          : null;
+    } else {
+      final legacyToken = _storage.read<String>(AppConstants.keyToken);
+      final legacyUser = _storage.read(AppConstants.keyUser);
+      if (!revoked && legacyToken != null && legacyUser is Map) {
+        _token = legacyToken;
+        _user = UserModel.fromJson(Map<String, dynamic>.from(legacyUser));
+        // Commit securely before deleting the legacy copy.
+        await _persistSession();
+      }
+    }
+    await _storage.remove(AppConstants.keyToken);
+    await _storage.remove(AppConstants.keyUser);
+    // GetStorage's backup is asynchronous. Sanitize its recovery copy too.
+    if (!kIsWeb) {
+      final directory = await getApplicationDocumentsDirectory();
+      final backup = File('${directory.path}/GetStorage.bak');
+      if (await backup.exists()) {
+        final values = <String, dynamic>{
+          for (final key in _storage.getKeys<Iterable<dynamic>>())
+            key.toString(): _storage.read(key.toString()),
+        };
+        await backup.writeAsString(jsonEncode(values), flush: true);
+      }
+    }
+    SessionScope.invalidate();
+    userRevision.value++;
+  }
+
+  static Future<void> _persistSession() async {
+    final session = SessionScope.current;
+    final authenticated = _token != null && _user != null;
+    final encoded = _token == null && _user == null
+        ? null
+        : jsonEncode({'token': _token, 'user': _user?.toJson()});
+    try {
+      await SecureVault.write(_sessionKey, encoded);
+      if (authenticated && SessionScope.isCurrent(session)) {
+        await _storage.remove(_revokedKey);
+      }
+    } catch (error, stack) {
+      if (SessionScope.isCurrent(session)) {
+        _token = null;
+        _user = null;
+        SessionScope.invalidate();
+        userRevision.value++;
+        await _storage.write(_revokedKey, true);
+      }
+      Error.throwWithStackTrace(error, stack);
+    }
+  }
 
   /// Check if storage is initialized
   static bool get isInitialized {
@@ -15,11 +94,6 @@ class StorageService {
       _storage.read('test');
       return true;
     } catch (e) {
-      developer.log(
-        'StorageService NOT initialized',
-        name: 'StorageService',
-        error: e,
-      );
       return false;
     }
   }
@@ -27,40 +101,20 @@ class StorageService {
   // ==================== Token Management ====================
 
   /// Save authentication token
-  static void saveToken(String token) {
-    developer.log(
-      'Saving auth token',
-      name: 'StorageService',
-      error: 'Token length: ${token.length}',
-    );
-    _storage.write(AppConstants.keyToken, token);
+  static Future<void> saveToken(String token) {
+    SessionScope.invalidate();
+    _token = token.isEmpty ? null : token;
+    return _persistSession();
   }
 
-  /// Get stored token
-  static String? getToken() {
-    final token = _storage.read<String>(AppConstants.keyToken);
-    developer.log(
-      'Retrieved token',
-      name: 'StorageService',
-      error: token != null
-          ? 'Token exists (${token.length} chars)'
-          : 'No token found',
-    );
-    return token;
-  }
+  static String? getToken() => _token;
+  static bool get hasToken => _token != null && _token!.isNotEmpty;
 
-  /// Check if user has valid token
-  static bool get hasToken {
-    final token = getToken();
-    final hasValidToken = token != null && token.isNotEmpty;
-    developer.log('Token check: $hasValidToken', name: 'StorageService');
-    return hasValidToken;
-  }
-
-  /// Remove token
-  static void clearToken() {
-    developer.log('Clearing auth token', name: 'StorageService');
-    _storage.remove(AppConstants.keyToken);
+  static Future<void> clearToken() {
+    _storage.write(_revokedKey, true);
+    SessionScope.invalidate();
+    _token = null;
+    return _persistSession();
   }
 
   // ==================== User Data Management ====================
@@ -73,71 +127,30 @@ class StorageService {
   static final RxInt userRevision = 0.obs;
 
   /// Save user data to storage
-  static void saveUser(UserModel user) {
-    developer.log(
-      'Saving user data',
-      name: 'StorageService',
-      error: 'User: ${user.toString()}',
-    );
-    _storage.write(AppConstants.keyUser, user.toJson());
+  static Future<void> saveUser(UserModel user) {
+    if (_user?.id != user.id) SessionScope.invalidate();
+    _user = user;
     userRevision.value++;
+    return _persistSession();
   }
 
-  /// Get cached user data
-  static UserModel? getUser() {
-    try {
-      final data = _storage.read(AppConstants.keyUser);
-      if (data == null) {
-        developer.log('No cached user found', name: 'StorageService');
-        return null;
-      }
-
-      Map<String, dynamic> userData;
-      if (data is Map<String, dynamic>) {
-        userData = data;
-      } else {
-        userData = Map<String, dynamic>.from(data);
-      }
-
-      final user = UserModel.fromJson(userData);
-      developer.log(
-        'Retrieved cached user',
-        name: 'StorageService',
-        error: 'User: ${user.toString()}',
-      );
-      return user;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error getting cached user',
-        name: 'StorageService',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
+  static UserModel? getUser() => _user;
 
   /// Update user data
-  static void updateUser(UserModel user) {
-    saveUser(user);
-  }
+  static Future<void> updateUser(UserModel user) => saveUser(user);
 
   /// Remove user data
-  static void clearUser() {
-    developer.log('Clearing user data', name: 'StorageService');
-    _storage.remove(AppConstants.keyUser);
+  static Future<void> clearUser() {
+    SessionScope.invalidate();
+    _user = null;
     userRevision.value++;
+    return _persistSession();
   }
 
   // ==================== Preferences Management ====================
 
   /// Save user preferences
   static void savePreferences(Map<String, dynamic> preferences) {
-    developer.log(
-      'Saving preferences',
-      name: 'StorageService',
-      error: 'Preferences: $preferences',
-    );
     _storage.write(AppConstants.keyPreferences, preferences);
   }
 
@@ -152,11 +165,6 @@ class StorageService {
       }
       return Map<String, dynamic>.from(data);
     } catch (e) {
-      developer.log(
-        'Error getting preferences',
-        name: 'StorageService',
-        error: e,
-      );
       return null;
     }
   }
@@ -175,7 +183,6 @@ class StorageService {
 
   /// Clear preferences
   static void clearPreferences() {
-    developer.log('Clearing preferences', name: 'StorageService');
     _storage.remove(AppConstants.keyPreferences);
     _storage.remove(AppConstants.keyPreferencesPrompted);
   }
@@ -184,14 +191,12 @@ class StorageService {
 
   /// Mark onboarding as completed
   static void setOnboardingDone() {
-    developer.log('Marking onboarding as done', name: 'StorageService');
     _storage.write(AppConstants.keyOnboardingDone, true);
   }
 
   /// Check if onboarding was completed
   static bool get isOnboardingDone {
     final done = _storage.read(AppConstants.keyOnboardingDone) ?? false;
-    developer.log('Onboarding done: $done', name: 'StorageService');
     return done;
   }
 
@@ -204,7 +209,6 @@ class StorageService {
 
   /// Save theme mode
   static void saveThemeMode(String mode) {
-    developer.log('Saving theme mode: $mode', name: 'StorageService');
     _storage.write(AppConstants.keyThemeMode, mode);
   }
 
@@ -218,21 +222,18 @@ class StorageService {
   /// Check if user is authenticated
   static bool get isAuthenticated {
     final authenticated = hasToken && getUser() != null;
-    developer.log(
-      'Authentication check: $authenticated',
-      name: 'StorageService',
-    );
     return authenticated;
   }
 
   /// Clear all authentication data (logout)
-  static void clearAuth() {
-    developer.log(
-      '========== LOGOUT: Clearing all auth data ==========',
-      name: 'StorageService',
-    );
-    clearToken();
-    clearUser();
+  static Future<void> clearAuth() {
+    final scope = getUser()?.id;
+    final retiredSession = SessionScope.current;
+    final cleared = clearAuthSession();
+    final snapshots = OfflineStore.clearSnapshotsFor(scope);
+    final exports = kIsWeb
+        ? Future<void>.value()
+        : PrivateExports.cleanup(retiredSession: retiredSession);
     clearPreferences();
     clearCurrency(); // Clear currency selection
     clearCountry(); // Clear country selection
@@ -242,58 +243,40 @@ class StorageService {
     // Clear all cache data
     try {
       CacheManager().clearAll();
-      developer.log('Cache cleared successfully', name: 'StorageService');
-    } catch (e) {
-      developer.log('Error clearing cache', name: 'StorageService', error: e);
-    }
+    } catch (e) {}
 
-    developer.log(
-      'All user data cleared: token, user, preferences, currency, country, cache',
-      name: 'StorageService',
-    );
+    return Future.wait([cleared, snapshots, exports]);
   }
 
   /// Clear all storage data
-  static void clearAll() {
-    developer.log(
-      '========== CLEARING ALL STORAGE ==========',
-      name: 'StorageService',
-    );
-    _storage.erase();
+  static Future<void> clearAll() async {
+    await clearAuth();
+    await _storage.erase();
+  }
+
+  /// Memory switches synchronously; durable writes remain ordered.
+  static Future<void> saveAuthSession(String token, UserModel user) {
+    SessionScope.invalidate();
+    _token = token;
+    _user = user;
     userRevision.value++;
+    disableGuestMode();
+    return _persistSession();
   }
 
-  /// Save complete auth session (token + user)
-  static void saveAuthSession(String token, UserModel user) {
-    developer.log(
-      '========== SAVING AUTH SESSION ==========',
-      name: 'StorageService',
-      error: 'Token length: ${token.length}, User: ${user.toString()}',
-    );
-    saveToken(token);
-    saveUser(user);
-    disableGuestMode(); // Disable guest mode when user logs in
-  }
-
-  /// Clear auth session (token + user)
-  static void clearAuthSession() {
-    developer.log(
-      '========== CLEARING AUTH SESSION ==========',
-      name: 'StorageService',
-    );
-    _storage.remove(AppConstants.keyToken);
-    _storage.remove(AppConstants.keyUser);
+  static Future<void> clearAuthSession() {
+    _storage.write(_revokedKey, true);
+    SessionScope.invalidate();
+    _token = null;
+    _user = null;
+    userRevision.value++;
+    return _persistSession();
   }
 
   // ==================== Currency Management ====================
 
   /// Save user currency
   static void saveCurrency(Map<String, dynamic> currency) {
-    developer.log(
-      'Saving currency data',
-      name: 'StorageService',
-      error: 'Currency: $currency',
-    );
     _storage.write('user_currency', currency);
   }
 
@@ -302,7 +285,6 @@ class StorageService {
     try {
       final data = _storage.read('user_currency');
       if (data == null) {
-        developer.log('No cached currency found', name: 'StorageService');
         return null;
       }
 
@@ -311,18 +293,12 @@ class StorageService {
       }
       return Map<String, dynamic>.from(data);
     } catch (e) {
-      developer.log(
-        'Error getting cached currency',
-        name: 'StorageService',
-        error: e,
-      );
       return null;
     }
   }
 
   /// Clear currency data
   static void clearCurrency() {
-    developer.log('Clearing currency data', name: 'StorageService');
     _storage.remove('user_currency');
   }
 
@@ -354,11 +330,6 @@ class StorageService {
 
   /// Save user selected country
   static void saveCountry(String country) {
-    developer.log(
-      'Saving selected country',
-      name: 'StorageService',
-      error: 'Country: $country',
-    );
     _storage.write('user_country', country);
   }
 
@@ -367,23 +338,16 @@ class StorageService {
     try {
       final country = _storage.read('user_country');
       if (country == null) {
-        developer.log('No saved country found', name: 'StorageService');
         return null;
       }
       return country as String;
     } catch (e) {
-      developer.log(
-        'Error getting saved country',
-        name: 'StorageService',
-        error: e,
-      );
       return null;
     }
   }
 
   /// Clear country data
   static void clearCountry() {
-    developer.log('Clearing country data', name: 'StorageService');
     _storage.remove('user_country');
   }
 
@@ -394,20 +358,17 @@ class StorageService {
 
   /// Enable guest mode (skip authentication)
   static void enableGuestMode() {
-    developer.log('Enabling guest mode', name: 'StorageService');
     _storage.write('guest_mode', true);
   }
 
   /// Disable guest mode
   static void disableGuestMode() {
-    developer.log('Disabling guest mode', name: 'StorageService');
     _storage.remove('guest_mode');
   }
 
   /// Check if user is in guest mode
   static bool get isGuestMode {
     final isGuest = _storage.read('guest_mode') ?? false;
-    developer.log('Guest mode: $isGuest', name: 'StorageService');
     return isGuest;
   }
 

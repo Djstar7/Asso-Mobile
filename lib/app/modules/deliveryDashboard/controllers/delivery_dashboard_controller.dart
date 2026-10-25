@@ -193,7 +193,6 @@ class DeliveryDashboardController extends GetxController {
           print('⚠️  Pas d\'entreprise dans la réponse');
         }
       } else {
-        print('⚠️  Erreur API: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('❌ Erreur lors du chargement de l\'entreprise: $e');
@@ -272,7 +271,6 @@ class DeliveryDashboardController extends GetxController {
         // Si l'API échoue, initialiser avec liste vide
         allRequests.value = [];
         stats.value = _calculateStats();
-        print('⚠️  API failed: ${response.message}');
       }
 
       // Appliquer le filtre

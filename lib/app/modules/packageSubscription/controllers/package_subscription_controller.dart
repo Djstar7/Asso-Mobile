@@ -70,7 +70,6 @@ class PackageSubscriptionController extends GetxController {
           print('✅ Loaded ${packages.length} packages');
         }
       } else {
-        print('❌ Failed to load packages: ${response.message}');
         AppFeedback.show(
           'package_subscription.error'.tr,
           response.message.isNotEmpty

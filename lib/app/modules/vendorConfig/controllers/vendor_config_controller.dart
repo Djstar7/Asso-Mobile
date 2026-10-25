@@ -199,9 +199,6 @@ class VendorConfigController extends GetxController {
       print('✅ VENDOR CONFIG: Delivery partners loaded successfully');
       print('  └─ Total: ${loadedPartners.length}');
       for (var partner in loadedPartners) {
-        print(
-          '  └─ ${partner.name} - ${partner.zone.name} (${partner.zone.latitude}, ${partner.zone.longitude})',
-        );
       }
 
       isLoadingDeliveryPartners.value = false;
@@ -509,8 +506,6 @@ class VendorConfigController extends GetxController {
     print('========================================');
     print('🚚 VENDOR CONFIG: Checking delivery availability');
     print('========================================');
-    print('  └─ Latitude: $latitude');
-    print('  └─ Longitude: $longitude');
 
     isCheckingDeliveryAvailability.value = true;
     deliveryAvailabilityMessage.value = '';
@@ -524,7 +519,6 @@ class VendorConfigController extends GetxController {
       print('📥 VENDOR CONFIG: Delivery availability response received');
       print('  └─ Success: ${response.success}');
       print('  └─ Status Code: ${response.statusCode}');
-      print('  └─ Message: ${response.message}');
 
       if (response.success && response.data != null) {
         final available = response.data!['available'] as bool? ?? false;
@@ -536,7 +530,6 @@ class VendorConfigController extends GetxController {
         print('');
         print('🔔 DELIVERY AVAILABILITY RESULT:');
         print('  ├─ Available: $available');
-        print('  ├─ Message: $message');
         print(
           '  └─ isDeliveryAvailable.value is now: ${isDeliveryAvailable.value}',
         );
@@ -557,7 +550,6 @@ class VendorConfigController extends GetxController {
         deliveryAvailabilityMessage.value = response.message;
 
         print('⚠️ VENDOR CONFIG: API returned error');
-        print('  └─ Message: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('💥 VENDOR CONFIG: Exception caught during delivery check!');
@@ -715,8 +707,6 @@ class VendorConfigController extends GetxController {
 
         print('');
         print('🎯 USER SELECTED POSITION:');
-        print('  ├─ Latitude: $latitude');
-        print('  ├─ Longitude: $longitude');
         print('  └─ Address: $address');
         print('');
         print('🔍 Now checking delivery availability for this position...');
@@ -969,14 +959,10 @@ class VendorConfigController extends GetxController {
       print('📥 VENDOR CONFIG: API Response received');
       print('  └─ Success: ${response.success}');
       print('  └─ Status Code: ${response.statusCode}');
-      print('  └─ Message: ${response.message}');
 
       if (response.success) {
         print('✅ VENDOR CONFIG: Success!');
         if (response.data != null) {
-          print('  └─ Shop ID: ${response.data!['shop']?['id']}');
-          print('  └─ Shop Name: ${response.data!['shop']?['name']}');
-          print('  └─ User Role: ${response.data!['user']?['role']}');
 
           // IMPORTANT: Update user in storage with new role
           if (response.data!['user'] != null) {
@@ -999,7 +985,7 @@ class VendorConfigController extends GetxController {
                   companyName: userData['company_name'],
                   avatar: userData['avatar'],
                 );
-                StorageService.saveUser(updatedUser);
+                await StorageService.saveUser(updatedUser);
                 print('  └─ User updated in storage');
                 print('  └─ Role: ${updatedUser.role}');
                 print('  └─ Roles: ${updatedUser.roles}');
@@ -1036,7 +1022,6 @@ class VendorConfigController extends GetxController {
         print('========================================');
       } else {
         print('❌ VENDOR CONFIG: Failed');
-        print('  └─ Error Message: ${response.message}');
 
         AppFeedback.show(
           'vendor_config.error'.tr,

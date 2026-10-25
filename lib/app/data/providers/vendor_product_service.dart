@@ -112,7 +112,6 @@ class VendorProductService {
       print('  └─ Success: ${response.success}');
       print('  └─ Status: ${response.statusCode}');
       if (response.data != null && response.data!['storage_freed_mb'] != null) {
-        print('  └─ Storage Freed: ${response.data!['storage_freed_mb']} MB');
       }
       print('========================================');
 

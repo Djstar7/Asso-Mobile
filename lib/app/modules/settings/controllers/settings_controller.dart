@@ -1209,7 +1209,7 @@ class SettingsController extends GetxController {
       try {
         await AuthService.logout();
       } catch (e) {
-        StorageService.clearAuth();
+        await StorageService.clearAuth();
       }
 
       Get.offAllNamed(Routes.LOGIN);
@@ -1937,7 +1937,6 @@ class SettingsController extends GetxController {
       );
 
       print('📡 API Response - Success: ${response.success}');
-      print('📡 API Response - Data null?: ${response.data == null}');
 
       if (response.success && response.data != null) {
         final List currencies = response.data!['data'];
@@ -1989,7 +1988,6 @@ class SettingsController extends GetxController {
         print('✅ Countries loaded successfully!');
       } else {
         print('❌ API call failed or no data');
-        print('   Message: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('❌ Error fetching countries: $e');

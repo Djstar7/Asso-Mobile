@@ -87,7 +87,6 @@ class StoreManagementController extends GetxController {
       final response = await ShopService.getShop();
 
       print('📊 CONTROLLER: Response success: ${response.success}');
-      print('📊 CONTROLLER: Response data: ${response.data}');
 
       if (response.success && response.data != null) {
         final data = response.data!;
@@ -546,8 +545,6 @@ class StoreManagementController extends GetxController {
     print('========================================');
     print('🚚 STORE MANAGEMENT: Checking delivery availability');
     print('========================================');
-    print('  └─ Latitude: $latitude');
-    print('  └─ Longitude: $longitude');
 
     isCheckingDeliveryAvailability.value = true;
     deliveryAvailabilityMessage.value = '';
@@ -561,7 +558,6 @@ class StoreManagementController extends GetxController {
       print('📥 STORE MANAGEMENT: Delivery availability response received');
       print('  └─ Success: ${response.success}');
       print('  └─ Status Code: ${response.statusCode}');
-      print('  └─ Message: ${response.message}');
 
       if (response.success && response.data != null) {
         final available = response.data!['available'] as bool? ?? false;
@@ -573,7 +569,6 @@ class StoreManagementController extends GetxController {
         print('');
         print('🔔 DELIVERY AVAILABILITY RESULT:');
         print('  ├─ Available: $available');
-        print('  ├─ Message: $message');
         print('  └─ isDeliveryAvailable.value is now: ${isDeliveryAvailable.value}');
 
         if (available) {
@@ -586,7 +581,6 @@ class StoreManagementController extends GetxController {
         deliveryAvailabilityMessage.value = response.message;
 
         print('⚠️ STORE MANAGEMENT: API returned error');
-        print('  └─ Message: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('💥 STORE MANAGEMENT: Exception caught during delivery check!');
@@ -632,9 +626,6 @@ class StoreManagementController extends GetxController {
       print('  ├─ Name: $name');
       print('  ├─ Description: $description');
       print('  ├─ Address: $address');
-      print('  ├─ Phone: $phone');
-      print('  ├─ Latitude: $latitude');
-      print('  ├─ Longitude: $longitude');
       print('  ├─ Categories: $categories');
       print('  └─ City: $city');
 
@@ -643,9 +634,6 @@ class StoreManagementController extends GetxController {
       print('  ├─ Name: ${storeInfo.value?.name}');
       print('  ├─ Description: ${storeInfo.value?.description}');
       print('  ├─ Address: ${storeInfo.value?.address}');
-      print('  ├─ Phone: ${storeInfo.value?.phone}');
-      print('  ├─ Latitude: ${storeInfo.value?.latitude}');
-      print('  ├─ Longitude: ${storeInfo.value?.longitude}');
       print('  └─ Categories: ${storeInfo.value?.categories}');
 
       // Boutique déjà placée : l'emplacement ne part pas avec le formulaire, il
@@ -689,8 +677,6 @@ class StoreManagementController extends GetxController {
       print('📥 Response received from API:');
       print('  ├─ Success: ${response.success}');
       print('  ├─ Status Code: ${response.statusCode}');
-      print('  ├─ Message: ${response.message}');
-      print('  └─ Data: ${response.data}');
 
       if (response.success && response.data != null) {
         print('');
@@ -707,9 +693,6 @@ class StoreManagementController extends GetxController {
           print('  ├─ Name: ${storeInfo.value?.name}');
           print('  ├─ Description: ${storeInfo.value?.description}');
           print('  ├─ Address: ${storeInfo.value?.address}');
-          print('  ├─ Phone: ${storeInfo.value?.phone}');
-          print('  ├─ Latitude: ${storeInfo.value?.latitude}');
-          print('  ├─ Longitude: ${storeInfo.value?.longitude}');
           print('  └─ Categories: ${storeInfo.value?.categories}');
         }
 
@@ -718,7 +701,6 @@ class StoreManagementController extends GetxController {
         print('');
         print('========================================');
         print('✅ SAVE COMPLETED SUCCESSFULLY');
-        print('  └─ Message: $message');
         print('========================================');
 
         AppFeedback.show(

@@ -1,19 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Configuration pour le développement - permet HTTP -->
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <certificates src="user" />
         </trust-anchors>
     </base-config>
-
-    <!-- Configuration spécifique pour les domaines de développement -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">192.168.34.157</domain>
-        <domain includeSubdomains="true">192.168.1.213</domain>
-        <domain includeSubdomains="true">https://asso-dashboard.sbs/api</domain>
-    </domain-config>
 </network-security-config>

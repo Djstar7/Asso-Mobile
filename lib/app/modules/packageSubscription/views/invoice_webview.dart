@@ -98,7 +98,6 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
   }
 
   void _handleJavaScriptMessage(String message) {
-    debugPrint('📨 JavaScript message received: $message');
     try {
       final data = json.decode(message);
       debugPrint('📨 Decoded data: $data');
@@ -163,7 +162,6 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
       Get.back(); // Close loading dialog
 
       debugPrint('📥 PDF Response Status: ${response.statusCode}');
-      debugPrint('📥 PDF Response Body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
 
       if (response.statusCode == 200) {
         // Save to temporary file

@@ -52,7 +52,6 @@ class DeliveryCheckController extends GetxController {
           print('  └─ Company info loaded: ${response.success}');
 
           if (response.data != null) {
-            print('  └─ Response keys: ${response.data!.keys}');
 
             // Extraire les infos de l'entreprise
             if (response.data!['company'] != null) {
@@ -137,7 +136,7 @@ class DeliveryCheckController extends GetxController {
 
           try {
             final user = UserModel.fromJson(userData);
-            StorageService.saveUser(user);
+            await StorageService.saveUser(user);
             print('✅ Profil rafraîchi: role=${user.role}, roles=${user.roles}, isDelivery=${user.isDelivery}');
           } catch (parseError, stackTrace) {
             print('❌ Erreur de parsing du profil: $parseError');
@@ -147,7 +146,6 @@ class DeliveryCheckController extends GetxController {
           print('⚠️  Pas de données utilisateur dans la réponse');
         }
       } else {
-        print('⚠️  Erreur lors du rafraîchissement: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('❌ Exception lors du rafraîchissement du profil: $e');

@@ -31,7 +31,6 @@ class DelivererService {
     print('========================================');
     print('🔍 DELIVERER SERVICE: Verify Sync Code START');
     print('========================================');
-    print('  └─ Code: $syncCode');
 
     try {
       final response = await ApiProvider.post(
@@ -76,7 +75,6 @@ class DelivererService {
     print('========================================');
     print('🔄 DELIVERER SERVICE: Sync Profile START');
     print('========================================');
-    print('  └─ Code: $syncCode');
     print('  └─ Device Token: ${deviceToken != null ? 'Present' : 'Not provided'}');
 
     try {
@@ -87,7 +85,6 @@ class DelivererService {
           fcmToken = await FirebaseMessaging.instance.getToken();
           print('  └─ FCM Token retrieved: ${fcmToken != null ? 'Yes' : 'No'}');
           if (fcmToken != null) {
-            print('  └─ FCM Token: ${fcmToken.substring(0, 20)}...');
           }
         } catch (e) {
           print('  └─ FCM Token retrieval failed: $e');
@@ -116,9 +113,6 @@ class DelivererService {
       print('✅ DELIVERER SERVICE: API call completed');
       print('  └─ Success: ${response.success}');
       print('  └─ Status: ${response.statusCode}');
-      print('  └─ Response data type: ${response.data.runtimeType}');
-      print('  └─ Response data keys: ${response.data?.keys}');
-      print('  └─ Response data: ${response.data}');
 
       // Parser la réponse
       final syncResponse = SyncProfileResponse.fromJson(response.data ?? {});
@@ -184,7 +178,6 @@ class DelivererService {
       print('✅ DELIVERER SERVICE: API call completed');
       print('  └─ Success: ${response.success}');
       print('  └─ Status: ${response.statusCode}');
-      print('  └─ Message: ${response.message}');
 
       if (response.success) {
         print('  └─ Unsync successful!');
@@ -241,10 +234,7 @@ class DelivererService {
       final response = await ApiProvider.get(AppConstants.deliveryDashboardUrl);
 
       if (response.success && response.data != null) {
-        print('  └─ Response keys: ${response.data!.keys}');
         if (response.data!['company'] != null) {
-          print('  └─ Company name: ${response.data!['company']['name']}');
-          print('  └─ Company logo: ${response.data!['company']['logo']}');
         }
       }
 
@@ -288,7 +278,6 @@ class DelivererService {
           print('  └─ Total deliverers: ${deliverers.length}');
           for (var deliverer in deliverers) {
             print('    ├─ ${deliverer.name} (${deliverer.zone.name})');
-            print('    │  └─ Position: (${deliverer.zone.latitude}, ${deliverer.zone.longitude})');
           }
 
           print('========================================');
@@ -299,7 +288,6 @@ class DelivererService {
           return [];
         }
       } else {
-        print('  └─ API call failed: ${response.message}');
         print('========================================');
         return [];
       }

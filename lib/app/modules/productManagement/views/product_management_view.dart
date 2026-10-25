@@ -7,6 +7,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/product_management_controller.dart';
 import '../../../routes/app_pages.dart';
+import '../../../core/widgets/offline_cache_notice.dart';
 
 class ProductManagementView extends GetView<ProductManagementController> {
   const ProductManagementView({super.key});
@@ -47,6 +48,11 @@ class ProductManagementView extends GetView<ProductManagementController> {
       ),
       body: Column(
         children: [
+          Obx(
+            () => controller.isShowingSnapshot.value
+                ? OfflineCacheNotice(savedAt: controller.lastSyncedAt.value)
+                : const SizedBox.shrink(),
+          ),
           _buildSearchHeader(context),
           Expanded(
             child: Obx(() {
@@ -392,8 +398,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
       fit: BoxFit.cover,
       // Colonne de 110 px : décodée à sa largeur, pas en pleine résolution.
       memCacheWidth: (110 * MediaQuery.devicePixelRatioOf(context)).ceil(),
-      placeholder: (context, url) =>
-          Container(color: context.ds.surfaceMuted),
+      placeholder: (context, url) => Container(color: context.ds.surfaceMuted),
       errorWidget: (context, url, error) => Container(
         color: context.ds.surfaceMuted,
         child: Icon(
@@ -443,10 +448,8 @@ class ProductManagementView extends GetView<ProductManagementController> {
             icon: Icons.campaign_outlined,
             label: 'product_management.boost'.tr,
             color: AppDesign.accent,
-            onTap: () => Get.toNamed(
-              Routes.BOOST,
-              arguments: {'product': product},
-            ),
+            onTap: () =>
+                Get.toNamed(Routes.BOOST, arguments: {'product': product}),
           ),
           Container(height: 1, color: context.borderColor),
         ],
@@ -480,7 +483,8 @@ class ProductManagementView extends GetView<ProductManagementController> {
                 color: AppThemeSystem.errorColor,
                 onTap: () => controller.deleteProduct(
                   product['id'] as int,
-                  product['name']?.toString() ?? 'product_management.this_product'.tr,
+                  product['name']?.toString() ??
+                      'product_management.this_product'.tr,
                 ),
               ),
             ),
@@ -554,7 +558,9 @@ class ProductManagementView extends GetView<ProductManagementController> {
     return _CenteredState(
       icon: Icons.cloud_off_rounded,
       title: 'product_management.error.title'.tr,
-      message: controller.errorMessage.value ?? 'product_management.error.message'.tr,
+      message:
+          controller.errorMessage.value ??
+          'product_management.error.message'.tr,
       actionLabel: 'product_management.error.retry'.tr,
       actionIcon: Icons.refresh_rounded,
       onAction: controller.refreshProducts,
@@ -608,9 +614,7 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected
-                  ? AppThemeSystem.primaryColor
-                  : context.ds.border,
+              color: selected ? AppThemeSystem.primaryColor : context.ds.border,
             ),
           ),
           child: Text(

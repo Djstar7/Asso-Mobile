@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
 
 import '../../data/providers/cache_manager.dart';
+import 'dart:async';
 import '../../data/services/websocket_service.dart';
+import '../../data/services/firebase_messaging_service.dart';
 import '../../modules/profile/controllers/profile_controller.dart';
 import '../../modules/wallet/controllers/wallet_controller.dart';
 import '../../modules/chat/controllers/chat_controller.dart';
@@ -77,6 +79,13 @@ class SessionReset {
   /// Supprime les controllers dépendants de l'auth et coupe le WebSocket.
   /// Le prochain login les recréera proprement via les bindings.
   static void clearControllers() {
+    if (Get.isRegistered<FirebaseMessagingService>()) {
+      unawaited(
+        FirebaseMessagingService.to.clearSessionNotifications().catchError(
+          (Object _) {},
+        ),
+      );
+    }
     // Couper le temps réel avant de détruire les controllers qui l'écoutent.
     if (Get.isRegistered<WebSocketService>()) {
       try {
@@ -97,8 +106,7 @@ class SessionReset {
     if (Get.isRegistered<NotificationController>()) {
       try {
         final notifications = Get.find<NotificationController>();
-        notifications.notifications.clear();
-        notifications.unreadCount.value = 0;
+        notifications.resetForSession();
       } catch (_) {}
     }
 

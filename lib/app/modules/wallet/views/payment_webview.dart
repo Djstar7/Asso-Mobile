@@ -123,7 +123,6 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         return;
       }
 
-      print('[PaymentWebView] Parsed data: $data');
 
       final success = data['success'] == true;
       final cancelled = data['cancelled'] == true;

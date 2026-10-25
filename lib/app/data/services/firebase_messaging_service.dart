@@ -17,6 +17,7 @@ import '../../core/services/locale_service.dart';
 import '../providers/api_provider.dart';
 import '../providers/storage_service.dart';
 import '../../core/utils/app_navigation.dart';
+import '../../core/utils/session_scope.dart';
 import 'deep_link_service.dart';
 import '../../modules/home/controllers/home_controller.dart';
 import '../../modules/immo/views/immo_reservation_view.dart';
@@ -35,9 +36,6 @@ void _logPush(String message) {
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   _logPush('🔔 Message reçu en arrière-plan: ${message.messageId}');
-  _logPush('Titre: ${message.notification?.title}');
-  _logPush('Corps: ${message.notification?.body}');
-  _logPush('Data: ${message.data}');
 }
 
 /// Service Firebase Cloud Messaging pour gérer les notifications push
@@ -451,9 +449,6 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
     _subscriptions.add(
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         _logPush('🔔 Message reçu en foreground: ${message.messageId}');
-        _logPush('Titre: ${message.notification?.title}');
-        _logPush('Corps: ${message.notification?.body}');
-        _logPush('Data: ${message.data}');
 
         // Afficher une notification locale quand l'app est en foreground.
         //
@@ -468,10 +463,12 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
   /// Affiche une notification locale
   Future<void> _showLocalNotification(RemoteMessage message) async {
     if (kIsWeb) return;
+    final session = SessionScope.current;
     final notification = message.notification;
     if (notification == null) return;
     final type = '${message.data['type'] ?? 'system'}';
     final category = PushPreferences.categoryFor(type);
+    if (category != 'marketing' && !StorageService.isAuthenticated) return;
     if (!NotificationPreferenceProvider.cached().allows(category)) return;
     final key =
         '${message.data['notification_id'] ?? message.data['notification_key'] ?? message.messageId ?? notification.hashCode}';
@@ -503,6 +500,7 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
             playSound: !quiet,
             enableVibration: !quiet,
             onlyAlertOnce: true,
+            visibility: NotificationVisibility.private,
             groupKey: 'asso_$category',
           ),
           iOS: DarwinNotificationDetails(
@@ -513,12 +511,17 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
             badgeNumber: int.tryParse('${message.data['badge_count']}'),
           ),
         ),
-        payload: jsonEncode(message.data),
+        payload: jsonEncode({...message.data, '_session_generation': session}),
       );
     } catch (_) {
       _shownMessages.remove(key);
       _logPush('Foreground notification presentation unavailable');
     }
+  }
+
+  Future<void> clearSessionNotifications() async {
+    _shownMessages.clear();
+    if (!kIsWeb) await _localNotifications.cancelAll();
   }
 
   /// Ouvre l'écran d'une notification, depuis la liste des notifications.
@@ -532,7 +535,17 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
   /// flux mais se contente de rafraîchir ses données. À deux, chaque tap
   /// ouvrait deux fois le même écran.
   Future<void> _handleMessageData(Map<String, dynamic> data) async {
-    _logPush('📦 Données du message: $data');
+    final session = SessionScope.current;
+    final category = PushPreferences.categoryFor('${data['type'] ?? 'system'}');
+    if (category != 'marketing') {
+      if (!StorageService.isAuthenticated) return;
+      final owner = int.tryParse(
+        '${data['user_id'] ?? data['recipient_id'] ?? ''}',
+      );
+      if (owner != null && owner != StorageService.getUser()?.id) return;
+      final generation = data['_session_generation'];
+      if (generation != null && generation != session) return;
+    }
 
     final type = data['type'] as String?;
 
@@ -545,7 +558,8 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
 
     // Application lancée par ce tap : on attend la fin du splash, dont le
     // `offAllNamed` emporterait l'écran ouvert trop tôt.
-    if (!await AppNavigation.whenAppReady()) return;
+    if (!await AppNavigation.whenAppReady() || !SessionScope.isCurrent(session))
+      return;
 
     switch (type) {
       case 'marketing_digest':
@@ -759,7 +773,6 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
 
   /// Callback quand une notification locale est tapée
   void _onNotificationTapped(NotificationResponse response) {
-    _logPush('👆 Notification tapée: ${response.payload}');
 
     if (response.payload == null || response.payload!.isEmpty) {
       _logPush('⚠️ Payload vide');
@@ -769,7 +782,6 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
     try {
       // Parser le JSON du payload
       final Map<String, dynamic> data = jsonDecode(response.payload!);
-      _logPush('📦 Payload parsé: $data');
 
       // Utiliser la même logique que _handleMessageData
       _handleMessageData(data);

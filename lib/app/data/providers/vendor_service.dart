@@ -202,8 +202,6 @@ class VendorService {
 
       print('✅ VENDOR SERVICE: Response received');
       print('  └─ Success: ${response.success}');
-      print('  └─ Has Active Orders: ${response.data?['has_active_orders']}');
-      print('  └─ Count: ${response.data?['active_orders_count']}');
       print('========================================');
 
       return response;

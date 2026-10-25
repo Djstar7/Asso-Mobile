@@ -992,10 +992,7 @@ class _EditStoreViewState extends State<EditStoreView> {
     print('  ├─ Name: $name');
     print('  ├─ Description: $description');
     print('  ├─ Address: $address');
-    print('  ├─ Phone: $phone');
     print('  ├─ Categories: ${selectedCategories.toList()}');
-    print('  ├─ Latitude: ${selectedPosition.value.latitude}');
-    print('  └─ Longitude: ${selectedPosition.value.longitude}');
 
     if (name.isEmpty) {
       AppFeedback.show(

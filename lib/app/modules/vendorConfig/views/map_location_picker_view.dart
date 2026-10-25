@@ -162,9 +162,6 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
       for (var partner in widget.deliveryPartners!) {
         print('  ├─ ${partner.name}');
         print('  │  └─ Zone: ${partner.zone.name}');
-        print(
-          '  │  └─ Position: (${partner.zone.latitude}, ${partner.zone.longitude})',
-        );
       }
     } else {
       print('⚠️ No delivery partners provided!');
@@ -505,9 +502,6 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
                       final index = entry.key;
                       final deliverer = entry.value;
 
-                      print(
-                        '🚚 Adding marker for: ${deliverer.name} at (${deliverer.zone.latitude}, ${deliverer.zone.longitude})',
-                      );
 
                       return Marker(
                         width: 100.0,

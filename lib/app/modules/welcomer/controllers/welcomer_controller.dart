@@ -1,5 +1,4 @@
 import 'package:asso/app/core/utils/app_feedback.dart';
-import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/auth_service.dart';
@@ -26,10 +25,6 @@ class WelcomerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    developer.log(
-      '========== WELCOMER CONTROLLER INIT ==========',
-      name: 'WelcomerController',
-    );
     firstNameController = TextEditingController();
     lastNameController = TextEditingController();
     emailController = TextEditingController();
@@ -48,12 +43,6 @@ class WelcomerController extends GetxController {
 
     isFormValid.value = emailValid && passwordValid && passwordsMatch;
 
-    developer.log(
-      'Form validation',
-      name: 'WelcomerController',
-      error:
-          'Email: $emailValid, Password: $passwordValid, Match: $passwordsMatch, Valid: ${isFormValid.value}',
-    );
   }
 
   /// La création de compte n'est proposée qu'une fois le formulaire valide
@@ -95,14 +84,8 @@ class WelcomerController extends GetxController {
   Future<void> skipWelcome() => GuestAccess.enter();
 
   Future<void> createAccountWithEmail() async {
-    developer.log(
-      '========== CREATE ACCOUNT WITH EMAIL ==========',
-      name: 'WelcomerController',
-      error: 'Email: ${email.value}',
-    );
 
     if (!isFormValid.value) {
-      developer.log('Invalid form', name: 'WelcomerController');
 
       if (!GetUtils.isEmail(email.value)) {
         AppFeedback.show(
@@ -150,7 +133,6 @@ class WelcomerController extends GetxController {
     }
 
     if (!termsAccepted.value) {
-      developer.log('Terms not accepted', name: 'WelcomerController');
       AppFeedback.show(
         'welcomer.policy_required_title'.tr,
         'welcomer.policy_required_message'.tr,
@@ -176,18 +158,8 @@ class WelcomerController extends GetxController {
         lastName: _optional(lastNameController.text),
       );
 
-      developer.log(
-        'Register response',
-        name: 'WelcomerController',
-        error: 'Success: ${response.success}, Message: ${response.message}',
-      );
 
       if (response.success) {
-        developer.log(
-          'Registration successful - OTP sent to email',
-          name: 'WelcomerController',
-          error: 'Email: ${email.value}',
-        );
 
         AppFeedback.show(
           'welcomer.code_sent_title'.tr,
@@ -202,7 +174,6 @@ class WelcomerController extends GetxController {
 
         await Future.delayed(const Duration(milliseconds: 500));
 
-        developer.log('Navigating to OTP screen', name: 'WelcomerController');
         Get.toNamed(
           Routes.OTP,
           arguments: {
@@ -212,11 +183,6 @@ class WelcomerController extends GetxController {
           },
         );
       } else {
-        developer.log(
-          'Registration failed',
-          name: 'WelcomerController',
-          error: response.message,
-        );
         AppFeedback.show(
           'common.error'.tr,
           response.message,
@@ -229,12 +195,6 @@ class WelcomerController extends GetxController {
         );
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'Create account error',
-        name: 'WelcomerController',
-        error: e,
-        stackTrace: stackTrace,
-      );
       AppFeedback.show(
         'common.error'.tr,
         'common.generic_error_retry'.tr,
@@ -251,7 +211,6 @@ class WelcomerController extends GetxController {
   }
 
   void continueWithGoogle() {
-    developer.log('Continue with Google', name: 'WelcomerController');
     AppFeedback.show(
       'Google',
       'welcomer.google_signing_in'.tr,
@@ -262,7 +221,6 @@ class WelcomerController extends GetxController {
   }
 
   void continueWithApple() {
-    developer.log('Continue with Apple', name: 'WelcomerController');
     AppFeedback.show(
       'Apple',
       'welcomer.apple_signing_in'.tr,
@@ -275,7 +233,6 @@ class WelcomerController extends GetxController {
   Future<void> continueAsGuest() => GuestAccess.enter();
 
   void goToLogin() {
-    developer.log('Go to login', name: 'WelcomerController');
     Get.toNamed(Routes.LOGIN);
   }
 }

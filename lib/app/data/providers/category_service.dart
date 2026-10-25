@@ -40,7 +40,6 @@ class CategoryService {
         }
       } else {
         print('❌ CATEGORY SERVICE: API failed');
-        print('  └─ Message: ${response.message}');
         print('========================================');
         return [];
       }

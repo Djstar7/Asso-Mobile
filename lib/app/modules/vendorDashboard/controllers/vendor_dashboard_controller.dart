@@ -8,6 +8,9 @@ import '../../../data/providers/boost_service.dart';
 import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/offline_store.dart';
+import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/offline_read_cache.dart';
+import '../../../core/values/constants.dart';
 import '../../../data/services/connectivity_service.dart';
 import '../../../data/services/offline_product_sync_service.dart';
 import '../../addProduct/controllers/add_product_controller.dart';
@@ -24,7 +27,8 @@ class VendorDashboardController extends GetxController {
 
   // Statut de vérification
   final verificationStatus = 'pending'.obs; // pending, approved, rejected
-  final verificationMessage = 'vendor_dashboard.verification.pending_message'.tr.obs;
+  final verificationMessage =
+      'vendor_dashboard.verification.pending_message'.tr.obs;
 
   // Données du vendeur
   final shopName = ''.obs;
@@ -54,6 +58,7 @@ class VendorDashboardController extends GetxController {
   final storageUsedMb = 0.0.obs;
   final storageRemainingMb = 0.0.obs;
   final storagePercentageUsed = 0.0.obs;
+
   /// Forfait « taille illimitée » : pas de plafond ni de jauge.
   final storageUnlimited = false.obs;
   final packageExpiresAt = Rx<String?>(null);
@@ -89,8 +94,8 @@ class VendorDashboardController extends GetxController {
 
   OfflineProductSyncService? get offlineSync =>
       Get.isRegistered<OfflineProductSyncService>()
-          ? OfflineProductSyncService.to
-          : null;
+      ? OfflineProductSyncService.to
+      : null;
 
   final List<Worker> _offlineWorkers = [];
 
@@ -125,9 +130,11 @@ class VendorDashboardController extends GetxController {
     }
     if (Get.isRegistered<ConnectivityService>()) {
       // Retour du réseau : l'instantané affiché laisse place au serveur.
-      _offlineWorkers.add(ever<bool>(ConnectivityService.to.isOnline, (online) {
-        if (online && isShowingSnapshot.value) refreshData();
-      }));
+      _offlineWorkers.add(
+        ever<bool>(ConnectivityService.to.isOnline, (online) {
+          if (online && isShowingSnapshot.value) refreshData();
+        }),
+      );
     }
 
     if (Get.isRegistered<CurrencyService>()) {
@@ -213,7 +220,6 @@ class VendorDashboardController extends GetxController {
       print('📥 VENDOR DASHBOARD: API Response received');
       print('  └─ Success: ${response.success}');
       print('  └─ Status Code: ${response.statusCode}');
-      print('  └─ Message: ${response.message}');
 
       if (response.success && response.data != null) {
         print('✅ VENDOR DASHBOARD: Parsing response data...');
@@ -223,6 +229,7 @@ class VendorDashboardController extends GetxController {
         OfflineStore.saveSnapshot(dashboardSnapshotKey, data);
         // Prépare l'ajout de produit hors ligne (catégories, boutique).
         AddProductController.warmOfflineCache();
+        unawaited(_warmOfflinePages());
         print('========================================');
       } else {
         print('❌ VENDOR DASHBOARD: API failed or no data');
@@ -239,6 +246,31 @@ class VendorDashboardController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _warmOfflinePages() async {
+    if (_isDisposed || ConnectivityService.isOffline) return;
+    final requests = <(String, Map<String, dynamic>?)>[
+      ('/v1/vendor/products', {'page': 1, 'per_page': 20}),
+      ('/v1/wallet', null),
+      ('/v1/wallet/withdrawal-balances', null),
+      ('/v1/wallet/transactions', {'page': 1, 'per_page': 20}),
+    ];
+    await Future.wait(
+      requests.map((entry) async {
+        final uri = Uri.parse('${AppConstants.baseUrl}${entry.$1}').replace(
+          queryParameters: entry.$2?.map(
+            (key, value) => MapEntry(key, '$value'),
+          ),
+        );
+        final cached = OfflineReadCache.read(uri);
+        final saved = DateTime.tryParse('${cached?['_saved_at']}');
+        if (saved != null &&
+            DateTime.now().difference(saved) < const Duration(minutes: 15))
+          return;
+        await ApiProvider.get(entry.$1, queryParams: entry.$2);
+      }),
+    );
   }
 
   /// Échec du serveur : dernier état connu, sinon un écran neutre (jamais de
@@ -279,7 +311,9 @@ class VendorDashboardController extends GetxController {
       shopLogoUrl.value = shop['logo_url'] ?? shop['logo'];
       print('  └─ Shop ID: ${shopId.value}');
       print('  └─ Shop Name: ${shopName.value}');
-      print('  └─ Shop Description: ${shopDescription.value.isNotEmpty ? "YES" : "NO"}');
+      print(
+        '  └─ Shop Description: ${shopDescription.value.isNotEmpty ? "YES" : "NO"}',
+      );
       print('  └─ Shop Logo URL: ${shopLogoUrl.value ?? "NONE"}');
     } else {
       print('  └─ ⚠️ No shop data in response');
@@ -294,8 +328,10 @@ class VendorDashboardController extends GetxController {
       totalProducts.value = stats['total_products'] ?? 0;
       rating.value = (stats['rating'] ?? 0).toDouble();
       totalVisits.value = (stats['total_visits'] as num?)?.toInt() ?? 0;
-      totalProductViews.value = (stats['total_product_views'] as num?)?.toInt() ?? 0;
-      visitsLast7Days.value = (stats['visits_last_7_days'] as num?)?.toInt() ?? 0;
+      totalProductViews.value =
+          (stats['total_product_views'] as num?)?.toInt() ?? 0;
+      visitsLast7Days.value =
+          (stats['visits_last_7_days'] as num?)?.toInt() ?? 0;
       totalContacts.value = (stats['total_contacts'] as num?)?.toInt() ?? 0;
       print('  └─ Total Orders: ${totalOrders.value}');
       print('  └─ Pending Orders: ${pendingOrders.value}');
@@ -310,7 +346,9 @@ class VendorDashboardController extends GetxController {
     if (data['verification'] != null) {
       final verification = data['verification'];
       verificationStatus.value = verification['status'] ?? 'pending';
-      verificationMessage.value = verification['message'] ?? 'vendor_dashboard.verification.pending_message'.tr;
+      verificationMessage.value =
+          verification['message'] ??
+          'vendor_dashboard.verification.pending_message'.tr;
       print('  └─ Verification Status: ${verificationStatus.value}');
       print('  └─ Verification Message: ${verificationMessage.value}');
     } else {
@@ -325,7 +363,9 @@ class VendorDashboardController extends GetxController {
       certificationDaysRemaining.value = certification['days_until_expiry'];
       print('  └─ Is Certified: ${isCertified.value}');
       if (isCertified.value) {
-        print('  └─ Certification Days Remaining: ${certificationDaysRemaining.value}');
+        print(
+          '  └─ Certification Days Remaining: ${certificationDaysRemaining.value}',
+        );
       }
     } else {
       print('  └─ ⚠️ No certification data in response');
@@ -339,15 +379,22 @@ class VendorDashboardController extends GetxController {
 
       if (hasPackage.value && package['vendor_package'] != null) {
         packageInfo.value = package['vendor_package'];
-        storageTotalMb.value = (package['vendor_package']['storage_total_mb'] ?? 0).toDouble();
-        storageUsedMb.value = (package['vendor_package']['storage_used_mb'] ?? 0).toDouble();
-        storageRemainingMb.value = (package['vendor_package']['storage_remaining_mb'] ?? 0).toDouble();
-        storagePercentageUsed.value = (package['vendor_package']['storage_percentage_used'] ?? 0).toDouble();
-        storageUnlimited.value = package['vendor_package']['is_unlimited_storage'] == true;
+        storageTotalMb.value =
+            (package['vendor_package']['storage_total_mb'] ?? 0).toDouble();
+        storageUsedMb.value =
+            (package['vendor_package']['storage_used_mb'] ?? 0).toDouble();
+        storageRemainingMb.value =
+            (package['vendor_package']['storage_remaining_mb'] ?? 0).toDouble();
+        storagePercentageUsed.value =
+            (package['vendor_package']['storage_percentage_used'] ?? 0)
+                .toDouble();
+        storageUnlimited.value =
+            package['vendor_package']['is_unlimited_storage'] == true;
         packageExpiresAt.value = package['vendor_package']['expires_at'];
 
         // Convert days_remaining to int (backend might return double)
-        final daysRemainingValue = package['vendor_package']['days_remaining'] ?? 0;
+        final daysRemainingValue =
+            package['vendor_package']['days_remaining'] ?? 0;
         daysRemaining.value = daysRemainingValue is int
             ? daysRemainingValue
             : (daysRemainingValue as num).toInt();
@@ -356,8 +403,12 @@ class VendorDashboardController extends GetxController {
         print('  └─ Storage Total: ${storageTotalMb.value} MB');
         print('  └─ Storage Percentage: ${storagePercentageUsed.value}%');
         print('  └─ Days Remaining: ${daysRemaining.value}');
-        print('  └─ Package Name: ${package['vendor_package']['package']?['name'] ?? "N/A"}');
-        print('  └─ Package Price: ${package['vendor_package']['package']?['formatted_price'] ?? "N/A"}');
+        print(
+          '  └─ Package Name: ${package['vendor_package']['package']?['name'] ?? "N/A"}',
+        );
+        print(
+          '  └─ Package Price: ${package['vendor_package']['package']?['formatted_price'] ?? "N/A"}',
+        );
       }
     } else {
       print('  └─ ⚠️ No package data in response');
@@ -375,7 +426,10 @@ class VendorDashboardController extends GetxController {
 
     try {
       print('🌐 VENDOR DASHBOARD: Calling pending orders API...');
-      final response = await VendorService.getVendorOrders(status: 'pending', page: 1);
+      final response = await VendorService.getVendorOrders(
+        status: 'pending',
+        page: 1,
+      );
 
       if (_isDisposed) return;
 
@@ -428,9 +482,7 @@ class VendorDashboardController extends GetxController {
         Get.dialog(
           AlertDialog(
             title: Text('vendor_dashboard.package_required.title'.tr),
-            content: Text(
-              'vendor_dashboard.package_required.message'.tr,
-            ),
+            content: Text('vendor_dashboard.package_required.message'.tr),
             actions: [
               TextButton(
                 onPressed: () => Get.back(),
@@ -475,11 +527,11 @@ class VendorDashboardController extends GetxController {
 
   /// Écran des statistiques détaillées (visites, consultations, ventes, CA)
   void navigateToStatistics() => onlineOnly(() {
-        Get.toNamed('/shop-statistics')?.then((_) => refreshData());
-      })();
+    Get.toNamed('/shop-statistics')?.then((_) => refreshData());
+  })();
 
   /// Navigate to product management
-  void navigateToProductManagement() => onlineOnly(_openProductManagement)();
+  void navigateToProductManagement() => _openProductManagement();
 
   void _openProductManagement() {
     Get.toNamed('/product-management')?.then((_) {

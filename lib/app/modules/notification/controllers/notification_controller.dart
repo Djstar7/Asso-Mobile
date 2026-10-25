@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../../../core/models/notification_model.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../routes/app_pages.dart';
+import '../../../core/utils/session_scope.dart';
+import '../../../data/providers/storage_service.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 
 class NotificationController extends GetxController
@@ -68,45 +70,10 @@ class NotificationController extends GetxController
 
   /// Gère les notifications reçues quand l'app est active
   void _handleForegroundMessage(RemoteMessage message) {
-    print('📬 [FCM] Message reçu (foreground): ${message.data}');
-
+    if (!StorageService.isAuthenticated) return;
     final data = message.data;
-    final notification = message.notification;
-
-    // Affichage : on NE montre PAS de snackbar ici. En foreground, la
-    // notification locale (heads-up) est déjà affichée par
-    // FirebaseMessagingService. Afficher aussi un snackbar créait un doublon
-    // visuel : on garde donc uniquement la notification locale.
-
-    // Insertion dans la liste : ne jamais utiliser d'ID temporaire
-    // (DateTime.now()) sous peine de doublons et d'échecs de markAsRead sur un
-    // ID inexistant côté backend.
-    final rawId = data['notification_id'];
-    final int? realId = rawId is int ? rawId : int.tryParse('${rawId ?? ''}');
-
-    if (realId != null) {
-      // Le backend a fourni le vrai ID : insertion avec déduplication.
-      _addLocalNotification(
-        NotificationModel(
-          id: realId,
-          userId: 0,
-          title: notification?.title ?? 'notification.default_title'.tr,
-          body: notification?.body ?? '',
-          type: data['type'] as String?,
-          data: data,
-          isRead: false,
-          sentAt: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-      // Reconcilier le compteur avec le backend.
-      updateUnreadCount();
-    } else {
-      // Pas d'ID réel : on recharge depuis le backend pour récupérer l'entrée
-      // authentique (avec son ID) plutôt que d'inventer un ID local.
-      fetchNotifications(refresh: true);
-    }
+    // Fetch account-scoped content from the API, never insert a raw push body.
+    fetchNotifications(refresh: true);
 
     // Gérer les actions selon le type (rafraîchissement wallet, etc.).
     _handleNotificationAction(data);
@@ -114,7 +81,7 @@ class NotificationController extends GetxController
 
   /// Gère le clic sur une notification en arrière-plan
   void _handleBackgroundMessageClick(RemoteMessage message) {
-    print('🖱️  [FCM] Notification cliquée: ${message.data}');
+    if (!StorageService.isAuthenticated) return;
 
     final data = message.data;
 
@@ -135,7 +102,6 @@ class NotificationController extends GetxController
     bool fromClick = false,
   }) {
     final type = data['type'] as String?;
-    print('🎬 [FCM] Action pour type: $type (fromClick: $fromClick)');
 
     switch (type) {
       case 'wallet_credit':
@@ -154,17 +120,23 @@ class NotificationController extends GetxController
       if (Get.isRegistered<WalletController>()) {
         final walletController = Get.find<WalletController>();
         walletController.refresh();
-        print('✅ [FCM] Wallet rafraîchi');
-      } else {
-        print('⚠️  [FCM] WalletController non enregistré');
-      }
-    } catch (e) {
-      print('❌ [FCM] Erreur lors du rafraîchissement du wallet: $e');
-    }
+      } else {}
+    } catch (e) {}
+  }
+
+  void resetForSession() {
+    notifications.clear();
+    unreadCount.value = 0;
+    isLoading.value = false;
+    isLoadingMore.value = false;
+    _currentPage = 1;
+    _hasMorePages = true;
   }
 
   /// Récupère les notifications depuis le backend
   Future<void> fetchNotifications({bool refresh = false}) async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     if (refresh) {
       _currentPage = 1;
       _hasMorePages = true;
@@ -181,6 +153,7 @@ class NotificationController extends GetxController
         perPage: 20,
       );
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success && response.data != null) {
         final newNotifications = NotificationService.parseNotifications(
           response.data!['notifications'],
@@ -204,14 +177,15 @@ class NotificationController extends GetxController
         }
       }
     } catch (e) {
-      print('❌ Erreur lors du chargement des notifications: $e');
     } finally {
-      isLoading.value = false;
+      if (SessionScope.isCurrent(session)) isLoading.value = false;
     }
   }
 
   /// Charge plus de notifications (pagination)
   Future<void> loadMoreNotifications() async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     if (isLoadingMore.value || !_hasMorePages) return;
 
     isLoadingMore.value = true;
@@ -220,37 +194,31 @@ class NotificationController extends GetxController
     try {
       await fetchNotifications();
     } finally {
-      isLoadingMore.value = false;
+      if (SessionScope.isCurrent(session)) isLoadingMore.value = false;
     }
   }
 
   /// Met à jour le compteur de notifications non lues
   Future<void> updateUnreadCount() async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     try {
       final response = await NotificationService.getUnreadCount();
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success && response.data != null) {
         unreadCount.value = response.data!['unread_count'] ?? 0;
       }
-    } catch (e) {
-      print('❌ Erreur lors de la mise à jour du compteur: $e');
-    }
-  }
-
-  /// Ajoute une notification locale (depuis FCM), avec déduplication par ID
-  /// pour éviter d'afficher deux fois la même notification.
-  void _addLocalNotification(NotificationModel notification) {
-    if (notifications.any((n) => n.id == notification.id)) return;
-    notifications.insert(0, notification);
-    if (!notification.isRead) {
-      unreadCount.value++;
-    }
+    } catch (e) {}
   }
 
   /// Marque une notification comme lue
   Future<void> markAsRead(int notificationId) async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     try {
       final response = await NotificationService.markAsRead(notificationId);
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success) {
         // Mettre à jour localement
         final index = notifications.indexWhere((n) => n.id == notificationId);
@@ -263,16 +231,17 @@ class NotificationController extends GetxController
           unreadCount.value = (unreadCount.value - 1).clamp(0, 999);
         }
       }
-    } catch (e) {
-      print('❌ Erreur lors du marquage comme lu: $e');
-    }
+    } catch (e) {}
   }
 
   /// Marque toutes les notifications comme lues
   Future<void> markAllAsRead() async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     try {
       final response = await NotificationService.markAllAsRead();
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success) {
         // Mettre à jour localement
         notifications.value = notifications
@@ -281,18 +250,19 @@ class NotificationController extends GetxController
         unreadCount.value = 0;
         notifications.refresh();
       }
-    } catch (e) {
-      print('❌ Erreur lors du marquage de toutes comme lues: $e');
-    }
+    } catch (e) {}
   }
 
   /// Supprime une notification
   Future<void> deleteNotification(int notificationId) async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     try {
       final response = await NotificationService.deleteNotification(
         notificationId,
       );
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success) {
         // Mettre à jour localement
         final notification = notifications.firstWhere(
@@ -303,22 +273,21 @@ class NotificationController extends GetxController
         }
         notifications.removeWhere((n) => n.id == notificationId);
       }
-    } catch (e) {
-      print('❌ Erreur lors de la suppression: $e');
-    }
+    } catch (e) {}
   }
 
   /// Supprime toutes les notifications
   Future<void> clearAll() async {
+    final session = SessionScope.current;
+    if (!StorageService.isAuthenticated) return;
     try {
       final response = await NotificationService.deleteAllNotifications();
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success) {
         notifications.clear();
         unreadCount.value = 0;
       }
-    } catch (e) {
-      print('❌ Erreur lors de la suppression de toutes: $e');
-    }
+    } catch (e) {}
   }
 }

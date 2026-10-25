@@ -9,7 +9,10 @@ import '../../core/values/constants.dart';
 import '../services/connectivity_service.dart';
 import '../services/websocket_service.dart';
 import 'storage_service.dart';
+import 'offline_read_cache.dart';
 import '../../core/services/locale_service.dart';
+import '../../core/utils/session_scope.dart';
+import '../../core/utils/session_reset.dart';
 
 class ApiProvider {
   static http.Client _client = http.Client();
@@ -37,15 +40,43 @@ class ApiProvider {
   static Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParams]) {
     final url = '${AppConstants.baseUrl}$endpoint';
     if (queryParams != null && queryParams.isNotEmpty) {
-      final cleanParams = queryParams.map((key, value) => MapEntry(key, value.toString()));
+      final cleanParams = queryParams.map(
+        (key, value) => MapEntry(key, value.toString()),
+      );
       return Uri.parse(url).replace(queryParameters: cleanParams);
     }
     return Uri.parse(url);
   }
 
+  static ApiResponse? _offlineResponse(Uri uri, int session) {
+    if (!SessionScope.isCurrent(session) || !StorageService.isAuthenticated)
+      return null;
+    final data = OfflineReadCache.read(uri);
+    return data == null
+        ? null
+        : ApiResponse(
+            success: true,
+            message: 'core.offline.label'.tr,
+            statusCode: 200,
+            data: data,
+          );
+  }
+
   /// GET request
-  static Future<ApiResponse> get(String endpoint, {Map<String, dynamic>? queryParams}) async {
+  static Future<ApiResponse> get(
+    String endpoint, {
+    Map<String, dynamic>? queryParams,
+  }) async {
+    final session = SessionScope.current;
     final uri = _buildUri(endpoint, queryParams);
+    if (ConnectivityService.isOffline && OfflineReadCache.supports(uri)) {
+      return _offlineResponse(uri, session) ??
+          ApiResponse(
+            success: false,
+            message: 'core.offline.no_saved_data'.tr,
+            statusCode: 0,
+          );
+    }
     developer.log(
       'GET ${uri.toString()}',
       name: 'ApiProvider',
@@ -63,23 +94,67 @@ class ApiProvider {
         error: 'Endpoint: $endpoint',
       );
 
-      return _handleResponse(response);
+      final parsed = _handleResponse(response, session);
+      if (parsed.success &&
+          parsed.data != null &&
+          StorageService.isAuthenticated &&
+          SessionScope.isCurrent(session)) {
+        await OfflineReadCache.save(uri, parsed.data!);
+      }
+      return SessionScope.isCurrent(session)
+          ? parsed
+          : ApiResponse(
+              success: false,
+              message: 'network.session_expired'.tr,
+              statusCode: 409,
+            );
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
+      return _offlineResponse(uri, session) ??
+          ApiResponse(
+            success: false,
+            message: 'network.no_internet'.tr,
+            statusCode: 0,
+          );
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
+      return _offlineResponse(uri, session) ??
+          ApiResponse(
+            success: false,
+            message: 'network.server_error'.tr,
+            statusCode: 500,
+          );
     } catch (e, stackTrace) {
-      developer.log('GET error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
+      developer.log(
+        'GET error',
+        name: 'ApiProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
+      return _offlineResponse(uri, session) ??
+          ApiResponse(
+            success: false,
+            message: 'network.error_detail'.trParams({'error': e.toString()}),
+            statusCode: 0,
+          );
     }
   }
 
   /// POST request
-  static Future<ApiResponse> post(String endpoint, {Map<String, dynamic>? body}) async {
+  static Future<ApiResponse> post(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    if (ConnectivityService.isOffline) {
+      return ApiResponse(
+        success: false,
+        message: 'core.offline.online_required'.tr,
+        statusCode: 0,
+      );
+    }
+    final session = SessionScope.current;
     final uri = _buildUri(endpoint);
     developer.log(
       'POST ${uri.toString()}',
@@ -98,23 +173,51 @@ class ApiProvider {
         error: 'Endpoint: $endpoint',
       );
 
-      return _handleResponse(response);
+      return _handleResponse(response, session);
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.no_internet'.tr,
+        statusCode: 0,
+      );
     } on HttpException catch (e) {
       developer.log('HTTP error', name: 'ApiProvider', error: e);
-      return ApiResponse(success: false, message: 'network.server_error'.tr, statusCode: 500);
+      return ApiResponse(
+        success: false,
+        message: 'network.server_error'.tr,
+        statusCode: 500,
+      );
     } catch (e, stackTrace) {
-      developer.log('POST error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
+      developer.log(
+        'POST error',
+        name: 'ApiProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.error_detail'.trParams({'error': e.toString()}),
+        statusCode: 0,
+      );
     }
   }
 
   /// PUT request
-  static Future<ApiResponse> put(String endpoint, {Map<String, dynamic>? body}) async {
+  static Future<ApiResponse> put(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    if (ConnectivityService.isOffline) {
+      return ApiResponse(
+        success: false,
+        message: 'core.offline.online_required'.tr,
+        statusCode: 0,
+      );
+    }
+    final session = SessionScope.current;
     final uri = _buildUri(endpoint);
     developer.log(
       'PUT ${uri.toString()}',
@@ -133,20 +236,44 @@ class ApiProvider {
         error: 'Endpoint: $endpoint',
       );
 
-      return _handleResponse(response);
+      return _handleResponse(response, session);
     } on SocketException catch (e) {
       developer.log('Network error', name: 'ApiProvider', error: e);
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.no_internet'.tr, statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.no_internet'.tr,
+        statusCode: 0,
+      );
     } catch (e, stackTrace) {
-      developer.log('PUT error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
+      developer.log(
+        'PUT error',
+        name: 'ApiProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.error_detail'.trParams({'error': e.toString()}),
+        statusCode: 0,
+      );
     }
   }
 
   /// DELETE request
-  static Future<ApiResponse> delete(String endpoint, {Map<String, dynamic>? body}) async {
+  static Future<ApiResponse> delete(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    if (ConnectivityService.isOffline) {
+      return ApiResponse(
+        success: false,
+        message: 'core.offline.online_required'.tr,
+        statusCode: 0,
+      );
+    }
+    final session = SessionScope.current;
     final uri = _buildUri(endpoint);
     developer.log(
       'DELETE ${uri.toString()}',
@@ -169,11 +296,20 @@ class ApiProvider {
         error: 'Endpoint: $endpoint',
       );
 
-      return _handleResponse(response);
+      return _handleResponse(response, session);
     } catch (e, stackTrace) {
-      developer.log('DELETE error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
+      developer.log(
+        'DELETE error',
+        name: 'ApiProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.error_detail'.trParams({'error': e.toString()}),
+        statusCode: 0,
+      );
     }
   }
 
@@ -193,11 +329,20 @@ class ApiProvider {
     Map<String, List<XFile>>? mediaFileLists,
     String method = 'POST',
   }) async {
+    if (ConnectivityService.isOffline) {
+      return ApiResponse(
+        success: false,
+        message: 'core.offline.online_required'.tr,
+        statusCode: 0,
+      );
+    }
+    final session = SessionScope.current;
     final uri = _buildUri(endpoint);
     developer.log(
       'MULTIPART $method ${uri.toString()}',
       name: 'ApiProvider',
-      error: 'Fields: ${fields?.keys.join(", ")}, Files: ${files?.keys.join(", ")}',
+      error:
+          'Fields: ${fields?.keys.join(", ")}, Files: ${files?.keys.join(", ")}',
     );
 
     try {
@@ -214,7 +359,9 @@ class ApiProvider {
         for (var entry in files.entries) {
           final file = File(entry.value);
           if (await file.exists()) {
-            request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+            request.files.add(
+              await http.MultipartFile.fromPath(entry.key, entry.value),
+            );
           } else {
             developer.log(
               'File not found: ${entry.value}',
@@ -241,7 +388,9 @@ class ApiProvider {
         }
       }
 
-      final streamedResponse = await request.send().timeout(AppConstants.apiTimeout);
+      final streamedResponse = await request.send().timeout(
+        AppConstants.apiTimeout,
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       developer.log(
@@ -250,11 +399,20 @@ class ApiProvider {
         error: 'Endpoint: $endpoint',
       );
 
-      return _handleResponse(response);
+      return _handleResponse(response, session);
     } catch (e, stackTrace) {
-      developer.log('MULTIPART error', name: 'ApiProvider', error: e, stackTrace: stackTrace);
+      developer.log(
+        'MULTIPART error',
+        name: 'ApiProvider',
+        error: e,
+        stackTrace: stackTrace,
+      );
       ConnectivityService.reportNetworkFailure(e);
-      return ApiResponse(success: false, message: 'network.error_detail'.trParams({'error': e.toString()}), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: 'network.error_detail'.trParams({'error': e.toString()}),
+        statusCode: 0,
+      );
     }
   }
 
@@ -272,13 +430,32 @@ class ApiProvider {
   }
 
   /// Handle response
-  static ApiResponse _handleResponse(http.Response response) {
+  static ApiResponse _handleResponse(http.Response response, int session) {
+    if (!SessionScope.isCurrent(session)) {
+      return ApiResponse(
+        success: false,
+        message: 'network.session_expired'.tr,
+        statusCode: 409,
+      );
+    }
+    // A proxy may return HTML for a 401. Invalidate before JSON decoding.
+    if (response.statusCode == 401) {
+      _handleUnauthorized();
+      return ApiResponse(
+        success: false,
+        message: 'network.session_expired'.tr,
+        statusCode: 401,
+      );
+    }
     try {
       final body = jsonDecode(response.body);
       // Une réponse JSON sous 500, même en erreur, prouve que le backend
       // traite les requêtes ; une 5xx fait re-sonder le serveur.
       ConnectivityService.reportResponse(response.statusCode);
-      final success = body['success'] == true && response.statusCode >= 200 && response.statusCode < 300;
+      final success =
+          body['success'] == true &&
+          response.statusCode >= 200 &&
+          response.statusCode < 300;
 
       // Extract message - can be either String or Map
       final messageField = body['message'];
@@ -289,23 +466,9 @@ class ApiProvider {
       developer.log(
         'Response parsed',
         name: 'ApiProvider',
-        error: 'Success: $success, Status: ${response.statusCode}, Message: $messageString',
+        error:
+            'Success: $success, Status: ${response.statusCode}',
       );
-
-      // Handle 401 - Unauthorized (token expired)
-      if (response.statusCode == 401) {
-        developer.log(
-          '⚠️ 401 Unauthorized - Session expired',
-          name: 'ApiProvider',
-        );
-        _handleUnauthorized();
-        return ApiResponse(
-          success: false,
-          message: 'network.session_expired'.tr,
-          statusCode: 401,
-          data: body,
-        );
-      }
 
       return ApiResponse(
         success: success,
@@ -325,7 +488,7 @@ class ApiProvider {
       ConnectivityService.reportResponse(503);
       return ApiResponse(
         success: false,
-        message: 'network.parsing_error'.trParams({'body': response.body}),
+        message: 'network.server_error'.tr,
         statusCode: response.statusCode,
       );
     }
@@ -343,8 +506,12 @@ class ApiProvider {
       return;
     }
 
-    developer.log('Clearing session and redirecting to login', name: 'ApiProvider');
+    developer.log(
+      'Clearing session and redirecting to login',
+      name: 'ApiProvider',
+    );
     StorageService.clearAuth();
+    SessionReset.clearControllers();
     // Le temps réel tournait encore sur le jeton expiré.
     if (Get.isRegistered<WebSocketService>()) {
       WebSocketService.to.disconnect();

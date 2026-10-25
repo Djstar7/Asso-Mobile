@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
+import '../../../data/providers/offline_store.dart';
 
 /// Brouillon local d'une fiche produit en cours de rédaction.
 ///
@@ -92,19 +91,17 @@ class ProductDraft {
 class ProductDraftStore {
   ProductDraftStore._();
 
-  static const _key = 'add_product_draft_v1';
+  static const _key = 'product_form_draft';
 
   /// Au-delà, le brouillon est considéré comme périmé : reprendre une fiche
   /// vieille de plusieurs semaines apporte plus de confusion que d'aide.
   static const _maxAge = Duration(days: 14);
 
-  static GetStorage get _box => GetStorage();
-
-  static Future<void> init() => GetStorage.init();
+  static Future<void> init() => OfflineStore.init();
 
   static void save(ProductDraft draft) {
     try {
-      _box.write(_key, jsonEncode(draft.toJson()));
+      OfflineStore.saveSnapshot(_key, draft.toJson());
     } catch (_) {
       // Un brouillon est un confort : son échec ne doit jamais interrompre
       // la saisie en cours.
@@ -115,10 +112,7 @@ class ProductDraftStore {
   /// périmé, ou si toutes ses photos ont disparu de l'appareil.
   static ProductDraft? read() {
     try {
-      final raw = _box.read<String>(_key);
-      if (raw == null || raw.isEmpty) return null;
-
-      final decoded = jsonDecode(raw);
+      final decoded = OfflineStore.readSnapshot(_key, maxAge: _maxAge);
       if (decoded is! Map) return null;
 
       final draft = ProductDraft.fromJson(Map<String, dynamic>.from(decoded));
@@ -139,7 +133,7 @@ class ProductDraftStore {
 
   static void clear() {
     try {
-      _box.remove(_key);
+      OfflineStore.removeSnapshot(_key);
     } catch (_) {
       // Rien à faire : le brouillon sera écrasé au prochain enregistrement.
     }

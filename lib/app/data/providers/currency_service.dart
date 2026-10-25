@@ -289,7 +289,6 @@ class CurrencyService extends GetxService {
       );
 
       print('📡 API Response - Success: ${response.success}');
-      print('📡 API Response - Data: ${response.data}');
 
       if (response.success && response.data != null) {
         final currencyData = response.data!['data'];
@@ -299,7 +298,6 @@ class CurrencyService extends GetxService {
         await _setUserCurrency(currency);
       } else {
         print('⚠️ API failed or no data, using default XAF');
-        print('   Message: ${response.message}');
         await _setDefaultCurrency();
       }
     } catch (e) {

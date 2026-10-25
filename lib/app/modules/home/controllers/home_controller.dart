@@ -155,7 +155,6 @@ class HomeController extends GetxController
       userName.value = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'
           .trim();
       userAvatar.value = user['avatar'] ?? '';
-      print('  └─ User loaded: ${userName.value}');
     } else {
       print('  └─ No user found');
     }
@@ -962,7 +961,6 @@ class HomeController extends GetxController
     }
 
     print('👤 HOME: User found');
-    print('  └─ Name: ${user.fullName}');
     print('  └─ Role: ${user.role}');
     print('  └─ Is Vendor: ${user.isVendor}');
 

@@ -5,6 +5,7 @@ import '../../../data/providers/conversation_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/string_utils.dart';
+import '../../../core/utils/session_scope.dart';
 
 class ChatController extends GetxController {
   final RxList<Map<String, dynamic>> conversations =
@@ -23,6 +24,7 @@ class ChatController extends GetxController {
     return total + (count > 0 ? count : 0);
   });
   int _currentPage = 1;
+  int _loadGeneration = 0;
 
   @override
   void onInit() {
@@ -37,6 +39,12 @@ class ChatController extends GetxController {
   }
 
   Future<void> _loadConversations({bool refresh = false}) async {
+    final session = SessionScope.current;
+    final generation = ++_loadGeneration;
+    bool isCurrent() =>
+        !isClosed &&
+        SessionScope.isCurrent(session) &&
+        generation == _loadGeneration;
     if (refresh) {
       _currentPage = 1;
       hasMore.value = true;
@@ -48,6 +56,7 @@ class ChatController extends GetxController {
       final response = await ConversationService.getConversations(
         page: _currentPage,
       );
+      if (!isCurrent()) return;
 
       if (response.success && response.data != null) {
         final convList =
@@ -113,19 +122,11 @@ class ChatController extends GetxController {
         final pagination =
             response.data!['pagination'] as Map<String, dynamic>?;
         hasMore.value = pagination?['has_more'] ?? false;
-      } else {
-        // No fallback - just keep empty if no data
-        if (refresh || _currentPage == 1) {
-          conversations.value = [];
-        }
       }
     } catch (e) {
-      // No fallback - just keep empty on error
-      if (refresh || _currentPage == 1) {
-        conversations.value = [];
-      }
+      // Conserver la liste affichée si le rafraîchissement échoue.
     } finally {
-      isLoading.value = false;
+      if (isCurrent()) isLoading.value = false;
     }
   }
 
@@ -174,16 +175,16 @@ class ChatController extends GetxController {
         .toList();
   }
 
-  void openConversation(Map<String, dynamic> conversation) {
-    Get.toNamed('/chatdetail', arguments: conversation);
+  Future<void> openConversation(Map<String, dynamic> conversation) async {
+    final session = SessionScope.current;
+    await Get.toNamed('/chatdetail', arguments: conversation);
+    if (isClosed || !SessionScope.isCurrent(session)) return;
+    await refreshConversations();
   }
 
   /// Refresh the list of conversations, optionally forcing a reload from the server
   Future<void> loadConversations({bool refresh = false}) async {
-    if (refresh) {
-      isLoading.value = true;
-    }
-    await _loadConversations(); // ta logique existante
+    await _loadConversations(refresh: refresh);
   }
 
   /// Start a new conversation with a user (optionally about a product)
@@ -200,17 +201,14 @@ class ChatController extends GetxController {
         final otherUser = conv['other_user'];
         final userName = otherUser?['name'] ?? 'chat.default_user_name'.tr;
 
-        Get.toNamed(
-          '/chatdetail',
-          arguments: {
-            'id': conv['id']?.toString(),
-            'name': userName,
-            'avatar': StringUtils.getInitials(userName),
-            'userId': userId,
-            'productId': productId,
-            'isOnline': false, // On ne connaît pas le statut au démarrage
-          },
-        );
+        await openConversation({
+          'id': conv['id']?.toString(),
+          'name': userName,
+          'avatar': StringUtils.getInitials(userName),
+          'userId': userId,
+          'productId': productId,
+          'isOnline': false, // On ne connaît pas le statut au démarrage
+        });
       }
     } catch (e) {
       AppFeedback.show('chat.error'.tr, 'chat.start_conversation_failed'.tr);

@@ -89,7 +89,6 @@ class FcmService extends GetxService {
 
   /// Gérer le tap sur une notification locale
   void _onNotificationTapped(NotificationResponse response) {
-    print('[FCM] Notification tapped: ${response.payload}');
 
     if (response.payload == null) return;
 
@@ -115,9 +114,6 @@ class FcmService extends GetxService {
     // Message reçu quand l'app est en foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('[FCM] Foreground message received:');
-      print('  Title: ${message.notification?.title}');
-      print('  Body: ${message.notification?.body}');
-      print('  Data: ${message.data}');
 
       _handleMessage(message, inForeground: true);
     });
@@ -125,7 +121,6 @@ class FcmService extends GetxService {
     // Message reçu quand l'app est en background et qu'on clique dessus
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('[FCM] Background message opened:');
-      print('  Data: ${message.data}');
 
       _handleMessage(message, inForeground: false);
     });
@@ -272,7 +267,6 @@ class FcmService extends GetxService {
       }
 
       final token = await _firebaseMessaging.getToken();
-      print('[FCM] FCM Token: $token');
 
       // Envoyer le token au backend
       if (token != null) {
@@ -281,7 +275,6 @@ class FcmService extends GetxService {
           if (response.success) {
             print('[FCM] ✅ Token registered successfully on backend');
           } else {
-            print('[FCM] ⚠️ Failed to register token: ${response.message}');
           }
         } catch (e) {
           print('[FCM] ⚠️ Error sending token to backend: $e');
@@ -304,7 +297,6 @@ class FcmService extends GetxService {
   /// Rafraîchir le token FCM
   void setupTokenRefresh() {
     _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-      print('[FCM] Token refreshed: $newToken');
 
       // Mettre à jour le token sur le backend
       try {
@@ -312,7 +304,6 @@ class FcmService extends GetxService {
         if (response.success) {
           print('[FCM] ✅ Refreshed token registered successfully');
         } else {
-          print('[FCM] ⚠️ Failed to register refreshed token: ${response.message}');
         }
       } catch (e) {
         print('[FCM] ⚠️ Error sending refreshed token to backend: $e');

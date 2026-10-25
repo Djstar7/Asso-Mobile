@@ -6,12 +6,19 @@ import '../../core/values/constants.dart';
 
 /// Injectable wallet service that wraps the static provider
 class WalletService {
+  bool isUsingOfflineData = false;
+  DateTime? lastSyncedAt;
+
   /// Get wallet stats and balances
   Future<WalletModel?> getWalletStats() async {
     try {
       final response = await wallet_provider.WalletService.getWallet();
 
       if (response.success && response.data != null) {
+        isUsingOfflineData = response.data!['_offline'] == true;
+        lastSyncedAt =
+            DateTime.tryParse('${response.data!['_saved_at']}') ??
+            DateTime.now();
         // Extract the actual data from the response
         final actualData = response.data!['data'] as Map<String, dynamic>?;
         if (actualData != null) {
@@ -93,21 +100,20 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'data.wallet.recharge_success'.tr,
+          'message':
+              response.data?['message'] ?? 'data.wallet.recharge_success'.tr,
           ...?response.data,
         };
       }
 
       return {
         'success': false,
-        'message': response.data?['message'] ?? 'data.wallet.recharge_failed'.tr,
+        'message':
+            response.data?['message'] ?? 'data.wallet.recharge_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error recharging wallet: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.recharge_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.recharge_error'.tr};
     }
   }
 
@@ -132,10 +138,7 @@ class WalletService {
       };
     } catch (e) {
       print('[WalletService] Error checking payment ability: $e');
-      return {
-        'can_pay': false,
-        'message': 'data.wallet.check_error'.tr,
-      };
+      return {'can_pay': false, 'message': 'data.wallet.check_error'.tr};
     }
   }
 
@@ -159,7 +162,8 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'data.wallet.payment_success'.tr,
+          'message':
+              response.data?['message'] ?? 'data.wallet.payment_success'.tr,
           ...?response.data,
         };
       }
@@ -170,26 +174,21 @@ class WalletService {
       };
     } catch (e) {
       print('[WalletService] Error paying with wallet: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.payment_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.payment_error'.tr};
     }
   }
 
   /// Get withdrawal balances
   Future<Map<String, dynamic>> getWithdrawalBalances() async {
     try {
-      final response = await wallet_provider.WalletService.getWithdrawalBalances();
+      final response =
+          await wallet_provider.WalletService.getWithdrawalBalances();
 
       if (response.success && response.data != null) {
         // Extract the actual data from the response
         final actualData = response.data!['data'] as Map<String, dynamic>?;
         if (actualData != null) {
-          return {
-            'success': true,
-            ...actualData,
-          };
+          return {'success': true, ...actualData};
         }
       }
 
@@ -228,21 +227,21 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'data.wallet.withdrawal_initiated'.tr,
+          'message':
+              response.data?['message'] ??
+              'data.wallet.withdrawal_initiated'.tr,
           ...?response.data,
         };
       }
 
       return {
         'success': false,
-        'message': response.data?['message'] ?? 'data.wallet.withdrawal_failed'.tr,
+        'message':
+            response.data?['message'] ?? 'data.wallet.withdrawal_failed'.tr,
       };
     } catch (e) {
       print('[WalletService] Error initiating KPay withdrawal: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.withdrawal_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.withdrawal_error'.tr};
     }
   }
 
@@ -262,7 +261,8 @@ class WalletService {
       if (response.success) {
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'data.wallet.transfer_initiated'.tr,
+          'message':
+              response.data?['message'] ?? 'data.wallet.transfer_initiated'.tr,
           ...?response.data,
         };
       }
@@ -275,13 +275,9 @@ class WalletService {
       };
     } catch (e) {
       print('[WalletService] Error initiating Stripe withdrawal: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.transfer_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.transfer_error'.tr};
     }
   }
-
 
   /// Devis d'un virement IBAN : montant converti vers la devise du compte bancaire.
   Future<Map<String, dynamic>> getStripeWithdrawalQuote({
@@ -289,10 +285,11 @@ class WalletService {
     String? currency,
   }) async {
     try {
-      final response = await wallet_provider.WalletService.stripeWithdrawalQuote(
-        amount: amount,
-        currency: currency,
-      );
+      final response =
+          await wallet_provider.WalletService.stripeWithdrawalQuote(
+            amount: amount,
+            currency: currency,
+          );
 
       if (response.success && response.data != null) {
         // `ApiResponse.data` porte le corps complet : le devis est sous `data`.
@@ -306,25 +303,24 @@ class WalletService {
       return {'success': false, 'message': response.message};
     } catch (e) {
       print('[WalletService] Error fetching Stripe quote: $e');
-      return {'success': false, 'message': 'data.wallet.conversion_unavailable'.tr};
+      return {
+        'success': false,
+        'message': 'data.wallet.conversion_unavailable'.tr,
+      };
     }
   }
 
   /// Check withdrawal status
   Future<Map<String, dynamic>> checkWithdrawalStatus(int withdrawalId) async {
     try {
-      final response = await wallet_provider.WalletService.checkWithdrawalStatus(
-        withdrawalId,
-      );
+      final response = await wallet_provider
+          .WalletService.checkWithdrawalStatus(withdrawalId);
 
       if (response.success && response.data != null) {
         // Extract the actual data from the response
         final actualData = response.data!['data'] as Map<String, dynamic>?;
         if (actualData != null) {
-          return {
-            'success': true,
-            ...actualData,
-          };
+          return {'success': true, ...actualData};
         }
       }
 
@@ -334,10 +330,7 @@ class WalletService {
       };
     } catch (e) {
       print('[WalletService] Error checking withdrawal status: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.status_check_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.status_check_error'.tr};
     }
   }
 
@@ -386,16 +379,15 @@ class WalletService {
   /// Check payment status (for recharge polling)
   Future<Map<String, dynamic>> checkPaymentStatus(int paymentId) async {
     try {
-      final response = await ApiProvider.get('${AppConstants.walletPaymentStatusUrl}/$paymentId');
+      final response = await ApiProvider.get(
+        '${AppConstants.walletPaymentStatusUrl}/$paymentId',
+      );
 
       if (response.success && response.data != null) {
         // Extract the actual data from the response
         final actualData = response.data!['data'] as Map<String, dynamic>?;
         if (actualData != null) {
-          return {
-            'success': true,
-            ...actualData,
-          };
+          return {'success': true, ...actualData};
         }
       }
 
@@ -405,11 +397,7 @@ class WalletService {
       };
     } catch (e) {
       print('[WalletService] Error checking payment status: $e');
-      return {
-        'success': false,
-        'message': 'data.wallet.status_check_error'.tr,
-      };
+      return {'success': false, 'message': 'data.wallet.status_check_error'.tr};
     }
   }
-
 }

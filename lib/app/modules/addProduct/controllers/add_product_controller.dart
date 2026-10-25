@@ -777,7 +777,6 @@ class AddProductController extends GetxController {
           _categoriesFromServer = true;
           return;
         }
-        print('⚠️ ADD_PRODUCT: Catégories indisponibles: ${response.message}');
       } catch (e) {
         print('❌ ADD_PRODUCT: Erreur lors du chargement des catégories: $e');
       }
@@ -1827,8 +1826,6 @@ class AddProductController extends GetxController {
             );
 
       print('📦 ADD_PRODUCT: Réponse reçue - success: ${response.success}');
-      print('📦 ADD_PRODUCT: Réponse reçue - message: ${response.message}');
-      print('📦 ADD_PRODUCT: Réponse reçue - data: ${response.data}');
 
       // Backend perdu pendant l'envoi : plutôt que de perdre la saisie, on
       // la garde pour l'envoi différé (sans doublon grâce à la référence).
@@ -1854,12 +1851,6 @@ class AddProductController extends GetxController {
           '✅ PRODUCT ${isEditMode.value ? "UPDATED" : "CREATED"} SUCCESSFULLY!',
         );
         print('✅ ========================================');
-        print(
-          '📦 Product ID: ${response.data?['product']?['id'] ?? editProductId.value ?? 'N/A'}',
-        );
-        print(
-          '📦 Product Name: ${response.data?['product']?['name'] ?? nameController.text}',
-        );
 
         // Afficher info stockage si disponible
         if (response.data?['storage_info'] != null) {

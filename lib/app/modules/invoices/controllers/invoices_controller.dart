@@ -2,14 +2,13 @@ import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../../core/services/locale_service.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/models/invoice_model.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/authenticated_download.dart';
+import '../../../data/providers/private_exports.dart';
+import '../../../core/utils/session_scope.dart';
 import '../../../core/utils/app_design.dart';
 
 class InvoicesController extends GetxController {
@@ -28,12 +27,16 @@ class InvoicesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    developer.log('========== INVOICES CONTROLLER INIT ==========', name: 'InvoicesController');
+    developer.log(
+      '========== INVOICES CONTROLLER INIT ==========',
+      name: 'InvoicesController',
+    );
     fetchInvoices();
   }
 
   /// Fetch invoices from API
   Future<void> fetchInvoices({bool refresh = false}) async {
+    final session = SessionScope.current;
     if (refresh) {
       currentPage.value = 1;
       invoices.clear();
@@ -67,6 +70,7 @@ class InvoicesController extends GetxController {
         error: 'Success: ${response.success}',
       );
 
+      if (!SessionScope.isCurrent(session)) return;
       if (response.success && response.data != null) {
         final invoicesData = response.data!['invoices'] as Map<String, dynamic>;
         final invoicesList = (invoicesData['data'] as List)
@@ -86,7 +90,8 @@ class InvoicesController extends GetxController {
         developer.log(
           'Invoices loaded',
           name: 'InvoicesController',
-          error: 'Total: ${total.value}, Page: ${currentPage.value}/$lastPage.value',
+          error:
+              'Total: ${total.value}, Page: ${currentPage.value}/$lastPage.value',
         );
       } else {
         AppFeedback.show(
@@ -154,6 +159,7 @@ class InvoicesController extends GetxController {
   /// ouvre le partage système (enregistrer dans Fichiers, ouvrir, envoyer…).
   /// Ouvrir le lien dans le navigateur échouait : la route exige d'être connecté.
   Future<void> downloadInvoice(InvoiceModel invoice) async {
+    final session = SessionScope.current;
     final url = invoice.pdfUrl;
     if (url == null) {
       _error('invoices.download_url_unavailable'.tr);
@@ -163,15 +169,15 @@ class InvoicesController extends GetxController {
     downloadingNumber.value = invoice.invoiceNumber;
 
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer ${ApiProvider.token}',
-          'Accept': 'application/pdf',
-          // Facture rédigée dans la langue de l'app.
-          'Accept-Language': LocaleService.currentLanguage,
-        },
-      );
+      final uri = Uri.tryParse(url);
+      final response = uri == null
+          ? null
+          : await AuthenticatedDownload.get(uri, accept: 'application/pdf');
+      if (!SessionScope.isCurrent(session)) return;
+      if (response == null) {
+        _error('invoices.download_error'.tr);
+        return;
+      }
       final isPdf = (response.headers['content-type'] ?? '').contains('pdf');
       if (response.statusCode != 200 || !isPdf) {
         developer.log(
@@ -183,10 +189,12 @@ class InvoicesController extends GetxController {
         return;
       }
 
-      final dir = await getTemporaryDirectory();
-      final safeName = invoice.invoiceNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-      final file = File('${dir.path}/facture_$safeName.pdf');
-      await file.writeAsBytes(response.bodyBytes);
+      final file = await PrivateExports.write(
+        'facture_${invoice.invoiceNumber}.pdf',
+        response.bodyBytes,
+        session,
+      );
+      if (file == null || !SessionScope.isCurrent(session)) return;
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/pdf')],
@@ -194,10 +202,14 @@ class InvoicesController extends GetxController {
         text: 'package_subscription.invoice.share_text'.tr,
       );
     } catch (e) {
-      developer.log('Error downloading invoice', name: 'InvoicesController', error: e);
+      developer.log(
+        'Error downloading invoice',
+        name: 'InvoicesController',
+        error: e,
+      );
       _error('invoices.download_error'.tr);
     } finally {
-      downloadingNumber.value = null;
+      if (SessionScope.isCurrent(session)) downloadingNumber.value = null;
     }
   }
 

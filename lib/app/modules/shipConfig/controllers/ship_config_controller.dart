@@ -86,7 +86,6 @@ class ShipConfigController extends GetxController {
 
       print('  └─ Response success: ${response.success}');
       print('  └─ Response status: ${response.statusCode}');
-      print('  └─ Response data type: ${response.data.runtimeType}');
 
       if (response.success && response.data != null) {
         final responseData = response.data!;
@@ -102,7 +101,7 @@ class ShipConfigController extends GetxController {
 
           try {
             final user = UserModel.fromJson(userData);
-            StorageService.saveUser(user);
+            await StorageService.saveUser(user);
             print(
               '✅ Profil rafraîchi: role=${user.role}, roles=${user.roles}, isDelivery=${user.isDelivery}',
             );
@@ -116,7 +115,6 @@ class ShipConfigController extends GetxController {
           print('⚠️  Pas de données utilisateur dans la réponse');
         }
       } else {
-        print('⚠️  Erreur lors du rafraîchissement: ${response.message}');
       }
     } catch (e, stackTrace) {
       print('❌ Exception lors du rafraîchissement du profil: $e');

@@ -1020,6 +1020,9 @@
       "address": "Address"
     },
     "offline": {
+      "no_saved_data": "No data saved on this device. Connect once to synchronise.",
+      "saved_copy": "Offline · Last synced: @date. Showing saved data; balances may have changed.",
+      "online_required": "Reconnect to perform this action.",
       "label": "Offline"
     },
     "free_delivery": {
@@ -3083,7 +3086,7 @@
     },
     "validate_dialog": {
       "title": "Validate order",
-      "message": "Do you want to validate order #@id from @name?\n\nThe funds will be credited to your wallet and available immediately.",
+      "message": "Do you want to validate order #@id from @name?\n\nThe funds remain on hold until the order is completed. They will then be available in your wallet.",
       "success_title": "Order validated",
       "success_carrier": "Drop the parcel off at the @agency agency, then tap “Hand to carrier”.",
       "default_carrier": "carrier",

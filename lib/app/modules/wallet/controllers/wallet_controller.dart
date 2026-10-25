@@ -14,6 +14,8 @@ import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/real_estate_service.dart';
 import '../../../data/providers/wallet_service.dart' as wallet_api;
 import '../widgets/recharge_bottom_sheet.dart';
+import '../../../data/services/connectivity_service.dart';
+import '../../../core/utils/session_scope.dart';
 
 class WalletController extends GetxController {
   final WalletService _walletService = Get.find<WalletService>();
@@ -27,6 +29,23 @@ class WalletController extends GetxController {
   StreamSubscription? _fcmSubscription;
 
   // États réactifs
+  final isShowingSnapshot = false.obs;
+  final lastSyncedAt = Rxn<DateTime>();
+  Worker? _connectivityWorker;
+  bool get isReadOnly =>
+      ConnectivityService.isOffline || isShowingSnapshot.value;
+
+  void onlineOnly(VoidCallback action) {
+    if (isReadOnly) {
+      AppFeedback.show(
+        'core.offline.label'.tr,
+        'core.offline.online_required'.tr,
+      );
+      return;
+    }
+    action();
+  }
+
   final isLoading = true.obs;
   final isLoadingTransactions = false.obs;
   final isProcessingPayment = false.obs;
@@ -34,7 +53,8 @@ class WalletController extends GetxController {
   // Données du wallet
   final wallet = Rxn<WalletModel>();
   final transactions = <WalletTransactionModel>[].obs;
-  final lockedBookings = <Map<String, dynamic>>[].obs; // Bookings avec fonds bloqués
+  final lockedBookings =
+      <Map<String, dynamic>>[].obs; // Bookings avec fonds bloqués
   /// Réservations Immo reçues dont la part du bailleur est encore bloquée.
   final lockedRealEstate = <RealEstateReservation>[].obs;
 
@@ -53,7 +73,8 @@ class WalletController extends GetxController {
   final stripeWithdrawEligible = false.obs; // compte IBAN validé (approved)
   final stripeWithdrawStatus = RxnString(); // null|pending|approved|rejected
   final stripeWithdrawCurrency = 'EUR'.obs;
-  final stripeWithdrawAvailable = 0.0.obs; // montant versable, converti dans la devise du payout
+  final stripeWithdrawAvailable =
+      0.0.obs; // montant versable, converti dans la devise du payout
   final stripeIbanLast4 = RxnString();
 
   // Solde du PORTEFEUILLE utilisé pour financer le virement (ex. XAF) : c'est
@@ -84,7 +105,8 @@ class WalletController extends GetxController {
   final perPage = 20.obs;
 
   // Filtres
-  final selectedType = Rxn<String>(); // credit, debit, refund, bonus, adjustment
+  final selectedType =
+      Rxn<String>(); // credit, debit, refund, bonus, adjustment
 
   // Messages
   final errorMessage = ''.obs;
@@ -109,6 +131,11 @@ class WalletController extends GetxController {
   void onInit() {
     super.onInit();
 
+    if (Get.isRegistered<ConnectivityService>()) {
+      _connectivityWorker = ever(ConnectivityService.to.isOnline, (online) {
+        if (online == true && StorageService.isAuthenticated) refresh();
+      });
+    }
     // Charger les données uniquement si l'utilisateur est connecté
     if (StorageService.isAuthenticated) {
       loadWallet();
@@ -137,7 +164,10 @@ class WalletController extends GetxController {
     super.onReady();
     // Arrivée depuis « Solde insuffisant → Recharger » : ouvrir directement la recharge.
     final args = Get.arguments;
-    if (args is Map && args['openRecharge'] == true && StorageService.isAuthenticated) {
+    if (!isReadOnly &&
+        args is Map &&
+        args['openRecharge'] == true &&
+        StorageService.isAuthenticated) {
       final ctx = Get.context;
       if (ctx != null) RechargeBottomSheet.show(ctx);
     }
@@ -145,25 +175,16 @@ class WalletController extends GetxController {
 
   @override
   void onClose() {
-    print('');
-    print('========================================');
-    print('💰 WALLET CONTROLLER: Closing');
-    print('========================================');
+    _connectivityWorker?.dispose();
 
     _isDisposed = true;
 
     // Annuler la subscription FCM
     try {
       _fcmSubscription?.cancel();
-      print('  └─ FCM subscription cancelled');
-    } catch (e) {
-      print('  └─ Error cancelling FCM subscription: $e');
-    }
+    } catch (e) {}
 
     super.onClose();
-
-    print('  └─ Controller disposed safely');
-    print('========================================');
   }
 
   /// Configure l'écoute des notifications FCM pour le wallet
@@ -173,54 +194,60 @@ class WalletController extends GetxController {
 
       // Écouter les notifications de wallet
       _fcmSubscription = _fcmService?.walletNotificationStream.listen((data) {
-        print('[WalletController] FCM wallet notification received: $data');
-
         final type = data['type'] as String?;
 
         if (type == 'wallet_credit') {
           // Dépôt réussi
-          print('[WalletController] Deposit completed - refreshing wallet');
           refresh();
 
           AppFeedback.show(
             'wallet.notif.deposit_success_title'.tr,
-            'wallet.notif.deposit_success_message'
-                .trParams({'amount': _notifAmount(data['amount'])}),
+            'wallet.notif.deposit_success_message'.trParams({
+              'amount': _notifAmount(data['amount']),
+            }),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
-            icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
+            icon: Icon(
+              Icons.check_circle_rounded,
+              color: Get.theme.colorScheme.onPrimary,
+            ),
             duration: const Duration(seconds: 4),
           );
         } else if (type == 'wallet_credit_failed') {
           // Dépôt échoué
-          print('[WalletController] Deposit failed - refreshing wallet');
           refresh();
 
           AppFeedback.show(
             'wallet.notif.deposit_failed_title'.tr,
-            data['reason'] as String? ?? 'wallet.notif.deposit_failed_message'.tr,
+            data['reason'] as String? ??
+                'wallet.notif.deposit_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
-            icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
+            icon: Icon(
+              Icons.error_rounded,
+              color: Get.theme.colorScheme.onError,
+            ),
             duration: const Duration(seconds: 5),
           );
         } else if (type == 'wallet_withdrawal_completed') {
           // Retrait réussi
-          print('[WalletController] Withdrawal completed - refreshing wallet');
           refresh();
 
           AppFeedback.show(
             'wallet.notif.withdrawal_done_title'.tr,
-            'wallet.notif.withdrawal_done_message'
-                .trParams({'amount': _notifAmount(data['amount'])}),
+            'wallet.notif.withdrawal_done_message'.trParams({
+              'amount': _notifAmount(data['amount']),
+            }),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
-            icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
+            icon: Icon(
+              Icons.check_circle_rounded,
+              color: Get.theme.colorScheme.onPrimary,
+            ),
             duration: const Duration(seconds: 4),
           );
         } else if (type == 'wallet_withdrawal_failed') {
           // Retrait échoué (avec remboursement automatique)
-          print('[WalletController] Withdrawal failed - refreshing wallet');
           refresh();
 
           AppFeedback.show(
@@ -228,29 +255,32 @@ class WalletController extends GetxController {
             'wallet.notif.withdrawal_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
             colorText: Get.theme.colorScheme.onError,
-            icon: Icon(Icons.error_rounded, color: Get.theme.colorScheme.onError),
+            icon: Icon(
+              Icons.error_rounded,
+              color: Get.theme.colorScheme.onError,
+            ),
             duration: const Duration(seconds: 5),
           );
         } else if (type == 'wallet_unlocked') {
           // Fonds débloqués après confirmation de livraison diaspo
-          print('[WalletController] Funds unlocked - refreshing wallet');
           refresh();
 
           AppFeedback.show(
             'wallet.notif.funds_unlocked_title'.tr,
-            'wallet.notif.funds_unlocked_message'
-                .trParams({'amount': _notifAmount(data['amount'])}),
+            'wallet.notif.funds_unlocked_message'.trParams({
+              'amount': _notifAmount(data['amount']),
+            }),
             backgroundColor: Get.theme.colorScheme.primary,
             colorText: Get.theme.colorScheme.onPrimary,
-            icon: Icon(Icons.lock_open_rounded, color: Get.theme.colorScheme.onPrimary),
+            icon: Icon(
+              Icons.lock_open_rounded,
+              color: Get.theme.colorScheme.onPrimary,
+            ),
             duration: const Duration(seconds: 4),
           );
         }
       });
-
-      print('[WalletController] FCM listener setup complete');
     } catch (e) {
-      print('[WalletController] FCM service not available: $e');
       // FCM is optional - app still works without it
     }
   }
@@ -258,6 +288,7 @@ class WalletController extends GetxController {
   /// Charge les données du wallet (solde et stats)
   Future<void> loadWallet() async {
     if (_isDisposed) return;
+    final session = SessionScope.current;
 
     isLoading.value = true;
     errorMessage.value = '';
@@ -265,63 +296,42 @@ class WalletController extends GetxController {
     try {
       final result = await _walletService.getWalletStats();
 
-      if (_isDisposed) return;
+      if (_isDisposed || !SessionScope.isCurrent(session)) return;
 
       if (result != null) {
         wallet.value = result;
-        print('[WalletController] 💰 Wallet loaded:');
-        print('  - Current Balance: ${result.currentBalance}');
-        print('  - Total Locked: ${result.totalLockedBalance}');
-        print('  - Locked KPay: ${result.lockedKPayBalance}');
-        print('  - Locked Paypal: ${result.lockedPaypalBalance}');
-        print('  - Has Locked Funds: ${result.hasLockedFunds}');
+        isShowingSnapshot.value = _walletService.isUsingOfflineData;
+        lastSyncedAt.value = _walletService.lastSyncedAt;
       } else {
-        errorMessage.value = 'wallet.errors.load_wallet_failed'.tr;
+        errorMessage.value = ConnectivityService.isOffline
+            ? 'core.offline.no_saved_data'.tr
+            : 'wallet.errors.load_wallet_failed'.tr;
       }
     } catch (e) {
-      print('[WalletController] Error loading wallet: $e');
       errorMessage.value = 'wallet.errors.load_wallet_error'.tr;
     } finally {
-      isLoading.value = false;
+      if (SessionScope.isCurrent(session)) isLoading.value = false;
     }
   }
 
-    void handleVendorModeNavigation() {
-    print('');
-    print('========================================');
-    print('🏪 HOME: VENDOR MODE NAVIGATION');
-    print('========================================');
-
+  void handleVendorModeNavigation() {
     final user = StorageService.getUser();
 
     if (user == null) {
-      print('❌ HOME: No user found in storage');
       AppFeedback.show(
         'wallet.login_required_title'.tr,
         'wallet.login_required_vendor'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
-      print('========================================');
       return;
     }
 
-    print('👤 HOME: User found');
-    print('  └─ Name: ${user.fullName}');
-    print('  └─ Role: ${user.role}');
-    print('  └─ Is Vendor: ${user.isVendor}');
-
     if (user.isVendor) {
-      print('✅ HOME: User is already a vendor, navigating to dashboard');
       Get.toNamed(Routes.VENDOR_DASHBOARD);
     } else {
-      print('📝 HOME: User is not a vendor, navigating to config');
       Get.toNamed(Routes.VENDOR_CONFIG);
     }
-
-    print('========================================');
   }
-
-
 
   /// Charge l'historique des transactions
   Future<void> loadTransactions({bool loadMore = false}) async {
@@ -352,7 +362,6 @@ class WalletController extends GetxController {
       lastPage.value = result['last_page'] as int;
       totalTransactions.value = result['total'] as int;
     } catch (e) {
-      print('[WalletController] Error loading transactions: $e');
       errorMessage.value = 'wallet.errors.load_transactions_error'.tr;
     } finally {
       isLoadingTransactions.value = false;
@@ -387,10 +396,10 @@ class WalletController extends GetxController {
       final res = await wallet_api.WalletService.getPayoutAccount();
       if (_isDisposed || !res.success) return;
       final data = res.data?['data'];
-      payoutAccount.value = data is Map ? Map<String, dynamic>.from(data) : null;
-    } catch (e) {
-      print('[WalletController] loadPayoutAccount error: $e');
-    }
+      payoutAccount.value = data is Map
+          ? Map<String, dynamic>.from(data)
+          : null;
+    } catch (e) {}
   }
 
   /// Enregistre le compte Mobile Money de retrait. Renvoie le message d'erreur, ou null.
@@ -407,10 +416,14 @@ class WalletController extends GetxController {
         accountHolder: accountHolder,
       );
       if (!res.success) {
-        return res.message.isNotEmpty ? res.message : 'wallet.errors.save_account_failed'.tr;
+        return res.message.isNotEmpty
+            ? res.message
+            : 'wallet.errors.save_account_failed'.tr;
       }
       final data = res.data?['data'];
-      payoutAccount.value = data is Map ? Map<String, dynamic>.from(data) : null;
+      payoutAccount.value = data is Map
+          ? Map<String, dynamic>.from(data)
+          : null;
       return null;
     } catch (e) {
       return 'wallet.errors.generic'.tr;
@@ -432,11 +445,15 @@ class WalletController extends GetxController {
   /// Charge les réservations avec fonds bloqués (pour le seller)
   /// Loyers et acomptes encore bloqués : délai de visite ou litige en cours.
   Future<void> loadLockedRealEstate() async {
+    if (ConnectivityService.isOffline) return;
     final received = await RealEstateService.receivedReservations();
-    lockedRealEstate.value = received.where((r) => r.status == 'paid' || r.status == 'disputed').toList();
+    lockedRealEstate.value = received
+        .where((r) => r.status == 'paid' || r.status == 'disputed')
+        .toList();
   }
 
   Future<void> loadLockedBookings() async {
+    if (ConnectivityService.isOffline) return;
     if (_isDisposed) return;
 
     try {
@@ -446,7 +463,8 @@ class WalletController extends GetxController {
       // Récupérer les bookings en tant que seller avec status 'paid'
       final result = await diaspoService.getBookings(
         role: 'seller',
-        status: 'paid', // paid = payé, en attente de confirmation de livraison par le seller
+        status:
+            'paid', // paid = payé, en attente de confirmation de livraison par le seller
         perPage: 100, // Récupérer tous les bookings payés en attente
       );
 
@@ -471,37 +489,33 @@ class WalletController extends GetxController {
         lockedBookings.value = bookingsData
             .where((booking) => booking['status'] == 'paid')
             .map((booking) {
-                  // Parser correctement les valeurs numériques qui peuvent être String ou num
-                  final subtotalRaw = booking['subtotal'];
-                  final subtotal = subtotalRaw is String
-                      ? double.tryParse(subtotalRaw) ?? 0.0
-                      : (subtotalRaw is num ? subtotalRaw.toDouble() : 0.0);
+              // Parser correctement les valeurs numériques qui peuvent être String ou num
+              final subtotalRaw = booking['subtotal'];
+              final subtotal = subtotalRaw is String
+                  ? double.tryParse(subtotalRaw) ?? 0.0
+                  : (subtotalRaw is num ? subtotalRaw.toDouble() : 0.0);
 
-                  final kgBookedRaw = booking['kg_booked'];
-                  final kgBooked = kgBookedRaw is String
-                      ? double.tryParse(kgBookedRaw) ?? 0.0
-                      : (kgBookedRaw is num ? kgBookedRaw.toDouble() : 0.0);
+              final kgBookedRaw = booking['kg_booked'];
+              final kgBooked = kgBookedRaw is String
+                  ? double.tryParse(kgBookedRaw) ?? 0.0
+                  : (kgBookedRaw is num ? kgBookedRaw.toDouble() : 0.0);
 
-                  return {
-                    'id': booking['id'],
-                    'confirmation_code': booking['confirmation_code'],
-                    'subtotal': subtotal,
-                    'kg_booked': kgBooked,
-                    'buyer_name': booking['buyer']?['name'] ?? 'wallet.default_client'.tr,
-                    'created_at': booking['created_at'],
-                  };
-                })
+              return {
+                'id': booking['id'],
+                'confirmation_code': booking['confirmation_code'],
+                'subtotal': subtotal,
+                'kg_booked': kgBooked,
+                'buyer_name':
+                    booking['buyer']?['name'] ?? 'wallet.default_client'.tr,
+                'created_at': booking['created_at'],
+              };
+            })
             .toList();
 
-        print('[WalletController] 🔒 Locked bookings loaded: ${lockedBookings.length} bookings');
-        for (var booking in lockedBookings) {
-          print('  - Booking #${booking['id']}: ${booking['subtotal']} FCFA (${booking['kg_booked']} kg)');
-        }
       } else {
         lockedBookings.value = [];
       }
     } catch (e) {
-      print('[WalletController] Error loading locked bookings: $e');
       lockedBookings.value = [];
     }
   }
@@ -512,10 +526,12 @@ class WalletController extends GetxController {
   Future<Map<String, dynamic>> initiateRecharge({
     required double amount,
     required String paymentMethod, // 'kpay' ou 'paypal'
-    String? provider, // code opérateur KPay (ex. MTN_MOMO_CMR) — requis pour kpay
+    String?
+    provider, // code opérateur KPay (ex. MTN_MOMO_CMR) — requis pour kpay
     String? phoneNumber, // format international sans '+' — requis pour kpay
   }) async {
-    if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
+    if (_isDisposed)
+      return {'success': false, 'message': 'Controller disposed'};
 
     isProcessingPayment.value = true;
     errorMessage.value = '';
@@ -529,26 +545,25 @@ class WalletController extends GetxController {
         phoneNumber: phoneNumber,
       );
 
-      if (_isDisposed) return {'success': false, 'message': 'Controller disposed'};
+      if (_isDisposed)
+        return {'success': false, 'message': 'Controller disposed'};
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'wallet.messages.recharge_initiated'.tr;
+        successMessage.value =
+            result['message'] ?? 'wallet.messages.recharge_initiated'.tr;
 
         // Si c'est KPay et que le wallet est déjà crédité, rafraîchir
         if (paymentMethod == 'kpay' && result['status'] == 'completed') {
-          await Future.wait([
-            loadWallet(),
-            loadWithdrawalBalances(),
-          ]);
+          await Future.wait([loadWallet(), loadWithdrawalBalances()]);
         }
 
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'wallet.errors.recharge_init_failed'.tr;
+        errorMessage.value =
+            result['message'] ?? 'wallet.errors.recharge_init_failed'.tr;
         return {'success': false, 'message': errorMessage.value};
       }
     } catch (e) {
-      print('[WalletController] Error initiating recharge: $e');
       errorMessage.value = 'wallet.errors.recharge_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
@@ -587,10 +602,7 @@ class WalletController extends GetxController {
           // Si le paiement est complété
           if (status == 'completed') {
             // Rafraîchir le solde et les soldes de retrait
-            await Future.wait([
-              loadWallet(),
-              loadWithdrawalBalances(),
-            ]);
+            await Future.wait([loadWallet(), loadWithdrawalBalances()]);
             return {
               'success': true,
               'status': 'completed',
@@ -604,7 +616,9 @@ class WalletController extends GetxController {
             return {
               'success': false,
               'status': 'failed',
-              'message': result['failure_reason'] ?? 'wallet.messages.payment_failed'.tr,
+              'message':
+                  result['failure_reason'] ??
+                  'wallet.messages.payment_failed'.tr,
               ...result,
             };
           }
@@ -626,7 +640,6 @@ class WalletController extends GetxController {
           attempts++;
         }
       } catch (e) {
-        print('[WalletController] Error polling payment status: $e');
         attempts++;
 
         // Si trop d'erreurs consécutives, abandonner
@@ -654,7 +667,6 @@ class WalletController extends GetxController {
     try {
       return await _walletService.checkPaymentStatus(paymentId);
     } catch (e) {
-      print('[WalletController] Error checking payment status: $e');
       return {
         'success': false,
         'message': 'wallet.errors.status_check_error'.tr,
@@ -675,7 +687,10 @@ class WalletController extends GetxController {
           'wallet.notif.recharge_confirmed_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
-          icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
+          icon: Icon(
+            Icons.check_circle_rounded,
+            color: Get.theme.colorScheme.onPrimary,
+          ),
           duration: const Duration(seconds: 4),
         );
       } else if (status == 'failed' || status == 'cancelled') {
@@ -705,7 +720,10 @@ class WalletController extends GetxController {
           'wallet.notif.withdrawal_sent_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
           colorText: Get.theme.colorScheme.onPrimary,
-          icon: Icon(Icons.check_circle_rounded, color: Get.theme.colorScheme.onPrimary),
+          icon: Icon(
+            Icons.check_circle_rounded,
+            color: Get.theme.colorScheme.onPrimary,
+          ),
           duration: const Duration(seconds: 4),
         );
         return;
@@ -730,7 +748,6 @@ class WalletController extends GetxController {
       final result = await _walletService.canPayWithWallet(amount);
       return result;
     } catch (e) {
-      print('[WalletController] Error checking payment ability: $e');
       return {
         'can_pay': false,
         'current_balance': wallet.value?.currentBalance ?? 0.0,
@@ -768,21 +785,19 @@ class WalletController extends GetxController {
       if (_isDisposed) return false;
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'wallet.messages.payment_done'.tr;
+        successMessage.value =
+            result['message'] ?? 'wallet.messages.payment_done'.tr;
 
         // Rafraîchir le wallet et les soldes de retrait après paiement
-        await Future.wait([
-          loadWallet(),
-          loadWithdrawalBalances(),
-        ]);
+        await Future.wait([loadWallet(), loadWithdrawalBalances()]);
 
         return true;
       } else {
-        errorMessage.value = result['message'] ?? 'wallet.errors.payment_failed'.tr;
+        errorMessage.value =
+            result['message'] ?? 'wallet.errors.payment_failed'.tr;
         return false;
       }
     } catch (e) {
-      print('[WalletController] Error paying with wallet: $e');
       errorMessage.value = 'wallet.errors.payment_error'.tr;
       return false;
     } finally {
@@ -810,7 +825,8 @@ class WalletController extends GetxController {
   }
 
   /// Getter pour le solde formaté (solde disponible, fonds bloqués exclus)
-  String get formattedBalance => wallet.value?.formattedAvailableBalance ?? '0 FCFA';
+  String get formattedBalance =>
+      wallet.value?.formattedAvailableBalance ?? '0 FCFA';
 
   /// Vérifie si le wallet a un solde suffisant
   bool hasSufficientBalance(double amount) {
@@ -843,8 +859,9 @@ class WalletController extends GetxController {
         if (list is List) {
           for (final item in list) {
             if (item is Map && item['currency'] != null) {
-              byCurrency[item['currency'].toString()] =
-                  _parseBalance(item['available']);
+              byCurrency[item['currency'].toString()] = _parseBalance(
+                item['available'],
+              );
             }
           }
         }
@@ -880,9 +897,7 @@ class WalletController extends GetxController {
           if (s is Map) stripeConfigured.value = s['configured'] == true;
         }
       }
-    } catch (e) {
-      print('[WalletController] Error loading withdrawal balances: $e');
-    }
+    } catch (e) {}
   }
 
   /// Parse balance value safely (handles both string and numeric types)
@@ -899,11 +914,7 @@ class WalletController extends GetxController {
     try {
       return await _walletService.getWithdrawalBalances();
     } catch (e) {
-      print('[WalletController] Error getting withdrawal balances: $e');
-      return {
-        'success': false,
-        'message': 'wallet.errors.balances_error'.tr,
-      };
+      return {'success': false, 'message': 'wallet.errors.balances_error'.tr};
     }
   }
 
@@ -927,27 +938,24 @@ class WalletController extends GetxController {
       );
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'wallet.messages.withdrawal_initiated'.tr;
+        successMessage.value =
+            result['message'] ?? 'wallet.messages.withdrawal_initiated'.tr;
 
         // ⚠️ CRITIQUE: Mettre à jour le solde IMMÉDIATEMENT avec la valeur retournée
         // Le backend a déjà débité le solde, il faut refléter ça côté frontend
         if (result['data'] != null && result['data']['new_balance'] != null) {
           kpayBalance.value = _parseBalance(result['data']['new_balance']);
-          print('[WalletController] ✅ Balance updated immediately: ${kpayBalance.value} FCFA');
         }
 
         // Rafraîchir le solde complet et les soldes de retrait en arrière-plan
-        await Future.wait([
-          loadWallet(),
-          loadWithdrawalBalances(),
-        ]);
+        await Future.wait([loadWallet(), loadWithdrawalBalances()]);
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'wallet.errors.withdrawal_init_failed'.tr;
+        errorMessage.value =
+            result['message'] ?? 'wallet.errors.withdrawal_init_failed'.tr;
         return result;
       }
     } catch (e) {
-      print('[WalletController] Error initiating KPay withdrawal: $e');
       errorMessage.value = 'wallet.errors.withdrawal_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
@@ -982,7 +990,6 @@ class WalletController extends GetxController {
         stripeQuoteMessage.value = res['message']?.toString();
       }
     } catch (e) {
-      print('[WalletController] Error quoting Stripe withdrawal: $e');
       stripeQuoteAmount.value = 0;
       stripeQuoteMessage.value = 'wallet.errors.conversion_unavailable'.tr;
     } finally {
@@ -1007,25 +1014,24 @@ class WalletController extends GetxController {
       );
 
       if (result['success'] == true) {
-        successMessage.value = result['message'] ?? 'wallet.messages.transfer_initiated'.tr;
+        successMessage.value =
+            result['message'] ?? 'wallet.messages.transfer_initiated'.tr;
 
         // Refléter immédiatement le débit côté UI (le backend a déjà débité).
-        final newBalance = result['data']?['new_balance'] ?? result['new_balance'];
+        final newBalance =
+            result['data']?['new_balance'] ?? result['new_balance'];
         if (newBalance != null) {
           stripeWithdrawAvailable.value = _parseBalance(newBalance);
         }
 
-        await Future.wait([
-          loadWallet(),
-          loadWithdrawalBalances(),
-        ]);
+        await Future.wait([loadWallet(), loadWithdrawalBalances()]);
         return result;
       } else {
-        errorMessage.value = result['message'] ?? 'wallet.errors.transfer_failed'.tr;
+        errorMessage.value =
+            result['message'] ?? 'wallet.errors.transfer_failed'.tr;
         return result;
       }
     } catch (e) {
-      print('[WalletController] Error initiating Stripe withdrawal: $e');
       errorMessage.value = 'wallet.errors.transfer_init_error'.tr;
       return {'success': false, 'message': errorMessage.value};
     } finally {
@@ -1058,7 +1064,9 @@ class WalletController extends GetxController {
     } else {
       return {
         'success': false,
-        'message': 'wallet.errors.invalid_provider'.trParams({'provider': provider}),
+        'message': 'wallet.errors.invalid_provider'.trParams({
+          'provider': provider,
+        }),
       };
     }
   }
@@ -1068,7 +1076,6 @@ class WalletController extends GetxController {
     try {
       return await _walletService.checkWithdrawalStatus(withdrawalId);
     } catch (e) {
-      print('[WalletController] Error checking withdrawal status: $e');
       return {
         'success': false,
         'message': 'wallet.errors.status_check_error'.tr,
@@ -1091,7 +1098,6 @@ class WalletController extends GetxController {
         status: status,
       );
     } catch (e) {
-      print('[WalletController] Error getting withdrawal history: $e');
       return {
         'withdrawals': [],
         'current_page': 1,

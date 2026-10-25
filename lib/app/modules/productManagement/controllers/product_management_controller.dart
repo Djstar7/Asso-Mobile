@@ -6,9 +6,16 @@ import 'package:get/get.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/session_scope.dart';
+import '../../../data/providers/offline_store.dart';
+import '../../../data/services/connectivity_service.dart';
 
 class ProductManagementController extends GetxController {
   // Observable variables
+  final isShowingSnapshot = false.obs;
+  final lastSyncedAt = Rxn<DateTime>();
+  Worker? _connectivityWorker;
+
   final products = <Map<String, dynamic>>[].obs;
   final isLoading = false.obs;
   final currentPage = 1.obs;
@@ -55,6 +62,11 @@ class ProductManagementController extends GetxController {
     }
 
     loadProducts();
+    if (Get.isRegistered<ConnectivityService>()) {
+      _connectivityWorker = ever(ConnectivityService.to.isOnline, (online) {
+        if (online == true) refreshProducts();
+      });
+    }
   }
 
   @override
@@ -71,6 +83,12 @@ class ProductManagementController extends GetxController {
 
   /// Load products with pagination
   Future<void> loadProducts({bool loadMore = false}) async {
+    final session = SessionScope.current;
+    if (ConnectivityService.isOffline) {
+      _requestId++;
+      _loadSavedProducts();
+      return;
+    }
     if (loadMore) {
       // Une page supplémentaire ne doit pas s'empiler sur un chargement en
       // cours, ni être demandée une fois la dernière page atteinte.
@@ -97,7 +115,7 @@ class ProductManagementController extends GetxController {
       );
 
       // Une réponse devancée par une recherche plus récente est ignorée.
-      if (requestId != _requestId) {
+      if (requestId != _requestId || !SessionScope.isCurrent(session)) {
         print('↩️ Réponse obsolète ignorée (page $page)');
         return;
       }
@@ -116,6 +134,10 @@ class ProductManagementController extends GetxController {
           products.value = newProducts;
         }
         errorMessage.value = null;
+        isShowingSnapshot.value = response.data!['_offline'] == true;
+        lastSyncedAt.value =
+            DateTime.tryParse('${response.data!['_saved_at']}') ??
+            DateTime.now();
 
         if (meta != null) {
           currentPage.value = meta['current_page'] as int? ?? page;
@@ -129,12 +151,13 @@ class ProductManagementController extends GetxController {
           totalProducts.value = products.length;
         }
 
-        print('✅ ${newProducts.length} produits — total ${totalProducts.value}');
+        print(
+          '✅ ${newProducts.length} produits — total ${totalProducts.value}',
+        );
       } else {
         final message = response.message.isNotEmpty
             ? response.message
             : 'product_management.controller.load_failed'.tr;
-        print('❌ Échec du chargement : $message');
         // L'erreur reste affichée dans la liste ; la snackbar ne sert qu'au
         // chargement d'une page supplémentaire, où la liste reste visible.
         if (loadMore) {
@@ -148,24 +171,55 @@ class ProductManagementController extends GetxController {
         }
       }
     } catch (e) {
-      if (requestId != _requestId) return;
+      if (requestId != _requestId || !SessionScope.isCurrent(session)) return;
       print('💥 Exception loading products: $e');
       final message = 'product_management.controller.check_connection'.tr;
       if (loadMore) {
         AppFeedback.show(
-            'product_management.controller.error_title'.tr,
-            message,
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          'product_management.controller.error_title'.tr,
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
       } else {
         errorMessage.value = message;
       }
     } finally {
-      if (requestId == _requestId) {
+      if (requestId == _requestId && SessionScope.isCurrent(session)) {
         isLoading.value = false;
         isLoadingMore.value = false;
       }
     }
+  }
+
+  void _loadSavedProducts() {
+    final snapshot = OfflineStore.readSnapshot('vendor_product_list');
+    isShowingSnapshot.value = true;
+    isLoading.value = false;
+    isLoadingMore.value = false;
+    hasMore.value = false;
+    if (snapshot is! Map || snapshot['products'] is! List) {
+      products.clear();
+      totalProducts.value = 0;
+      lastSyncedAt.value = null;
+      errorMessage.value = 'core.offline.no_saved_data'.tr;
+      return;
+    }
+    lastSyncedAt.value = DateTime.tryParse('${snapshot['saved_at']}');
+    final search = searchQuery.value.trim().toLowerCase();
+    products.value = (snapshot['products'] as List)
+        .whereType<Map>()
+        .map((product) => Map<String, dynamic>.from(product))
+        .where(
+          (product) =>
+              (search.isEmpty ||
+                  '${product['name'] ?? ''}'.toLowerCase().contains(search)) &&
+              (statusFilter.value == null ||
+                  product['status'] == statusFilter.value),
+        )
+        .toList();
+    totalProducts.value = products.length;
+    currentPage.value = 1;
+    errorMessage.value = null;
   }
 
   // ================================
@@ -217,8 +271,21 @@ class ProductManagementController extends GetxController {
     loadProducts();
   }
 
+  bool get isReadOnly =>
+      ConnectivityService.isOffline || isShowingSnapshot.value;
+
+  bool _canEditOnline() {
+    if (!isReadOnly) return true;
+    AppFeedback.show(
+      'core.offline.label'.tr,
+      'core.offline.online_required'.tr,
+    );
+    return false;
+  }
+
   /// Delete a product
   Future<void> deleteProduct(int productId, String productName) async {
+    if (!_canEditOnline()) return;
     print('');
     print('🗑️ Deleting product...');
     print('  └─ Product ID: $productId');
@@ -229,7 +296,9 @@ class ProductManagementController extends GetxController {
       AlertDialog(
         title: Text('product_management.controller.delete_title'.tr),
         content: Text(
-          'product_management.controller.delete_message'.trParams({'name': productName}),
+          'product_management.controller.delete_message'.trParams({
+            'name': productName,
+          }),
         ),
         actions: [
           TextButton(
@@ -238,9 +307,7 @@ class ProductManagementController extends GetxController {
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesign.danger,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppDesign.danger),
             child: Text(
               'product_management.controller.delete'.tr,
               style: const TextStyle(color: Colors.white),
@@ -284,7 +351,6 @@ class ProductManagementController extends GetxController {
           duration: const Duration(seconds: 3),
         );
       } else {
-        print('❌ Failed to delete product: ${response.message}');
         AppFeedback.show(
           'product_management.controller.error_title'.tr,
           response.message.isNotEmpty
@@ -299,7 +365,9 @@ class ProductManagementController extends GetxController {
       print('💥 Exception deleting product: $e');
       AppFeedback.show(
         'product_management.controller.error_title'.tr,
-        'product_management.controller.error_with_detail'.trParams({'error': '$e'}),
+        'product_management.controller.error_with_detail'.trParams({
+          'error': '$e',
+        }),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppDesign.danger,
         colorText: Colors.white,
@@ -308,6 +376,7 @@ class ProductManagementController extends GetxController {
   }
 
   Future<void> toggleProductStatus(Map<String, dynamic> product) async {
+    if (!_canEditOnline()) return;
     final currentStatus = product['status']?.toString() ?? 'inactive';
     final nextStatus = currentStatus == 'active' ? 'inactive' : 'active';
     final confirmed = await Get.dialog<bool>(
@@ -369,6 +438,7 @@ class ProductManagementController extends GetxController {
 
   /// Navigate to edit product
   void editProduct(Map<String, dynamic> product) {
+    if (!_canEditOnline()) return;
     print('');
     print('✏️ Editing product: ${product['name']}');
 
@@ -411,6 +481,7 @@ class ProductManagementController extends GetxController {
 
   @override
   void onClose() {
+    _connectivityWorker?.dispose();
     _searchDebounce?.cancel();
     searchController.dispose();
     super.onClose();

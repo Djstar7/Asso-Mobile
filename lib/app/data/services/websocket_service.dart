@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:get/get.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
@@ -93,7 +94,8 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
   static const int wsPort = int.fromEnvironment('WS_PORT', defaultValue: 443);
 
   /// true -> wss://, false -> ws://
-  static const bool useTls = bool.fromEnvironment('WS_TLS', defaultValue: true);
+  static const bool useTls =
+      kReleaseMode || bool.fromEnvironment('WS_TLS', defaultValue: true);
 
   static String get wsScheme => useTls ? 'wss' : 'ws';
 
@@ -150,7 +152,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
     try {
       final authToken = StorageService.getToken();
       if (authToken == null) {
-        print('⚠️  No auth token, skipping WebSocket initialization');
         return;
       }
       if (_channel != null) return;
@@ -163,7 +164,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
         '?protocol=7&client=dart&version=1.0.0',
       );
 
-      print('🔌 [WebSocket] Attempting to connect to: $uri');
       final channel = WebSocketChannel.connect(uri);
       _channel = channel;
       // L'échec de connexion arrive aussi par `onError` ci-dessous ; sans
@@ -178,21 +178,14 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           _handleIncomingMessage(message);
         },
         onError: (error) {
-          print('❌ [WebSocket] Error: $error');
           _onConnectionLost(generation);
         },
         onDone: () {
-          print('🔌 [WebSocket] Connection closed');
           _onConnectionLost(generation);
         },
         cancelOnError: true,
       );
-
-      print(
-        '🔌 [WebSocket] Stream listener attached, waiting for connection_established...',
-      );
     } catch (e) {
-      print('❌ [WebSocket] Error initializing: $e');
       _channel = null;
       _scheduleReconnect();
     }
@@ -213,7 +206,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
       _send({'event': 'pusher:ping', 'data': {}});
       _pongTimer = Timer(_pongTimeout, () {
         if (generation != _generation) return;
-        print('⚠️  [WebSocket] Pas de réponse au ping : reconnexion');
         _closeChannel();
         _scheduleReconnect();
       });
@@ -253,7 +245,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
 
     final seconds = math.min(60, 2 << math.min(_reconnectAttempts, 5));
     _reconnectAttempts++;
-    print('🔁 [WebSocket] Reconnexion dans ${seconds}s');
     _reconnectTimer = Timer(Duration(seconds: seconds), ensureConnected);
   }
 
@@ -279,16 +270,12 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
   /// Gérer les messages entrants
   void _handleIncomingMessage(dynamic message) {
     try {
-      print('📨 [WebSocket] Raw message received: $message');
       final data = jsonDecode(message);
       final event = data['event'] as String?;
 
       if (event == null) {
-        print('⚠️  [WebSocket] No event field in message');
         return;
       }
-
-      print('📩 [WebSocket] Event: $event');
 
       switch (event) {
         case 'pusher:connection_established':
@@ -318,17 +305,12 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           _handleOnlineStatus(data);
           break;
         default:
-          print('📩 [WebSocket] Unhandled event: $event');
       }
-    } catch (e) {
-      print('❌ [WebSocket] Error handling incoming message: $e');
-      print('   └─ Message was: $message');
-    }
+    } catch (e) {}
   }
 
   /// Erreur signalée par le serveur Pusher/Reverb.
   void _handleServerError(Map<String, dynamic> data) {
-    print('⚠️  [WebSocket] Erreur serveur : ${data['data']}');
     try {
       final payload = data['data'] is String
           ? jsonDecode(data['data'])
@@ -352,10 +334,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
       if (timeout != null && timeout > 0) {
         _activityTimeout = Duration(seconds: timeout.clamp(10, 120));
       }
-      print('✅ Pusher connection established - Socket ID: $_socketId');
-    } catch (e) {
-      print('❌ Error parsing connection data: $e');
-    }
+    } catch (e) {}
     _isConnected.value = true;
     _reconnectAttempts = 0;
     connectionEpoch.value++;
@@ -376,9 +355,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
     if (channel == null) return;
     try {
       channel.sink.add(jsonEncode(payload));
-    } catch (e) {
-      print('❌ [WebSocket] Envoi impossible : $e');
-    }
+    } catch (e) {}
   }
 
   /// Attend la connexion (5 s au plus). Faux si elle n'est pas établie.
@@ -413,18 +390,13 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
         'data': {'channel': channelName, 'auth': auth},
       });
       _subscribedChannels.add(channelName);
-      print('📡 Subscribing to $channelName');
-    } catch (e) {
-      print('❌ Error subscribing to $channelName: $e');
-    }
+    } catch (e) {}
   }
 
   /// Abonnement réussi
   void _handleSubscriptionSucceeded(Map<String, dynamic> data) {
     final channel = data['channel'] as String?;
-    if (channel != null) {
-      print('✅ Subscribed to channel: $channel');
-    }
+    if (channel != null) {}
   }
 
   /// S'abonner à une conversation.
@@ -444,7 +416,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
       'event': 'pusher:unsubscribe',
       'data': {'channel': channelName},
     });
-    print('🔕 Unsubscribed from $channelName');
   }
 
   /// S'abonner au statut en ligne d'un utilisateur
@@ -456,7 +427,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
     _wantedChannels.add(channelName);
     if (!await _waitForConnection()) {
       // La connexion établie plus tard rejouera l'abonnement.
-      print('⚠️  WebSocket not connected yet, $channelName en attente');
       return;
     }
     await _subscribe(channelName);
@@ -465,12 +435,10 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
   /// Obtenir l'authentification du channel (appel à l'API Laravel)
   Future<String> _getChannelAuth(String channelName, String? token) async {
     if (_socketId == null) {
-      print('⚠️  Socket ID not available yet');
       return '$appKey:no-socket-id';
     }
 
     if (token == null) {
-      print('⚠️  No auth token available');
       return '$appKey:no-token';
     }
 
@@ -478,8 +446,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
       // Extraire l'URL de base depuis AppConstants
       final baseUrl = AppConstants.baseUrl.replaceAll('/api', '');
       final authUrl = '$baseUrl/broadcasting/auth';
-
-      print('🔑 Authenticating channel: $channelName');
 
       final response = await http.post(
         Uri.parse(authUrl),
@@ -495,16 +461,11 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final auth = data['auth'] as String;
-        print('✅ Channel authenticated successfully');
         return auth;
       } else {
-        print(
-          '❌ Authentication failed: ${response.statusCode} - ${response.body}',
-        );
         return '$appKey:auth-failed';
       }
     } catch (e) {
-      print('❌ Error getting channel auth: $e');
       return '$appKey:error';
     }
   }
@@ -517,7 +478,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           : data['data'] as Map<String, dynamic>? ?? {};
 
       if (messageData.isEmpty) {
-        print('⚠️  Empty message data received');
         return;
       }
 
@@ -536,11 +496,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
 
       // Broadcaster le message
       _messageStream.add(msg);
-
-      print('✅ Message broadcasted to stream');
-    } catch (e) {
-      print('❌ Error handling message.sent: $e');
-    }
+    } catch (e) {}
   }
 
   /// Gérer l'événement user.typing
@@ -550,9 +506,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           ? jsonDecode(data['data'])
           : data['data'] as Map<String, dynamic>? ?? {};
       _typingStream.add(Map<String, dynamic>.from(typingData));
-    } catch (e) {
-      print('❌ Error handling user.typing: $e');
-    }
+    } catch (e) {}
   }
 
   /// Gérer l'événement user.online.status
@@ -562,9 +516,7 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
           ? jsonDecode(data['data'])
           : data['data'] as Map<String, dynamic>? ?? {};
       _onlineStatusStream.add(Map<String, dynamic>.from(statusData));
-    } catch (e) {
-      print('❌ Error handling user.online.status: $e');
-    }
+    } catch (e) {}
   }
 
   /// Reconnecter avec le token courant.
@@ -585,7 +537,6 @@ class WebSocketService extends GetxService with WidgetsBindingObserver {
   Future<void> disconnect() async {
     _wantedChannels.clear();
     _closeChannel();
-    print('🔌 Disconnected from WebSocket');
   }
 
   @override

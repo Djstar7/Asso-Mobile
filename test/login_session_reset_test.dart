@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -14,12 +15,16 @@ import 'package:asso/app/data/providers/storage_service.dart';
 /// après un login, parce que les controllers `permanent: true` survivent à la
 /// navigation et que le mode invité restait inscrit en storage.
 void main() {
+  late Directory storageDirectory;
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    storageDirectory = await Directory.systemTemp.createTemp(
+      'asso-login-session-',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('plugins.flutter.io/path_provider'),
-          (call) async => '.',
+          (call) async => storageDirectory.path,
         );
     await GetStorage.init();
   });
@@ -30,17 +35,21 @@ void main() {
   });
 
   tearDown(Get.reset);
+  tearDownAll(() async {
+    await StorageService.clearAuthSession();
+    await storageDirectory.delete(recursive: true);
+  });
 
   UserModel buildUser() => UserModel(
-        id: 7,
-        firstName: 'Awa',
-        lastName: 'Diop',
-        name: 'Awa Diop',
-        email: 'awa@example.com',
-        phone: '+221770000000',
-        role: 'client',
-        createdAt: DateTime(2026, 1, 1).toIso8601String(),
-      );
+    id: 7,
+    firstName: 'Awa',
+    lastName: 'Diop',
+    name: 'Awa Diop',
+    email: 'awa@example.com',
+    phone: '+221770000000',
+    role: 'client',
+    createdAt: DateTime(2026, 1, 1).toIso8601String(),
+  );
 
   test('enregistrer la session sort du mode invité', () {
     StorageService.enableGuestMode();

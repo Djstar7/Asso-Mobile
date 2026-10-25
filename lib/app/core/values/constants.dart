@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 /// Application constants
 class AppConstants {
   // App Info
@@ -27,7 +29,16 @@ class AppConstants {
 
   static String get baseUrl {
     // Surcharge explicite au build (développement local / préproduction)
-    if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
+    if (_envBaseUrl.isNotEmpty) {
+      final uri = Uri.parse(_envBaseUrl);
+      if (kReleaseMode &&
+          (uri.scheme != 'https' ||
+              uri.host.isEmpty ||
+              uri.userInfo.isNotEmpty)) {
+        throw StateError('Release API requires an HTTPS origin');
+      }
+      return _envBaseUrl;
+    }
 
     // Défaut : production
     return 'https://$productionDomain/api';
