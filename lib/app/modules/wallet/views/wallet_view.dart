@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
   import 'dart:async';
   import 'package:asso/app/core/utils/auth_guard.dart';
 import 'package:flutter/material.dart';
@@ -1606,13 +1607,13 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                           final amount =
                               double.tryParse(amountController.text.trim().replaceAll(',', '.')) ?? 0;
                           if (amount <= 0) {
-                            Get.snackbar('wallet.stripe_dialog.invalid_amount_title'.tr,
+                            AppFeedback.show('wallet.stripe_dialog.invalid_amount_title'.tr,
                                 'wallet.stripe_dialog.invalid_amount_message'.tr,
                                 snackPosition: SnackPosition.BOTTOM);
                             return;
                           }
                           if (amount > available) {
-                            Get.snackbar(
+                            AppFeedback.show(
                                 'wallet.stripe_dialog.insufficient_balance'.tr,
                                 'wallet.stripe_dialog.available'.trParams({
                                   'amount': money(available,
@@ -1627,7 +1628,7 @@ Widget _buildIbanConfigLink(BuildContext context, String? status) {
                             currency: sourceCurrency,
                           );
                           Get.back();
-                          Get.snackbar(
+                          AppFeedback.show(
                             result['success'] == true
                                 ? 'wallet.stripe_dialog.transfer_in_progress'.tr
                                 : 'wallet.stripe_dialog.error'.tr,

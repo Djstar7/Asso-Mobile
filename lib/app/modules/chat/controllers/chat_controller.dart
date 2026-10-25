@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/conversation_service.dart';
@@ -191,7 +192,7 @@ class ChatController extends GetxController {
         });
       }
     } catch (e) {
-      Get.snackbar('chat.error'.tr, 'chat.start_conversation_failed'.tr);
+      AppFeedback.show('chat.error'.tr, 'chat.start_conversation_failed'.tr);
     } finally {
       isLoading.value = false;
     }
@@ -207,7 +208,7 @@ class ChatController extends GetxController {
       final conversationId = int.tryParse(conversation['id']?.toString() ?? '');
 
       if (conversationId == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'chat.error'.tr,
           'chat.delete_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -222,7 +223,7 @@ class ChatController extends GetxController {
       final response = await ConversationService.hideConversation(conversationId);
 
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'chat.success'.tr,
           'chat.conversation_deleted'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -232,7 +233,7 @@ class ChatController extends GetxController {
         );
       } else {
         // En cas d'échec, recharger la liste
-        Get.snackbar(
+        AppFeedback.show(
           'chat.error'.tr,
           'chat.delete_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -240,7 +241,7 @@ class ChatController extends GetxController {
         await _loadConversations(refresh: true);
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'chat.error'.tr,
         'chat.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,

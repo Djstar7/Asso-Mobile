@@ -11,7 +11,16 @@ import 'freight_inquiries_view.dart';
 
 /// Offres des partenaires, filtrées par transport aérien ou maritime.
 class MaritimeSection extends GetView<MaritimeController> {
-  const MaritimeSection({super.key, this.transportMode = 'sea'});
+  const MaritimeSection({
+    super.key,
+    this.transportMode = 'sea',
+    this.pageController,
+  });
+
+  final MaritimeController? pageController;
+
+  @override
+  MaritimeController get controller => pageController ?? super.controller;
 
   final String transportMode;
 

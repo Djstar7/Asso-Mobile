@@ -162,6 +162,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
             key: controller.fieldKeys[errorKey],
             child: TextField(
               controller: c,
+              cursorColor: AppDesign.accent,
               readOnly: errorKey == 'kg_booked' && controller.freightInquiry != null,
               keyboardType: phone
                   ? TextInputType.phone
@@ -176,6 +177,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                       : null,
               decoration: InputDecoration(
                 labelText: label,
+                floatingLabelStyle: const TextStyle(color: AppDesign.accent),
                 hintText: phone ? '+237 6XX XX XX XX' : null,
                 suffixText: suffix,
                 errorText: controller.errorOf(errorKey),
@@ -183,6 +185,10 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                 filled: true,
                 fillColor: _fill(isDark),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppDesign.accent, width: 1.5),
+                ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: AppDesign.danger, width: 1.2),

@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -20,16 +22,22 @@ import '../../wallet/widgets/kpay_payment_sheet.dart';
 class DisputeShipmentPayment {
   const DisputeShipmentPayment._();
 
-  static String _price(double amount) => CurrencyService.formatFromPivot(amount);
+  static String _price(double amount) =>
+      CurrencyService.formatFromPivot(amount);
 
   /// Renvoie true si la course est payée.
-  static Future<bool> pay({required int shipmentId, required bool isReturn}) async {
+  static Future<bool> pay({
+    required int shipmentId,
+    required bool isReturn,
+  }) async {
     final partnersResponse = await DisputeService.shipmentPartners(shipmentId);
     if (!partnersResponse.success) {
       _error(partnersResponse.message);
       return false;
     }
-    final quotes = Map<String, dynamic>.from(partnersResponse.data?['quotes'] as Map? ?? const {});
+    final quotes = Map<String, dynamic>.from(
+      partnersResponse.data?['quotes'] as Map? ?? const {},
+    );
     final partners = ((quotes['partners'] as List?) ?? const [])
         .whereType<Map>()
         .map((p) => Map<String, dynamic>.from(p))
@@ -49,12 +57,15 @@ class DisputeShipmentPayment {
       _error(chosen.message);
       return false;
     }
-    final amount = double.tryParse('${chosen.data?['shipment']?['price'] ?? 0}') ?? 0;
+    final amount =
+        double.tryParse('${chosen.data?['shipment']?['price'] ?? 0}') ?? 0;
 
     final method = await PaymentMethodSelector.show(
       amount: amount,
       currency: 'XAF',
-      amountLabel: isReturn ? 'disputes.payment.return_fee'.tr : 'disputes.payment.replacement_fee'.tr,
+      amountLabel: isReturn
+          ? 'disputes.payment.return_fee'.tr
+          : 'disputes.payment.replacement_fee'.tr,
       allowedCodes: const {'kpay', 'stripe'},
       includeWallet: true,
     );
@@ -66,7 +77,9 @@ class DisputeShipmentPayment {
     switch (method.code) {
       case 'wallet':
         final ok = await WalletPaymentConfirmDialog.show(
-          itemLabel: isReturn ? 'disputes.payment.return_fee'.tr : 'disputes.payment.replacement_fee'.tr,
+          itemLabel: isReturn
+              ? 'disputes.payment.return_fee'.tr
+              : 'disputes.payment.replacement_fee'.tr,
           amount: amount,
           balance: method.balance ?? 0,
         );
@@ -93,7 +106,15 @@ class DisputeShipmentPayment {
     }
 
     try {
-      final response = await DisputeService.payShipment(shipmentId, paymentMode: mode, provider: provider, phone: phone);
+      final response = await PaymentPreparation.run(
+        method: mode,
+        action: () => DisputeService.payShipment(
+          shipmentId,
+          paymentMode: mode,
+          provider: provider,
+          phone: phone,
+        ),
+      );
       if (!response.success) {
         _error(response.message);
         return false;
@@ -125,10 +146,11 @@ class DisputeShipmentPayment {
           _paid();
           return true;
         }
-        if (outcome.status == 'pending') _poll(shipmentId); // prévient à la réponse
+        if (outcome.status == 'pending')
+          _poll(shipmentId); // prévient à la réponse
         return false;
       }
-      Get.snackbar(
+      AppFeedback.show(
         'disputes.payment.delivery_fee'.tr,
         response.message,
         snackPosition: SnackPosition.BOTTOM,
@@ -144,7 +166,9 @@ class DisputeShipmentPayment {
 
   /// État du paiement de la course (une lecture).
   static Future<MobileMoneyStatus> _state(int shipmentId) async {
-    final shipment = (await DisputeService.shipmentPaymentStatus(shipmentId)).data?['shipment'];
+    final shipment = (await DisputeService.shipmentPaymentStatus(
+      shipmentId,
+    )).data?['shipment'];
     final status = shipment?['payment_status']?.toString();
     return (
       status: status == 'paid' || status == 'failed' ? status! : 'pending',
@@ -157,7 +181,9 @@ class DisputeShipmentPayment {
     for (var i = 0; i < 60; i++) {
       await Future.delayed(const Duration(seconds: 5));
       try {
-        final shipment = (await DisputeService.shipmentPaymentStatus(shipmentId)).data?['shipment'];
+        final shipment = (await DisputeService.shipmentPaymentStatus(
+          shipmentId,
+        )).data?['shipment'];
         if (shipment?['payment_status'] == 'paid') {
           _paid();
           return true;
@@ -171,25 +197,25 @@ class DisputeShipmentPayment {
     return false;
   }
 
-  static void _paid() => Get.snackbar(
-        'disputes.payment.paid_title'.tr,
-        'disputes.payment.paid_message'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.success,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+  static void _paid() => AppFeedback.show(
+    'disputes.payment.paid_title'.tr,
+    'disputes.payment.paid_message'.tr,
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: AppDesign.success,
+    colorText: Colors.white,
+    margin: const EdgeInsets.all(16),
+    borderRadius: 12,
+  );
 
-  static void _error(String message) => Get.snackbar(
-        'my_order.errors.title'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppDesign.danger,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
+  static void _error(String message) => AppFeedback.show(
+    'my_order.errors.title'.tr,
+    message,
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: AppDesign.danger,
+    colorText: Colors.white,
+    margin: const EdgeInsets.all(16),
+    borderRadius: 12,
+  );
 }
 
 /// Partenaires de livraison disponibles pour la course, avec leur prix.
@@ -205,42 +231,70 @@ class _PartnerPickerSheet extends StatelessWidget {
 
     return AppSheet(
       title: 'disputes.payment.choose_partner'.tr,
-      subtitle: isReturn ? 'disputes.payment.return_subtitle'.tr : 'disputes.payment.replacement_subtitle'.tr,
+      subtitle: isReturn
+          ? 'disputes.payment.return_subtitle'.tr
+          : 'disputes.payment.replacement_subtitle'.tr,
       child: Column(
         children: partners
-            .map((partner) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppDesign.space2),
-                  child: Material(
-                    color: ds.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-                      side: BorderSide(color: ds.border),
+            .map(
+              (partner) => Padding(
+                padding: const EdgeInsets.only(bottom: AppDesign.space2),
+                child: Material(
+                  color: ds.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDesign.radiusSm),
+                    side: BorderSide(color: ds.border),
+                  ),
+                  child: ListTile(
+                    onTap: () => Navigator.of(context).pop(partner),
+                    leading: Icon(
+                      Icons.local_shipping_outlined,
+                      color: ds.textSecondary,
                     ),
-                    child: ListTile(
-                      onTap: () => Navigator.of(context).pop(partner),
-                      leading: Icon(Icons.local_shipping_outlined, color: ds.textSecondary),
-                      title: Text(
-                        '${partner['company_name'] ?? ''}',
-                        style: context.body1.copyWith(fontWeight: FontWeight.w600),
+                    title: Text(
+                      '${partner['company_name'] ?? ''}',
+                      style: context.body1.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(
-                        [partner['route_label'], partner['lead_time']]
-                            .where((v) => v != null && '$v'.isNotEmpty)
-                            .join(' · '),
-                        style: context.caption,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          [partner['route_label'], partner['lead_time']]
+                              .where((v) => v != null && '$v'.isNotEmpty)
+                              .join(' · '),
+                          style: context.caption,
+                        ),
+                        if (partner['international_dispute'] == true &&
+                            DeliveryBreakdown.fromMap(partner['breakdown']) !=
+                                null)
+                          ExportDeliveryCostLines(
+                            breakdown: DeliveryBreakdown.fromMap(
+                              partner['breakdown'],
+                            )!,
+                            formatPrice: DisputeShipmentPayment._price,
+                          ),
+                        if (partner['international_dispute'] == true &&
+                            '${partner['conditions'] ?? ''}'.isNotEmpty)
+                          Text(
+                            '${partner['conditions']}',
+                            style: context.caption,
+                          ),
+                      ],
+                    ),
+                    trailing: Text(
+                      DisputeShipmentPayment._price(
+                        double.tryParse('${partner['delivery_price']}') ?? 0,
                       ),
-                        if (partner['international_dispute'] == true && DeliveryBreakdown.fromMap(partner['breakdown']) != null)
-                          ExportDeliveryCostLines(breakdown: DeliveryBreakdown.fromMap(partner['breakdown'])!, formatPrice: DisputeShipmentPayment._price),
-                        if (partner['international_dispute'] == true && '${partner['conditions'] ?? ''}'.isNotEmpty)
-                          Text('${partner['conditions']}', style: context.caption),
-                      ]),
-                      trailing: Text(
-                        DisputeShipmentPayment._price(double.tryParse('${partner['delivery_price']}') ?? 0),
-                        style: context.body2.copyWith(fontWeight: FontWeight.w700),
+                      style: context.body2.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                ))
+                ),
+              ),
+            )
             .toList(),
       ),
     );

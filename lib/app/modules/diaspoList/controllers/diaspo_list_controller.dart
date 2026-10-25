@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -186,7 +187,7 @@ class DiaspoListController extends GetxController {
       }
     } catch (e) {
       print('Error loading offers: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.error'.tr,
         'diaspo_list.load_offers_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -267,7 +268,7 @@ class DiaspoListController extends GetxController {
         confirmationCode: code,
       );
       Get.back(); // fermer le dialogue
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.code_validated_title'.tr,
         'diaspo_list.code_validated_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -276,7 +277,7 @@ class DiaspoListController extends GetxController {
       );
       await loadMyBookingsAsSeller();
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
@@ -301,7 +302,7 @@ class DiaspoListController extends GetxController {
       await loadMyBookingsAsBuyer();
       _showReceiptConfirmedDialog();
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
@@ -433,7 +434,7 @@ class DiaspoListController extends GetxController {
   /// Ouvre le parcours de vérification sans bloquer la création d'une offre.
   void handleVerification() {
     if (verificationStatus.value == 'verified') {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.identity_verified_title'.tr,
         'diaspo_list.identity_verified_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1004,7 +1005,7 @@ class DiaspoListController extends GetxController {
       final docTypeName = selectedDocumentType.value == 'cni'
           ? 'diaspo_list.verification.id_card'.tr
           : 'diaspo_list.verification.passport'.tr;
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.success'.tr,
         'diaspo_list.verification.submitted_message'.trParams({
           'document': docTypeName,
@@ -1019,7 +1020,7 @@ class DiaspoListController extends GetxController {
       await loadVerificationStatus();
     } catch (e) {
       isUploadingDocument.value = false;
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_list.error'.tr,
         _serverMessage(e),
         snackPosition: SnackPosition.BOTTOM,

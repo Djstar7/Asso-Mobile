@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -59,5 +60,5 @@ Future<bool> showImmoDisputeEvidenceSheet(RealEstateReservation r) async {
 
 void _snack(String title, String message) {
   if (message.isEmpty) return;
-  Get.snackbar(title, message, snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(16));
+  AppFeedback.show(title, message, snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(16));
 }

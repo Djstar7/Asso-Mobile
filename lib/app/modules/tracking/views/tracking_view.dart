@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -100,7 +101,7 @@ class TrackingView extends GetView<TrackingController> {
     return GestureDetector(
       onTap: () async {
         await controller.loadOrders();
-        Get.snackbar(
+        AppFeedback.show(
           'tracking.refreshed_title'.tr,
           'tracking.refreshed_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -279,7 +280,7 @@ class TrackingView extends GetView<TrackingController> {
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: shipment['confirmationCode']));
-                      Get.snackbar('tracking.copied_title'.tr, 'tracking.code_copied'.tr, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
+                      AppFeedback.show('tracking.copied_title'.tr, 'tracking.code_copied'.tr, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
                     },
                     child: Container(
                       width: double.infinity,

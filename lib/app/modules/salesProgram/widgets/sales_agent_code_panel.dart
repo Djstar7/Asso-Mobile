@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -22,7 +23,7 @@ class SalesAgentCodePanel extends StatelessWidget {
 
   void _copy() {
     Clipboard.setData(ClipboardData(text: code));
-    Get.snackbar(
+    AppFeedback.show(
       'sales_program.code.copied_title'.tr,
       'sales_program.code.copied_message'.tr,
       snackPosition: SnackPosition.BOTTOM,

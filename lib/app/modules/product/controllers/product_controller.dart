@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
@@ -152,7 +154,7 @@ class ProductController extends GetxController {
   }) async {
     final url = shareUrl(product);
     if (url == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.share.unavailable_title'.tr,
         'product.share.unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -294,7 +296,9 @@ class ProductController extends GetxController {
       }
     }, time: const Duration(milliseconds: 500));
 
-    recipientNameController.addListener(() => recipientName.value = recipientNameController.text.trim());
+    recipientNameController.addListener(
+      () => recipientName.value = recipientNameController.text.trim(),
+    );
     final user = StorageService.getUser();
     recipientNameController.text = user?.name ?? '';
     final rawPhone = (user?.phone ?? '').trim();
@@ -393,7 +397,7 @@ class ProductController extends GetxController {
 
   /// Explique pourquoi la quantité ne monte plus.
   void notifyStockLimit(int max) {
-    Get.snackbar(
+    AppFeedback.show(
       'product.stock.limited_title'.tr,
       max <= 0
           ? 'product.stock.option_sold_out'.tr
@@ -481,7 +485,8 @@ class ProductController extends GetxController {
     else if (orderQuantity.value < 1)
       'product.order.step_quantity'.tr,
     if (!hasValidLocation) 'product.order.step_address'.tr,
-    if (selectedPartner.value?['international_export'] == true && recipientName.value.isEmpty)
+    if (selectedPartner.value?['international_export'] == true &&
+        recipientName.value.isEmpty)
       'product.order.recipient_required'.tr,
     if (addressDetails.value.isEmpty) 'product.order.step_address_details'.tr,
     if (!hasValidPhone) 'product.order.step_phone'.tr,
@@ -668,7 +673,7 @@ class ProductController extends GetxController {
       }
 
       if (!response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'product.delivery.unavailable'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -696,7 +701,7 @@ class ProductController extends GetxController {
       }
     } catch (_) {
       if (request != _partnersRequest) return;
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.delivery.partners_load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -768,7 +773,7 @@ class ProductController extends GetxController {
 
     final missing = missingOrderSteps(product);
     if (missing.isNotEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.order.incomplete'.tr,
         missing.first,
         snackPosition: SnackPosition.BOTTOM,
@@ -787,7 +792,7 @@ class ProductController extends GetxController {
         (deliveryRouteId == null &&
             deliveryZoneId == null &&
             deliveryGridId == null)) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.delivery.partner_invalid'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -808,46 +813,49 @@ class ProductController extends GetxController {
 
     isCreatingOrder.value = true;
     try {
-      final response = await OrderService.createOrder(
-        // Une ligne par option choisie : le serveur vérifie et décompte le
-        // stock de chacune.
-        items: [
-          for (final line in lines)
-            {
-              'product_id': productId,
-              'quantity': line.quantity,
-              if (line.variant?['id'] != null)
-                'variant_id': line.variant!['id'],
-            },
-        ],
-        deliveryCompanyId: deliveryCompanyId,
-        deliveryZoneId: deliveryZoneId,
-        deliveryRouteId: deliveryRouteId,
-        deliveryGridId: deliveryGridId,
-        deliveryVehicle: partner.vehicle,
-        deliveryQuarter: deliveryQuarter.value,
-        deliveryCity: _quotedCity.isNotEmpty
-            ? _quotedCity
-            : currentLocation.value,
-        deliveryCountry: deliveryQuote.value?['destination'] is Map
-            ? deliveryQuote.value!['destination']['country']?.toString()
-            : null,
-        walletProvider: 'kpay',
-        paymentMode: paymentMode,
-        kpayProvider: kpayProvider,
-        kpayPhone: kpayPhone,
-        deliveryAddress: currentLocation.value,
-        deliveryAddressDetails: details.isEmpty ? null : details,
-        customerPhone: customerPhone.value,
-        recipientName: recipientNameController.text.trim(),
-        deliveryPostalCode: postalCodeController.text.trim(),
-        deliveryLatitude: clientLatitude.value,
-        deliveryLongitude: clientLongitude.value,
-        notes: variantNote.isEmpty ? null : 'Variantes : $variantNote',
+      final response = await PaymentPreparation.run(
+        method: paymentMode,
+        action: () => OrderService.createOrder(
+          // Une ligne par option choisie : le serveur vérifie et décompte le
+          // stock de chacune.
+          items: [
+            for (final line in lines)
+              {
+                'product_id': productId,
+                'quantity': line.quantity,
+                if (line.variant?['id'] != null)
+                  'variant_id': line.variant!['id'],
+              },
+          ],
+          deliveryCompanyId: deliveryCompanyId,
+          deliveryZoneId: deliveryZoneId,
+          deliveryRouteId: deliveryRouteId,
+          deliveryGridId: deliveryGridId,
+          deliveryVehicle: partner.vehicle,
+          deliveryQuarter: deliveryQuarter.value,
+          deliveryCity: _quotedCity.isNotEmpty
+              ? _quotedCity
+              : currentLocation.value,
+          deliveryCountry: deliveryQuote.value?['destination'] is Map
+              ? deliveryQuote.value!['destination']['country']?.toString()
+              : null,
+          walletProvider: 'kpay',
+          paymentMode: paymentMode,
+          kpayProvider: kpayProvider,
+          kpayPhone: kpayPhone,
+          deliveryAddress: currentLocation.value,
+          deliveryAddressDetails: details.isEmpty ? null : details,
+          customerPhone: customerPhone.value,
+          recipientName: recipientNameController.text.trim(),
+          deliveryPostalCode: postalCodeController.text.trim(),
+          deliveryLatitude: clientLatitude.value,
+          deliveryLongitude: clientLongitude.value,
+          notes: variantNote.isEmpty ? null : 'Variantes : $variantNote',
+        ),
       );
 
       if (!response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'product.order.failed_title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -857,7 +865,7 @@ class ProductController extends GetxController {
 
       return response.data ?? const {};
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.order.error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
@@ -888,7 +896,7 @@ class ProductController extends GetxController {
       try {
         final state = await orderPaymentState(orderId);
         if (state.status == 'paid') {
-          Get.snackbar(
+          AppFeedback.show(
             'product.payment.confirmed_title'.tr,
             'product.payment.confirmed_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -899,7 +907,7 @@ class ProductController extends GetxController {
           return;
         }
         if (state.status == 'failed') {
-          Get.snackbar(
+          AppFeedback.show(
             'product.payment.failed_title'.tr,
             switch (state.failure) {
               final String failure => MobileMoneyWaiting.failureMessage(
@@ -941,7 +949,7 @@ class ProductController extends GetxController {
           '',
     );
     if (sellerId == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.chat.start_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -966,7 +974,7 @@ class ProductController extends GetxController {
         );
       }
       if (!response.success || conversationId == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'product.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -1000,7 +1008,7 @@ class ProductController extends GetxController {
         },
       );
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.chat.start_error'.tr,
         snackPosition: SnackPosition.BOTTOM,

@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import '../../../data/providers/package_service.dart';
@@ -70,7 +72,7 @@ class PackageSubscriptionController extends GetxController {
         }
       } else {
         print('❌ Failed to load packages: ${response.message}');
-        Get.snackbar(
+        AppFeedback.show(
           'package_subscription.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -82,7 +84,7 @@ class PackageSubscriptionController extends GetxController {
       }
     } catch (e) {
       print('💥 Exception loading packages: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'package_subscription.error'.tr,
         'package_subscription.generic_error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
@@ -113,8 +115,12 @@ class PackageSubscriptionController extends GetxController {
         if (hasPackage.value) {
           currentVendorPackage.value = response.data!['vendor_package'];
           print('✅ Current package loaded');
-          print('  └─ Storage used: ${currentVendorPackage.value!['storage_used_mb']} MB');
-          print('  └─ Storage total: ${currentVendorPackage.value!['storage_total_mb']} MB');
+          print(
+            '  └─ Storage used: ${currentVendorPackage.value!['storage_used_mb']} MB',
+          );
+          print(
+            '  └─ Storage total: ${currentVendorPackage.value!['storage_total_mb']} MB',
+          );
         } else {
           print('ℹ️ No active package');
         }
@@ -170,7 +176,7 @@ class PackageSubscriptionController extends GetxController {
         await _subscribeViaCard(package, price);
         break;
       default:
-        Get.snackbar(
+        AppFeedback.show(
           'package_subscription.unavailable'.tr,
           'package_subscription.method_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -186,19 +192,26 @@ class PackageSubscriptionController extends GetxController {
     final addedMb = (package['storage_size_mb'] as num?)?.toDouble() ?? 0;
     final current = hasPackage.value ? currentVendorPackage.value : null;
     final currentEnd = DateTime.tryParse('${current?['expires_at'] ?? ''}');
-    final cumulative = current != null && currentEnd != null && currentEnd.isAfter(DateTime.now());
-    final end = (cumulative ? currentEnd : DateTime.now()).add(Duration(days: days));
+    final cumulative =
+        current != null &&
+        currentEnd != null &&
+        currentEnd.isAfter(DateTime.now());
+    final end = (cumulative ? currentEnd : DateTime.now()).add(
+      Duration(days: days),
+    );
     final endLabel = PackageDetailsSheet.formatDate(end);
 
     final notes = <String>[];
     if (cumulative) {
       final currentMb = (current['storage_total_mb'] as num?)?.toDouble() ?? 0;
-      notes.add('package_details.storage.cumulative'.trParams({
-        'added': _formatMb(addedMb),
-        'total': _formatMb(currentMb + addedMb),
-        'from': PackageDetailsSheet.formatDate(currentEnd),
-        'to': endLabel,
-      }));
+      notes.add(
+        'package_details.storage.cumulative'.trParams({
+          'added': _formatMb(addedMb),
+          'total': _formatMb(currentMb + addedMb),
+          'from': PackageDetailsSheet.formatDate(currentEnd),
+          'to': endLabel,
+        }),
+      );
     } else {
       notes.add('package_details.storage.new'.trParams({'date': endLabel}));
     }
@@ -211,10 +224,26 @@ class PackageSubscriptionController extends GetxController {
       durationLabel: '${package['formatted_duration'] ?? ''}',
       description: package['description']?.toString(),
       facts: [
-        PackageDetailFact(Icons.storage_outlined, 'package_details.storage.space'.tr, _formatMb(addedMb)),
-        PackageDetailFact(Icons.schedule_outlined, 'package_details.duration'.tr, '${package['formatted_duration'] ?? ''}'),
-        PackageDetailFact(Icons.event_outlined, 'package_details.valid_until'.tr, endLabel),
-        PackageDetailFact(Icons.bolt_outlined, 'package_details.activation'.tr, 'package_details.activation_value'.tr),
+        PackageDetailFact(
+          Icons.storage_outlined,
+          'package_details.storage.space'.tr,
+          _formatMb(addedMb),
+        ),
+        PackageDetailFact(
+          Icons.schedule_outlined,
+          'package_details.duration'.tr,
+          '${package['formatted_duration'] ?? ''}',
+        ),
+        PackageDetailFact(
+          Icons.event_outlined,
+          'package_details.valid_until'.tr,
+          endLabel,
+        ),
+        PackageDetailFact(
+          Icons.bolt_outlined,
+          'package_details.activation'.tr,
+          'package_details.activation_value'.tr,
+        ),
       ],
       benefits: PackageDetailsSheet.benefitsOf(package['benefits']),
       notes: notes,
@@ -224,7 +253,9 @@ class PackageSubscriptionController extends GetxController {
 
   /// Taille lisible : Mo sous 1 Go, Go au-delà.
   String _formatMb(double mb) => mb >= 1024
-      ? 'package_details.gb'.trParams({'size': (mb / 1024).toStringAsFixed(mb % 1024 == 0 ? 0 : 1)})
+      ? 'package_details.gb'.trParams({
+          'size': (mb / 1024).toStringAsFixed(mb % 1024 == 0 ? 0 : 1),
+        })
       : 'package_details.mb'.trParams({'size': mb.toStringAsFixed(0)});
 
   /// Abonnement payé avec le solde du Wallet ASSO : débit et activation immédiats.
@@ -234,7 +265,9 @@ class PackageSubscriptionController extends GetxController {
     PaymentMethodOption method,
   ) async {
     final confirmed = await WalletPaymentConfirmDialog.show(
-      itemLabel: 'package_subscription.package_item'.trParams({'name': '${package['name'] ?? ''}'}),
+      itemLabel: 'package_subscription.package_item'.trParams({
+        'name': '${package['name'] ?? ''}',
+      }),
       amount: price,
       balance: method.balance ?? 0,
       salesCode: salesCode.code,
@@ -269,14 +302,19 @@ class PackageSubscriptionController extends GetxController {
       );
     } catch (e) {
       PaymentLoadingDialog.hide();
-      _showSubscriptionError('package_subscription.generic_error'.trParams({'error': '$e'}));
+      _showSubscriptionError(
+        'package_subscription.generic_error'.trParams({'error': '$e'}),
+      );
     } finally {
       isSubscribing.value = false;
     }
   }
 
   /// Abonnement payé par Mobile Money (KPay direct, USSD).
-  Future<void> _subscribeViaKpay(Map<String, dynamic> package, double price) async {
+  Future<void> _subscribeViaKpay(
+    Map<String, dynamic> package,
+    double price,
+  ) async {
     // Sélecteur pays → opérateur → numéro (mêmes valeurs que les commandes).
     final selection = await KpayDirectPaymentSheet.show(
       amount: price,
@@ -285,22 +323,21 @@ class PackageSubscriptionController extends GetxController {
     if (selection == null) return; // annulé
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(
-      message: 'package_subscription.creating'.trParams({'name': '${package['name']}'}),
-    );
 
     try {
-      final response = await PackageService.subscribePackageDirect(
-        package['id'] as int,
-        paymentMode: 'kpay_direct',
-        provider: selection['provider'],
-        phoneNumber: selection['phone'],
-        salesCode: salesCode.code,
-        acceptOwnCode: salesCode.acceptOwnCode,
+      final response = await PaymentPreparation.run(
+        method: 'kpay_direct',
+        action: () => PackageService.subscribePackageDirect(
+          package['id'] as int,
+          paymentMode: 'kpay_direct',
+          provider: selection['provider'],
+          phoneNumber: selection['phone'],
+          salesCode: salesCode.code,
+          acceptOwnCode: salesCode.acceptOwnCode,
+        ),
       );
 
       if (_isDisposed) return;
-      PaymentLoadingDialog.hide();
 
       final subscriptionId = _subscriptionIdFrom(response);
       if (!response.success || subscriptionId == null) {
@@ -323,7 +360,7 @@ class PackageSubscriptionController extends GetxController {
         case 'failed':
           break; // motif déjà expliqué
         default:
-          Get.snackbar(
+          AppFeedback.show(
             'package_subscription.payment_pending'.tr,
             'package_subscription.validate_ussd'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -334,17 +371,21 @@ class PackageSubscriptionController extends GetxController {
           _pollSubscriptionPayment(subscriptionId, package, price, 'kpay');
       }
     } catch (e) {
-      PaymentLoadingDialog.hide();
-      _showSubscriptionError('package_subscription.generic_error'.trParams({'error': '$e'}));
+      _showSubscriptionError(
+        'package_subscription.generic_error'.trParams({'error': '$e'}),
+      );
     } finally {
       isSubscribing.value = false;
     }
   }
 
   /// Abonnement payé par CARTE (Payment Sheet Stripe native).
-  Future<void> _subscribeViaCard(Map<String, dynamic> package, double price) async {
+  Future<void> _subscribeViaCard(
+    Map<String, dynamic> package,
+    double price,
+  ) async {
     if (!StripeNativeService.isSupported) {
-      Get.snackbar(
+      AppFeedback.show(
         'package_subscription.unavailable'.tr,
         'wallet.recharge.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -353,18 +394,19 @@ class PackageSubscriptionController extends GetxController {
     }
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'package_subscription.preparing_payment'.tr);
 
     try {
-      final response = await PackageService.subscribePackageDirect(
-        package['id'] as int,
-        paymentMode: 'stripe_direct',
-        salesCode: salesCode.code,
-        acceptOwnCode: salesCode.acceptOwnCode,
+      final response = await PaymentPreparation.run(
+        method: 'stripe_direct',
+        action: () => PackageService.subscribePackageDirect(
+          package['id'] as int,
+          paymentMode: 'stripe_direct',
+          salesCode: salesCode.code,
+          acceptOwnCode: salesCode.acceptOwnCode,
+        ),
       );
 
       if (_isDisposed) return;
-      PaymentLoadingDialog.hide();
 
       final subscriptionId = _subscriptionIdFrom(response);
       final clientSecret = response.data?['client_secret']?.toString();
@@ -375,8 +417,10 @@ class PackageSubscriptionController extends GetxController {
         _showSubscriptionError(response.message);
         return;
       }
-      if (clientSecret == null || clientSecret.isEmpty ||
-          publishableKey == null || publishableKey.isEmpty) {
+      if (clientSecret == null ||
+          clientSecret.isEmpty ||
+          publishableKey == null ||
+          publishableKey.isEmpty) {
         _showSubscriptionError('package_subscription.card_data_unavailable'.tr);
         return;
       }
@@ -388,7 +432,7 @@ class PackageSubscriptionController extends GetxController {
       if (_isDisposed) return;
 
       if (!ok) {
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.webview.cancelled'.tr,
           'package_subscription.payment_not_finalized'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -399,7 +443,7 @@ class PackageSubscriptionController extends GetxController {
         return;
       }
 
-      Get.snackbar(
+      AppFeedback.show(
         'package_subscription.payment_in_progress'.tr,
         'package_subscription.payment_confirming'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -410,7 +454,6 @@ class PackageSubscriptionController extends GetxController {
 
       _pollSubscriptionPayment(subscriptionId, package, price, 'stripe');
     } catch (e) {
-      PaymentLoadingDialog.hide();
       _showSubscriptionError(e.toString().replaceAll('Exception: ', ''));
     } finally {
       isSubscribing.value = false;
@@ -431,14 +474,16 @@ class PackageSubscriptionController extends GetxController {
       if (_isDisposed) return;
 
       try {
-        final res = await PackageService.getSubscriptionPaymentStatus(subscriptionId);
+        final res = await PackageService.getSubscriptionPaymentStatus(
+          subscriptionId,
+        );
         final status = res.data?['data']?['status'];
 
         if (status == 'paid') {
           await _onSubscriptionPaid(package, price, methodCode);
           return;
         } else if (status == 'failed') {
-          Get.snackbar(
+          AppFeedback.show(
             'package_subscription.payment_failed'.tr,
             'package_subscription.subscription_payment_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -453,7 +498,7 @@ class PackageSubscriptionController extends GetxController {
 
     // Délai dépassé sans confirmation : rester prudent.
     if (_isDisposed) return;
-    Get.snackbar(
+    AppFeedback.show(
       'package_subscription.payment_pending'.tr,
       'package_subscription.confirmation_not_arrived'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -486,9 +531,11 @@ class PackageSubscriptionController extends GetxController {
   }
 
   void _showSubscriptionError(String? message) {
-    Get.snackbar(
+    AppFeedback.show(
       'package_subscription.error'.tr,
-      message?.isNotEmpty == true ? message! : 'package_subscription.subscribe_error'.tr,
+      message?.isNotEmpty == true
+          ? message!
+          : 'package_subscription.subscribe_error'.tr,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppThemeSystem.errorColor,
       colorText: Colors.white,
@@ -498,10 +545,7 @@ class PackageSubscriptionController extends GetxController {
 
   /// Refresh packages
   Future<void> refreshPackages() async {
-    await Future.wait([
-      loadPackages(),
-      loadCurrentPackage(),
-    ]);
+    await Future.wait([loadPackages(), loadCurrentPackage()]);
   }
 
   // ================================
@@ -509,7 +553,8 @@ class PackageSubscriptionController extends GetxController {
   // ================================
 
   /// Montant (prix en XAF) affiché dans la devise de l'utilisateur.
-  String formatCurrency(double priceInXOF) => CurrencyService.formatFromPivot(priceInXOF);
+  String formatCurrency(double priceInXOF) =>
+      CurrencyService.formatFromPivot(priceInXOF);
 
   /// Get currency symbol
   String get currencySymbol {

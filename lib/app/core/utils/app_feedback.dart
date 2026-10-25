@@ -7,24 +7,33 @@ import 'app_design.dart';
 class AppFeedback {
   const AppFeedback._();
 
-  static void show(
+  static SnackbarController show(
     String title,
     String message, {
     Color? backgroundColor,
     Color? colorText,
     SnackPosition snackPosition = SnackPosition.BOTTOM,
     Duration duration = const Duration(seconds: 4),
+    EdgeInsets margin = const EdgeInsets.all(AppDesign.space4),
+    double borderRadius = AppDesign.radiusMd,
+    Widget? icon,
+    TextButton? mainButton,
+    List<BoxShadow>? boxShadows,
+    double maxWidth = 560,
   }) {
-    Get.snackbar(
+    return Get.snackbar(
       title,
       message,
       snackPosition: snackPosition,
       duration: duration,
-      margin: const EdgeInsets.all(AppDesign.space4),
-      borderRadius: AppDesign.radiusMd,
-      backgroundColor: backgroundColor ?? AppDesign.neutral900,
-      colorText: colorText ?? AppDesign.neutral0,
-      maxWidth: 560,
+      margin: margin,
+      borderRadius: borderRadius,
+      backgroundColor: backgroundColor ?? AppDesign.accent,
+      colorText: colorText ?? AppDesign.onAccent,
+      icon: icon,
+      mainButton: mainButton,
+      boxShadows: boxShadows,
+      maxWidth: maxWidth,
     );
   }
 }

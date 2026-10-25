@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_pages.dart';
@@ -421,7 +422,7 @@ class PreferencesController extends GetxController {
     }
 
     // Afficher un message de succès
-    Get.snackbar(
+    AppFeedback.show(
       'preferences.saved_title'.tr,
       (selectedSubcategories.length > 1
               ? 'preferences.saved_many'

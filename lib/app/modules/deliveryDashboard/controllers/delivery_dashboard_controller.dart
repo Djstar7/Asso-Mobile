@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -287,7 +288,7 @@ class DeliveryDashboardController extends GetxController {
         '  └─ Stack trace: ${stackTrace.toString().split('\n').take(3).join('\n')}',
       );
 
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.errors.load_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -355,7 +356,7 @@ class DeliveryDashboardController extends GetxController {
     disputeCourseBusyId.value = id;
     try {
       final response = await action();
-      Get.snackbar(
+      AppFeedback.show(
         response.success
             ? 'delivery_dashboard.dispute.title'.tr
             : 'delivery_dashboard.errors.error'.tr,
@@ -374,7 +375,7 @@ class DeliveryDashboardController extends GetxController {
         colorText: Colors.white,
       );
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -611,7 +612,7 @@ class DeliveryDashboardController extends GetxController {
       if (!response.success) throw Exception(response.message);
       isOnline.value = response.data?['is_online'] as bool? ?? isOnline.value;
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -621,7 +622,7 @@ class DeliveryDashboardController extends GetxController {
       isUpdatingAvailability.value = false;
     }
 
-    Get.snackbar(
+    AppFeedback.show(
       isOnline.value
           ? 'delivery_dashboard.online.title_on'.tr
           : 'delivery_dashboard.online.title_off'.tr,
@@ -645,7 +646,7 @@ class DeliveryDashboardController extends GetxController {
 
       if (response.success) {
         await loadDeliveries();
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.accept.success_title'.tr,
           'delivery_dashboard.accept.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -653,7 +654,7 @@ class DeliveryDashboardController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.errors.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -664,7 +665,7 @@ class DeliveryDashboardController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.accept.request_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -707,7 +708,7 @@ class DeliveryDashboardController extends GetxController {
       stats.value = _calculateStats();
       _applyFilter();
 
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.decline.title'.tr,
         'delivery_dashboard.decline.message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -715,7 +716,7 @@ class DeliveryDashboardController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.decline.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -782,7 +783,7 @@ class DeliveryDashboardController extends GetxController {
     if (response.success) {
       await loadDeliveries();
     } else {
-      Get.snackbar('delivery_dashboard.errors.error'.tr, response.message);
+      AppFeedback.show('delivery_dashboard.errors.error'.tr, response.message);
     }
   }
 
@@ -810,7 +811,7 @@ class DeliveryDashboardController extends GetxController {
 
       if (response.success) {
         await loadDeliveries();
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.confirm.success_title'.tr,
           'delivery_dashboard.confirm.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -818,7 +819,7 @@ class DeliveryDashboardController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.errors.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -829,7 +830,7 @@ class DeliveryDashboardController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.confirm.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -842,7 +843,7 @@ class DeliveryDashboardController extends GetxController {
   /// Ouvre le chat avec le client
   void openChat(String requestId) {
     // TODO: Implémenter le chat
-    Get.snackbar(
+    AppFeedback.show(
       'delivery_dashboard.chat.title'.tr,
       'delivery_dashboard.chat.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -856,7 +857,7 @@ class DeliveryDashboardController extends GetxController {
 
     final uri = Uri(scheme: 'tel', path: cleaned);
     if (!await launchUrl(uri)) {
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.call.title'.tr,
         'delivery_dashboard.call.failed'.trParams({'phone': phone}),
         snackPosition: SnackPosition.BOTTOM,
@@ -1028,7 +1029,7 @@ class DeliveryDashboardController extends GetxController {
       print('⚠️ Erreur lors de l\'animation de la caméra: $e');
     }
 
-    Get.snackbar(
+    AppFeedback.show(
       'delivery_dashboard.zone.changed_title'.tr,
       'delivery_dashboard.zone.changed_message'.trParams({'zone': zone.name}),
       snackPosition: SnackPosition.BOTTOM,
@@ -1068,7 +1069,7 @@ class DeliveryDashboardController extends GetxController {
       final response = await DelivererService.unsyncProfile();
 
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.unsync.success_title'.tr,
           'delivery_dashboard.unsync.success_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -1082,7 +1083,7 @@ class DeliveryDashboardController extends GetxController {
           Get.offAllNamed('/home');
         });
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'delivery_dashboard.errors.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -1094,7 +1095,7 @@ class DeliveryDashboardController extends GetxController {
       }
     } catch (e) {
       print('❌ Erreur lors de la désynchronisation: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'delivery_dashboard.errors.error'.tr,
         'delivery_dashboard.unsync.error'.tr,
         snackPosition: SnackPosition.BOTTOM,

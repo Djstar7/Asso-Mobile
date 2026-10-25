@@ -165,7 +165,7 @@ class AppButton extends StatelessWidget {
     switch (variant) {
       case AppButtonVariant.primary:
         background = AppDesign.accent;
-        foreground = Colors.white;
+        foreground = AppDesign.onAccent;
         borderColor = null;
       case AppButtonVariant.secondary:
         background = Colors.transparent;

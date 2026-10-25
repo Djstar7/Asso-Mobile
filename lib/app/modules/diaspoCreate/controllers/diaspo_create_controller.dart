@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -211,7 +212,7 @@ class DiaspoCreateController extends GetxController {
     if (currentStep.value == 0) {
       if (!formKey1.currentState!.validate()) return;
       if (departureDateTime.value == null || arrivalDateTime.value == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'diaspo_create.error'.tr,
           'diaspo_create.select_dates'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -238,7 +239,7 @@ class DiaspoCreateController extends GetxController {
   Future<void> submitOffer() async {
     // Validate dates before submitting
     if (departureDateTime.value == null || arrivalDateTime.value == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_create.error'.tr,
         'diaspo_create.select_dates'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -250,7 +251,7 @@ class DiaspoCreateController extends GetxController {
 
     if (arrivalDateTime.value!.isBefore(departureDateTime.value!) ||
         arrivalDateTime.value!.isAtSameMomentAs(departureDateTime.value!)) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_create.error'.tr,
         'diaspo_create.arrival_after_departure'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -261,7 +262,7 @@ class DiaspoCreateController extends GetxController {
     }
 
     if (travelProof.value == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_create.error'.tr,
         'diaspo_create.travel_proof_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -290,7 +291,7 @@ class DiaspoCreateController extends GetxController {
 
       Get.offNamed('/diaspo/detail', arguments: {'offer': createdOffer});
       final deadline = createdOffer.formattedVerificationDeadline;
-      Get.snackbar(
+      AppFeedback.show(
         createdOffer.profileVerified
             ? 'diaspo_create.published_title'.tr
             : 'diaspo_create.published_unverified_title'.tr,
@@ -312,7 +313,7 @@ class DiaspoCreateController extends GetxController {
         errorMessage = 'diaspo_create.arrival_after_departure'.tr;
       }
 
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_create.error'.tr,
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
@@ -380,7 +381,7 @@ class DiaspoCreateController extends GetxController {
         // Validate that arrival is after departure
         if (selectedArrivalDateTime.isBefore(minDate) ||
             selectedArrivalDateTime.isAtSameMomentAs(minDate)) {
-          Get.snackbar(
+          AppFeedback.show(
             'diaspo_create.error'.tr,
             'diaspo_create.arrival_time_after_departure'.tr,
             snackPosition: SnackPosition.BOTTOM,

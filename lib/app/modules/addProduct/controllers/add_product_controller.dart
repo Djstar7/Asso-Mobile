@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -297,7 +298,7 @@ class AddProductController extends GetxController {
 
   // ───────────── Mode hors ligne ─────────────
 
-    static const _shopFreeDeliveryKey = 'shop_free_delivery';
+  static const _shopFreeDeliveryKey = 'shop_free_delivery';
 
   /// Joignabilité du serveur (badge, envoi différé).
   bool get isOffline => ConnectivityService.isOffline;
@@ -531,10 +532,9 @@ class AddProductController extends GetxController {
     productImages.assignAll(
       draft.existingImagePaths.map((path) => XFile(path)),
     );
-    primaryImageIndex.value =
-        draft.primaryImageIndex < productImages.length
-            ? draft.primaryImageIndex
-            : 0;
+    primaryImageIndex.value = draft.primaryImageIndex < productImages.length
+        ? draft.primaryImageIndex
+        : 0;
 
     variantEditor.loadFromDraftJson(draft.variants);
     isVariableProduct.value =
@@ -549,6 +549,7 @@ class AddProductController extends GetxController {
   void discardDraft() {
     ProductDraftStore.clear();
   }
+
   final Map<String, dynamic>? editProductData = Get.arguments?['product'];
 
   final ImagePicker _picker = ImagePicker();
@@ -561,6 +562,20 @@ class AddProductController extends GetxController {
 
   /// Nombre total d'images (existantes + nouvelles)
   int get totalImagesCount => existingImages.length + productImages.length;
+
+  /// Les photos serveur restent référencées dans existingImages ; seules les
+  /// photos locales sont envoyées. À la création, la principale part en tête.
+  List<XFile> get imagesForUpload {
+    final primary = primaryImageIndex.value;
+    if (isEditMode.value || primary <= 0 || primary >= productImages.length) {
+      return productImages.toList();
+    }
+    return [
+      productImages[primary],
+      for (var i = 0; i < productImages.length; i++)
+        if (i != primary) productImages[i],
+    ];
+  }
 
   /// Supprimer une image (existante ou nouvelle) via un index combiné
   void removeImage(int index) {
@@ -885,8 +900,7 @@ class AddProductController extends GetxController {
     return allSubcategories.firstWhereOrNull(
       (entry) => subId != null
           ? entry['id'] == subId && entry['category_only'] != '1'
-          : entry['id'] == resolved.categoryId &&
-              entry['category_only'] == '1',
+          : entry['id'] == resolved.categoryId && entry['category_only'] == '1',
     );
   }
 
@@ -959,13 +973,12 @@ class AddProductController extends GetxController {
 
   /// Espace du forfait actif, lu dans une réponse du tableau de bord.
   void _applyStorage(Map data) {
-    if (data['package'] != null &&
-        data['package']['vendor_package'] != null) {
+    if (data['package'] != null && data['package']['vendor_package'] != null) {
       final vendorPackage = data['package']['vendor_package'];
       final storageTotalMb = (vendorPackage['storage_total_mb'] ?? 0)
           .toDouble();
-      final storageRemainingMb =
-          (vendorPackage['storage_remaining_mb'] ?? 0).toDouble();
+      final storageRemainingMb = (vendorPackage['storage_remaining_mb'] ?? 0)
+          .toDouble();
       final packageName =
           vendorPackage['package']?['name'] ?? 'add_product.active_package'.tr;
 
@@ -976,7 +989,9 @@ class AddProductController extends GetxController {
           'available': storageRemainingMb / 1024, // Convert MB to GB
           'total': storageTotalMb / 1024, // Convert MB to GB
           'unlimited': vendorPackage['is_unlimited_storage'] == true,
-          'used': ((vendorPackage['storage_used_mb'] ?? 0) as num).toDouble() / 1024,
+          'used':
+              ((vendorPackage['storage_used_mb'] ?? 0) as num).toDouble() /
+              1024,
         },
       ];
 
@@ -1156,7 +1171,7 @@ class AddProductController extends GetxController {
     } catch (e, stackTrace) {
       print('❌ ADD_PRODUCT: Error populating edit data: $e');
       print('Stack trace: $stackTrace');
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.error'.tr,
         'add_product.snack.load_product_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1189,7 +1204,7 @@ class AddProductController extends GetxController {
       }
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la sélection des images: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.error'.tr,
         'add_product.snack.pick_images_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1213,7 +1228,7 @@ class AddProductController extends GetxController {
       }
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la prise de photo: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.error'.tr,
         'add_product.snack.take_photo_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1240,7 +1255,7 @@ class AddProductController extends GetxController {
       if (file != null) await video.upload(file);
     } catch (e) {
       print('❌ ADD_PRODUCT: Erreur lors de la sélection de la vidéo: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.error'.tr,
         'add_product.video.pick_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1254,7 +1269,7 @@ class AddProductController extends GetxController {
   Future<void> analyzeProductImage() async {
     // Validation: au moins une image
     if (productImages.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.snack.no_image_title'.tr,
         'add_product.snack.no_image_message'.tr,
         snackPosition: SnackPosition.TOP,
@@ -1266,7 +1281,7 @@ class AddProductController extends GetxController {
     }
 
     if (isOffline) {
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.offline'.tr,
         'add_product.snack.analysis_offline'.tr,
         snackPosition: SnackPosition.TOP,
@@ -1304,7 +1319,7 @@ class AddProductController extends GetxController {
           _applyAnalysisResults(analysis, confidence ?? {});
 
           // Afficher un snackbar de succès
-          Get.snackbar(
+          AppFeedback.show(
             'add_product.snack.analysis_done_title'.tr,
             'add_product.snack.analysis_done_message'.tr,
             snackPosition: SnackPosition.TOP,
@@ -1317,11 +1332,13 @@ class AddProductController extends GetxController {
           throw Exception('add_product.snack.analysis_invalid_data'.tr);
         }
       } else {
-        throw Exception(response.message ?? 'add_product.snack.analysis_error'.tr);
+        throw Exception(
+          response.message ?? 'add_product.snack.analysis_error'.tr,
+        );
       }
     } catch (e) {
       print('❌ Analysis error: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.snack.analysis_failed_title'.tr,
         'add_product.snack.analysis_failed_message'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.TOP,
@@ -1371,7 +1388,7 @@ class AddProductController extends GetxController {
         (subcat) => subcategoryId != null
             ? subcat['id'] == subcategoryId && subcat['category_only'] != '1'
             : subcat['category_id'] == categoryId &&
-                subcat['category_only'] == '1',
+                  subcat['category_only'] == '1',
       );
 
       if (matchingSubcat != null) {
@@ -1416,7 +1433,9 @@ class AddProductController extends GetxController {
   /// L'étape Prix acceptait la virgule mais l'envoi relisait le texte brut :
   /// « 1500,50 » partait à 0. Une seule lecture sert désormais aux deux.
   static double? parsePrice(String raw) {
-    final text = raw.replaceAll(RegExp(r'[\s\u00A0\u202F]'), '').replaceAll(',', '.');
+    final text = raw
+        .replaceAll(RegExp(r'[\s\u00A0\u202F]'), '')
+        .replaceAll(',', '.');
     if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)) return null;
     return double.tryParse(text);
   }
@@ -1425,8 +1444,8 @@ class AddProductController extends GetxController {
   /// à centimes). Arrondir à l'unité faisait passer 9,99 € à 10 €.
   static String formatPriceForApi(double price) =>
       price == price.roundToDouble()
-          ? price.toStringAsFixed(0)
-          : price.toStringAsFixed(2);
+      ? price.toStringAsFixed(0)
+      : price.toStringAsFixed(2);
 
   /// Référence de la création en cours (voir
   /// [OfflineProductSyncService.newReference]) : la même à chaque nouvel
@@ -1452,7 +1471,8 @@ class AddProductController extends GetxController {
     final text = weightKgController.text.trim();
     if (articleType.value != 'article' && text.isEmpty) return null;
     if (text.isEmpty) return 'add_product.weight.required'.tr;
-    if (!_weightInput.hasMatch(text)) return 'add_product.weight.not_a_number'.tr;
+    if (!_weightInput.hasMatch(text))
+      return 'add_product.weight.not_a_number'.tr;
     final value = double.tryParse(text.replaceAll(',', '.')) ?? 0;
     if (value <= 0) return 'add_product.weight.positive'.tr;
     if (value > 100000) return 'add_product.weight.too_heavy'.tr;
@@ -1467,7 +1487,7 @@ class AddProductController extends GetxController {
   /// avec la couleur sémantique du design system : l'avertissement passait
   /// inaperçu au bas de l'écran.
   void _warnMissingField(String title, String message) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -1499,7 +1519,7 @@ class AddProductController extends GetxController {
       return;
     }
 
-    if (productImages.isEmpty) {
+    if (totalImagesCount == 0) {
       _warnMissingField(
         'add_product.validation.image_required_title'.tr,
         'add_product.validation.image_required'.tr,
@@ -1557,7 +1577,9 @@ class AddProductController extends GetxController {
     if (weightProblem != null) {
       _warnMissingField(
         'add_product.validation.weight_required_title'.tr,
-        'add_product.validation.weight_problem'.trParams({'problem': weightProblem}),
+        'add_product.validation.weight_problem'.trParams({
+          'problem': weightProblem,
+        }),
       );
       return;
     }
@@ -1576,7 +1598,7 @@ class AddProductController extends GetxController {
     // Ces validations sont commentées pour le moment
 
     // if (selectedStorage.value == null) {
-    //   Get.snackbar(
+    //   AppFeedback.show(
     //     'Stockage requis',
     //     'Veuillez sélectionner un espace de stockage',
     //     snackPosition: SnackPosition.BOTTOM,
@@ -1585,7 +1607,7 @@ class AddProductController extends GetxController {
     // }
 
     // if (selectedWeightType.value == null) {
-    //   Get.snackbar(
+    //   AppFeedback.show(
     //     'Poids requis',
     //     'Veuillez sélectionner le poids du produit',
     //     snackPosition: SnackPosition.BOTTOM,
@@ -1594,7 +1616,7 @@ class AddProductController extends GetxController {
     // }
 
     // if (selectedWeightType.value == 'custom' && weightKgController.text.trim().isEmpty) {
-    //   Get.snackbar(
+    //   AppFeedback.show(
     //     'Poids requis',
     //     'Veuillez entrer le poids en KG',
     //     snackPosition: SnackPosition.BOTTOM,
@@ -1603,7 +1625,7 @@ class AddProductController extends GetxController {
     // }
 
     // if (stockController.text.trim().isEmpty) {
-    //   Get.snackbar(
+    //   AppFeedback.show(
     //     'Stock requis',
     //     'Veuillez entrer la quantité en stock',
     //     snackPosition: SnackPosition.BOTTOM,
@@ -1624,25 +1646,16 @@ class AddProductController extends GetxController {
 
     try {
       // Déterminer quelles images envoyer
-      List<XFile> imagesToUpload;
+      final imagesToUpload = imagesForUpload;
       if (isEditMode.value) {
         // En mode édition, n'envoyer que les NOUVELLES images
-        imagesToUpload = productImages.sublist(newImageStartIndex.value);
         print('📦 ADD_PRODUCT: Mode EDIT - Sending only NEW images');
-        print('   └─ Total images: ${productImages.length}');
-        print('   └─ Existing images: ${newImageStartIndex.value}');
+        print('   └─ Total images: $totalImagesCount');
+        print('   └─ Existing images: ${existingImages.length}');
         print('   └─ New images to upload: ${imagesToUpload.length}');
       } else {
         // En mode création, envoyer toutes les images, la principale en
         // tête : le serveur prend la première comme photo principale.
-        final primary = primaryImageIndex.value;
-        imagesToUpload = primary > 0 && primary < productImages.length
-            ? [
-                productImages[primary],
-                for (var i = 0; i < productImages.length; i++)
-                  if (i != primary) productImages[i],
-              ]
-            : productImages.toList();
         print('📦 ADD_PRODUCT: Mode CREATE - Sending all images');
         print('   └─ Total images to upload: ${imagesToUpload.length}');
       }
@@ -1757,7 +1770,9 @@ class AddProductController extends GetxController {
       // Commande avec acompte : % du prix client, solde après vérification ASSO.
       fieldsMap['deposit_enabled'] = depositEnabled.value ? '1' : '0';
       if (depositEnabled.value) {
-        fieldsMap['deposit_rate'] = depositRateController.text.trim().replaceAll(',', '.');
+        fieldsMap['deposit_rate'] = depositRateController.text
+            .trim()
+            .replaceAll(',', '.');
       }
 
       // Poids réel en kg, nombre décimal avec point (ex. « 2.5 »).
@@ -1857,7 +1872,7 @@ class AddProductController extends GetxController {
         print('');
 
         // Toast de succès avec style responsive
-        Get.snackbar(
+        AppFeedback.show(
           isEditMode.value
               ? 'add_product.success.updated_title'.tr
               : 'add_product.success.created_title'.tr,
@@ -1971,7 +1986,7 @@ class AddProductController extends GetxController {
             ),
           );
         } else {
-          Get.snackbar(
+          AppFeedback.show(
             'add_product.error'.tr,
             response.message ?? 'add_product.snack.add_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -1981,7 +1996,7 @@ class AddProductController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'add_product.error'.tr,
         'add_product.snack.add_error'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
@@ -2067,7 +2082,7 @@ class AddProductController extends GetxController {
     // La fiche est en file : son brouillon n'a plus lieu d'être proposé.
     discardDraft();
 
-    Get.snackbar(
+    AppFeedback.show(
       'add_product.offline_save.saved_title'.tr,
       'add_product.offline_save.saved_message'.tr,
       snackPosition: SnackPosition.TOP,
@@ -2102,7 +2117,10 @@ class AddProductController extends GetxController {
 
   void _schedulePricePreview() {
     _previewDebounce?.cancel();
-    _previewDebounce = Timer(const Duration(milliseconds: 400), _loadPricePreview);
+    _previewDebounce = Timer(
+      const Duration(milliseconds: 400),
+      _loadPricePreview,
+    );
   }
 
   Future<void> _loadPricePreview() async {
@@ -2115,13 +2133,15 @@ class AddProductController extends GetxController {
       return;
     }
     try {
-      final res = await ApiProvider.get('/v1/pricing/preview', queryParams: {
-        'price': price,
-        'currency': selectedCurrency.value,
-      });
+      final res = await ApiProvider.get(
+        '/v1/pricing/preview',
+        queryParams: {'price': price, 'currency': selectedCurrency.value},
+      );
       if (isClosed) return;
       final value = res.data?['data']?['buyer_price'];
-      buyerPricePreview.value = res.success && value is num ? value.toDouble() : null;
+      buyerPricePreview.value = res.success && value is num
+          ? value.toDouble()
+          : null;
     } catch (_) {
       buyerPricePreview.value = null;
     }

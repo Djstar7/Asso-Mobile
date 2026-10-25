@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/post.dart';
@@ -106,7 +107,7 @@ class MyVoiceController extends GetxController {
   }
 
   void _snack(String title, String message, {bool error = false}) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,

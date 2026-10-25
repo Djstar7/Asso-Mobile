@@ -1350,6 +1350,12 @@
     }
   },
   "payment": {
+    "preparation": {
+      "mobile_money_title": "Preparing Mobile Money payment",
+      "mobile_money_message": "Please wait while the payment request is sent to your phone.",
+      "card_title": "Opening card payment",
+      "card_message": "Please wait while the secure payment form is prepared."
+    },
     "wallet_confirm": {
       "title": "Pay with my Wallet",
       "current_balance": "Current balance",
@@ -1742,6 +1748,7 @@
     "clear": "Clear"
   },
   "chatdetail": {
+    "send": "Send",
     "error": "Error",
     "success": "Success",
     "message_not_sent": "Message not sent",

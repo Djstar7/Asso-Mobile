@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/order_service.dart';
@@ -1167,7 +1168,7 @@ class ProductView extends GetView<ProductController> {
                       arguments: {'shop_id': shopId.toString()},
                     );
                   } else {
-                    Get.snackbar(
+                    AppFeedback.show(
                       'product.error'.tr,
                       'product.shop_access_error'.tr,
                       snackPosition: SnackPosition.BOTTOM,
@@ -1626,7 +1627,7 @@ class ProductView extends GetView<ProductController> {
       );
     } else {
       // Pas de coordonnées disponibles
-      Get.snackbar(
+      AppFeedback.show(
         'product.map_options.position_unavailable_title'.tr,
         'product.map_options.position_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1654,7 +1655,7 @@ class ProductView extends GetView<ProductController> {
     }
 
     if (lat == null || lng == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.map_options.position_unavailable_title'.tr,
         'product.map_options.position_unavailable_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1675,7 +1676,7 @@ class ProductView extends GetView<ProductController> {
       if (canLaunch) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'product.error'.tr,
           'product.map_options.google_maps_open_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -1685,7 +1686,7 @@ class ProductView extends GetView<ProductController> {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.map_options.google_maps_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -3040,7 +3041,7 @@ class ProductView extends GetView<ProductController> {
         await _payViaCard(product);
         break;
       default:
-        Get.snackbar(
+        AppFeedback.show(
           'product.payment.unavailable_title'.tr,
           'product.payment.method_unavailable'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -3127,7 +3128,7 @@ class ProductView extends GetView<ProductController> {
   /// Paiement par CARTE (Payment Sheet Stripe native), confirmé côté serveur.
   Future<void> _payViaCard(Map<String, dynamic> product) async {
     if (!StripeNativeService.isSupported) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.payment.unavailable_title'.tr,
         'product.payment.card_mobile_only'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -3146,7 +3147,7 @@ class ProductView extends GetView<ProductController> {
     final publishableKey = data['publishable_key']?.toString() ?? '';
     if (clientSecret.isEmpty || publishableKey.isEmpty) {
       await OrderService.abandonUnpaidOrder(orderId);
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         'product.payment.card_data_missing'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -3161,7 +3162,7 @@ class ProductView extends GetView<ProductController> {
       );
       if (!ok) {
         await OrderService.abandonUnpaidOrder(orderId);
-        Get.snackbar(
+        AppFeedback.show(
           'product.payment.cancelled_title'.tr,
           'product.payment.cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -3176,7 +3177,7 @@ class ProductView extends GetView<ProductController> {
         'product.payment.card_pending'.tr,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'product.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,
@@ -3327,7 +3328,7 @@ class ProductView extends GetView<ProductController> {
       await controller.loadDeliveryPartners(controller.currentProductId.value);
     }
 
-    Get.snackbar(
+    AppFeedback.show(
       'product.location.updated_title'.tr,
       'product.location.updated_message'.tr,
       snackPosition: SnackPosition.BOTTOM,

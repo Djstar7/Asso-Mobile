@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -384,13 +385,13 @@ class AppThemeSystem {
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: AppDesign.accent,
-        onPrimary: Colors.white,
+        onPrimary: AppDesign.onAccent,
         primaryContainer: AppDesign.accentSubtle,
         onPrimaryContainer: AppDesign.accentText,
         secondary: isDark ? const Color(0xFFD8D8D3) : AppDesign.neutral800,
         onSecondary: isDark ? AppDesign.neutral900 : Colors.white,
         tertiary: AppDesign.accent,
-        onTertiary: Colors.white,
+        onTertiary: AppDesign.onAccent,
         surface: surface,
         onSurface: textPrimary,
         surfaceContainerLowest: canvas,
@@ -439,7 +440,7 @@ class AppThemeSystem {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppDesign.accent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppDesign.onAccent,
           disabledBackgroundColor: isDark
               ? AppDesign.neutralDark600
               : AppDesign.neutral200,
@@ -484,7 +485,7 @@ class AppThemeSystem {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppDesign.accent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppDesign.onAccent,
           minimumSize: const Size(0, AppDesign.minTapTarget),
           shape: RoundedRectangleBorder(borderRadius: radiusSm),
         ),
@@ -576,13 +577,13 @@ class AppThemeSystem {
       ),
 
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? AppDesign.neutral100 : AppDesign.neutral900,
+        backgroundColor: AppDesign.accent,
         contentTextStyle: TextStyle(
           fontFamily: 'SF-Pro',
-          color: isDark ? AppDesign.neutral900 : Colors.white,
+          color: AppDesign.onAccent,
           fontSize: 14,
         ),
-        actionTextColor: AppDesign.accent,
+        actionTextColor: AppDesign.onAccent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: radiusSm),
       ),
@@ -662,18 +663,16 @@ class AppThemeSystem {
         color: AppDesign.accent,
       ),
 
-      // Le libellé et l'icône d'un bouton flottant sont explicitement blancs :
-      // hérités du thème, ils prenaient la couleur d'accent et devenaient
-      // illisibles sur le fond orange du bouton.
+      // Texte et icônes contrastés sur le fond orange de marque.
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppDesign.accent,
-        foregroundColor: Colors.white,
+        foregroundColor: AppDesign.onAccent,
         elevation: 2,
         extendedTextStyle: TextStyle(
           fontFamily: 'SF-Pro',
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: AppDesign.onAccent,
         ),
       ),
 
@@ -1074,7 +1073,7 @@ class AppDialogs {
               })
             : 'core.login_required.snackbar_generic'.tr);
 
-    Get.snackbar(
+    AppFeedback.show(
       'core.login_required.title'.tr,
       defaultMessage,
       snackPosition: SnackPosition.BOTTOM,

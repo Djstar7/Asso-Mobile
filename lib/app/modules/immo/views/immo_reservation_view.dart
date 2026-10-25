@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import '../widgets/immo_summary_row.dart';
 import 'dart:async';
 
@@ -96,13 +97,13 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
     setState(() => _busy = false);
     if (res.success) {
       _load();
-      Get.snackbar(
+      AppFeedback.show(
         'immo.booking.confirmed_title'.tr,
         'immo.booking.confirmed_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
-      Get.snackbar(
+      AppFeedback.show(
         'immo.reserve.error'.tr,
         res.message,
         snackPosition: SnackPosition.BOTTOM,
@@ -129,7 +130,7 @@ class _ImmoReservationViewState extends State<ImmoReservationView> {
       }
     } catch (_) {
       if (mounted) {
-        Get.snackbar(
+        AppFeedback.show(
           'immo.reserve.error'.tr,
           'immo.booking.document_error'.tr,
           snackPosition: SnackPosition.BOTTOM,

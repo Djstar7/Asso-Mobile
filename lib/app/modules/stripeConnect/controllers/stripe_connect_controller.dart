@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -207,7 +208,7 @@ class StripeConnectController extends GetxController {
     try {
       final res = await StripeConnectService.unlink();
       if (res.success && res.data != null) _applyStatus(res.data!);
-      Get.snackbar(
+      AppFeedback.show(
         res.success ? 'stripe_connect.unlink.done_title'.tr : 'stripe_connect.error'.tr,
         res.message.isNotEmpty ? res.message : 'stripe_connect.errors.generic_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -215,7 +216,7 @@ class StripeConnectController extends GetxController {
         colorText: Colors.white,
       );
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'stripe_connect.error'.tr,
         'stripe_connect.errors.generic_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -250,7 +251,7 @@ class StripeConnectController extends GetxController {
 
       if (res.success) {
         if (res.data != null) _applyStatus(res.data!);
-        Get.snackbar(
+        AppFeedback.show(
           'stripe_connect.submitted_title'.tr,
           'stripe_connect.submitted_message'.tr,
           snackPosition: SnackPosition.BOTTOM,

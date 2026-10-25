@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -104,7 +105,7 @@ class _LandlordVerificationViewState extends State<LandlordVerificationView> {
       if (!mounted) return;
       if (res.success) {
         Get.back(result: true);
-        Get.snackbar(
+        AppFeedback.show(
           'landlord.verify.sent_title'.tr,
           'landlord.verify.sent_message'.tr,
           snackPosition: SnackPosition.BOTTOM,

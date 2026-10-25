@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -185,7 +186,7 @@ class _LandlordEditorViewState extends State<LandlordEditorView> {
     if (!res.success || data is! Map) {
       final errors = res.data?['errors'];
       final first = errors is Map && errors.isNotEmpty ? (errors.values.first as List).first.toString() : res.message;
-      Get.snackbar('landlord.editor.error'.tr, first, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show('landlord.editor.error'.tr, first, snackPosition: SnackPosition.BOTTOM);
       return false;
     }
     final json = Map<String, dynamic>.from(data);
@@ -204,7 +205,7 @@ class _LandlordEditorViewState extends State<LandlordEditorView> {
 
   Future<void> _next() async {
     if (!_stepValid(_step)) {
-      Get.snackbar('landlord.editor.incomplete'.tr, 'landlord.editor.step_required_$_step'.tr, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show('landlord.editor.incomplete'.tr, 'landlord.editor.step_required_$_step'.tr, snackPosition: SnackPosition.BOTTOM);
       return;
     }
     // On enregistre avant la visite : les photos s'attachent à des pièces
@@ -226,11 +227,11 @@ class _LandlordEditorViewState extends State<LandlordEditorView> {
     setState(() => _saving = false);
     if (res.success) {
       Get.back();
-      Get.snackbar('landlord.editor.submitted_title'.tr, 'landlord.editor.submitted_message'.tr, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show('landlord.editor.submitted_title'.tr, 'landlord.editor.submitted_message'.tr, snackPosition: SnackPosition.BOTTOM);
     } else {
       final missing = (res.data?['missing'] as List? ?? const []).map((e) => e.toString()).toList();
       setState(() => _missing = missing);
-      Get.snackbar('landlord.editor.incomplete'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show('landlord.editor.incomplete'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -663,7 +664,7 @@ class _LandlordEditorViewState extends State<LandlordEditorView> {
       _saving = false;
       if (data != null) _apply(data);
     });
-    if (!res.success) Get.snackbar('landlord.editor.error'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
+    if (!res.success) AppFeedback.show('landlord.editor.error'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
   }
 
   Widget _tourStepView(BuildContext context) => Column(

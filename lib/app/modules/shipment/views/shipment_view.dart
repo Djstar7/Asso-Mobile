@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -287,7 +288,7 @@ class ShipmentView extends GetView<MyOrderController> {
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: order.confirmationCode!));
-                      Get.snackbar('shipment.copied_title'.tr, 'shipment.code_copied'.tr,
+                      AppFeedback.show('shipment.copied_title'.tr, 'shipment.code_copied'.tr,
                         snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
                     },
                     child: Container(

@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/locale_service.dart';
@@ -180,7 +181,7 @@ class CountrySelectionController extends GetxController {
       if (options.isEmpty) hasError.value = true;
     } catch (e) {
       hasError.value = true;
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'country_selection.load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -255,7 +256,7 @@ class CountrySelectionController extends GetxController {
       );
       Get.offAllNamed(Routes.ONBOARDING);
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'country_selection.select_error'.tr,
         snackPosition: SnackPosition.BOTTOM,

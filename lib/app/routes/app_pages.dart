@@ -3,7 +3,7 @@ import 'package:asso/app/modules/boost/views/boost_view.dart';
 import 'package:asso/app/modules/boost/views/boost_detail_view.dart';
 import 'package:asso/app/modules/invoices/views/invoices_view.dart';
 import 'package:asso/app/modules/diaspoList/bindings/diaspo_list_binding.dart';
-import 'package:asso/app/modules/diaspoList/views/diaspo_list_view.dart';
+import 'package:asso/app/modules/diaspoList/views/passcolis_section.dart';
 import 'package:asso/app/modules/diaspoCreate/bindings/diaspo_create_binding.dart';
 import 'package:asso/app/modules/diaspoCreate/views/diaspo_create_view.dart';
 import 'package:asso/app/modules/diaspoEdit/bindings/diaspo_edit_binding.dart';
@@ -379,7 +379,7 @@ class AppPages {
     ),
     GetPage(
       name: _Paths.DIASPO,
-      page: () => const DiaspoListView(),
+      page: () => const PasscolisSection(embedded: false),
       binding: DiaspoListBinding(),
     ),
     GetPage(

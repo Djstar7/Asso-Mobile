@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,7 +23,7 @@ class ImmoActions {
         final res = await RealEstateService.contact(listing.id);
         final conversation = res.data?['conversation'];
         if (!res.success || conversation is! Map) {
-          Get.snackbar('immo.contact.error_title'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
+          AppFeedback.show('immo.contact.error_title'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
           return;
         }
         final name = (conversation['other_user'] as Map?)?['name']?.toString() ?? 'immo.contact.asso'.tr;

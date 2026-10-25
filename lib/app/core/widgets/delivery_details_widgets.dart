@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -308,7 +309,7 @@ class CarrierTrackingCard extends StatelessWidget {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok) throw Exception();
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'core.delivery.open_carrier_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -358,7 +359,7 @@ class CarrierTrackingCard extends StatelessWidget {
             InkWell(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: number));
-                Get.snackbar(
+                AppFeedback.show(
                   'core.delivery.copied'.tr,
                   'core.delivery.tracking_copied'.tr,
                   snackPosition: SnackPosition.BOTTOM,

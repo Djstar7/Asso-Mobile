@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -109,7 +110,7 @@ class TrackingController extends GetxController {
         shipments.value = [];
         shipments.value = newShipments;
       } else if (!silent) {
-        Get.snackbar(
+        AppFeedback.show(
           'tracking.errors.error'.tr,
           response.message.isNotEmpty ? response.message : 'tracking.errors.load_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -118,7 +119,7 @@ class TrackingController extends GetxController {
       }
     } catch (e) {
       if (!silent) {
-        Get.snackbar(
+        AppFeedback.show(
           'tracking.errors.connection'.tr,
           'tracking.errors.refresh_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -362,7 +363,7 @@ class TrackingController extends GetxController {
     if (orderId == null) return false;
     final response = await OrderService.confirmReception(orderId);
     if (response.success) {
-      Get.snackbar(
+      AppFeedback.show(
         'tracking.receipt.thanks_title'.tr,
         'tracking.receipt.thanks_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -372,7 +373,7 @@ class TrackingController extends GetxController {
       await loadOrders();
       return true;
     }
-    Get.snackbar(
+    AppFeedback.show(
       'tracking.errors.error'.tr,
       response.message.isNotEmpty
           ? response.message
@@ -449,7 +450,7 @@ class TrackingController extends GetxController {
         );
 
         if (!response.success || response.data == null) {
-          Get.snackbar(
+          AppFeedback.show(
             'tracking.errors.error'.tr,
             'tracking.errors.chat_seller_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -461,7 +462,7 @@ class TrackingController extends GetxController {
         final conversationId =
             conversation['id'] ?? conversation['conversation_id'];
         if (conversationId == null) {
-          Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
+          AppFeedback.show('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
               snackPosition: SnackPosition.BOTTOM);
           return;
         }
@@ -489,7 +490,7 @@ class TrackingController extends GetxController {
       final supportUserId = await appConfig.ensureSupportUserId();
 
       if (supportUserId == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'tracking.errors.support_unavailable_title'.tr,
           'tracking.errors.support_unavailable_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -500,7 +501,7 @@ class TrackingController extends GetxController {
       final response =
           await ConversationService.startConversation(userId: supportUserId);
       if (!response.success || response.data == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'tracking.errors.error'.tr,
           'tracking.errors.chat_support_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -511,7 +512,7 @@ class TrackingController extends GetxController {
       final conversation = response.data!['conversation'];
       final conversationId = conversation?['id'];
       if (conversationId == null) {
-        Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
+        AppFeedback.show('tracking.errors.error'.tr, 'tracking.errors.chat_unavailable'.tr,
             snackPosition: SnackPosition.BOTTOM);
         return;
       }
@@ -526,7 +527,7 @@ class TrackingController extends GetxController {
         'is_support': true,
       });
     } catch (e) {
-      Get.snackbar('tracking.errors.error'.tr, 'tracking.errors.generic'.trParams({'error': '$e'}),
+      AppFeedback.show('tracking.errors.error'.tr, 'tracking.errors.generic'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       openingChatOrderId.value = '';
@@ -534,7 +535,7 @@ class TrackingController extends GetxController {
   }
 
   void contactSupport() {
-    Get.snackbar(
+    AppFeedback.show(
       'tracking.support.title'.tr,
       'tracking.support.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,

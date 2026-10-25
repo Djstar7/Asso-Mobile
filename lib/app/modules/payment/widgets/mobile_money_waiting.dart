@@ -44,7 +44,8 @@ class MobileMoneyWaiting {
         builder: (context) {
           dialogContext = context;
           return _WaitingDialog(
-            amount: formatAmount?.call(amount) ??
+            amount:
+                formatAmount?.call(amount) ??
                 CurrencyService.formatFromPivot(amount),
             operator: KPayCatalog.labelFor(provider),
             phone: '+$phone',
@@ -175,7 +176,10 @@ class _WaitingDialog extends StatelessWidget {
         icon: const SizedBox(
           width: 48,
           height: 48,
-          child: CircularProgressIndicator(strokeWidth: 3.5),
+          child: CircularProgressIndicator(
+            strokeWidth: 3.5,
+            color: AppDesign.accent,
+          ),
         ),
         title: Text(
           'payment.mobile_money.waiting_title'.tr,

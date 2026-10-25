@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -88,7 +89,7 @@ class InvoicesController extends GetxController {
           error: 'Total: ${total.value}, Page: ${currentPage.value}/$lastPage.value',
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'invoices.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -103,7 +104,7 @@ class InvoicesController extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar(
+      AppFeedback.show(
         'invoices.error'.tr,
         'invoices.load_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -201,7 +202,7 @@ class InvoicesController extends GetxController {
   }
 
   void _error(String message) {
-    Get.snackbar(
+    AppFeedback.show(
       'invoices.error'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,

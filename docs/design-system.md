@@ -2,12 +2,14 @@
 
 ## Source de vérité
 
-`AppDesign` porte les tokens ; `AppThemeSystem` construit les thèmes Material et conserve les adaptateurs des anciennes vues. `app_ui.dart` porte les primitives, `AppSheet` les feuilles et `ToneColors` les paires sémantiques clair/sombre. Aucun package supplémentaire.
+`AppBrandColors` (`lib/app/core/utils/app_brand_colors.dart`) définit la palette de marque ; `AppDesign` expose les tokens ; `AppThemeSystem` construit les thèmes Material et conserve les adaptateurs des anciennes vues. `app_ui.dart` porte les primitives, `AppSheet` les feuilles et `ToneColors` les paires sémantiques clair/sombre. Aucun package supplémentaire.
 
 ## Couleurs
 
-- Orange identitaire : `brandAccent` #E87722, réservé aux illustrations/décors.
-- Action interactive : `accent` #A64F0F, texte blanc ; hover #97460B et pressé #8F430B. Utiliser le token, jamais recopier l’hex dans une vue.
+- Orange de marque unique : `AppBrandColors.primary` #FC9141, partagé par `AppDesign.brandAccent`, `AppDesign.accent` et les adaptateurs historiques.
+- Variantes centralisées : hover #F7832C, pressé #EF751F, fond discret #FFF2E8, bordure #FFD3B2, texte sur fond teinté #9A4108. Sur un fond orange plein, les textes et icônes sont toujours blancs #FFFFFF (`onAccent`), y compris aux états survolé et pressé. Utiliser les tokens, jamais recopier les hex dans une vue.
+- Boutons, confirmations, navigation et snackbars utilisent ces tokens. Tous les snackbars GetX passent par `AppFeedback.show` ; les SnackBar Material héritent du thème. Les couleurs sémantiques explicites restent disponibles. Le XML des notifications Android est un miroir vérifié par test.
+- Champs de saisie : curseur, bordure active et libellé flottant en orange de marque. Chargement des pages et actualisation : orange de marque ; chargement dans un bouton orange : blanc (`onAccent`).
 - Fonds/surfaces/textes : `context.ds.canvas`, `.surface`, `.surfaceMuted`, `.border`, `.textPrimary`, `.textSecondary`, `.textTertiary`. Le tertiaire est désormais lisible sur les surfaces claires.
 - Statuts : succès/avertissement/erreur/information, avec un libellé explicite. `ToneColors` résout les fonds et textes selon le thème. Le mode sombre reste désactivé dans la configuration de production ; son activation demande une validation dédiée.
 - Les couleurs produit, prestataire de paiement, itinéraire ou illustration bancaire sont des exceptions fonctionnelles. Elles ne deviennent pas des couleurs d’action concurrentes.
@@ -34,6 +36,8 @@ Breakpoints partagés : mobile<600 ; tablette600–899 ; grande tablette900–10
 - Navigation basse et `SegmentedTabs` : état selected exposé à l’accessibilité, feedback pressé/focus ; libellés visibles ; géométrie adaptée au texte agrandi.
 
 Les boutons de retour continuent d’utiliser AppNavigation/AppBackButton. Une modification graphique ne change ni droits, ni statuts, ni montants, ni destination métier. Pendant une confirmation asynchrone, définir explicitement les possibilités de sortie et protéger la soumission répétée.
+
+Les vues de fiches empilables utilisent `ScopedControllerPage` et reçoivent leur contrôleur explicitement. Pour une inscription GetX affectée à un champ nullable, écrire le type non nullable explicitement (`Get.put<MonController>(...)`) : l’inférence pourrait enregistrer `MonController?`, introuvable par la vue. Les hôtes Passcolis partagent une durée de vie comptée ; seul le dernier hôte libère les instances créées. Ne pas conserver simultanément deux navigateurs portant la même `GlobalKey` pendant un fondu. Un binding doit déclarer aussi les dépendances nécessaires à l’ouverture directe de sa route.
 
 ## Vérification
 

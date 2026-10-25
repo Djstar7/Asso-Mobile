@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/auth_guard.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -182,7 +183,7 @@ class ProfileController extends GetxController {
         },
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'profile.edit_profile_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,

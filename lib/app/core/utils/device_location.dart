@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -143,7 +144,7 @@ class DeviceLocation {
   static void showFailure(DeviceLocationResult result, {String? hint}) {
     final message = result.message;
     if (message == null) return;
-    Get.snackbar(
+    AppFeedback.show(
       'core.location.unavailable_title'.tr,
       hint == null ? message : '$message $hint',
       snackPosition: SnackPosition.BOTTOM,

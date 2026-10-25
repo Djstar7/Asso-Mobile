@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -95,7 +96,7 @@ class MyOrderController extends GetxController {
       }
     } catch (e) {
       if (!silent) {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.errors.title'.tr,
           'my_order.errors.load_orders'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -123,7 +124,7 @@ class MyOrderController extends GetxController {
         reason: reason,
       );
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.success_title'.tr,
           'my_order.cancelled_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -134,7 +135,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.errors.title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -145,7 +146,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.errors.title'.tr,
         'my_order.errors.cancel_order'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -161,7 +162,7 @@ class MyOrderController extends GetxController {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.errors.title'.tr,
           'my_order.errors.call_number'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -172,7 +173,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.errors.title'.tr,
         'my_order.errors.contact_deliverer'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -192,7 +193,7 @@ class MyOrderController extends GetxController {
     try {
       final response = await WalletService.confirmDelivery(int.parse(orderId));
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.success_title'.tr,
           'my_order.delivery_confirmed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -203,7 +204,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.errors.title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -214,7 +215,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.errors.title'.tr,
         'my_order.errors.confirm_delivery'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -252,7 +253,7 @@ class MyOrderController extends GetxController {
     if (id == null) return;
     final response = await OrderService.confirmReception(id);
     if (response.success) {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.thanks_title'.tr,
         response.message.isNotEmpty && response.message != 'Succès'
             ? response.message
@@ -265,7 +266,7 @@ class MyOrderController extends GetxController {
       );
       await loadOrders(refresh: true);
     } else {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.errors.title'.tr,
         response.message.isNotEmpty
             ? response.message
@@ -500,7 +501,7 @@ class MyOrderController extends GetxController {
 
   void _controlSnack(String message, {bool error = false}) {
     if (message.isEmpty) return;
-    Get.snackbar(
+    AppFeedback.show(
       error ? 'my_order.errors.title'.tr : 'disputes.title'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -525,7 +526,7 @@ class MyOrderController extends GetxController {
       );
 
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.thanks_title'.tr,
           'my_order.rating_dialog.sent'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -536,7 +537,7 @@ class MyOrderController extends GetxController {
         );
         loadOrders(refresh: true);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'my_order.errors.title'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -549,7 +550,7 @@ class MyOrderController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'my_order.errors.title'.tr,
         'my_order.errors.send_rating'.tr,
         snackPosition: SnackPosition.BOTTOM,

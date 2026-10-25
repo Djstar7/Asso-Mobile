@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -364,7 +365,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
   Future<void> _handleWithdrawal() async {
     // Validation supplémentaire pour KPay (opérateur + numéro valides)
     if (isKpay && (!_kpayValid || _kpayProvider == null || _kpayPhone == null)) {
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.recharge.error'.tr,
         'wallet.recharge.fields_required_message'.tr,
         backgroundColor: AppThemeSystem.errorColor,
@@ -413,7 +414,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
         Get.back(result: true);
 
         // Afficher un message de succès
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.webview.success_title'.tr,
           result['message'] ?? 'wallet.messages.withdrawal_initiated'.tr,
           backgroundColor: AppThemeSystem.successColor,
@@ -427,7 +428,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
         // Naviguer vers l'historique pour voir le retrait en pending
         Get.toNamed(Routes.WALLET_HISTORY);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.recharge.error'.tr,
           result['message'] ?? 'wallet.withdrawal.failed'.tr,
           backgroundColor: AppThemeSystem.errorColor,
@@ -436,7 +437,7 @@ class _WithdrawalBottomSheetState extends State<WithdrawalBottomSheet> {
       }
     } catch (e) {
       print('[WithdrawalBottomSheet] Error: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.recharge.error'.tr,
         'wallet.recharge.generic_error'.tr,
         backgroundColor: AppThemeSystem.errorColor,

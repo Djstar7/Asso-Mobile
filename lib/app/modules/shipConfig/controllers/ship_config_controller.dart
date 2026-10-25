@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -405,7 +406,7 @@ class ShipConfigController extends GetxController {
 
   /// Affiche un snackbar d'erreur
   void _showErrorSnackbar(String title, String message) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -420,7 +421,7 @@ class ShipConfigController extends GetxController {
 
   /// Affiche un snackbar de succès
   void _showSuccessSnackbar(String title, String message) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -435,7 +436,7 @@ class ShipConfigController extends GetxController {
 
   /// Affiche un snackbar d'information
   void _showInfoSnackbar(String title, String message) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,

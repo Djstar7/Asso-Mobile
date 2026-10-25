@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/routes/app_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -228,7 +229,7 @@ class StoreManagementController extends GetxController {
       certification.value = null;
       inventoryEntries.value = [];
 
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.load_error'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
@@ -319,7 +320,7 @@ class StoreManagementController extends GetxController {
       final response = await ShopService.updateFreeDelivery(value);
       if (!response.success) {
         freeDelivery.value = previous;
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.free_delivery.title'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -328,7 +329,7 @@ class StoreManagementController extends GetxController {
       }
       final overridden =
           (response.data?['overridden_products'] as num?)?.toInt() ?? 0;
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.free_delivery.title'.tr,
         [
           value
@@ -344,7 +345,7 @@ class StoreManagementController extends GetxController {
       );
     } catch (_) {
       freeDelivery.value = previous;
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.free_delivery.title'.tr,
         'store_management.free_delivery.save_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -410,7 +411,7 @@ class StoreManagementController extends GetxController {
       if (response.success && shop is Map) {
         storeInfo.value = storeInfoFromApi(Map<String, dynamic>.from(shop));
         freeDelivery.value = readFreeDelivery(shop['free_delivery']);
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.success'.tr,
           'store_management.logo.updated'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -418,7 +419,7 @@ class StoreManagementController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -429,7 +430,7 @@ class StoreManagementController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.logo.update_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -479,7 +480,7 @@ class StoreManagementController extends GetxController {
     final ordersResponse = await VendorService.checkActiveOrders();
     final count = ordersResponse.data?['active_orders_count'] as int? ?? 0;
     if (ordersResponse.success && (ordersResponse.data?['has_active_orders'] == true)) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.move.active_orders_title'.tr,
         'store_management.move.active_orders_message'.trParams({'count': '$count'}),
         snackPosition: SnackPosition.BOTTOM,
@@ -505,7 +506,7 @@ class StoreManagementController extends GetxController {
     try {
       await checkDeliveryAvailability(latitude, longitude);
       if (!isDeliveryAvailable.value) {
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.out_of_zone_title'.tr,
           'store_management.move.out_of_zone_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -523,7 +524,7 @@ class StoreManagementController extends GetxController {
         reason: reason,
       );
       if (!response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.move.request_not_sent'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -655,7 +656,7 @@ class StoreManagementController extends GetxController {
       if (!placed && latitude != null && longitude != null) {
         await checkDeliveryAvailability(latitude, longitude);
         if (!isDeliveryAvailable.value) {
-          Get.snackbar(
+          AppFeedback.show(
             'store_management.out_of_zone_title'.tr,
             'store_management.out_of_zone_message'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -720,7 +721,7 @@ class StoreManagementController extends GetxController {
         print('  └─ Message: $message');
         print('========================================');
 
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.success'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
@@ -730,7 +731,7 @@ class StoreManagementController extends GetxController {
         );
         return true;
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'store_management.error'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -742,7 +743,7 @@ class StoreManagementController extends GetxController {
         return false;
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.save_error_detail'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
@@ -776,7 +777,7 @@ class StoreManagementController extends GetxController {
 
   /// Passer en premium
   void upgradeToPremium() {
-    Get.snackbar(
+    AppFeedback.show(
       'store_management.premium.title'.tr,
       'store_management.premium.in_progress'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -785,7 +786,7 @@ class StoreManagementController extends GetxController {
 
   /// Voir les détails de l'inventaire
   void viewInventoryDetails(InventoryEntry entry) {
-    Get.snackbar(
+    AppFeedback.show(
       'store_management.inventory.title'.tr,
       '${entry.type.label}: ${entry.productName} (${entry.quantity})',
       snackPosition: SnackPosition.BOTTOM,

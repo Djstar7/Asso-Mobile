@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -67,11 +69,14 @@ class DepositBalancePayment {
     }
 
     try {
-      final response = await OrderService.payBalance(
-        orderId,
-        paymentMode: mode,
-        provider: provider,
-        phone: phone,
+      final response = await PaymentPreparation.run(
+        method: mode,
+        action: () => OrderService.payBalance(
+          orderId,
+          paymentMode: mode,
+          provider: provider,
+          phone: phone,
+        ),
       );
       if (!response.success) {
         _error(response.message);
@@ -106,10 +111,11 @@ class DepositBalancePayment {
           _paid();
           return true;
         }
-        if (outcome.status == 'pending') _poll(orderId); // prévient à la réponse
+        if (outcome.status == 'pending')
+          _poll(orderId); // prévient à la réponse
         return false;
       }
-      Get.snackbar(
+      AppFeedback.show(
         'core.deposit.balance'.tr,
         response.message,
         snackPosition: SnackPosition.BOTTOM,
@@ -126,7 +132,8 @@ class DepositBalancePayment {
   /// État du paiement du solde (une lecture).
   static Future<MobileMoneyStatus> _state(int orderId) async {
     final data = (await OrderService.orderPaymentStatus(orderId)).data?['data'];
-    if (data?['balance_status'] == 'paid') return (status: 'paid', failure: null);
+    if (data?['balance_status'] == 'paid')
+      return (status: 'paid', failure: null);
     if (data?['balance_payment_pending'] == false) {
       return (status: 'failed', failure: null);
     }
@@ -138,7 +145,9 @@ class DepositBalancePayment {
     for (var i = 0; i < 60; i++) {
       await Future.delayed(const Duration(seconds: 5));
       try {
-        final data = (await OrderService.orderPaymentStatus(orderId)).data?['data'];
+        final data = (await OrderService.orderPaymentStatus(
+          orderId,
+        )).data?['data'];
         if (data?['balance_status'] == 'paid') {
           _paid();
           return true;
@@ -152,7 +161,7 @@ class DepositBalancePayment {
     return false;
   }
 
-  static void _paid() => Get.snackbar(
+  static void _paid() => AppFeedback.show(
     'core.deposit.balance_status.paid'.tr,
     'core.deposit.balance_paid_message'.tr,
     snackPosition: SnackPosition.BOTTOM,
@@ -162,7 +171,7 @@ class DepositBalancePayment {
     borderRadius: 12,
   );
 
-  static void _error(String message) => Get.snackbar(
+  static void _error(String message) => AppFeedback.show(
     'my_order.errors.title'.tr,
     message,
     snackPosition: SnackPosition.BOTTOM,

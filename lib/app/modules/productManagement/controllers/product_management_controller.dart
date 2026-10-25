@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -137,7 +138,7 @@ class ProductManagementController extends GetxController {
         // L'erreur reste affichée dans la liste ; la snackbar ne sert qu'au
         // chargement d'une page supplémentaire, où la liste reste visible.
         if (loadMore) {
-          Get.snackbar(
+          AppFeedback.show(
             'product_management.controller.error_title'.tr,
             message,
             snackPosition: SnackPosition.BOTTOM,
@@ -151,7 +152,7 @@ class ProductManagementController extends GetxController {
       print('💥 Exception loading products: $e');
       final message = 'product_management.controller.check_connection'.tr;
       if (loadMore) {
-        Get.snackbar(
+        AppFeedback.show(
             'product_management.controller.error_title'.tr,
             message,
             snackPosition: SnackPosition.BOTTOM,
@@ -274,7 +275,7 @@ class ProductManagementController extends GetxController {
               '\n${'product_management.controller.storage_freed'.trParams({'mb': freedMb.toStringAsFixed(2)})}';
         }
 
-        Get.snackbar(
+        AppFeedback.show(
           'product_management.controller.success_title'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
@@ -284,7 +285,7 @@ class ProductManagementController extends GetxController {
         );
       } else {
         print('❌ Failed to delete product: ${response.message}');
-        Get.snackbar(
+        AppFeedback.show(
           'product_management.controller.error_title'.tr,
           response.message.isNotEmpty
               ? response.message
@@ -296,7 +297,7 @@ class ProductManagementController extends GetxController {
       }
     } catch (e) {
       print('💥 Exception deleting product: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'product_management.controller.error_title'.tr,
         'product_management.controller.error_with_detail'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
@@ -348,7 +349,7 @@ class ProductManagementController extends GetxController {
         if (totalProducts.value > 0) totalProducts.value -= 1;
       }
       products.refresh();
-      Get.snackbar(
+      AppFeedback.show(
         'product_management.controller.success_title'.tr,
         response.message.isNotEmpty
             ? response.message
@@ -356,7 +357,7 @@ class ProductManagementController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
-      Get.snackbar(
+      AppFeedback.show(
         'product_management.controller.error_title'.tr,
         response.message.isNotEmpty
             ? response.message

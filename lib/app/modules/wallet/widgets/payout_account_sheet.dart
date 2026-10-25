@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -46,7 +47,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
 
   Future<void> _save() async {
     if (!_valid || _provider == null || _phone == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.payout_sheet.incomplete_title'.tr,
         'wallet.payout_sheet.incomplete_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -64,7 +65,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     if (!mounted) return;
 
     if (error != null) {
-      Get.snackbar('wallet.payout_sheet.error'.tr, error,
+      AppFeedback.show('wallet.payout_sheet.error'.tr, error,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppThemeSystem.errorColor,
           colorText: Colors.white);
@@ -72,7 +73,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     }
 
     Get.back(result: true);
-    Get.snackbar(
+    AppFeedback.show(
       'wallet.payout_sheet.saved_title'.tr,
       'wallet.payout_sheet.saved_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -86,7 +87,7 @@ class _PayoutAccountSheetState extends State<PayoutAccountSheet> {
     if (!mounted) return;
     Get.back(result: ok);
     if (ok) {
-      Get.snackbar('wallet.payout_sheet.deleted_title'.tr,
+      AppFeedback.show('wallet.payout_sheet.deleted_title'.tr,
           'wallet.payout_sheet.deleted_message'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }

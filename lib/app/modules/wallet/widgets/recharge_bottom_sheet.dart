@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -59,18 +61,16 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   /// Le franc CFA s'écrit « FCFA » à l'usage ; afficher « XAF (FCFA) » dans
   /// un libellé donnait « Montant (XAF (FCFA)) », avec deux parenthèses
   /// imbriquées.
-  String _currencyLabel(String c) =>
-      (c == 'XAF' || c == 'XOF') ? 'FCFA' : c;
+  String _currencyLabel(String c) => (c == 'XAF' || c == 'XOF') ? 'FCFA' : c;
 
   /// Convertit le montant déjà saisi lorsqu'on change de devise d'opérateur.
   Future<void> _convertFieldToCurrency(String from, String to) async {
     final amount = double.tryParse(_amountController.text.trim());
     if (from == to || amount == null || amount <= 0) return;
-    final response = await ApiProvider.get('/v1/currencies/convert', queryParams: {
-      'from': from,
-      'to': to,
-      'amount': amount,
-    });
+    final response = await ApiProvider.get(
+      '/v1/currencies/convert',
+      queryParams: {'from': from, 'to': to, 'amount': amount},
+    );
     if (!mounted) return;
     if (response.success && response.data?['data'] != null) {
       final converted = response.data!['data']['converted'];
@@ -79,9 +79,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
   }
 
   void _backToMethodChoice() => setState(() {
-        _currentStep = 1;
-        _selectedMethod = null;
-      });
+    _currentStep = 1;
+    _selectedMethod = null;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +271,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           onTap: () {
             // Carte désactivée côté plateforme : on l'explique au lieu d'échouer plus loin.
             if (!walletController.stripeConfigured.value) {
-              Get.snackbar(
+              AppFeedback.show(
                 'wallet.recharge.card_unavailable_title'.tr,
                 'wallet.recharge.card_unavailable_message'.tr,
                 backgroundColor: AppThemeSystem.warningColor,
@@ -282,7 +282,6 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             _selectMethod('card');
           },
         ),
-
       ],
     );
   }
@@ -436,8 +435,9 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             ),
             decoration: InputDecoration(
               labelText: _selectedMethod == 'kpay'
-                  ? 'wallet.recharge.amount_label'
-                      .trParams({'currency': _currencyLabel(_kpayCurrency)})
+                  ? 'wallet.recharge.amount_label'.trParams({
+                      'currency': _currencyLabel(_kpayCurrency),
+                    })
                   : 'wallet.recharge.amount_label'.trParams({
                       'currency': _currencyLabel(CurrencyService.pivot),
                     }),
@@ -473,22 +473,27 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           // Champs spécifiques selon la méthode
           if (_selectedMethod == 'kpay')
             KpayPhoneSelector(
-              onChanged: ({
-                required String? providerCode,
-                required String? phoneNumber,
-                required String currency,
-                required bool isValid,
-              }) {
-                _kpayProvider = providerCode;
-                _kpayPhone = phoneNumber;
-                _kpayValid = isValid;
-                if (currency != _kpayCurrency) {
-                  final old = _kpayCurrency;
-                  _kpayCurrency = currency;
-                  if (mounted) setState(() {}); // met à jour le libellé de devise
-                  _convertFieldToCurrency(old, currency); // convertit le montant saisi
-                }
-              },
+              onChanged:
+                  ({
+                    required String? providerCode,
+                    required String? phoneNumber,
+                    required String currency,
+                    required bool isValid,
+                  }) {
+                    _kpayProvider = providerCode;
+                    _kpayPhone = phoneNumber;
+                    _kpayValid = isValid;
+                    if (currency != _kpayCurrency) {
+                      final old = _kpayCurrency;
+                      _kpayCurrency = currency;
+                      if (mounted)
+                        setState(() {}); // met à jour le libellé de devise
+                      _convertFieldToCurrency(
+                        old,
+                        currency,
+                      ); // convertit le montant saisi
+                    }
+                  },
             ),
 
           // Pour la carte bancaire, aucun champ supplémentaire : la Payment Sheet
@@ -545,7 +550,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
       if (_selectedMethod == 'kpay') {
         // Mobile Money via KPay (pays + opérateur choisis dans le sélecteur)
         if (!_kpayValid || _kpayProvider == null || _kpayPhone == null) {
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.recharge.fields_required_title'.tr,
             'wallet.recharge.fields_required_message'.tr,
             backgroundColor: AppThemeSystem.errorColor,
@@ -554,11 +559,14 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           return;
         }
 
-        final result = await walletController.initiateRecharge(
-          amount: amount,
-          paymentMethod: 'kpay',
-          provider: _kpayProvider,
-          phoneNumber: _kpayPhone,
+        final result = await PaymentPreparation.run(
+          method: 'kpay',
+          action: () => walletController.initiateRecharge(
+            amount: amount,
+            paymentMethod: 'kpay',
+            provider: _kpayProvider,
+            phoneNumber: _kpayPhone,
+          ),
         );
 
         if (!mounted) return;
@@ -571,10 +579,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
               ? await MobileMoneyWaiting.run(
                   amount: amount,
                   // Montant saisi, débité tel quel dans la devise de l'opérateur.
-                  formatAmount: (value) => CurrencyService.formatAmountInCurrency(
-                    value,
-                    _kpayCurrency,
-                  ),
+                  formatAmount: (value) =>
+                      CurrencyService.formatAmountInCurrency(
+                        value,
+                        _kpayCurrency,
+                      ),
                   provider: _kpayProvider!,
                   phone: _kpayPhone!,
                   check: () => _depositState(txId),
@@ -586,7 +595,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
           await walletController.refresh();
 
           if (outcome.status == 'paid') {
-            Get.snackbar(
+            AppFeedback.show(
               'wallet.recharge.title'.tr,
               'wallet.messages.payment_success'.tr,
               backgroundColor: AppThemeSystem.successColor,
@@ -599,7 +608,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
             Get.toNamed(Routes.WALLET_HISTORY);
           }
         } else {
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.recharge.error'.tr,
             result['message'] ?? 'wallet.recharge.failed'.tr,
             backgroundColor: AppThemeSystem.errorColor,
@@ -609,7 +618,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
       } else {
         // Carte bancaire — recharge via Stripe natif (Payment Sheet).
         if (!StripeNativeService.isSupported) {
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.recharge.unavailable_title'.tr,
             'wallet.recharge.card_mobile_only'.tr,
             backgroundColor: AppThemeSystem.warningColor,
@@ -619,15 +628,18 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         }
 
         // Créer l'intention de recharge carte (montant en XAF).
-        final result = await walletController.initiateRecharge(
-          amount: amount,
-          paymentMethod: 'stripe',
+        final result = await PaymentPreparation.run(
+          method: 'stripe',
+          action: () => walletController.initiateRecharge(
+            amount: amount,
+            paymentMethod: 'stripe',
+          ),
         );
 
         if (!mounted) return;
 
         if (result['success'] != true) {
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.recharge.error'.tr,
             result['message'] ?? 'wallet.recharge.failed'.tr,
             backgroundColor: AppThemeSystem.errorColor,
@@ -642,9 +654,11 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         final publishableKey = data?['publishable_key']?.toString();
 
         if (txId == null ||
-            clientSecret == null || clientSecret.isEmpty ||
-            publishableKey == null || publishableKey.isEmpty) {
-          Get.snackbar(
+            clientSecret == null ||
+            clientSecret.isEmpty ||
+            publishableKey == null ||
+            publishableKey.isEmpty) {
+          AppFeedback.show(
             'wallet.recharge.error'.tr,
             'wallet.recharge.card_data_unavailable'.tr,
             backgroundColor: AppThemeSystem.errorColor,
@@ -662,7 +676,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
         if (!mounted) return;
 
         if (!ok) {
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.recharge.cancelled_title'.tr,
             'wallet.recharge.card_cancelled'.tr,
             backgroundColor: AppThemeSystem.warningColor,
@@ -678,7 +692,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
 
         // Fermer le bottom sheet et informer.
         Navigator.of(context).pop();
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.recharge.pending_title'.tr,
           'wallet.recharge.pending_message'.tr,
           backgroundColor: AppThemeSystem.successColor,
@@ -695,7 +709,7 @@ class _RechargeBottomSheetState extends State<RechargeBottomSheet> {
       final message = e is Exception
           ? e.toString().replaceAll('Exception: ', '')
           : 'wallet.recharge.generic_error'.tr;
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.recharge.error'.tr,
         message,
         backgroundColor: AppThemeSystem.errorColor,

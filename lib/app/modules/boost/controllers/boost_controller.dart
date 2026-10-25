@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -101,7 +103,8 @@ class BoostController extends GetxController {
 
       // Le forfait mis en avant est présélectionné : le vendeur n'a qu'à
       // confirmer s'il n'a pas d'avis sur la question.
-      selectedPackage.value ??= packages.firstWhereOrNull((p) => p.isPopular) ??
+      selectedPackage.value ??=
+          packages.firstWhereOrNull((p) => p.isPopular) ??
           (packages.isNotEmpty ? packages.first : null);
     } catch (_) {
       if (!_isDisposed) hasLoadError.value = true;
@@ -123,7 +126,8 @@ class BoostController extends GetxController {
 
       // L'API vendeur renvoie sa liste sous `data` (paginée), contrairement
       // au catalogue public qui utilise `products`.
-      final raw = (res.data?['data'] as List?) ??
+      final raw =
+          (res.data?['data'] as List?) ??
           (res.data?['products'] as List?) ??
           const [];
       products.value = raw
@@ -285,15 +289,17 @@ class BoostController extends GetxController {
     if (selection == null || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'boost.creating_campaign'.tr);
 
     try {
-      final res = await PackageService.subscribePackageDirect(
-        package.id,
-        paymentMode: 'kpay_direct',
-        provider: selection['provider'],
-        phoneNumber: selection['phone'],
-        productId: productId,
+      final res = await PaymentPreparation.run(
+        method: 'kpay_direct',
+        action: () => PackageService.subscribePackageDirect(
+          package.id,
+          paymentMode: 'kpay_direct',
+          provider: selection['provider'],
+          phoneNumber: selection['phone'],
+          productId: productId,
+        ),
       );
       if (_isDisposed) return;
 
@@ -304,7 +310,7 @@ class BoostController extends GetxController {
       }
 
       // Rien n'est annoncé avant la réponse de l'opérateur.
-      PaymentLoadingDialog.hide();
+
       final outcome = await MobileMoneyWaiting.run(
         amount: package.price,
         provider: selection['provider']!,
@@ -320,7 +326,7 @@ class BoostController extends GetxController {
         case 'failed':
           break; // motif déjà expliqué
         default:
-          Get.snackbar(
+          AppFeedback.show(
             'package_subscription.payment_pending'.tr,
             'boost.validate_ussd'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -333,7 +339,6 @@ class BoostController extends GetxController {
     } catch (e) {
       _error('boost.errors.generic'.trParams({'error': '$e'}));
     } finally {
-      PaymentLoadingDialog.hide();
       isSubscribing.value = false;
     }
   }
@@ -346,18 +351,19 @@ class BoostController extends GetxController {
     }
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'package_subscription.preparing_payment'.tr);
 
     try {
-      final res = await PackageService.subscribePackageDirect(
-        package.id,
-        paymentMode: 'stripe_direct',
-        productId: productId,
+      final res = await PaymentPreparation.run(
+        method: 'stripe_direct',
+        action: () => PackageService.subscribePackageDirect(
+          package.id,
+          paymentMode: 'stripe_direct',
+          productId: productId,
+        ),
       );
       if (_isDisposed) return;
       // La Payment Sheet s'ouvre ensuite : le dialogue de chargement doit
       // disparaître avant, sinon il la recouvre.
-      PaymentLoadingDialog.hide();
 
       final subscriptionId = _subscriptionIdFrom(res);
       final clientSecret = res.data?['client_secret']?.toString();
@@ -367,8 +373,10 @@ class BoostController extends GetxController {
         _error(res.message);
         return;
       }
-      if (clientSecret == null || clientSecret.isEmpty ||
-          publishableKey == null || publishableKey.isEmpty) {
+      if (clientSecret == null ||
+          clientSecret.isEmpty ||
+          publishableKey == null ||
+          publishableKey.isEmpty) {
         _error('package_subscription.card_data_unavailable'.tr);
         return;
       }
@@ -380,7 +388,7 @@ class BoostController extends GetxController {
       if (_isDisposed) return;
 
       if (!ok) {
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.webview.cancelled'.tr,
           'package_subscription.payment_not_finalized'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -391,7 +399,7 @@ class BoostController extends GetxController {
         return;
       }
 
-      Get.snackbar(
+      AppFeedback.show(
         'package_subscription.payment_in_progress'.tr,
         'boost.payment_confirming'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -404,7 +412,6 @@ class BoostController extends GetxController {
     } catch (e) {
       _error(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      PaymentLoadingDialog.hide();
       isSubscribing.value = false;
     }
   }
@@ -418,7 +425,9 @@ class BoostController extends GetxController {
       if (_isDisposed) return;
 
       try {
-        final res = await PackageService.getSubscriptionPaymentStatus(subscriptionId);
+        final res = await PackageService.getSubscriptionPaymentStatus(
+          subscriptionId,
+        );
         final status = res.data?['data']?['status'];
 
         if (status == 'paid') {
@@ -428,7 +437,7 @@ class BoostController extends GetxController {
           return;
         }
         if (status == 'failed') {
-          Get.snackbar(
+          AppFeedback.show(
             'package_subscription.payment_failed'.tr,
             'boost.payment_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -442,7 +451,7 @@ class BoostController extends GetxController {
     }
 
     if (_isDisposed) return;
-    Get.snackbar(
+    AppFeedback.show(
       'package_subscription.payment_pending'.tr,
       'boost.confirmation_pending'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -474,7 +483,9 @@ class BoostController extends GetxController {
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            style: TextButton.styleFrom(foregroundColor: AppThemeSystem.errorColor),
+            style: TextButton.styleFrom(
+              foregroundColor: AppThemeSystem.errorColor,
+            ),
             child: Text('boost.cancel_dialog.stop'.tr),
           ),
         ],
@@ -489,7 +500,7 @@ class BoostController extends GetxController {
 
       if (res.success) {
         await loadCampaigns();
-        Get.snackbar(
+        AppFeedback.show(
           'boost.stopped_title'.tr,
           'boost.stopped_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -530,7 +541,7 @@ class BoostController extends GetxController {
   }
 
   void _success(BoostPackage package) {
-    Get.snackbar(
+    AppFeedback.show(
       'boost.activated_title'.tr,
       'boost.activated_message'.trParams({'reach': package.formattedReach}),
       snackPosition: SnackPosition.BOTTOM,
@@ -541,7 +552,7 @@ class BoostController extends GetxController {
   }
 
   void _error(String? message) {
-    Get.snackbar(
+    AppFeedback.show(
       'boost.error'.tr,
       message?.isNotEmpty == true ? message! : 'boost.errors.launch_failed'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -553,7 +564,10 @@ class BoostController extends GetxController {
 
   /// Fiche détaillée de la campagne avant paiement. Elle s'arrête au premier
   /// des deux : quota de personnes atteint ou échéance (règle du serveur).
-  Future<bool> _confirmDetails(BoostPackage package, Map<String, dynamic> product) {
+  Future<bool> _confirmDetails(
+    BoostPackage package,
+    Map<String, dynamic> product,
+  ) {
     final end = DateTime.now().add(Duration(days: package.durationDays));
     final productName = '${product['name'] ?? ''}'.trim();
 
@@ -565,15 +579,38 @@ class BoostController extends GetxController {
       description: package.description,
       facts: [
         if (productName.isNotEmpty)
-          PackageDetailFact(Icons.inventory_2_outlined, 'package_details.boost.product'.tr, productName),
-        PackageDetailFact(Icons.groups_outlined, 'package_details.boost.reach'.tr, package.formattedReach),
-        PackageDetailFact(Icons.schedule_outlined, 'package_details.duration'.tr, package.formattedDuration),
-        PackageDetailFact(Icons.event_outlined, 'package_details.boost.ends_at_latest'.tr, PackageDetailsSheet.formatDate(end)),
-        PackageDetailFact(Icons.bolt_outlined, 'package_details.activation'.tr, 'package_details.activation_value'.tr),
+          PackageDetailFact(
+            Icons.inventory_2_outlined,
+            'package_details.boost.product'.tr,
+            productName,
+          ),
+        PackageDetailFact(
+          Icons.groups_outlined,
+          'package_details.boost.reach'.tr,
+          package.formattedReach,
+        ),
+        PackageDetailFact(
+          Icons.schedule_outlined,
+          'package_details.duration'.tr,
+          package.formattedDuration,
+        ),
+        PackageDetailFact(
+          Icons.event_outlined,
+          'package_details.boost.ends_at_latest'.tr,
+          PackageDetailsSheet.formatDate(end),
+        ),
+        PackageDetailFact(
+          Icons.bolt_outlined,
+          'package_details.activation'.tr,
+          'package_details.activation_value'.tr,
+        ),
       ],
       benefits: package.benefits,
       notes: [
-        'package_details.boost.stop_rule'.trParams({'reach': package.formattedReach, 'duration': package.formattedDuration}),
+        'package_details.boost.stop_rule'.trParams({
+          'reach': package.formattedReach,
+          'duration': package.formattedDuration,
+        }),
         'package_details.boost.stats'.tr,
       ],
     );

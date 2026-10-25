@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -213,7 +214,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
       widget.onPaymentComplete!(true, message);
     } else {
       _close({'success': true, 'message': message});
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.webview.success_title'.tr,
         message,
         backgroundColor: AppThemeSystem.successColor,
@@ -228,7 +229,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
       widget.onPaymentComplete!(false, message);
     } else {
       _close({'success': false, 'message': message});
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.webview.failure_title'.tr,
         message,
         backgroundColor: AppThemeSystem.errorColor,

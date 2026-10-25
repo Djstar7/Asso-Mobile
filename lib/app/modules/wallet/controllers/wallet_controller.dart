@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:asso/app/routes/app_pages.dart';
@@ -181,7 +182,7 @@ class WalletController extends GetxController {
           print('[WalletController] Deposit completed - refreshing wallet');
           refresh();
 
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.notif.deposit_success_title'.tr,
             'wallet.notif.deposit_success_message'
                 .trParams({'amount': _notifAmount(data['amount'])}),
@@ -195,7 +196,7 @@ class WalletController extends GetxController {
           print('[WalletController] Deposit failed - refreshing wallet');
           refresh();
 
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.notif.deposit_failed_title'.tr,
             data['reason'] as String? ?? 'wallet.notif.deposit_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
@@ -208,7 +209,7 @@ class WalletController extends GetxController {
           print('[WalletController] Withdrawal completed - refreshing wallet');
           refresh();
 
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.notif.withdrawal_done_title'.tr,
             'wallet.notif.withdrawal_done_message'
                 .trParams({'amount': _notifAmount(data['amount'])}),
@@ -222,7 +223,7 @@ class WalletController extends GetxController {
           print('[WalletController] Withdrawal failed - refreshing wallet');
           refresh();
 
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.notif.withdrawal_failed_title'.tr,
             'wallet.notif.withdrawal_failed_message'.tr,
             backgroundColor: Get.theme.colorScheme.error,
@@ -235,7 +236,7 @@ class WalletController extends GetxController {
           print('[WalletController] Funds unlocked - refreshing wallet');
           refresh();
 
-          Get.snackbar(
+          AppFeedback.show(
             'wallet.notif.funds_unlocked_title'.tr,
             'wallet.notif.funds_unlocked_message'
                 .trParams({'amount': _notifAmount(data['amount'])}),
@@ -295,7 +296,7 @@ class WalletController extends GetxController {
 
     if (user == null) {
       print('❌ HOME: No user found in storage');
-      Get.snackbar(
+      AppFeedback.show(
         'wallet.login_required_title'.tr,
         'wallet.login_required_vendor'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -669,7 +670,7 @@ class WalletController extends GetxController {
       final status = res['status'];
       if (status == 'completed') {
         refresh();
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.notif.recharge_confirmed_title'.tr,
           'wallet.notif.recharge_confirmed_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
@@ -678,7 +679,7 @@ class WalletController extends GetxController {
           duration: const Duration(seconds: 4),
         );
       } else if (status == 'failed' || status == 'cancelled') {
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.notif.recharge_failed_title'.tr,
           res['message'] ?? 'wallet.notif.recharge_failed_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,
@@ -699,7 +700,7 @@ class WalletController extends GetxController {
       final status = res['data']?['status'] ?? res['status'];
       if (status == 'completed') {
         refresh();
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.notif.withdrawal_done_title'.tr,
           'wallet.notif.withdrawal_sent_message'.tr,
           backgroundColor: Get.theme.colorScheme.primary,
@@ -710,7 +711,7 @@ class WalletController extends GetxController {
         return;
       } else if (status == 'failed' || status == 'cancelled') {
         refresh();
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.notif.withdrawal_failed_title'.tr,
           'wallet.notif.withdrawal_refunded_message'.tr,
           backgroundColor: Get.theme.colorScheme.error,

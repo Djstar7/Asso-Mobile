@@ -150,6 +150,7 @@ class ParcelInsuranceCard extends StatelessWidget {
 
     InputDecoration deco(String label, {String? suffix, String? error}) => InputDecoration(
           labelText: label,
+          floatingLabelStyle: const TextStyle(color: AppDesign.accent),
           suffixText: suffix,
           errorText: error,
           errorMaxLines: 2,
@@ -158,6 +159,10 @@ class ParcelInsuranceCard extends StatelessWidget {
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppDesign.accent, width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -229,6 +234,7 @@ class ParcelInsuranceCard extends StatelessWidget {
           KeyedSubtree(
             key: valueKey,
             child: TextField(
+              cursorColor: AppDesign.accent,
               controller: form.valueController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [

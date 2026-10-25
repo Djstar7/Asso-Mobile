@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -104,7 +105,7 @@ class WelcomerController extends GetxController {
       developer.log('Invalid form', name: 'WelcomerController');
 
       if (!GetUtils.isEmail(email.value)) {
-        Get.snackbar(
+        AppFeedback.show(
           'welcomer.invalid_email_title'.tr,
           'welcomer.invalid_email_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -118,7 +119,7 @@ class WelcomerController extends GetxController {
       }
 
       if (password.value.length < 6) {
-        Get.snackbar(
+        AppFeedback.show(
           'welcomer.password_too_short_title'.tr,
           'welcomer.password_too_short_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -132,7 +133,7 @@ class WelcomerController extends GetxController {
       }
 
       if (password.value != confirmPassword.value) {
-        Get.snackbar(
+        AppFeedback.show(
           'welcomer.passwords_mismatch_title'.tr,
           'welcomer.passwords_mismatch_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -150,7 +151,7 @@ class WelcomerController extends GetxController {
 
     if (!termsAccepted.value) {
       developer.log('Terms not accepted', name: 'WelcomerController');
-      Get.snackbar(
+      AppFeedback.show(
         'welcomer.policy_required_title'.tr,
         'welcomer.policy_required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -188,7 +189,7 @@ class WelcomerController extends GetxController {
           error: 'Email: ${email.value}',
         );
 
-        Get.snackbar(
+        AppFeedback.show(
           'welcomer.code_sent_title'.tr,
           'welcomer.code_sent_message'.trParams({'email': email.value}),
           snackPosition: SnackPosition.BOTTOM,
@@ -216,7 +217,7 @@ class WelcomerController extends GetxController {
           name: 'WelcomerController',
           error: response.message,
         );
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -234,7 +235,7 @@ class WelcomerController extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'common.generic_error_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -251,7 +252,7 @@ class WelcomerController extends GetxController {
 
   void continueWithGoogle() {
     developer.log('Continue with Google', name: 'WelcomerController');
-    Get.snackbar(
+    AppFeedback.show(
       'Google',
       'welcomer.google_signing_in'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -262,7 +263,7 @@ class WelcomerController extends GetxController {
 
   void continueWithApple() {
     developer.log('Continue with Apple', name: 'WelcomerController');
-    Get.snackbar(
+    AppFeedback.show(
       'Apple',
       'welcomer.apple_signing_in'.tr,
       snackPosition: SnackPosition.BOTTOM,

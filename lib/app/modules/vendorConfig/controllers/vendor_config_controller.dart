@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -269,7 +270,7 @@ class VendorConfigController extends GetxController {
 
       if (permission == LocationPermission.deniedForever) {
         // Permission refusée de façon permanente
-        Get.snackbar(
+        AppFeedback.show(
           'vendor_config.permission_required_title'.tr,
           'vendor_config.permission_required_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -332,7 +333,7 @@ class VendorConfigController extends GetxController {
   /// Valide l'étape 1
   bool validateStep1() {
     if (firstNameController.text.trim().isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.required_title'.tr,
         'vendor_config.validation.first_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -341,7 +342,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (lastNameController.text.trim().isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.required_title'.tr,
         'vendor_config.validation.last_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -350,7 +351,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (selectedGender.value.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.required_title'.tr,
         'vendor_config.validation.gender'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -359,7 +360,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (profileImage.value == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.photo_required_title'.tr,
         'vendor_config.validation.photo_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -373,7 +374,7 @@ class VendorConfigController extends GetxController {
   /// Valide l'étape 2
   bool validateStep2() {
     if (shopNameController.text.trim().isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.required_title'.tr,
         'vendor_config.validation.shop_name'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -382,7 +383,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (shopDescriptionController.text.trim().isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.required_title'.tr,
         'vendor_config.validation.shop_description'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -391,7 +392,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (shopLogo.value == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.logo_required_title'.tr,
         'vendor_config.validation.logo_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -400,7 +401,7 @@ class VendorConfigController extends GetxController {
     }
 
     if (shopLocation.value.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.location_required_title'.tr,
         'vendor_config.validation.location_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -413,7 +414,7 @@ class VendorConfigController extends GetxController {
     // This prevents the bug where isDeliveryAvailable might be reset to false in error cases.
 
     if (selectedCategories.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.validation.category_required_title'.tr,
         'vendor_config.validation.category_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -745,7 +746,7 @@ class VendorConfigController extends GetxController {
               address == 'vendor_config.map.loading_address'.tr ||
               address.trim().isEmpty) {
             print('⚠️ WARNING: Invalid address detected: "$address"');
-            Get.snackbar(
+            AppFeedback.show(
               'vendor_config.invalid_address_title'.tr,
               'vendor_config.invalid_address_message'.tr,
               snackPosition: SnackPosition.BOTTOM,
@@ -772,7 +773,7 @@ class VendorConfigController extends GetxController {
         AppNavigation.pop();
       }
 
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.error'.tr,
         'vendor_config.map_open_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1022,7 +1023,7 @@ class VendorConfigController extends GetxController {
           }
         }
 
-        Get.snackbar(
+        AppFeedback.show(
           'vendor_config.success'.tr,
           'vendor_config.now_vendor'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -1037,7 +1038,7 @@ class VendorConfigController extends GetxController {
         print('❌ VENDOR CONFIG: Failed');
         print('  └─ Error Message: ${response.message}');
 
-        Get.snackbar(
+        AppFeedback.show(
           'vendor_config.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -1055,7 +1056,7 @@ class VendorConfigController extends GetxController {
       print('  └─ Stack Trace:');
       print(stackTrace.toString().split('\n').take(5).join('\n'));
 
-      Get.snackbar(
+      AppFeedback.show(
         'vendor_config.error'.tr,
         'vendor_config.error_occurred'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,

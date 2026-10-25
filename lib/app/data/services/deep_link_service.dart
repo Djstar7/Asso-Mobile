@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
@@ -177,7 +178,7 @@ class DeepLinkService extends GetxService {
   /// Un lien qui n'ouvre rien passe pour une application cassée : on dit ce
   /// qui s'est passé.
   void _reportNotFound() {
-    Get.snackbar(
+    AppFeedback.show(
       'data.deep_link.product_not_found_title'.tr,
       'data.deep_link.product_not_found_message'.tr,
       snackPosition: SnackPosition.BOTTOM,

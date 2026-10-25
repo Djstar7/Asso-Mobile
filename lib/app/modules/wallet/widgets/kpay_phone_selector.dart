@@ -185,14 +185,16 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // Un seul pays servi (ElgioPay : Cameroun) : rien à choisir.
     final canPickCountry = _countries.length > 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --- Pays ---
-        Text('wallet.kpay.country'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          'wallet.kpay.country'.tr,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         InkWell(
           onTap: canPickCountry ? _pickCountry : null,
@@ -229,7 +231,10 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         const SizedBox(height: 16),
 
         // --- Opérateur ---
-        Text('wallet.kpay.operator'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          'wallet.kpay.operator'.tr,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
@@ -243,9 +248,10 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
                 setState(() => _operator = op);
                 _notify();
               },
-              selectedColor: theme.colorScheme.primary.withOpacity(0.15),
+              selectedColor: AppDesign.accent,
+              checkmarkColor: AppDesign.onAccent,
               labelStyle: TextStyle(
-                color: selected ? theme.colorScheme.primary : null,
+                color: selected ? AppDesign.onAccent : null,
                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             );
@@ -291,7 +297,10 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
               'wallet.kpay.operator_mismatch'.trParams({
                 'operator': detected.name,
               }),
-              style: const TextStyle(color: AppDesign.warningText, fontSize: 12),
+              style: const TextStyle(
+                color: AppDesign.warningText,
+                fontSize: 12,
+              ),
             ),
           ),
         if (_phoneController.text.isNotEmpty && !_isValid)

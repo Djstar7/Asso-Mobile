@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -965,7 +966,7 @@ class _EditStoreViewState extends State<EditStoreView> {
       ),
     );
     if (sent == true) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.edit.request_sent_title'.tr,
         'store_management.edit.request_sent_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -997,7 +998,7 @@ class _EditStoreViewState extends State<EditStoreView> {
     print('  └─ Longitude: ${selectedPosition.value.longitude}');
 
     if (name.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.edit.name_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1008,7 +1009,7 @@ class _EditStoreViewState extends State<EditStoreView> {
     }
 
     if (!controller.isShopPlaced && address.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.edit.address_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1019,7 +1020,7 @@ class _EditStoreViewState extends State<EditStoreView> {
     }
 
     if (phone.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.edit.phone_required'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1031,7 +1032,7 @@ class _EditStoreViewState extends State<EditStoreView> {
 
     // Limite du serveur : au-delà, il refusait tout l'enregistrement.
     if (phone.length > 20) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.error'.tr,
         'store_management.edit.phone_too_long'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1245,7 +1246,7 @@ class _LocationRequestSheetState extends State<_LocationRequestSheet> {
   Future<void> _send() async {
     final address = addressController.text.trim();
     if (address.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'store_management.edit.address_missing_title'.tr,
         'store_management.edit.address_missing_message'.tr,
         snackPosition: SnackPosition.BOTTOM,

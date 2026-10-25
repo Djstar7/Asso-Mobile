@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -981,7 +982,7 @@ extension SortOptionExtension on SortOption {
 }
 
 void _showError(String message) {
-  Get.snackbar(
+  AppFeedback.show(
     'search.error_title'.tr,
     message,
     snackPosition: SnackPosition.BOTTOM,

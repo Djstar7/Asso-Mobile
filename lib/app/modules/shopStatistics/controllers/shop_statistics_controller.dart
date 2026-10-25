@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -112,7 +113,7 @@ class ShopStatisticsController extends GetxController {
   }
 
   void _notify(String title, String message, {bool isError = false}) {
-    Get.snackbar(
+    AppFeedback.show(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,

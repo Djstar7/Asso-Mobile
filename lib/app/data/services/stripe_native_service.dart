@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
+import '../../core/utils/app_design.dart';
+import '../../modules/payment/widgets/payment_preparation.dart';
 
 /// Service réutilisable pour le paiement carte NATIF via la Payment Sheet Stripe.
 ///
@@ -36,25 +38,43 @@ class StripeNativeService {
     }
 
     try {
-      // Clé publique (peut changer selon l'environnement renvoyé par l'API).
-      Stripe.publishableKey = publishableKey;
-      await Stripe.instance.applySettings();
-
-      // Préparation bornée : bloquée, elle laissait l'écran sans réaction et
-      // sans message après le choix « Carte bancaire ».
-      await Stripe.instance
-          .initPaymentSheet(
+      await PaymentPreparation.run(
+        method: 'stripe',
+        action: () => (() async {
+          // La modale reste visible pendant toute l'initialisation du SDK.
+          Stripe.publishableKey = publishableKey;
+          await Stripe.instance.applySettings();
+          await Stripe.instance.initPaymentSheet(
             paymentSheetParameters: SetupPaymentSheetParameters(
               paymentIntentClientSecret: clientSecret,
               merchantDisplayName: merchantDisplayName,
+              appearance: const PaymentSheetAppearance(
+                colors: PaymentSheetAppearanceColors(primary: AppDesign.accent),
+                primaryButton: PaymentSheetPrimaryButtonAppearance(
+                  colors: PaymentSheetPrimaryButtonTheme(
+                    light: PaymentSheetPrimaryButtonThemeColors(
+                      background: AppDesign.accent,
+                      text: AppDesign.onAccent,
+                    ),
+                    dark: PaymentSheetPrimaryButtonThemeColors(
+                      background: AppDesign.accent,
+                      text: AppDesign.onAccent,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          )
-          .timeout(_initTimeout);
+          );
+        })().timeout(_initTimeout),
+      );
 
+      // La modale de préparation est retirée avant de présenter Stripe.
       await Stripe.instance.presentPaymentSheet();
       return true; // Paiement confirmé côté client.
     } on TimeoutException {
-      debugPrint('[StripeNativeService] initPaymentSheet sans réponse après ${_initTimeout.inSeconds} s');
+      debugPrint(
+        '[StripeNativeService] initPaymentSheet sans réponse après ${_initTimeout.inSeconds} s',
+      );
       throw Exception('data.stripe.sheet_unavailable'.tr);
     } on StripeException catch (e) {
       // Annulation utilisateur : retour silencieux (false), pas une erreur.
@@ -65,7 +85,9 @@ class StripeNativeService {
       // quand la feuille ne s'ouvre pas (clés test/live mélangées, compte…).
       debugPrint('[StripeNativeService] ${e.error.code}: ${e.error.message}');
       throw Exception(
-        e.error.localizedMessage ?? e.error.message ?? 'data.stripe.payment_failed'.tr,
+        e.error.localizedMessage ??
+            e.error.message ??
+            'data.stripe.payment_failed'.tr,
       );
     } on PlatformException catch (e) {
       // Erreur native hors StripeException (SDK non initialisé, écran absent…).

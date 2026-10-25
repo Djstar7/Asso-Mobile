@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -158,7 +159,7 @@ class MaritimeController extends GetxController {
       return;
     }
     if (!departure.isBookable) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.trip_impossible_title'.tr,
         'maritime.trip_impossible'.tr,
         backgroundColor: AppDesign.accent,
@@ -189,7 +190,7 @@ class MaritimeController extends GetxController {
     if (confirmed != true) return;
     try {
       await _service.cancel(booking.id);
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.cancelled_title'.tr,
         'maritime.cancelled_message'.tr,
         backgroundColor: AppDesign.success,
@@ -197,7 +198,7 @@ class MaritimeController extends GetxController {
       );
       loadMyBookings();
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppDesign.danger,
@@ -359,7 +360,7 @@ class MaritimeController extends GetxController {
     if (reason == null || reason.isEmpty) return;
     try {
       await _service.reportLoss(bookingId: booking.id, reason: reason);
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.claim.report_title'.tr,
         'maritime.claim.report_success'.tr,
         backgroundColor: AppDesign.success,
@@ -367,7 +368,7 @@ class MaritimeController extends GetxController {
       );
       await loadMyBookings();
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppDesign.danger,

@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_theme_system.dart';
@@ -673,7 +674,7 @@ class SearchView extends GetView<search.SearchController> {
       product['is_favorite'] = !(product['is_favorite'] == true);
       controller.searchResults.refresh();
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'Erreur',
         'Impossible de mettre à jour le favori',
         snackPosition: SnackPosition.BOTTOM,

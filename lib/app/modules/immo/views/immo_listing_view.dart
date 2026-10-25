@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -105,7 +106,7 @@ class _ImmoListingViewState extends State<ImmoListingView> {
   /// Récapitulatif des montants, puis parcours de réservation (compte requis).
   void _reserve(RealEstateListing listing, RealEstateUnit? unit) {
     if (listing.isOwnListing) {
-      Get.snackbar(
+      AppFeedback.show(
         'immo.reserve.own_listing_title'.tr,
         'immo.reserve.own_listing_message'.tr,
         snackPosition: SnackPosition.BOTTOM,

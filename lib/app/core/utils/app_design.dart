@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_brand_colors.dart';
 import 'app_theme_system.dart';
 
 /// Design tokens ASSO — socle visuel unique de l'application.
@@ -44,16 +45,17 @@ class AppDesign {
   // L'orange ASSO, décliné. `accent` est la seule couleur autorisée pour
   // guider l'action principale ; les autres nuances servent de fonds discrets.
 
-  /// Orange identitaire, réservé aux illustrations et éléments décoratifs.
-  static const Color brandAccent = Color(0xFFE87722);
+  /// Orange de référence : palette centralisée dans AppBrandColors.
+  static const Color brandAccent = AppBrandColors.primary;
 
-  /// Orange interactif : contraste supérieur à 4,5:1 avec le blanc.
-  static const Color accent = Color(0xFFA64F0F);
-  static const Color accentHover = Color(0xFF97460B);
-  static const Color accentPressed = Color(0xFF8F430B);
-  static const Color accentSubtle = Color(0xFFFDF3EA); // Fond de badge/chip
-  static const Color accentBorder = Color(0xFFF6D9C0);
-  static const Color accentText = Color(0xFF9C4A0A); // Texte sur accentSubtle
+  /// Orange interactif vif, identique à la couleur de marque.
+  static const Color accent = brandAccent;
+  static const Color accentHover = AppBrandColors.hover;
+  static const Color accentPressed = AppBrandColors.pressed;
+  static const Color accentSubtle = AppBrandColors.subtle;
+  static const Color accentBorder = AppBrandColors.border;
+  static const Color accentText = AppBrandColors.text;
+  static const Color onAccent = AppBrandColors.onPrimary;
 
   // ================================
   // PALETTE — SÉMANTIQUE

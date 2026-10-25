@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/chatdetail_controller.dart';
 import '../../../core/widgets/scoped_controller_page.dart';
+import '../widgets/chat_wallpaper.dart';
 
 /// Page ouverte par la route : chaque conversation empilée a son propre
 /// [ChatdetailController] (voir [ScopedControllerPage]).
@@ -39,13 +41,16 @@ class ChatdetailView extends GetView<ChatdetailController> {
     final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: AppThemeSystem.getBackgroundColor(context),
+      backgroundColor: AppDesign.canvas(context),
       appBar: AppBar(
         // `darkCardColor` est un bleu-gris froid, hors de l'échelle neutre
         // chaude du design system : en sombre, l'en-tête du chat n'avait pas
         // la même teinte que le reste de l'application.
         backgroundColor: AppDesign.surface(context),
         elevation: 0,
+        titleSpacing: 0,
+        toolbarHeight: 68,
+        shape: Border(bottom: BorderSide(color: AppDesign.border(context))),
         leading: const AppBackButton(),
         title: Row(
           children: [
@@ -94,27 +99,34 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    controller.conversation['name'] ?? 'chatdetail.default_user_name'.tr,
+                    controller.conversation['name'] ??
+                        'chatdetail.default_user_name'.tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: context.textStyle(
                       FontSizeType.body1,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Obx(() => controller.otherUserTyping.value
-                      ? Text(
-                          'chatdetail.typing'.tr,
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            color: AppThemeSystem.primaryColor,
+                  Obx(
+                    () => controller.otherUserTyping.value
+                        ? Text(
+                            'chatdetail.typing'.tr,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.primaryColor,
+                            ),
+                          )
+                        : Text(
+                            controller.conversation['isOnline'] == true
+                                ? 'chatdetail.online'.tr
+                                : 'chatdetail.offline'.tr,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppDesign.textSecondary(context),
+                            ),
                           ),
-                        )
-                      : Text(
-                          controller.conversation['isOnline'] == true ? 'chatdetail.online'.tr : 'chatdetail.offline'.tr,
-                          style: context.textStyle(
-                            FontSizeType.caption,
-                            color: AppThemeSystem.grey600,
-                          ),
-                        )),
+                  ),
                 ],
               ),
             ),
@@ -125,32 +137,49 @@ class ChatdetailView extends GetView<ChatdetailController> {
         children: [
           // Fil des messages
           Expanded(
-            child: Obx(() {
-              // Trois situations bien distinctes, qui donnaient toutes la
-              // même page blanche : le chargement, la conversation encore
-              // vierge, et le fil garni.
-              if (controller.isLoading.value && controller.messages.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (controller.messages.isEmpty) {
-                return _buildConversationStart(context);
-              }
-
-              return ListView.builder(
-                controller: controller.scrollController,
-                // Remonter le fil range le clavier, comme dans toute
-                // messagerie : il cachait la moitié des messages.
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.all(16),
-                itemCount: controller.messages.length,
-                itemBuilder: (context, index) {
-                  final message = controller.messages[index];
-                  return _buildMessageBubble(context, message);
-                },
-              );
-            }),
+            child: ChatWallpaper(
+              child: Obx(() {
+                if (controller.isLoading.value && controller.messages.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.messages.isEmpty) {
+                  return _buildConversationStart(context);
+                }
+                // Le fil court repose au-dessus de la saisie. Les longues
+                // conversations gardent l'ordre chronologique et le même
+                // ScrollController (le dernier message reste à maxScrollExtent).
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: ListView.builder(
+                      controller: controller.scrollController,
+                      shrinkWrap: true,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(12, 24, 12, 16),
+                      itemCount: controller.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = controller.messages[index];
+                        final next = index + 1 < controller.messages.length
+                            ? controller.messages[index + 1]
+                            : null;
+                        final groupEnd =
+                            next == null ||
+                            next['isSystem'] == true ||
+                            message['isSystem'] == true ||
+                            next['isSentByMe'] != message['isSentByMe'];
+                        return _buildMessageBubble(
+                          context,
+                          message,
+                          groupEnd: groupEnd,
+                        );
+                      },
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
 
           // Typing indicator (for other user)
@@ -171,7 +200,8 @@ class ChatdetailView extends GetView<ChatdetailController> {
   /// Mieux vaut une invitation à écrire qu'une page blanche : on vient
   /// souvent ici depuis une fiche produit, sans savoir par quoi commencer.
   Widget _buildConversationStart(BuildContext context) {
-    final name = controller.conversation['name'] ?? 'chatdetail.default_interlocutor'.tr;
+    final name =
+        controller.conversation['name'] ?? 'chatdetail.default_interlocutor'.tr;
 
     return Center(
       child: Padding(
@@ -209,135 +239,121 @@ class ChatdetailView extends GetView<ChatdetailController> {
     );
   }
 
-  Widget _buildMessageBubble(BuildContext context, Map<String, dynamic> message) {
-    final isSystem = message['isSystem'] as bool? ?? false;
-
-    // Si c'est un message système, afficher dans un style spécial
-    if (isSystem) {
+  Widget _buildMessageBubble(
+    BuildContext context,
+    Map<String, dynamic> message, {
+    bool groupEnd = true,
+  }) {
+    if (message['isSystem'] == true)
       return _buildSystemMessage(context, message);
-    }
+    final isMine = message['isSentByMe'] == true;
+    final foreground = isMine
+        ? AppDesign.onAccent
+        : AppDesign.textPrimary(context);
+    final metadata = isMine
+        ? AppDesign.onAccent.withValues(alpha: 0.88)
+        : AppDesign.textSecondary(context);
 
-    final isSentByMe = message['isSentByMe'] as bool;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isSentByMe)
-            Container(
-              width: 32,
-              height: 32,
-              margin: EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: AppDesign.accent,
-                shape: BoxShape.circle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = (constraints.maxWidth * .84).clamp(0.0, 480.0);
+        final hasPreview =
+            message['product'] != null ||
+            message['diaspo_offer'] != null ||
+            message['image_path'] != null;
+        return Padding(
+          padding: EdgeInsets.only(bottom: groupEnd ? 12 : 4),
+          child: Align(
+            alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth,
+                minWidth: hasPreview ? maxWidth.clamp(0.0, 250.0) : 0,
               ),
-              child: Center(
-                child: Text(
-                  controller.conversation['avatar'] ?? 'U',
-                  style: context.textStyle(
-                    FontSizeType.caption,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          Flexible(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSentByMe
-                    ? AppThemeSystem.primaryColor
-                    : AppThemeSystem.getSurfaceColor(context),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(isSentByMe ? 16 : 4),
-                  bottomRight: Radius.circular(isSentByMe ? 4 : 16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Afficher le produit taggué si présent (style WhatsApp)
-                  if (message['product'] != null)
-                    _buildProductQuote(
-                      context,
-                      message['product'],
-                      isSentByMe,
-                    ),
-
-                  // Afficher l'offre Diaspo taguée si présente (style WhatsApp)
-                  if (message['diaspo_offer'] != null)
-                    _buildDiaspoOfferQuote(
-                      context,
-                      message['diaspo_offer'],
-                      isSentByMe,
-                    ),
-
-                  // Afficher l'image si présente
-                  if (message['image_path'] != null)
-                    _buildMessageImage(
-                      context,
-                      message['image_path'],
-                    ),
-
-                  // Afficher le texte seulement s'il est présent
-                  if (message['text'] != null && message['text'].toString().isNotEmpty)
-                    Text(
-                      message['text'],
-                      style: context.textStyle(
-                        FontSizeType.body2,
-                        color: isSentByMe
-                            ? Colors.white
-                            : AppThemeSystem.getPrimaryTextColor(context),
+              child: IntrinsicWidth(
+                child: Container(
+                  key: ValueKey('chat-bubble-${message['id']}'),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  decoration: BoxDecoration(
+                    color: isMine
+                        ? AppDesign.accent
+                        : AppDesign.surface(context),
+                    border: isMine
+                        ? null
+                        : Border.all(color: AppDesign.border(context)),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(AppDesign.radiusMd),
+                      topRight: const Radius.circular(AppDesign.radiusMd),
+                      bottomLeft: Radius.circular(
+                        !isMine && groupEnd ? 4 : AppDesign.radiusMd,
+                      ),
+                      bottomRight: Radius.circular(
+                        isMine && groupEnd ? 4 : AppDesign.radiusMd,
                       ),
                     ),
-                  SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        message['timestamp'],
-                        style: context.textStyle(
-                          FontSizeType.caption,
-                          color: isSentByMe
-                              ? Colors.white.withValues(alpha: 0.8)
-                              : AppThemeSystem.grey600,
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppDesign.neutral900.withValues(alpha: .035),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
-                      if (isSentByMe) ...[
-                        SizedBox(width: 4),
-                        Icon(
-                          message['isRead']
-                              ? Icons.done_all_rounded
-                              : Icons.done_rounded,
-                          size: 14,
-                          color: message['isRead']
-                              ? AppDesign.info
-                              : Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ],
                     ],
                   ),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (message['product'] != null)
+                        _buildProductQuote(context, message['product'], isMine),
+                      if (message['diaspo_offer'] != null)
+                        _buildDiaspoOfferQuote(
+                          context,
+                          message['diaspo_offer'],
+                          isMine,
+                        ),
+                      if (message['image_path'] != null)
+                        _buildMessageImage(context, message['image_path']),
+                      if (message['text']?.toString().isNotEmpty == true)
+                        Text(
+                          message['text'].toString(),
+                          style: context.textStyle(
+                            FontSizeType.body1,
+                            color: foreground,
+                            height: 1.4,
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            message['timestamp']?.toString() ?? '',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: metadata,
+                            ),
+                          ),
+                          if (isMine) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              message['isRead'] == true
+                                  ? Icons.done_all_rounded
+                                  : Icons.done_rounded,
+                              size: 15,
+                              color: AppDesign.onAccent,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-          if (isSentByMe) SizedBox(width: 40),
-          if (!isSentByMe) SizedBox(width: 40),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -347,57 +363,54 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
     return Container(
       margin: EdgeInsets.only(bottom: 8),
-      constraints: BoxConstraints(
-        maxWidth: 250,
-        maxHeight: 300,
-      ),
+      constraints: BoxConstraints(maxWidth: 250, maxHeight: 300),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: isLocalPath
             // Sur le web, un fichier local sélectionné est une URL blob :
             // on la charge via Image.network. Sur mobile, via Image.file (dart:io).
             ? (kIsWeb
-                ? Image.network(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 150,
-                        color: AppThemeSystem.grey200,
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: AppThemeSystem.grey600,
-                            size: 48,
+                  ? Image.network(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 150,
+                          color: AppThemeSystem.grey200,
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: AppThemeSystem.grey600,
+                              size: 48,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  )
-                : Image.file(
-                    File(imagePath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 150,
-                        color: AppThemeSystem.grey200,
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: AppThemeSystem.grey600,
-                            size: 48,
+                        );
+                      },
+                    )
+                  : Image.file(
+                      File(imagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 150,
+                          color: AppThemeSystem.grey200,
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: AppThemeSystem.grey600,
+                              size: 48,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ))
+                        );
+                      },
+                    ))
             : CachedNetworkImage(
                 imageUrl: imagePath,
                 fit: BoxFit.cover,
                 // Bulle de 250 px au plus : une conversation riche en photos
                 // ne les garde plus toutes en pleine résolution.
-                memCacheWidth:
-                    (250 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                memCacheWidth: (250 * MediaQuery.devicePixelRatioOf(context))
+                    .ceil(),
                 placeholder: (context, url) => Container(
                   height: 150,
                   color: AppThemeSystem.grey200,
@@ -495,200 +508,226 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   Widget _buildInputBar(BuildContext context, bool isDark) {
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: AppDesign.surface(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: Offset(0, -4),
-          ),
-        ],
+        border: Border(top: BorderSide(color: AppDesign.border(context))),
       ),
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Badge du produit sélectionné
-            Obx(() {
-              if (controller.selectedProduct.value == null) {
-                return SizedBox.shrink();
-              }
-
-              final product = controller.selectedProduct.value!;
-              return Container(
-                margin: EdgeInsets.only(bottom: 8),
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      color: AppThemeSystem.primaryColor,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        product['name'] ?? 'chatdetail.product'.tr,
-                        style: context.textStyle(
-                          FontSizeType.caption,
-                          color: AppThemeSystem.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: AppThemeSystem.grey600,
-                      ),
-                      onPressed: controller.clearSelectedProduct,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-            // Badge de l'offre Diaspo sélectionnée
-            Obx(() {
-              if (controller.selectedDiaspoOffer.value == null) {
-                return SizedBox.shrink();
-              }
-
-              final diaspoOffer = controller.selectedDiaspoOffer.value!;
-              return Container(
-                margin: EdgeInsets.only(bottom: 8),
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppThemeSystem.primaryColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.flight,
-                      color: AppThemeSystem.primaryColor,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${diaspoOffer['departure_city']} → ${diaspoOffer['arrival_city']}',
-                        style: context.textStyle(
-                          FontSizeType.caption,
-                          color: AppThemeSystem.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: AppThemeSystem.grey600,
-                      ),
-                      onPressed: controller.clearSelectedDiaspoOffer,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-            // Barre de saisie
-            Row(
+        top: false,
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Le chat support ne permet pas l'envoi d'images.
-                if (!controller.isSupport)
-                  IconButton(
-                    icon: Icon(
-                      Icons.camera_alt_rounded,
-                      color: AppThemeSystem.primaryColor,
-                      size: 28,
-                    ),
-                    onPressed: () {
-                      _showImageSourceDialog(context);
-                    },
-                  )
-                else
-                  const SizedBox.shrink(),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppThemeSystem.getSurfaceColor(context),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: TextField(
-                      controller: controller.messageController,
-                      // Le clavier réduit le fil par le bas : sans ce
-                      // recalage, il recouvrait les derniers messages, ceux
-                      // auxquels on s'apprête à répondre.
-                      onTap: _scrollToLatestOnceKeyboardIsUp,
-                      decoration: InputDecoration(
-                        hintText: 'chatdetail.message_hint'.tr,
-                        hintStyle: context.textStyle(
-                          FontSizeType.body2,
-                          color: AppThemeSystem.grey600,
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      style: context.textStyle(FontSizeType.body2),
-                      maxLines: null,
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                // Le bouton reflète l'état du champ : actif seulement quand il
-                // y a quelque chose à envoyer.
+                // Badge du produit sélectionné
                 Obx(() {
-                  final enabled = controller.canSend.value;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
+                  if (controller.selectedProduct.value == null) {
+                    return SizedBox.shrink();
+                  }
+
+                  final product = controller.selectedProduct.value!;
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: enabled
-                          ? AppDesign.accent
-                          : AppDesign.surfaceMuted(context),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.send_rounded,
-                        color: enabled
-                            ? Colors.white
-                            : AppDesign.textTertiary(context),
-                        size: 22,
+                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppThemeSystem.primaryColor.withValues(
+                          alpha: 0.3,
+                        ),
+                        width: 1,
                       ),
-                      onPressed: enabled ? controller.sendMessage : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          color: AppThemeSystem.primaryColor,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            product['name'] ?? 'chatdetail.product'.tr,
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppThemeSystem.grey600,
+                          ),
+                          onPressed: controller.clearSelectedProduct,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                      ],
                     ),
                   );
                 }),
+
+                // Badge de l'offre Diaspo sélectionnée
+                Obx(() {
+                  if (controller.selectedDiaspoOffer.value == null) {
+                    return SizedBox.shrink();
+                  }
+
+                  final diaspoOffer = controller.selectedDiaspoOffer.value!;
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppThemeSystem.primaryColor.withValues(
+                          alpha: 0.3,
+                        ),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.flight,
+                          color: AppThemeSystem.primaryColor,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${diaspoOffer['departure_city']} → ${diaspoOffer['arrival_city']}',
+                            style: context.textStyle(
+                              FontSizeType.caption,
+                              color: AppThemeSystem.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppThemeSystem.grey600,
+                          ),
+                          onPressed: controller.clearSelectedDiaspoOffer,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                // Un seul champ visuel pour le message et ses pièces jointes.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppDesign.canvas(context),
+                          borderRadius: BorderRadius.circular(
+                            AppDesign.radiusXl,
+                          ),
+                          border: Border.all(color: AppDesign.border(context)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!controller.isSupport)
+                              IconButton(
+                                tooltip: 'chatdetail.camera'.tr,
+                                icon: Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: AppDesign.icon(context),
+                                  size: 23,
+                                ),
+                                onPressed: () =>
+                                    _showImageSourceDialog(context),
+                              )
+                            else
+                              const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: controller.messageController,
+                                onTap: _scrollToLatestOnceKeyboardIsUp,
+                                cursorColor: AppDesign.accent,
+                                decoration: InputDecoration(
+                                  hintText: 'chatdetail.message_hint'.tr,
+                                  hintStyle: context.textStyle(
+                                    FontSizeType.body2,
+                                    color: AppDesign.textSecondary(context),
+                                  ),
+                                  filled: false,
+                                  contentPadding: const EdgeInsets.fromLTRB(
+                                    2,
+                                    14,
+                                    12,
+                                    14,
+                                  ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                ),
+                                style: context.textStyle(
+                                  FontSizeType.body1,
+                                  height: 1.4,
+                                ),
+                                minLines: 1,
+                                maxLines: 5,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                keyboardType: TextInputType.multiline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Obx(() {
+                      final enabled = controller.canSend.value;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: enabled
+                              ? AppDesign.accent
+                              : AppDesign.surfaceMuted(context),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          tooltip: 'chatdetail.send'.tr,
+                          icon: Icon(
+                            Icons.arrow_upward_rounded,
+                            color: enabled
+                                ? AppDesign.onAccent
+                                : AppDesign.textTertiary(context),
+                            size: 25,
+                          ),
+                          onPressed: enabled ? controller.sendMessage : null,
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -792,10 +831,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 2,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
         ),
         child: Column(
           children: [
@@ -812,11 +848,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                   ),
                 ],
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: Icon(icon, color: Colors.white, size: 32),
             ),
             SizedBox(height: 12),
             Text(
@@ -891,7 +923,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 'chatdetail.menu.search'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('chatdetail.menu.search_title'.tr, 'chatdetail.feature_in_progress'.tr);
+                  AppFeedback.show(
+                    'chatdetail.menu.search_title'.tr,
+                    'chatdetail.feature_in_progress'.tr,
+                  );
                 },
               ),
               _buildMenuItem(
@@ -900,7 +935,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 'chatdetail.menu.mute'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('chatdetail.menu.notifications_title'.tr, 'chatdetail.menu.notifications_muted'.tr);
+                  AppFeedback.show(
+                    'chatdetail.menu.notifications_title'.tr,
+                    'chatdetail.menu.notifications_muted'.tr,
+                  );
                 },
               ),
               _buildMenuItem(
@@ -909,7 +947,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
                 'chatdetail.menu.block'.tr,
                 () {
                   Get.back();
-                  Get.snackbar('chatdetail.menu.block_title'.tr, 'chatdetail.menu.user_blocked'.tr);
+                  AppFeedback.show(
+                    'chatdetail.menu.block_title'.tr,
+                    'chatdetail.menu.user_blocked'.tr,
+                  );
                 },
               ),
               _buildMenuItem(
@@ -1006,7 +1047,9 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isDestructive ? AppThemeSystem.errorColor : AppThemeSystem.grey700,
+        color: isDestructive
+            ? AppThemeSystem.errorColor
+            : AppThemeSystem.grey700,
       ),
       title: Text(
         title,
@@ -1030,7 +1073,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return InkWell(
       onTap: () {
         Get.back();
-        Get.snackbar(label, 'chatdetail.feature_in_progress'.tr);
+        AppFeedback.show(label, 'chatdetail.feature_in_progress'.tr);
       },
       borderRadius: BorderRadius.circular(12),
       child: Column(
@@ -1041,11 +1084,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 32,
-            ),
+            child: Icon(icon, color: color, size: 32),
           ),
           SizedBox(height: 8),
           Text(
@@ -1081,9 +1120,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
           borderRadius: BorderRadius.circular(8),
           border: Border(
             left: BorderSide(
-              color: isSentByMe
-                  ? Colors.white
-                  : AppThemeSystem.primaryColor,
+              color: isSentByMe ? Colors.white : AppThemeSystem.primaryColor,
               width: 3,
             ),
           ),
@@ -1153,11 +1190,12 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   /// Construire petite image du produit (pour citation)
   Widget _buildProductImageSmall(Map<String, dynamic> product) {
-    final imageUrl = product['primary_image'] ??
-                     (product['images'] is List && (product['images'] as List).isNotEmpty
-                         ? product['images'][0]
-                         : null) ??
-                     product['image'];
+    final imageUrl =
+        product['primary_image'] ??
+        (product['images'] is List && (product['images'] as List).isNotEmpty
+            ? product['images'][0]
+            : null) ??
+        product['image'];
 
     if (imageUrl != null && imageUrl.toString().startsWith('http')) {
       return Image(
@@ -1244,9 +1282,14 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     children: [
                       // Badge "Produit"
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppThemeSystem.primaryColor.withValues(alpha: 0.1),
+                          color: AppThemeSystem.primaryColor.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -1298,11 +1341,12 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   /// Construire l'image du produit
   Widget _buildProductImage(Map<String, dynamic> product) {
-    final imageUrl = product['primary_image'] ??
-                     (product['images'] is List && (product['images'] as List).isNotEmpty
-                         ? product['images'][0]
-                         : null) ??
-                     product['image'];
+    final imageUrl =
+        product['primary_image'] ??
+        (product['images'] is List && (product['images'] as List).isNotEmpty
+            ? product['images'][0]
+            : null) ??
+        product['image'];
 
     if (imageUrl != null && imageUrl.toString().startsWith('http')) {
       return Image(
@@ -1353,7 +1397,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
 
   /// Widget pour afficher l'offre Diaspo comme une citation dans le message (style WhatsApp)
   /// Widget pour afficher un message système (message d'avertissement de sécurité)
-  Widget _buildSystemMessage(BuildContext context, Map<String, dynamic> message) {
+  Widget _buildSystemMessage(
+    BuildContext context,
+    Map<String, dynamic> message,
+  ) {
     final text = message['text'] as String;
     final parts = text.split('→ En savoir plus');
     final mainText = parts[0].trim();
@@ -1374,10 +1421,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
                       AppDesign.neutral800.withValues(alpha: 0.7),
                       AppDesign.neutral900.withValues(alpha: 0.7),
                     ]
-                  : [
-                      AppDesign.warningSubtle,
-                      AppDesign.warningSubtle,
-                    ],
+                  : [AppDesign.warningSubtle, AppDesign.warningSubtle],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -1424,7 +1468,9 @@ class ChatdetailView extends GetView<ChatdetailController> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppThemeSystem.primaryColor.withValues(alpha: 0.4),
+                            color: AppThemeSystem.primaryColor.withValues(
+                              alpha: 0.4,
+                            ),
                             blurRadius: 8,
                             offset: Offset(0, 2),
                           ),
@@ -1470,7 +1516,9 @@ class ChatdetailView extends GetView<ChatdetailController> {
                           ),
                           child: Icon(
                             Icons.warning_amber_rounded,
-                            color: isDark ? AppDesign.warning : AppDesign.warningText,
+                            color: isDark
+                                ? AppDesign.warning
+                                : AppDesign.warningText,
                             size: 24,
                           ),
                         ),
@@ -1560,7 +1608,10 @@ class ChatdetailView extends GetView<ChatdetailController> {
     return GestureDetector(
       onTap: () {
         // Naviguer vers la page de détails de l'offre Diaspo
-        Get.toNamed('/diaspo/detail', arguments: {'offerId': diaspoOffer['id']});
+        Get.toNamed(
+          '/diaspo/detail',
+          arguments: {'offerId': diaspoOffer['id']},
+        );
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 8),
@@ -1572,9 +1623,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
           borderRadius: BorderRadius.circular(8),
           border: Border(
             left: BorderSide(
-              color: isSentByMe
-                  ? Colors.white
-                  : AppThemeSystem.primaryColor,
+              color: isSentByMe ? Colors.white : AppThemeSystem.primaryColor,
               width: 3,
             ),
           ),
@@ -1593,9 +1642,7 @@ class ChatdetailView extends GetView<ChatdetailController> {
               ),
               child: Icon(
                 Icons.flight,
-                color: isSentByMe
-                    ? Colors.white
-                    : AppThemeSystem.primaryColor,
+                color: isSentByMe ? Colors.white : AppThemeSystem.primaryColor,
                 size: 24,
               ),
             ),
@@ -1628,17 +1675,19 @@ class ChatdetailView extends GetView<ChatdetailController> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Obx(() => Text(
-                    // Prix au kilo dans la devise de l'utilisateur, comme sur la fiche Diaspo.
-                    '${CurrencyService.formatFromCurrency(double.tryParse(diaspoOffer['price_per_kg']?.toString() ?? '0') ?? 0, '${diaspoOffer['currency'] ?? 'XAF'}')}/kg',
-                    style: context.textStyle(
-                      FontSizeType.caption,
-                      color: isSentByMe
-                          ? Colors.white.withValues(alpha: 0.8)
-                          : AppThemeSystem.primaryColor,
-                      fontWeight: FontWeight.w500,
+                  Obx(
+                    () => Text(
+                      // Prix au kilo dans la devise de l'utilisateur, comme sur la fiche Diaspo.
+                      '${CurrencyService.formatFromCurrency(double.tryParse(diaspoOffer['price_per_kg']?.toString() ?? '0') ?? 0, '${diaspoOffer['currency'] ?? 'XAF'}')}/kg',
+                      style: context.textStyle(
+                        FontSizeType.caption,
+                        color: isSentByMe
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : AppThemeSystem.primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:asso/app/core/utils/app_design.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:asso/app/core/widgets/app_ui.dart';
 import 'package:asso/app/core/widgets/product_card.dart';
@@ -9,6 +10,7 @@ import 'package:asso/app/data/providers/diaspo_service.dart';
 import 'package:asso/app/modules/wallet/widgets/quick_confirm_code_dialog.dart';
 import 'package:asso/app/modules/wallet/widgets/confirm_code_parts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
@@ -30,26 +32,129 @@ class _PendingDelivery extends DiaspoService {
 void main() {
   tearDown(Get.reset);
 
-  test('action and informative text have sufficient contrast on surfaces', () {
-    double contrast(Color a, Color b) {
-      final x = a.computeLuminance();
-      final y = b.computeLuminance();
-      return ((x > y ? x : y) + .05) / ((x > y ? y : x) + .05);
-    }
+  test(
+    'actions use vivid brand orange and informative text stays readable',
+    () {
+      double contrast(Color a, Color b) {
+        final x = a.computeLuminance();
+        final y = b.computeLuminance();
+        return ((x > y ? x : y) + .05) / ((x > y ? y : x) + .05);
+      }
 
-    for (final surface in [
-      Colors.white,
-      AppDesign.neutral50,
-      AppDesign.neutral100,
-      AppDesign.accentSubtle,
-    ]) {
-      expect(contrast(AppDesign.accent, surface), greaterThanOrEqualTo(4.5));
-      expect(contrast(AppDesign.neutral600, surface), greaterThanOrEqualTo(4.5));
-    }
-    expect(
-      contrast(AppDesign.accentText, AppDesign.accentSubtle),
-      greaterThanOrEqualTo(4.5),
+      for (final surface in [
+        Colors.white,
+        AppDesign.neutral50,
+        AppDesign.neutral100,
+        AppDesign.accentSubtle,
+      ]) {
+        expect(
+          contrast(AppDesign.neutral600, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+      expect(AppDesign.accent, const Color(0xFFFC9141));
+      expect(AppThemeSystem.primaryColor, AppDesign.accent);
+      expect(
+        AppThemeSystem.getLightTheme().colorScheme.primary,
+        AppDesign.accent,
+      );
+      expect(
+        AppThemeSystem.getDarkTheme().colorScheme.primary,
+        AppDesign.accent,
+      );
+      expect(AppDesign.onAccent, Colors.white);
+      for (final theme in [
+        AppThemeSystem.getLightTheme(),
+        AppThemeSystem.getDarkTheme(),
+      ]) {
+        expect(theme.colorScheme.onPrimary, Colors.white);
+        expect(theme.colorScheme.onTertiary, Colors.white);
+        expect(
+          theme.elevatedButtonTheme.style!.foregroundColor!.resolve({}),
+          Colors.white,
+        );
+        expect(
+          theme.filledButtonTheme.style!.foregroundColor!.resolve({}),
+          Colors.white,
+        );
+        expect(theme.floatingActionButtonTheme.foregroundColor, Colors.white);
+        expect(theme.snackBarTheme.contentTextStyle!.color, Colors.white);
+        expect(theme.snackBarTheme.actionTextColor, Colors.white);
+        expect(theme.progressIndicatorTheme.color, const Color(0xFFFC9141));
+        expect(
+          theme.inputDecorationTheme.floatingLabelStyle!.color,
+          const Color(0xFFFC9141),
+        );
+        expect(
+          theme.inputDecorationTheme.focusedBorder!.borderSide.color,
+          const Color(0xFFFC9141),
+        );
+        expect(theme.textSelectionTheme.cursorColor, const Color(0xFFFC9141));
+      }
+      expect(
+        contrast(AppDesign.accentText, AppDesign.accentSubtle),
+        greaterThanOrEqualTo(4.5),
+      );
+    },
+  );
+
+  testWidgets('modal actions and snackbars share the reference orange', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      themedApp(
+        Scaffold(
+          body: AlertDialog(
+            title: const Text('Confirmer la livraison'),
+            actions: [
+              AppButton(label: 'Confirmer', expand: false, onPressed: () {}),
+              ElevatedButton(
+                onPressed: () {},
+                child: const Text('Enregistrer'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
+    final buttonMaterial = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.byType(AppButton),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(buttonMaterial.color, const Color(0xFFFC9141));
+    expect(
+      tester
+          .renderObject<RenderParagraph>(find.text('Confirmer'))
+          .text
+          .style!
+          .color,
+      Colors.white,
+    );
+    final context = tester.element(find.byType(AlertDialog));
+    final theme = Theme.of(context);
+    expect(
+      theme.elevatedButtonTheme.style!.backgroundColor!.resolve({}),
+      AppDesign.accent,
+    );
+    expect(
+      theme.filledButtonTheme.style!.backgroundColor!.resolve({}),
+      AppDesign.accent,
+    );
+    expect(theme.snackBarTheme.backgroundColor, AppDesign.accent);
+
+    AppFeedback.show('ASSO', 'Colis récupéré');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    final snackbar = tester.widget<GetSnackBar>(find.byType(GetSnackBar));
+    expect(snackbar.backgroundColor, AppDesign.accent);
+    expect((snackbar.titleText! as Text).style!.color, Colors.white);
+    expect((snackbar.messageText! as Text).style!.color, Colors.white);
+    Get.closeAllSnackbars();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('text and card radii stay stable when window height changes', (
@@ -140,6 +245,15 @@ void main() {
     expect(before.height, lessThan(300));
     update(() => loading = true);
     await tester.pump();
+    expect(
+      tester
+          .widget<CircularProgressIndicator>(
+            find.byType(CircularProgressIndicator),
+          )
+          .valueColor!
+          .value,
+      Colors.white,
+    );
     expect(tester.getSize(find.byType(AppButton)), before);
     expect(tester.takeException(), isNull);
   });

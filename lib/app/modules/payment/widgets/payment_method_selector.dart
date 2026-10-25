@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -161,7 +162,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   void _notifyUnavailable(PaymentMethodOption m, String? hint) {
     // Solde insuffisant : raccourci direct vers la recharge du Wallet.
     if (m.isWallet) {
-      Get.snackbar(
+      AppFeedback.show(
         'payment.selector.wallet_insufficient'.tr,
         hint ?? 'payment.selector.recharge_hint'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -186,7 +187,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     final reason = (hint != null && hint.trim().isNotEmpty)
         ? hint
         : 'payment.selector.method_unavailable'.tr;
-    Get.snackbar(
+    AppFeedback.show(
       m.label,
       reason,
       snackPosition: SnackPosition.BOTTOM,

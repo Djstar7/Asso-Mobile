@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -61,7 +62,7 @@ class DiaspoEditController extends GetxController {
     final args = Get.arguments;
     if (args == null || args['offer'] == null) {
       Get.back();
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_edit.error'.tr,
         'diaspo_edit.offer_not_found'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -94,7 +95,7 @@ class DiaspoEditController extends GetxController {
     if (currentStep.value == 0) {
       if (!formKey1.currentState!.validate()) return;
       if (departureDateTime.value == null || arrivalDateTime.value == null) {
-        Get.snackbar(
+        AppFeedback.show(
           'diaspo_edit.error'.tr,
           'diaspo_edit.select_dates'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -121,7 +122,7 @@ class DiaspoEditController extends GetxController {
   Future<void> submitOffer() async {
     // Validate dates before submitting
     if (departureDateTime.value == null || arrivalDateTime.value == null) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_edit.error'.tr,
         'diaspo_edit.select_dates'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -133,7 +134,7 @@ class DiaspoEditController extends GetxController {
 
     if (arrivalDateTime.value!.isBefore(departureDateTime.value!) ||
         arrivalDateTime.value!.isAtSameMomentAs(departureDateTime.value!)) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_edit.error'.tr,
         'diaspo_edit.arrival_after_departure'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -161,7 +162,7 @@ class DiaspoEditController extends GetxController {
       );
 
       Get.back(result: true); // Return true to indicate success
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_edit.success'.tr,
         'diaspo_edit.updated_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -188,7 +189,7 @@ class DiaspoEditController extends GetxController {
         }
       }
 
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_edit.error'.tr,
         errorMessage,
         snackPosition: SnackPosition.BOTTOM,
@@ -270,7 +271,7 @@ class DiaspoEditController extends GetxController {
         // Validate that arrival is after departure
         if (selectedArrivalDateTime.isBefore(minDate) ||
             selectedArrivalDateTime.isAtSameMomentAs(minDate)) {
-          Get.snackbar(
+          AppFeedback.show(
             'diaspo_edit.error'.tr,
             'diaspo_edit.arrival_time_after_departure'.tr,
             snackPosition: SnackPosition.BOTTOM,

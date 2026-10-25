@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -318,7 +320,7 @@ class MaritimeBookingController extends GetxController {
   Future<void> submit() async {
     if (!_validate()) {
       _scrollToFirstError();
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         'maritime.validation.fix_fields'.tr,
         backgroundColor: AppDesign.danger,
@@ -328,7 +330,7 @@ class MaritimeBookingController extends GetxController {
     }
     if (insuranceOptIn.value && insurance.isQuoting.value) return;
     if (insuranceOptIn.value && !insurance.quoteAvailable.value) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         'maritime.form.insurance_quote_unavailable'.tr,
         backgroundColor: AppDesign.danger,
@@ -371,9 +373,12 @@ class MaritimeBookingController extends GetxController {
   }) async {
     isSubmitting.value = true;
     try {
-      final result = await _service.book(
-        departureId: departure.value!.id,
-        data: bookingPayload(method, provider: provider, phone: phone),
+      final result = await PaymentPreparation.run(
+        method: method,
+        action: () => _service.book(
+          departureId: departure.value!.id,
+          data: bookingPayload(method, provider: provider, phone: phone),
+        ),
       );
       _lastPayment = result.payment;
       return result.booking;
@@ -381,14 +386,14 @@ class MaritimeBookingController extends GetxController {
       if (e.fieldErrors.isNotEmpty) {
         _setErrors(e.fieldErrors);
         _scrollToFirstError();
-        Get.snackbar(
+        AppFeedback.show(
           'maritime.error'.tr,
           'maritime.validation.fix_fields'.tr,
           backgroundColor: AppDesign.danger,
           colorText: Colors.white,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'maritime.error'.tr,
           e.message,
           backgroundColor: AppDesign.danger,
@@ -398,7 +403,7 @@ class MaritimeBookingController extends GetxController {
       }
       return null;
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppDesign.danger,
@@ -433,7 +438,7 @@ class MaritimeBookingController extends GetxController {
 
   Future<void> _payCard() async {
     if (!StripeNativeService.isSupported) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_booking.unavailable'.tr,
         'diaspo_booking.card_mobile_only'.tr,
       );
@@ -444,7 +449,7 @@ class MaritimeBookingController extends GetxController {
     final secret = _lastPayment['client_secret']?.toString();
     final key = _lastPayment['publishable_key']?.toString();
     if (secret == null || key == null || secret.isEmpty || key.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         'diaspo_booking.card_data_unavailable'.tr,
       );
@@ -455,7 +460,7 @@ class MaritimeBookingController extends GetxController {
       clientSecret: secret,
     );
     if (!ok) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_booking.payment_cancelled_title'.tr,
         'diaspo_booking.payment_cancelled_message'.tr,
         backgroundColor: AppDesign.accent,
@@ -471,7 +476,7 @@ class MaritimeBookingController extends GetxController {
     if (booking == null) return;
     final url = _lastPayment['approval_url']?.toString();
     if (url == null || url.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'maritime.error'.tr,
         'diaspo_booking.payment_link_unavailable'.tr,
       );
@@ -497,7 +502,7 @@ class MaritimeBookingController extends GetxController {
         return;
       }
       if (state.status == 'failed') {
-        Get.snackbar(
+        AppFeedback.show(
           'diaspo_booking.payment_failed_title'.tr,
           'maritime.form.payment_failed_released'.tr,
           backgroundColor: AppDesign.danger,
@@ -506,7 +511,7 @@ class MaritimeBookingController extends GetxController {
         return;
       }
     }
-    Get.snackbar(
+    AppFeedback.show(
       'diaspo_booking.payment_pending_title'.tr,
       'diaspo_booking.payment_pending_timeout'.tr,
       backgroundColor: AppDesign.accent,

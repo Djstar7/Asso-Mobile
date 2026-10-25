@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -253,7 +254,7 @@ class HelpController extends GetxController {
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           'help.errors.email_client'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -262,7 +263,7 @@ class HelpController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -280,7 +281,7 @@ class HelpController extends GetxController {
       if (await canLaunchUrl(phoneUri)) {
         await launchUrl(phoneUri);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           'help.errors.dialer'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -289,7 +290,7 @@ class HelpController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -309,7 +310,7 @@ class HelpController extends GetxController {
       if (await canLaunchUrl(whatsappUri)) {
         await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           'help.errors.whatsapp'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -318,7 +319,7 @@ class HelpController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'help.errors.generic'.tr,
         snackPosition: SnackPosition.BOTTOM,

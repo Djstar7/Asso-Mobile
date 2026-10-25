@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -240,7 +241,7 @@ class DiaspoEditView extends GetView<DiaspoEditController> {
             Obx(() => InkWell(
                   onTap: () {
                     if (controller.departureDateTime.value == null) {
-                      Get.snackbar(
+                      AppFeedback.show(
                         'diaspo_edit.warning'.tr,
                         'diaspo_edit.select_departure_first'.tr,
                         snackPosition: SnackPosition.BOTTOM,

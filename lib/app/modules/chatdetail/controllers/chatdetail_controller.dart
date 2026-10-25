@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -336,7 +337,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
         if (!response.success) {
           print('❌ [CHAT] Message sending failed!');
-          Get.snackbar('chatdetail.error'.tr, 'chatdetail.message_not_sent'.tr,
+          AppFeedback.show('chatdetail.error'.tr, 'chatdetail.message_not_sent'.tr,
             snackPosition: SnackPosition.BOTTOM,
           );
         } else {
@@ -346,7 +347,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         print('❌ [CHAT] Exception while sending message:');
         print('   └─ Error: $e');
         print('   └─ StackTrace: $stackTrace');
-        Get.snackbar('chatdetail.error'.tr, 'chatdetail.send_message_failed'.tr,
+        AppFeedback.show('chatdetail.error'.tr, 'chatdetail.send_message_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
@@ -432,7 +433,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         await _sendImageMessage(photo);
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'chatdetail.error'.tr,
         'chatdetail.camera_access_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -454,7 +455,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         await _sendImageMessage(image);
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'chatdetail.error'.tr,
         'chatdetail.gallery_access_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -518,7 +519,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
       );
 
       if (!response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'chatdetail.error'.tr,
           'chatdetail.send_image_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -545,7 +546,7 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'chatdetail.error'.tr,
         'chatdetail.send_image_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -567,20 +568,20 @@ class ChatdetailController extends GetxController with SafeControllerMixin {
 
       if (response.success) {
         Get.back(); // Retour à la liste des conversations
-        Get.snackbar(
+        AppFeedback.show(
           'chatdetail.success'.tr,
           'chatdetail.conversation_hidden'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'chatdetail.error'.tr,
           'chatdetail.hide_conversation_failed'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'chatdetail.error'.tr,
         'chatdetail.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,

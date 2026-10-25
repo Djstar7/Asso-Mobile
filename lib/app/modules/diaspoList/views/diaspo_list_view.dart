@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,7 +15,18 @@ import '../../../data/providers/currency_service.dart';
 import '../../../routes/app_pages.dart';
 
 class DiaspoListView extends GetView<DiaspoListController> {
-  const DiaspoListView({super.key, this.embedded = false});
+  const DiaspoListView({
+    super.key,
+    this.embedded = false,
+    this.pageController,
+    this.freightController,
+  });
+
+  final DiaspoListController? pageController;
+  final MaritimeController? freightController;
+
+  @override
+  DiaspoListController get controller => pageController ?? super.controller;
 
   final bool embedded;
 
@@ -24,11 +36,13 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
     return Scaffold(
       backgroundColor: AppDesign.canvas(context),
-      appBar: embedded ? null : AppBar(
-        leading: const AppBackButton(),
-        title: const Text('DIASPO EXCHANGE'),
-        centerTitle: false,
-      ),
+      appBar: embedded
+          ? null
+          : AppBar(
+              leading: const AppBackButton(),
+              title: const Text('DIASPO EXCHANGE'),
+              centerTitle: false,
+            ),
       body: Column(
         children: [
           // Rubriques Avion / Maritime, avec le seuil indicatif de poids.
@@ -37,7 +51,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
           Expanded(
             child: Obx(
               () => controller.transportMode.value == 1
-                  ? const MaritimeSection()
+                  ? MaritimeSection(pageController: _freight)
                   : _buildAirSection(context, isDark),
             ),
           ),
@@ -59,9 +73,11 @@ class DiaspoListView extends GetView<DiaspoListController> {
     );
   }
 
-  MaritimeController? get _freight => Get.isRegistered<MaritimeController>()
-      ? Get.find<MaritimeController>()
-      : null;
+  MaritimeController? get _freight =>
+      freightController ??
+      (Get.isRegistered<MaritimeController>()
+          ? Get.find<MaritimeController>()
+          : null);
 
   List<MaritimeDeparture> get _airDepartures {
     final query = controller.searchQuery.value.trim().toLowerCase();
@@ -1432,7 +1448,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   : () async {
                       final code = codeController.text.trim();
                       if (code.length != 6) {
-                        Get.snackbar(
+                        AppFeedback.show(
                           'diaspo_list.validate_dialog.invalid_title'.tr,
                           'diaspo_list.validate_dialog.invalid_message'.tr,
                           snackPosition: SnackPosition.BOTTOM,

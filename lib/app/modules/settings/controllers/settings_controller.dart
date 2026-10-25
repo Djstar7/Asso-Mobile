@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
@@ -366,7 +367,7 @@ class SettingsController extends GetxController {
 
         // Validate phone number (basic validation)
         if (newPhone.length < 8) {
-          Get.snackbar(
+          AppFeedback.show(
             'common.error'.tr,
             'settings.phone_change.invalid'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -396,7 +397,7 @@ class SettingsController extends GetxController {
             },
           );
 
-          Get.snackbar(
+          AppFeedback.show(
             'settings.phone_change.code_sent'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
@@ -404,7 +405,7 @@ class SettingsController extends GetxController {
             colorText: Colors.white,
           );
         } else {
-          Get.snackbar(
+          AppFeedback.show(
             'common.error'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
@@ -414,7 +415,7 @@ class SettingsController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.phone_change.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -597,7 +598,7 @@ class SettingsController extends GetxController {
       // TODO: Effacer le cache
       await Future.delayed(const Duration(seconds: 1));
 
-      Get.snackbar(
+      AppFeedback.show(
         'common.success'.tr,
         'settings.cache.cleared'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -605,7 +606,7 @@ class SettingsController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.cache.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -987,7 +988,7 @@ class SettingsController extends GetxController {
                                     'settings.delete_account.confirm_word'.tr) {
                                   Get.back(result: true);
                                 } else {
-                                  Get.snackbar(
+                                  AppFeedback.show(
                                     'common.error'.tr,
                                     'settings.delete_account.type_exact_error'
                                         .trParams({
@@ -1047,7 +1048,7 @@ class SettingsController extends GetxController {
       final response = await AuthService.deleteAccount();
 
       if (response.success) {
-        Get.snackbar(
+        AppFeedback.show(
           'settings.delete_account.deleted_title'.tr,
           'settings.delete_account.deleted_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -1060,7 +1061,7 @@ class SettingsController extends GetxController {
         await Future.delayed(const Duration(seconds: 1));
         Get.offAllNamed('/login');
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -1069,7 +1070,7 @@ class SettingsController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.delete_account.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1213,7 +1214,7 @@ class SettingsController extends GetxController {
 
       Get.offAllNamed(Routes.LOGIN);
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.logout.failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1621,7 +1622,7 @@ class SettingsController extends GetxController {
     if (code == selectedLanguage.value) return;
     await LocaleService.to.setLanguage(code, manual: true);
 
-    Get.snackbar(
+    AppFeedback.show(
       'settings.language.changed_title'.tr,
       'settings.language.changed_message'.trParams({'language': language}),
       snackPosition: SnackPosition.BOTTOM,
@@ -1655,13 +1656,13 @@ class SettingsController extends GetxController {
       final success = await NotificationPreferenceProvider.save(value);
       if (!success) throw StateError('Preference synchronization failed');
       _applyPushPreferences(value);
-      Get.snackbar(
+      AppFeedback.show(
         'settings.notifications.title'.tr,
         'settings.notifications.saved'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (_) {
-      Get.snackbar(
+      AppFeedback.show(
         'settings.notifications.title'.tr,
         'settings.notifications.save_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -1737,7 +1738,7 @@ class SettingsController extends GetxController {
                 final response = await ApiProvider.post(
                   '/v1/notifications/test',
                 );
-                Get.snackbar(
+                AppFeedback.show(
                   'settings.notifications.title'.tr,
                   response.message,
                   snackPosition: SnackPosition.BOTTOM,
@@ -1993,7 +1994,7 @@ class SettingsController extends GetxController {
     } catch (e, stackTrace) {
       print('❌ Error fetching countries: $e');
       print('Stack trace: $stackTrace');
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.country.load_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -2129,7 +2130,7 @@ class SettingsController extends GetxController {
       // Close the bottom sheet
       Get.back();
 
-      Get.snackbar(
+      AppFeedback.show(
         'common.success'.tr,
         'settings.country.updated'.trParams({
           'country': country,
@@ -2143,7 +2144,7 @@ class SettingsController extends GetxController {
       );
     } catch (e) {
       print('Error selecting country: $e');
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'settings.country.select_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,

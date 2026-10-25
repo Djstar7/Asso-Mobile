@@ -30,9 +30,10 @@ class KpayDirectPaymentSheet extends StatefulWidget {
   }) {
     return AppSheet.show<Map<String, String>>(
       KpayDirectPaymentSheet(
-          amount: amount,
-          currency: currency,
-          amountLabel: amountLabel ?? 'wallet.kpay.total_to_pay'.tr),
+        amount: amount,
+        currency: currency,
+        amountLabel: amountLabel ?? 'wallet.kpay.total_to_pay'.tr,
+      ),
     );
   }
 
@@ -97,7 +98,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
             decoration: BoxDecoration(
               // Décor de la feuille : l'accent de marque, et non un
               // orange voisin qui faisait cohabiter deux primaires.
-              color: AppDesign.accentSubtle,
+              color: AppDesign.accent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -107,7 +108,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                   children: [
                     Text(
                       widget.amountLabel ?? 'wallet.kpay.amount_to_pay'.tr,
-                      style: TextStyle(color: Colors.grey.shade700),
+                      style: const TextStyle(color: AppDesign.onAccent),
                     ),
                     Obx(
                       () => Text(
@@ -115,7 +116,7 @@ class _KpayDirectPaymentSheetState extends State<KpayDirectPaymentSheet> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppDesign.accentText,
+                          color: AppDesign.onAccent,
                         ),
                       ),
                     ),

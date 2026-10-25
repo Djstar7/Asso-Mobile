@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/product_service.dart';
@@ -72,7 +73,7 @@ class FavoritesController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'favorites.error_title'.tr,
         'favorites.load_failed'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
@@ -118,14 +119,14 @@ class FavoritesController extends GetxController {
           // HomeController not found, ignore
         }
 
-        Get.snackbar(
+        AppFeedback.show(
           'favorites.success_title'.tr,
           response.data?['message'] ?? (isFavorite ? 'favorites.added'.tr : 'favorites.removed'.tr),
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'favorites.error_title'.tr,
         'favorites.toggle_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -136,7 +137,7 @@ class FavoritesController extends GetxController {
   /// Remove all favorites
   Future<void> removeAllFavorites() async {
     if (favoriteProducts.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'favorites.info_title'.tr,
         'favorites.nothing_to_remove'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -183,13 +184,13 @@ class FavoritesController extends GetxController {
       }
 
       favoriteProducts.clear();
-      Get.snackbar(
+      AppFeedback.show(
         'favorites.success_title'.tr,
         'favorites.all_removed'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'favorites.error_title'.tr,
         'favorites.remove_all_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,

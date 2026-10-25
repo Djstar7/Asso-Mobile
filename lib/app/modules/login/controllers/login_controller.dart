@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -103,7 +104,7 @@ class LoginController extends GetxController {
 
     if (!isFormValid.value) {
       developer.log('Invalid form', name: 'LoginController');
-      Get.snackbar(
+      AppFeedback.show(
         'login.invalid_form_title'.tr,
         'login.invalid_form_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -210,7 +211,7 @@ class LoginController extends GetxController {
     Get.offAllNamed(Routes.HOME);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.success'.tr,
         'login.success'.tr,
         snackPosition: SnackPosition.BOTTOM,

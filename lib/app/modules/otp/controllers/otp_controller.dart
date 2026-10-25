@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
@@ -150,7 +151,7 @@ class OtpController extends GetxController {
     _startTimer();
     focusNodes[0].requestFocus();
 
-    Get.snackbar(
+    AppFeedback.show(
       response.success ? 'otp.code_resent_title'.tr : 'common.error'.tr,
       response.success
           ? 'otp.code_resent_message'.trParams({'phone': phoneNumber.value})
@@ -182,7 +183,7 @@ class OtpController extends GetxController {
 
     if (!isOtpComplete.value) {
       developer.log('OTP incomplete', name: 'OtpController');
-      Get.snackbar(
+      AppFeedback.show(
         'otp.incomplete_title'.tr,
         'otp.incomplete_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -220,7 +221,7 @@ class OtpController extends GetxController {
         );
 
         if (response.success) {
-          Get.snackbar(
+          AppFeedback.show(
             'common.success'.tr,
             'otp.phone_changed'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -242,7 +243,7 @@ class OtpController extends GetxController {
             name: 'OtpController',
             error: response.message,
           );
-          Get.snackbar(
+          AppFeedback.show(
             'otp.incorrect_code'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
@@ -272,7 +273,7 @@ class OtpController extends GetxController {
         );
 
         if (response.success) {
-          Get.snackbar(
+          AppFeedback.show(
             'common.success'.tr,
             'login.success'.tr,
             snackPosition: SnackPosition.BOTTOM,
@@ -334,7 +335,7 @@ class OtpController extends GetxController {
             name: 'OtpController',
             error: response.message,
           );
-          Get.snackbar(
+          AppFeedback.show(
             'otp.incorrect_code'.tr,
             response.message,
             snackPosition: SnackPosition.BOTTOM,
@@ -359,7 +360,7 @@ class OtpController extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'common.generic_error_retry'.tr,
         snackPosition: SnackPosition.BOTTOM,

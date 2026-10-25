@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -427,7 +428,7 @@ class OfflineProductSyncService extends GetxService {
   }
 
   void _notify(String message, Color color) {
-    Get.snackbar(
+    AppFeedback.show(
       'data.offline_sync.title'.tr,
       message,
       snackPosition: SnackPosition.TOP,

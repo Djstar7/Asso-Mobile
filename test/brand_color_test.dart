@@ -12,9 +12,37 @@ import 'package:flutter_test/flutter_test.dart';
 /// test relit les sources et signale tout nouvel orange saturé hors des
 /// exceptions listées.
 void main() {
+  test('les snackbars passent par le composant de marque commun', () {
+    final offenders = <String>[];
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (entity.path.endsWith('app_feedback.dart')) continue;
+      if (RegExp(
+        r'Get\.(?:snackbar|rawSnackbar)\s*\(',
+      ).hasMatch(entity.readAsStringSync())) {
+        offenders.add(entity.path);
+      }
+    }
+    expect(offenders, isEmpty, reason: 'Utiliser AppFeedback.show.');
+  });
+
+  test('les notifications Android reprennent la palette de marque', () {
+    final palette = File(
+      'lib/app/core/utils/app_brand_colors.dart',
+    ).readAsStringSync();
+    final hex = RegExp(
+      r'primary = Color\(0xFF([0-9A-F]{6})\)',
+    ).firstMatch(palette)!.group(1)!;
+    final native = File(
+      'android/app/src/main/res/values/asso_notification_colors.xml',
+    ).readAsStringSync();
+    expect(native, contains('>#$hex</color>'));
+  });
+
   /// Fichiers où un orange en dur est légitime, avec sa raison.
   const allowed = <String, String>{
-    'lib/app/core/utils/app_design.dart': 'définit les tokens de marque',
+    'lib/app/core/utils/app_brand_colors.dart': 'définit la palette de marque',
+    'lib/app/core/utils/app_design.dart': 'expose les tokens sémantiques',
     'lib/app/core/utils/app_theme_system.dart':
         'couleur identité du prestataire de paiement KPay',
     'lib/app/core/widgets/product_variant_selector.dart':
@@ -29,7 +57,7 @@ void main() {
         'métaux des paliers (bronze, argent, or)',
   };
 
-  /// accentText (#9C4A0A) est un brun sombre, pensé pour rester lisible sur
+  /// accentText (#9A4108) est un orange soutenu, pensé pour rester lisible sur
   /// accentSubtle. Posé sur une surface blanche, il passe pour un second
   /// orange — c'est ce qui faisait paraître la barre de navigation d'une
   /// autre couleur que les raccourcis juste au-dessus.
@@ -58,12 +86,15 @@ void main() {
         // Le commentaire qui précède vaut justification quand le fond
         // teinté appartient au widget parent, hors de portée d'une lecture
         // statique.
-        final justified = i > 0 &&
+        final justified =
+            i > 0 &&
             lines[i - 1].trimLeft().startsWith('//') &&
-            lines.sublist((i - 4).clamp(0, i), i).join(' ').contains(
-                  'accentSubtle',
-                );
-        final tinted = justified ||
+            lines
+                .sublist((i - 4).clamp(0, i), i)
+                .join(' ')
+                .contains('accentSubtle');
+        final tinted =
+            justified ||
             context.contains('accentSubtle') ||
             context.contains('accentBorder') ||
             context.contains('accent.withValues');
@@ -77,7 +108,8 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'Sur une surface claire, utilisez AppDesign.accent ; '
+      reason:
+          'Sur une surface claire, utilisez AppDesign.accent ; '
           'accentText suppose un fond accentSubtle :\n${offenders.join('\n')}',
     );
   });

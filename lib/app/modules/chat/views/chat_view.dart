@@ -68,7 +68,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppThemeSystem.getSecondaryTextColor(context),
+                          AppThemeSystem.primaryColor,
                         ),
                       ),
                     )

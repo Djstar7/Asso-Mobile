@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
@@ -885,7 +886,7 @@ class HomeController extends GetxController
         favoritesCount.value = (favoritesCount.value + (isFavorite ? 1 : -1))
             .clamp(0, 9999);
 
-        Get.snackbar(
+        AppFeedback.show(
           'home.success'.tr,
           message,
           snackPosition: SnackPosition.BOTTOM,
@@ -895,7 +896,7 @@ class HomeController extends GetxController
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'home.error'.tr,
         'home.favorite.error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -946,7 +947,7 @@ class HomeController extends GetxController
 
     if (user == null) {
       print('❌ HOME: No user found in storage');
-      Get.snackbar(
+      AppFeedback.show(
         'home.login_required'.tr,
         'home.vendor_login_required'.tr,
         snackPosition: SnackPosition.BOTTOM,

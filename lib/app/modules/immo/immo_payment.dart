@@ -1,3 +1,5 @@
+import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -43,7 +45,10 @@ class ImmoPayment {
         if (!ok) return null;
         mode = 'wallet';
       case 'kpay':
-        final selection = await KpayDirectPaymentSheet.show(amount: total.toDouble(), amountLabel: label);
+        final selection = await KpayDirectPaymentSheet.show(
+          amount: total.toDouble(),
+          amountLabel: label,
+        );
         if (selection == null) return null;
         mode = 'kpay_direct';
         provider = selection['provider'];
@@ -59,18 +64,23 @@ class ImmoPayment {
         return null;
     }
 
-    final res = await RealEstateService.reserve(listingId, {
-      ...body,
-      'payment_mode': mode,
-      'provider': ?provider,
-      'phone_number': ?phone,
-    });
+    final res = await PaymentPreparation.run(
+      method: mode,
+      action: () => RealEstateService.reserve(listingId, {
+        ...body,
+        'payment_mode': mode,
+        'provider': ?provider,
+        'phone_number': ?phone,
+      }),
+    );
     final data = res.data?['data'];
     if (!res.success || data is! Map) {
       _error(res.message);
       return null;
     }
-    var reservation = RealEstateReservation.fromJson(Map<String, dynamic>.from(data));
+    var reservation = RealEstateReservation.fromJson(
+      Map<String, dynamic>.from(data),
+    );
     if (mode == 'wallet') return reservation;
 
     if (mode == 'stripe_direct') {
@@ -90,7 +100,9 @@ class ImmoPayment {
       provider: provider!,
       phone: phone!,
       check: () async {
-        final r = await RealEstateService.reservationPaymentStatus(reservation.id);
+        final r = await RealEstateService.reservationPaymentStatus(
+          reservation.id,
+        );
         if (r == null) return (status: 'pending', failure: null);
         reservation = r;
         if (r.isPaid) return (status: 'paid', failure: null);
@@ -100,7 +112,11 @@ class ImmoPayment {
     );
     if (outcome.status == 'paid') return reservation;
     if (outcome.status == 'pending') {
-      Get.snackbar('immo.reserve.pending_title'.tr, 'immo.reserve.pending_message'.tr, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show(
+        'immo.reserve.pending_title'.tr,
+        'immo.reserve.pending_message'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
 
     return null;
@@ -113,13 +129,22 @@ class ImmoPayment {
       if (r?.status == 'cancelled') return null;
       await Future.delayed(const Duration(seconds: 5));
     }
-    Get.snackbar('immo.reserve.pending_title'.tr, 'immo.reserve.pending_message'.tr, snackPosition: SnackPosition.BOTTOM);
+    AppFeedback.show(
+      'immo.reserve.pending_title'.tr,
+      'immo.reserve.pending_message'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
 
     return null;
   }
 
   static void _error(String message) {
     if (message.isEmpty) return;
-    Get.snackbar('immo.reserve.error'.tr, message, snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(16));
+    AppFeedback.show(
+      'immo.reserve.error'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+    );
   }
 }

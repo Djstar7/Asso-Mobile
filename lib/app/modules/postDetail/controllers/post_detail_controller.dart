@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/post.dart';
@@ -40,7 +41,7 @@ class PostDetailController extends GetxController {
         post.value = Post.fromJson(response.data?['data']);
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'post_detail.error'.tr,
         'post_detail.load_post_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -63,7 +64,7 @@ class PostDetailController extends GetxController {
         comments.value = data.map((json) => PostComment.fromJson(json)).toList();
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'post_detail.error'.tr,
         'post_detail.load_comments_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -88,7 +89,7 @@ class PostDetailController extends GetxController {
   }
 
   void _showError(String message) {
-    Get.snackbar(
+    AppFeedback.show(
       'post_detail.error'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -125,7 +126,7 @@ class PostDetailController extends GetxController {
       _applyCommentsCount(response.data?['comments_count'], fallbackDelta: 1);
       await fetchComments();
 
-      Get.snackbar(
+      AppFeedback.show(
         'post_detail.success'.tr,
         parentId == null ? 'post_detail.comment_added'.tr : 'post_detail.reply_added'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -195,7 +196,7 @@ class PostDetailController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'post_detail.error'.tr,
         'post_detail.react_comment_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -220,7 +221,7 @@ class PostDetailController extends GetxController {
         if (data is Map) post.value = post.value!.withReaction(data);
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'post_detail.error'.tr,
         'post_detail.react_post_error'.tr,
         snackPosition: SnackPosition.BOTTOM,

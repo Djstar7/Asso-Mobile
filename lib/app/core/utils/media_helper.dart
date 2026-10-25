@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -48,7 +49,7 @@ class MediaHelper {
         imageQuality: imageQuality,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'core.media.pick_image_failed'.tr,
         snackPosition: SnackPosition.BOTTOM,

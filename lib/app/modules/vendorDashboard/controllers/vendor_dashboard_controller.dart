@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:get/get.dart';
@@ -99,7 +100,7 @@ class VendorDashboardController extends GetxController {
   VoidCallback onlineOnly(FutureOr<void> Function() action) {
     return () {
       if (ConnectivityService.isOffline) {
-        Get.snackbar(
+        AppFeedback.show(
           'vendor_dashboard.offline.title'.tr,
           'vendor_dashboard.offline.section_requires_connection'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -456,7 +457,7 @@ class VendorDashboardController extends GetxController {
       // Hors ligne, la souscription est impossible. Sans tableau de bord
       // connu, on ignore s'il y a un forfait : le serveur tranchera à l'envoi.
       if (_hasDashboardData) {
-        Get.snackbar(
+        AppFeedback.show(
           'vendor_dashboard.offline.package_required_title'.tr,
           'vendor_dashboard.offline.package_required_message'.tr,
           snackPosition: SnackPosition.BOTTOM,

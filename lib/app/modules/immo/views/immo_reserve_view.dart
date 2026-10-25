@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import '../widgets/immo_summary_row.dart';
 import 'package:flutter/material.dart';
 import '../widgets/immo_fee_details.dart';
@@ -161,7 +162,7 @@ class _ImmoReserveViewState extends State<ImmoReserveView> {
 
   Future<void> _pay() async {
     if (_listing.isOwnListing) {
-      Get.snackbar(
+      AppFeedback.show(
         'immo.reserve.own_listing_title'.tr,
         'immo.reserve.own_listing_message'.tr,
         snackPosition: SnackPosition.BOTTOM,

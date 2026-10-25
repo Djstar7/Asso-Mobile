@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -72,7 +73,7 @@ class CompleteProfileController extends GetxController {
 
   Future<void> saveProfile() async {
     if (firstNameController.text.isEmpty || lastNameController.text.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'complete_profile.required_title'.tr,
         'complete_profile.required_message'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -117,7 +118,7 @@ class CompleteProfileController extends GetxController {
         // Le cache est déjà mis à jour dans AuthService.updateProfile
         // Mais on va forcer un refresh du profil si on revient en arrière
 
-        Get.snackbar(
+        AppFeedback.show(
           'complete_profile.completed_title'.tr,
           'complete_profile.completed_message'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -143,7 +144,7 @@ class CompleteProfileController extends GetxController {
         // Utiliser Get.back() au lieu de Get.offAllNamed() pour éviter le duplicate GlobalKey
         navigateBack();
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           response.message,
           snackPosition: SnackPosition.BOTTOM,
@@ -154,7 +155,7 @@ class CompleteProfileController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'complete_profile.generic_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -187,7 +188,7 @@ class CompleteProfileController extends GetxController {
       );
       if (image != null) avatarImage.value = image;
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         source == ImageSource.camera
             ? 'complete_profile.photo_camera_failed'.tr

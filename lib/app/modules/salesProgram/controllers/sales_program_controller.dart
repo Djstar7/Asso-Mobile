@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -90,7 +91,7 @@ class SalesProgramController extends GetxController {
   }
 
   void _showError(String message) {
-    Get.snackbar(
+    AppFeedback.show(
       'common.error'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,

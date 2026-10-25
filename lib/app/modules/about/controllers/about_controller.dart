@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -143,7 +144,7 @@ class AboutController extends GetxController {
   /// Ouvrir un lien
   Future<void> openUrl(String url) async {
     if (url.isEmpty) {
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'about.errors.url_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -160,7 +161,7 @@ class AboutController extends GetxController {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'common.error'.tr,
           'about.errors.open_link'.tr,
           snackPosition: SnackPosition.BOTTOM,
@@ -170,7 +171,7 @@ class AboutController extends GetxController {
       }
     } catch (e) {
       developer.log('Error opening URL', name: 'AboutController', error: e);
-      Get.snackbar(
+      AppFeedback.show(
         'common.error'.tr,
         'about.errors.open_link'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -190,7 +191,7 @@ class AboutController extends GetxController {
     if (contactEmail.value.isNotEmpty) {
       openUrl('mailto:${contactEmail.value}');
     } else {
-      Get.snackbar(
+      AppFeedback.show(
         'about.unavailable'.tr,
         'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -205,7 +206,7 @@ class AboutController extends GetxController {
     if (contactEmail.value.isNotEmpty) {
       openUrl('mailto:${contactEmail.value}?subject=Feedback%20ASSO%20Market');
     } else {
-      Get.snackbar(
+      AppFeedback.show(
         'about.unavailable'.tr,
         'about.errors.contact_email_unavailable'.tr,
         snackPosition: SnackPosition.BOTTOM,

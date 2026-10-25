@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 import 'package:asso/app/core/values/constants.dart';
 import 'package:flutter/material.dart';
@@ -544,7 +545,7 @@ class PostDetailView extends GetView<PostDetailController> {
                 : () async {
                     final content = contentController.text.trim();
                     if (content.isEmpty) {
-                      Get.snackbar(
+                      AppFeedback.show(
                         'post_detail.empty_comment_title'.tr,
                         'post_detail.empty_comment_message'.tr,
                         snackPosition: SnackPosition.BOTTOM,

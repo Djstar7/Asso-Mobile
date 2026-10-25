@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -56,7 +57,7 @@ class _ImmoProjectViewState extends State<ImmoProjectView> {
       _sent = res.success;
     });
     if (!res.success) {
-      Get.snackbar('immo.project.error'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.show('immo.project.error'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
     }
   }
 

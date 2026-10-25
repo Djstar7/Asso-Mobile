@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -393,7 +394,7 @@ class _MapLocationPickerViewState extends State<MapLocationPickerView> {
     // Obtenir l'adresse
     _reverseGeocode(newPosition);
 
-    Get.snackbar(
+    AppFeedback.show(
       'vendor_config.map.position_found_title'.tr,
       'vendor_config.map.position_found_message'.tr,
       snackPosition: SnackPosition.TOP,

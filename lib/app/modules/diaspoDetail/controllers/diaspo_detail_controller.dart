@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/diaspo_offer.dart';
@@ -57,7 +58,7 @@ class DiaspoDetailController extends GetxController {
       offer.value = fetchedOffer;
       _checkIfMyOffer(); // Vérifier si c'est mon offre après le fetch
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_detail.error'.tr,
         'diaspo_detail.load_error'.tr,
       );
@@ -105,14 +106,14 @@ class DiaspoDetailController extends GetxController {
           'default_message': 'diaspo_detail.chat_default_message'.tr,
         });
       } else {
-        Get.snackbar(
+        AppFeedback.show(
           'diaspo_detail.error'.tr,
           'diaspo_detail.chat_start_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_detail.error'.tr,
         'diaspo_detail.generic_error'.trParams({'error': e.toString()}),
         snackPosition: SnackPosition.BOTTOM,
@@ -210,7 +211,7 @@ class DiaspoDetailController extends GetxController {
       }
 
       Get.back(); // Return to previous screen
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_detail.success'.tr,
         'diaspo_detail.delete_success'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -218,7 +219,7 @@ class DiaspoDetailController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
-      Get.snackbar(
+      AppFeedback.show(
         'diaspo_detail.error'.tr,
         e.toString().replaceAll('Exception: ', ''),
         snackPosition: SnackPosition.BOTTOM,

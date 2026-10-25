@@ -221,7 +221,7 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: ds.textTertiary,
+                      color: AppDesign.accent,
                     ),
                   ),
                 );

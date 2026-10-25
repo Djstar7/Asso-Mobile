@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
@@ -76,17 +77,17 @@ class HomeView extends GetView<HomeController> {
                   // l'accueil, elle se pose au-dessus des onglets et garde
                   // la barre du bas visible.
                   Obx(
-                    () => AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: controller.realEstateOpen.value
-                          ? ImmoShell(
-                              key: const ValueKey('immo-shell'),
-                              initialRoute: controller.realEstateInitialRoute,
-                              initialArguments:
-                                  controller.realEstateInitialArguments,
-                            )
-                          : const SizedBox.shrink(),
-                    ),
+                    // Le navigateur imbriqué possède une GlobalKey unique.
+                    // Un fondu conservait deux ImmoShell lors d'une réouverture
+                    // rapide et détruisait le contrôleur de la vue entrante.
+                    () => controller.realEstateOpen.value
+                        ? ImmoShell(
+                            key: const ValueKey('immo-shell'),
+                            initialRoute: controller.realEstateInitialRoute,
+                            initialArguments:
+                                controller.realEstateInitialArguments,
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ],
               ),
@@ -717,7 +718,7 @@ class HomeView extends GetView<HomeController> {
                   title: 'home.drawer.invite_friend'.tr,
                   onTap: () {
                     Get.back();
-                    Get.snackbar(
+                    AppFeedback.show(
                       'home.drawer.share_title'.tr,
                       'home.drawer.share_message'.tr,
                       snackPosition: SnackPosition.BOTTOM,

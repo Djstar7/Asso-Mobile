@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -279,7 +280,7 @@ class DisputeDetailController extends GetxController {
     return ok == true;
   }
 
-  void _snack(String message, {bool error = false}) => Get.snackbar(
+  void _snack(String message, {bool error = false}) => AppFeedback.show(
     error ? 'my_order.errors.title'.tr : 'disputes.title'.tr,
     message,
     snackPosition: SnackPosition.BOTTOM,

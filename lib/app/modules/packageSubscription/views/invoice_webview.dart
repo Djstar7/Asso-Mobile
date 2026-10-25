@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -180,7 +181,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
           text: 'package_subscription.invoice.share_text'.tr,
         );
 
-        Get.snackbar(
+        AppFeedback.show(
           'wallet.webview.success_title'.tr,
           'package_subscription.invoice.downloaded'.tr,
           backgroundColor: AppThemeSystem.successColor,
@@ -188,7 +189,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
         );
       } else {
         debugPrint('❌ PDF Download Error: ${response.statusCode}');
-        Get.snackbar(
+        AppFeedback.show(
           'package_subscription.error'.tr,
           'package_subscription.invoice.download_failed'.trParams({'code': '${response.statusCode}'}),
           backgroundColor: AppThemeSystem.errorColor,
@@ -199,7 +200,7 @@ class _InvoiceWebViewState extends State<InvoiceWebView> {
       debugPrint('❌ Exception during PDF download: $e');
       debugPrint('❌ StackTrace: $stackTrace');
       Get.back(); // Close loading dialog if open
-      Get.snackbar(
+      AppFeedback.show(
         'package_subscription.error'.tr,
         'package_subscription.invoice.download_error'.trParams({'error': '$e'}),
         backgroundColor: AppThemeSystem.errorColor,

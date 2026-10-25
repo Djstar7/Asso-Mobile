@@ -1,3 +1,4 @@
+import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -185,7 +186,7 @@ class SalesCodeInput {
     final typed = _typed;
     if (typed.isEmpty) return;
     if (!await _confirmOwn(typed, warning)) return;
-    Get.snackbar(
+    AppFeedback.show(
       'package_subscription.sales_code.own_code.title'.tr,
       'package_subscription.sales_code.own_code.retry'.tr,
       snackPosition: SnackPosition.BOTTOM,
@@ -193,7 +194,7 @@ class SalesCodeInput {
   }
 
   void _warn() {
-    Get.snackbar(
+    AppFeedback.show(
       'package_subscription.sales_code.title'.tr,
       errorMessage.value.isNotEmpty
           ? 'package_subscription.sales_code.warn_with_error'.trParams({'error': errorMessage.value})
