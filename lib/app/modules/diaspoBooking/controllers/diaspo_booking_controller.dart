@@ -183,13 +183,16 @@ class DiaspoBookingController extends GetxController {
   Future<void> _processWalletBooking() async {
     isSubmitting.value = true;
     try {
-      final result = await _diaspoService.bookOffer(
-        offerId: offer.value!.id,
-        kgBooked: kgBooked.value,
-        parcelNatureId: insurance.selectedNature.value?.id,
-        declaredValue: insurance.declaredValue.value,
-        declaredValueCurrency: insurance.valueCurrency,
-        paymentMethod: 'wallet',
+      final result = await PaymentPreparation.run(
+        method: 'wallet',
+        action: () => _diaspoService.bookOffer(
+          offerId: offer.value!.id,
+          kgBooked: kgBooked.value,
+          parcelNatureId: insurance.selectedNature.value?.id,
+          declaredValue: insurance.declaredValue.value,
+          declaredValueCurrency: insurance.valueCurrency,
+          paymentMethod: 'wallet',
+        ),
       );
       isSubmitting.value = false;
       _showSuccessDialog(result['booking'] as DiaspoBooking);

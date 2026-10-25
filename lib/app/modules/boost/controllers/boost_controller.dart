@@ -13,7 +13,6 @@ import '../../../data/providers/package_service.dart';
 import '../../../data/providers/vendor_product_service.dart';
 import '../../../data/services/stripe_native_service.dart';
 import '../../packageSubscription/widgets/package_details_sheet.dart';
-import '../../packageSubscription/widgets/payment_loading_dialog.dart';
 import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
@@ -252,13 +251,15 @@ class BoostController extends GetxController {
     if (!confirmed || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'boost.activating'.tr);
 
     try {
-      final res = await PackageService.subscribePackageDirect(
-        package.id,
-        paymentMode: 'wallet',
-        productId: productId,
+      final res = await PaymentPreparation.run(
+        method: 'wallet',
+        action: () => PackageService.subscribePackageDirect(
+          package.id,
+          paymentMode: 'wallet',
+          productId: productId,
+        ),
       );
       if (_isDisposed) return;
 
@@ -273,9 +274,6 @@ class BoostController extends GetxController {
     } catch (e) {
       _error('boost.errors.generic'.trParams({'error': '$e'}));
     } finally {
-      // Fermé ici et nulle part ailleurs : un `return` anticipé (écran quitté
-      // pendant l'appel) laissait sinon un dialogue bloquant à l'écran.
-      PaymentLoadingDialog.hide();
       isSubscribing.value = false;
     }
   }

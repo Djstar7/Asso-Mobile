@@ -161,11 +161,14 @@ class CertificationPackagesController extends GetxController {
     if (_isDisposed || isCreatingOrder.value) return null;
     isCreatingOrder.value = true;
     try {
-      final response = await PackageService.subscribePackageDirect(
-        packageId,
-        paymentMode: 'wallet',
-        salesCode: salesCode.code,
-        acceptOwnCode: salesCode.acceptOwnCode,
+      final response = await PaymentPreparation.run(
+        method: 'wallet',
+        action: () => PackageService.subscribePackageDirect(
+          packageId,
+          paymentMode: 'wallet',
+          salesCode: salesCode.code,
+          acceptOwnCode: salesCode.acceptOwnCode,
+        ),
       );
       if (salesCode.handleServerRejection(response)) return null;
       if (!response.success) {

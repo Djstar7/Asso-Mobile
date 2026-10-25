@@ -10,6 +10,10 @@ import 'package:asso/app/modules/diaspoList/views/diaspo_list_view.dart';
 import 'package:asso/app/modules/diaspoList/views/passcolis_section.dart';
 import 'package:asso/app/modules/inventoryList/bindings/inventory_list_binding.dart';
 import 'package:asso/app/modules/inventoryList/controllers/inventory_list_controller.dart';
+import 'package:asso/app/modules/home/controllers/home_controller.dart';
+import 'package:asso/app/modules/search/controllers/search_controller.dart'
+    as search;
+import 'package:asso/app/modules/search/views/search_view.dart';
 import 'package:asso/app/modules/maritime/controllers/maritime_controller.dart';
 import 'package:asso/app/modules/maritime/views/maritime_section.dart';
 import 'package:asso/app/modules/storeManagement/controllers/store_management_controller.dart';
@@ -88,6 +92,55 @@ void main() {
     Get.put<MaritimeService>(_MaritimeService());
     Get.put(CurrencyService());
   }
+
+  testWidgets(
+    'le premier clic Passcolis ouvre les trajets avant de monter Recherche',
+    (tester) async {
+      services();
+      await tester.pumpWidget(
+        themedApp(const Scaffold(body: SizedBox.shrink())),
+      );
+      final home = HomeController();
+      home.tabController = TabController(length: 5, vsync: tester);
+      addTearDown(home.onClose);
+      expect(Get.isRegistered<search.SearchController>(), isFalse);
+
+      home.onSeeAllPasscolis();
+      final controller = Get.find<search.SearchController>();
+      expect(controller.scope.value, search.SearchScope.passcolis);
+      expect(home.currentTabIndex.value, 1);
+      await tester.pumpWidget(themedApp(const Scaffold(body: SearchTabView())));
+      await tester.pumpAndSettle();
+      expect(Get.find<search.SearchController>(), same(controller));
+      expect(find.byType(PasscolisSection), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'le raccourci Passcolis réutilise Recherche déjà ouverte sur Produits',
+    (tester) async {
+      services();
+      await tester.pumpWidget(themedApp(const Scaffold(body: SearchTabView())));
+      await tester.pumpAndSettle();
+      final controller = Get.find<search.SearchController>();
+      controller.searchTextController.text = 'Téléphone';
+      expect(controller.scope.value, search.SearchScope.products);
+      final home = HomeController();
+      home.tabController = TabController(length: 5, vsync: tester);
+      addTearDown(home.onClose);
+
+      home.onSeeAllPasscolis();
+      await tester.pumpAndSettle();
+      expect(Get.find<search.SearchController>(), same(controller));
+      expect(controller.scope.value, search.SearchScope.passcolis);
+      expect(controller.searchTextController.text, 'Téléphone');
+      expect(find.byType(PasscolisSection), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     'Passcolis reste utilisable après un aller-retour durant le fondu',

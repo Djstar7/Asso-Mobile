@@ -147,15 +147,25 @@ void main() {
     expect(find.byType(PaymentPreparationDialog), findsNothing);
   });
 
-  testWidgets('le solde Wallet conserve son parcours sans modale externe', (
+  testWidgets('le paiement Wallet affiche une attente jusqu’à confirmation', (
     tester,
   ) async {
     await openApp(tester);
-    expect(
-      await PaymentPreparation.run(method: 'wallet', action: () async => 7),
-      7,
+    final response = Completer<int>();
+    final task = PaymentPreparation.run(
+      method: 'wallet',
+      action: () => response.future,
     );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('payment.preparation.wallet_title'.tr), findsOneWidget);
+    expect(find.byIcon(Icons.account_balance_wallet_outlined), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byType(PaymentPreparationDialog), findsOneWidget);
+    response.complete(7);
     await tester.pumpAndSettle();
+    expect(await task, 7);
     expect(find.byType(PaymentPreparationDialog), findsNothing);
   });
 

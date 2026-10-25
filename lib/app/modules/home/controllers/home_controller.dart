@@ -841,14 +841,17 @@ class HomeController extends GetxController
 
   /// La bannière Passcolis ouvre la recherche sur l'onglet des trajets.
   void onSeeAllPasscolis() {
-    // Le controller de recherche vit déjà (l'onglet est monté avec la page) :
-    // on lui demande de changer de famille plutôt que de lui passer un
-    // argument de route, qu'il ne relirait qu'à sa création.
-    if (Get.isRegistered<search_ctrl.SearchController>()) {
-      Get.find<search_ctrl.SearchController>().changeScope(
-        search_ctrl.SearchScope.passcolis,
-      );
-    }
+    if (_isDisposed) return;
+    // TabBarView monte ses onglets à la demande : au premier clic depuis
+    // l'accueil, Recherche peut ne pas encore avoir de contrôleur. Le créer
+    // avant la navigation permet de conserver le choix Passcolis au montage.
+    final search = Get.isRegistered<search_ctrl.SearchController>()
+        ? Get.find<search_ctrl.SearchController>()
+        : Get.put<search_ctrl.SearchController>(
+            search_ctrl.SearchController(),
+            permanent: true,
+          );
+    search.changeScope(search_ctrl.SearchScope.passcolis);
     goToSearchTab();
   }
 
@@ -876,7 +879,9 @@ class HomeController extends GetxController
         final isFavorite = response.data?['is_favorite'] ?? false;
         final message =
             response.data?['message'] ??
-            (isFavorite ? 'home.favorite.added'.tr : 'home.favorite.removed'.tr);
+            (isFavorite
+                ? 'home.favorite.added'.tr
+                : 'home.favorite.removed'.tr);
 
         // Update the is_favorite status in all product lists
         updateProductFavoriteStatus(productId, isFavorite);

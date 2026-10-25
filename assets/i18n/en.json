@@ -1351,6 +1351,8 @@
   },
   "payment": {
     "preparation": {
+      "wallet_title": "Wallet payment in progress",
+      "wallet_message": "Please wait while your payment with your ASSO Wallet balance is confirmed.",
       "mobile_money_title": "Preparing Mobile Money payment",
       "mobile_money_message": "Please wait while the payment request is sent to your phone.",
       "card_title": "Opening card payment",

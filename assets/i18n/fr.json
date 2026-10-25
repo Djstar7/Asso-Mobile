@@ -1351,6 +1351,8 @@
   },
   "payment": {
     "preparation": {
+      "wallet_title": "Paiement Wallet en cours",
+      "wallet_message": "Veuillez patienter pendant la confirmation de votre paiement avec le solde Wallet ASSO.",
       "mobile_money_title": "Préparation du paiement Mobile Money",
       "mobile_money_message": "Veuillez patienter pendant l’envoi de la demande de paiement à votre téléphone.",
       "card_title": "Ouverture du paiement par carte",

@@ -9,7 +9,6 @@ import '../../payment/widgets/payment_method_selector.dart';
 import '../../payment/widgets/wallet_payment_confirm_dialog.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
-import '../widgets/payment_loading_dialog.dart';
 import '../widgets/payment_success_dialog.dart';
 import '../widgets/package_details_sheet.dart';
 import '../widgets/sales_code_field.dart';
@@ -275,17 +274,18 @@ class PackageSubscriptionController extends GetxController {
     if (!confirmed || _isDisposed) return;
 
     isSubscribing.value = true;
-    PaymentLoadingDialog.show(message: 'package_subscription.activating'.tr);
 
     try {
-      final response = await PackageService.subscribePackageDirect(
-        package['id'] as int,
-        paymentMode: 'wallet',
-        salesCode: salesCode.code,
-        acceptOwnCode: salesCode.acceptOwnCode,
+      final response = await PaymentPreparation.run(
+        method: 'wallet',
+        action: () => PackageService.subscribePackageDirect(
+          package['id'] as int,
+          paymentMode: 'wallet',
+          salesCode: salesCode.code,
+          acceptOwnCode: salesCode.acceptOwnCode,
+        ),
       );
       if (_isDisposed) return;
-      PaymentLoadingDialog.hide();
 
       if (!response.success) {
         if (salesCode.handleServerRejection(response)) return;
@@ -301,7 +301,6 @@ class PackageSubscriptionController extends GetxController {
         paymentMethod: 'wallet',
       );
     } catch (e) {
-      PaymentLoadingDialog.hide();
       _showSubscriptionError(
         'package_subscription.generic_error'.trParams({'error': '$e'}),
       );
