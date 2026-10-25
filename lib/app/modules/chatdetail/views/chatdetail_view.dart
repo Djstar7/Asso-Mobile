@@ -117,15 +117,15 @@ class ChatdetailView extends GetView<ChatdetailController> {
                               color: AppThemeSystem.primaryColor,
                             ),
                           )
-                        : Text(
-                            controller.conversation['isOnline'] == true
-                                ? 'chatdetail.online'.tr
-                                : 'chatdetail.offline'.tr,
+                        : controller.conversation['isOnline'] == true
+                        ? Text(
+                            'chatdetail.online'.tr,
                             style: context.textStyle(
                               FontSizeType.caption,
                               color: AppDesign.textSecondary(context),
                             ),
-                          ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ],
               ),
