@@ -4459,6 +4459,7 @@
     }
   },
   "parcel_insurance": {
+    "quote_unavailable": "Le devis d’assurance est indisponible. Réessayez avant de payer.",
     "title": "Nature et valeur du colis",
     "intro": "Indiquez ce que contient le colis et sa valeur : un supplément d'assurance est ajouté au prix. En cas de perte, ASSO vous indemnise jusqu'à la valeur déclarée.",
     "nature": "Nature du colis",
@@ -4526,7 +4527,7 @@
     "insurance_quote_unknown": "—",
     "insurance_quote_unavailable": "Le devis d’assurance n’est pas disponible. Réessayez ou décochez l’assurance.",
     "parcel": "Colis",
-    "kg": "Poids",
+    "kg": "Poids total",
     "parcels": "Nombre de colis",
     "kg_available": "@kg kg disponibles sur ce départ",
     "sender": "Vos coordonnées",

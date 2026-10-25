@@ -52,15 +52,31 @@ class MaritimeInsuranceSection extends StatelessWidget {
             child: CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              value: optIn.value,
-              onChanged: (value) => optIn.value = value ?? false,
+              value: form.isComplete && optIn.value,
+              onChanged: form.isComplete
+                  ? (value) => optIn.value = value ?? false
+                  : null,
               title: Text(
                 'maritime.form.insurance_opt_in'.tr,
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              subtitle: Text(
-                'maritime.form.insurance_legal_disclosure'.tr,
-                style: TextStyle(fontSize: 12, height: 1.4, color: mutedColor),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!form.isComplete)
+                    Text(
+                      'parcel_insurance.required'.tr,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  Text(
+                    'maritime.form.insurance_legal_disclosure'.tr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: mutedColor,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

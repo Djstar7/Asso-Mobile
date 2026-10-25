@@ -4459,6 +4459,7 @@
     }
   },
   "parcel_insurance": {
+    "quote_unavailable": "The insurance quote is unavailable. Please try again before paying.",
     "title": "Parcel contents and value",
     "intro": "Tell us what the parcel contains and its value: an insurance supplement is added to the price. If it is lost, ASSO compensates you up to the declared value.",
     "nature": "Parcel contents",
@@ -4526,7 +4527,7 @@
     "insurance_quote_unknown": "—",
     "insurance_quote_unavailable": "The insurance quote is unavailable. Try again or opt out of insurance.",
     "parcel": "Parcel",
-    "kg": "Weight",
+    "kg": "Total weight",
     "parcels": "Number of parcels",
     "kg_available": "@kg kg available on this departure",
     "sender": "Your details",

@@ -62,11 +62,10 @@ class DiaspoBookingController extends GetxController {
 
     // Listen to kg changes
     kgController.addListener(() {
-      final value = double.tryParse(kgController.text) ?? 0;
-      if (value > 0 && value <= remainingKg) {
-        kgBooked.value = value;
-        _calculatePrices();
-      }
+      final value =
+          double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
+      kgBooked.value = value.isFinite && value > 0 ? value : 0;
+      _calculatePrices();
     });
   }
 
@@ -146,6 +145,13 @@ class DiaspoBookingController extends GetxController {
       return;
     }
     if (insurance.isQuoting.value) return;
+    if (!insurance.quoteAvailable.value) {
+      AppFeedback.show(
+        'diaspo_booking.error'.tr,
+        'parcel_insurance.quote_unavailable'.tr,
+      );
+      return;
+    }
 
     // 1) Choix du moyen de paiement (tous affichés, grisés si trop faible,
     //    jamais masqués selon le pays, sans solde wallet).

@@ -27,7 +27,8 @@ class ParcelInsuranceForm {
       ? CurrencyService.to.displayCurrencyCode
       : CurrencyService.pivot;
 
-  String get valueCurrencySymbol => CurrencyService.getSymbolForCode(valueCurrency);
+  String get valueCurrencySymbol =>
+      CurrencyService.getSymbolForCode(valueCurrency);
 
   final DiaspoService _service = Get.find<DiaspoService>();
 
@@ -43,8 +44,12 @@ class ParcelInsuranceForm {
   Timer? _debounce;
   int _quoteSeq = 0;
 
-  bool get isComplete =>
-      selectedNature.value != null && valueController.text.trim().isNotEmpty;
+  bool get hasValidValue =>
+      declaredValue.value.isFinite &&
+      declaredValue.value > 0 &&
+      declaredValue.value <= 100000000;
+
+  bool get isComplete => selectedNature.value != null && hasValidValue;
 
   Future<void> load() async {
     try {
@@ -57,8 +62,10 @@ class ParcelInsuranceForm {
   }
 
   void selectNature(ParcelNature? nature) {
+    _debounce?.cancel();
     _quoteSeq++;
     quoteAvailable.value = false;
+    insuranceAmount.value = 0;
     isQuoting.value = false;
     selectedNature.value = nature;
     _requestQuote();
@@ -70,13 +77,14 @@ class ParcelInsuranceForm {
     declaredValue.value =
         double.tryParse(valueController.text.replaceAll(',', '.')) ?? 0;
     quoteAvailable.value = false;
+    insuranceAmount.value = 0;
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), _requestQuote);
   }
 
   Future<void> _requestQuote() async {
     final nature = selectedNature.value;
-    if (nature == null || valueController.text.trim().isEmpty) {
+    if (!isComplete) {
       insuranceAmount.value = 0;
       quoteAvailable.value = false;
       return;
@@ -85,7 +93,7 @@ class ParcelInsuranceForm {
     isQuoting.value = true;
     try {
       final amount = await _service.insuranceQuote(
-        natureId: nature.id,
+        natureId: nature!.id,
         declaredValue: declaredValue.value,
         declaredValueCurrency: valueCurrency,
         currency: currency(),
@@ -105,10 +113,12 @@ class ParcelInsuranceForm {
   }
 
   void dispose() {
+    _quoteSeq++;
     _debounce?.cancel();
     valueController.dispose();
   }
 }
+
 /// Carte « Nature et valeur du colis » avec le supplément d'assurance.
 class ParcelInsuranceCard extends StatelessWidget {
   const ParcelInsuranceCard({
@@ -146,9 +156,12 @@ class ParcelInsuranceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = AppThemeSystem.isDarkMode(context);
     final muted = isDark ? Colors.white70 : AppDesign.neutral500;
-    final fill = isDark ? Colors.white.withValues(alpha: 0.04) : AppDesign.neutral50;
+    final fill = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppDesign.neutral50;
 
-    InputDecoration deco(String label, {String? suffix, String? error}) => InputDecoration(
+    InputDecoration deco(String label, {String? suffix, String? error}) =>
+        InputDecoration(
           labelText: label,
           floatingLabelStyle: const TextStyle(color: AppDesign.accent),
           suffixText: suffix,
@@ -182,11 +195,20 @@ class ParcelInsuranceCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.shield_outlined, size: 20, color: AppThemeSystem.primaryColor),
+              Icon(
+                Icons.shield_outlined,
+                size: 20,
+                color: AppThemeSystem.primaryColor,
+              ),
               const SizedBox(width: 8),
-              Text(
-                'parcel_insurance.title'.tr,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  'parcel_insurance.title'.tr,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
@@ -202,16 +224,17 @@ class ParcelInsuranceCard extends StatelessWidget {
               () => DropdownButtonFormField<int>(
                 value: form.selectedNature.value?.id,
                 isExpanded: true,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: muted,
-                ),
+                icon: Icon(Icons.keyboard_arrow_down_rounded, color: muted),
                 iconSize: 22,
-                dropdownColor:
-                    isDark ? AppThemeSystem.darkCardColor : Colors.white,
+                dropdownColor: isDark
+                    ? AppThemeSystem.darkCardColor
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 menuMaxHeight: 320,
-                decoration: deco('parcel_insurance.nature'.tr, error: natureError),
+                decoration: deco(
+                  'parcel_insurance.nature'.tr,
+                  error: natureError,
+                ),
                 items: form.natures
                     .map(
                       (n) => DropdownMenuItem(
@@ -236,7 +259,9 @@ class ParcelInsuranceCard extends StatelessWidget {
             child: TextField(
               cursorColor: AppDesign.accent,
               controller: form.valueController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+[.,]?\d{0,2}')),
               ],
@@ -253,7 +278,10 @@ class ParcelInsuranceCard extends StatelessWidget {
               () => Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('parcel_insurance.supplement'.tr, style: TextStyle(color: muted)),
+                  Text(
+                    'parcel_insurance.supplement'.tr,
+                    style: TextStyle(color: muted),
+                  ),
                   form.isQuoting.value
                       ? const SizedBox(
                           width: 16,

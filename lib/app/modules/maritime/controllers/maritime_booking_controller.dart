@@ -31,7 +31,6 @@ class MaritimeBookingController extends GetxController {
 
   final kgController = TextEditingController(text: '10');
   final kg = 10.0.obs;
-  final parcelsController = TextEditingController(text: '1');
 
   final senderFirstName = TextEditingController();
   final senderLastName = TextEditingController();
@@ -54,7 +53,6 @@ class MaritimeBookingController extends GetxController {
   /// Ordre d'affichage des champs dans le formulaire.
   static const _fieldOrder = [
     'kg_booked',
-    'parcels_count',
     'sender_first_name',
     'sender_last_name',
     'sender_phone',
@@ -102,7 +100,6 @@ class MaritimeBookingController extends GetxController {
   void _bindErrorClearing() {
     final map = <String, TextEditingController>{
       'kg_booked': kgController,
-      'parcels_count': parcelsController,
       'sender_first_name': senderFirstName,
       'sender_last_name': senderLastName,
       'sender_phone': senderPhone,
@@ -112,9 +109,19 @@ class MaritimeBookingController extends GetxController {
       'recipient_phone': recipientPhone,
     };
     map.forEach((key, c) => c.addListener(() => clearError(key)));
-    ever(insurance.selectedNature, (_) => clearError('parcel_nature_id'));
-    ever(insurance.declaredValue, (_) => clearError('declared_value'));
+    _declarationWorkers.addAll([
+      ever(insurance.selectedNature, (_) {
+        clearError('parcel_nature_id');
+        if (!insurance.isComplete) insuranceOptIn.value = false;
+      }),
+      ever(insurance.declaredValue, (_) {
+        clearError('declared_value');
+        if (!insurance.isComplete) insuranceOptIn.value = false;
+      }),
+    ]);
   }
+
+  final List<Worker> _declarationWorkers = [];
 
   String get currency => departure.value?.currency ?? 'EUR';
   double get pricePerKg => freightInquiry != null
@@ -162,8 +169,9 @@ class MaritimeBookingController extends GetxController {
     kgController.addListener(() {
       final value =
           double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
-      if (freightInquiry == null && value > 0 && value <= remainingKg)
-        kg.value = value;
+      if (freightInquiry == null) {
+        kg.value = value.isFinite && value > 0 ? value : 0;
+      }
     });
 
     _bindErrorClearing();
@@ -174,7 +182,6 @@ class MaritimeBookingController extends GetxController {
   void onClose() {
     for (final c in [
       kgController,
-      parcelsController,
       senderFirstName,
       senderLastName,
       senderPhone,
@@ -186,6 +193,9 @@ class MaritimeBookingController extends GetxController {
       c.dispose();
     }
     scrollController.dispose();
+    for (final worker in _declarationWorkers) {
+      worker.dispose();
+    }
     insurance.dispose();
     super.onClose();
   }
@@ -208,7 +218,7 @@ class MaritimeBookingController extends GetxController {
 
     // Poids
     final rawKg = double.tryParse(kgController.text.replaceAll(',', '.'));
-    if (rawKg == null || t(kgController).isEmpty) {
+    if (rawKg == null || !rawKg.isFinite || t(kgController).isEmpty) {
       errors['kg_booked'] = 'maritime.validation.kg_required'.tr;
     } else if (rawKg < 0.5) {
       errors['kg_booked'] = 'maritime.validation.kg_min'.tr;
@@ -216,14 +226,6 @@ class MaritimeBookingController extends GetxController {
       errors['kg_booked'] = 'maritime.validation.kg_max'.trParams({
         'max': remainingKg.toStringAsFixed(1),
       });
-    }
-
-    // Colis
-    final parcels = int.tryParse(parcelsController.text);
-    if (parcels == null || parcels < 1) {
-      errors['parcels_count'] = 'maritime.validation.parcels_min'.tr;
-    } else if (parcels > 500) {
-      errors['parcels_count'] = 'maritime.validation.parcels_max'.tr;
     }
 
     // Expéditeur
@@ -238,8 +240,9 @@ class MaritimeBookingController extends GetxController {
     /// [requiredKey] = clé du message « obligatoire » propre au champ.
     String? phoneError(TextEditingController c, String requiredKey) {
       if (t(c).isEmpty) return requiredKey.tr;
-      if (!_phoneRegex.hasMatch(t(c)))
+      if (!_phoneRegex.hasMatch(t(c))) {
         return 'maritime.validation.phone_invalid'.tr;
+      }
       return null;
     }
 
@@ -279,7 +282,7 @@ class MaritimeBookingController extends GetxController {
     if (insurance.selectedNature.value == null) {
       errors['parcel_nature_id'] = 'maritime.validation.nature_required'.tr;
     }
-    if (insurance.declaredValue.value <= 0) {
+    if (!insurance.hasValidValue) {
       errors['declared_value'] = 'maritime.validation.value_required'.tr;
     }
 
@@ -296,7 +299,7 @@ class MaritimeBookingController extends GetxController {
     'kg_booked': freightInquiry != null
         ? freightInquiry!['kg']
         : double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
-    'parcels_count': int.tryParse(parcelsController.text) ?? 1,
+    'parcels_count': 1,
     'sender_first_name': senderFirstName.text.trim(),
     'sender_last_name': senderLastName.text.trim(),
     'sender_phone': senderPhone.text.trim(),
