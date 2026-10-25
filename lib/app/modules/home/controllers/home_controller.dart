@@ -823,8 +823,20 @@ class HomeController extends GetxController
   /// Une bascule d'onglet, pas un `toNamed` : la recherche est une
   /// destination principale de la barre du bas. L'empiler en écran aurait
   /// masqué cette barre et fait apparaître une flèche de retour.
-  void goToSearchTab() {
+  void goToSearchTab({
+    search_ctrl.SearchScope scope = search_ctrl.SearchScope.products,
+  }) {
     if (_isDisposed) return;
+    // Chaque raccourci de l'accueil choisit explicitement sa famille : un
+    // précédent passage par Passcolis ne doit pas détourner « Voir tout »
+    // des produits. Initialiser aussi le contrôleur si l'onglet est inédit.
+    final search = Get.isRegistered<search_ctrl.SearchController>()
+        ? Get.find<search_ctrl.SearchController>()
+        : Get.put<search_ctrl.SearchController>(
+            search_ctrl.SearchController(),
+            permanent: true,
+          );
+    search.changeScope(scope);
     handleTabTap(1);
     try {
       if (tabController.index != currentTabIndex.value) {
@@ -840,20 +852,8 @@ class HomeController extends GetxController
   }
 
   /// La bannière Passcolis ouvre la recherche sur l'onglet des trajets.
-  void onSeeAllPasscolis() {
-    if (_isDisposed) return;
-    // TabBarView monte ses onglets à la demande : au premier clic depuis
-    // l'accueil, Recherche peut ne pas encore avoir de contrôleur. Le créer
-    // avant la navigation permet de conserver le choix Passcolis au montage.
-    final search = Get.isRegistered<search_ctrl.SearchController>()
-        ? Get.find<search_ctrl.SearchController>()
-        : Get.put<search_ctrl.SearchController>(
-            search_ctrl.SearchController(),
-            permanent: true,
-          );
-    search.changeScope(search_ctrl.SearchScope.passcolis);
-    goToSearchTab();
-  }
+  void onSeeAllPasscolis() =>
+      goToSearchTab(scope: search_ctrl.SearchScope.passcolis);
 
   void onSeeAllNearby() => goToSearchTab();
 

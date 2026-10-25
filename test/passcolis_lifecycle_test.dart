@@ -142,6 +142,46 @@ void main() {
     },
   );
 
+  for (final entry in ['nearby', 'recent', 'search']) {
+    testWidgets('$entry ouvre Produits après une visite de Passcolis', (
+      tester,
+    ) async {
+      services();
+      await tester.pumpWidget(
+        themedApp(const Scaffold(body: SizedBox.shrink())),
+      );
+      final home = HomeController();
+      home.tabController = TabController(length: 5, vsync: tester);
+      addTearDown(home.onClose);
+      home.onSeeAllPasscolis();
+      await tester.pumpWidget(themedApp(const Scaffold(body: SearchTabView())));
+      await tester.pumpAndSettle();
+      final controller = Get.find<search.SearchController>();
+      expect(controller.scope.value, search.SearchScope.passcolis);
+
+      switch (entry) {
+        case 'nearby':
+          home.onSeeAllNearby();
+        case 'recent':
+          home.onSeeAllRecent();
+        default:
+          home.goToSearchTab();
+      }
+      await tester.pumpAndSettle();
+      expect(home.currentTabIndex.value, 1);
+      expect(Get.find<search.SearchController>(), same(controller));
+      expect(controller.scope.value, search.SearchScope.products);
+      expect(find.byType(PasscolisSection), findsNothing);
+
+      home.onSeeAllPasscolis();
+      await tester.pumpAndSettle();
+      expect(controller.scope.value, search.SearchScope.passcolis);
+      expect(find.byType(PasscolisSection), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets(
     'Passcolis reste utilisable après un aller-retour durant le fondu',
     (tester) async {

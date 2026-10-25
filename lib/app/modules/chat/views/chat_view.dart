@@ -244,8 +244,9 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                             conversation['name'],
                             style: context.textStyle(
                               FontSizeType.subtitle1,
-                              fontWeight:
-                                  hasUnread ? FontWeight.bold : FontWeight.w600,
+                              fontWeight: hasUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -259,8 +260,9 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                             color: hasUnread
                                 ? AppThemeSystem.primaryColor
                                 : AppThemeSystem.getSecondaryTextColor(context),
-                            fontWeight:
-                                hasUnread ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: hasUnread
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -276,9 +278,11 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                               color: hasUnread
                                   ? AppThemeSystem.getPrimaryTextColor(context)
                                   : AppThemeSystem.getSecondaryTextColor(
-                                      context),
-                              fontWeight:
-                                  hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                      context,
+                                    ),
+                              fontWeight: hasUnread
+                                  ? FontWeight.w500
+                                  : FontWeight.normal,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -294,8 +298,9 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                             ),
                             decoration: BoxDecoration(
                               color: AppDesign.accent,
-                              borderRadius:
-                                  BorderRadius.circular(AppDesign.radiusPill),
+                              borderRadius: BorderRadius.circular(
+                                AppDesign.radiusPill,
+                              ),
                             ),
                             child: Center(
                               child: Text(
@@ -315,8 +320,8 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                 ),
               ),
 
-              // Image du produit (optionnel)
-              if (conversation['productImage'] != null) ...[
+              // Aperçu de la photo réellement jointe au dernier message.
+              if (conversation['lastMessageImage'] != null) ...[
                 SizedBox(width: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(
@@ -326,13 +331,13 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                     ),
                   ),
                   child: CachedNetworkImage(
-                    imageUrl: conversation['productImage'],
+                    imageUrl: conversation['lastMessageImage'],
                     width: 48,
                     height: 48,
                     // Vignette de 48 px : décodée à sa taille, pas en
                     // pleine résolution.
-                    memCacheWidth:
-                        (48 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                    memCacheWidth: (48 * MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       width: 48,
@@ -356,7 +361,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
                       height: 48,
                       color: AppThemeSystem.grey200,
                       child: Icon(
-                        Icons.image_outlined,
+                        Icons.broken_image_outlined,
                         size: 24,
                         color: AppThemeSystem.grey600,
                       ),
@@ -535,7 +540,7 @@ class _ChatViewState extends State<ChatView> with WidgetsBindingObserver {
 /// l'écriture, et un en-tête épinglé doit annoncer sa hauteur d'avance.
 class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   _SearchBarDelegate({required this.controller, required BuildContext context})
-      : _height = _measure(context);
+    : _height = _measure(context);
 
   final ChatController controller;
   final double _height;

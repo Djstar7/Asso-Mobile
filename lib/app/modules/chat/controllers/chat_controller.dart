@@ -7,7 +7,8 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/string_utils.dart';
 
 class ChatController extends GetxController {
-  final RxList<Map<String, dynamic>> conversations = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> conversations =
+      <Map<String, dynamic>>[].obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
@@ -16,14 +17,11 @@ class ChatController extends GetxController {
   ///
   /// Alimente la pastille de la barre du haut, d'où la messagerie est
   /// désormais accessible.
-  int get totalUnreadCount => conversations.fold<int>(
-        0,
-        (total, conversation) {
-          final raw = conversation['unreadCount'];
-          final count = raw is int ? raw : int.tryParse('$raw') ?? 0;
-          return total + (count > 0 ? count : 0);
-        },
-      );
+  int get totalUnreadCount => conversations.fold<int>(0, (total, conversation) {
+    final raw = conversation['unreadCount'];
+    final count = raw is int ? raw : int.tryParse('$raw') ?? 0;
+    return total + (count > 0 ? count : 0);
+  });
   int _currentPage = 1;
 
   @override
@@ -38,7 +36,6 @@ class ChatController extends GetxController {
     }
   }
 
-
   Future<void> _loadConversations({bool refresh = false}) async {
     if (refresh) {
       _currentPage = 1;
@@ -48,10 +45,13 @@ class ChatController extends GetxController {
     isLoading.value = true;
 
     try {
-      final response = await ConversationService.getConversations(page: _currentPage);
+      final response = await ConversationService.getConversations(
+        page: _currentPage,
+      );
 
       if (response.success && response.data != null) {
-        final convList = response.data!['conversations'] as List? ??
+        final convList =
+            response.data!['conversations'] as List? ??
             response.data!['data'] as List? ??
             [];
 
@@ -60,16 +60,20 @@ class ChatController extends GetxController {
 
           // Gérer le dernier message (peut être un String ou un Map)
           String lastMessageText = '';
+          String? lastMessageImage;
           final lastMsg = conv['last_message'];
 
           if (lastMsg is Map) {
             // Le backend retourne un objet message complet
             final msgText = lastMsg['message'];
-            final hasImage = lastMsg['image_path'] != null;
+            final imagePath = lastMsg['image_path'];
+            if (imagePath is String && imagePath.trim().isNotEmpty) {
+              lastMessageImage = imagePath.trim();
+            }
 
             if (msgText != null && msgText.toString().isNotEmpty) {
               lastMessageText = msgText.toString();
-            } else if (hasImage) {
+            } else if (lastMessageImage != null) {
               lastMessageText = 'chat.image_message'.tr;
             } else {
               lastMessageText = '';
@@ -80,10 +84,18 @@ class ChatController extends GetxController {
 
           return <String, dynamic>{
             'id': conv['id']?.toString() ?? '',
-            'name': conv['other_user']?['name'] ?? conv['name'] ?? 'chat.default_user_name'.tr,
-            'avatar': StringUtils.getInitials(conv['other_user']?['name'] ?? conv['name'] ?? ''),
+            'name':
+                conv['other_user']?['name'] ??
+                conv['name'] ??
+                'chat.default_user_name'.tr,
+            'avatar': StringUtils.getInitials(
+              conv['other_user']?['name'] ?? conv['name'] ?? '',
+            ),
             'lastMessage': lastMessageText,
-            'timestamp': _formatTimestamp(conv['updated_at'] ?? conv['last_message_at']),
+            'lastMessageImage': lastMessageImage,
+            'timestamp': _formatTimestamp(
+              conv['updated_at'] ?? conv['last_message_at'],
+            ),
             'unreadCount': conv['unread_count'] ?? 0,
             'isOnline': conv['other_user']?['is_online'] ?? false,
             'productImage': conv['product']?['image'] ?? conv['product_image'],
@@ -98,7 +110,8 @@ class ChatController extends GetxController {
           conversations.addAll(converted);
         }
 
-        final pagination = response.data!['pagination'] as Map<String, dynamic>?;
+        final pagination =
+            response.data!['pagination'] as Map<String, dynamic>?;
         hasMore.value = pagination?['has_more'] ?? false;
       } else {
         // No fallback - just keep empty if no data
@@ -123,8 +136,12 @@ class ChatController extends GetxController {
       final now = DateTime.now();
       final diff = now.difference(date);
 
-      if (diff.inMinutes < 60) return 'chat.time.minutes_ago'.trParams({'minutes': '${diff.inMinutes}'});
-      if (diff.inHours < 24) return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      if (diff.inMinutes < 60)
+        return 'chat.time.minutes_ago'.trParams({
+          'minutes': '${diff.inMinutes}',
+        });
+      if (diff.inHours < 24)
+        return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
       if (diff.inDays == 1) return 'chat.time.yesterday'.tr;
       if (diff.inDays < 7) {
         final days = [
@@ -149,10 +166,11 @@ class ChatController extends GetxController {
       return conversations;
     }
     return conversations
-        .where((conv) => conv['name']
-            .toString()
-            .toLowerCase()
-            .contains(searchQuery.value.toLowerCase()))
+        .where(
+          (conv) => conv['name'].toString().toLowerCase().contains(
+            searchQuery.value.toLowerCase(),
+          ),
+        )
         .toList();
   }
 
@@ -182,14 +200,17 @@ class ChatController extends GetxController {
         final otherUser = conv['other_user'];
         final userName = otherUser?['name'] ?? 'chat.default_user_name'.tr;
 
-        Get.toNamed('/chatdetail', arguments: {
-          'id': conv['id']?.toString(),
-          'name': userName,
-          'avatar': StringUtils.getInitials(userName),
-          'userId': userId,
-          'productId': productId,
-          'isOnline': false, // On ne connaît pas le statut au démarrage
-        });
+        Get.toNamed(
+          '/chatdetail',
+          arguments: {
+            'id': conv['id']?.toString(),
+            'name': userName,
+            'avatar': StringUtils.getInitials(userName),
+            'userId': userId,
+            'productId': productId,
+            'isOnline': false, // On ne connaît pas le statut au démarrage
+          },
+        );
       }
     } catch (e) {
       AppFeedback.show('chat.error'.tr, 'chat.start_conversation_failed'.tr);
@@ -220,7 +241,9 @@ class ChatController extends GetxController {
       conversations.removeWhere((c) => c['id'] == conversation['id']);
 
       // Appeler l'API pour cacher la conversation
-      final response = await ConversationService.hideConversation(conversationId);
+      final response = await ConversationService.hideConversation(
+        conversationId,
+      );
 
       if (response.success) {
         AppFeedback.show(
