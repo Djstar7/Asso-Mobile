@@ -703,8 +703,11 @@ class AuthService {
   static Future<ApiResponse> logout() async {
     developer.log('========== LOGOUT ==========', name: 'AuthService');
 
-    // Le backend supprime automatiquement tous les tokens FCM lors du logout
-    final response = await ApiProvider.post(AppConstants.logoutUrl);
+    // Remove this session's device without disconnecting the other devices.
+    final response = await ApiProvider.post(
+      AppConstants.logoutUrl,
+      body: {'fcm_token': StorageService.registeredFcmToken},
+    );
 
     developer.log(
       'Logout response',

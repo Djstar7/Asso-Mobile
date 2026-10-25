@@ -149,7 +149,41 @@
       "enabled_title": "Notifications enabled",
       "disabled_title": "Notifications disabled",
       "enabled_message": "You will receive push notifications",
-      "disabled_message": "You will no longer receive push notifications"
+      "disabled_message": "You will no longer receive push notifications",
+      "saved": "Your notification preferences have been saved.",
+      "save_failed": "Unable to sync your preferences. The change was not applied. Try again when you have a connection.",
+      "daily_summary": "One quiet daily summary.",
+      "categories": {
+        "orders": "Orders and deliveries",
+        "payments": "Payments and Wallet",
+        "messages": "Messages",
+        "disputes": "Disputes and required actions",
+        "real_estate": "Property and saved alerts",
+        "marketing": "News and promotions",
+        "system": "Account and service information"
+      },
+      "diagnostics": {
+        "title": "Check my notifications",
+        "permission": "Phone permission: @status",
+        "registered": "This device’s registration with ASSO: @status",
+        "apple": "Apple notification connection: @status",
+        "ready": "available",
+        "not_ready": "needs checking",
+        "devices": "Active devices on this account: @count",
+        "pending": "Pending deliveries on this account: @count",
+        "error": "Code to share with support: @code",
+        "explanation": "Phone permission, ASSO registration and actual reception are separate checks. Firebase acceptance does not prove that you read the message on your phone.",
+        "open_settings": "Phone settings",
+        "test": "Send a test",
+        "status": {
+          "authorized": "allowed",
+          "denied": "denied",
+          "provisional": "allowed quietly",
+          "notDetermined": "not requested",
+          "unavailable": "unavailable",
+          "ephemeral": "temporarily allowed"
+        }
+      }
     },
     "country": {
       "sheet_title": "Select your country",
@@ -2287,7 +2321,21 @@
     "delete": "Delete",
     "delete_all_title": "Delete all notifications",
     "delete_all_message": "Do you really want to delete all your notifications?",
-    "delete_all_confirm": "Delete all"
+    "delete_all_confirm": "Delete all",
+    "channels": {
+      "actions": "Orders and important actions",
+      "actions_description": "Messages, payments and actions required on your cases.",
+      "updates": "News and summaries",
+      "updates_description": "Quiet promotional summaries and property alerts."
+    },
+    "digest": {
+      "title": "Your ASSO summary",
+      "date": "Updates for @date",
+      "load_failed": "Unable to load the summary. Check your connection.",
+      "more": "Load more",
+      "retry": "Try again",
+      "empty": "No announcements are available in this summary."
+    }
   },
   "add_product": {
     "steps": {

@@ -149,7 +149,41 @@
       "enabled_title": "Notifications activées",
       "disabled_title": "Notifications désactivées",
       "enabled_message": "Vous recevrez des notifications push",
-      "disabled_message": "Vous ne recevrez plus de notifications push"
+      "disabled_message": "Vous ne recevrez plus de notifications push",
+      "saved": "Vos préférences de notifications ont été enregistrées.",
+      "save_failed": "Impossible de synchroniser vos préférences. Le changement n’a pas été appliqué. Réessayez avec une connexion disponible.",
+      "daily_summary": "Un résumé quotidien, sans alerte sonore.",
+      "categories": {
+        "orders": "Commandes et livraisons",
+        "payments": "Paiements et Wallet",
+        "messages": "Messages",
+        "disputes": "Litiges et actions attendues",
+        "real_estate": "Immobilier et alertes enregistrées",
+        "marketing": "Nouveautés et promotions",
+        "system": "Compte et informations de service"
+      },
+      "diagnostics": {
+        "title": "Vérifier mes notifications",
+        "permission": "Autorisation du téléphone : @status",
+        "registered": "Enregistrement de cet appareil auprès d’ASSO : @status",
+        "apple": "Connexion aux notifications Apple : @status",
+        "ready": "disponible",
+        "not_ready": "à vérifier",
+        "devices": "Appareils actifs sur ce compte : @count",
+        "pending": "Envois en attente sur ce compte : @count",
+        "error": "Code à communiquer au support : @code",
+        "explanation": "L’autorisation du téléphone, l’enregistrement dans ASSO et la réception réelle sont des vérifications distinctes. Un envoi accepté par Firebase ne prouve pas sa lecture sur votre téléphone.",
+        "open_settings": "Réglages du téléphone",
+        "test": "Envoyer un test",
+        "status": {
+          "authorized": "autorisées",
+          "denied": "refusées",
+          "provisional": "autorisées discrètement",
+          "notDetermined": "non demandées",
+          "unavailable": "indisponible",
+          "ephemeral": "autorisées temporairement"
+        }
+      }
     },
     "country": {
       "sheet_title": "Sélectionnez votre pays",
@@ -2287,7 +2321,21 @@
     "delete": "Supprimer",
     "delete_all_title": "Supprimer toutes les notifications",
     "delete_all_message": "Voulez-vous vraiment supprimer toutes vos notifications ?",
-    "delete_all_confirm": "Supprimer tout"
+    "delete_all_confirm": "Supprimer tout",
+    "channels": {
+      "actions": "Commandes et actions importantes",
+      "actions_description": "Messages, paiements et actions attendues sur vos dossiers.",
+      "updates": "Actualités et résumés",
+      "updates_description": "Résumés promotionnels et alertes immobilières sans son."
+    },
+    "digest": {
+      "title": "Votre résumé ASSO",
+      "date": "Nouveautés du @date",
+      "load_failed": "Impossible de charger le résumé. Vérifiez votre connexion.",
+      "more": "Voir la suite",
+      "retry": "Réessayer",
+      "empty": "Aucune annonce disponible pour ce résumé."
+    }
   },
   "add_product": {
     "steps": {

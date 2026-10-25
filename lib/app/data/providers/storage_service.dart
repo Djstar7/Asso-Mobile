@@ -42,7 +42,9 @@ class StorageService {
     developer.log(
       'Retrieved token',
       name: 'StorageService',
-      error: token != null ? 'Token exists (${token.length} chars)' : 'No token found',
+      error: token != null
+          ? 'Token exists (${token.length} chars)'
+          : 'No token found',
     );
     return token;
   }
@@ -51,10 +53,7 @@ class StorageService {
   static bool get hasToken {
     final token = getToken();
     final hasValidToken = token != null && token.isNotEmpty;
-    developer.log(
-      'Token check: $hasValidToken',
-      name: 'StorageService',
-    );
+    developer.log('Token check: $hasValidToken', name: 'StorageService');
     return hasValidToken;
   }
 
@@ -245,11 +244,7 @@ class StorageService {
       CacheManager().clearAll();
       developer.log('Cache cleared successfully', name: 'StorageService');
     } catch (e) {
-      developer.log(
-        'Error clearing cache',
-        name: 'StorageService',
-        error: e,
-      );
+      developer.log('Error clearing cache', name: 'StorageService', error: e);
     }
 
     developer.log(
@@ -424,12 +419,23 @@ class StorageService {
   /// enregistré pour ce compte, ou s'il a changé depuis.
   static String? get fcmRegistration => _storage.read('fcm_registration');
 
+  static String? get registeredFcmToken {
+    final registration = fcmRegistration;
+    final prefix = '${getUser()?.id}:';
+    return registration != null && registration.startsWith(prefix)
+        ? registration.substring(prefix.length)
+        : null;
+  }
+
   static void setFcmRegistration(String value) =>
       _storage.write('fcm_registration', value);
 
-  /// Le backend supprime les tokens du compte à la déconnexion : la marque
+  /// Le backend supprime le token de cet appareil à la déconnexion : la marque
   /// doit tomber avec eux, sinon la reconnexion croirait le token connu.
-  static void clearFcmRegistration() => _storage.remove('fcm_registration');
+  static void clearFcmRegistration() {
+    _storage.remove('fcm_registration');
+    _storage.remove('fcm_registration_at');
+  }
 
   /// Token FCM et langue déjà abonnés au topic des annonces
   /// (`token|langue`, voir FirebaseMessagingService.topicMarker).
@@ -441,4 +447,19 @@ class StorageService {
 
   static void setAnnouncementsTopicToken(String token) =>
       _storage.write('fcm_topic_token', token);
+  static String get _pushPreferencesKey =>
+      'push_preferences_${getUser()?.id ?? 'guest'}';
+  static Map<String, dynamic>? get pushPreferences {
+    final value = _storage.read(_pushPreferencesKey);
+    return value is Map ? Map<String, dynamic>.from(value) : null;
+  }
+
+  static void savePushPreferences(Map<String, dynamic> value) =>
+      _storage.write(_pushPreferencesKey, value);
+  static DateTime? get fcmRegistrationAt =>
+      DateTime.tryParse(_storage.read<String>('fcm_registration_at') ?? '');
+  static void markFcmRegistrationTime() => _storage.write(
+    'fcm_registration_at',
+    DateTime.now().toUtc().toIso8601String(),
+  );
 }

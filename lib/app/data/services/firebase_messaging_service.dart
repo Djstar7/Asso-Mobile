@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:asso/app/routes/app_pages.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, kDebugMode, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:flutter/widgets.dart';
+import '../models/push_preferences.dart';
+import '../providers/notification_preference_provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../core/values/constants.dart';
 import '../../core/services/locale_service.dart';
@@ -15,23 +20,28 @@ import '../../core/utils/app_navigation.dart';
 import 'deep_link_service.dart';
 import '../../modules/home/controllers/home_controller.dart';
 import '../../modules/immo/views/immo_reservation_view.dart';
+import '../../modules/notification/views/notification_digest_view.dart';
 import '../../modules/immo/immo_nav.dart';
 import '../../modules/immo/controllers/immo_home_controller.dart';
 import '../models/real_estate_models.dart';
 import '../../modules/landlord/views/landlord_dashboard_view.dart';
 
+void _logPush(String message) {
+  if (kDebugMode) developer.log(message, name: 'ASSO Push');
+}
+
 /// Handler pour les messages en arrière-plan
 /// DOIT être une fonction top-level (en dehors de toute classe)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('🔔 Message reçu en arrière-plan: ${message.messageId}');
-  print('Titre: ${message.notification?.title}');
-  print('Corps: ${message.notification?.body}');
-  print('Data: ${message.data}');
+  _logPush('🔔 Message reçu en arrière-plan: ${message.messageId}');
+  _logPush('Titre: ${message.notification?.title}');
+  _logPush('Corps: ${message.notification?.body}');
+  _logPush('Data: ${message.data}');
 }
 
 /// Service Firebase Cloud Messaging pour gérer les notifications push
-class FirebaseMessagingService extends GetxService {
+class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
   static FirebaseMessagingService get to => Get.find();
 
   /// Ancien topic des annonces, en français seulement. Le serveur y publie
@@ -51,12 +61,50 @@ class FirebaseMessagingService extends GetxService {
 
   /// Marque d'abonnement : token et langue. Une nouvelle langue (ou une
   /// installation encore abonnée à `all_users`) relance l'abonnement.
-  static String topicMarker(String token) =>
-      '$token|${LocaleService.currentLanguage}';
+  static String topicMarker(String token) => 'retired-v2|$token';
 
   /// Vrai pendant [ensureRegisteredAndSubscribed], pour qu'un retour rapide
   /// sur l'accueil ne lance pas deux rattrapages en parallèle.
   bool _ensuring = false;
+  bool _apnsCompletionRunning = false;
+  Timer? _registrationRetry;
+  int _retryAttempt = 0;
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
+  final Set<String> _shownMessages = {};
+  final RxString permissionStatus = 'notDetermined'.obs;
+  final RxBool apnsReady = false.obs;
+  final RxBool registrationSucceeded = false.obs;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _retryAttempt = 0;
+      unawaited(refreshNotificationDiagnostics());
+    }
+  }
+
+  Future<void> refreshNotificationDiagnostics() async {
+    final settings = await _firebaseMessaging.getNotificationSettings();
+    permissionStatus.value = settings.authorizationStatus.name;
+    isPermissionGranted.value =
+        settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+    if (!kIsWeb && (Platform.isIOS || Platform.isMacOS))
+      await _apnsTokenReady(timeout: const Duration(seconds: 2));
+    await ensureRegisteredAndSubscribed(force: true);
+    await NotificationPreferenceProvider.fetch();
+  }
+
+  void _scheduleRegistrationRetry() {
+    if (_registrationRetry?.isActive == true || _retryAttempt >= 5) return;
+    const delays = [5, 30, 120, 600];
+    final delay = delays[_retryAttempt.clamp(0, delays.length - 1)];
+    _retryAttempt++;
+    _registrationRetry = Timer(
+      Duration(seconds: delay),
+      () => unawaited(ensureRegisteredAndSubscribed()),
+    );
+  }
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
@@ -70,13 +118,19 @@ class FirebaseMessagingService extends GetxService {
 
   /// Initialise le service FCM
   Future<FirebaseMessagingService> init() async {
-    print('🚀 Initialisation du service Firebase Messaging...');
+    _logPush('🚀 Initialisation du service Firebase Messaging...');
 
-    // Demander la permission pour les notifications
-    await _requestPermission();
-
-    // Configurer les notifications locales
-    await _setupLocalNotifications();
+    WidgetsBinding.instance.addObserver(this);
+    try {
+      await _requestPermission();
+    } catch (_) {
+      permissionStatus.value = 'unavailable';
+    }
+    try {
+      await _setupLocalNotifications();
+    } catch (_) {
+      /* Remote delivery still works when local setup is unavailable. */
+    }
 
     // Configurer le handler pour les messages en arrière-plan
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -96,38 +150,48 @@ class FirebaseMessagingService extends GetxService {
     // Changement de langue : les annonces suivent sur le topic de la langue.
     if (Get.isRegistered<LocaleService>()) {
       ever(LocaleService.to.language, (_) {
+        unawaited(
+          _setupLocalNotifications().catchError((Object _) {
+            _logPush('Channel labels could not be refreshed');
+          }),
+        );
         final token = fcmToken.value;
-        if (token != null && StorageService.announcementsTopicToken != topicMarker(token)) {
+        if (token != null &&
+            StorageService.announcementsTopicToken != topicMarker(token)) {
           unawaited(subscribeToAnnouncementsTopic());
         }
       });
     }
 
-    print('✅ Firebase Messaging Service initialisé');
+    _logPush('✅ Firebase Messaging Service initialisé');
 
     return this;
   }
 
   /// Demande la permission pour les notifications
   Future<void> _requestPermission() async {
-    print('📋 Demande de permission pour les notifications...');
+    _logPush('📋 Demande de permission pour les notifications...');
 
-    final NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+    final NotificationSettings settings = await _firebaseMessaging
+        .requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
 
-    isPermissionGranted.value = settings.authorizationStatus == AuthorizationStatus.authorized;
+    permissionStatus.value = settings.authorizationStatus.name;
+    isPermissionGranted.value =
+        settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
 
     if (isPermissionGranted.value) {
-      print('✅ Permission accordée pour les notifications');
+      _logPush('✅ Permission accordée pour les notifications');
     } else {
-      print('⚠️ Permission refusée pour les notifications');
+      _logPush('⚠️ Permission refusée pour les notifications');
     }
   }
 
@@ -135,40 +199,58 @@ class FirebaseMessagingService extends GetxService {
   Future<void> _setupLocalNotifications() async {
     // Les notifications locales ne sont pas supportées sur le Web
     if (kIsWeb) {
-      print('🌐 Web détecté — notifications locales ignorées');
+      _logPush('🌐 Web détecté — notifications locales ignorées');
       return;
     }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      print('📱 Configuration des notifications locales Android...');
+      _logPush('📱 Configuration des notifications locales Android...');
 
-      // Créer le channel de notification avec haute importance
-      const AndroidNotificationChannel channel = AndroidNotificationChannel(
-        'high_importance_channel', // id (doit correspondre à AndroidManifest)
-        'Notifications importantes', // name
-        description: 'Ce canal est utilisé pour les notifications importantes',
-        importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
+      for (final channel in [
+        AndroidNotificationChannel(
+          'asso_actions_v1',
+          'notification.channels.actions'.tr,
+          description: 'notification.channels.actions_description'.tr,
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+        ),
+        AndroidNotificationChannel(
+          'asso_updates_v1',
+          'notification.channels.updates'.tr,
+          description: 'notification.channels.updates_description'.tr,
+          importance: Importance.defaultImportance,
+          playSound: false,
+          enableVibration: false,
+        ),
+      ]) {
+        await _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.createNotificationChannel(channel);
+      }
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      // One foreground presentation path: our local notification, not a second native banner.
+      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: false,
+        badge: false,
+        sound: false,
       );
-
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
-
-      print('✅ Channel de notification créé');
     }
 
     // Initialiser les paramètres des notifications locales
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_stat_asso');
 
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    const DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -180,7 +262,7 @@ class FirebaseMessagingService extends GetxService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    print('✅ Notifications locales configurées');
+    _logPush('✅ Notifications locales configurées');
   }
 
   /// Attend que iOS ait remis le token APNs à Firebase, au plus [timeout].
@@ -198,11 +280,17 @@ class FirebaseMessagingService extends GetxService {
     final deadline = DateTime.now().add(timeout);
     while (true) {
       try {
-        if (await _firebaseMessaging.getAPNSToken() != null) return true;
+        if (await _firebaseMessaging.getAPNSToken() != null) {
+          apnsReady.value = true;
+          return true;
+        }
       } catch (_) {
         // Pas encore prêt : on réessaie jusqu'à l'échéance.
       }
-      if (!DateTime.now().isBefore(deadline)) return false;
+      if (!DateTime.now().isBefore(deadline)) {
+        apnsReady.value = false;
+        return false;
+      }
       await Future.delayed(const Duration(milliseconds: 500));
     }
   }
@@ -210,19 +298,18 @@ class FirebaseMessagingService extends GetxService {
   /// Token APNs arrivé après l'initialisation : on termine alors ce que le
   /// démarrage n'a pas pu faire (token au backend, abonnement aux annonces).
   Future<void> _completeRegistrationWhenApnsReady() async {
-    if (!await _apnsTokenReady(timeout: const Duration(seconds: 60))) {
-      print(
-        '⚠️ Aucun token APNs après 60 s : notifications push indisponibles. '
-        'Vérifier l\'autorisation aps-environment (Runner.entitlements), la '
-        'capacité Push Notifications de l\'App ID et la clé APNs dans la '
-        'console Firebase.',
-      );
-      return;
+    if (_apnsCompletionRunning) return;
+    _apnsCompletionRunning = true;
+    try {
+      if (!await _apnsTokenReady(timeout: const Duration(seconds: 60))) {
+        _scheduleRegistrationRetry();
+        return;
+      }
+      await _getFCMToken();
+      await subscribeToAnnouncementsTopic();
+    } finally {
+      _apnsCompletionRunning = false;
     }
-
-    print('✅ Token APNs reçu, enregistrement FCM repris');
-    await _getFCMToken();
-    await subscribeToAnnouncementsTopic();
   }
 
   /// Obtient le token FCM
@@ -231,27 +318,30 @@ class FirebaseMessagingService extends GetxService {
       // Brève attente seulement : l'initialisation retarde le premier écran.
       // Au-delà, l'enregistrement se poursuit en arrière-plan.
       if (!await _apnsTokenReady(timeout: const Duration(seconds: 2))) {
-        print('⏳ Token APNs pas encore remis par iOS : token FCM demandé plus tard');
+        _logPush(
+          '⏳ Token APNs pas encore remis par iOS : token FCM demandé plus tard',
+        );
         unawaited(_completeRegistrationWhenApnsReady());
         return;
       }
 
       // Borné : sans réseau, la demande de token peut rester pendante et
       // retenait le premier écran (mode hors ligne vendeur).
-      final token = await _firebaseMessaging
-          .getToken()
-          .timeout(const Duration(seconds: 5));
+      final token = await _firebaseMessaging.getToken().timeout(
+        const Duration(seconds: 5),
+      );
       fcmToken.value = token;
 
       if (token != null) {
-        print('🔑 FCM Token: $token');
+        _logPush('FCM token available');
         // Envoyer le token au backend, sans retenir le démarrage.
         unawaited(_sendTokenToBackend(token));
       } else {
-        print('⚠️ Impossible d\'obtenir le token FCM');
+        _logPush('⚠️ Impossible d\'obtenir le token FCM');
       }
     } catch (e) {
-      print('❌ Erreur lors de l\'obtention du token FCM: $e');
+      registrationSucceeded.value = false;
+      _scheduleRegistrationRetry();
     }
   }
 
@@ -260,7 +350,7 @@ class FirebaseMessagingService extends GetxService {
     try {
       // Vérifier si l'utilisateur est authentifié
       if (!ApiProvider.isAuthenticated) {
-        print('⚠️ Utilisateur non authentifié, token non envoyé');
+        _logPush('⚠️ Utilisateur non authentifié, token non envoyé');
         return;
       }
 
@@ -279,13 +369,15 @@ class FirebaseMessagingService extends GetxService {
       );
 
       if (response.success) {
-        print('✅ Token FCM envoyé au backend avec succès');
+        _logPush('✅ Token FCM envoyé au backend avec succès');
         _markTokenRegistered(token);
       } else {
-        print('⚠️ Échec de l\'envoi du token: ${response.message}');
+        registrationSucceeded.value = false;
+        _scheduleRegistrationRetry();
       }
     } catch (e) {
-      print('❌ Erreur lors de l\'envoi du token au backend: $e');
+      registrationSucceeded.value = false;
+      _scheduleRegistrationRetry();
     }
   }
 
@@ -342,60 +434,90 @@ class FirebaseMessagingService extends GetxService {
 
   /// Écoute les rafraîchissements du token
   void _listenToTokenRefresh() {
-    _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      fcmToken.value = newToken;
-      print('🔄 Token FCM rafraîchi: $newToken');
-      // Envoyer le nouveau token au backend
-      _sendTokenToBackend(newToken);
-      // L'abonnement au topic est porté par le token : on le refait.
-      unawaited(subscribeToAnnouncementsTopic());
-    });
+    _subscriptions.add(
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        fcmToken.value = newToken;
+        _logPush('FCM token refreshed');
+        // Envoyer le nouveau token au backend
+        _sendTokenToBackend(newToken);
+        // L'abonnement au topic est porté par le token : on le refait.
+        unawaited(subscribeToAnnouncementsTopic());
+      }),
+    );
   }
 
   /// Écoute les messages en foreground (app ouverte)
   void _listenToForegroundMessages() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('🔔 Message reçu en foreground: ${message.messageId}');
-      print('Titre: ${message.notification?.title}');
-      print('Corps: ${message.notification?.body}');
-      print('Data: ${message.data}');
+    _subscriptions.add(
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _logPush('🔔 Message reçu en foreground: ${message.messageId}');
+        _logPush('Titre: ${message.notification?.title}');
+        _logPush('Corps: ${message.notification?.body}');
+        _logPush('Data: ${message.data}');
 
-      // Afficher une notification locale quand l'app est en foreground.
-      //
-      // Aucune navigation ici : elle n'a lieu qu'au tap sur la notification
-      // (voir _onNotificationTapped). Naviguer à la réception envoyait tout
-      // utilisateur actif sur la fiche de chaque produit publié.
-      _showLocalNotification(message);
-    });
+        // Afficher une notification locale quand l'app est en foreground.
+        //
+        // Aucune navigation ici : elle n'a lieu qu'au tap sur la notification
+        // (voir _onNotificationTapped). Naviguer à la réception envoyait tout
+        // utilisateur actif sur la fiche de chaque produit publié.
+        unawaited(_showLocalNotification(message));
+      }),
+    );
   }
 
   /// Affiche une notification locale
   Future<void> _showLocalNotification(RemoteMessage message) async {
+    if (kIsWeb) return;
     final notification = message.notification;
-    final android = message.notification?.android;
-
-    if (notification != null) {
+    if (notification == null) return;
+    final type = '${message.data['type'] ?? 'system'}';
+    final category = PushPreferences.categoryFor(type);
+    if (!NotificationPreferenceProvider.cached().allows(category)) return;
+    final key =
+        '${message.data['notification_id'] ?? message.data['notification_key'] ?? message.messageId ?? notification.hashCode}';
+    if (!_shownMessages.add(key)) return;
+    if (_shownMessages.length > 200)
+      _shownMessages.remove(_shownMessages.first);
+    final quiet = category == 'marketing' || type == 'real_estate_alert';
+    final id =
+        int.tryParse('${message.data['notification_id']}') ??
+        (key.hashCode & 0x7fffffff);
+    try {
       await _localNotifications.show(
-        notification.hashCode,
+        id,
         notification.title,
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'Notifications importantes',
-            channelDescription: 'Ce canal est utilisé pour les notifications importantes',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+            quiet ? 'asso_updates_v1' : 'asso_actions_v1',
+            (quiet
+                    ? 'notification.channels.updates'
+                    : 'notification.channels.actions')
+                .tr,
+            importance: quiet ? Importance.defaultImportance : Importance.high,
+            priority: quiet ? Priority.defaultPriority : Priority.high,
+            icon: 'ic_stat_asso',
+            largeIcon: const DrawableResourceAndroidBitmap(
+              'asso_notification_logo',
+            ),
+            playSound: !quiet,
+            enableVibration: !quiet,
+            onlyAlertOnce: true,
+            groupKey: 'asso_$category',
           ),
-          iOS: const DarwinNotificationDetails(
+          iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
-            presentSound: true,
+            presentSound: !quiet,
+            threadIdentifier: 'asso_$category',
+            badgeNumber: int.tryParse('${message.data['badge_count']}'),
           ),
         ),
         payload: jsonEncode(message.data),
       );
+    } catch (_) {
+      _shownMessages.remove(key);
+      _logPush('Foreground notification presentation unavailable');
     }
   }
 
@@ -410,38 +532,48 @@ class FirebaseMessagingService extends GetxService {
   /// flux mais se contente de rafraîchir ses données. À deux, chaque tap
   /// ouvrait deux fois le même écran.
   Future<void> _handleMessageData(Map<String, dynamic> data) async {
-    print('📦 Données du message: $data');
+    _logPush('📦 Données du message: $data');
 
     final type = data['type'] as String?;
 
     if (type == null) {
-      print('⚠️ Type de notification non défini');
+      _logPush('⚠️ Type de notification non défini');
       return;
     }
 
-    print('🔔 Type de notification: $type');
+    _logPush('🔔 Type de notification: $type');
 
     // Application lancée par ce tap : on attend la fin du splash, dont le
     // `offAllNamed` emporterait l'écran ouvert trop tôt.
     if (!await AppNavigation.whenAppReady()) return;
 
     switch (type) {
+      case 'marketing_digest':
+        final date = '${data['digest_date'] ?? ''}';
+        if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date))
+          Get.to(() => NotificationDigestView(date: date));
+        break;
       case 'new_message':
         // Navigation vers les détails de la conversation
         final conversationId = data['conversation_id'];
         final senderName = data['sender_name']?.toString() ?? '';
 
         if (conversationId != null) {
-          print('💬 Navigation vers la conversation $conversationId (de $senderName)');
-          Get.toNamed(Routes.CHATDETAIL, arguments: {
-            'id': conversationId,
-            'name': senderName.isEmpty ? 'Utilisateur' : senderName,
-            // Nom vide : `senderName[0]` levait une RangeError.
-            'avatar': senderName.isEmpty ? 'U' : senderName[0].toUpperCase(),
-          });
+          _logPush(
+            '💬 Navigation vers la conversation $conversationId (de $senderName)',
+          );
+          Get.toNamed(
+            Routes.CHATDETAIL,
+            arguments: {
+              'id': conversationId,
+              'name': senderName.isEmpty ? 'Utilisateur' : senderName,
+              // Nom vide : `senderName[0]` levait une RangeError.
+              'avatar': senderName.isEmpty ? 'U' : senderName[0].toUpperCase(),
+            },
+          );
         } else {
           // Si pas d'ID, naviguer vers la liste des conversations
-          print('💬 Navigation vers la liste des conversations');
+          _logPush('💬 Navigation vers la liste des conversations');
           Get.toNamed(Routes.CHAT);
         }
         break;
@@ -455,11 +587,11 @@ class FirebaseMessagingService extends GetxService {
         // Navigation vers les détails de l'offre diaspo
         final offerId = data['offer_id'];
         if (offerId != null) {
-          print('✈️ Navigation vers l\'offre diaspo $offerId');
+          _logPush('✈️ Navigation vers l\'offre diaspo $offerId');
           Get.toNamed(Routes.DIASPO_DETAIL, arguments: {'offerId': offerId});
         } else {
           // Si pas d'ID, naviguer vers la liste des offres diaspo
-          print('✈️ Navigation vers la liste des offres diaspo');
+          _logPush('✈️ Navigation vers la liste des offres diaspo');
           Get.toNamed(Routes.DIASPO);
         }
         break;
@@ -524,7 +656,10 @@ class FirebaseMessagingService extends GetxService {
         switch (data['action']) {
           case 'open_real_estate_reservation':
             final id = int.tryParse('${data['reservation_id'] ?? ''}');
-            if (id != null) Get.to(() => ImmoReservationView(reservationId: id, standalone: true));
+            if (id != null)
+              Get.to(
+                () => ImmoReservationView(reservationId: id, standalone: true),
+              );
             return;
           case 'open_real_estate':
             if (Get.isRegistered<HomeController>()) {
@@ -537,12 +672,16 @@ class FirebaseMessagingService extends GetxService {
                   ImmoNav.push(ImmoNav.listing, arguments: listingId);
                 } else if (Get.isRegistered<ImmoHomeController>()) {
                   Get.find<ImmoHomeController>().switchType(
-                    data['property_type'] == 'land' ? RealEstateType.land : RealEstateType.rent,
+                    data['property_type'] == 'land'
+                        ? RealEstateType.land
+                        : RealEstateType.rent,
                   );
                 }
               } else {
                 home.openRealEstate(
-                  initialRoute: listingId == null ? ImmoNav.home : ImmoNav.listing,
+                  initialRoute: listingId == null
+                      ? ImmoNav.home
+                      : ImmoNav.listing,
                   arguments: listingId ?? data['property_type'],
                 );
               }
@@ -556,14 +695,19 @@ class FirebaseMessagingService extends GetxService {
         // Réclamations / litiges : le dossier, côté client ou vendeur. « Paiement
         // de livraison requis » ouvre directement le paiement de la course.
         if (type.startsWith('dispute_') && data['dispute_id'] != null) {
-          Get.toNamed(Routes.DISPUTE_DETAIL, arguments: {
-            'id': data['dispute_id'],
-            'role': data['role'] == 'vendor' ? 'vendor' : 'client',
-            'pay': type == 'dispute_shipment_payment_required' || type == 'dispute_shipment_payment_failed',
-          });
+          Get.toNamed(
+            Routes.DISPUTE_DETAIL,
+            arguments: {
+              'id': data['dispute_id'],
+              'role': data['role'] == 'vendor' ? 'vendor' : 'client',
+              'pay':
+                  type == 'dispute_shipment_payment_required' ||
+                  type == 'dispute_shipment_payment_failed',
+            },
+          );
           break;
         }
-        print('⚠️ Type de notification non géré: $type');
+        _logPush('⚠️ Type de notification non géré: $type');
         break;
     }
   }
@@ -580,11 +724,11 @@ class FirebaseMessagingService extends GetxService {
       // `toNamed(HOME)` : l'accueil est déjà en bas de la pile, et un second
       // accueil partagerait ses contrôleurs permanents (onglets, défilement)
       // avec le premier.
-      print('🛍️ Produit non identifiable, aucune navigation');
+      _logPush('🛍️ Produit non identifiable, aucune navigation');
       return;
     }
 
-    print('🛍️ Ouverture du produit $id');
+    _logPush('🛍️ Ouverture du produit $id');
     Get.find<DeepLinkService>().handleExternal(
       Uri.parse(AppConstants.productUrl(id)),
     );
@@ -595,36 +739,42 @@ class FirebaseMessagingService extends GetxService {
     // Message qui a ouvert l'app (depuis terminated state)
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
-        print('🚀 App ouverte via notification (terminated): ${message.messageId}');
+        _logPush(
+          '🚀 App ouverte via notification (terminated): ${message.messageId}',
+        );
         _handleMessageData(message.data);
       }
     });
 
     // Message qui ouvre l'app (depuis background)
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print('🚀 App ouverte via notification (background): ${message.messageId}');
-      _handleMessageData(message.data);
-    });
+    _subscriptions.add(
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _logPush(
+          '🚀 App ouverte via notification (background): ${message.messageId}',
+        );
+        _handleMessageData(message.data);
+      }),
+    );
   }
 
   /// Callback quand une notification locale est tapée
   void _onNotificationTapped(NotificationResponse response) {
-    print('👆 Notification tapée: ${response.payload}');
+    _logPush('👆 Notification tapée: ${response.payload}');
 
     if (response.payload == null || response.payload!.isEmpty) {
-      print('⚠️ Payload vide');
+      _logPush('⚠️ Payload vide');
       return;
     }
 
     try {
       // Parser le JSON du payload
       final Map<String, dynamic> data = jsonDecode(response.payload!);
-      print('📦 Payload parsé: $data');
+      _logPush('📦 Payload parsé: $data');
 
       // Utiliser la même logique que _handleMessageData
       _handleMessageData(data);
     } catch (e) {
-      print('❌ Erreur lors du parsing du payload: $e');
+      _logPush('❌ Erreur lors du parsing du payload: $e');
     }
   }
 
@@ -632,13 +782,15 @@ class FirebaseMessagingService extends GetxService {
   Future<void> subscribeToTopic(String topic) async {
     try {
       if (!await _apnsTokenReady()) {
-        print('⏳ Abonnement au topic $topic reporté : token APNs indisponible');
+        _logPush(
+          '⏳ Abonnement au topic $topic reporté : token APNs indisponible',
+        );
         return;
       }
       await _firebaseMessaging.subscribeToTopic(topic);
-      print('✅ Abonné au topic: $topic');
+      _logPush('✅ Abonné au topic: $topic');
     } catch (e) {
-      print('❌ Erreur lors de l\'abonnement au topic $topic: $e');
+      _logPush('❌ Erreur lors de l\'abonnement au topic $topic: $e');
     }
   }
 
@@ -646,9 +798,9 @@ class FirebaseMessagingService extends GetxService {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      print('✅ Désabonné du topic: $topic');
+      _logPush('✅ Désabonné du topic: $topic');
     } catch (e) {
-      print('❌ Erreur lors du désabonnement du topic $topic: $e');
+      _logPush('❌ Erreur lors du désabonnement du topic $topic: $e');
     }
   }
 
@@ -657,9 +809,11 @@ class FirebaseMessagingService extends GetxService {
     try {
       await _firebaseMessaging.deleteToken();
       fcmToken.value = null;
-      print('✅ Token FCM supprimé');
+      StorageService.clearFcmRegistration();
+      registrationSucceeded.value = false;
+      _logPush('✅ Token FCM supprimé');
     } catch (e) {
-      print('❌ Erreur lors de la suppression du token: $e');
+      _logPush('❌ Erreur lors de la suppression du token: $e');
     }
   }
 
@@ -669,7 +823,7 @@ class FirebaseMessagingService extends GetxService {
     try {
       // Vérifier si l'utilisateur est authentifié
       if (!ApiProvider.isAuthenticated) {
-        print('⚠️ Utilisateur non authentifié, token non envoyé');
+        _logPush('⚠️ Utilisateur non authentifié, token non envoyé');
         return false;
       }
 
@@ -679,7 +833,9 @@ class FirebaseMessagingService extends GetxService {
       // Si pas de token en mémoire, le récupérer
       if (token == null) {
         if (!await _apnsTokenReady()) {
-          print('⏳ Token FCM indisponible : iOS n\'a pas encore remis le token APNs');
+          _logPush(
+            '⏳ Token FCM indisponible : iOS n\'a pas encore remis le token APNs',
+          );
           return false;
         }
         token = await _firebaseMessaging.getToken();
@@ -687,11 +843,11 @@ class FirebaseMessagingService extends GetxService {
       }
 
       if (token == null) {
-        print('⚠️ Impossible d\'obtenir le token FCM');
+        _logPush('⚠️ Impossible d\'obtenir le token FCM');
         return false;
       }
 
-      print('📤 Envoi du token FCM au backend...');
+      _logPush('📤 Envoi du token FCM au backend...');
 
       // Obtenir les informations du device
       final deviceInfo = await _getDeviceInfo();
@@ -708,15 +864,17 @@ class FirebaseMessagingService extends GetxService {
       );
 
       if (response.success) {
-        print('✅ Token FCM envoyé au backend avec succès');
+        _logPush('✅ Token FCM envoyé au backend avec succès');
         _markTokenRegistered(token);
         return true;
       } else {
-        print('⚠️ Échec de l\'envoi du token: ${response.message}');
+        registrationSucceeded.value = false;
+        _scheduleRegistrationRetry();
         return false;
       }
     } catch (e) {
-      print('❌ Erreur lors de l\'envoi du token au backend: $e');
+      registrationSucceeded.value = false;
+      _scheduleRegistrationRetry();
       return false;
     }
   }
@@ -725,70 +883,41 @@ class FirebaseMessagingService extends GetxService {
   /// autres (ancien `all_users`, autre langue).
   /// Retourne true si succès, false sinon
   Future<bool> subscribeToAnnouncementsTopic() async {
-    final topic = announcementsTopic;
+    // Retire legacy global subscriptions. Promotions now arrive as a personal daily summary.
     try {
-      // Sans token APNs, l'appel échouerait aussitôt : on le signale comme un
-      // report, pas comme une erreur — le token arrivé, l'abonnement est
-      // repris (initialisation, rafraîchissement du token, accueil).
       if (!await _apnsTokenReady()) {
-        print('⏳ Abonnement à "$topic" reporté : token APNs indisponible');
+        _scheduleRegistrationRetry();
         return false;
       }
-
-      print('📢 Abonnement au topic "$topic" pour les annonces...');
-      // Appel direct plutôt que [subscribeToTopic], qui avale l'erreur : cette
-      // méthode répondait toujours « abonné », même sans APNS sur iOS ou sans
-      // services Google Play, et l'échec n'était jamais retenté.
-      //
-      // Borné dans le temps : sans services Google Play, l'appel ne rend
-      // jamais la main.
-      await _firebaseMessaging
-          .subscribeToTopic(topic)
-          .timeout(const Duration(seconds: 10));
-
-      // Puis on quitte les autres topics. Un échec laisse la marque de côté :
-      // le rattrapage de l'accueil réessaiera (l'abonnement est idempotent).
-      final left = await _leaveOtherAnnouncementTopics(topic);
-
-      final token = fcmToken.value;
-      if (token != null && left) {
-        StorageService.setAnnouncementsTopicToken(topicMarker(token));
-      }
-
-      print('✅ Abonné au topic "$topic" avec succès');
-      return true;
-    } catch (e) {
-      print('❌ Erreur lors de l\'abonnement au topic "$topic": $e');
-      return false;
-    }
-  }
-
-  /// Quitte `all_users` et les topics des autres langues.
-  Future<bool> _leaveOtherAnnouncementTopics(String keep) async {
-    final others = [
-      legacyAnnouncementsTopic,
-      for (final language in LocaleService.supportedLanguages)
-        announcementsTopicFor(language),
-    ].where((topic) => topic != keep);
-
-    var ok = true;
-    for (final topic in others) {
-      try {
+      for (final topic in [
+        legacyAnnouncementsTopic,
+        for (final language in LocaleService.supportedLanguages)
+          announcementsTopicFor(language),
+      ]) {
         await _firebaseMessaging
             .unsubscribeFromTopic(topic)
             .timeout(const Duration(seconds: 10));
-      } catch (e) {
-        ok = false;
-        print('⚠️ Désabonnement de "$topic" impossible: $e');
       }
+      final token = fcmToken.value;
+      if (token != null)
+        StorageService.setAnnouncementsTopicToken(topicMarker(token));
+      return true;
+    } catch (_) {
+      _scheduleRegistrationRetry();
+      return false;
     }
-    return ok;
   }
 
   /// Retient que le backend connaît ce token pour le compte courant.
   void _markTokenRegistered(String token) {
     final userId = StorageService.getUser()?.id;
-    if (userId != null) StorageService.setFcmRegistration('$userId:$token');
+    if (userId != null) {
+      StorageService.setFcmRegistration('$userId:$token');
+      StorageService.markFcmRegistrationTime();
+      registrationSucceeded.value = true;
+      _retryAttempt = 0;
+      _registrationRetry?.cancel();
+    }
   }
 
   /// Rattrapage depuis l'accueil : enregistre le token et abonne l'appareil
@@ -801,7 +930,7 @@ class FirebaseMessagingService extends GetxService {
   ///
   /// Ne fait rien quand tout est déjà en place, pour que l'appeler à chaque
   /// ouverture de l'accueil ne coûte rien.
-  Future<void> ensureRegisteredAndSubscribed() async {
+  Future<void> ensureRegisteredAndSubscribed({bool force = false}) async {
     if (_ensuring) return;
     _ensuring = true;
 
@@ -809,7 +938,10 @@ class FirebaseMessagingService extends GetxService {
       var token = fcmToken.value;
       if (token == null) {
         if (!await _apnsTokenReady(timeout: const Duration(seconds: 10))) {
-          print('⏳ Rattrapage FCM reporté : token APNs pas encore disponible');
+          _logPush(
+            '⏳ Rattrapage FCM reporté : token APNs pas encore disponible',
+          );
+          _scheduleRegistrationRetry();
           return;
         }
         token = await _firebaseMessaging.getToken().timeout(
@@ -818,24 +950,32 @@ class FirebaseMessagingService extends GetxService {
         fcmToken.value = token;
       }
       if (token == null) {
-        print('⚠️ Rattrapage FCM : token toujours indisponible');
+        _logPush('⚠️ Rattrapage FCM : token toujours indisponible');
         return;
       }
 
       final userId = StorageService.getUser()?.id;
       if (ApiProvider.isAuthenticated &&
           userId != null &&
-          StorageService.fcmRegistration != '$userId:$token') {
-        print('📤 Rattrapage FCM : token inconnu du backend, envoi...');
+          (force ||
+              StorageService.fcmRegistration != '$userId:$token' ||
+              StorageService.fcmRegistrationAt == null ||
+              DateTime.now()
+                      .toUtc()
+                      .difference(StorageService.fcmRegistrationAt!)
+                      .inHours >=
+                  6)) {
+        _logPush('📤 Rattrapage FCM : token inconnu du backend, envoi...');
         await sendTokenToBackend();
       }
 
       if (StorageService.announcementsTopicToken != topicMarker(token)) {
-        print('📢 Rattrapage FCM : appareil non abonné aux annonces...');
+        _logPush('📢 Rattrapage FCM : appareil non abonné aux annonces...');
         await subscribeToAnnouncementsTopic();
       }
-    } catch (e) {
-      print('❌ Rattrapage FCM impossible: $e');
+    } catch (_) {
+      registrationSucceeded.value = false;
+      _scheduleRegistrationRetry();
     } finally {
       _ensuring = false;
     }
@@ -844,10 +984,7 @@ class FirebaseMessagingService extends GetxService {
   /// Méthode complète: Envoie le token ET s'abonne au topic des annonces
   /// À appeler après login/register ou au démarrage de l'app
   Future<Map<String, bool>> registerDeviceAndSubscribe() async {
-    final results = {
-      'token_sent': false,
-      'topic_subscribed': false,
-    };
+    final results = {'token_sent': false, 'topic_subscribed': false};
 
     // Envoyer le token au backend
     results['token_sent'] = await sendTokenToBackend();
@@ -860,7 +997,11 @@ class FirebaseMessagingService extends GetxService {
 
   @override
   void onClose() {
-    // Nettoyage si nécessaire
+    WidgetsBinding.instance.removeObserver(this);
+    _registrationRetry?.cancel();
+    for (final subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
     super.onClose();
   }
 }

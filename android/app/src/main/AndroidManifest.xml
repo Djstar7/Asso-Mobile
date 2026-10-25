@@ -58,17 +58,17 @@
         <!-- Channel de notification par défaut pour FCM -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="high_importance_channel" />
+            android:value="asso_actions_v1" />
 
         <!-- Icône de notification par défaut -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_asso" />
 
         <!-- Couleur de notification par défaut -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@android:color/transparent" />
+            android:resource="@color/asso_notification_accent" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

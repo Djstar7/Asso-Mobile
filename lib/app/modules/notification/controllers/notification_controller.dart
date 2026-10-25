@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +8,9 @@ import '../../../data/services/notification_service.dart';
 import '../../../routes/app_pages.dart';
 import '../../wallet/controllers/wallet_controller.dart';
 
-class NotificationController extends GetxController with WidgetsBindingObserver {
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+class NotificationController extends GetxController
+    with WidgetsBindingObserver {
+  final List<StreamSubscription<RemoteMessage>> _subscriptions = [];
 
   // Liste des notifications (synchronisées avec le backend)
   final notifications = <NotificationModel>[].obs;
@@ -30,6 +32,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
   @override
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
+    for (final subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
     super.onClose();
   }
 
@@ -49,13 +54,16 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
   /// Configure les listeners FCM
   void _setupFCMListeners() {
     // 1. Notification reçue quand l'app est au premier plan (foreground)
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    _subscriptions.add(
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage),
+    );
 
     // 2. Notification cliquée quand l'app est en arrière-plan
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessageClick);
-
-    // 3. Vérifier si l'app a été ouverte via une notification
-    _checkInitialMessage();
+    _subscriptions.add(
+      FirebaseMessaging.onMessageOpenedApp.listen(
+        _handleBackgroundMessageClick,
+      ),
+    );
   }
 
   /// Gère les notifications reçues quand l'app est active
@@ -78,18 +86,20 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
 
     if (realId != null) {
       // Le backend a fourni le vrai ID : insertion avec déduplication.
-      _addLocalNotification(NotificationModel(
-        id: realId,
-        userId: 0,
-        title: notification?.title ?? 'notification.default_title'.tr,
-        body: notification?.body ?? '',
-        type: data['type'] as String?,
-        data: data,
-        isRead: false,
-        sentAt: DateTime.now(),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ));
+      _addLocalNotification(
+        NotificationModel(
+          id: realId,
+          userId: 0,
+          title: notification?.title ?? 'notification.default_title'.tr,
+          body: notification?.body ?? '',
+          type: data['type'] as String?,
+          data: data,
+          isRead: false,
+          sentAt: DateTime.now(),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
       // Reconcilier le compteur avec le backend.
       updateUnreadCount();
     } else {
@@ -115,21 +125,15 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
     _handleNotificationAction(data, fromClick: true);
   }
 
-  /// Vérifie si l'app a été ouverte via une notification
-  Future<void> _checkInitialMessage() async {
-    final message = await _firebaseMessaging.getInitialMessage();
-    if (message != null) {
-      print('🚀 [FCM] App ouverte via notification: ${message.data}');
-      _handleBackgroundMessageClick(message);
-    }
-  }
-
   /// Rafraîchit les données touchées par une notification.
   ///
   /// La navigation au tap est l'affaire de `FirebaseMessagingService`, qui
   /// écoute les mêmes flux : naviguer aussi d'ici ouvrait chaque écran deux
   /// fois, et visait des routes inexistantes (`/orders/…`, `/chat/…`).
-  void _handleNotificationAction(Map<String, dynamic> data, {bool fromClick = false}) {
+  void _handleNotificationAction(
+    Map<String, dynamic> data, {
+    bool fromClick = false,
+  }) {
     final type = data['type'] as String?;
     print('🎬 [FCM] Action pour type: $type (fromClick: $fromClick)');
 
@@ -178,7 +182,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       );
 
       if (response.success && response.data != null) {
-        final newNotifications = NotificationService.parseNotifications(response.data!['notifications']);
+        final newNotifications = NotificationService.parseNotifications(
+          response.data!['notifications'],
+        );
 
         if (refresh) {
           notifications.value = newNotifications;
@@ -269,7 +275,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
 
       if (response.success) {
         // Mettre à jour localement
-        notifications.value = notifications.map((n) => n.copyWith(isRead: true, readAt: DateTime.now())).toList();
+        notifications.value = notifications
+            .map((n) => n.copyWith(isRead: true, readAt: DateTime.now()))
+            .toList();
         unreadCount.value = 0;
         notifications.refresh();
       }
@@ -281,11 +289,15 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
   /// Supprime une notification
   Future<void> deleteNotification(int notificationId) async {
     try {
-      final response = await NotificationService.deleteNotification(notificationId);
+      final response = await NotificationService.deleteNotification(
+        notificationId,
+      );
 
       if (response.success) {
         // Mettre à jour localement
-        final notification = notifications.firstWhere((n) => n.id == notificationId);
+        final notification = notifications.firstWhere(
+          (n) => n.id == notificationId,
+        );
         if (!notification.isRead) {
           unreadCount.value = (unreadCount.value - 1).clamp(0, 999);
         }
@@ -309,5 +321,4 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       print('❌ Erreur lors de la suppression de toutes: $e');
     }
   }
-
 }
