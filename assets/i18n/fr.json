@@ -1349,7 +1349,9 @@
       "amount_to_pay": "Montant à payer",
       "pay_now": "Payer maintenant",
       "debited_by_operator": "Débité par votre opérateur",
-      "operator_mismatch": "Ce numéro semble être un numéro @operator."
+      "operator_mismatch": "Ce numéro semble être un numéro @operator.",
+      "operator_unstable": "@operator est momentanément instable. Choisissez un autre opérateur ou réessayez dans quelques minutes.",
+      "try_operator": "Essayez @operator"
     }
   },
   "payment": {

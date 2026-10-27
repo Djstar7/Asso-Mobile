@@ -31,6 +31,26 @@ class PaymentService {
     }
     return [];
   }
+  /// Disponibilité d'un opérateur. En cas d'erreur réseau : considéré disponible
+  /// (le backend bloquera de toute façon si besoin).
+  static Future<({bool available, List<String> suggestions})> checkOperatorAvailability(
+    String providerCode,
+  ) async {
+    try {
+      final res = await ApiProvider.get(
+        '/v1/payments/operator-availability',
+        queryParams: {'provider': providerCode},
+      );
+      if (res.success && res.data?['data'] != null) {
+        final d = res.data!['data'] as Map;
+        return (
+          available: d['available'] == true,
+          suggestions: (d['suggestions'] as List?)?.map((e) => e.toString()).toList() ?? <String>[],
+        );
+      }
+    } catch (_) {}
+    return (available: true, suggestions: <String>[]);
+  }
 
   static Set<String>? _mobileMoneyProviders;
   static DateTime? _mobileMoneyProvidersAt;

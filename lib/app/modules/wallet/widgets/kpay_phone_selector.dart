@@ -13,6 +13,11 @@ import '../../../data/providers/payment_service.dart';
 /// backend (KPay : tout son catalogue ; ElgioPay : Cameroun seul). Renvoie via [onChanged] le code
 /// opérateur KPay (ex. MTN_MOMO_CMR) et le numéro au format international
 /// sans '+' (ex. 237670000001), ainsi que la validité du formulaire.
+///
+/// Dès qu'un opérateur est choisi (ou détecté via le numéro), on interroge
+/// l'API de disponibilité KPay (via le backend). Si l'opérateur est instable,
+/// l'utilisateur est averti, un autre opérateur lui est suggéré et le
+/// formulaire est marqué invalide (bouton « Payer » désactivé).
 class KpayPhoneSelector extends StatefulWidget {
   final void Function({
     required String? providerCode,
@@ -44,6 +49,20 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
   List<KPayCountry> _countries = KPayCatalog.countries;
   final TextEditingController _phoneController = TextEditingController();
 
+  // --- Disponibilité de l'opérateur ---
+  /// true quand l'API KPay signale l'opérateur courant comme instable.
+  bool _operatorUnstable = false;
+
+  /// Opérateurs alternatifs disponibles dans le même pays.
+  List<KPayOperator> _suggested = [];
+
+  /// Vérification en cours (petit loader à côté du libellé « Opérateur »).
+  bool _checkingAvailability = false;
+
+  /// Identifiant de la dernière vérification lancée : une réponse tardive
+  /// d'un ancien choix d'opérateur est ignorée.
+  int _availabilityRequestId = 0;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +87,8 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
       });
     }
     _loadAllowedProviders();
+    // Vérifie l'opérateur proposé par défaut dès l'ouverture.
+    _checkAvailability();
   }
 
   /// Ne garde que les pays/opérateurs du prestataire actif. Le choix courant
@@ -93,10 +114,17 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
       _countries = allowed;
       _country = country;
       _operator = operator;
+      if (countryChanged || operatorChanged) {
+        _operatorUnstable = false;
+        _suggested = [];
+      }
       // Numéro saisi pour un autre indicatif : il ne vaut plus rien.
       if (countryChanged) _phoneController.clear();
     });
-    if (countryChanged || operatorChanged) _notify();
+    if (countryChanged || operatorChanged) {
+      _notify();
+      _checkAvailability();
+    }
   }
 
   @override
@@ -124,22 +152,73 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
     return _country.operators.firstWhereOrNull((o) => o.providerCode == code);
   }
 
+  /// Change d'opérateur : réinitialise l'avertissement précédent, prévient le
+  /// parent, puis vérifie la disponibilité du nouvel opérateur.
+  void _selectOperator(KPayOperator op) {
+    setState(() {
+      _operator = op;
+      _operatorUnstable = false;
+      _suggested = [];
+    });
+    _notify();
+    _checkAvailability();
+  }
+
+  /// Interroge le backend (qui interroge KPay, cache 60 s) sur l'opérateur
+  /// courant. En cas d'erreur réseau, l'opérateur est considéré disponible :
+  /// le serveur bloquera de toute façon un opérateur instable à l'init.
+  Future<void> _checkAvailability() async {
+    final requestId = ++_availabilityRequestId;
+    final code = _operator.providerCode;
+
+    if (mounted) setState(() => _checkingAvailability = true);
+
+    final res = await PaymentService.checkOperatorAvailability(code);
+
+    // Réponse périmée : l'utilisateur a changé d'opérateur entre-temps.
+    if (!mounted ||
+        requestId != _availabilityRequestId ||
+        code != _operator.providerCode) {
+      return;
+    }
+
+    setState(() {
+      _checkingAvailability = false;
+      _operatorUnstable = !res.available;
+      _suggested = res.available
+          ? []
+          : _country.operators
+                .where(
+                  (o) =>
+                      o.providerCode != code &&
+                      res.suggestions.contains(o.providerCode),
+                )
+                .toList();
+    });
+    _notify();
+  }
+
   /// Le numéro désigne son opérateur : un numéro Orange envoyé chez MTN est
   /// refusé sans qu'aucune demande USSD n'arrive sur le téléphone.
   void _onPhoneChanged() {
     final detected = _detectedOperator;
     if (detected != null && detected.providerCode != _operator.providerCode) {
-      setState(() => _operator = detected);
+      // _selectOperator notifie le parent et lance la vérification.
+      _selectOperator(detected);
+      return;
     }
     _notify();
   }
 
   void _notify() {
+    // Un opérateur instable rend le formulaire invalide : le bouton « Payer »
+    // du parent (canPay = _valid && ...) se désactive automatiquement.
+    final valid = _isValid && !_operatorUnstable;
     widget.onChanged(
       providerCode: _operator.providerCode,
-      phoneNumber: _isValid ? _fullPhone : null,
+      phoneNumber: valid ? _fullPhone : null,
       currency: _country.currency,
-      isValid: _isValid,
+      isValid: valid,
     );
   }
 
@@ -178,9 +257,72 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
       setState(() {
         _country = selected;
         _operator = selected.operators.first;
+        _operatorUnstable = false;
+        _suggested = [];
       });
       _notify();
+      _checkAvailability();
     }
+  }
+
+  /// Bannière d'avertissement + opérateurs alternatifs cliquables.
+  Widget _buildUnstableBanner() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppDesign.warningText.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppDesign.warningText.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppDesign.warningText,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'wallet.kpay.operator_unstable'.trParams({
+                    'operator': _operator.name,
+                  }),
+                  style: const TextStyle(
+                    color: AppDesign.warningText,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_suggested.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _suggested
+                  .map(
+                    (o) => ActionChip(
+                      label: Text(
+                        'wallet.kpay.try_operator'.trParams({
+                          'operator': o.name,
+                        }),
+                      ),
+                      onPressed: () => _selectOperator(o),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -231,9 +373,21 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
         const SizedBox(height: 16),
 
         // --- Opérateur ---
-        Text(
-          'wallet.kpay.operator'.tr,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+        Row(
+          children: [
+            Text(
+              'wallet.kpay.operator'.tr,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            if (_checkingAvailability) ...[
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 6),
         Wrap(
@@ -244,10 +398,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
             return ChoiceChip(
               label: Text(op.name),
               selected: selected,
-              onSelected: (_) {
-                setState(() => _operator = op);
-                _notify();
-              },
+              onSelected: (_) => _selectOperator(op),
               selectedColor: AppDesign.accent,
               checkmarkColor: AppDesign.onAccent,
               labelStyle: TextStyle(
@@ -257,6 +408,9 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
             );
           }).toList(),
         ),
+
+        // --- Avertissement : opérateur instable ---
+        if (_operatorUnstable) _buildUnstableBanner(),
         const SizedBox(height: 16),
 
         // --- Numéro ---
@@ -305,7 +459,7 @@ class _KpayPhoneSelectorState extends State<KpayPhoneSelector> {
           ),
         if (_phoneController.text.isNotEmpty && !_isValid)
           Padding(
-            padding: EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 6),
             child: Text(
               _country.iso3 == 'CMR'
                   ? 'wallet.kpay.phone_9_digits'.tr

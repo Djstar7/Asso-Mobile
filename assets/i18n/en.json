@@ -1349,7 +1349,9 @@
       "amount_to_pay": "Amount to pay",
       "pay_now": "Pay now",
       "debited_by_operator": "Debited by your operator",
-      "operator_mismatch": "This looks like an @operator number."
+      "operator_mismatch": "This looks like an @operator number.",
+      "operator_unstable": "@operator is temporarily unstable. Please choose another operator or try again in a few minutes.",
+      "try_operator": "Try @operator"
     }
   },
   "payment": {
