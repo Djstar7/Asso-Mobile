@@ -7,6 +7,10 @@ import 'app_design.dart';
 class AppFeedback {
   const AppFeedback._();
 
+  static SnackbarController? _active;
+  static String? _activeTitle;
+  static String? _activeMessage;
+
   static SnackbarController show(
     String title,
     String message, {
@@ -21,7 +25,12 @@ class AppFeedback {
     List<BoxShadow>? boxShadows,
     double maxWidth = 560,
   }) {
-    return Get.snackbar(
+    // A request may report the same failure through both its caller and
+    // its form handler. Reuse the visible notification instead of queuing it.
+    if (_active != null && _activeTitle == title && _activeMessage == message) {
+      return _active!;
+    }
+    final controller = Get.snackbar(
       title,
       message,
       snackPosition: snackPosition,
@@ -35,5 +44,16 @@ class AppFeedback {
       boxShadows: boxShadows,
       maxWidth: maxWidth,
     );
+    _active = controller;
+    _activeTitle = title;
+    _activeMessage = message;
+    controller.future.then((_) {
+      if (identical(_active, controller)) {
+        _active = null;
+        _activeTitle = null;
+        _activeMessage = null;
+      }
+    });
+    return controller;
   }
 }

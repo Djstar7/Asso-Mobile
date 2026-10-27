@@ -5,13 +5,13 @@
     "request": "Request a sea freight quote",
     "empty": "No quote requests yet.",
     "accept": "Accept and book",
-    "accept_message": "Accept freight of @amount for @kg kg? Optional insurance is added at payment.",
+    "accept_message": "Accept freight of @amount for @volume CBM? Optional insurance is added at payment.",
     "unavailable": "This quote is unavailable.",
     "expiry": "Valid until @date",
     "discuss": "Chat with ASSO",
     "destination": "Destination country",
     "weight": "Weight (kg)",
-    "volume": "Volume in m³ (optional)",
+    "volume": "Volume (CBM)",
     "general": "General cargo",
     "sensitive": "Sensitive cargo",
     "description": "Parcel description and destination city",
@@ -3703,7 +3703,7 @@
       "air": "Plane",
       "sea": "Sea",
       "air_hint": "Best for parcels under @kg kg",
-      "sea_hint": "Best for parcels over @kg kg"
+      "sea_hint": "Sea shipments are booked in CBM (m³). Choose air freight for small parcels."
     }
   },
   "diaspo_detail": {
@@ -4496,6 +4496,7 @@
   "no_departure_matches": "No departures match your search or filter.",
   "no_shipments": "You have no sea shipments yet.",
   "departure_on": "Departs on @date",
+  "cbm_left": "@volume CBM available",
   "kg_left": "@kg kg available",
   "last_day_to_book": "Last day to book",
   "days_left_to_book": "@days days left to book",
@@ -4530,6 +4531,8 @@
     "kg": "Total weight",
     "parcels": "Number of parcels",
     "kg_available": "@kg kg available on this departure",
+    "volume": "Shipment volume (CBM)",
+    "volume_available": "@volume CBM available",
     "sender": "Your details",
     "first_name": "First name",
     "last_name": "Last name",
@@ -4547,12 +4550,16 @@
     "dropoff_warning": "We expect your parcel at @hub before @date. After that, your money will be returned, minus ASSO fees.",
     "fill_all": "Please fill in all contact details.",
     "kg_range": "The weight must be between 0.5 and @max kg.",
-    "payment_failed_released": "The payment did not go through: the kilos have been released.",
+    "payment_failed_released": "The payment did not go through: the reserved capacity has been released.",
     "volume_line": "That is @volume m³ at @price per m³"
   },
   "validation": {
     "fix_fields": "Please fix the fields highlighted in red.",
     "kg_required": "Enter the weight of your shipment.",
+    "volume_required": "Enter a volume in CBM.",
+    "volume_min": "Minimum volume is 0.001 CBM.",
+    "volume_max": "Available volume: @max CBM.",
+
     "kg_min": "The minimum weight is 0.5 kg.",
     "kg_max": "Maximum @max kg available.",
     "parcels_min": "Enter at least 1 parcel.",

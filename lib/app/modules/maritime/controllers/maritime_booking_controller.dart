@@ -20,7 +20,7 @@ import '../../wallet/views/payment_webview.dart';
 import '../../wallet/widgets/kpay_payment_sheet.dart';
 import 'maritime_controller.dart';
 
-/// Envoi maritime : kilos, colis, coordonnées, nature et valeur, puis paiement.
+/// Envoi maritime : volume en CBM, colis, coordonnées, nature et valeur, puis paiement.
 class MaritimeBookingController extends GetxController {
   final MaritimeService _service = Get.find<MaritimeService>();
 
@@ -52,6 +52,7 @@ class MaritimeBookingController extends GetxController {
 
   /// Ordre d'affichage des champs dans le formulaire.
   static const _fieldOrder = [
+    'volume_cbm',
     'kg_booked',
     'sender_first_name',
     'sender_last_name',
@@ -100,6 +101,7 @@ class MaritimeBookingController extends GetxController {
   void _bindErrorClearing() {
     final map = <String, TextEditingController>{
       'kg_booked': kgController,
+      'volume_cbm': kgController,
       'sender_first_name': senderFirstName,
       'sender_last_name': senderLastName,
       'sender_phone': senderPhone,
@@ -129,11 +131,22 @@ class MaritimeBookingController extends GetxController {
             (freightInquiry!['kg'] as num).toDouble()
       : departure.value?.pricePerKg ?? 0;
   double get remainingKg => departure.value?.remainingKg ?? 0;
+  bool get isSea => departure.value?.isSea ?? true;
+  String get quantityField => isSea ? 'volume_cbm' : 'kg_booked';
+  double get conversion => isSea ? (departure.value?.kgPerCbm ?? 1000) : 1;
+  double get quantity => kg.value / conversion;
+  double get remainingQuantity => remainingKg / conversion;
+  double get unitPrice => freightInquiry != null && quantity > 0
+      ? (freightInquiry!['freight_amount'] as num).toDouble() / quantity
+      : isSea
+      ? (departure.value?.publicCbmRate ?? 0)
+      : pricePerKg;
+  String get unit => isSea ? 'CBM' : 'kg';
 
   /// À lire dans un Obx.
   double get freight => freightInquiry != null
       ? (freightInquiry!['freight_amount'] as num).toDouble()
-      : double.parse((kg.value * pricePerKg).toStringAsFixed(2));
+      : double.parse((quantity * unitPrice).toStringAsFixed(2));
   double get grandTotal => double.parse(
     (freight + (insuranceOptIn.value ? insurance.insuranceAmount.value : 0))
         .toStringAsFixed(2),
@@ -166,11 +179,15 @@ class MaritimeBookingController extends GetxController {
       kg.value = remainingKg;
       kgController.text = remainingKg.toStringAsFixed(1);
     }
+    if (freightInquiry == null && isSea) {
+      kg.value = remainingKg < 1000 ? remainingKg : 1000;
+    }
+    kgController.text = quantity.toStringAsFixed(isSea ? 3 : 1);
     kgController.addListener(() {
       final value =
           double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
       if (freightInquiry == null) {
-        kg.value = value.isFinite && value > 0 ? value : 0;
+        kg.value = value.isFinite && value > 0 ? value * conversion : 0;
       }
     });
 
@@ -219,13 +236,25 @@ class MaritimeBookingController extends GetxController {
     // Poids
     final rawKg = double.tryParse(kgController.text.replaceAll(',', '.'));
     if (rawKg == null || !rawKg.isFinite || t(kgController).isEmpty) {
-      errors['kg_booked'] = 'maritime.validation.kg_required'.tr;
-    } else if (rawKg < 0.5) {
-      errors['kg_booked'] = 'maritime.validation.kg_min'.tr;
-    } else if (rawKg > remainingKg) {
-      errors['kg_booked'] = 'maritime.validation.kg_max'.trParams({
-        'max': remainingKg.toStringAsFixed(1),
-      });
+      errors[quantityField] =
+          (isSea
+                  ? 'maritime.validation.volume_required'
+                  : 'maritime.validation.kg_required')
+              .tr;
+    } else if (rawKg < (isSea ? 0.001 : 0.5)) {
+      errors[quantityField] =
+          (isSea
+                  ? 'maritime.validation.volume_min'
+                  : 'maritime.validation.kg_min')
+              .tr;
+    } else if (rawKg > remainingQuantity) {
+      errors[quantityField] =
+          (isSea
+                  ? 'maritime.validation.volume_max'
+                  : 'maritime.validation.kg_max')
+              .trParams({
+                'max': remainingQuantity.toStringAsFixed(isSea ? 3 : 1),
+              });
     }
 
     // Expéditeur
@@ -296,9 +325,7 @@ class MaritimeBookingController extends GetxController {
     String? phone,
   }) => {
     if (freightInquiry != null) 'freight_inquiry_id': freightInquiry!['id'],
-    'kg_booked': freightInquiry != null
-        ? freightInquiry!['kg']
-        : double.tryParse(kgController.text.replaceAll(',', '.')) ?? kg.value,
+    quantityField: quantity,
     'parcels_count': 1,
     'sender_first_name': senderFirstName.text.trim(),
     'sender_last_name': senderLastName.text.trim(),

@@ -39,8 +39,12 @@ class MaritimeHub {
     openingHours: json['opening_hours']?.toString(),
   );
 
-  String get fullAddress =>
-      [name, address, city].where((part) => part.trim().isNotEmpty).join(', ');
+  String get fullAddress => [
+    name,
+    address,
+    city,
+    countryName.isNotEmpty ? countryName : country,
+  ].where((part) => part.trim().isNotEmpty).join(', ');
 }
 
 /// Départ maritime d'un partenaire entre deux QG.
@@ -115,6 +119,10 @@ class MaritimeDeparture {
     this.meetingDetailsAvailable = false,
     this.notes,
   });
+
+  bool get isSea => transportMode == 'sea';
+  double get remainingCbm => remainingKg / (kgPerCbm ?? 1000);
+  double get publicCbmRate => pricePerCbm ?? pricePerKg * (kgPerCbm ?? 1000);
 
   bool get isPricedPerCbm => (pricePerCbm ?? 0) > 0 && (kgPerCbm ?? 0) > 0;
 

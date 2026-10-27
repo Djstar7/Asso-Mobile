@@ -5,13 +5,13 @@
     "request": "Demander un devis maritime",
     "empty": "Aucune demande de devis.",
     "accept": "Accepter et réserver",
-    "accept_message": "Accepter un fret de @amount pour @kg kg ? L’assurance facultative s’ajoute au paiement.",
+    "accept_message": "Accepter un fret de @amount pour @volume CBM ? L’assurance facultative s’ajoute au paiement.",
     "unavailable": "Ce devis est indisponible.",
     "expiry": "Valable jusqu’au @date",
     "discuss": "Discuter avec ASSO",
     "destination": "Pays de destination",
     "weight": "Poids (kg)",
-    "volume": "Volume en m³ (facultatif)",
+    "volume": "Volume (CBM)",
     "general": "Colis général",
     "sensitive": "Colis sensible",
     "description": "Description du colis et ville de destination",
@@ -3703,7 +3703,7 @@
       "air": "Avion",
       "sea": "Maritime",
       "air_hint": "Idéal pour les colis de moins de @kg kg",
-      "sea_hint": "Idéal pour les colis de plus de @kg kg"
+      "sea_hint": "Les envois maritimes se réservent en CBM (m³). Pour les petits colis, choisissez l’avion."
     }
   },
   "diaspo_detail": {
@@ -4496,6 +4496,7 @@
   "no_departure_matches": "Aucun départ ne correspond à votre recherche ou à ce filtre.",
   "no_shipments": "Vous n'avez pas encore d'envoi international.",
   "departure_on": "Départ le @date",
+  "cbm_left": "@volume CBM disponibles",
   "kg_left": "@kg kg disponibles",
   "last_day_to_book": "Dernier jour pour réserver",
   "days_left_to_book": "Encore @days jours pour réserver",
@@ -4530,6 +4531,8 @@
     "kg": "Poids total",
     "parcels": "Nombre de colis",
     "kg_available": "@kg kg disponibles sur ce départ",
+    "volume": "Volume à envoyer (CBM)",
+    "volume_available": "@volume CBM disponibles",
     "sender": "Vos coordonnées",
     "first_name": "Prénom",
     "last_name": "Nom",
@@ -4547,12 +4550,16 @@
     "dropoff_warning": "Nous attendons votre colis à @hub avant le @date. Passé ce délai, votre argent vous sera retourné, hors frais ASSO.",
     "fill_all": "Remplissez toutes les coordonnées.",
     "kg_range": "Le poids doit être compris entre 0,5 et @max kg.",
-    "payment_failed_released": "Le paiement n'a pas abouti : les kilos ont été libérés.",
+    "payment_failed_released": "Le paiement n'a pas abouti : la capacité réservée a été libérée.",
     "volume_line": "Soit @volume m³ au tarif de @price le m³"
   },
   "validation": {
     "fix_fields": "Corrigez les champs signalés en rouge.",
     "kg_required": "Indiquez le poids de votre envoi.",
+    "volume_required": "Saisissez un volume en CBM.",
+    "volume_min": "Le volume minimum est de 0,001 CBM.",
+    "volume_max": "Volume disponible : @max CBM.",
+
     "kg_min": "Le poids minimum est de 0,5 kg.",
     "kg_max": "Maximum @max kg disponibles.",
     "parcels_min": "Indiquez au moins 1 colis.",

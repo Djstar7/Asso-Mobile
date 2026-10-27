@@ -288,7 +288,7 @@ class MaritimeSection extends GetView<MaritimeController> {
                     Text(
                       d.requiresQuote
                           ? 'freight_quote.on_request'.tr
-                          : '${controller.formatAmount(d.pricePerKg, d.currency)}/kg',
+                          : '${controller.formatAmount(d.isSea ? d.publicCbmRate : d.pricePerKg, d.currency)}/${d.isSea ? 'CBM' : 'kg'}',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppThemeSystem.primaryColor,
@@ -301,17 +301,6 @@ class MaritimeSection extends GetView<MaritimeController> {
                   'Diaspo Exchange',
                   style: TextStyle(fontSize: 12, color: _muted(isDark)),
                 ),
-                if (d.isPricedPerCbm)
-                  Text(
-                    'maritime.cbm_rate'.trParams({
-                      'price': controller.formatAmount(
-                        d.pricePerCbm!,
-                        d.currency,
-                      ),
-                      'kg': d.kgPerCbm!.toStringAsFixed(0),
-                    }),
-                    style: TextStyle(fontSize: 12, color: _muted(isDark)),
-                  ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 16,
@@ -326,9 +315,11 @@ class MaritimeSection extends GetView<MaritimeController> {
                     ),
                     _info(
                       Icons.scale_outlined,
-                      'maritime.kg_left'.trParams({
-                        'kg': d.remainingKg.toStringAsFixed(0),
-                      }),
+                      (d.isSea ? 'maritime.cbm_left' : 'maritime.kg_left')
+                          .trParams({
+                            'volume': d.remainingCbm.toStringAsFixed(3),
+                            'kg': d.remainingKg.toStringAsFixed(0),
+                          }),
                       isDark,
                     ),
                     if (from != null)
@@ -470,7 +461,7 @@ class MaritimeSection extends GetView<MaritimeController> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${b.kgBooked.toStringAsFixed(1)} kg · ${'maritime.parcels'.trParams({'count': '${b.parcelsCount}'})} · ${controller.formatAmount(b.freightTotal, b.currency)}',
+            '${b.departure?.isSea == true ? (b.kgBooked / (b.departure?.kgPerCbm ?? 1000)).toStringAsFixed(3) : b.kgBooked.toStringAsFixed(1)} ${b.departure?.isSea == true ? 'CBM' : 'kg'} · ${'maritime.parcels'.trParams({'count': '${b.parcelsCount}'})} · ${controller.formatAmount(b.freightTotal, b.currency)}',
             style: TextStyle(color: _muted(isDark)),
           ),
           Text(

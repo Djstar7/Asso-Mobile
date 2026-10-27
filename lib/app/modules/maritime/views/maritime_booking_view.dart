@@ -57,17 +57,25 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                         _field(
                           isDark,
                           controller.kgController,
-                          'maritime.form.kg'.tr,
-                          errorKey: 'kg_booked',
-                          suffix: 'kg',
+                          (controller.isSea
+                                  ? 'maritime.form.volume'
+                                  : 'maritime.form.kg')
+                              .tr,
+                          errorKey: controller.quantityField,
+                          suffix: controller.unit,
                           number: true,
                           decimal: true,
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'maritime.form.kg_available'.trParams({
-                            'kg': controller.remainingKg.toStringAsFixed(1),
-                          }),
+                          (controller.isSea
+                                  ? 'maritime.form.volume_available'
+                                  : 'maritime.form.kg_available')
+                              .trParams({
+                                'volume': controller.remainingQuantity
+                                    .toStringAsFixed(3),
+                                'kg': controller.remainingKg.toStringAsFixed(1),
+                              }),
                           style: TextStyle(fontSize: 12, color: _muted(isDark)),
                         ),
                       ],
@@ -239,7 +247,9 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
       child: TextField(
         controller: c,
         cursorColor: AppDesign.accent,
-        readOnly: errorKey == 'kg_booked' && controller.freightInquiry != null,
+        readOnly:
+            errorKey == controller.quantityField &&
+            controller.freightInquiry != null,
         keyboardType: phone
             ? TextInputType.phone
             : number
@@ -251,7 +261,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
         inputFormatters: number
             ? [
                 FilteringTextInputFormatter.allow(
-                  RegExp(decimal ? r'^\d+[.,]?\d{0,1}' : r'^\d+'),
+                  RegExp(decimal ? r'^\d*[.,]?\d{0,3}$' : r'^\d+'),
                 ),
               ]
             : phone
@@ -335,7 +345,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                 ),
               ),
               Text(
-                '${controller.formatAmount(controller.pricePerKg)}/kg',
+                '${controller.formatAmount(controller.unitPrice)}/${controller.unit}',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppThemeSystem.primaryColor,
@@ -399,21 +409,9 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
             const SizedBox(height: 12),
             _row(
               isDark,
-              '${controller.kg.value.toStringAsFixed(1)} kg × ${controller.formatAmount(controller.pricePerKg)}',
+              '${controller.quantity.toStringAsFixed(controller.isSea ? 3 : 1)} ${controller.unit} × ${controller.formatAmount(controller.unitPrice)}',
               controller.formatAmount(controller.freight),
             ),
-            if (d.isPricedPerCbm) ...[
-              const SizedBox(height: 4),
-              Text(
-                'maritime.form.volume_line'.trParams({
-                  'volume': d
-                      .volumeForKg(controller.kg.value)!
-                      .toStringAsFixed(3),
-                  'price': controller.formatAmount(d.pricePerCbm!),
-                }),
-                style: TextStyle(fontSize: 12, color: _muted(isDark)),
-              ),
-            ],
             const SizedBox(height: 8),
             _insuranceQuoteLine(isDark),
             const Divider(height: 24),

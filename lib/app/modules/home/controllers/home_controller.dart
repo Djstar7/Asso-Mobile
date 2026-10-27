@@ -670,6 +670,8 @@ class HomeController extends GetxController
       final response = await ProductService.getBanners();
       if (response.success && response.data != null) {
         final bannerList = response.data!['banners'] as List? ?? [];
+        currentBannerIndex.value = 0;
+        if (bannerController.hasClients) bannerController.jumpToPage(0);
         banners.value = bannerList
             .map((b) => Map<String, dynamic>.from(b))
             .toList();
@@ -810,6 +812,7 @@ class HomeController extends GetxController
 
   Future<void> refreshProducts() async {
     await Future.wait([
+      _loadBanners(),
       _loadNearbyProducts(),
       _loadRecentProducts(),
       _loadPasscolisOffers(),

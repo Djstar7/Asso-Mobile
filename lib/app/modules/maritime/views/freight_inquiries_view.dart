@@ -71,7 +71,8 @@ class _FreightInquiriesViewState extends State<FreightInquiriesView> {
               (inquiry['freight_amount'] as num).toDouble(),
               inquiry['currency'],
             ),
-            'kg': '${inquiry['kg']}',
+            'volume':
+                '${inquiry['volume_cbm'] ?? (double.tryParse('${inquiry['kg']}') ?? 0) / 1000}',
           }),
         ),
         actions: [
@@ -155,7 +156,7 @@ class _FreightInquiriesViewState extends State<FreightInquiriesView> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '${inquiry['kg']} kg · ${'freight_quote.status.${inquiry['status']}'.tr}',
+                    '${inquiry['volume_cbm'] ?? (double.tryParse('${inquiry['kg']}') ?? 0) / 1000} CBM · ${'freight_quote.status.${inquiry['status']}'.tr}',
                   ),
                   Text(inquiry['description']?.toString() ?? ''),
                   if (inquiry['freight_amount'] != null)
@@ -203,7 +204,6 @@ class _InquiryDialog extends StatefulWidget {
 }
 
 class _InquiryDialogState extends State<_InquiryDialog> {
-  final weight = TextEditingController();
   final volume = TextEditingController();
   final description = TextEditingController();
   String? country;
@@ -213,7 +213,6 @@ class _InquiryDialogState extends State<_InquiryDialog> {
 
   @override
   void dispose() {
-    weight.dispose();
     volume.dispose();
     description.dispose();
     super.dispose();
@@ -233,7 +232,6 @@ class _InquiryDialogState extends State<_InquiryDialog> {
       final result = await Get.find<MaritimeService>().createInquiry({
         'destination_country': country,
         'cargo_category': category,
-        'kg': double.tryParse(weight.text.replaceAll(',', '.')),
         'volume_cbm': double.tryParse(volume.text.replaceAll(',', '.')),
         'description': description.text.trim(),
       });
@@ -260,15 +258,6 @@ class _InquiryDialogState extends State<_InquiryDialog> {
                 label: 'freight_quote.destination'.tr,
                 value: country,
                 onChanged: (value) => setState(() => country = value),
-              ),
-              TextField(
-                controller: weight,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'freight_quote.weight'.tr,
-                ),
               ),
               TextField(
                 controller: volume,
