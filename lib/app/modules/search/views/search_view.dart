@@ -125,7 +125,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
   Widget _buildSearchHeader(BuildContext context, bool isDark) {
     if (controller.scope.value == search_ctrl.SearchScope.passcolis) {
       return Container(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
+        color: context.ds.canvas,
         padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
         child: Row(
           children: [
@@ -292,8 +292,14 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       ];
       return SegmentedTabs(
         tabs: [
-          SegmentedTab(label: 'search.tab_products'.tr, icon: Icons.grid_view_rounded),
-          SegmentedTab(label: 'search.tab_passcolis'.tr, icon: Icons.flight_takeoff_rounded),
+          SegmentedTab(
+            label: 'search.tab_products'.tr,
+            icon: Icons.grid_view_rounded,
+          ),
+          SegmentedTab(
+            label: 'search.tab_passcolis'.tr,
+            icon: Icons.flight_takeoff_rounded,
+          ),
         ],
         selectedIndex: scopes.indexOf(controller.scope.value),
         onChanged: (index) => controller.changeScope(scopes[index]),
@@ -863,7 +869,11 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
             (count > 1
                     ? 'search.products_count_plural'
                     : 'search.products_count')
-                .trParams({'count': '$count'}),
+                .trParams({
+                  'count': controller.isResultCountComplete
+                      ? '$count'
+                      : '$count+',
+                }),
             style: context.textStyle(
               FontSizeType.body1,
               fontWeight: FontWeight.w600,
@@ -1004,10 +1014,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       name: product.name,
       price: tier == null
           ? '—'
-          : CurrencyService.formatFromCurrency(
-              tier.unitPrice,
-              tier.currency,
-            ),
+          : CurrencyService.formatFromCurrency(tier.unitPrice, tier.currency),
       // Le prix affiché est celui du palier le plus avantageux : il ne
       // s'entend qu'à partir de sa quantité.
       meta: tier == null

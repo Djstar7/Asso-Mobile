@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/format_cbm.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/segmented_tabs.dart';
 import '../../../data/models/maritime.dart';
@@ -317,7 +318,7 @@ class MaritimeSection extends GetView<MaritimeController> {
                       Icons.scale_outlined,
                       (d.isSea ? 'maritime.cbm_left' : 'maritime.kg_left')
                           .trParams({
-                            'volume': d.remainingCbm.toStringAsFixed(3),
+                            'volume': formatCbm(d.remainingCbm),
                             'kg': d.remainingKg.toStringAsFixed(0),
                           }),
                       isDark,
@@ -461,7 +462,7 @@ class MaritimeSection extends GetView<MaritimeController> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${b.departure?.isSea == true ? (b.kgBooked / (b.departure?.kgPerCbm ?? 1000)).toStringAsFixed(3) : b.kgBooked.toStringAsFixed(1)} ${b.departure?.isSea == true ? 'CBM' : 'kg'} · ${'maritime.parcels'.trParams({'count': '${b.parcelsCount}'})} · ${controller.formatAmount(b.freightTotal, b.currency)}',
+            '${b.departure?.isSea == true ? formatCbm(b.kgBooked / (b.departure?.kgPerCbm ?? 1000)) : b.kgBooked.toStringAsFixed(1)} ${b.departure?.isSea == true ? 'CBM' : 'kg'} · ${'maritime.parcels'.trParams({'count': '${b.parcelsCount}'})} · ${controller.formatAmount(b.freightTotal, b.currency)}',
             style: TextStyle(color: _muted(isDark)),
           ),
           Text(

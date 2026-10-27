@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/widgets/iso_country_field.dart';
+import '../../../core/utils/app_design.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/maritime_service.dart';
@@ -248,6 +249,10 @@ class _InquiryDialogState extends State<_InquiryDialog> {
     canPop: !busy,
     child: AlertDialog(
       title: Text('freight_quote.request'.tr),
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      actionsOverflowButtonSpacing: AppDesign.space2,
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -259,6 +264,7 @@ class _InquiryDialogState extends State<_InquiryDialog> {
                 value: country,
                 onChanged: (value) => setState(() => country = value),
               ),
+              const SizedBox(height: AppDesign.space5),
               TextField(
                 controller: volume,
                 keyboardType: const TextInputType.numberWithOptions(
@@ -268,8 +274,13 @@ class _InquiryDialogState extends State<_InquiryDialog> {
                   labelText: 'freight_quote.volume'.tr,
                 ),
               ),
+              const SizedBox(height: AppDesign.space5),
               DropdownButtonFormField<String>(
                 initialValue: category,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'maritime.form.cargo_category'.tr,
+                ),
                 items: ['general', 'sensitive']
                     .map(
                       (value) => DropdownMenuItem(
@@ -282,6 +293,7 @@ class _InquiryDialogState extends State<_InquiryDialog> {
                     ? null
                     : (value) => category = value ?? 'general',
               ),
+              const SizedBox(height: AppDesign.space5),
               TextField(
                 controller: description,
                 maxLength: 3000,
@@ -291,9 +303,14 @@ class _InquiryDialogState extends State<_InquiryDialog> {
                 ),
               ),
               if (error != null)
-                Text(
-                  error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                Padding(
+                  padding: const EdgeInsets.only(top: AppDesign.space3),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
               if (busy) const LinearProgressIndicator(),
             ],

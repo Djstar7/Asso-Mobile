@@ -293,6 +293,7 @@ class WholesaleCatalog {
   /// Page reçue (1 sans pagination) et s'il en reste après elle.
   final int page;
   final bool hasMore;
+  final int total;
 
   const WholesaleCatalog({
     required this.countryCode,
@@ -302,6 +303,7 @@ class WholesaleCatalog {
     required this.shippingOptions,
     this.page = 1,
     this.hasMore = false,
+    this.total = 0,
   });
 
   factory WholesaleCatalog.fromJson(Map<String, dynamic> j) {
@@ -312,6 +314,10 @@ class WholesaleCatalog {
     return WholesaleCatalog(
       page: (pagination['current_page'] as num?)?.toInt() ?? 1,
       hasMore: pagination['has_more'] == true,
+      total:
+          (pagination['total'] as num?)?.toInt() ??
+          (j['products'] as List?)?.length ??
+          0,
       countryCode: country['code']?.toString() ?? '',
       countryName: country['name']?.toString() ?? '',
       countryFlag: country['flag']?.toString() ?? '',

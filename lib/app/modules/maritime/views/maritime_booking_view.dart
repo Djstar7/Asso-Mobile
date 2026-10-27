@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/format_cbm.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/maritime_booking_controller.dart';
@@ -44,7 +45,10 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                     _routeCard(isDark),
                     Obx(
                       () => Text(
-                        controller.departure.value?.commercialSummary ?? '',
+                        controller.departure.value?.commercialSummaryFor(
+                              controller.cargoCategory.value,
+                            ) ??
+                            '',
                         style: TextStyle(color: AppThemeSystem.grey600),
                       ),
                     ),
@@ -54,6 +58,42 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                       'maritime.form.parcel'.tr,
                       Icons.scale_outlined,
                       [
+                        if (d.cargoOptions.length > 1 &&
+                            controller.freightInquiry == null) ...[
+                          KeyedSubtree(
+                            key: controller.fieldKeys['cargo_category'],
+                            child: DropdownButtonFormField<String>(
+                              key: ValueKey(
+                                'cargo-${d.id}-${controller.cargoCategory.value}',
+                              ),
+                              initialValue: controller.cargoCategory.value,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: 'maritime.form.cargo_category'.tr,
+                                errorText: controller.errorOf('cargo_category'),
+                              ),
+                              items: [
+                                for (final option in d.cargoOptions)
+                                  DropdownMenuItem(
+                                    value: option.category,
+                                    child: Text(
+                                      'partner_freight.${option.category}'.tr,
+                                    ),
+                                  ),
+                              ],
+                              onChanged: controller.isSubmitting.value
+                                  ? null
+                                  : controller.selectCargoCategory,
+                            ),
+                          ),
+                          const SizedBox(height: AppDesign.space4),
+                        ] else ...[
+                          Text(
+                            '${'maritime.form.cargo_category'.tr} : ${'partner_freight.${controller.cargoCategory.value}'.tr}',
+                            style: TextStyle(color: _muted(isDark)),
+                          ),
+                          const SizedBox(height: AppDesign.space4),
+                        ],
                         _field(
                           isDark,
                           controller.kgController,
@@ -72,8 +112,9 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
                                   ? 'maritime.form.volume_available'
                                   : 'maritime.form.kg_available')
                               .trParams({
-                                'volume': controller.remainingQuantity
-                                    .toStringAsFixed(3),
+                                'volume': formatCbm(
+                                  controller.remainingQuantity,
+                                ),
                                 'kg': controller.remainingKg.toStringAsFixed(1),
                               }),
                           style: TextStyle(fontSize: 12, color: _muted(isDark)),
@@ -409,7 +450,7 @@ class MaritimeBookingView extends GetView<MaritimeBookingController> {
             const SizedBox(height: 12),
             _row(
               isDark,
-              '${controller.quantity.toStringAsFixed(controller.isSea ? 3 : 1)} ${controller.unit} × ${controller.formatAmount(controller.unitPrice)}',
+              '${controller.isSea ? formatCbm(controller.quantity) : controller.quantity.toStringAsFixed(1)} ${controller.unit} × ${controller.formatAmount(controller.unitPrice)}',
               controller.formatAmount(controller.freight),
             ),
             const SizedBox(height: 8),

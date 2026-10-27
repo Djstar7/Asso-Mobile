@@ -4519,6 +4519,7 @@
     "see_shipments": "Voir mes envois"
   },
   "form": {
+    "cargo_category": "Catégorie du colis",
     "title": "Envoi international",
     "insurance_fields_intro": "Indiquez la nature du colis et sa valeur déclarée. Ces informations restent nécessaires même si vous ne souscrivez pas à l’assurance.",
     "insurance_opt_in": "Je souhaite assurer mon colis contre les risques de perte.",

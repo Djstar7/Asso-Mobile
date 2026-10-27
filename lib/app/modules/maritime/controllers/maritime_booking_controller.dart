@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
+import '../../../core/utils/format_cbm.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/models/payment_method_option.dart';
 import '../../../data/providers/api_validation_exception.dart';
@@ -28,6 +29,7 @@ class MaritimeBookingController extends GetxController {
   Map<String, dynamic>? freightInquiry;
   final isSubmitting = false.obs;
   final insuranceOptIn = false.obs;
+  final cargoCategory = 'general'.obs;
 
   final kgController = TextEditingController(text: '10');
   final kg = 10.0.obs;
@@ -53,6 +55,7 @@ class MaritimeBookingController extends GetxController {
   /// Ordre d'affichage des champs dans le formulaire.
   static const _fieldOrder = [
     'volume_cbm',
+    'cargo_category',
     'kg_booked',
     'sender_first_name',
     'sender_last_name',
@@ -138,9 +141,25 @@ class MaritimeBookingController extends GetxController {
   double get remainingQuantity => remainingKg / conversion;
   double get unitPrice => freightInquiry != null && quantity > 0
       ? (freightInquiry!['freight_amount'] as num).toDouble() / quantity
-      : isSea
-      ? (departure.value?.publicCbmRate ?? 0)
-      : pricePerKg;
+      : selectedCargoOption?.pricePerUnit ??
+            (isSea ? (departure.value?.publicCbmRate ?? 0) : pricePerKg);
+  MaritimeCargoOption? get selectedCargoOption => departure.value?.cargoOptions
+      .firstWhereOrNull((option) => option.category == cargoCategory.value);
+
+  void selectCargoCategory(String? category) {
+    if (category == null || freightInquiry != null || isSubmitting.value) {
+      return;
+    }
+    if (!(departure.value?.cargoOptions.any(
+          (option) => option.category == category,
+        ) ??
+        false)) {
+      return;
+    }
+    cargoCategory.value = category;
+    clearError('cargo_category');
+  }
+
   String get unit => isSea ? 'CBM' : 'kg';
 
   /// À lire dans un Obx.
@@ -158,6 +177,7 @@ class MaritimeBookingController extends GetxController {
     final args = Get.arguments;
     if (args is Map && args['departure'] is MaritimeDeparture) {
       departure.value = args['departure'] as MaritimeDeparture;
+      cargoCategory.value = departure.value!.cargoCategory;
       if (args['freight_inquiry'] is Map) {
         freightInquiry = Map<String, dynamic>.from(args['freight_inquiry']);
         kg.value = (freightInquiry!['kg'] as num).toDouble();
@@ -180,9 +200,11 @@ class MaritimeBookingController extends GetxController {
       kgController.text = remainingKg.toStringAsFixed(1);
     }
     if (freightInquiry == null && isSea) {
-      kg.value = remainingKg < 1000 ? remainingKg : 1000;
+      kg.value = remainingKg < conversion ? remainingKg : conversion;
     }
-    kgController.text = quantity.toStringAsFixed(isSea ? 3 : 1);
+    kgController.text = isSea
+        ? formatCbm(quantity)
+        : quantity.toStringAsFixed(1);
     kgController.addListener(() {
       final value =
           double.tryParse(kgController.text.replaceAll(',', '.')) ?? 0;
@@ -253,7 +275,9 @@ class MaritimeBookingController extends GetxController {
                   ? 'maritime.validation.volume_max'
                   : 'maritime.validation.kg_max')
               .trParams({
-                'max': remainingQuantity.toStringAsFixed(isSea ? 3 : 1),
+                'max': isSea
+                    ? formatCbm(remainingQuantity)
+                    : remainingQuantity.toStringAsFixed(1),
               });
     }
 
@@ -326,6 +350,8 @@ class MaritimeBookingController extends GetxController {
   }) => {
     if (freightInquiry != null) 'freight_inquiry_id': freightInquiry!['id'],
     quantityField: quantity,
+    'cargo_category': cargoCategory.value,
+    'expected_unit_price': unitPrice,
     'parcels_count': 1,
     'sender_first_name': senderFirstName.text.trim(),
     'sender_last_name': senderLastName.text.trim(),

@@ -30,6 +30,20 @@ void main() {
       'price_per_cbm': 900,
       'kg_per_cbm': 1000,
       'currency': 'EUR',
+      'cargo_options': [
+        {
+          'cargo_category': 'general',
+          'price_per_unit': 900,
+          'unit': 'CBM',
+          'currency': 'EUR',
+        },
+        {
+          'cargo_category': 'sensitive',
+          'price_per_unit': 1200,
+          'unit': 'CBM',
+          'currency': 'EUR',
+        },
+      ],
       'departure_date': '2026-12-01',
       'origin_hub': {
         'id': 1,
@@ -73,6 +87,28 @@ void main() {
     expect(find.textContaining('PRIVATE'), findsNothing);
     expect(find.text('Volume à envoyer (CBM)'), findsOneWidget);
     final controller = Get.find<MaritimeBookingController>();
+    expect(controller.kgController.text, '1');
+    expect(controller.quantity, 1);
+    expect(controller.freight, 900);
+    expect(find.text('2,5 CBM disponibles'), findsOneWidget);
+    expect(find.text('1.000'), findsNothing);
+    controller.insurance.selectedNature.value = ParcelNature(
+      id: 1,
+      name: 'Vêtements',
+      insuranceRate: 1,
+      minInsuranceAmount: 0,
+    );
+    expect(controller.bookingPayload('wallet')['volume_cbm'], 1);
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Colis sensible').last);
+    await tester.pumpAndSettle();
+    expect(controller.cargoCategory.value, 'sensitive');
+    expect(controller.freight, 1200);
+    expect(controller.bookingPayload('wallet')['cargo_category'], 'sensitive');
+    expect(controller.bookingPayload('wallet')['expected_unit_price'], 1200);
+    controller.selectCargoCategory('general');
+    await tester.pump();
     await tester.enterText(
       find.widgetWithText(TextField, 'Volume à envoyer (CBM)'),
       '0,123',

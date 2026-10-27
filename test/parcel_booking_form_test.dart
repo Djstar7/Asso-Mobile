@@ -50,7 +50,7 @@ void main() {
 
   for (final mode in ['sea', 'air']) {
     testWidgets(
-      '$mode freight uses total weight and gates insurance on a valid declaration',
+      '$mode freight uses its billing unit and gates insurance on a valid declaration',
       (tester) async {
         tester.view.physicalSize = const Size(430, 932);
         tester.view.devicePixelRatio = 1;
@@ -62,8 +62,9 @@ void main() {
           'departure_date': '2026-11-20',
           'departure_datetime': '2026-11-20T10:00:00Z',
           'arrival_datetime': '2026-11-21T10:00:00Z',
-          'remaining_kg': 100,
+          'remaining_kg': mode == 'sea' ? 10000 : 100,
           'price_per_kg': 12,
+          if (mode == 'sea') 'price_per_cbm': 120,
           'currency': 'EUR',
           'status': 'open',
           'transport_mode': mode,
@@ -79,11 +80,14 @@ void main() {
         await tester.pumpAndSettle();
         final controller = Get.find<MaritimeBookingController>();
         expect(find.text('Nombre de colis'), findsNothing);
-        expect(find.text('Poids total'), findsOneWidget);
+        final quantityLabel = mode == 'sea'
+            ? 'Volume à envoyer (CBM)'
+            : 'Poids total';
+        expect(find.text(quantityLabel), findsOneWidget);
         expect(controller.freight, 120);
         await tester.enterText(
-          find.widgetWithText(TextField, 'Poids total'),
-          '20,5',
+          find.widgetWithText(TextField, quantityLabel),
+          mode == 'sea' ? '2,05' : '20,5',
         );
         await tester.pump();
         expect(controller.freight, 246);
@@ -118,7 +122,12 @@ void main() {
         await tester.pump();
         expect(controller.grandTotal, 250);
         expect(controller.bookingPayload('wallet')['parcels_count'], 1);
-        expect(controller.bookingPayload('wallet')['kg_booked'], 20.5);
+        expect(
+          controller.bookingPayload('wallet')[mode == 'sea'
+              ? 'volume_cbm'
+              : 'kg_booked'],
+          mode == 'sea' ? 2.05 : 20.5,
+        );
 
         controller.insurance.valueController.clear();
         await tester.pump();

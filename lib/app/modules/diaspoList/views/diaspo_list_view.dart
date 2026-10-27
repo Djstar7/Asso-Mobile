@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_list_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/semantic_tone.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/segmented_tabs.dart';
 import '../../maritime/views/maritime_section.dart';
@@ -97,6 +98,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
   Widget _buildAirSection(BuildContext context, bool isDark) {
     _freight?.ensureLoaded(transportMode: 'air');
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSearchBar(context, isDark),
         _buildVerificationBanner(context, isDark),
@@ -109,8 +111,8 @@ class DiaspoListView extends GetView<DiaspoListController> {
   /// Avion / Maritime : avion pour les petits colis, bateau au-delà du seuil.
   Widget _buildTransportSwitch(BuildContext context, bool isDark) {
     return Container(
-      color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      color: context.ds.canvas,
+      padding: EdgeInsets.fromLTRB(16, embedded ? 0 : 12, 16, 0),
       child: Obx(() {
         final kg = controller.airMaxKgHint.value;
         final kgText = kg % 1 == 0
@@ -140,9 +142,9 @@ class DiaspoListView extends GetView<DiaspoListController> {
                       : 'diaspo_list.mode.air_hint')
                   .trParams({'kg': kgText}),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? Colors.white70 : AppDesign.neutral500,
+              style: context.textStyle(
+                FontSizeType.caption,
+                color: context.ds.textSecondary,
               ),
             ),
           ],
@@ -227,42 +229,47 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
   /// Barre de recherche (remplace les filtres)
   Widget _buildSearchBar(BuildContext context, bool isDark) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: TextField(
-          onChanged: (value) => controller.searchQuery.value = value,
-          decoration: InputDecoration(
-            hintText: 'diaspo_list.search_hint'.tr,
-            hintStyle: TextStyle(
-              fontSize: 14,
-              color: isDark ? Colors.white54 : Colors.grey[500],
-            ),
-            prefixIcon: Icon(
-              Icons.search_rounded,
-              color: isDark ? Colors.white54 : Colors.grey[500],
-            ),
-            suffixIcon: Obx(
-              () => controller.searchQuery.value.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(
-                        Icons.clear,
-                        color: isDark ? Colors.white54 : Colors.grey[500],
-                      ),
-                      onPressed: () => controller.searchQuery.value = '',
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      child: TextField(
+        style: context.textStyle(FontSizeType.body2),
+        textInputAction: TextInputAction.search,
+        onChanged: (value) => controller.searchQuery.value = value,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: context.ds.surface,
+          hintText: 'diaspo_list.search_hint'.tr,
+          hintStyle: context.textStyle(
+            FontSizeType.body2,
+            color: context.ds.textTertiary,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: context.ds.textTertiary,
+          ),
+          suffixIcon: Obx(
+            () => controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, color: context.ds.textSecondary),
+                    onPressed: () => controller.searchQuery.value = '',
+                  )
+                : const SizedBox.shrink(),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+            borderSide: BorderSide(color: context.ds.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+            borderSide: BorderSide(color: context.ds.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+            borderSide: const BorderSide(color: AppDesign.accent, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
           ),
         ),
       ),
@@ -278,58 +285,65 @@ class DiaspoListView extends GetView<DiaspoListController> {
       'diaspo_list.tabs.my_sales'.tr,
     ];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppThemeSystem.darkCardColor : Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Obx(
-          () => Row(
-            children: List.generate(tabs.length, (index) {
-              final isSelected = controller.selectedTab.value == index;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  // Sans cela, un tap dans les marges de la puce traverse vers
-                  // la carte en dessous au lieu de changer d'onglet.
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => controller.changeTab(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppThemeSystem.primaryColor
-                          : (isDark ? Colors.grey[800] : Colors.grey[200]),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      tabs[index],
-                      style: TextStyle(
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Obx(
+            () => Row(
+              children: List.generate(tabs.length, (index) {
+                final isSelected = controller.selectedTab.value == index;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: isSelected
+                        ? AppDesign.accent.withValues(
+                            alpha: isDark ? 0.18 : 0.10,
+                          )
+                        : context.ds.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                      side: BorderSide(
                         color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white70 : Colors.grey[700]),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        fontSize: 14,
+                            ? AppDesign.accent
+                            : context.ds.border,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () => controller.changeTab(index),
+                      borderRadius: BorderRadius.circular(AppDesign.radiusPill),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: AppDesign.minTapTarget,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Text(
+                            tabs[index],
+                            style: context.textStyle(
+                              FontSizeType.body2,
+                              color: isSelected
+                                  ? (isDark
+                                        ? AppDesign.accent
+                                        : AppDesign.accentText)
+                                  : context.ds.textSecondary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -423,7 +437,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
             itemCount: entries.length + (loadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == entries.length) {
@@ -758,6 +772,7 @@ class DiaspoListView extends GetView<DiaspoListController> {
 
     final muted = isDark ? Colors.white70 : AppDesign.neutral500;
     final titleColor = isDark ? Colors.white : AppDesign.neutral900;
+    final availability = ToneColors.success(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -901,9 +916,11 @@ class DiaspoListView extends GetView<DiaspoListController> {
                   ),
                 ),
                 // Prix + disponibilité
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: AppDesign.space4,
+                  runSpacing: AppDesign.space2,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -931,26 +948,26 @@ class DiaspoListView extends GetView<DiaspoListController> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: AppDesign.success.withValues(alpha: 0.1),
+                        color: availability.background,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.inventory_2_outlined,
                             size: 15,
-                            color: AppDesign.success,
+                            color: availability.foreground,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             'diaspo_list.card.kg_available'.trParams({
                               'kg': offer.remainingKg.toStringAsFixed(1),
                             }),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppDesign.success,
+                              color: availability.foreground,
                             ),
                           ),
                         ],

@@ -73,14 +73,17 @@ class MaritimeDeparture {
   final String status;
   final String transportMode;
   final String cargoCategory;
+  final List<MaritimeCargoOption> cargoOptions;
   final int? transitDaysMin;
   final int? transitDaysMax;
   final int? frequencyDays;
   final bool meetingDetailsAvailable;
 
-  String get commercialSummary => [
+  String get commercialSummary => commercialSummaryFor(cargoCategory);
+
+  String commercialSummaryFor(String category) => [
     'partner_freight.$transportMode'.tr,
-    'partner_freight.$cargoCategory'.tr,
+    'partner_freight.$category'.tr,
     if (transitDaysMin != null && transitDaysMax != null)
       'partner_freight.transit_days'.trParams({
         'min': '$transitDaysMin',
@@ -113,6 +116,7 @@ class MaritimeDeparture {
     required this.status,
     this.transportMode = 'sea',
     this.cargoCategory = 'general',
+    this.cargoOptions = const [],
     this.transitDaysMin,
     this.transitDaysMax,
     this.frequencyDays,
@@ -172,6 +176,13 @@ class MaritimeDeparture {
       status: json['status']?.toString() ?? 'open',
       transportMode: json['transport_mode']?.toString() ?? 'sea',
       cargoCategory: json['cargo_category']?.toString() ?? 'general',
+      cargoOptions: (json['cargo_options'] as List? ?? [])
+          .whereType<Map>()
+          .map(
+            (option) =>
+                MaritimeCargoOption.fromJson(Map<String, dynamic>.from(option)),
+          )
+          .toList(),
       transitDaysMin: int.tryParse('${json['transit_days_min']}'),
       transitDaysMax: int.tryParse('${json['transit_days_max']}'),
       frequencyDays: int.tryParse('${json['frequency_days']}'),
@@ -179,6 +190,28 @@ class MaritimeDeparture {
       notes: meetingVisible ? json['notes']?.toString() : null,
     );
   }
+}
+
+class MaritimeCargoOption {
+  const MaritimeCargoOption({
+    required this.category,
+    required this.pricePerUnit,
+    required this.unit,
+    required this.currency,
+  });
+
+  final String category;
+  final double pricePerUnit;
+  final String unit;
+  final String currency;
+
+  factory MaritimeCargoOption.fromJson(Map<String, dynamic> json) =>
+      MaritimeCargoOption(
+        category: json['cargo_category']?.toString() ?? 'general',
+        pricePerUnit: _d(json['price_per_unit']),
+        unit: json['unit']?.toString() ?? 'CBM',
+        currency: json['currency']?.toString() ?? 'EUR',
+      );
 }
 
 /// Envoi maritime d'un expéditeur.

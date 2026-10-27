@@ -14,8 +14,8 @@ import '../../core/values/constants.dart';
 /// ne se fie donc pas à l'état du Wi-Fi ou des données mobiles — un réseau
 /// peut être « connecté » sans rien laisser passer (forfait épuisé, portail
 /// captif), et internet peut marcher alors que le serveur ASSO est tombé.
-/// Le service sonde la route de santé de Laravel (`/up`) : seule une réponse
-/// 2xx de sa part vaut « en ligne ». Une passerelle en erreur (502/503/504),
+/// Le service sonde la santé Laravel (`/up`), ou la route publique de version
+/// sur le web : seule une réponse 2xx vaut « en ligne ». Une passerelle en erreur (502/503/504),
 /// la maintenance Laravel (503), une redirection de portail captif ou un
 /// délai dépassé valent « hors ligne ».
 ///
@@ -92,7 +92,7 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
   Future<bool> _probe() async {
     bool reachable;
     try {
-      final request = http.Request(kIsWeb ? 'HEAD' : 'GET', _probeUri)
+      final request = http.Request('GET', _probeUri)
         // Un portail captif répond par une redirection : ce n'est pas le
         // serveur ASSO.
         ..followRedirects = false;
@@ -115,22 +115,25 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
 
   /// Route sondée. Sur mobile, la route de santé de Laravel, à la racine du
   /// site (`…/api` → `…/up`) : elle ne répond 200 que si l'application
-  /// démarre réellement. Sur le web, elle n'est pas ouverte au CORS : on
-  /// garde la racine de l'API.
+  /// démarre réellement. Sur le web, on utilise une route publique existante
+  /// sous `api/*`, couverte par le CORS Laravel. La racine `/api` n'est pas
+  /// couverte et peut faire déclarer hors ligne un serveur disponible.
   static Uri get _probeUri {
     final api = Uri.parse(AppConstants.baseUrl);
-    if (kIsWeb) return api;
+    if (kIsWeb) {
+      return api.replace(
+        path:
+            '${api.path.replaceFirst(RegExp(r'/+$'), '')}${AppConstants.versionUrl}',
+      );
+    }
     final segments = api.pathSegments.where((s) => s.isNotEmpty).toList();
     if (segments.isNotEmpty && segments.last == 'api') segments.removeLast();
     return api.replace(pathSegments: [...segments, 'up']);
   }
 
-  /// `/up` doit répondre 2xx ; la racine de l'API (web) répond 404 ou 405
-  /// quand tout va bien. Dans les deux cas, 3xx et 5xx = injoignable.
-  static bool _isHealthy(int status) {
-    if (status >= 200 && status < 300) return true;
-    return kIsWeb && status >= 400 && status < 500;
-  }
+  /// Les deux routes doivent répondre 2xx. Une redirection ou une erreur
+  /// ne doit pas activer la synchronisation des écritures en attente.
+  static bool _isHealthy(int status) => status >= 200 && status < 300;
 
   void _setOnline(bool value) {
     if (isOnline.value != value) isOnline.value = value;
@@ -139,10 +142,7 @@ class ConnectivityService extends GetxService with WidgetsBindingObserver {
 
   void _schedule() {
     _timer?.cancel();
-    _timer = Timer(
-      isOnline.value ? _onlineInterval : _offlineInterval,
-      check,
-    );
+    _timer = Timer(isOnline.value ? _onlineInterval : _offlineInterval, check);
   }
 
   // ── Signaux venus des appels API ──────────────────────────────────────

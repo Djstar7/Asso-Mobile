@@ -4519,6 +4519,7 @@
     "see_shipments": "See my shipments"
   },
   "form": {
+    "cargo_category": "Parcel category",
     "title": "Ship by boat",
     "insurance_fields_intro": "Describe the parcel and its declared value. This information is still required even if you do not opt into insurance.",
     "insurance_opt_in": "I want to purchase maritime insurance",
