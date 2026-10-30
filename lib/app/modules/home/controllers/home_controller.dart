@@ -737,6 +737,33 @@ class HomeController extends GetxController
       currentTabIndex.value = index;
     }
   }
+  /// Une catégorie est « bibliothèque » si l'API le dit, sinon d'après son nom ou son slug.
+  bool _isLibraryCategory(Map<String, dynamic> category) {
+    final flag = category['is_library'];
+    if (flag == true || flag == 1 || '$flag' == '1' || '$flag' == 'true') return true;
+    final text = '${category['slug'] ?? ''} ${category['name'] ?? ''}'.toLowerCase();
+    return text.contains('biblio') || text.contains('library');
+  }
+
+  /// Raccourci de l'accueil : filtre la liste sur la catégorie Bibliothèque.
+  void openLibrary() {
+    if (_isDisposed) return;
+    if (realEstateOpen.value) closeRealEstate();
+
+    final category = apiCategories.firstWhereOrNull(_isLibraryCategory);
+    if (category == null) {
+      AppFeedback.show(
+        'home.error'.tr,
+        'La rubrique Bibliothèque n\'est pas disponible pour le moment.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Retour en haut de page : la grille filtrée s'affiche sous les catégories.
+    if (nestedScrollController.hasClients) nestedScrollController.jumpTo(0);
+    selectCategory(category['name'].toString());
+  }
 
   /// Ouvre le même écran Commandes / Suivi que l'onglet Suivi de l'accueil.
   void openOrdersTab() {

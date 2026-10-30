@@ -1505,15 +1505,12 @@ class HomeItemView extends GetView<HomeController> {
         onTap: controller.openOrdersTab,
       ),
       _QuickLink(
-        label: 'home.tooltip.favorites'.tr,
-        icon: Icons.favorite_rounded,
-        count: controller.favoritesCount.value,
-        onTap: () => AuthGuard.navigateIfAuthenticated(
-          context,
-          Routes.FAVORITES,
-          featureName: 'home.feature.your_favorites'.tr,
-          useDialog: true,
-        ),
+        label: 'home.quick.library'.tr == 'home.quick.library'
+            ? 'Bibliothèque'
+            : 'home.quick.library'.tr,
+        icon: Icons.menu_book_rounded,
+        isNew: true,
+        onTap: controller.openLibrary,
       ),
     ];
 

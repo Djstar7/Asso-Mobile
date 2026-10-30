@@ -233,6 +233,8 @@ class ProductView extends GetView<ProductController> {
                 _buildLocationSection(context, product),
                 _sectionGap(context),
                 _buildDescriptionSection(context, product),
+                _buildBookSection(context, product),
+                _buildProductCharacteristics(context, product),
                 _buildProductCharacteristics(context, product),
                 _sectionGap(context),
                 _buildSellerSection(context, product),
@@ -246,6 +248,17 @@ class ProductView extends GetView<ProductController> {
       ),
       bottomNavigationBar: _buildBottomBar(context, product),
     );
+  }
+    /// Fiche livre renvoyée par l'API (`product.book`), null hors bibliothèque.
+  Map<String, dynamic>? _bookOf(Map<String, dynamic> product) {
+    final book = product['book'];
+    return book is Map ? Map<String, dynamic>.from(book) : null;
+  }
+
+  /// Traduction avec repli français tant que la clé n'est pas dans les fichiers de langue.
+  String _t(String key, String fallback) {
+    final value = key.tr;
+    return value == key ? fallback : value;
   }
 
   Widget _buildImageCarousel(
@@ -520,6 +533,17 @@ class ProductView extends GetView<ProductController> {
               height: 1.35,
             ),
           ),
+          if (_bookOf(product)?['author']?.toString().trim().isNotEmpty == true) ...[
+            SizedBox(height: AppDesign.space1),
+            Text(
+              '${_t('product.book.by', 'Par')} ${_bookOf(product)!['author']}',
+              style: context.textStyle(
+                FontSizeType.caption,
+                fontWeight: FontWeight.w600,
+                color: AppDesign.accent,
+              ),
+            ),
+          ],
           if (shopName.isNotEmpty) ...[
             SizedBox(height: AppDesign.space2),
             Row(
@@ -657,6 +681,74 @@ class ProductView extends GetView<ProductController> {
             if (i > 0) AppDivider(),
             rows[i],
           ],
+        ],
+      ),
+    );
+  }
+
+    /// Détails du livre : auteur, éditeur, langue, format, pages, année, ISBN.
+  Widget _buildBookSection(BuildContext context, Map<String, dynamic> product) {
+    final book = _bookOf(product);
+    if (book == null) return const SizedBox.shrink();
+
+    String? text(String key) {
+      final value = book[key]?.toString().trim();
+      return (value == null || value.isEmpty || value == 'null') ? null : value;
+    }
+
+    final language = text('language');
+    final pages = text('pages');
+    final rows = <Widget>[
+      if (text('author') != null)
+        _specRow(context, label: _t('product.book.author', 'Auteur'), value: text('author')!),
+      if (text('publisher') != null)
+        _specRow(context, label: _t('product.book.publisher', 'Éditeur'), value: text('publisher')!),
+      if (language != null)
+        _specRow(
+          context,
+          label: _t('product.book.language', 'Langue'),
+          value: switch (language) {
+            'fr' => 'Français',
+            'en' => 'Anglais',
+            _ => language.toUpperCase(),
+          },
+        ),
+      if (text('format_label') != null)
+        _specRow(context, label: _t('product.book.format', 'Format'), value: text('format_label')!),
+      if (pages != null)
+        _specRow(context, label: _t('product.book.pages', 'Pages'), value: pages),
+      if (text('published_year') != null)
+        _specRow(context, label: _t('product.book.year', 'Publication'), value: text('published_year')!),
+      if (text('isbn') != null)
+        _specRow(context, label: 'ISBN', value: text('isbn')!),
+    ];
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppDivider(),
+          Padding(
+            padding: EdgeInsets.only(top: AppDesign.space3),
+            child: Text(
+              _t('product.book.title', 'Détails du livre'),
+              style: context.textStyle(
+                FontSizeType.body1,
+                fontWeight: FontWeight.w700,
+                color: context.ds.textPrimary,
+              ),
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) AppDivider(),
+            rows[i],
+          ],
+          SizedBox(height: AppDesign.space2),
         ],
       ),
     );
