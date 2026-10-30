@@ -2081,7 +2081,8 @@
       "diaspo": "Diaspo",
       "wholesale": "Grossiste",
       "orders": "Commandes",
-      "real_estate": "Immobilier"
+      "real_estate": "Immobilier",
+      "library": "Bibliothèque"
     },
     "banner": {
       "welcome_title": "Bienvenue sur Asso",
@@ -2181,6 +2182,17 @@
     "react_error": "Impossible de réagir au message"
   },
   "product": {
+    "book": {
+      "title": "Détails du livre",
+      "by": "Par @author",
+      "author": "Auteur",
+      "publisher": "Éditeur",
+      "language": "Langue",
+      "format": "Format",
+      "pages": "Pages",
+      "year": "Publication",
+      "isbn": "ISBN"
+    },
     "error": "Erreur",
     "seller": "Vendeur",
     "share": {
@@ -2475,6 +2487,37 @@
       "books": "Livres",
       "other": "Autres"
     }
+  },
+  "library": {
+    "title": "Bibliothèque",
+    "search_hint": "Titre, auteur ou ISBN",
+    "clear_search": "Effacer la recherche",
+    "all_shelves": "Tous les rayons",
+    "all_genres": "Tous les genres",
+    "filters": "Filtres",
+    "language": "Langue",
+    "format": "Format",
+    "any": "Indifférent",
+    "reset": "Réinitialiser",
+    "apply": "Appliquer",
+    "languages": {
+      "fr": "Français",
+      "en": "Anglais"
+    },
+    "formats": {
+      "paperback": "Broché",
+      "hardcover": "Relié",
+      "ebook": "Livre numérique",
+      "audio": "Livre audio"
+    },
+    "empty_title": "Bientôt des livres ici",
+    "empty_message": "La Bibliothèque se remplit : revenez dans quelques jours.",
+    "no_result_title": "Aucun livre trouvé",
+    "no_result_message": "Essayez un autre rayon, un autre auteur ou retirez des filtres.",
+    "clear_filters": "Effacer les filtres",
+    "error_title": "Chargement impossible",
+    "load_failed": "Les livres n'ont pas pu être chargés.",
+    "retry": "Réessayer"
   },
   "favorites": {
     "error_title": "Erreur",

@@ -16,6 +16,11 @@ class ProductService {
     double? maxPrice,
     String sortBy = 'created_at',
     String sortOrder = 'desc',
+    // Rubrique Bibliothèque : livres seuls, filtrables par auteur, langue, format.
+    bool library = false,
+    String? author,
+    String? language,
+    String? format,
   }) async {
     final params = <String, dynamic>{
       'page': page,
@@ -30,6 +35,10 @@ class ProductService {
     if (originCountry != null) params['origin_country'] = originCountry;
     if (minPrice != null) params['min_price'] = minPrice;
     if (maxPrice != null) params['max_price'] = maxPrice;
+    if (library) params['library'] = 1;
+    if (author != null && author.isNotEmpty) params['author'] = author;
+    if (language != null && language.isNotEmpty) params['language'] = language;
+    if (format != null && format.isNotEmpty) params['format'] = format;
 
     return await ApiProvider.get(AppConstants.productsUrl, queryParams: params);
   }
@@ -89,8 +98,12 @@ class ProductService {
   }
 
   /// Get categories
-  static Future<ApiResponse> getCategories() async {
-    return await ApiProvider.get(AppConstants.categoriesUrl);
+  /// Catégories du catalogue général ; [library] : rayons de la Bibliothèque.
+  static Future<ApiResponse> getCategories({bool library = false}) async {
+    return await ApiProvider.get(
+      AppConstants.categoriesUrl,
+      queryParams: library ? {'library': 1} : null,
+    );
   }
 
   /// Get banners

@@ -1465,8 +1465,8 @@ class HomeItemView extends GetView<HomeController> {
   /// Accès rapides, sous la bannière.
   ///
   /// La carte « Diaspo Exchange » occupait seule une ligne entière pour un
-  /// service parmi d'autres. Quatre raccourcis tiennent dans la même hauteur
-  /// et donnent une vue d'ensemble de ce que propose l'application.
+  /// service parmi d'autres. Les raccourcis, en grille, donnent une vue
+  /// d'ensemble de ce que propose l'application.
   Widget _buildQuickAccess(BuildContext context) {
     final entries = <_QuickLink>[
       _QuickLink(
@@ -1498,6 +1498,14 @@ class HomeItemView extends GetView<HomeController> {
         onTap: controller.openRealEstate,
       ),
       _QuickLink(
+        label: 'home.quick.library'.tr,
+        icon: Icons.menu_book_rounded,
+        isNew: true,
+        // Écran à part, comme l'Immobilier : les livres n'apparaissent pas
+        // dans le fil de l'accueil.
+        onTap: () => Get.toNamed(Routes.LIBRARY),
+      ),
+      _QuickLink(
         label: 'home.quick.orders'.tr,
         icon: Icons.receipt_long_rounded,
         onTap: controller.openOrdersTab,
@@ -1522,16 +1530,31 @@ class HomeItemView extends GetView<HomeController> {
         context.ds.gutter,
         AppDesign.space2,
       ),
-      child: Row(
+      // Deux rangées de trois : six raccourcis sur une seule ligne
+      // rendraient les libellés illisibles sur un petit écran.
+      child: Column(
         children: [
-          for (final entry in entries) ...[
-            Expanded(child: _QuickLinkTile(link: entry)),
-            if (entry != entries.last) SizedBox(width: AppDesign.space2),
+          for (var start = 0; start < entries.length; start += _quickLinksPerRow) ...[
+            if (start > 0) SizedBox(height: AppDesign.space2),
+            Row(
+              children: [
+                for (var i = start; i < start + _quickLinksPerRow; i++) ...[
+                  if (i > start) SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: i < entries.length
+                        ? _QuickLinkTile(link: entries[i])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
           ],
         ],
       ),
     );
   }
+
+  static const _quickLinksPerRow = 3;
 
   Widget _buildBannerCarousel(BuildContext context) {
     final deviceType = AppThemeSystem.getDeviceType(context);

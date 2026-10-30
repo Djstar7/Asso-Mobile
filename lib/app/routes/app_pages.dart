@@ -37,6 +37,8 @@ import '../modules/faq/bindings/faq_binding.dart';
 import '../modules/faq/views/faq_view.dart';
 import '../modules/favorites/bindings/favorites_binding.dart';
 import '../modules/favorites/views/favorites_view.dart';
+import '../modules/library/bindings/library_binding.dart';
+import '../modules/library/views/library_view.dart';
 import '../modules/help/bindings/help_binding.dart';
 import '../modules/help/views/help_view.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -192,6 +194,11 @@ class AppPages {
       name: _Paths.FAVORITES,
       page: () => const FavoritesView(),
       binding: FavoritesBinding(),
+    ),
+    GetPage(
+      name: _Paths.LIBRARY,
+      page: () => const LibraryView(),
+      binding: LibraryBinding(),
     ),
     GetPage(
       name: _Paths.SETTINGS,
