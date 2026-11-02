@@ -412,8 +412,9 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
   }
 
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
-    final stock = product['stock'] ?? 0;
-    final isOutOfStock = stock is num && stock <= 0;
+    // Stock absent : inconnu n'est pas épuisé.
+    final stock = num.tryParse('${product['stock']}');
+    final isOutOfStock = stock != null && stock <= 0;
 
     String? image;
     final primary = product['primary_image']?.toString();

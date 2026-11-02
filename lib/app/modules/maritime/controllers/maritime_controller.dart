@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/controllers/app_config_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/search_text.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../../data/models/maritime.dart';
 import '../../../data/providers/currency_service.dart';
@@ -63,13 +64,16 @@ class MaritimeController extends GetxController {
   String _transportMode = 'sea';
   int _generation = 0;
 
+  /// L'erreur affichée demande une connexion, pas une nouvelle tentative.
+  bool get loginRequired => error.value == 'maritime.login_required'.tr;
+
   List<MaritimeDeparture> get filteredDepartures {
-    final query = departureSearchQuery.value.trim().toLowerCase();
+    final query = departureSearchQuery.value.trim();
     return departures.where((departure) {
       if (bookableDeparturesOnly.value && !departure.isBookable) return false;
       if (query.isEmpty) return true;
 
-      final searchableText = [
+      return SearchText.matches([
         departure.partnerName,
         departure.originHub?.city,
         departure.originHub?.countryName,
@@ -77,8 +81,7 @@ class MaritimeController extends GetxController {
         departure.destinationHub?.city,
         departure.destinationHub?.countryName,
         departure.destinationHub?.name,
-      ].whereType<String>().join(' ').toLowerCase();
-      return searchableText.contains(query);
+      ], query);
     }).toList();
   }
 
@@ -146,6 +149,8 @@ class MaritimeController extends GetxController {
 
   void changeTab(int index) {
     selectedTab.value = index;
+    // « Mes envois » demande un compte, pas la consultation des départs.
+    if (index == 0 && loginRequired) error.value = null;
     if (index == 1) loadMyBookings();
   }
 

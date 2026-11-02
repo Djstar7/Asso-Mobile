@@ -2343,7 +2343,7 @@
     },
     "variants": {
       "title": "Available options",
-      "hint": "You'll choose colors, sizes and quantities when ordering.",
+      "hint": "Choose your colors, sizes and quantities here: they'll be ready when you order.",
       "order_title": "Your options and quantities",
       "order_hint": "Pick a combination, enter its quantity, then move to the next: several colors and sizes in the same order."
     },
@@ -4669,6 +4669,7 @@
   "filter_all": "All departures",
   "filter_bookable": "Bookable only",
   "reservations_closed": "Bookings closed",
+  "login_required": "Sign in to continue.",
   "no_departures": "No departures planned yet. Check back soon.",
   "no_departure_matches": "No departures match your search or filter.",
   "no_shipments": "You have no sea shipments yet.",

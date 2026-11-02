@@ -11,6 +11,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/media_helper.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/search_text.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/iso_country_field.dart';
 import '../views/selfie_capture_view.dart';
@@ -92,14 +93,16 @@ class DiaspoListController extends GetxController {
 
   /// Liste filtrée selon le texte recherché
   List<DiaspoOffer> get filteredOffers {
-    final query = searchQuery.value.trim().toLowerCase();
+    final query = searchQuery.value.trim();
     if (query.isEmpty) return offers;
 
     return offers.where((offer) {
-      return offer.departureCity.toLowerCase().contains(query) ||
-          offer.departureCountry.toLowerCase().contains(query) ||
-          offer.arrivalCity.toLowerCase().contains(query) ||
-          offer.arrivalCountry.toLowerCase().contains(query);
+      return SearchText.matches([
+        offer.departureCity,
+        offer.departureCountry,
+        offer.arrivalCity,
+        offer.arrivalCountry,
+      ], query);
     }).toList();
   }
 
@@ -187,11 +190,15 @@ class DiaspoListController extends GetxController {
       }
     } catch (e) {
       print('Error loading offers: $e');
-      AppFeedback.show(
-        'diaspo_list.error'.tr,
-        'diaspo_list.load_offers_error'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Les offres de voyageurs demandent un compte : un invité n'a pas à voir
+      // une erreur alors que les départs partenaires restent consultables.
+      if (StorageService.isAuthenticated) {
+        AppFeedback.show(
+          'diaspo_list.error'.tr,
+          'diaspo_list.load_offers_error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isLoading.value = false;
       isLoadingMore.value = false;

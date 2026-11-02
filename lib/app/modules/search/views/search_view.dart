@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/frameless_input.dart';
 import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -171,9 +172,9 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.ds.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppThemeSystem.grey300, width: 1),
+                    border: Border.all(color: context.ds.border, width: 1),
                   ),
                   // Obx : seul le libellé du champ dépend de l'onglet. Le
                   // TextEditingController et le FocusNode appartenant au
@@ -192,7 +193,7 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                         }
                       },
                       style: TextStyle(
-                        color: AppThemeSystem.blackColor,
+                        color: context.ds.textPrimary,
                         fontSize: 15,
                       ),
                       decoration: InputDecoration(
@@ -222,12 +223,11 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                                 )
                               : const SizedBox.shrink(),
                         ),
-                        border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
                         ),
-                      ),
+                      ).frameless,
                     ),
                   ),
                 ),

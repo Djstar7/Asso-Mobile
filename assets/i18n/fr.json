@@ -2343,7 +2343,7 @@
     },
     "variants": {
       "title": "Options disponibles",
-      "hint": "Vous choisirez vos couleurs, tailles et quantités en commandant.",
+      "hint": "Choisissez vos couleurs, tailles et quantités ici : vous les retrouverez en commandant.",
       "order_title": "Vos options et quantités",
       "order_hint": "Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante : plusieurs couleurs et tailles dans la même commande."
     },
@@ -4669,6 +4669,7 @@
   "filter_all": "Tous les départs",
   "filter_bookable": "Réservables uniquement",
   "reservations_closed": "Réservations closes",
+  "login_required": "Connectez-vous pour continuer.",
   "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
   "no_departure_matches": "Aucun départ ne correspond à votre recherche ou à ce filtre.",
   "no_shipments": "Vous n'avez pas encore d'envoi international.",

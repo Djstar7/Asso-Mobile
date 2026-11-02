@@ -111,6 +111,33 @@ class ProductController extends GetxController {
   final recipientNameController = TextEditingController();
   final postalCodeController = TextEditingController();
 
+  /// Produit relu au serveur à l'ouverture de la fiche : les listes et les
+  /// messages ne transportent qu'un extrait, parfois périmé ou sans boutique.
+  final liveProduct = Rx<Map<String, dynamic>?>(null);
+
+  /// [product] complété par sa version à jour, si elle est arrivée.
+  Map<String, dynamic> withLiveData(Map<String, dynamic> product) {
+    final live = liveProduct.value;
+    if (live == null || live['id']?.toString() != product['id']?.toString()) {
+      return product;
+    }
+    return {...product, ...live};
+  }
+
+  Future<void> _refreshProduct(int id, {required bool fromAd}) async {
+    try {
+      final response = await ProductService.getProduct(id, fromAd: fromAd);
+      final fresh = response.data?['product'];
+      if (response.success && fresh is Map && !isClosed) {
+        liveProduct.value = Map<String, dynamic>.from(fresh)
+          ..removeWhere((_, value) => value == null);
+      }
+    } catch (e) {
+      // La fiche reste affichée avec les données dont elle a été ouverte.
+      debugPrint('[Product] relecture du produit $id impossible : $e');
+    }
+  }
+
   /// Produits dont la consultation a déjà été signalée (statistiques vendeur).
   final Set<String> _trackedProductIds = {};
 
@@ -120,14 +147,12 @@ class ProductController extends GetxController {
     if (id == null || id.isEmpty || !_trackedProductIds.add(id)) return;
     StatisticsService.trackProductView(id);
 
-    // Asso Ads : la fiche a été ouverte depuis une carte sponsorisée. On le
-    // signale au serveur pour mesurer l'efficacité de la campagne ; le quota
-    // acheté n'est pas entamé, seul l'affichage de l'annonce est facturé.
-    if (product['from_ad'] == true) {
-      final numericId = int.tryParse(id);
-      if (numericId != null) {
-        ProductService.getProduct(numericId, fromAd: true);
-      }
+    // Asso Ads : `fromAd` signale une ouverture depuis une carte sponsorisée,
+    // pour mesurer l'efficacité de la campagne ; le quota acheté n'est pas
+    // entamé, seul l'affichage de l'annonce est facturé.
+    final numericId = int.tryParse(id);
+    if (numericId != null) {
+      _refreshProduct(numericId, fromAd: product['from_ad'] == true);
     }
     // Même point d'entrée, dédoublonné : la fiche est reconstruite à chaque
     // changement d'état et relancerait sinon la requête en boucle.
@@ -422,12 +447,25 @@ class ProductController extends GetxController {
     orderQuantity.value = VariantQuantityList.totalOf(quantities);
   }
 
-  /// Remet la commande à zéro à l'ouverture de la feuille. La variante
-  /// regardée sur la fiche, si elle est en stock, est proposée d'office.
+  /// Prépare la commande à l'ouverture de la feuille : les options choisies
+  /// sur la fiche sont reprises, sinon la variante regardée, si elle est en
+  /// stock, est proposée d'office.
   void resetOrderQuantities(Map<String, dynamic> product) {
-    variantQuantities.clear();
     if (!productHasVariants(product)) {
+      variantQuantities.clear();
       orderQuantity.value = 1;
+      return;
+    }
+    final catalogIds = VariantCatalog.fromApi(
+      product['variants'],
+      product['variant_options'],
+    ).variants.map(VariantQuantityList.idOf).toSet();
+    final chosen = {
+      for (final line in variantQuantities.entries)
+        if (catalogIds.contains(line.key)) line.key: line.value,
+    };
+    if (chosen.isNotEmpty) {
+      setVariantQuantities(chosen);
       return;
     }
     final variant = selectedVariantOf(product);
