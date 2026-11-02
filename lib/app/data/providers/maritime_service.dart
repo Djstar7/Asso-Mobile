@@ -35,6 +35,9 @@ class MaritimeService extends GetxService {
 
   /// Message d'erreur du serveur (422 métier ou validation), sinon l'erreur brute.
   Exception _error(Object e) {
+    if (e is DioException && e.response?.statusCode == 401) {
+      return Exception('maritime.login_required'.tr);
+    }
     if (e is DioException && e.response?.data is Map) {
       final data = e.response!.data as Map;
       final errors = data['errors'];

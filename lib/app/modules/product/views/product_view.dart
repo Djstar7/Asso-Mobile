@@ -68,8 +68,6 @@ class ProductView extends GetView<ProductController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppThemeSystem.isDarkMode(context);
-
     // Les arguments de CETTE page, et non `Get.arguments` : ce dernier suit la
     // route au sommet de la pile. Dès qu'une visionneuse d'image, une feuille
     // ou un dialogue s'ouvrait par-dessus, une reconstruction de la fiche
@@ -79,9 +77,9 @@ class ProductView extends GetView<ProductController> {
     // Sans arguments, on n'invente plus de produit : l'ancien produit de
     // démonstration (un t-shirt) s'affichait à la place du vrai et semblait
     // être « la mauvaise photo ».
-    final product =
+    final routeProduct =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (product == null) {
+    if (routeProduct == null) {
       return Scaffold(
         backgroundColor: AppThemeSystem.getBackgroundColor(context),
         appBar: AppBar(leading: const AppBackButton()),
@@ -94,7 +92,15 @@ class ProductView extends GetView<ProductController> {
     }
 
     // Statistiques vendeur : consultation de la fiche (dédoublonnée).
-    controller.trackProductView(product);
+    controller.trackProductView(routeProduct);
+
+    return Obx(
+      () => _buildPage(context, controller.withLiveData(routeProduct)),
+    );
+  }
+
+  Widget _buildPage(BuildContext context, Map<String, dynamic> product) {
+    final isDark = AppThemeSystem.isDarkMode(context);
 
     return Scaffold(
       backgroundColor: AppThemeSystem.getBackgroundColor(context),
@@ -861,8 +867,8 @@ class ProductView extends GetView<ProductController> {
             ],
           ),
           const SizedBox(height: 4),
-          // Le choix se fait dans la feuille de commande, où plusieurs
-          // combinaisons peuvent être prises à la fois.
+          // Le choix fait ici est repris dans la feuille de commande, où il
+          // reste modifiable.
           Text(
             'product.variants.hint'.tr,
             style: context.textStyle(
@@ -871,7 +877,17 @@ class ProductView extends GetView<ProductController> {
             ),
           ),
           const SizedBox(height: 16),
-          VariantOptionsPreview(catalog: catalog),
+          Obx(
+            () => VariantComboPicker(
+              catalog: catalog,
+              quantities: Map<int, int>.from(controller.variantQuantities),
+              onChanged: controller.setVariantQuantities,
+              priceOf: (variant) => controller.formatPrice(
+                controller.variantPriceXaf(product, variant),
+              ),
+              onStockLimit: (_, stock) => controller.notifyStockLimit(stock),
+            ),
+          ),
         ],
       ),
     );
@@ -1702,8 +1718,8 @@ class ProductView extends GetView<ProductController> {
     controller.deliveryPartners.clear();
     controller.deliveryQuote.value = null;
     controller.deliveryBlockedMessage.value = null;
-    // Quantités remises à zéro à chaque ouverture ; la variante regardée sur
-    // la fiche est proposée d'office.
+    // Les options choisies sur la fiche sont reprises ; sinon la variante
+    // regardée est proposée d'office.
     controller.resetOrderQuantities(product);
     final hasVariants = controller.productHasVariants(product);
 
@@ -3562,8 +3578,9 @@ class ProductView extends GetView<ProductController> {
     BuildContext context,
     Map<String, dynamic> product,
   ) {
-    final productStock = product['stock'] ?? 0;
-    final isOutOfStock = (productStock is num ? productStock : 0) <= 0;
+    // Stock absent ou reçu en texte : inconnu n'est pas épuisé.
+    final productStock = num.tryParse('${product['stock']}');
+    final isOutOfStock = productStock != null && productStock <= 0;
     final productImage = _similarProductImageUrl(product);
 
     final price = CurrencyService.formatProductPrice(product);

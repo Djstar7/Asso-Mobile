@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/format_cbm.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/widgets/frameless_input.dart';
 import '../../../core/widgets/segmented_tabs.dart';
 import '../../../data/models/maritime.dart';
 import '../controllers/maritime_controller.dart';
@@ -111,7 +112,13 @@ class MaritimeSection extends GetView<MaritimeController> {
           child: controller.isLoading.value && controller.departures.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : controller.error.value != null && controller.departures.isEmpty
-              ? _empty(Icons.cloud_off, controller.error.value!, isDark)
+              ? _empty(
+                  controller.loginRequired
+                      ? Icons.lock_outline
+                      : Icons.cloud_off,
+                  controller.error.value!,
+                  isDark,
+                )
               : controller.departures.isEmpty
               ? _empty(
                   Icons.directions_boat_outlined,
@@ -185,9 +192,8 @@ class MaritimeSection extends GetView<MaritimeController> {
                     )
                   : const SizedBox.shrink(),
             ),
-            border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
+          ).frameless,
         ),
       ),
     );
@@ -400,11 +406,13 @@ class MaritimeSection extends GetView<MaritimeController> {
       return const Center(child: CircularProgressIndicator());
     }
     if (bookings.isEmpty) {
-      return _empty(
-        Icons.inventory_2_outlined,
-        'maritime.no_shipments'.tr,
-        isDark,
-      );
+      return controller.loginRequired
+          ? _empty(Icons.lock_outline, controller.error.value!, isDark)
+          : _empty(
+              Icons.inventory_2_outlined,
+              'maritime.no_shipments'.tr,
+              isDark,
+            );
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/diaspo_list_controller.dart';
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/search_text.dart';
 import '../../../core/utils/semantic_tone.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/segmented_tabs.dart';
@@ -81,16 +82,16 @@ class DiaspoListView extends GetView<DiaspoListController> {
           : null);
 
   List<MaritimeDeparture> get _airDepartures {
-    final query = controller.searchQuery.value.trim().toLowerCase();
+    final query = controller.searchQuery.value.trim();
     return _freight?.departures.where((departure) {
           if (departure.transportMode != 'air') return false;
           if (query.isEmpty) return true;
-          return [
+          return SearchText.matches([
             departure.originHub?.city,
             departure.originHub?.countryName,
             departure.destinationHub?.city,
             departure.destinationHub?.countryName,
-          ].whereType<String>().join(' ').toLowerCase().contains(query);
+          ], query);
         }).toList() ??
         [];
   }
@@ -397,27 +398,33 @@ class DiaspoListView extends GetView<DiaspoListController> {
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              if (error != null)
-                Padding(padding: const EdgeInsets.all(16), child: Text(error)),
-              AppEmptyState(
-                icon: searching
-                    ? Icons.search_off_rounded
-                    : Icons.flight_takeoff_rounded,
-                title: searching
-                    ? 'diaspo_list.empty.no_results'.trParams({
-                        'query': controller.searchQuery.value,
-                      })
-                    : 'diaspo_list.empty.no_offers'.tr,
-                message: searching
-                    ? 'diaspo_list.empty.try_other'.tr
-                    : 'diaspo_list.empty.be_first'.tr,
-                actionLabel: searching
-                    ? 'diaspo_list.empty.clear_search'.tr
-                    : 'diaspo_list.create_my_offer'.tr,
-                onAction: searching
-                    ? () => controller.searchQuery.value = ''
-                    : controller.handleCreateOffer,
-              ),
+              if (error != null && !searching)
+                AppEmptyState(
+                  icon: _freight!.loginRequired
+                      ? Icons.lock_outline
+                      : Icons.cloud_off,
+                  title: error,
+                )
+              else
+                AppEmptyState(
+                  icon: searching
+                      ? Icons.search_off_rounded
+                      : Icons.flight_takeoff_rounded,
+                  title: searching
+                      ? 'diaspo_list.empty.no_results'.trParams({
+                          'query': controller.searchQuery.value,
+                        })
+                      : 'diaspo_list.empty.no_offers'.tr,
+                  message: searching
+                      ? 'diaspo_list.empty.try_other'.tr
+                      : 'diaspo_list.empty.be_first'.tr,
+                  actionLabel: searching
+                      ? 'diaspo_list.empty.clear_search'.tr
+                      : 'diaspo_list.create_my_offer'.tr,
+                  onAction: searching
+                      ? () => controller.searchQuery.value = ''
+                      : controller.handleCreateOffer,
+                ),
             ],
           );
         }

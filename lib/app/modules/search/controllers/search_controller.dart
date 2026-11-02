@@ -2,6 +2,7 @@ import 'package:asso/app/core/utils/app_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import '../../../core/utils/search_text.dart';
 import '../../../data/models/diaspo_offer.dart';
 import '../../../data/models/wholesale_models.dart';
 import '../../../data/providers/diaspo_service.dart';
@@ -353,14 +354,16 @@ class SearchController extends GetxController {
   /// sait filtrer que par ville ou pays pris séparément, alors que
   /// l'utilisateur tape indifféremment « Douala » ou « Cameroun ».
   List<DiaspoOffer> get filteredPasscolis {
-    final query = searchQuery.value.trim().toLowerCase();
+    final query = searchQuery.value.trim();
     if (query.isEmpty) return passcolisOffers;
 
     return passcolisOffers.where((offer) {
-      return offer.departureCity.toLowerCase().contains(query) ||
-          offer.departureCountry.toLowerCase().contains(query) ||
-          offer.arrivalCity.toLowerCase().contains(query) ||
-          offer.arrivalCountry.toLowerCase().contains(query);
+      return SearchText.matches([
+        offer.departureCity,
+        offer.departureCountry,
+        offer.arrivalCity,
+        offer.arrivalCountry,
+      ], query);
     }).toList();
   }
 
@@ -547,7 +550,9 @@ class SearchController extends GetxController {
         maxPrice: currentMaxPrice.value < _priceCap
             ? _toPivot(currentMaxPrice.value)
             : null,
-        sortBy: sortBy.value,
+        sortBy: selectedSortOption.value == SortOption.relevance
+            ? 'relevance'
+            : sortBy.value,
         sortOrder: sortOrder.value,
       );
 
@@ -911,9 +916,8 @@ class SearchController extends GetxController {
   void _updateSortParams(SortOption option) {
     switch (option) {
       case SortOption.relevance:
-        // `/products` ne calcule pas de score : lui demander un tri sur une
-        // colonne « relevance » inexistante faisait échouer la requête. La
-        // pertinence y est l'ordre par défaut, du plus récent au plus ancien.
+        // Le score est calculé par `/products` quand il y a une saisie ; sans
+        // saisie, l'ordre reste du plus récent au plus ancien.
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
         break;
