@@ -87,6 +87,27 @@ class AppNavigation {
     return route.isNotEmpty && route != Routes.SPLASH;
   }
 
+  /// Écrans de mise en route : on ne pose rien par-dessus, un lien attend leur
+  /// fin. Ils se terminent tous par `offAllNamed`, qui emporterait la fiche.
+  static const Set<String> _setupRoutes = {
+    Routes.SPLASH,
+    Routes.COUNTRY_SELECTION,
+    Routes.ONBOARDING,
+    Routes.WELCOMER,
+    Routes.LOGIN,
+    Routes.OTP,
+    Routes.COMPLETE_PROFILE,
+    Routes.PREFERENCES,
+  };
+
+  static bool isSetupRoute(String route) =>
+      route.isEmpty || _setupRoutes.contains(route);
+
+  /// Écrans où un visiteur sans compte n'a encore rien entrepris : un lien
+  /// l'y fait entrer en invité plutôt que d'attendre qu'il se décide.
+  static bool isVisitorEntryRoute(String route) =>
+      route == Routes.ONBOARDING || route == Routes.WELCOMER;
+
   /// Referme le clavier sans rien valider.
   static void dismissKeyboard() =>
       FocusManager.instance.primaryFocus?.unfocus();

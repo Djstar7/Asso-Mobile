@@ -151,7 +151,7 @@ Future<void> _bootstrap() async {
       unknownRoute: AppPages.unknownRoute,
       // Borne la pile : produit → boutique → produit… ne s'empile plus
       // indéfiniment en mémoire.
-      navigatorObservers: [RouteStackGuard()],
+      navigatorObservers: [RouteStackGuard(), DeepLinkRouteObserver()],
       // Enveloppe le navigateur : la fenêtre de mise à jour s'y ouvre via
       // `Get.key`, et ne s'ouvre que sur l'accueil.
       //

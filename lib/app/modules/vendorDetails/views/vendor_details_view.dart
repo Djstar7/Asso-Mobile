@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_navigation.dart';
+import '../../../core/utils/share_links.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../controllers/vendor_details_controller.dart';
 import '../../../core/widgets/scoped_controller_page.dart';
@@ -217,6 +218,23 @@ class VendorDetailsView extends GetView<VendorDetailsController> {
           onPressed: () => AppNavigation.back(context),
         ),
       ),
+      actions: [
+        if (ShareLinks.enabled && controller.shopId != null)
+          Padding(
+            padding: EdgeInsets.only(right: AppDesign.space2),
+            child: Builder(
+              builder: (buttonContext) => _GlassIconButton(
+                icon: Icons.share_rounded,
+                tooltip: 'vendor_details.share'.tr,
+                onPressed: () => ShareLinks.shareShop(
+                  id: controller.shopId!,
+                  name: shopName,
+                  origin: ShareLinks.originOf(buttonContext),
+                ),
+              ),
+            ),
+          ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsetsDirectional.only(
           start: 56,

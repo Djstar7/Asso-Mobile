@@ -19,7 +19,10 @@ class GuestAccess {
   ///
   /// Le choix du pays passe avant l'accueil quand il n'a pas encore été fait :
   /// sans pays, les prix n'ont pas de devise à afficher.
-  static Future<void> enter() async {
+  ///
+  /// [skipInterests] : le visiteur vient d'un lien et attend ce qu'il a ouvert.
+  /// Les centres d'intérêt lui seront proposés à sa prochaine entrée en invité.
+  static Future<void> enter({bool skipInterests = false}) async {
     developer.log('Passer — activation du mode invité', name: 'GuestAccess');
     StorageService.enableGuestMode();
 
@@ -32,7 +35,7 @@ class GuestAccess {
     // de plus, sans rien changer à l'écran.
     unawaited(_subscribeToAnnouncements());
 
-    Get.offAllNamed(nextRoute());
+    Get.offAllNamed(nextRoute(skipInterests: skipInterests));
   }
 
   /// Abonnement aux annonces, mené à part de la navigation.
@@ -68,9 +71,11 @@ class GuestAccess {
   /// Le pays d'abord — sans lui les prix n'ont pas de devise —, puis les
   /// centres d'intérêt, proposés une seule fois, à l'invité comme à
   /// l'inscrit.
-  static String nextRoute() {
+  static String nextRoute({bool skipInterests = false}) {
     if (!StorageService.hasSelectedCountry) return Routes.COUNTRY_SELECTION;
-    if (!StorageService.wasPreferencesPrompted) return Routes.PREFERENCES;
+    if (!skipInterests && !StorageService.wasPreferencesPrompted) {
+      return Routes.PREFERENCES;
+    }
     return Routes.HOME;
   }
 }

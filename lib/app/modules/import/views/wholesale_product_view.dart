@@ -1,4 +1,5 @@
 import 'package:asso/app/modules/payment/widgets/payment_preparation.dart';
+import '../../../core/utils/share_links.dart';
 import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
@@ -714,6 +715,27 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           ),
         ),
       ),
+      actions: [
+        if (ShareLinks.enabled)
+          Padding(
+            padding: const EdgeInsets.all(AppDesign.space1),
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.35),
+              shape: const CircleBorder(),
+              child: Builder(
+                builder: (buttonContext) => IconButton(
+                  icon: const Icon(Icons.share_rounded, color: Colors.white),
+                  tooltip: 'product.share.action'.tr,
+                  onPressed: () => ShareLinks.shareProduct(
+                    id: widget.product.id,
+                    name: widget.product.name,
+                    origin: ShareLinks.originOf(buttonContext),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
       flexibleSpace: _mediaCount == 0
           ? null
           : FlexibleSpaceBar(

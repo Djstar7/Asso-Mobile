@@ -37,6 +37,7 @@ import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/variant_combo_picker.dart';
 import '../../../core/utils/app_navigation.dart';
+import '../../../core/utils/share_links.dart';
 import '../../legal/legal_consent.dart';
 
 /// Fiche produit telle que la route l'ouvre : chaque fiche empilée
@@ -141,46 +142,34 @@ class ProductView extends GetView<ProductController> {
               onPressed: () => AppNavigation.back(context),
             ),
             actions: [
-              // Partage masqué en attendant la mise en ligne : les liens
-              // n'ouvriront la fiche que lorsque le domaine servira les
-              // fichiers d'association renseignés (empreinte Android, Team ID
-              // Apple). D'ici là, un lien partagé ne ferait que renvoyer vers
-              // la boutique d'applications.
-              //
-              // Pour le rétablir : décommenter ce bloc. Le reste de la chaîne
-              // est en place — AppConstants.productUrl, shareProduct() et
-              // DeepLinkService.
-              //
-              // IconButton(
-              //   icon: Container(
-              //     padding: EdgeInsets.all(8),
-              //     decoration: BoxDecoration(
-              //       color: Colors.black.withValues(alpha: 0.3),
-              //       shape: BoxShape.circle,
-              //       border: Border.all(
-              //         color: Colors.white.withValues(alpha: 0.3),
-              //         width: 1,
-              //       ),
-              //     ),
-              //     child: Icon(
-              //       Icons.share_rounded,
-              //       color: Colors.white,
-              //       size: 20,
-              //     ),
-              //   ),
-              //   onPressed: () {
-              //     // Rectangle d'ancrage réclamé par iPad : sans lui, iOS
-              //     // refuse d'afficher la feuille.
-              //     final box = context.findRenderObject() as RenderBox?;
-              //     controller.shareProduct(
-              //       product,
-              //       origin: box == null
-              //           ? null
-              //           : box.localToGlobal(Offset.zero) & box.size,
-              //     );
-              //   },
-              // ),
-              // SizedBox(width: 8),
+              if (ShareLinks.enabled) ...[
+                Builder(
+                  builder: (buttonContext) => IconButton(
+                    tooltip: 'product.share.action'.tr,
+                    icon: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.share_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    onPressed: () => controller.shareProduct(
+                      product,
+                      origin: ShareLinks.originOf(buttonContext),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+              ],
               Obx(() {
                 final isFav = controller.isFavorite.value;
                 return IconButton(

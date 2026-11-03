@@ -12,39 +12,57 @@ import '../../modules/import/views/wholesale_product_view.dart';
 import '../../routes/app_pages.dart';
 import '../models/wholesale_models.dart';
 import '../providers/api_provider.dart';
+import '../providers/guest_access.dart';
 import '../providers/import_service.dart';
 import '../providers/product_service.dart';
+import '../providers/storage_service.dart';
 
-/// Ouvre dans l'application les liens partagés (https://<domaine>/produit/{id}).
+/// Ce vers quoi pointe un lien partagé.
+enum _LinkKind { product, shop }
+
+class _LinkTarget {
+  const _LinkTarget(this.kind, this.id, this.uri);
+
+  final _LinkKind kind;
+  final int id;
+  final Uri uri;
+}
+
+/// Ouvre dans l'application les liens partagés : `/p/{id}` et `/b/{id}`, sur le
+/// domaine ou par le schéma de la vitrine (`assomarket://domaine/p/{id}`).
 ///
-/// Deux portes d'entrée, réunies dans [_handleUri] :
-///   1. démarrage à froid — le lien qui a lancé l'application ;
-///   2. à chaud — les liens reçus pendant qu'elle tourne déjà.
+/// Le lien n'est jamais suivi à son arrivée : il attend que l'application soit
+/// sur un écran stable, quel que soit le chemin pris pour y arriver (démarrage à
+/// froid, choix du pays, préférences, connexion). [DeepLinkRouteObserver] le
+/// réveille à chaque changement d'écran.
 ///
-/// La navigation attend que le routeur soit monté : un lien de démarrage à
-/// froid arrive avant la première image et viserait sinon un navigateur
-/// inexistant.
+/// Flutter ne doit pas traiter ces liens lui-même : `flutter_deeplinking_enabled`
+/// (Android) et `FlutterDeepLinkingEnabled` (iOS) sont à false. Sinon, à froid, le
+/// lien remplace la route de départ, le splash ne démarre jamais et l'utilisateur
+/// tombe sur « Page introuvable ».
 ///
-/// Les chemins traités ici doivent aussi figurer dans les fichiers
-/// d'association du serveur (apple-app-site-association, assetlinks.json) et
-/// dans l'intent-filter Android, sans quoi le système ne nous remet jamais
-/// le lien.
+/// Les chemins traités ici doivent aussi figurer dans l'intent-filter Android et
+/// dans les fichiers d'association servis par le back-office.
 class DeepLinkService extends GetxService {
   DeepLinkService({
     AppLinks? appLinks,
     Future<ApiResponse> Function(int id)? loadProduct,
     Future<ApiResponse> Function(int id)? loadWholesaleProduct,
     Future<VoidCallback> Function(Map<String, dynamic> body)? wholesaleOpener,
+    Future<void> Function()? enterAsGuest,
   }) : _appLinks = appLinks ?? AppLinks(),
        _loadProduct = loadProduct ?? ProductService.getProduct,
        _loadWholesaleProduct = loadWholesaleProduct ?? ImportService.getProduct,
-       _wholesaleOpener = wholesaleOpener ?? _defaultWholesaleOpener;
+       _wholesaleOpener = wholesaleOpener ?? _defaultWholesaleOpener,
+       _enterAsGuest =
+           enterAsGuest ?? (() => GuestAccess.enter(skipInterests: true));
 
   final AppLinks _appLinks;
   final Future<ApiResponse> Function(int id) _loadProduct;
   final Future<ApiResponse> Function(int id) _loadWholesaleProduct;
   final Future<VoidCallback> Function(Map<String, dynamic> body)
   _wholesaleOpener;
+  final Future<void> Function() _enterAsGuest;
   StreamSubscription<Uri>? _subscription;
 
   /// Le démarrage à froid livre parfois le même lien deux fois (lien initial
@@ -58,10 +76,14 @@ class DeepLinkService extends GetxService {
   /// pas deux fois la même fiche.
   bool _handling = false;
 
-  /// Passe à vrai une fois [start] exécuté. Un lien arrivé avant est mis de
-  /// côté et rejoué à ce moment-là.
+  /// Passe à vrai une fois [start] exécuté, le routeur étant alors monté.
   bool _started = false;
-  Uri? _pending;
+
+  /// Le dernier lien reçu et pas encore ouvert : le plus récent l'emporte.
+  _LinkTarget? _pending;
+
+  /// Un lien attend d'être ouvert.
+  bool get hasPendingLink => _pending != null;
 
   Future<DeepLinkService> init() async => this;
 
@@ -84,11 +106,7 @@ class DeepLinkService extends GetxService {
       debugPrint('[DeepLink] lien initial illisible : $e');
     }
 
-    final pending = _pending;
-    if (pending != null) {
-      _pending = null;
-      await _handleUri(pending, fromSystem: false);
-    }
+    await drain();
   }
 
   /// Point d'entrée pour les liens venus d'ailleurs que du système, par
@@ -110,49 +128,98 @@ class DeepLinkService extends GetxService {
       _lastHandledAt = now;
     }
 
-    if (!_started) {
-      _pending = uri;
-      debugPrint('[DeepLink] mis de côté (routeur absent) : $uri');
-      return;
-    }
-    if (_handling) return;
+    final target = _parse(uri);
+    if (target == null) return;
 
-    // Le système restreint déjà les liens au domaine vérifié ; cette
-    // vérification est une précaution supplémentaire.
-    if (uri.host.isNotEmpty && uri.host != AppConstants.shareDomain) return;
+    _pending = target;
+    await drain();
+  }
+
+  /// Vrai pour un lien que ce service sait ouvrir.
+  static bool isShareLink(Uri uri) => _parse(uri) != null;
+
+  /// Lit un lien ; null s'il ne nous concerne pas.
+  ///
+  /// `/produit` reste lu pour les notifications et les appels internes, mais
+  /// n'est plus déclaré aux plateformes.
+  static _LinkTarget? _parse(Uri uri) {
+    final schemeAllowed =
+        uri.scheme == 'https' || uri.scheme == AppConstants.mobileScheme;
+    if (!schemeAllowed || uri.host != AppConstants.shareDomain) return null;
 
     final segments = uri.pathSegments;
-    if (segments.length < 2) return;
+    if (segments.length != 2) return null;
 
-    final value = segments[1].trim();
-    if (value.isEmpty) return;
+    final id = int.tryParse(segments[1]);
+    if (id == null || id <= 0) return null;
 
+    return switch (segments[0]) {
+      'p' || 'produit' => _LinkTarget(_LinkKind.product, id, uri),
+      'b' => _LinkTarget(_LinkKind.shop, id, uri),
+      _ => null,
+    };
+  }
+
+  /// Ouvre le lien en attente si l'écran courant le permet.
+  ///
+  /// Sur l'accueil de bienvenue, un visiteur entre en invité ; sur les autres
+  /// écrans de mise en route, le lien attend leur fin.
+  @visibleForTesting
+  Future<void> drain() async {
+    final target = _pending;
+    if (!_started || _handling || target == null) return;
+
+    final route = Get.currentRoute;
+    if (AppNavigation.isVisitorEntryRoute(route) &&
+        !StorageService.isAuthenticated) {
+      _handling = true;
+      try {
+        await _enterAsGuest();
+      } finally {
+        _handling = false;
+      }
+      return;
+    }
+    if (AppNavigation.isSetupRoute(route)) return;
+
+    _pending = null;
     _handling = true;
     try {
-      if (segments[0] == 'produit') {
-        await _openProduct(value);
+      switch (target.kind) {
+        case _LinkKind.product:
+          await _openProduct(target);
+        case _LinkKind.shop:
+          await _openShop(target);
       }
     } finally {
       _handling = false;
     }
+    // Un lien plus récent est arrivé pendant le chargement.
+    if (_pending != null) await drain();
   }
+
+  /// La page de boutique charge elle-même ses données et gère leur échec.
+  Future<void> _openShop(_LinkTarget target) => _openWhenReady(
+    () => Get.toNamed(
+      Routes.VENDOR_DETAILS,
+      arguments: {'shop_id': target.id.toString()},
+      preventDuplicates: false,
+    ),
+  );
 
   /// Récupère le produit puis ouvre sa fiche.
   ///
   /// L'écran attend le produit complet en argument, pas son identifiant :
   /// il faut donc le charger avant de naviguer.
-  Future<void> _openProduct(String id) async {
-    final productId = int.tryParse(id);
-    if (productId == null) return;
-
+  Future<void> _openProduct(_LinkTarget target) async {
     final hideLoader = _showLoader();
     VoidCallback? open;
     try {
-      open = await _resolveProduct(productId);
+      open = await _resolveProduct(target.id);
       if (open == null) _reportNotFound();
     } catch (e) {
-      debugPrint('[DeepLink] produit $id illisible : $e');
-      _reportLoadFailed();
+      debugPrint('[DeepLink] produit ${target.id} illisible : $e');
+      _reportLoadFailed(target);
     } finally {
       hideLoader();
     }
@@ -275,12 +342,16 @@ class DeepLinkService extends GetxService {
     );
   }
 
-  void _reportLoadFailed() {
+  void _reportLoadFailed(_LinkTarget target) {
     AppFeedback.show(
       'data.deep_link.load_failed_title'.tr,
       'data.deep_link.load_failed_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 6),
+      mainButton: TextButton(
+        onPressed: () => _handleUri(target.uri, fromSystem: false),
+        child: Text('common.retry'.tr),
+      ),
     );
   }
 
@@ -289,4 +360,24 @@ class DeepLinkService extends GetxService {
     _subscription?.cancel();
     super.onClose();
   }
+}
+
+/// Réveille [DeepLinkService] à chaque changement d'écran : c'est à ce moment
+/// qu'un lien en attente peut devenir ouvrable.
+class DeepLinkRouteObserver extends NavigatorObserver {
+  void _wake() {
+    if (!Get.isRegistered<DeepLinkService>()) return;
+    // Après la mise à jour de `Get.currentRoute`, et hors de la navigation en
+    // cours : pousser une route depuis un observateur fait échouer le navigateur.
+    unawaited(
+      Future<void>.delayed(Duration.zero, Get.find<DeepLinkService>().drain),
+    );
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => _wake();
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _wake();
 }
