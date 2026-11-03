@@ -68,6 +68,15 @@ class AppConstants {
   /// Lien public d'une boutique.
   static String shopUrl(Object id) => 'https://$shareDomain/b/$id';
 
+  /// Vrai pour le build de l'espace vendeur web (lib/main_vendor_web.dart).
+  /// Le wallet, les paiements, les forfaits et les boosts n'y sont pas proposés.
+  static const bool isVendorWeb = bool.fromEnvironment('VENDOR_WEB');
+
+  /// Préfixe du contenu du QR de connexion : ce n'est pas un lien, pour qu'un
+  /// message piégé ne puisse pas lancer la connexion. Seul le scanner de
+  /// l'application le lit.
+  static const String webLoginQrPrefix = 'asso-vendor-web:';
+
   /// Schéma du bouton « Ouvrir » de la vitrine sur iOS : un lien universel
   /// cliqué depuis son propre domaine n'ouvre pas l'application.
   static const String mobileScheme = 'assomarket';
@@ -215,6 +224,9 @@ class AppConstants {
   static const String vendorShopUrl = '/v1/vendor/shop';
   static const String vendorShopsUrl = '/v1/vendor/shops';
   static const String publicShopUrl = '/v1/shops'; // + /{id}
+
+  // Connexion par QR à l'espace vendeur web
+  static const String webLoginUrl = '/v1/web-login';
 
   // Device Tokens & Notifications (FCM)
   static const String deviceTokensUrl = '/v1/device-tokens';

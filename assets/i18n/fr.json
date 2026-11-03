@@ -5424,5 +5424,64 @@
     "remove_iban_title": "Retirer cet IBAN ?",
     "remove_iban_confirm": "Vous ne pourrez plus retirer par virement tant que vous n’aurez pas ajouté un nouvel IBAN.",
     "iban_removed": "Votre IBAN a été retiré."
+  },
+  "web_login": {
+    "title": "Espace vendeur sur ordinateur",
+    "dashboard_subtitle": "Gérez votre boutique depuis un navigateur",
+    "intro": "Sur votre ordinateur, ouvrez asso-dashboard.sbs/vendor, puis scannez le QR affiché.",
+    "scan_action": "Scanner le QR",
+    "devices_title": "Navigateurs connectés",
+    "no_devices": "Aucun navigateur connecté.",
+    "device_details": "Adresse : @ip · Expire le @date",
+    "revoke": "Déconnecter",
+    "invalid_qr_title": "QR non reconnu",
+    "invalid_qr_message": "Ce QR ne provient pas de l'espace vendeur ASSO.",
+    "approved_title": "Connexion autorisée",
+    "approved_message": "Votre navigateur est maintenant connecté.",
+    "revoked_title": "Navigateur déconnecté",
+    "revoked_message": "Cette session web est fermée.",
+    "failed_title": "Action impossible",
+    "failed_message": "Vérifiez votre connexion, puis réessayez.",
+    "scanner": {
+      "title": "Scanner le QR",
+      "hint": "Placez le QR de votre ordinateur dans le cadre.",
+      "use_photo": "Prendre une photo du QR",
+      "no_code": "Aucun QR trouvé sur cette photo.",
+      "permission_denied": "Autorisez la caméra pour scanner le QR.",
+      "camera_failed": "La caméra n'a pas pu démarrer.",
+      "open_settings": "Ouvrir les réglages"
+    },
+    "confirm": {
+      "title": "Connecter ce navigateur ?",
+      "device": "@browser sur @platform",
+      "ip": "Adresse : @ip",
+      "warning": "N'acceptez que si vous êtes devant cet ordinateur et que vous venez d'y ouvrir l'espace vendeur.",
+      "approve": "Autoriser",
+      "reject": "Refuser"
+    }
+  },
+  "vendor_web": {
+    "login": {
+      "title": "Espace vendeur ASSO",
+      "steps": "1. Ouvrez l'application ASSO sur votre téléphone.\n2. Allez dans Tableau de bord vendeur, puis Espace vendeur sur ordinateur.\n3. Scannez ce QR et confirmez.",
+      "scanned": "QR scanné. Confirmez la connexion sur votre téléphone.",
+      "expired": "Ce QR a expiré.",
+      "rejected": "La connexion a été refusée depuis le téléphone.",
+      "failed": "Connexion au serveur impossible ou espace indisponible.",
+      "new_qr": "Afficher un nouveau QR"
+    },
+    "unavailable": {
+      "title": "Disponible dans l'application",
+      "message": "Cette section se gère depuis l'application ASSO sur votre téléphone."
+    },
+    "nav": {
+      "dashboard": "Accueil",
+      "products": "Produits",
+      "add_product": "Ajouter",
+      "orders": "Commandes",
+      "shop": "Boutique",
+      "statistics": "Statistiques",
+      "sign_out": "Quitter"
+    }
   }
 }

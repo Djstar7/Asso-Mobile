@@ -5424,5 +5424,64 @@
     "remove_iban_title": "Remove this IBAN?",
     "remove_iban_confirm": "You won't be able to withdraw by bank transfer until you add a new IBAN.",
     "iban_removed": "Your IBAN has been removed."
+  },
+  "web_login": {
+    "title": "Vendor space on computer",
+    "dashboard_subtitle": "Manage your shop from a browser",
+    "intro": "On your computer, open asso-dashboard.sbs/vendor, then scan the QR code shown.",
+    "scan_action": "Scan the QR code",
+    "devices_title": "Connected browsers",
+    "no_devices": "No connected browser.",
+    "device_details": "Address: @ip · Expires on @date",
+    "revoke": "Sign out",
+    "invalid_qr_title": "QR code not recognised",
+    "invalid_qr_message": "This QR code does not come from the ASSO vendor space.",
+    "approved_title": "Sign-in authorised",
+    "approved_message": "Your browser is now signed in.",
+    "revoked_title": "Browser signed out",
+    "revoked_message": "This web session is closed.",
+    "failed_title": "Action not possible",
+    "failed_message": "Check your connection, then try again.",
+    "scanner": {
+      "title": "Scan the QR code",
+      "hint": "Place the QR code from your computer inside the frame.",
+      "use_photo": "Take a photo of the QR code",
+      "no_code": "No QR code found in this photo.",
+      "permission_denied": "Allow the camera to scan the QR code.",
+      "camera_failed": "The camera could not start.",
+      "open_settings": "Open settings"
+    },
+    "confirm": {
+      "title": "Sign in this browser?",
+      "device": "@browser on @platform",
+      "ip": "Address: @ip",
+      "warning": "Only accept if you are in front of this computer and have just opened the vendor space on it.",
+      "approve": "Authorise",
+      "reject": "Decline"
+    }
+  },
+  "vendor_web": {
+    "login": {
+      "title": "ASSO vendor space",
+      "steps": "1. Open the ASSO app on your phone.\n2. Go to the vendor dashboard, then Vendor space on computer.\n3. Scan this QR code and confirm.",
+      "scanned": "QR code scanned. Confirm the sign-in on your phone.",
+      "expired": "This QR code has expired.",
+      "rejected": "The sign-in was declined from the phone.",
+      "failed": "Could not reach the server, or the space is unavailable.",
+      "new_qr": "Show a new QR code"
+    },
+    "unavailable": {
+      "title": "Available in the app",
+      "message": "This section is managed from the ASSO app on your phone."
+    },
+    "nav": {
+      "dashboard": "Home",
+      "products": "Products",
+      "add_product": "Add",
+      "orders": "Orders",
+      "shop": "Shop",
+      "statistics": "Statistics",
+      "sign_out": "Sign out"
+    }
   }
 }

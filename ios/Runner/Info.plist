@@ -31,7 +31,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Nous avons besoin d'accéder à votre caméra pour prendre des photos et enregistrer des vidéos de vérification</string>
+	<string>Nous avons besoin d'accéder à votre caméra pour prendre des photos, enregistrer des vidéos de vérification et scanner le QR de connexion à l'espace vendeur web</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Nous avons besoin du microphone pour enregistrer le son de vos vidéos de vérification</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

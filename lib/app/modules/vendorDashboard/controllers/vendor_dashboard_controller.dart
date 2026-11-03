@@ -9,6 +9,7 @@ import '../../../data/providers/vendor_service.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/offline_store.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../data/providers/web_login_service.dart';
 import '../../../data/providers/offline_read_cache.dart';
 import '../../../core/values/constants.dart';
 import '../../../data/services/connectivity_service.dart';
@@ -18,6 +19,8 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/utils/location_label.dart';
 
 class VendorDashboardController extends GetxController {
+  final webLoginAvailable = false.obs;
+
   // State management
   bool _isDisposed = false;
   bool get isSafe => !_isDisposed && isClosed == false;
@@ -121,6 +124,7 @@ class VendorDashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadWebLoginAvailability();
 
     final sync = offlineSync;
     if (sync != null) {
@@ -248,13 +252,25 @@ class VendorDashboardController extends GetxController {
     }
   }
 
+  /// L'entrée vers l'espace web n'apparaît qu'aux comptes qui y ont accès.
+  Future<void> _loadWebLoginAvailability() async {
+    if (AppConstants.isVendorWeb) return;
+    final response = await WebLoginService.availability();
+    if (_isDisposed) return;
+    webLoginAvailable.value =
+        response.success && response.data?['available'] == true;
+  }
+
   Future<void> _warmOfflinePages() async {
     if (_isDisposed || ConnectivityService.isOffline) return;
     final requests = <(String, Map<String, dynamic>?)>[
       ('/v1/vendor/products', {'page': 1, 'per_page': 20}),
-      ('/v1/wallet', null),
-      ('/v1/wallet/withdrawal-balances', null),
-      ('/v1/wallet/transactions', {'page': 1, 'per_page': 20}),
+      // Le wallet n'existe pas sur l'espace web : son jeton n'y a pas accès.
+      if (!AppConstants.isVendorWeb) ...[
+        ('/v1/wallet', null),
+        ('/v1/wallet/withdrawal-balances', null),
+        ('/v1/wallet/transactions', {'page': 1, 'per_page': 20}),
+      ],
     ];
     await Future.wait(
       requests.map((entry) async {

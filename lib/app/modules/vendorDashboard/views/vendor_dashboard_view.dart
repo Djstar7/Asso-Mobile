@@ -12,6 +12,7 @@ import '../../orderManagement/views/order_management_view.dart';
 import '../../orderManagement/bindings/order_management_binding.dart';
 import '../../storeManagement/views/store_management_view.dart';
 import '../../storeManagement/bindings/store_management_binding.dart';
+import '../../../core/values/constants.dart';
 import '../../wallet/views/wallet_view.dart';
 import '../../wallet/bindings/wallet_binding.dart';
 import '../../../core/widgets/currency_switcher.dart';
@@ -361,8 +362,12 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                         ? 'vendor_dashboard.stats.orders_total_plural'
                         : 'vendor_dashboard.stats.orders_total_singular')
                     .trParams({'count': '${controller.totalOrders.value}'}),
-            onTap: () =>
-                Get.to(() => const WalletView(), binding: WalletBinding()),
+            onTap: AppConstants.isVendorWeb
+                ? null
+                : () => Get.to(
+                    () => const WalletView(),
+                    binding: WalletBinding(),
+                  ),
           ),
         ),
 
@@ -914,35 +919,37 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   isFirst: true,
                 );
               }),
-              _buildRowDivider(context),
-              // Asso Ads : mettre un article en avant dans le fil et la
-              // recherche. Quand une campagne tourne, la ligne rend compte de
-              // la portée déjà délivrée — le vendeur a payé, il doit voir où
-              // en est son achat sans avoir à ouvrir l'écran.
-              Obx(() {
-                final running = controller.runningBoosts.value;
-                final served = controller.boostImpressionsServed.value;
-                final quota = controller.boostImpressionsQuota.value;
+              if (!AppConstants.isVendorWeb) ...[
+                _buildRowDivider(context),
+                // Asso Ads : mettre un article en avant dans le fil et la
+                // recherche. Quand une campagne tourne, la ligne rend compte de
+                // la portée déjà délivrée — le vendeur a payé, il doit voir où
+                // en est son achat sans avoir à ouvrir l'écran.
+                Obx(() {
+                  final running = controller.runningBoosts.value;
+                  final served = controller.boostImpressionsServed.value;
+                  final quota = controller.boostImpressionsQuota.value;
 
-                return _buildActionRow(
-                  context,
-                  icon: Icons.campaign_outlined,
-                  title: running > 0
-                      ? 'vendor_dashboard.actions.boost_running'.tr
-                      : 'vendor_dashboard.actions.boost_item'.tr,
-                  subtitle: running > 0
-                      ? 'vendor_dashboard.actions.boost_reach'.trParams({
-                          'served': _compact(served),
-                          'quota': _compact(quota),
-                        })
-                      : 'vendor_dashboard.actions.boost_subtitle'.tr,
-                  badge: running > 0 ? running : null,
-                  onTap: controller.onlineOnly(() async {
-                    await Get.toNamed(Routes.BOOST);
-                    await controller.refreshData();
-                  }),
-                );
-              }),
+                  return _buildActionRow(
+                    context,
+                    icon: Icons.campaign_outlined,
+                    title: running > 0
+                        ? 'vendor_dashboard.actions.boost_running'.tr
+                        : 'vendor_dashboard.actions.boost_item'.tr,
+                    subtitle: running > 0
+                        ? 'vendor_dashboard.actions.boost_reach'.trParams({
+                            'served': _compact(served),
+                            'quota': _compact(quota),
+                          })
+                        : 'vendor_dashboard.actions.boost_subtitle'.tr,
+                    badge: running > 0 ? running : null,
+                    onTap: controller.onlineOnly(() async {
+                      await Get.toNamed(Routes.BOOST);
+                      await controller.refreshData();
+                    }),
+                  );
+                }),
+              ],
               _buildRowDivider(context),
               Obx(
                 () => _buildActionRow(
@@ -965,17 +972,19 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   }),
                 ),
               ),
-              _buildRowDivider(context),
-              // Réclamations clients : répondre, remplacer ou organiser le retour.
-              _buildActionRow(
-                context,
-                icon: Icons.gavel_rounded,
-                title: 'disputes.vendor.list_title'.tr,
-                subtitle: 'disputes.vendor.dashboard_subtitle'.tr,
-                onTap: controller.onlineOnly(
-                  () => Get.toNamed(Routes.VENDOR_DISPUTES),
+              if (!AppConstants.isVendorWeb) ...[
+                _buildRowDivider(context),
+                // Réclamations clients : répondre, remplacer ou organiser le retour.
+                _buildActionRow(
+                  context,
+                  icon: Icons.gavel_rounded,
+                  title: 'disputes.vendor.list_title'.tr,
+                  subtitle: 'disputes.vendor.dashboard_subtitle'.tr,
+                  onTap: controller.onlineOnly(
+                    () => Get.toNamed(Routes.VENDOR_DISPUTES),
+                  ),
                 ),
-              ),
+              ],
               _buildRowDivider(context),
               _buildActionRow(
                 context,
@@ -991,28 +1000,50 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   // bord : sans relecture, une modification semblait perdue.
                   await controller.refreshData();
                 }),
+                isLast: AppConstants.isVendorWeb,
               ),
-              _buildRowDivider(context),
-              _buildActionRow(
-                context,
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'vendor_dashboard.actions.wallet'.tr,
-                subtitle: 'vendor_dashboard.actions.wallet_subtitle'.tr,
-                onTap: () => Get.toNamed('/wallet'),
-              ),
-              _buildRowDivider(context),
-              _buildActionRow(
-                context,
-                icon: Icons.account_balance_outlined,
-                title: 'vendor_dashboard.actions.payout_account'.tr,
-                subtitle: 'vendor_dashboard.actions.payout_account_subtitle'.tr,
-                // IBAN et numéro Mobile Money : la même page que Profil →
-                // Moyens de paiement.
-                onTap: controller.onlineOnly(
-                  () => Get.toNamed(Routes.PAYMENT_METHODS),
+              if (!AppConstants.isVendorWeb) ...[
+                Obx(
+                  () => controller.webLoginAvailable.value
+                      ? Column(
+                          children: [
+                            _buildRowDivider(context),
+                            _buildActionRow(
+                              context,
+                              icon: Icons.qr_code_scanner_rounded,
+                              title: 'web_login.title'.tr,
+                              subtitle: 'web_login.dashboard_subtitle'.tr,
+                              onTap: controller.onlineOnly(
+                                () => Get.toNamed(Routes.WEB_LOGIN),
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
-                isLast: true,
-              ),
+                _buildRowDivider(context),
+                _buildActionRow(
+                  context,
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'vendor_dashboard.actions.wallet'.tr,
+                  subtitle: 'vendor_dashboard.actions.wallet_subtitle'.tr,
+                  onTap: () => Get.toNamed('/wallet'),
+                ),
+                _buildRowDivider(context),
+                _buildActionRow(
+                  context,
+                  icon: Icons.account_balance_outlined,
+                  title: 'vendor_dashboard.actions.payout_account'.tr,
+                  subtitle:
+                      'vendor_dashboard.actions.payout_account_subtitle'.tr,
+                  // IBAN et numéro Mobile Money : la même page que Profil →
+                  // Moyens de paiement.
+                  onTap: controller.onlineOnly(
+                    () => Get.toNamed(Routes.PAYMENT_METHODS),
+                  ),
+                  isLast: true,
+                ),
+              ],
             ],
           ),
         ),
