@@ -901,7 +901,9 @@
     },
     "deep_link": {
       "product_not_found_title": "Product not found",
-      "product_not_found_message": "This product is no longer available."
+      "product_not_found_message": "This product is no longer available.",
+      "load_failed_title": "Could not load",
+      "load_failed_message": "Check your connection, then try again."
     },
     "pending_product": {
       "unnamed": "Unnamed product"

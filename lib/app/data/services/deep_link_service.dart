@@ -2,13 +2,17 @@ import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 import '../../core/utils/app_navigation.dart';
 import '../../core/values/constants.dart';
+import '../../modules/import/views/wholesale_product_view.dart';
 import '../../routes/app_pages.dart';
+import '../models/wholesale_models.dart';
+import '../providers/api_provider.dart';
+import '../providers/import_service.dart';
 import '../providers/product_service.dart';
 
 /// Ouvre dans l'application les liens partagés (https://<domaine>/produit/{id}).
@@ -26,9 +30,21 @@ import '../providers/product_service.dart';
 /// dans l'intent-filter Android, sans quoi le système ne nous remet jamais
 /// le lien.
 class DeepLinkService extends GetxService {
-  DeepLinkService({AppLinks? appLinks}) : _appLinks = appLinks ?? AppLinks();
+  DeepLinkService({
+    AppLinks? appLinks,
+    Future<ApiResponse> Function(int id)? loadProduct,
+    Future<ApiResponse> Function(int id)? loadWholesaleProduct,
+    Future<VoidCallback> Function(Map<String, dynamic> body)? wholesaleOpener,
+  }) : _appLinks = appLinks ?? AppLinks(),
+       _loadProduct = loadProduct ?? ProductService.getProduct,
+       _loadWholesaleProduct = loadWholesaleProduct ?? ImportService.getProduct,
+       _wholesaleOpener = wholesaleOpener ?? _defaultWholesaleOpener;
 
   final AppLinks _appLinks;
+  final Future<ApiResponse> Function(int id) _loadProduct;
+  final Future<ApiResponse> Function(int id) _loadWholesaleProduct;
+  final Future<VoidCallback> Function(Map<String, dynamic> body)
+  _wholesaleOpener;
   StreamSubscription<Uri>? _subscription;
 
   /// Le démarrage à froid livre parfois le même lien deux fois (lien initial
@@ -71,24 +87,28 @@ class DeepLinkService extends GetxService {
     final pending = _pending;
     if (pending != null) {
       _pending = null;
-      await _handleUri(pending);
+      await _handleUri(pending, fromSystem: false);
     }
   }
 
   /// Point d'entrée pour les liens venus d'ailleurs que du système, par
   /// exemple le corps d'une notification.
-  Future<void> handleExternal(Uri uri) => _handleUri(uri);
+  Future<void> handleExternal(Uri uri) => _handleUri(uri, fromSystem: false);
 
-  Future<void> _handleUri(Uri uri) async {
-    final now = DateTime.now();
-    final last = _lastHandledAt;
-    if (_lastHandled == uri &&
-        last != null &&
-        now.difference(last) < _replayWindow) {
-      return;
+  Future<void> _handleUri(Uri uri, {bool fromSystem = true}) async {
+    // Seul le système livre un lien en double. Un toucher est toujours voulu :
+    // ouvrir une annonce, revenir et la rouvrir aussitôt ne faisait plus rien.
+    if (fromSystem) {
+      final now = DateTime.now();
+      final last = _lastHandledAt;
+      if (_lastHandled == uri &&
+          last != null &&
+          now.difference(last) < _replayWindow) {
+        return;
+      }
+      _lastHandled = uri;
+      _lastHandledAt = now;
     }
-    _lastHandled = uri;
-    _lastHandledAt = now;
 
     if (!_started) {
       _pending = uri;
@@ -125,19 +145,93 @@ class DeepLinkService extends GetxService {
     final productId = int.tryParse(id);
     if (productId == null) return;
 
+    final hideLoader = _showLoader();
+    VoidCallback? open;
     try {
-      final response = await ProductService.getProduct(productId);
-      final product = _extractProduct(response.data);
-
-      if (!response.success || product == null) {
-        _reportNotFound();
-        return;
-      }
-      await _pushWhenIdle(Routes.PRODUCT, arguments: product);
+      open = await _resolveProduct(productId);
+      if (open == null) _reportNotFound();
     } catch (e) {
       debugPrint('[DeepLink] produit $id illisible : $e');
-      _reportNotFound();
+      _reportLoadFailed();
+    } finally {
+      hideLoader();
     }
+    if (open != null) await _openWhenReady(open);
+  }
+
+  /// Renvoie de quoi ouvrir la fiche, ou null si le produit n'existe plus.
+  /// Lève une erreur quand on ne peut pas conclure (réseau, serveur).
+  ///
+  /// Les produits importés ne sont pas servis par la route du catalogue local :
+  /// sur un 404, on les cherche dans le catalogue gros, qui a son propre écran.
+  Future<VoidCallback?> _resolveProduct(int id) async {
+    final response = await _loadProduct(id);
+    final product = _extractProduct(response.data);
+    if (response.success && product != null) {
+      // Sans `preventDuplicates: false`, un lien reçu depuis une fiche produit
+      // ne s'ouvrait pas : GetX y voit la même route.
+      return () => Get.toNamed(
+        Routes.PRODUCT,
+        arguments: product,
+        preventDuplicates: false,
+      );
+    }
+    if (response.statusCode != 404) {
+      throw StateError('catalogue local : ${response.statusCode}');
+    }
+
+    final wholesale = await _loadWholesaleProduct(id);
+    final body = wholesale.data;
+    if (wholesale.success && body != null && body['product'] is Map) {
+      return _wholesaleOpener(body);
+    }
+    if (wholesale.statusCode != 404) {
+      throw StateError('catalogue gros : ${wholesale.statusCode}');
+    }
+    return null;
+  }
+
+  static Future<VoidCallback> _defaultWholesaleOpener(
+    Map<String, dynamic> body,
+  ) async {
+    final product = WholesaleProduct.fromJson(
+      Map<String, dynamic>.from(body['product'] as Map),
+    );
+    final shippingOptions = (body['shipping_options'] as List? ?? [])
+        .whereType<Map>()
+        .map((o) => ShippingOption.fromJson(Map<String, dynamic>.from(o)))
+        .toList();
+    final countries = await ProductService.getImportCountries();
+    final country = countries.firstWhereOrNull(
+      (c) => c['code'] == product.originCountry?.toUpperCase(),
+    );
+    return () => WholesaleProductView.open(
+      product: product,
+      shippingOptions: shippingOptions,
+      countryFlag: country?['flag'] ?? '',
+    );
+  }
+
+  /// Indicateur pendant le chargement, sans lequel le toucher semble sans effet.
+  /// Rien au démarrage à froid : le splash est encore affiché.
+  VoidCallback _showLoader() {
+    final navigator = Get.key.currentState;
+    final context = Get.key.currentContext;
+    if (!AppNavigation.isAppReady || navigator == null || context == null) {
+      return () {};
+    }
+    final route = DialogRoute<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+    navigator.push(route);
+    return () {
+      if (route.isActive) navigator.removeRoute(route);
+    };
   }
 
   /// Extrait la fiche de la réponse.
@@ -152,27 +246,22 @@ class DeepLinkService extends GetxService {
     return null;
   }
 
-  /// Navigue une fois l'arbre de widgets au repos.
+  /// Navigue une fois l'application prête.
   ///
   /// Pousser une route au milieu d'une reconstruction fait échouer le
-  /// navigateur ; on attend la fin de l'image en cours, puis le montage du
-  /// routeur au démarrage à froid.
-  Future<void> _pushWhenIdle(String route, {Object? arguments}) async {
+  /// navigateur. Au repos, on navigue tout de suite : `addPostFrameCallback` ne
+  /// demande aucune image, et la fiche restait en attente du prochain toucher
+  /// d'écran quand le réseau répondait après la fin de l'animation du tap.
+  Future<void> _openWhenReady(VoidCallback open) async {
+    // Le splash se termine par `offAllNamed`, qui emporterait la fiche.
+    if (!await AppNavigation.whenAppReady()) {
+      debugPrint('[DeepLink] pas de navigateur, ouverture abandonnée');
+      return;
+    }
     if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
       await SchedulerBinding.instance.endOfFrame;
     }
-    // Le splash se termine par `offAllNamed`, qui emporterait la fiche.
-    if (!await AppNavigation.whenAppReady()) {
-      debugPrint('[DeepLink] pas de navigateur, $route abandonné');
-      return;
-    }
-
-    final completer = Completer<void>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.toNamed(route, arguments: arguments);
-      completer.complete();
-    });
-    await completer.future;
+    open();
   }
 
   /// Un lien qui n'ouvre rien passe pour une application cassée : on dit ce
@@ -181,6 +270,15 @@ class DeepLinkService extends GetxService {
     AppFeedback.show(
       'data.deep_link.product_not_found_title'.tr,
       'data.deep_link.product_not_found_message'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 4),
+    );
+  }
+
+  void _reportLoadFailed() {
+    AppFeedback.show(
+      'data.deep_link.load_failed_title'.tr,
+      'data.deep_link.load_failed_message'.tr,
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 4),
     );
