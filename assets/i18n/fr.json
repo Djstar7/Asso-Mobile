@@ -901,7 +901,9 @@
     },
     "deep_link": {
       "product_not_found_title": "Produit introuvable",
-      "product_not_found_message": "Ce produit n'est plus disponible."
+      "product_not_found_message": "Ce produit n'est plus disponible.",
+      "load_failed_title": "Chargement impossible",
+      "load_failed_message": "Vérifiez votre connexion, puis réessayez."
     },
     "pending_product": {
       "unnamed": "Produit sans nom"

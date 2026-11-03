@@ -603,6 +603,9 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
 
       case 'new_product':
       case 'sponsored_product':
+      // Annonce de l'administration : le produit lié est facultatif, sans lui
+      // `_openProduct` ne navigue pas.
+      case 'announcement':
         _openProduct(data['product_id']);
         break;
 

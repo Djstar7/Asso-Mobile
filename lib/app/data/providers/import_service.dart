@@ -35,6 +35,18 @@ class ImportService {
     return null;
   }
 
+  /// Fiche d'un produit en gros et ses options d'expédition, pour l'ouvrir
+  /// depuis son seul identifiant (annonce, lien partagé).
+  static Future<ApiResponse> getProduct(int id) {
+    final targetCurrency = Get.isRegistered<CurrencyService>()
+        ? CurrencyService.to.currencyCode
+        : 'XAF';
+    return ApiProvider.get(
+      '/v1/import/products/$id',
+      queryParams: {'currency': targetCurrency},
+    );
+  }
+
   /// Crée une commande EN GROS : import jusqu'à Douala, puis livraison [delivery].
   /// [items] : [{ 'product_id': int, 'price_tier_id': int, 'quantity': int }, ...]
   /// Retourne l'ApiResponse (data contient order_id, approval_url, payment_reference).
