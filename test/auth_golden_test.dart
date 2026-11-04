@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'helpers/golden_fonts.dart';
 import 'helpers/themed_app.dart';
 
 import 'package:asso/app/modules/login/controllers/login_controller.dart';
@@ -25,9 +26,7 @@ void main() {
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
-    await (FontLoader(
-      'SF-Pro',
-    )..addFont(rootBundle.load('assets/fonts/SF-Pro/SF-Pro.ttf'))).load();
+    await loadGoldenFonts();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('plugins.flutter.io/path_provider'),

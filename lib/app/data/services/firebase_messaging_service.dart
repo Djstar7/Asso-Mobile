@@ -57,8 +57,8 @@ class FirebaseMessagingService extends GetxService with WidgetsBindingObserver {
   static String get announcementsTopic =>
       announcementsTopicFor(LocaleService.currentLanguage);
 
-  /// Marque d'abonnement : token et langue. Une nouvelle langue (ou une
-  /// installation encore abonnée à `all_users`) relance l'abonnement.
+  /// Marque des topics quittés pour ce token : un nouveau token (ou une
+  /// installation encore abonnée à `all_users`) relance le désabonnement.
   static String topicMarker(String token) => 'retired-v2|$token';
 
   /// Vrai pendant [ensureRegisteredAndSubscribed], pour qu'un retour rapide
