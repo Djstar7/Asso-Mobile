@@ -2182,6 +2182,7 @@
     "error": "Erreur",
     "seller": "Vendeur",
     "share": {
+      "action": "Partager ce produit",
       "unavailable_title": "Partage indisponible",
       "unavailable_message": "Ce produit ne peut pas encore être partagé."
     },
@@ -2888,6 +2889,7 @@
     }
   },
   "store_management": {
+    "share": "Partager ma boutique",
     "certification_status": {
       "not_certified": "Non certifié",
       "pending": "En attente",
@@ -4380,6 +4382,7 @@
     }
   },
   "vendor_details": {
+    "share": "Partager cette boutique",
     "sort": {
       "recent": "Nouveautés",
       "price_asc": "Prix croissant",

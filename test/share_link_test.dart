@@ -20,10 +20,11 @@ void main() {
   tearDown(Get.reset);
 
   group('Lien de partage', () {
-    test('un produit se partage sous /produit/{id}', () {
+    test('un produit se partage sous /p/{id}, une boutique sous /b/{id}', () {
       final url = AppConstants.productUrl(35);
 
-      expect(url, 'https://asso-dashboard.sbs/produit/35');
+      expect(url, 'https://asso-dashboard.sbs/p/35');
+      expect(AppConstants.shopUrl(4), 'https://asso-dashboard.sbs/b/4');
     });
 
     test('le lien est construit depuis l\'identifiant du produit', () {
@@ -31,7 +32,7 @@ void main() {
 
       final url = c.shareUrl({'id': 35, 'name': 'Smart TV'});
 
-      expect(url, endsWith('/produit/35'));
+      expect(url, endsWith('/p/35'));
       expect(url, startsWith('https://'));
     });
 
@@ -46,11 +47,11 @@ void main() {
 
     test('le chemin partagé est celui déclaré aux plateformes', () {
       // Les fichiers d'association et l'intent-filter Android déclarent
-      // /produit/* : un changement ici ne doit pas passer inaperçu, sinon
+      // /p/* et /b/* : un changement ici ne doit pas passer inaperçu, sinon
       // le système cesse de remettre le lien à l'application.
       final uri = Uri.parse(AppConstants.productUrl(7));
 
-      expect(uri.pathSegments.first, 'produit');
+      expect(uri.pathSegments.first, 'p');
       expect(uri.host, AppConstants.shareDomain);
     });
   });

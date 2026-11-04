@@ -13,6 +13,8 @@ class AppConfigController extends GetxController {
   final _timezone = Rx<String>('Africa/Porto-Novo');
   final _defaultLanguage = Rx<String>('fr');
   final _appName = Rx<String>('ASSO');
+  // Boutons de partage : coupés tant que le back-office ne les a pas activés.
+  final _shareLinksEnabled = RxBool(false);
 
   // Getters
   double get minDepositAmount => _minDepositAmount.value;
@@ -79,6 +81,10 @@ class AppConfigController extends GetxController {
         if (generalSettings.containsKey('app_name')) {
           _appName.value = generalSettings['app_name'].toString();
         }
+
+        final share = generalSettings['share_links_enabled'];
+        _shareLinksEnabled.value =
+            share == true || share == 1 || share == '1' || share == 'true';
       }
 
       isLoaded.value = true;
@@ -102,6 +108,8 @@ class AppConfigController extends GetxController {
     }
     return 100.0;
   }
+
+  bool get shareLinksEnabled => _shareLinksEnabled.value;
 
   /// Recharger les settings (utile après modification dans le panel admin)
   Future<void> refreshSettings() async {

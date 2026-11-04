@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/share_links.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -40,6 +41,28 @@ class StoreManagementView extends GetView<StoreManagementController> {
           ),
         ),
         actions: [
+          if (ShareLinks.enabled)
+            Obx(() {
+              final store = controller.storeInfo.value;
+              if (store == null || store.id.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Builder(
+                builder: (buttonContext) => IconButton(
+                  icon: Icon(
+                    Icons.share_rounded,
+                    color: ds.textSecondary,
+                    size: 20,
+                  ),
+                  tooltip: 'store_management.share'.tr,
+                  onPressed: () => ShareLinks.shareShop(
+                    id: store.id,
+                    name: store.name,
+                    origin: ShareLinks.originOf(buttonContext),
+                  ),
+                ),
+              );
+            }),
           IconButton(
             icon: Icon(
               Icons.refresh_rounded,

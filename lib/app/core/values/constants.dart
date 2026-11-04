@@ -49,10 +49,9 @@ class AppConstants {
   // ==========================================================================
   // Partage & liens universels
   // --------------------------------------------------------------------------
-  // Un produit partagé prend la forme https://<shareDomain>/produit/{id}.
-  // Sur un appareil où l'application est installée, le système la lui remet
-  // directement (DeepLinkService) ; ailleurs, le serveur redirige vers la
-  // fiche du magasin d'applications.
+  // Un produit se partage sous https://<shareDomain>/p/{id}, une boutique sous
+  // /b/{id}. Sur un appareil où l'application est installée, le système la lui
+  // remet directement (DeepLinkService) ; ailleurs, le serveur affiche la vitrine.
   //
   // Le domaine est surchargeable au build, comme l'URL d'API :
   //   flutter build apk --dart-define=SHARE_DOMAIN=asso.cm
@@ -64,7 +63,14 @@ class AppConstants {
       _envShareDomain.isNotEmpty ? _envShareDomain : productionDomain;
 
   /// Lien public d'un produit, celui que l'on partage.
-  static String productUrl(Object id) => 'https://$shareDomain/produit/$id';
+  static String productUrl(Object id) => 'https://$shareDomain/p/$id';
+
+  /// Lien public d'une boutique.
+  static String shopUrl(Object id) => 'https://$shareDomain/b/$id';
+
+  /// Schéma du bouton « Ouvrir » de la vitrine sur iOS : un lien universel
+  /// cliqué depuis son propre domaine n'ouvre pas l'application.
+  static const String mobileScheme = 'assomarket';
 
   // Storage Keys
   static const String keyUser = 'user';

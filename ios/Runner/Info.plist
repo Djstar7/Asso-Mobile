@@ -95,5 +95,22 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Le paquet app_links traite les liens (DeepLinkService). Sans ce réglage,
+	     Flutter prend aussi le lien pour une route et affiche « Page introuvable ». -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<!-- Bouton « Ouvrir » de la vitrine : un lien universel cliqué depuis son
+	     propre domaine n'ouvre pas l'application. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.asso.asso.share</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>assomarket</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

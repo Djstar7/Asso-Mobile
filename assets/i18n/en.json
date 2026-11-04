@@ -2182,6 +2182,7 @@
     "error": "Error",
     "seller": "Seller",
     "share": {
+      "action": "Share this product",
       "unavailable_title": "Sharing unavailable",
       "unavailable_message": "This product can't be shared yet."
     },
@@ -2888,6 +2889,7 @@
     }
   },
   "store_management": {
+    "share": "Share my shop",
     "certification_status": {
       "not_certified": "Not certified",
       "pending": "Pending",
@@ -4380,6 +4382,7 @@
     }
   },
   "vendor_details": {
+    "share": "Share this shop",
     "sort": {
       "recent": "Newest",
       "price_asc": "Price: low to high",
