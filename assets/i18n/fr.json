@@ -2346,7 +2346,7 @@
     },
     "variants": {
       "title": "Options disponibles",
-      "hint": "Choisissez vos couleurs, tailles et quantités ici : vous les retrouverez en commandant.",
+      "hint": "Vous choisirez vos couleurs, tailles et quantités en commandant.",
       "order_title": "Vos options et quantités",
       "order_hint": "Choisissez une combinaison, saisissez sa quantité, puis passez à la suivante : plusieurs couleurs et tailles dans la même commande."
     },
