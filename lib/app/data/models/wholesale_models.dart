@@ -14,6 +14,11 @@ class PriceTier {
 
   /// Poids d'une unité commandée à ce palier (pack, bidon, pièce), en kg.
   final double? weightKg;
+
+  /// Dimensions du colis d'une unité à ce palier (null : celles du produit).
+  final double? lengthCm;
+  final double? widthCm;
+  final double? heightCm;
   final String formattedPrice;
 
   const PriceTier({
@@ -25,6 +30,9 @@ class PriceTier {
     required this.minQuantity,
     this.packSize,
     this.weightKg,
+    this.lengthCm,
+    this.widthCm,
+    this.heightCm,
     required this.formattedPrice,
   });
 
@@ -40,6 +48,9 @@ class PriceTier {
     minQuantity: (j['min_quantity'] as num?)?.toInt() ?? 1,
     packSize: (j['pack_size'] as num?)?.toInt(),
     weightKg: (j['weight_kg'] as num?)?.toDouble(),
+    lengthCm: (j['length_cm'] as num?)?.toDouble(),
+    widthCm: (j['width_cm'] as num?)?.toDouble(),
+    heightCm: (j['height_cm'] as num?)?.toDouble(),
     formattedPrice: j['formatted_price']?.toString() ?? '',
   );
 
@@ -58,10 +69,123 @@ class PriceTier {
   }
 }
 
+/// Règles de transport du pays d'origine, décidées par le serveur.
+class FreightRules {
+  final double airMaxWeightKg;
+  final int volumetricDivisor;
+  final double pickupThresholdKg;
+  final String? warehouseName;
+  final String? warehouseAddress;
+
+  const FreightRules({
+    required this.airMaxWeightKg,
+    required this.volumetricDivisor,
+    required this.pickupThresholdKg,
+    this.warehouseName,
+    this.warehouseAddress,
+  });
+
+  /// Null pour une ancienne API : aucun seuil n'est alors appliqué.
+  static FreightRules? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final warehouse = raw['warehouse'];
+    return FreightRules(
+      airMaxWeightKg:
+          (raw['air_max_weight_kg'] as num?)?.toDouble() ?? double.infinity,
+      volumetricDivisor: (raw['volumetric_divisor'] as num?)?.toInt() ?? 6000,
+      pickupThresholdKg:
+          (raw['pickup_threshold_kg'] as num?)?.toDouble() ?? double.infinity,
+      warehouseName: warehouse is Map ? warehouse['name']?.toString() : null,
+      warehouseAddress: warehouse is Map
+          ? warehouse['address']?.toString()
+          : null,
+    );
+  }
+}
+
+/// Dimensions du critère « Dimensions » (« 120 × 80 × 100 cm »), même lecture
+/// que le serveur ; null pour un autre critère ou une valeur libre.
+List<double>? packageDimensionsFromAttributes(Map<String, dynamic> attributes) {
+  final pattern = RegExp(
+    r'^\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?\s*$',
+    caseSensitive: false,
+  );
+  for (final entry in attributes.entries) {
+    if (entry.key.trim().toLowerCase() != 'dimensions') continue;
+    final match = pattern.firstMatch('${entry.value}');
+    if (match != null) {
+      return [
+        for (final side in [1, 2, 3])
+          double.parse(match.group(side)!.replaceAll(',', '.')),
+      ];
+    }
+  }
+  return null;
+}
+
+/// Une ligne de commande vue par le transport : poids et dimensions d'une unité.
+class FreightLine {
+  final double? unitWeightKg;
+  final List<double>? dimensionsCm;
+  final int quantity;
+
+  const FreightLine({
+    required this.quantity,
+    this.unitWeightKg,
+    this.dimensionsCm,
+  });
+}
+
+/// Mesures d'une commande, même calcul que le serveur (ImportFreightService).
+class FreightMeasure {
+  final double weightKg;
+  final double volumeCbm;
+  final double billableKg;
+  final double billableCbm;
+  final bool missingWeight;
+  final bool unmeasured;
+
+  const FreightMeasure({
+    this.weightKg = 0,
+    this.volumeCbm = 0,
+    this.billableKg = 0,
+    this.billableCbm = 0,
+    this.missingWeight = false,
+    this.unmeasured = false,
+  });
+
+  factory FreightMeasure.of(Iterable<FreightLine> lines, FreightRules? rules) {
+    var weight = 0.0;
+    var cbm = 0.0;
+    var missingWeight = false;
+    var unmeasured = false;
+    for (final line in lines) {
+      final unit = line.unitWeightKg ?? 0;
+      final dims = line.dimensionsCm;
+      missingWeight = missingWeight || unit <= 0;
+      unmeasured = unmeasured || (unit <= 0 && dims == null);
+      weight += unit * line.quantity;
+      if (dims != null) {
+        cbm += dims[0] * dims[1] * dims[2] / 1000000 * line.quantity;
+      }
+    }
+    final volumetric = cbm * 1000000 / (rules?.volumetricDivisor ?? 6000);
+    return FreightMeasure(
+      weightKg: weight,
+      volumeCbm: cbm,
+      billableKg: weight > volumetric ? weight : volumetric,
+      // 1 000 kg comptent pour 1 CBM.
+      billableCbm: cbm > weight / 1000 ? cbm : weight / 1000,
+      missingWeight: missingWeight,
+      unmeasured: unmeasured,
+    );
+  }
+}
+
 class ShippingOption {
   final int id;
-  final String mode; // air | sea | express
-  final String modeLabel; // Avion | Bateau | Express
+  final String mode; // air | sea
+  final String modeLabel; // Avion | Bateau
   final String rateType; // per_kg | per_cbm | flat
   final double rateAmount;
   final double rateAmountXaf;
@@ -108,6 +232,31 @@ class ShippingOption {
     destination: j['destination']?.toString() ?? 'Douala',
     formattedRate: j['formatted_rate']?.toString() ?? '',
   );
+
+  /// L'avion s'arrête au seuil du pays ; le bateau reste toujours possible.
+  bool isAvailableFor(FreightMeasure measure, FreightRules? rules) =>
+      mode != 'air' ||
+      measure.billableKg <= (rules?.airMaxWeightKg ?? double.infinity);
+
+  /// Ancien bateau au kilo, gardé jusqu'à la saisie du tarif au CBM.
+  bool get _legacySeaByKg => mode == 'sea' && rateType == 'per_kg';
+
+  /// Le transport peut-il se chiffrer avec ces mesures ?
+  bool canPrice(FreightMeasure measure) {
+    if (rateType == 'flat') return true;
+    if (measure.unmeasured) return false;
+    return !_legacySeaByKg || !measure.missingWeight;
+  }
+
+  /// Quantité facturée dans l'unité du tarif (kg, CBM ou 1 pour un forfait).
+  double billedQuantity(FreightMeasure measure) => switch (rateType) {
+    'per_cbm' => measure.billableCbm,
+    'flat' => 1,
+    _ => _legacySeaByKg ? measure.weightKg : measure.billableKg,
+  };
+
+  double costFor(FreightMeasure measure) =>
+      rateAmountXaf * billedQuantity(measure);
 }
 
 /// Vidéo de présentation d'un produit (facultative), grossiste ou non.
@@ -181,6 +330,14 @@ class WholesaleProduct {
   final String currency;
   final int? minOrderQuantity;
   final double? unitWeightKg;
+
+  /// Dimensions du colis d'une unité, facultatives (cm).
+  final double? lengthCm;
+  final double? widthCm;
+  final double? heightCm;
+
+  /// Règles de transport de son pays d'origine.
+  final FreightRules? freightRules;
   final List<PriceTier> priceTiers;
   final List<Map<String, dynamic>> variants;
   final List<Map<String, dynamic>> variantOptions;
@@ -216,6 +373,10 @@ class WholesaleProduct {
     required this.currency,
     this.minOrderQuantity,
     this.unitWeightKg,
+    this.lengthCm,
+    this.widthCm,
+    this.heightCm,
+    this.freightRules,
     required this.priceTiers,
     this.variants = const [],
     this.variantOptions = const [],
@@ -229,6 +390,19 @@ class WholesaleProduct {
     this.depositRate = 0,
   });
 
+  /// Dimensions d'une unité : celles du palier si complètes, sinon du produit.
+  List<double>? dimensionsFor(PriceTier? tier) {
+    bool complete(double? l, double? w, double? h) =>
+        (l ?? 0) > 0 && (w ?? 0) > 0 && (h ?? 0) > 0;
+    if (complete(tier?.lengthCm, tier?.widthCm, tier?.heightCm)) {
+      return [tier!.lengthCm!, tier.widthCm!, tier.heightCm!];
+    }
+    if (complete(lengthCm, widthCm, heightCm)) {
+      return [lengthCm!, widthCm!, heightCm!];
+    }
+    return null;
+  }
+
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
     id: j['id'] as int,
     name: j['name']?.toString() ?? '',
@@ -239,6 +413,10 @@ class WholesaleProduct {
     currency: j['currency']?.toString() ?? 'XAF',
     minOrderQuantity: (j['min_order_quantity'] as num?)?.toInt(),
     unitWeightKg: (j['unit_weight_kg'] as num?)?.toDouble(),
+    lengthCm: (j['length_cm'] as num?)?.toDouble(),
+    widthCm: (j['width_cm'] as num?)?.toDouble(),
+    heightCm: (j['height_cm'] as num?)?.toDouble(),
+    freightRules: FreightRules.fromJson(j['freight_rules']),
     priceTiers:
         (j['price_tiers'] as List?)
             ?.map((e) => PriceTier.fromJson(Map<String, dynamic>.from(e)))

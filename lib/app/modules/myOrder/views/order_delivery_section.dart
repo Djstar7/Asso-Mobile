@@ -67,7 +67,13 @@ class CustomerOrderDeliverySection extends StatelessWidget {
               style: context.h5.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            Text('tracking.code_hint'.tr, style: context.caption),
+            Text(
+              (delivery.deliveryOption == 'warehouse_pickup'
+                      ? 'tracking.warehouse_code_hint'
+                      : 'tracking.code_hint')
+                  .tr,
+              style: context.caption,
+            ),
           ],
         ],
       ),

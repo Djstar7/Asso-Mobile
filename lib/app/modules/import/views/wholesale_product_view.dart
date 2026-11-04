@@ -77,7 +77,8 @@ class WholesaleProductView extends StatefulWidget {
 }
 
 class _WholesaleProductViewState extends State<WholesaleProductView> {
-  ShippingOption? _shipping;
+  /// Mode choisi par l'acheteur ; voir [_shipping] s'il n'est plus possible.
+  ShippingOption? _chosenShipping;
 
   /// Quantité d'un produit sans options.
   int _singleQuantity = 0;
@@ -137,7 +138,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     super.initState();
     _singleQuantity = widget.product.firstTier?.minQuantity ?? 1;
     if (widget.shippingOptions.isNotEmpty) {
-      _shipping = widget.shippingOptions.first;
+      _chosenShipping = widget.shippingOptions.first;
     }
   }
 
@@ -276,20 +277,61 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       },
   ];
 
-  double get _shippingCost {
-    final s = _shipping;
-    if (s == null) return 0;
-    switch (s.rateType) {
-      case 'per_kg':
-        return s.rateAmountXaf * _shippingWeightKg;
-      case 'per_cbm':
-        return 0; // le volume doit être configuré/calculé par l'équipe côté serveur
-      default:
-        return s.rateAmountXaf; // flat
-    }
+  FreightRules? get _freightRules => widget.product.freightRules;
+
+  /// Poids et volume de la commande, à partir des quantités saisies.
+  FreightMeasure get _freight => FreightMeasure.of([
+    for (final line in _lines)
+      () {
+        final tier = _tierFor(line.$2);
+        final tierWeight = tier?.weightKg ?? 0;
+        return FreightLine(
+          quantity: line.$2,
+          unitWeightKg: tierWeight > 0
+              ? tierWeight
+              : widget.product.unitWeightKg,
+          // La taille choisie par le client prime sur le palier et la fiche.
+          dimensionsCm:
+              _chosenDimensions(line.$1) ?? widget.product.dimensionsFor(tier),
+        );
+      }(),
+  ], _freightRules);
+
+  List<double>? _chosenDimensions(int? variantId) {
+    if (variantId == null) return null;
+    final variant = _variantCatalog.variants.firstWhereOrNull(
+      (v) => VariantQuantityList.idOf(v) == variantId,
+    );
+    return variant == null
+        ? null
+        : packageDimensionsFromAttributes(
+            Map<String, dynamic>.from(VariantCatalog.attributesOf(variant)),
+          );
   }
 
-  double get _total => _subtotal + _shippingCost + _delivery.buyerPrice;
+  /// Modes autorisés pour cette commande : au-delà du seuil, le bateau seul.
+  List<ShippingOption> get _availableShipping => widget.shippingOptions
+      .where((s) => s.isAvailableFor(_freight, _freightRules))
+      .toList();
+
+  /// Le mode choisi s'il reste possible, sinon le premier mode autorisé.
+  ShippingOption? get _shipping {
+    final available = _availableShipping;
+    return available.firstWhereOrNull((s) => s.id == _chosenShipping?.id) ??
+        available.firstOrNull;
+  }
+
+  /// Au-delà du seuil de l'entrepôt : retrait à Douala, sans SOLEX.
+  bool get _warehousePickup =>
+      _freight.billableKg >
+      (_freightRules?.pickupThresholdKg ?? double.infinity);
+
+  double get _shippingCost => _shipping?.costFor(_freight) ?? 0;
+
+  /// Course SOLEX payée par l'acheteur : aucune en retrait à l'entrepôt.
+  double get _localDeliveryCost => _warehousePickup ? 0 : _delivery.buyerPrice;
+
+  double get _total => _subtotal + _shippingCost + _localDeliveryCost;
 
   bool get _hasDeposit => widget.product.hasDeposit;
 
@@ -306,7 +348,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             rate,
           ),
     );
-    final deposit = lines + _shippingCost + _delivery.buyerPrice;
+    final deposit = lines + _shippingCost + _localDeliveryCost;
     return deposit < _total ? deposit : _total;
   }
 
@@ -319,19 +361,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   /// Ville d'arrivée de l'import, d'où part la livraison locale.
   String get _hubCity => _shipping?.destination ?? 'Douala';
-
-  bool get _needsWeight => _shipping?.rateType == 'per_kg';
-  bool get _needsCbm => _shipping?.rateType == 'per_cbm';
-
-  /// Poids d'une unité commandée : celui du palier (un pack, un bidon…),
-  /// sinon celui de la fiche.
-  double get _shippingWeightKg => _lines.fold(
-    0,
-    (sum, line) =>
-        sum +
-        (_tierFor(line.$2)?.weightKg ?? widget.product.unitWeightKg ?? 0) *
-            line.$2,
-  );
 
   /// Toucher un palier y amène la quantité : 100 pour « à partir de 100 ».
   /// Avec options cumulées, c'est l'option en cours de saisie qui comble
@@ -379,13 +408,22 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           : 'import.wholesale.hint.enter_quantity'.tr;
     }
     if (_belowMinimum) return _minimumMessage;
+    if (_tier != null &&
+        widget.shippingOptions.isNotEmpty &&
+        _availableShipping.isEmpty) {
+      return 'import.wholesale.sea_required_unavailable'.tr;
+    }
     if (_tier == null || _shipping == null) {
       return 'import.wholesale.choose_tier_and_shipping'.tr;
     }
-    if (_needsWeight && _shippingWeightKg <= 0) {
+    if (!_shipping!.canPrice(_freight)) {
       return 'import.wholesale.weight_unavailable_message'.tr;
     }
-    if (_needsCbm) return 'import.wholesale.volume_unavailable_message'.tr;
+    if (_warehousePickup) {
+      return _delivery.hasValidPhone
+          ? null
+          : 'import.delivery.missing_phone'.tr;
+    }
     return _delivery.missingStep;
   }
 
@@ -552,23 +590,47 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             }),
             child: Column(
               children: [
-                ...widget.shippingOptions.map(_shippingTile),
-                if (_needsWeight || _needsCbm) _shippingMeasureInfo(context),
+                ..._availableShipping.map(_shippingTile),
+                if (_availableShipping.length < widget.shippingOptions.length)
+                  _shippingNotice(
+                    context,
+                    Icons.directions_boat_rounded,
+                    'import.wholesale.air_removed'.trParams({
+                      'weight': _kg(_freightRules?.airMaxWeightKg ?? 0),
+                    }),
+                  ),
+                if (_shipping != null && _shipping!.rateType != 'flat')
+                  _shippingMeasureInfo(context),
               ],
             ),
           ),
         ],
         // 4. Adresse, précision, contact et partenaire de livraison.
         const SizedBox(height: AppDesign.space3),
-        _section(
-          context,
-          title: 'import.wholesale.delivery_title'.trParams({'city': _hubCity}),
-          subtitle: 'import.wholesale.delivery_subtitle'.tr,
-          child: WholesaleDeliverySection(
-            delivery: _delivery,
-            formatPrice: _fmt,
+        if (_warehousePickup)
+          _section(
+            context,
+            title: 'import.wholesale.pickup_title'.tr,
+            subtitle: 'import.wholesale.pickup_subtitle'.trParams({
+              'weight': _kg(_freightRules?.pickupThresholdKg ?? 0),
+            }),
+            child: WholesalePickupSection(
+              delivery: _delivery,
+              rules: _freightRules,
+            ),
+          )
+        else
+          _section(
+            context,
+            title: 'import.wholesale.delivery_title'.trParams({
+              'city': _hubCity,
+            }),
+            subtitle: 'import.wholesale.delivery_subtitle'.tr,
+            child: WholesaleDeliverySection(
+              delivery: _delivery,
+              formatPrice: _fmt,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -1267,7 +1329,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         color: selected ? AppDesign.accentSubtle : context.ds.surface,
         borderRadius: BorderRadius.circular(AppDesign.radiusSm),
         child: InkWell(
-          onTap: () => _update(() => _shipping = s),
+          onTap: () => _update(() => _chosenShipping = s),
           borderRadius: BorderRadius.circular(AppDesign.radiusSm),
           child: Container(
             padding: const EdgeInsets.all(AppDesign.space3),
@@ -1335,36 +1397,56 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     }
   }
 
-  Widget _shippingMeasureInfo(BuildContext context) => Container(
-    padding: const EdgeInsets.all(AppDesign.space3),
-    decoration: BoxDecoration(
-      color: AppDesign.infoSubtle,
-      borderRadius: BorderRadius.circular(AppDesign.radiusSm),
-    ),
-    child: Row(
-      children: [
-        Icon(
-          _needsWeight ? Icons.scale_rounded : Icons.view_in_ar_rounded,
-          color: AppDesign.info,
-          size: 20,
+  /// Mesure facturée pour le mode choisi : kilos pour l'avion, CBM pour le bateau.
+  Widget _shippingMeasureInfo(BuildContext context) {
+    final shipping = _shipping!;
+    final billed = shipping.billedQuantity(_freight);
+    return _shippingNotice(
+      context,
+      shipping.rateType == 'per_cbm'
+          ? Icons.view_in_ar_rounded
+          : Icons.scale_rounded,
+      billed <= 0
+          ? 'import.wholesale.weight_set_by_asso'.tr
+          : shipping.rateType == 'per_cbm'
+          ? 'import.wholesale.volume_computed'.trParams({
+              'volume': billed.toStringAsFixed(3),
+            })
+          : 'import.wholesale.weight_computed'.trParams({
+              'weight': billed.toStringAsFixed(2),
+            }),
+    );
+  }
+
+  Widget _shippingNotice(BuildContext context, IconData icon, String text) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: AppDesign.space2),
+        padding: const EdgeInsets.all(AppDesign.space3),
+        decoration: BoxDecoration(
+          color: AppDesign.infoSubtle,
+          borderRadius: BorderRadius.circular(AppDesign.radiusSm),
         ),
-        const SizedBox(width: AppDesign.space3),
-        Expanded(
-          child: Text(
-            _needsWeight && _shippingWeightKg > 0
-                ? 'import.wholesale.weight_computed'.trParams({
-                    'weight': _shippingWeightKg.toStringAsFixed(2),
-                  })
-                : 'import.wholesale.weight_set_by_asso'.tr,
-            style: context.textStyle(
-              FontSizeType.caption,
-              color: AppDesign.infoText,
+        child: Row(
+          children: [
+            Icon(icon, color: AppDesign.info, size: 20),
+            const SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: Text(
+                text,
+                style: context.textStyle(
+                  FontSizeType.caption,
+                  color: AppDesign.infoText,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
+
+  /// « 100 » ou « 99,5 » : un seuil se lit sans décimales inutiles.
+  String _kg(double value) => value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toString();
 
   /// Récapitulatif complet, comme celui de la fiche détail : article et
   /// options, expédition, livraison, montant. Rend `true` sur « Confirmer et
@@ -1474,10 +1556,16 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                     const SizedBox(height: AppDesign.space2),
                     _sumRow(
                       context,
-                      'import.wholesale.recap.address'.tr,
-                      _delivery.address,
+                      _warehousePickup
+                          ? 'import.wholesale.recap.pickup'.tr
+                          : 'import.wholesale.recap.address'.tr,
+                      _warehousePickup
+                          ? (_freightRules?.warehouseAddress ??
+                                _freightRules?.warehouseName ??
+                                _hubCity)
+                          : _delivery.address,
                     ),
-                    if (details.isNotEmpty) ...[
+                    if (details.isNotEmpty && !_warehousePickup) ...[
                       const SizedBox(height: AppDesign.space2),
                       _sumRow(
                         context,
@@ -1491,7 +1579,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
                       'import.wholesale.recap.contact_phone'.tr,
                       _delivery.phoneController.text.trim(),
                     ),
-                    if (delivery != null) ...[
+                    if (delivery != null && !_warehousePickup) ...[
                       const SizedBox(height: AppDesign.space2),
                       _sumRow(
                         context,
@@ -1571,16 +1659,23 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           _fmt(_shippingCost),
         ),
         const SizedBox(height: AppDesign.space2),
-        _sumRow(
-          context,
-          _delivery.selected == null
-              ? 'import.wholesale.delivery_title'.trParams({'city': _hubCity})
-              : 'import.wholesale.summary.delivery_company'.trParams({
-                  'company': _delivery.selected!.companyName,
-                }),
-          _delivery.selected == null ? '—' : _fmt(_delivery.price),
-          struck: _delivery.isFree,
-        ),
+        if (_warehousePickup)
+          _sumRow(
+            context,
+            'import.wholesale.summary.warehouse_pickup'.tr,
+            'import.wholesale.summary.no_solex'.tr,
+          )
+        else
+          _sumRow(
+            context,
+            _delivery.selected == null
+                ? 'import.wholesale.delivery_title'.trParams({'city': _hubCity})
+                : 'import.wholesale.summary.delivery_company'.trParams({
+                    'company': _delivery.selected!.companyName,
+                  }),
+            _delivery.selected == null ? '—' : _fmt(_delivery.price),
+            struck: _delivery.isFree,
+          ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: AppDesign.space3),
           child: AppDivider(),
@@ -1720,8 +1815,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
     // Une ligne par option commandée, au palier que sa quantité atteint.
     final items = _orderItems;
-    final weight = _needsWeight ? _shippingWeightKg : null;
-    final cbm = null;
 
     if (method.code == 'wallet') {
       final confirmed = await WalletPaymentConfirmDialog.show(
@@ -1732,7 +1825,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         balance: method.balance ?? 0,
       );
       if (!confirmed) return;
-      await _create('wallet', items, shipping.id, weight, cbm);
+      await _create('wallet', items, shipping.id);
     } else if (method.code == 'kpay') {
       final sel = await KpayDirectPaymentSheet.show(
         amount: _amountDue,
@@ -1743,13 +1836,11 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         'kpay_direct',
         items,
         shipping.id,
-        weight,
-        cbm,
         provider: sel['provider'],
         phone: sel['phone'],
       );
     } else if (method.code == 'stripe') {
-      await _createCard(items, shipping.id, weight, cbm);
+      await _createCard(items, shipping.id);
     } else {
       AppFeedback.show(
         'import.wholesale.unavailable'.tr,
@@ -1762,9 +1853,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   Future<void> _create(
     String mode,
     List<Map<String, dynamic>> items,
-    int shippingId,
-    double? weight,
-    double? cbm, {
+    int shippingId, {
     String? provider,
     String? phone,
   }) async {
@@ -1775,12 +1864,12 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         action: () => ImportService.createOrder(
           items: items,
           shippingOptionId: shippingId,
-          shippingWeightKg: weight,
-          shippingCbm: cbm,
           paymentMode: mode,
           provider: provider,
           phoneNumber: phone,
-          delivery: _delivery.orderFields(),
+          delivery: _warehousePickup
+              ? _delivery.pickupFields()
+              : _delivery.orderFields(),
           notes: _variantNote(),
         ),
       );
@@ -1897,8 +1986,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
   Future<void> _createCard(
     List<Map<String, dynamic>> items,
     int shippingId,
-    double? weight,
-    double? cbm,
   ) async {
     if (!StripeNativeService.isSupported) {
       AppFeedback.show(
@@ -1915,10 +2002,10 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         action: () => ImportService.createOrder(
           items: items,
           shippingOptionId: shippingId,
-          shippingWeightKg: weight,
-          shippingCbm: cbm,
           paymentMode: 'stripe_direct',
-          delivery: _delivery.orderFields(),
+          delivery: _warehousePickup
+              ? _delivery.pickupFields()
+              : _delivery.orderFields(),
           notes: _variantNote(),
         ),
       );
@@ -2106,7 +2193,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
     } catch (e) {
       AppFeedback.show(
         'import.wholesale.error'.tr,
-        'import.wholesale.error_with_details'.trParams({'error': AppFeedback.errorMessage(e)}),
+        'import.wholesale.error_with_details'.trParams({
+          'error': AppFeedback.errorMessage(e),
+        }),
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

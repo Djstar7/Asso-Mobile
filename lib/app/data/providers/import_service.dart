@@ -53,8 +53,6 @@ class ImportService {
   static Future<ApiResponse> createOrder({
     required List<Map<String, dynamic>> items,
     required int shippingOptionId,
-    double? shippingWeightKg,
-    double? shippingCbm,
     String paymentMode = 'kpay_direct',
     String? provider,
     String? phoneNumber,
@@ -66,8 +64,6 @@ class ImportService {
       body: {
         'items': items,
         'shipping_option_id': shippingOptionId,
-        if (shippingWeightKg != null) 'shipping_weight_kg': shippingWeightKg,
-        if (shippingCbm != null) 'shipping_cbm': shippingCbm,
         'payment_mode': paymentMode,
         if (provider != null) 'provider': provider,
         if (phoneNumber != null) 'phone_number': phoneNumber,
