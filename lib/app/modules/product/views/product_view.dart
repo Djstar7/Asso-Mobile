@@ -856,8 +856,8 @@ class ProductView extends GetView<ProductController> {
             ],
           ),
           const SizedBox(height: 4),
-          // Le choix fait ici est repris dans la feuille de commande, où il
-          // reste modifiable.
+          // Le choix se fait dans la feuille de commande, où plusieurs
+          // combinaisons peuvent être prises à la fois.
           Text(
             'product.variants.hint'.tr,
             style: context.textStyle(
@@ -866,17 +866,7 @@ class ProductView extends GetView<ProductController> {
             ),
           ),
           const SizedBox(height: 16),
-          Obx(
-            () => VariantComboPicker(
-              catalog: catalog,
-              quantities: Map<int, int>.from(controller.variantQuantities),
-              onChanged: controller.setVariantQuantities,
-              priceOf: (variant) => controller.formatPrice(
-                controller.variantPriceXaf(product, variant),
-              ),
-              onStockLimit: (_, stock) => controller.notifyStockLimit(stock),
-            ),
-          ),
+          VariantOptionsPreview(catalog: catalog),
         ],
       ),
     );
@@ -1707,8 +1697,8 @@ class ProductView extends GetView<ProductController> {
     controller.deliveryPartners.clear();
     controller.deliveryQuote.value = null;
     controller.deliveryBlockedMessage.value = null;
-    // Les options choisies sur la fiche sont reprises ; sinon la variante
-    // regardée est proposée d'office.
+    // Quantités remises à zéro à chaque ouverture ; la variante regardée sur
+    // la fiche est proposée d'office.
     controller.resetOrderQuantities(product);
     final hasVariants = controller.productHasVariants(product);
 

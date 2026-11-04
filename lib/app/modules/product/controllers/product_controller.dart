@@ -447,25 +447,12 @@ class ProductController extends GetxController {
     orderQuantity.value = VariantQuantityList.totalOf(quantities);
   }
 
-  /// Prépare la commande à l'ouverture de la feuille : les options choisies
-  /// sur la fiche sont reprises, sinon la variante regardée, si elle est en
-  /// stock, est proposée d'office.
+  /// Remet la commande à zéro à l'ouverture de la feuille. La variante
+  /// regardée sur la fiche, si elle est en stock, est proposée d'office.
   void resetOrderQuantities(Map<String, dynamic> product) {
+    variantQuantities.clear();
     if (!productHasVariants(product)) {
-      variantQuantities.clear();
       orderQuantity.value = 1;
-      return;
-    }
-    final catalogIds = VariantCatalog.fromApi(
-      product['variants'],
-      product['variant_options'],
-    ).variants.map(VariantQuantityList.idOf).toSet();
-    final chosen = {
-      for (final line in variantQuantities.entries)
-        if (catalogIds.contains(line.key)) line.key: line.value,
-    };
-    if (chosen.isNotEmpty) {
-      setVariantQuantities(chosen);
       return;
     }
     final variant = selectedVariantOf(product);

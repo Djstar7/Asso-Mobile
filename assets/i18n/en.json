@@ -2346,7 +2346,7 @@
     },
     "variants": {
       "title": "Available options",
-      "hint": "Choose your colors, sizes and quantities here: they'll be ready when you order.",
+      "hint": "You'll choose colors, sizes and quantities when ordering.",
       "order_title": "Your options and quantities",
       "order_hint": "Pick a combination, enter its quantity, then move to the next: several colors and sizes in the same order."
     },
