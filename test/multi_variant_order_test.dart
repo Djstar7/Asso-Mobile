@@ -286,17 +286,21 @@ void main() {
     expect(comboField(), findsNothing);
 
     // Le choix se fait dans la feuille « Commander » (compte requis).
-    StorageService.saveAuthSession(
-      'token-abc',
-      UserModel(
-        id: 7,
-        firstName: 'Awa',
-        lastName: 'Diop',
-        name: 'Awa Diop',
-        email: 'awa@example.com',
-        phone: '+237690000000',
-        role: 'client',
-        createdAt: DateTime(2026, 1, 1).toIso8601String(),
+    // En temps réel : la file du coffre-fort attendrait sinon le temps simulé,
+    // et le nettoyage de fin de test ne se terminerait jamais.
+    await tester.runAsync(
+      () => StorageService.saveAuthSession(
+        'token-abc',
+        UserModel(
+          id: 7,
+          firstName: 'Awa',
+          lastName: 'Diop',
+          name: 'Awa Diop',
+          email: 'awa@example.com',
+          phone: '+237690000000',
+          role: 'client',
+          createdAt: DateTime(2026, 1, 1).toIso8601String(),
+        ),
       ),
     );
     addTearDown(StorageService.clearAuthSession);
