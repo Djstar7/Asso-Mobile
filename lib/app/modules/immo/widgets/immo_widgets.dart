@@ -60,7 +60,15 @@ String? immoLotSurface(RealEstateSubdivision sub) {
         });
 }
 
-/// Terrain : « Vendu au morceau · 7/8 disponibles » ou « Vente en bloc ».
+/// Surface totale du terrain : « 1 000 m² », null si elle n'est pas connue.
+String? immoTotalSurface(RealEstateListing listing) {
+  final total = listing.subdivision?.totalSurfaceM2;
+  if (total == null) return null;
+  final fmt = NumberFormat.decimalPattern(Get.locale?.languageCode ?? 'fr');
+  return '${fmt.format(total)} m²';
+}
+
+/// Terrain : « Morcelable · 7/8 disponibles » ou « Non morcelable ».
 class ImmoSaleModeBadge extends StatelessWidget {
   const ImmoSaleModeBadge({super.key, required this.listing});
 
@@ -406,7 +414,7 @@ class ImmoPriceText extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (listing.priceFrom)
+          if (listing.priceFrom && !listing.isSale)
             Text(
               'immo.card.from'.tr,
               style: context.textStyle(
@@ -569,7 +577,7 @@ class ImmoHouseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = immoRoomsLabel(listing);
     final extras = [
-      if (listing.furnished) 'immo.card.furnished'.tr,
+      if (listing.furnished && !listing.isSale) 'immo.card.furnished'.tr,
       ...listing.amenityNames,
     ].take(3).join(' - ');
 
@@ -596,7 +604,7 @@ class ImmoHouseCard extends StatelessWidget {
                     ImmoPhotoTag(
                       label:
                           (listing.isSale
-                                  ? 'immo.home.transaction_sale'
+                                  ? 'immo.card.house_for_sale'
                                   : 'immo.home.transaction_rent')
                               .tr,
                     ),
@@ -801,16 +809,15 @@ class ImmoLandCard extends StatelessWidget {
                       : 'immo.land.not_titled'.tr,
                   highlighted: listing.landTitled,
                 ),
-                const SizedBox(height: AppDesign.space2),
-                _LandRow(
-                  icon: Icons.park_outlined,
-                  label: 'immo.land.plot'.tr,
-                  value: [
-                    if (listing.serviced) 'immo.land.serviced'.tr,
-                    listing.surfaceLabel ?? '',
-                  ].where((e) => e.isNotEmpty).join('  ·  '),
-                  highlighted: true,
-                ),
+                if (immoTotalSurface(listing) case final total?) ...[
+                  const SizedBox(height: AppDesign.space2),
+                  _LandRow(
+                    icon: Icons.straighten_rounded,
+                    label: 'immo.land.total_surface'.tr,
+                    value: total,
+                    highlighted: true,
+                  ),
+                ],
               ],
             ),
           ),
