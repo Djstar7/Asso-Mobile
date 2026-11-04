@@ -83,6 +83,19 @@ void main() {
       );
     });
 
+    test('la feuille de commande repart de zéro à chaque ouverture', () {
+      final controller = ProductController();
+      final product = _tshirt();
+
+      // Les options se choisissent après « Commander » : un choix précédent
+      // n'est pas repris, seule la variante regardée peut être proposée.
+      controller.setVariantQuantities({101: 2, 102: 1});
+      controller.resetOrderQuantities(product);
+
+      expect(controller.variantQuantities.length, lessThanOrEqualTo(1));
+      expect(controller.variantQuantities.values, everyElement(1));
+    });
+
     test('rien de choisi : la commande le signale', () {
       final controller = ProductController();
       controller.setVariantQuantities(const {});
