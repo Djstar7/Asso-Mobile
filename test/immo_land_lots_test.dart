@@ -2,9 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:asso/app/data/models/real_estate_models.dart';
 import 'package:asso/app/modules/immo/widgets/immo_lot_payment.dart';
+import 'package:asso/app/modules/immo/widgets/immo_widgets.dart';
 
 /// Terrain vendu au morceau : N morceaux d'un lot, ou tout le terrain.
 void main() {
+  test('la surface totale du terrain se lit dans son morcellement', () {
+    RealEstateListing land(Map<String, dynamic> subdivision) =>
+        RealEstateListing.fromJson({
+          'id': 1,
+          'type': 'land',
+          'title': 'Terrain',
+          'subdivision': subdivision,
+        });
+
+    expect(immoTotalSurface(land({'total_surface_m2': 900})), '900 m²');
+    expect(immoTotalSurface(land({})), isNull);
+  });
+
   test('reads the whole-land payment exposed by the subdivision', () {
     final sub = RealEstateSubdivision.fromJson({
       'is_subdivided': true,

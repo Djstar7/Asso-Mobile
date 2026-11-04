@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:asso/app/core/utils/app_theme_system.dart';
 
+import 'golden_fonts.dart';
+
 /// The same theme, locale and text scaling contract used by the app.
 Widget themedApp(
   Widget home, {
@@ -9,8 +11,8 @@ Widget themedApp(
   ThemeMode mode = ThemeMode.light,
 }) => GetMaterialApp(
   debugShowCheckedModeBanner: false,
-  theme: AppThemeSystem.getLightTheme(),
-  darkTheme: AppThemeSystem.getDarkTheme(),
+  theme: withGoldenFont(AppThemeSystem.getLightTheme()),
+  darkTheme: withGoldenFont(AppThemeSystem.getDarkTheme()),
   themeMode: mode,
   locale: const Locale('fr', 'FR'),
   builder: (context, child) => MediaQuery(

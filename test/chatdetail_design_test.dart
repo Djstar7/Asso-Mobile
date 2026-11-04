@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'helpers/golden_fonts.dart';
 import 'helpers/themed_app.dart';
 
 void main() {
@@ -14,9 +15,7 @@ void main() {
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
-    await (FontLoader(
-      'SF-Pro',
-    )..addFont(rootBundle.load('assets/fonts/SF-Pro/SF-Pro.ttf'))).load();
+    await loadGoldenFonts();
   });
   tearDown(Get.reset);
 

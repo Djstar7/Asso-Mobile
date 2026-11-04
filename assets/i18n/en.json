@@ -4855,6 +4855,7 @@
       "other": "Other"
     },
     "card": {
+      "house_for_sale": "House for sale",
       "price_on_request": "Price per m² on request",
       "rooms": "@count rooms",
       "bedrooms": "@count bedrooms",
@@ -4877,15 +4878,15 @@
       "title_deed": "Land title",
       "titled": "Titled",
       "not_titled": "No title",
-      "plot": "Plot",
       "serviced": "Serviced",
       "from": "from",
       "per_lot": "per plot",
       "per_lot_of": "per plot of @surface",
       "total_price": "Total price: @amount",
       "surface_range": "@min to @max m²",
-      "sold_whole": "Sold as a whole",
-      "sold_per_lot": "Sold by plot · @available/@total available",
+      "sold_whole": "Not divisible · sold as a whole",
+      "sold_per_lot": "Divisible · @available/@total available",
+      "total_surface": "Total surface",
       "lot_sold": "Sold",
       "lots_available": "@count available"
     },
@@ -4953,7 +4954,6 @@
       "banner_update": "Update my alert"
     },
     "detail": {
-      "for_sale": "@kind for sale",
       "not_found": "This property is no longer available",
       "for_rent": "@kind for rent",
       "photos": "Photos",

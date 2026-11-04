@@ -4855,6 +4855,7 @@
       "other": "Autre"
     },
     "card": {
+      "house_for_sale": "Maison en vente",
       "price_on_request": "Prix au m² sur demande",
       "rooms": "@count pièces",
       "bedrooms": "@count chambres",
@@ -4877,15 +4878,15 @@
       "title_deed": "Titre foncier",
       "titled": "Titré",
       "not_titled": "Non titré",
-      "plot": "Terrain",
       "serviced": "Viabilisé",
       "from": "dès",
       "per_lot": "le morceau",
       "per_lot_of": "le morceau de @surface",
       "total_price": "Prix total : @amount",
       "surface_range": "@min à @max m²",
-      "sold_whole": "Vente en bloc",
-      "sold_per_lot": "Vendu au morceau · @available/@total disponibles",
+      "sold_whole": "Non morcelable · vente en bloc",
+      "sold_per_lot": "Morcelable · @available/@total disponibles",
+      "total_surface": "Surface totale",
       "lot_sold": "Vendu",
       "lots_available": "@count disponibles"
     },
@@ -4953,7 +4954,6 @@
       "banner_update": "Actualiser mon alerte"
     },
     "detail": {
-      "for_sale": "@kind à vendre",
       "not_found": "Ce bien n'est plus disponible",
       "for_rent": "@kind à louer",
       "photos": "Photos",
