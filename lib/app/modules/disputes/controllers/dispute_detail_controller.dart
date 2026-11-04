@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/values/constants.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../data/providers/currency_service.dart';
 import '../../../data/providers/dispute_service.dart';
@@ -191,6 +192,11 @@ class DisputeDetailController extends GetxController {
   }
 
   Future<void> payShipment() async {
+    // Le choix du partenaire et le paiement restent dans l'application.
+    if (AppConstants.isVendorWeb) {
+      _snack('disputes.vendor.pay_on_phone'.tr);
+      return;
+    }
     final shipmentId = dispute.value?.pendingShipmentId;
     if (shipmentId == null || isBusy.value) return;
     isBusy.value = true;

@@ -972,19 +972,17 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
                   }),
                 ),
               ),
-              if (!AppConstants.isVendorWeb) ...[
-                _buildRowDivider(context),
-                // Réclamations clients : répondre, remplacer ou organiser le retour.
-                _buildActionRow(
-                  context,
-                  icon: Icons.gavel_rounded,
-                  title: 'disputes.vendor.list_title'.tr,
-                  subtitle: 'disputes.vendor.dashboard_subtitle'.tr,
-                  onTap: controller.onlineOnly(
-                    () => Get.toNamed(Routes.VENDOR_DISPUTES),
-                  ),
+              _buildRowDivider(context),
+              // Réclamations clients : répondre, remplacer ou organiser le retour.
+              _buildActionRow(
+                context,
+                icon: Icons.gavel_rounded,
+                title: 'disputes.vendor.list_title'.tr,
+                subtitle: 'disputes.vendor.dashboard_subtitle'.tr,
+                onTap: controller.onlineOnly(
+                  () => Get.toNamed(Routes.VENDOR_DISPUTES),
                 ),
-              ],
+              ),
               _buildRowDivider(context),
               _buildActionRow(
                 context,

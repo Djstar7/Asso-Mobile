@@ -8,10 +8,14 @@ import '../../../data/providers/storage_service.dart';
 import '../../../data/providers/web_login_service.dart';
 import '../../../routes/app_pages.dart';
 
-enum VendorWebLoginStep { loading, showQr, scanned, expired, rejected, failed }
+enum VendorWebLoginStep { loading, showQr, scanned, expired, failed }
 
-/// Côté site : affiche le QR et attend la confirmation faite sur le téléphone.
+/// Côté site : affiche le QR, le renouvelle et attend le scan du téléphone.
 class VendorWebLoginController extends GetxController {
+  /// QR renouvelés sans action avant de demander un clic, soit environ 10 min :
+  /// un onglet oublié ne crée pas de sessions sans fin.
+  static const int _maxAutoRenewals = 5;
+
   final step = VendorWebLoginStep.loading.obs;
   final qr = ''.obs;
 
@@ -19,6 +23,7 @@ class VendorWebLoginController extends GetxController {
   String? _secret;
   Timer? _poll;
   bool _polling = false;
+  int _renewals = 0;
 
   @override
   void onInit() {
@@ -26,8 +31,14 @@ class VendorWebLoginController extends GetxController {
     start();
   }
 
+  /// Nouveau QR demandé par le vendeur.
+  Future<void> start() {
+    _renewals = 0;
+    return _createSession();
+  }
+
   /// Nouvelle session de connexion, donc nouveau QR.
-  Future<void> start() async {
+  Future<void> _createSession() async {
     _poll?.cancel();
     step.value = VendorWebLoginStep.loading;
 
@@ -60,7 +71,7 @@ class VendorWebLoginController extends GetxController {
       // Coupure passagère : on continue d'interroger jusqu'à l'expiration.
       if (!response.success) {
         if (response.statusCode == 404 || response.statusCode == 403) {
-          _stop(VendorWebLoginStep.expired);
+          await _renewOrStop();
         }
         return;
       }
@@ -70,10 +81,8 @@ class VendorWebLoginController extends GetxController {
           step.value = VendorWebLoginStep.scanned;
         case 'approved':
           await _signIn(response.data!);
-        case 'rejected':
-          _stop(VendorWebLoginStep.rejected);
         case 'expired':
-          _stop(VendorWebLoginStep.expired);
+          await _renewOrStop();
       }
     } finally {
       _polling = false;
@@ -96,9 +105,14 @@ class VendorWebLoginController extends GetxController {
     Get.offAllNamed(Routes.VENDOR_DASHBOARD);
   }
 
-  void _stop(VendorWebLoginStep next) {
+  Future<void> _renewOrStop() async {
     _poll?.cancel();
-    step.value = next;
+    if (_renewals >= _maxAutoRenewals) {
+      step.value = VendorWebLoginStep.expired;
+      return;
+    }
+    _renewals++;
+    await _createSession();
   }
 
   /// Contenu attendu du QR, vérifié par l'application qui le lit.

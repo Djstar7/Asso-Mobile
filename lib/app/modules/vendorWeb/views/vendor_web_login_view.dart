@@ -79,12 +79,6 @@ class VendorWebLoginView extends GetView<VendorWebLoginController> {
           'vendor_web.login.expired'.tr,
           retry: true,
         );
-      case VendorWebLoginStep.rejected:
-        return _message(
-          Icons.block_rounded,
-          'vendor_web.login.rejected'.tr,
-          retry: true,
-        );
       case VendorWebLoginStep.failed:
         return _message(
           Icons.cloud_off_rounded,

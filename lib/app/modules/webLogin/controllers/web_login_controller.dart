@@ -85,7 +85,7 @@ class WebLoginController extends GetxController {
     }
   }
 
-  /// Signale le QR au serveur ; renvoie la demande à faire confirmer.
+  /// Signale le QR au serveur ; renvoie la demande à autoriser.
   Future<WebLoginRequest?> scan(String raw) async {
     final code = codeFromQr(raw);
     if (code == null) {
@@ -125,18 +125,16 @@ class WebLoginController extends GetxController {
       }
       AppFeedback.show(
         'web_login.approved_title'.tr,
-        'web_login.approved_message'.tr,
+        'web_login.approved_message'.trParams({
+          'browser': request.browser,
+          'platform': request.platform,
+        }),
       );
       await loadDevices();
       return true;
     } finally {
       isBusy.value = false;
     }
-  }
-
-  Future<void> reject(WebLoginRequest request) async {
-    final response = await WebLoginService.reject(request.code);
-    if (!response.success) _showFailure(response);
   }
 
   Future<void> revoke(WebDevice device) async {

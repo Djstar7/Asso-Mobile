@@ -64,6 +64,11 @@ class VendorWebShell extends StatelessWidget {
       'vendor_web.nav.orders',
     ),
     _Destination(
+      Routes.VENDOR_DISPUTES,
+      Icons.gavel_rounded,
+      'vendor_web.nav.disputes',
+    ),
+    _Destination(
       Routes.STORE_MANAGEMENT,
       Icons.storefront_outlined,
       'vendor_web.nav.shop',

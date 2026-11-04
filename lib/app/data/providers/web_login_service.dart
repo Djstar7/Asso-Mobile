@@ -27,9 +27,6 @@ class WebLoginService {
   static Future<ApiResponse> approve(String code) =>
       ApiProvider.post('$_base/approve', body: {'code': code});
 
-  static Future<ApiResponse> reject(String code) =>
-      ApiProvider.post('$_base/reject', body: {'code': code});
-
   static Future<ApiResponse> devices() => ApiProvider.get('$_base/devices');
 
   static Future<ApiResponse> revokeDevice(int id) =>

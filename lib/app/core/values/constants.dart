@@ -68,6 +68,9 @@ class AppConstants {
   /// Lien public d'une boutique.
   static String shopUrl(Object id) => 'https://$shareDomain/b/$id';
 
+  /// Adresse de l'espace vendeur web, à ouvrir sur un ordinateur.
+  static String get vendorWebUrl => 'https://$shareDomain/vendor';
+
   /// Vrai pour le build de l'espace vendeur web (lib/main_vendor_web.dart).
   /// Le wallet, les paiements, les forfaits et les boosts n'y sont pas proposés.
   static const bool isVendorWeb = bool.fromEnvironment('VENDOR_WEB');

@@ -6,6 +6,7 @@ import 'package:asso/app/core/values/constants.dart';
 import 'package:asso/app/modules/vendorWeb/views/vendor_web_shell.dart';
 import 'package:asso/app/modules/webLogin/controllers/web_login_controller.dart';
 import 'package:asso/app/routes/app_pages.dart';
+import 'package:asso/main_vendor_web.dart' show vendorWebPages;
 
 void main() {
   group('QR de connexion', () {
@@ -42,6 +43,18 @@ void main() {
       expect(AppConstants.webLoginQrPrefix, isNot(startsWith('http')));
       expect(AppConstants.webLoginQrPrefix, isNot(contains('//')));
     });
+  });
+
+  test('le lien à copier mène à l’espace vendeur web', () {
+    expect(
+      AppConstants.vendorWebUrl,
+      'https://${AppConstants.shareDomain}/vendor',
+    );
+  });
+
+  test('les réclamations s’ouvrent dans l’espace web', () {
+    final routes = vendorWebPages.map((page) => page.name);
+    expect(routes, containsAll([Routes.VENDOR_DISPUTES, Routes.DISPUTE_DETAIL]));
   });
 
   group('Barre latérale de l’espace web', () {

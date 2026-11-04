@@ -1008,6 +1008,7 @@
       "choose": "Choose",
       "unavailable_combination": "This combination is not available",
       "choose_missing": "Choose: @options",
+      "selection_total": "@total in total",
       "remove": "Remove",
       "show_all_choices": "Show all choices",
       "product_sold_out": "This product is currently sold out",
@@ -4527,6 +4528,7 @@
       "held_notice": "@amount stays on hold in your Wallet until ASSO decides.",
       "held_short": "@amount on hold",
       "pay_notice": "Choose a delivery partner and pay for the delivery so the case can move forward.",
+      "pay_on_phone": "This delivery is paid from the ASSO app on your phone.",
       "pay_shipment": "Choose courier and pay",
       "replace": "Replace the product",
       "organize_return": "Organize the return",
@@ -5428,7 +5430,10 @@
   "web_login": {
     "title": "Vendor space on computer",
     "dashboard_subtitle": "Manage your shop from a browser",
-    "intro": "On your computer, open asso-dashboard.sbs/vendor, then scan the QR code shown.",
+    "intro": "On your computer, open this link, then scan the QR code shown.",
+    "copy_link": "Copy",
+    "link_copied_title": "Link copied",
+    "link_copied_message": "Paste it into your computer's browser, or send it to yourself.",
     "scan_action": "Scan the QR code",
     "devices_title": "Connected browsers",
     "no_devices": "No connected browser.",
@@ -5437,7 +5442,7 @@
     "invalid_qr_title": "QR code not recognised",
     "invalid_qr_message": "This QR code does not come from the ASSO vendor space.",
     "approved_title": "Sign-in authorised",
-    "approved_message": "Your browser is now signed in.",
+    "approved_message": "@browser on @platform is now connected.",
     "revoked_title": "Browser signed out",
     "revoked_message": "This web session is closed.",
     "failed_title": "Action not possible",
@@ -5450,23 +5455,14 @@
       "permission_denied": "Allow the camera to scan the QR code.",
       "camera_failed": "The camera could not start.",
       "open_settings": "Open settings"
-    },
-    "confirm": {
-      "title": "Sign in this browser?",
-      "device": "@browser on @platform",
-      "ip": "Address: @ip",
-      "warning": "Only accept if you are in front of this computer and have just opened the vendor space on it.",
-      "approve": "Authorise",
-      "reject": "Decline"
     }
   },
   "vendor_web": {
     "login": {
       "title": "ASSO vendor space",
-      "steps": "1. Open the ASSO app on your phone.\n2. Go to the vendor dashboard, then Vendor space on computer.\n3. Scan this QR code and confirm.",
-      "scanned": "QR code scanned. Confirm the sign-in on your phone.",
+      "steps": "1. Open the ASSO app on your phone.\n2. Go to the vendor dashboard, then Vendor space on computer.\n3. Scan this QR code.",
+      "scanned": "QR code scanned. Signing in…",
       "expired": "This QR code has expired.",
-      "rejected": "The sign-in was declined from the phone.",
       "failed": "Could not reach the server, or the space is unavailable.",
       "new_qr": "Show a new QR code"
     },
@@ -5479,6 +5475,7 @@
       "products": "Products",
       "add_product": "Add",
       "orders": "Orders",
+      "disputes": "Claims",
       "shop": "Shop",
       "statistics": "Statistics",
       "sign_out": "Sign out"

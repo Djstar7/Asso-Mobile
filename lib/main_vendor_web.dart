@@ -23,6 +23,9 @@ import 'app/modules/orderManagement/bindings/order_management_binding.dart';
 import 'app/modules/orderManagement/views/order_management_view.dart';
 import 'app/modules/productManagement/bindings/product_management_binding.dart';
 import 'app/modules/productManagement/views/product_management_view.dart';
+import 'app/modules/disputes/bindings/disputes_binding.dart';
+import 'app/modules/disputes/views/dispute_detail_view.dart';
+import 'app/modules/disputes/views/vendor_disputes_view.dart';
 import 'app/modules/shopStatistics/bindings/shop_statistics_binding.dart';
 import 'app/modules/shopStatistics/views/shop_statistics_view.dart';
 import 'app/modules/storeManagement/bindings/store_management_binding.dart';
@@ -136,6 +139,16 @@ final List<GetPage<dynamic>> vendorWebPages = [
     name: Routes.SHOP_STATISTICS,
     page: () => const ShopStatisticsView(),
     binding: ShopStatisticsBinding(),
+  ),
+  GetPage(
+    name: Routes.VENDOR_DISPUTES,
+    page: () => const VendorDisputesView(),
+    binding: VendorDisputesBinding(),
+  ),
+  GetPage(
+    name: Routes.DISPUTE_DETAIL,
+    page: () => const DisputeDetailView(),
+    binding: DisputeDetailBinding(),
   ),
   GetPage(
     name: Routes.INVENTORY_LIST,

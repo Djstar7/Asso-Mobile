@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_theme_system.dart';
+import '../../../core/values/constants.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../controllers/web_login_controller.dart';
 import 'qr_scanner_view.dart';
@@ -12,57 +15,24 @@ import 'qr_scanner_view.dart';
 class WebLoginView extends GetView<WebLoginController> {
   const WebLoginView({super.key});
 
+  void _copyLink() {
+    Clipboard.setData(ClipboardData(text: AppConstants.vendorWebUrl));
+    AppFeedback.show(
+      'web_login.link_copied_title'.tr,
+      'web_login.link_copied_message'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   Future<void> _scan(BuildContext context) async {
     final raw = await Navigator.of(
       context,
     ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerView()));
     if (raw == null) return;
 
+    // Comme sur WhatsApp : scanner depuis cet écran vaut autorisation.
     final request = await controller.scan(raw);
-    if (request == null || !context.mounted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('web_login.confirm.title'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'web_login.confirm.device'.trParams({
-                'browser': request.browser,
-                'platform': request.platform,
-              }),
-            ),
-            const SizedBox(height: AppDesign.space1),
-            Text('web_login.confirm.ip'.trParams({'ip': request.ip})),
-            const SizedBox(height: AppDesign.space3),
-            Text(
-              'web_login.confirm.warning'.tr,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('web_login.confirm.reject'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('web_login.confirm.approve'.tr),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await controller.approve(request);
-    } else {
-      await controller.reject(request);
-    }
+    if (request != null) await controller.approve(request);
   }
 
   @override
@@ -79,6 +49,18 @@ class WebLoginView extends GetView<WebLoginController> {
           padding: const EdgeInsets.all(AppDesign.space4),
           children: [
             Text('web_login.intro'.tr),
+            const SizedBox(height: AppDesign.space2),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.link_rounded),
+                title: SelectableText(AppConstants.vendorWebUrl),
+                trailing: TextButton.icon(
+                  onPressed: _copyLink,
+                  icon: const Icon(Icons.copy_rounded),
+                  label: Text('web_login.copy_link'.tr),
+                ),
+              ),
+            ),
             const SizedBox(height: AppDesign.space3),
             SizedBox(
               width: double.infinity,
