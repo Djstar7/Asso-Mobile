@@ -59,7 +59,7 @@ void main() {
       expect(departure.partnerName, 'Diaspo Exchange');
       expect(
         departure.originHub!.fullAddress,
-        'Dépôt privé, Rue privée, Guangzhou',
+        'Dépôt privé, Rue privée, Guangzhou, CN',
       );
       expect(departure.originHub!.phone, '+861234567890');
       expect(departure.destinationHub!.address, 'Rue privée arrivée');
