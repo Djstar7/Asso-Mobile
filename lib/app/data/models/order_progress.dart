@@ -37,12 +37,16 @@ class OrderProgress {
   final String stage;
   final String kind;
   final bool isAgencyPickup;
+
+  /// Commande récupérée à l'entrepôt ASSO de Douala, sans SOLEX.
+  final bool isWarehousePickup;
   final List<String> steps;
 
   const OrderProgress({
     required this.stage,
     required this.kind,
     required this.isAgencyPickup,
+    this.isWarehousePickup = false,
     required this.steps,
   });
 
@@ -56,6 +60,7 @@ class OrderProgress {
           stage: stage,
           kind: raw['kind']?.toString() ?? 'retail',
           isAgencyPickup: raw['delivery_option'] == 'agency_pickup',
+          isWarehousePickup: raw['delivery_option'] == 'warehouse_pickup',
           steps: steps,
         );
       }
@@ -118,6 +123,9 @@ class OrderProgress {
     if (step == 'to_confirm' && kind == 'local') {
       return 'order_progress.to_confirm_seller'.tr;
     }
+    if (isWarehousePickup && step == 'last_mile') {
+      return 'order_progress.warehouse_pickup'.tr;
+    }
     if (isAgencyPickup && step == 'in_transit') {
       return 'order_progress.to_agency'.tr;
     }
@@ -136,7 +144,10 @@ class OrderProgress {
     'to_validate' || 'to_confirm' => Icons.hourglass_top_rounded,
     'to_ship' || 'preparing' => Icons.inventory_2_outlined,
     'in_transit' || 'shipped' => Icons.local_shipping_outlined,
-    'last_mile' => Icons.delivery_dining_outlined,
+    'last_mile' =>
+      isWarehousePickup
+          ? Icons.warehouse_rounded
+          : Icons.delivery_dining_outlined,
     'ready_for_pickup' => Icons.storefront_outlined,
     'delivered' =>
       isAgencyPickup ? Icons.inventory_2_outlined : Icons.task_alt_rounded,

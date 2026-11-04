@@ -9,6 +9,7 @@ import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
 import '../../../core/widgets/free_delivery_widgets.dart';
 import '../../../data/models/delivery_info.dart';
+import '../../../data/models/wholesale_models.dart';
 import '../../../data/providers/delivery_service.dart';
 import '../../../data/providers/storage_service.dart';
 import '../../product/views/map_selection_view.dart';
@@ -244,6 +245,12 @@ class WholesaleDelivery extends ChangeNotifier {
     }
   }
 
+  /// Retrait à l'entrepôt : ni SOLEX ni adresse, seulement le contact.
+  Map<String, dynamic> pickupFields() => {
+    'warehouse_pickup': true,
+    'customer_phone': phoneController.text.trim(),
+  };
+
   /// Champs de la commande en gros (POST /v1/import/orders).
   Map<String, dynamic> orderFields() {
     final offer = selected!;
@@ -279,6 +286,75 @@ class WholesaleDelivery extends ChangeNotifier {
     detailsController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+}
+
+/// Commande trop lourde pour SOLEX : le client la récupère à l'entrepôt avec
+/// le code reçu à l'arrivée à Douala.
+class WholesalePickupSection extends StatelessWidget {
+  const WholesalePickupSection({
+    super.key,
+    required this.delivery,
+    required this.rules,
+  });
+
+  final WholesaleDelivery delivery;
+  final FreightRules? rules;
+
+  @override
+  Widget build(BuildContext context) {
+    final address = rules?.warehouseAddress;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.warehouse_rounded, color: AppDesign.accent),
+            const SizedBox(width: AppDesign.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rules?.warehouseName ?? '',
+                    style: context.textStyle(
+                      FontSizeType.body2,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textPrimary,
+                    ),
+                  ),
+                  if (address != null && address.isNotEmpty)
+                    Text(
+                      address,
+                      style: context.textStyle(
+                        FontSizeType.caption,
+                        color: context.ds.textSecondary,
+                      ),
+                    ),
+                  const SizedBox(height: AppDesign.space1),
+                  Text(
+                    'import.wholesale.pickup_code_info'.tr,
+                    style: context.textStyle(
+                      FontSizeType.caption,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppDesign.space3),
+        AppTextField(
+          controller: delivery.phoneController,
+          label: 'import.delivery.phone_label'.tr,
+          hint: 'import.delivery.phone_hint'.tr,
+          keyboardType: TextInputType.phone,
+          autofillHints: const [AutofillHints.telephoneNumber],
+        ),
+      ],
+    );
   }
 }
 

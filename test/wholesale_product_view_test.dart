@@ -139,6 +139,89 @@ void main() {
     expect(find.textContaining('Minimum 50 pour'), findsNothing);
   });
 
+  group('transport et retrait', () {
+    const rules = FreightRules(
+      airMaxWeightKg: 100,
+      volumetricDivisor: 6000,
+      pickupThresholdKg: 300,
+      warehouseName: 'ASSO Import Douala',
+    );
+    const options = [
+      ShippingOption(
+        id: 1,
+        mode: 'air',
+        modeLabel: 'Avion',
+        rateType: 'per_kg',
+        rateAmount: 12000,
+        rateAmountXaf: 12000,
+        currency: 'XAF',
+        destinations: [],
+        formattedRate: '',
+      ),
+      ShippingOption(
+        id: 2,
+        mode: 'sea',
+        modeLabel: 'Bateau',
+        rateType: 'per_cbm',
+        rateAmount: 330000,
+        rateAmountXaf: 330000,
+        currency: 'XAF',
+        destinations: [],
+        formattedRate: '',
+      ),
+    ];
+
+    Future<void> openWithRules(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: WholesaleProductView(
+            product: WholesaleProduct(
+              id: 7,
+              name: 'Chaises pliantes',
+              currency: 'XAF',
+              unitWeightKg: 4,
+              freightRules: rules,
+              priceTiers: _product().priceTiers,
+            ),
+            shippingOptions: options,
+            countryFlag: '🇨🇳',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await openOrderSheet(tester);
+    }
+
+    testWidgets("au-delà du seuil, l'avion disparaît au profit du bateau", (
+      tester,
+    ) async {
+      await openWithRules(tester);
+      // 50 × 4 = 200 kg : plus que les 100 kg permis en avion.
+      await tester.enterText(quantityField(), '50');
+      await tester.pump();
+
+      expect(find.text('Avion'), findsNothing);
+      expect(find.text('Bateau'), findsWidgets);
+      // 200 kg = 0,2 CBM × 330 000 = 66 000 ; 50 × 1 000 + 66 000 = 116 000.
+      expect(find.textContaining('116'), findsWidgets);
+    });
+
+    testWidgets("au-delà du seuil de l'entrepôt, plus de SOLEX ni d'adresse", (
+      tester,
+    ) async {
+      await openWithRules(tester);
+      await tester.enterText(quantityField(), '76');
+      await tester.pump();
+
+      expect(find.text('ASSO Import Douala'), findsOneWidget);
+      expect(find.byIcon(Icons.warehouse_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.my_location_rounded), findsNothing);
+    });
+  });
+
   testWidgets('sous le premier palier, rappelle le minimum et bloque', (
     tester,
   ) async {
