@@ -357,8 +357,9 @@ class _ImmoListingViewState extends State<ImmoListingView> {
                       ],
                     ),
                   ),
-                  if (listing.units.length > 1 ||
-                      listing.isLand && listing.units.isNotEmpty) ...[
+                  if (!listing.isSale &&
+                      (listing.units.length > 1 ||
+                          listing.isLand && listing.units.isNotEmpty)) ...[
                     const SizedBox(height: AppDesign.space6),
                     Text(
                       listing.isLand
@@ -581,13 +582,15 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = <String>[
-      if (!listing.isLand)
+      if (!listing.isLand && !listing.isSale)
         listing.furnished
             ? 'immo.card.furnished'.tr
             : 'immo.card.unfurnished'.tr,
       if (immoRoomsLabel(listing).isNotEmpty && !listing.isLand)
         immoRoomsLabel(listing),
       if (listing.surfaceLabel != null) listing.surfaceLabel!,
+      if (immoTotalSurface(listing) case final total?)
+        '${'immo.land.total_surface'.tr} : $total',
     ];
 
     return Column(
@@ -596,10 +599,11 @@ class _Intro extends StatelessWidget {
         Text(
           listing.isLand
               ? immoKindLabel(listing)
-              : (listing.isSale
-                        ? 'immo.detail.for_sale'
-                        : 'immo.detail.for_rent')
-                    .trParams({'kind': immoKindLabel(listing)}),
+              : listing.isSale
+              ? 'immo.card.house_for_sale'.tr
+              : 'immo.detail.for_rent'.trParams({
+                  'kind': immoKindLabel(listing),
+                }),
           style: context.textStyle(
             FontSizeType.body2,
             color: context.ds.textSecondary,
