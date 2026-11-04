@@ -112,6 +112,9 @@ import '../modules/salesProgram/views/sales_program_success_view.dart';
 
 import '../core/widgets/unknown_route_view.dart';
 
+import '../modules/webLogin/bindings/web_login_binding.dart';
+import '../modules/webLogin/views/web_login_view.dart';
+
 part 'app_routes.dart';
 
 class AppPages {
@@ -224,6 +227,11 @@ class AppPages {
       name: _Paths.DELIVERY_DASHBOARD,
       page: () => const DeliveryDashboardView(),
       binding: DeliveryDashboardBinding(),
+    ),
+    GetPage(
+      name: _Paths.WEB_LOGIN,
+      page: () => const WebLoginView(),
+      binding: WebLoginBinding(),
     ),
     GetPage(
       name: _Paths.VENDOR_DASHBOARD,

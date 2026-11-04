@@ -7,6 +7,7 @@ import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/delivery_details_widgets.dart';
+import '../../../core/values/constants.dart';
 import '../controllers/dispute_detail_controller.dart';
 import '../models/dispute_models.dart';
 import '../../../core/widgets/product_image_viewer.dart';
@@ -237,16 +238,22 @@ class DisputeDetailView extends GetView<DisputeDetailController> {
           ),
         );
         buttons.add(
-          AppButton(
-            label:
-                (dispute.internationalExport
-                        ? 'disputes.vendor.pay_transport'
-                        : 'disputes.vendor.pay_shipment')
-                    .tr,
-            icon: Icons.payments_outlined,
-            isLoading: busy,
-            onPressed: controller.payShipment,
-          ),
+          AppConstants.isVendorWeb
+              ? _notice(
+                  context,
+                  'disputes.vendor.pay_on_phone'.tr,
+                  AppDesign.warningSubtle,
+                )
+              : AppButton(
+                  label:
+                      (dispute.internationalExport
+                              ? 'disputes.vendor.pay_transport'
+                              : 'disputes.vendor.pay_shipment')
+                          .tr,
+                  icon: Icons.payments_outlined,
+                  isLoading: busy,
+                  onPressed: controller.payShipment,
+                ),
         );
         buttons.add(const SizedBox(height: AppDesign.space2));
       }

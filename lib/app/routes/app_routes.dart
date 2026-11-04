@@ -25,6 +25,7 @@ abstract class Routes {
   static const OTP = _Paths.OTP;
   static const DELIVERY_DASHBOARD = _Paths.DELIVERY_DASHBOARD;
   static const VENDOR_DASHBOARD = _Paths.VENDOR_DASHBOARD;
+  static const WEB_LOGIN = _Paths.WEB_LOGIN;
   static const WALLET = _Paths.WALLET;
   static const VENDOR_CONFIG = _Paths.VENDOR_CONFIG;
   static const STRIPE_CONNECT = _Paths.STRIPE_CONNECT;
@@ -90,6 +91,7 @@ abstract class _Paths {
   static const OTP = '/otp';
   static const DELIVERY_DASHBOARD = '/delivery-dashboard';
   static const VENDOR_DASHBOARD = '/vendor-dashboard';
+  static const WEB_LOGIN = '/web-login';
   static const WALLET = '/wallet';
   static const VENDOR_CONFIG = '/vendor-config';
   static const STRIPE_CONNECT = '/stripe-connect';

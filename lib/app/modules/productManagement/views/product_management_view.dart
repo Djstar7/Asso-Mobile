@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/providers/currency_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/values/constants.dart';
 import '../../../core/utils/app_design.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -443,7 +444,7 @@ class ProductManagementView extends GetView<ProductManagementController> {
       children: [
         // Asso Ads : mise en avant payante, réservée aux articles en ligne —
         // sponsoriser un produit désactivé n'aurait rien à montrer.
-        if (isActive) ...[
+        if (isActive && !AppConstants.isVendorWeb) ...[
           _CardAction(
             icon: Icons.campaign_outlined,
             label: 'product_management.boost'.tr,

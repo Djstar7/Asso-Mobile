@@ -1008,6 +1008,7 @@
       "choose": "Choose",
       "unavailable_combination": "This combination is not available",
       "choose_missing": "Choose: @options",
+      "selection_total": "@total in total",
       "remove": "Remove",
       "show_all_choices": "Show all choices",
       "product_sold_out": "This product is currently sold out",
@@ -4527,6 +4528,7 @@
       "held_notice": "@amount stays on hold in your Wallet until ASSO decides.",
       "held_short": "@amount on hold",
       "pay_notice": "Choose a delivery partner and pay for the delivery so the case can move forward.",
+      "pay_on_phone": "This delivery is paid from the ASSO app on your phone.",
       "pay_shipment": "Choose courier and pay",
       "replace": "Replace the product",
       "organize_return": "Organize the return",
@@ -5424,5 +5426,59 @@
     "remove_iban_title": "Remove this IBAN?",
     "remove_iban_confirm": "You won't be able to withdraw by bank transfer until you add a new IBAN.",
     "iban_removed": "Your IBAN has been removed."
+  },
+  "web_login": {
+    "title": "Vendor space on computer",
+    "dashboard_subtitle": "Manage your shop from a browser",
+    "intro": "On your computer, open this link, then scan the QR code shown.",
+    "copy_link": "Copy",
+    "link_copied_title": "Link copied",
+    "link_copied_message": "Paste it into your computer's browser, or send it to yourself.",
+    "scan_action": "Scan the QR code",
+    "devices_title": "Connected browsers",
+    "no_devices": "No connected browser.",
+    "device_details": "Address: @ip · Last active: @date",
+    "revoke": "Sign out",
+    "invalid_qr_title": "QR code not recognised",
+    "invalid_qr_message": "This QR code does not come from the ASSO vendor space.",
+    "approved_title": "Sign-in authorised",
+    "approved_message": "@browser on @platform is now connected.",
+    "revoked_title": "Browser signed out",
+    "revoked_message": "This web session is closed.",
+    "failed_title": "Action not possible",
+    "failed_message": "Check your connection, then try again.",
+    "scanner": {
+      "title": "Scan the QR code",
+      "hint": "Place the QR code from your computer inside the frame.",
+      "use_photo": "Take a photo of the QR code",
+      "no_code": "No QR code found in this photo.",
+      "permission_denied": "Allow the camera to scan the QR code.",
+      "camera_failed": "The camera could not start.",
+      "open_settings": "Open settings"
+    }
+  },
+  "vendor_web": {
+    "login": {
+      "title": "ASSO vendor space",
+      "steps": "1. Open the ASSO app on your phone.\n2. Go to the vendor dashboard, then Vendor space on computer.\n3. Scan this QR code.",
+      "scanned": "QR code scanned. Signing in…",
+      "expired": "This QR code has expired.",
+      "failed": "Could not reach the server, or the space is unavailable.",
+      "new_qr": "Show a new QR code"
+    },
+    "unavailable": {
+      "title": "Available in the app",
+      "message": "This section is managed from the ASSO app on your phone."
+    },
+    "nav": {
+      "dashboard": "Home",
+      "products": "Products",
+      "add_product": "Add",
+      "orders": "Orders",
+      "disputes": "Claims",
+      "shop": "Shop",
+      "statistics": "Statistics",
+      "sign_out": "Sign out"
+    }
   }
 }
