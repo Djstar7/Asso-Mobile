@@ -100,12 +100,12 @@ class WebLoginView extends GetView<WebLoginController> {
   }
 
   Widget _buildDevice(BuildContext context, WebDevice device) {
-    final expiresAt = device.expiresAt;
-    final expires = expiresAt == null
+    final lastActiveAt = device.lastActiveAt;
+    final lastActive = lastActiveAt == null
         ? ''
         : DateFormat.yMd(
             Get.locale?.languageCode ?? 'fr',
-          ).add_Hm().format(expiresAt);
+          ).add_Hm().format(lastActiveAt);
 
     return Card(
       child: ListTile(
@@ -114,7 +114,7 @@ class WebLoginView extends GetView<WebLoginController> {
         subtitle: Text(
           'web_login.device_details'.trParams({
             'ip': device.ip,
-            'date': expires,
+            'date': lastActive,
           }),
         ),
         trailing: TextButton(

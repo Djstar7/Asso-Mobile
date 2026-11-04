@@ -52,6 +52,18 @@ void main() {
     );
   });
 
+  test('un navigateur connecté indique sa dernière activité', () {
+    final device = WebDevice.fromJson({
+      'id': 3,
+      'browser': 'Chrome',
+      'platform': 'Windows',
+      'ip': '10.0.0.1',
+      'last_active_at': '2026-11-04T10:00:00Z',
+    });
+
+    expect(device.lastActiveAt, DateTime.utc(2026, 11, 4, 10).toLocal());
+  });
+
   test('les réclamations s’ouvrent dans l’espace web', () {
     final routes = vendorWebPages.map((page) => page.name);
     expect(routes, containsAll([Routes.VENDOR_DISPUTES, Routes.DISPUTE_DETAIL]));

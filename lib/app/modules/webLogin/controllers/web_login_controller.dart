@@ -27,7 +27,7 @@ class WebDevice {
     required this.browser,
     required this.platform,
     required this.ip,
-    required this.expiresAt,
+    required this.lastActiveAt,
   });
 
   factory WebDevice.fromJson(Map<String, dynamic> json) => WebDevice(
@@ -35,8 +35,8 @@ class WebDevice {
     browser: json['browser']?.toString() ?? '',
     platform: json['platform']?.toString() ?? '',
     ip: json['ip']?.toString() ?? '',
-    expiresAt: DateTime.tryParse(
-      json['expires_at']?.toString() ?? '',
+    lastActiveAt: DateTime.tryParse(
+      json['last_active_at']?.toString() ?? '',
     )?.toLocal(),
   );
 
@@ -44,7 +44,7 @@ class WebDevice {
   final String browser;
   final String platform;
   final String ip;
-  final DateTime? expiresAt;
+  final DateTime? lastActiveAt;
 }
 
 class WebLoginController extends GetxController {

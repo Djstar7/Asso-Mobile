@@ -5437,7 +5437,7 @@
     "scan_action": "Scanner le QR",
     "devices_title": "Navigateurs connectés",
     "no_devices": "Aucun navigateur connecté.",
-    "device_details": "Adresse : @ip · Expire le @date",
+    "device_details": "Adresse : @ip · Dernière activité : @date",
     "revoke": "Déconnecter",
     "invalid_qr_title": "QR non reconnu",
     "invalid_qr_message": "Ce QR ne provient pas de l'espace vendeur ASSO.",

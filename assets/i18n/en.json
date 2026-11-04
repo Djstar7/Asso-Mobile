@@ -5437,7 +5437,7 @@
     "scan_action": "Scan the QR code",
     "devices_title": "Connected browsers",
     "no_devices": "No connected browser.",
-    "device_details": "Address: @ip · Expires on @date",
+    "device_details": "Address: @ip · Last active: @date",
     "revoke": "Sign out",
     "invalid_qr_title": "QR code not recognised",
     "invalid_qr_message": "This QR code does not come from the ASSO vendor space.",
