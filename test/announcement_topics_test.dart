@@ -13,7 +13,7 @@ void main() {
     expect(FirebaseMessagingService.legacyAnnouncementsTopic, 'all_users');
   });
 
-  test('changer de langue change le topic et la marque d’abonnement', () {
+  test('changer de langue change le topic, pas la marque de désabonnement', () {
     // Sans service de langue (démarrage, tests) : le français.
     expect(FirebaseMessagingService.announcementsTopic, 'all_users_fr');
     final french = FirebaseMessagingService.topicMarker('tok');
@@ -22,9 +22,11 @@ void main() {
     locale.language.value = 'en';
 
     expect(FirebaseMessagingService.announcementsTopic, 'all_users_en');
-    expect(FirebaseMessagingService.topicMarker('tok'), isNot(french));
-    // Une installation qui n'a retenu que le token (ancien all_users) se
-    // réabonne aussi.
+    // Les annonces passent par le serveur : l'app quitte tous les topics, une
+    // seule fois par token, quelle que soit la langue.
+    expect(FirebaseMessagingService.topicMarker('tok'), french);
+    // Une installation qui n'a retenu que le token (ancien all_users) quitte
+    // aussi ses topics.
     expect(FirebaseMessagingService.topicMarker('tok'), isNot('tok'));
   });
 }
