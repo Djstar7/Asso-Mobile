@@ -3927,6 +3927,8 @@
     "chat": "Chatter",
     "order": "Commander",
     "after_verification": "Après vérification",
+    "departure_passed": "Départ passé",
+    "full": "Complet",
     "date_at_time": "@date à @time"
   },
   "diaspo_booking": {
@@ -4673,8 +4675,6 @@
     "my_shipments": "Mes envois"
   },
   "search_hint": "Rechercher une ville ou un pays",
-  "filter_all": "Tous les départs",
-  "filter_bookable": "Réservables uniquement",
   "reservations_closed": "Réservations closes",
   "login_required": "Connectez-vous pour continuer.",
   "no_departures": "Aucun départ prévu pour le moment. Revenez bientôt.",
@@ -4860,7 +4860,8 @@
       "land_available": "Disponible à la vente",
       "available_from": "Disponible à partir du @date",
       "unavailable": "Plus disponible",
-      "places_left": "Plus que @count places"
+      "places_left": "Plus que @count places",
+      "reserved": "Déjà réservé · Plus de place"
     },
     "land": {
       "title_deed": "Titre foncier",
@@ -4972,6 +4973,7 @@
       "contact": "Contacter ASSO",
       "contact_short": "Contacter",
       "reserve": "Réserver",
+      "already_reserved": "Déjà réservé",
       "pay_deposit": "Verser l'acompte",
       "own_listing_notice": "Vous ne pouvez pas réserver votre propre annonce.",
       "property_video": "Vidéo du logement",
@@ -5217,6 +5219,7 @@
     "title": "Espace bailleur",
     "new_listing": "Nouvelle annonce",
     "my_listings": "Mes annonces",
+    "reopen": "Remettre en location",
     "no_listing": "Aucune annonce pour le moment",
     "no_listing_help": "Faites vérifier votre profil, puis publiez votre premier logement.",
     "status": {

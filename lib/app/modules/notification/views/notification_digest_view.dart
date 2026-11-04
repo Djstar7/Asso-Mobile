@@ -34,6 +34,11 @@ class _NotificationDigestViewState extends State<NotificationDigestView> {
         queryParams: {'page': _nextPage},
       );
       if (!mounted) return;
+      // Résumé retiré passé 14 jours (ou plus aucune annonce à montrer).
+      if (response.statusCode == 404) {
+        setState(() => _nextPage = null);
+        return;
+      }
       if (!response.success) {
         setState(() => _error = 'notification.digest.load_failed'.tr);
         return;

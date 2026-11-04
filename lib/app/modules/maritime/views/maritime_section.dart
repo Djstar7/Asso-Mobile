@@ -107,7 +107,6 @@ class MaritimeSection extends GetView<MaritimeController> {
     return Column(
       children: [
         _buildDepartureSearch(isDark),
-        _buildDepartureFilters(isDark),
         Expanded(
           child: controller.isLoading.value && controller.departures.isEmpty
               ? const Center(child: CircularProgressIndicator())
@@ -195,58 +194,6 @@ class MaritimeSection extends GetView<MaritimeController> {
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ).frameless,
         ),
-      ),
-    );
-  }
-
-  Widget _buildDepartureFilters(bool isDark) {
-    return SizedBox(
-      height: 54,
-      child: Obx(
-        () => ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          scrollDirection: Axis.horizontal,
-          children: [
-            _departureFilterChip(
-              label: 'maritime.filter_all'.tr,
-              selected: !controller.bookableDeparturesOnly.value,
-              isDark: isDark,
-              onTap: () => controller.bookableDeparturesOnly.value = false,
-            ),
-            const SizedBox(width: 8),
-            _departureFilterChip(
-              label: 'maritime.filter_bookable'.tr,
-              selected: controller.bookableDeparturesOnly.value,
-              isDark: isDark,
-              onTap: () => controller.bookableDeparturesOnly.value = true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _departureFilterChip({
-    required String label,
-    required bool selected,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    final color = selected
-        ? AppThemeSystem.primaryColor
-        : (isDark ? AppThemeSystem.darkCardColor : Colors.white);
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: color,
-      backgroundColor: color,
-      labelStyle: TextStyle(
-        color: selected ? Colors.white : _muted(isDark),
-        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-      ),
-      side: BorderSide(
-        color: selected ? AppThemeSystem.primaryColor : AppDesign.neutral200,
       ),
     );
   }

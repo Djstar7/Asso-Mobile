@@ -27,7 +27,7 @@ void main() {
   });
 
   test(
-    'all departures include closed departures by default',
+    'list keeps every departure returned by the server',
     () {
       final controller = MaritimeController();
       controller.departures.assignAll([
@@ -38,25 +38,6 @@ void main() {
       expect(controller.filteredDepartures.map((departure) => departure.id), [
         1,
         2,
-      ]);
-    },
-  );
-
-  test(
-    'bookable filter excludes closed departures and composes with search',
-    () {
-      final controller = MaritimeController();
-      controller.departures.assignAll([
-        _departure(id: 1, partnerName: 'Ocean Cargo', isBookable: true),
-        _departure(id: 2, partnerName: 'Ocean Cargo', isBookable: false),
-        _departure(id: 3, partnerName: 'Blue Sea', isBookable: true),
-      ]);
-
-      controller.bookableDeparturesOnly.value = true;
-      controller.departureSearchQuery.value = 'ocean';
-
-      expect(controller.filteredDepartures.map((departure) => departure.id), [
-        1,
       ]);
     },
   );

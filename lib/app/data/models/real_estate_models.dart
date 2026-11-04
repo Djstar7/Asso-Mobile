@@ -435,6 +435,9 @@ class RealEstateListing {
   final DateTime? availableFrom;
   final bool availableNow;
   final int unitsAvailable;
+
+  /// Bien sans unités déjà réservé : son bailleur peut le remettre en location.
+  final bool isReserved;
   final bool lowStock;
   final List<String> amenityNames;
 
@@ -501,6 +504,7 @@ class RealEstateListing {
     this.availableFrom,
     this.availableNow = true,
     this.unitsAvailable = 1,
+    this.isReserved = false,
     this.lowStock = false,
     this.amenityNames = const [],
     this.subdivision,
@@ -596,6 +600,7 @@ class RealEstateListing {
           ? true
           : _bool(j['available_now']),
       unitsAvailable: _int(j['units_available'], 1),
+      isReserved: _bool(j['is_reserved']),
       lowStock: _bool(j['low_stock']),
       amenityNames: amenities is List
           ? amenities.map((e) => e.toString()).toList()

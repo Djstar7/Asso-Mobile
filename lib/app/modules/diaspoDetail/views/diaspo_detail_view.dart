@@ -422,6 +422,15 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
         ));
       }
 
+      final current = controller.offer.value;
+      final closedLabel = current == null
+          ? null
+          : !current.departureDateTime.isAfter(DateTime.now())
+          ? 'diaspo_detail.departure_passed'.tr
+          : current.remainingKg <= 0
+          ? 'diaspo_detail.full'.tr
+          : null;
+
       return wrap(Row(
         children: [
           Expanded(
@@ -445,14 +454,16 @@ class DiaspoDetailView extends GetView<DiaspoDetailController> {
             child: SizedBox(
               height: 52,
               child: ElevatedButton.icon(
-                // Réservation fermée tant que le profil n'est pas vérifié.
-                onPressed: (controller.offer.value?.profileVerified ?? false) ? controller.openBooking : null,
-                icon: Icon((controller.offer.value?.profileVerified ?? false)
+                // Réservation fermée : départ passé (ancien lien), complet, ou profil à vérifier.
+                onPressed: closedLabel == null && (controller.offer.value?.profileVerified ?? false) ? controller.openBooking : null,
+                icon: Icon(closedLabel != null
+                    ? Icons.event_busy_outlined
+                    : (controller.offer.value?.profileVerified ?? false)
                     ? Icons.shopping_bag_outlined
                     : Icons.lock_clock_outlined),
-                label: Text((controller.offer.value?.profileVerified ?? false)
+                label: Text(closedLabel ?? ((controller.offer.value?.profileVerified ?? false)
                     ? 'diaspo_detail.order'.tr
-                    : 'diaspo_detail.after_verification'.tr),
+                    : 'diaspo_detail.after_verification'.tr)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppThemeSystem.primaryColor,
                   foregroundColor: Colors.white,

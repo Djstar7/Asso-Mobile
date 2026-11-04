@@ -49,7 +49,6 @@ class MaritimeController extends GetxController {
 
   final departures = <MaritimeDeparture>[].obs;
   final departureSearchQuery = ''.obs;
-  final bookableDeparturesOnly = false.obs;
   final myBookings = <MaritimeBooking>[].obs;
   final isLoading = false.obs;
   final isLoadingMore = false.obs;
@@ -70,7 +69,6 @@ class MaritimeController extends GetxController {
   List<MaritimeDeparture> get filteredDepartures {
     final query = departureSearchQuery.value.trim();
     return departures.where((departure) {
-      if (bookableDeparturesOnly.value && !departure.isBookable) return false;
       if (query.isEmpty) return true;
 
       return SearchText.matches([

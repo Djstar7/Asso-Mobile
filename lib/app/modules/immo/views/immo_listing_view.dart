@@ -685,6 +685,14 @@ class _Intro extends StatelessWidget {
                 tone: AppBadgeTone.success,
                 icon: Icons.bolt_rounded,
               ),
+            if (listing.unitsAvailable <= 0)
+              AppBadge(
+                label: listing.isLand
+                    ? 'immo.card.unavailable'.tr
+                    : 'immo.card.reserved'.tr,
+                tone: AppBadgeTone.danger,
+                icon: Icons.event_busy_outlined,
+              ),
             if (listing.lowStock)
               AppBadge(
                 label: 'immo.card.places_left'.trParams({
@@ -1194,7 +1202,7 @@ class _UnitCard extends StatelessWidget {
             Text(
               listing.isLand
                   ? 'immo.land.lot_sold'.tr
-                  : 'immo.card.unavailable'.tr,
+                  : 'immo.card.reserved'.tr,
               style: context.textStyle(
                 FontSizeType.body2,
                 fontWeight: FontWeight.w700,
@@ -1820,7 +1828,9 @@ class _BottomBar extends StatelessWidget {
                 ? 'immo.detail.contact'.tr
                 : listing.isLand
                 ? 'immo.detail.pay_deposit'.tr
-                : 'immo.detail.reserve'.tr,
+                : available
+                ? 'immo.detail.reserve'.tr
+                : 'immo.detail.already_reserved'.tr,
             expand: false,
             onPressed: available && !listing.isOwnListing
                 ? (listing.isSale ? onContact : onReserve)
