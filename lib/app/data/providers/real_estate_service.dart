@@ -194,6 +194,9 @@ class RealEstateService {
   static Future<ApiResponse> submitListing(int id) =>
       ApiProvider.post('$_landlord/listings/$id/submit');
 
+  static Future<ApiResponse> reopenListing(int id) =>
+      ApiProvider.post('$_landlord/listings/$id/reopen');
+
   static Future<ApiResponse> deleteListing(int id) =>
       ApiProvider.delete('$_landlord/listings/$id');
 

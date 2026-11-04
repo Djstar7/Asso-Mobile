@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/app_design.dart';
+import '../../../core/utils/app_feedback.dart';
 import '../../../core/utils/app_theme_system.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -51,6 +52,16 @@ class _LandlordDashboardViewState extends State<LandlordDashboardView> {
   Future<void> _openVerification() async {
     final sent = await Get.to<bool>(() => const LandlordVerificationView());
     if (sent == true) _load();
+  }
+
+  Future<void> _reopen(RealEstateListing listing) async {
+    final res = await RealEstateService.reopenListing(listing.id);
+    if (!mounted) return;
+    if (res.success) {
+      _load();
+    } else {
+      AppFeedback.show('landlord.reopen'.tr, res.message, snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   Future<void> _openEditor([int? id]) async {
@@ -113,7 +124,7 @@ class _LandlordDashboardViewState extends State<LandlordDashboardView> {
                     )
                   else
                     for (final l in _listings) ...[
-                      _ListingTile(listing: l, onTap: () => _openEditor(l.id)),
+                      _ListingTile(listing: l, onTap: () => _openEditor(l.id), onReopen: () => _reopen(l)),
                       const SizedBox(height: AppDesign.space3),
                     ],
                 ],
@@ -170,10 +181,11 @@ class _StatusCard extends StatelessWidget {
 }
 
 class _ListingTile extends StatelessWidget {
-  const _ListingTile({required this.listing, required this.onTap});
+  const _ListingTile({required this.listing, required this.onTap, required this.onReopen});
 
   final RealEstateListing listing;
   final VoidCallback onTap;
+  final VoidCallback onReopen;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +223,10 @@ class _ListingTile extends StatelessWidget {
                 const SizedBox(height: AppDesign.space1),
                 Obx(() => Text('${immoPrice(listing.price)} ${'immo.card.per_month'.tr}',
                     style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.w700, color: AppDesign.accent))),
+                if (listing.isReserved) ...[
+                  Text('immo.card.reserved'.tr, style: context.textStyle(FontSizeType.caption, color: AppDesign.danger)),
+                  TextButton(onPressed: onReopen, child: Text('landlord.reopen'.tr)),
+                ],
               ],
             ),
           ),

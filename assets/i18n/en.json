@@ -3927,6 +3927,8 @@
     "chat": "Chat",
     "order": "Book",
     "after_verification": "After verification",
+    "departure_passed": "Departure passed",
+    "full": "Full",
     "date_at_time": "@date at @time"
   },
   "diaspo_booking": {
@@ -4673,8 +4675,6 @@
     "my_shipments": "My shipments"
   },
   "search_hint": "Search a city or country",
-  "filter_all": "All departures",
-  "filter_bookable": "Bookable only",
   "reservations_closed": "Bookings closed",
   "login_required": "Sign in to continue.",
   "no_departures": "No departures planned yet. Check back soon.",
@@ -4860,7 +4860,8 @@
       "land_available": "Available for sale",
       "available_from": "Available from @date",
       "unavailable": "No longer available",
-      "places_left": "Only @count left"
+      "places_left": "Only @count left",
+      "reserved": "Already reserved · No place left"
     },
     "land": {
       "title_deed": "Land title",
@@ -4972,6 +4973,7 @@
       "contact": "Contact ASSO",
       "contact_short": "Contact",
       "reserve": "Book",
+      "already_reserved": "Already reserved",
       "pay_deposit": "Pay the deposit",
       "own_listing_notice": "You cannot book your own listing.",
       "property_video": "Property video",
@@ -5217,6 +5219,7 @@
     "title": "Landlord space",
     "new_listing": "New listing",
     "my_listings": "My listings",
+    "reopen": "List again",
     "no_listing": "No listing yet",
     "no_listing_help": "Get your profile verified, then publish your first home.",
     "status": {

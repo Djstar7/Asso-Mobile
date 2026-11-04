@@ -331,7 +331,7 @@ class ImmoAvailability extends StatelessWidget {
         ? AppDesign.danger
         : (now ? AppDesign.success : AppDesign.info);
     final label = soldOut
-        ? 'immo.card.unavailable'.tr
+        ? (listing.isLand ? 'immo.card.unavailable'.tr : 'immo.card.reserved'.tr)
         : now
         ? (listing.isLand
               ? 'immo.card.land_available'.tr
