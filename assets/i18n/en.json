@@ -4240,7 +4240,10 @@
       "air_removed": "Above @weight kg, this order can only travel by sea.",
       "sea_required_unavailable": "This order exceeds the air weight limit and no sea option is available for this country.",
       "pickup_title": "Collection from the ASSO warehouse",
-      "pickup_subtitle": "Above @weight kg, the order is collected from the Douala warehouse, without SOLEX delivery.",
+      "pickup_subtitle": "No delivery fee: you collect the order from the Douala warehouse.",
+      "pickup_choice_title": "How do you want to receive your order?",
+      "pickup_choice_subtitle": "Above @weight kg, you can collect the order from the Douala warehouse or have it delivered by SOLEX.",
+      "pickup_choice_solex": "SOLEX delivery",
       "pickup_code_info": "You will receive a code when the order arrives. Show it at the warehouse to collect the order.",
       "weight_set_by_asso": "The shipping weight/volume is provided by ASSO.",
       "summary": {

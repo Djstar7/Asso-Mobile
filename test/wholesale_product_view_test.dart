@@ -208,17 +208,29 @@ void main() {
       expect(find.textContaining('116'), findsWidgets);
     });
 
-    testWidgets("au-delà du seuil de l'entrepôt, plus de SOLEX ni d'adresse", (
-      tester,
-    ) async {
-      await openWithRules(tester);
-      await tester.enterText(quantityField(), '76');
-      await tester.pump();
+    testWidgets(
+      "au-delà du seuil de l'entrepôt, le client choisit retrait ou SOLEX",
+      (tester) async {
+        await openWithRules(tester);
+        await tester.enterText(quantityField(), '76');
+        await tester.pump();
 
-      expect(find.text('ASSO Import Douala'), findsOneWidget);
-      expect(find.byIcon(Icons.warehouse_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.my_location_rounded), findsNothing);
-    });
+        expect(find.text('ASSO Import Douala'), findsOneWidget);
+        expect(find.byIcon(Icons.warehouse_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.my_location_rounded), findsNothing);
+
+        final solex = find.widgetWithText(
+          ChoiceChip,
+          'import.wholesale.pickup_choice_solex'.tr,
+        );
+        await tester.ensureVisible(solex);
+        await tester.tap(solex);
+        await tester.pump();
+
+        expect(find.byIcon(Icons.warehouse_rounded), findsNothing);
+        expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
+      },
+    );
   });
 
   testWidgets('sous le premier palier, rappelle le minimum et bloque', (
