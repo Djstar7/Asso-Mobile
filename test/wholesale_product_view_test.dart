@@ -142,7 +142,6 @@ void main() {
   group('transport et retrait', () {
     const rules = FreightRules(
       airMaxWeightKg: 100,
-      volumetricDivisor: 6000,
       pickupThresholdKg: 300,
       warehouseName: 'ASSO Import Douala',
     );

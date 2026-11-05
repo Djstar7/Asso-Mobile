@@ -15,34 +15,30 @@ ShippingOption _option(String mode, String rateType, double rate) =>
       formattedRate: '',
     );
 
-const _rules = FreightRules(
-  airMaxWeightKg: 100,
-  volumetricDivisor: 6000,
-  pickupThresholdKg: 300,
-);
+const _rules = FreightRules(airMaxWeightKg: 100, pickupThresholdKg: 300);
 
 /// Même calcul que le serveur (ImportFreightService), mêmes exemples que ses tests.
 void main() {
   final air = _option('air', 'per_kg', 12000);
   final sea = _option('sea', 'per_cbm', 330000);
 
-  test('boxes with dimensions: air by volumetric weight, sea by CBM', () {
+  test('boxes with dimensions: air by real weight, sea by CBM', () {
     final m = FreightMeasure.of([
       const FreightLine(
         quantity: 3,
         unitWeightKg: 8,
         dimensionsCm: [60, 40, 50],
       ),
-    ], _rules);
+    ]);
 
-    expect(air.costFor(m), closeTo(720000, 0.01));
+    expect(air.costFor(m), closeTo(288000, 0.01));
     expect(sea.costFor(m), closeTo(118800, 0.01));
   });
 
   test('without dimensions only weight counts, 1000 kg for 1 CBM', () {
     final m = FreightMeasure.of([
       const FreightLine(quantity: 3, unitWeightKg: 8),
-    ], _rules);
+    ]);
 
     expect(air.costFor(m), closeTo(288000, 0.01));
     expect(sea.costFor(m), closeTo(7920, 0.01));
@@ -55,7 +51,7 @@ void main() {
         unitWeightKg: 1200,
         dimensionsCm: [450, 180, 150],
       ),
-    ], _rules);
+    ]);
 
     expect(sea.costFor(m), closeTo(4009500, 0.01));
     expect(air.isAvailableFor(m, _rules), isFalse);
@@ -64,7 +60,7 @@ void main() {
 
   test('air stays available up to the limit', () {
     FreightMeasure weight(double kg) =>
-        FreightMeasure.of([FreightLine(quantity: 1, unitWeightKg: kg)], _rules);
+        FreightMeasure.of([FreightLine(quantity: 1, unitWeightKg: kg)]);
 
     expect(air.isAvailableFor(weight(100), _rules), isTrue);
     expect(air.isAvailableFor(weight(100.5), _rules), isFalse);
@@ -80,16 +76,17 @@ void main() {
         unitWeightKg: 8,
         dimensionsCm: [60, 40, 50],
       ),
-    ], _rules);
+    ]);
     final noWeight = FreightMeasure.of([
       const FreightLine(quantity: 1, dimensionsCm: [100, 100, 100]),
-    ], _rules);
+    ]);
 
     expect(legacy.costFor(m), closeTo(36000, 0.01));
     expect(legacy.canPrice(noWeight), isFalse);
+    expect(air.canPrice(noWeight), isFalse);
     expect(sea.canPrice(noWeight), isTrue);
     expect(
-      sea.canPrice(FreightMeasure.of(const [FreightLine(quantity: 1)], _rules)),
+      sea.canPrice(FreightMeasure.of(const [FreightLine(quantity: 1)])),
       isFalse,
     );
   });
@@ -117,7 +114,6 @@ void main() {
       'height_cm': 10,
       'freight_rules': {
         'air_max_weight_kg': 100,
-        'volumetric_divisor': 5000,
         'pickup_threshold_kg': 300,
         'warehouse': {'name': 'ASSO Import Douala', 'address': 'Akwa'},
       },
@@ -137,7 +133,6 @@ void main() {
       [20, 30, 40],
     );
     expect(product.dimensionsFor(tier({'length_cm': 20})), [10, 10, 10]);
-    expect(product.freightRules?.volumetricDivisor, 5000);
     expect(product.freightRules?.warehouseName, 'ASSO Import Douala');
   });
 }

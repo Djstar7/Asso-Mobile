@@ -295,7 +295,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
               _chosenDimensions(line.$1) ?? widget.product.dimensionsFor(tier),
         );
       }(),
-  ], _freightRules);
+  ]);
 
   List<double>? _chosenDimensions(int? variantId) {
     if (variantId == null) return null;
@@ -323,8 +323,7 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
 
   /// Au-delà du seuil de l'entrepôt : retrait à Douala, sans SOLEX.
   bool get _warehousePickup =>
-      _freight.billableKg >
-      (_freightRules?.pickupThresholdKg ?? double.infinity);
+      _freight.weightKg > (_freightRules?.pickupThresholdKg ?? double.infinity);
 
   double get _shippingCost => _shipping?.costFor(_freight) ?? 0;
 
