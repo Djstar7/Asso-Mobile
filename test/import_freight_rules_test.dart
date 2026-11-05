@@ -22,7 +22,7 @@ void main() {
   final air = _option('air', 'per_kg', 12000);
   final sea = _option('sea', 'per_cbm', 330000);
 
-  test('boxes with dimensions: air by real weight, sea by CBM', () {
+  test('boxes add weight and dimensions by air and by sea', () {
     final m = FreightMeasure.of([
       const FreightLine(
         quantity: 3,
@@ -31,8 +31,9 @@ void main() {
       ),
     ]);
 
-    expect(air.costFor(m), closeTo(288000, 0.01));
-    expect(sea.costFor(m), closeTo(118800, 0.01));
+    // 24 kg réels + 60 kg volumétriques ; 0,36 CBM + 0,024 CBM.
+    expect(air.costFor(m), closeTo(1008000, 0.01));
+    expect(sea.costFor(m), closeTo(126720, 0.01));
   });
 
   test('without dimensions only weight counts, 1000 kg for 1 CBM', () {
@@ -53,7 +54,7 @@ void main() {
       ),
     ]);
 
-    expect(sea.costFor(m), closeTo(4009500, 0.01));
+    expect(sea.costFor(m), closeTo(4405500, 0.01));
     expect(air.isAvailableFor(m, _rules), isFalse);
     expect(sea.isAvailableFor(m, _rules), isTrue);
   });

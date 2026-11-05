@@ -137,6 +137,7 @@ class FreightLine {
 class FreightMeasure {
   final double weightKg;
   final double volumeCbm;
+  final double billableKg;
   final double billableCbm;
   final bool missingWeight;
   final bool unmeasured;
@@ -144,6 +145,7 @@ class FreightMeasure {
   const FreightMeasure({
     this.weightKg = 0,
     this.volumeCbm = 0,
+    this.billableKg = 0,
     this.billableCbm = 0,
     this.missingWeight = false,
     this.unmeasured = false,
@@ -167,8 +169,10 @@ class FreightMeasure {
     return FreightMeasure(
       weightKg: weight,
       volumeCbm: cbm,
+      // Le poids et l'encombrement s'additionnent, comme sur le serveur.
+      billableKg: weight + cbm * 1000000 / 6000,
       // 1 000 kg comptent pour 1 CBM.
-      billableCbm: cbm > weight / 1000 ? cbm : weight / 1000,
+      billableCbm: cbm + weight / 1000,
       missingWeight: missingWeight,
       unmeasured: unmeasured,
     );
@@ -244,7 +248,8 @@ class ShippingOption {
   double billedQuantity(FreightMeasure measure) => switch (rateType) {
     'per_cbm' => measure.billableCbm,
     'flat' => 1,
-    _ => measure.weightKg,
+    // Ancien bateau au kilo, gardé jusqu'à la saisie du tarif au CBM.
+    _ => mode == 'sea' ? measure.weightKg : measure.billableKg,
   };
 
   double costFor(FreightMeasure measure) =>

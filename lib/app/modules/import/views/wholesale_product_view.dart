@@ -321,9 +321,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         available.firstOrNull;
   }
 
-  /// Au-delà du seuil de l'entrepôt : retrait à Douala, sans SOLEX.
-  bool get _warehousePickup =>
+  /// Au-delà du seuil de l'entrepôt, le client choisit : retrait ou SOLEX.
+  bool get _canPickUp =>
       _freight.weightKg > (_freightRules?.pickupThresholdKg ?? double.infinity);
+
+  bool _prefersPickup = true;
+
+  bool get _warehousePickup => _canPickUp && _prefersPickup;
 
   double get _shippingCost => _shipping?.costFor(_freight) ?? 0;
 
@@ -606,13 +610,37 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
         ],
         // 4. Adresse, précision, contact et partenaire de livraison.
         const SizedBox(height: AppDesign.space3),
+        if (_canPickUp) ...[
+          _section(
+            context,
+            title: 'import.wholesale.pickup_choice_title'.tr,
+            subtitle: 'import.wholesale.pickup_choice_subtitle'.trParams({
+              'weight': _kg(_freightRules?.pickupThresholdKg ?? 0),
+            }),
+            child: Wrap(
+              spacing: AppDesign.space2,
+              runSpacing: AppDesign.space2,
+              children: [
+                ChoiceChip(
+                  label: Text('import.wholesale.pickup_title'.tr),
+                  selected: _prefersPickup,
+                  onSelected: (_) => _update(() => _prefersPickup = true),
+                ),
+                ChoiceChip(
+                  label: Text('import.wholesale.pickup_choice_solex'.tr),
+                  selected: !_prefersPickup,
+                  onSelected: (_) => _update(() => _prefersPickup = false),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDesign.space3),
+        ],
         if (_warehousePickup)
           _section(
             context,
             title: 'import.wholesale.pickup_title'.tr,
-            subtitle: 'import.wholesale.pickup_subtitle'.trParams({
-              'weight': _kg(_freightRules?.pickupThresholdKg ?? 0),
-            }),
+            subtitle: 'import.wholesale.pickup_subtitle'.tr,
             child: WholesalePickupSection(
               delivery: _delivery,
               rules: _freightRules,

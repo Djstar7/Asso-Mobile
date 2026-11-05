@@ -4240,7 +4240,10 @@
       "air_removed": "Au-delà de @weight kg, cette commande part uniquement par bateau.",
       "sea_required_unavailable": "Cette commande dépasse le poids autorisé en avion et aucun bateau n'est disponible pour ce pays.",
       "pickup_title": "Retrait à l'entrepôt ASSO",
-      "pickup_subtitle": "Au-delà de @weight kg, la commande se récupère à l'entrepôt de Douala, sans livraison SOLEX.",
+      "pickup_subtitle": "Sans frais de livraison : vous récupérez la commande à l'entrepôt de Douala.",
+      "pickup_choice_title": "Comment recevoir votre commande ?",
+      "pickup_choice_subtitle": "Au-delà de @weight kg, vous pouvez retirer la commande à l'entrepôt de Douala ou la faire livrer par SOLEX.",
+      "pickup_choice_solex": "Livraison SOLEX",
       "pickup_code_info": "Vous recevrez un code à l'arrivée de la commande. Présentez-le à l'entrepôt pour la récupérer.",
       "weight_set_by_asso": "Le poids/volume d'expédition est renseigné par ASSO.",
       "summary": {
