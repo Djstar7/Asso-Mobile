@@ -69,17 +69,15 @@ class PriceTier {
   }
 }
 
-/// Règles de transport du pays d'origine, décidées par le serveur.
+/// Règles de transport communes à tous les pays, décidées par le serveur.
 class FreightRules {
   final double airMaxWeightKg;
-  final int volumetricDivisor;
   final double pickupThresholdKg;
   final String? warehouseName;
   final String? warehouseAddress;
 
   const FreightRules({
     required this.airMaxWeightKg,
-    required this.volumetricDivisor,
     required this.pickupThresholdKg,
     this.warehouseName,
     this.warehouseAddress,
@@ -92,7 +90,6 @@ class FreightRules {
     return FreightRules(
       airMaxWeightKg:
           (raw['air_max_weight_kg'] as num?)?.toDouble() ?? double.infinity,
-      volumetricDivisor: (raw['volumetric_divisor'] as num?)?.toInt() ?? 6000,
       pickupThresholdKg:
           (raw['pickup_threshold_kg'] as num?)?.toDouble() ?? double.infinity,
       warehouseName: warehouse is Map ? warehouse['name']?.toString() : null,
@@ -140,7 +137,6 @@ class FreightLine {
 class FreightMeasure {
   final double weightKg;
   final double volumeCbm;
-  final double billableKg;
   final double billableCbm;
   final bool missingWeight;
   final bool unmeasured;
@@ -148,13 +144,12 @@ class FreightMeasure {
   const FreightMeasure({
     this.weightKg = 0,
     this.volumeCbm = 0,
-    this.billableKg = 0,
     this.billableCbm = 0,
     this.missingWeight = false,
     this.unmeasured = false,
   });
 
-  factory FreightMeasure.of(Iterable<FreightLine> lines, FreightRules? rules) {
+  factory FreightMeasure.of(Iterable<FreightLine> lines) {
     var weight = 0.0;
     var cbm = 0.0;
     var missingWeight = false;
@@ -169,11 +164,9 @@ class FreightMeasure {
         cbm += dims[0] * dims[1] * dims[2] / 1000000 * line.quantity;
       }
     }
-    final volumetric = cbm * 1000000 / (rules?.volumetricDivisor ?? 6000);
     return FreightMeasure(
       weightKg: weight,
       volumeCbm: cbm,
-      billableKg: weight > volumetric ? weight : volumetric,
       // 1 000 kg comptent pour 1 CBM.
       billableCbm: cbm > weight / 1000 ? cbm : weight / 1000,
       missingWeight: missingWeight,
@@ -233,26 +226,25 @@ class ShippingOption {
     formattedRate: j['formatted_rate']?.toString() ?? '',
   );
 
-  /// L'avion s'arrête au seuil du pays ; le bateau reste toujours possible.
+  /// L'avion s'arrête au seuil commun ; le bateau reste toujours possible.
   bool isAvailableFor(FreightMeasure measure, FreightRules? rules) =>
       mode != 'air' ||
-      measure.billableKg <= (rules?.airMaxWeightKg ?? double.infinity);
-
-  /// Ancien bateau au kilo, gardé jusqu'à la saisie du tarif au CBM.
-  bool get _legacySeaByKg => mode == 'sea' && rateType == 'per_kg';
+      measure.weightKg <= (rules?.airMaxWeightKg ?? double.infinity);
 
   /// Le transport peut-il se chiffrer avec ces mesures ?
   bool canPrice(FreightMeasure measure) {
     if (rateType == 'flat') return true;
     if (measure.unmeasured) return false;
-    return !_legacySeaByKg || !measure.missingWeight;
+    // Au kilo (avion, ou ancien bateau gardé jusqu'à la saisie du CBM), le poids
+    // réel est indispensable.
+    return rateType != 'per_kg' || !measure.missingWeight;
   }
 
   /// Quantité facturée dans l'unité du tarif (kg, CBM ou 1 pour un forfait).
   double billedQuantity(FreightMeasure measure) => switch (rateType) {
     'per_cbm' => measure.billableCbm,
     'flat' => 1,
-    _ => _legacySeaByKg ? measure.weightKg : measure.billableKg,
+    _ => measure.weightKg,
   };
 
   double costFor(FreightMeasure measure) =>
