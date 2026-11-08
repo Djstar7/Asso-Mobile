@@ -1465,8 +1465,8 @@ class HomeItemView extends GetView<HomeController> {
   /// Accès rapides, sous la bannière.
   ///
   /// La carte « Diaspo Exchange » occupait seule une ligne entière pour un
-  /// service parmi d'autres. Quatre raccourcis tiennent dans la même hauteur
-  /// et donnent une vue d'ensemble de ce que propose l'application.
+  /// service parmi d'autres. Les raccourcis, en grille, donnent une vue
+  /// d'ensemble de ce que propose l'application.
   Widget _buildQuickAccess(BuildContext context) {
     final entries = <_QuickLink>[
       _QuickLink(
@@ -1484,34 +1484,23 @@ class HomeItemView extends GetView<HomeController> {
         ),
       ),
       _QuickLink(
-        label: 'home.quick.wholesale'.tr,
-        icon: Icons.inventory_2_rounded,
-        onTap: () {
-          controller.handleTabTap(2);
-          controller.tabController.animateTo(controller.currentTabIndex.value);
-        },
-      ),
-      _QuickLink(
         label: 'home.quick.real_estate'.tr,
         icon: Icons.home_outlined,
         isNew: true,
         onTap: controller.openRealEstate,
       ),
       _QuickLink(
+        label: 'home.quick.library'.tr,
+        icon: Icons.menu_book_rounded,
+        isNew: true,
+        // Écran à part, comme l'Immobilier : les livres n'apparaissent pas
+        // dans le fil de l'accueil.
+        onTap: () => Get.toNamed(Routes.LIBRARY),
+      ),
+      _QuickLink(
         label: 'home.quick.orders'.tr,
         icon: Icons.receipt_long_rounded,
         onTap: controller.openOrdersTab,
-      ),
-      _QuickLink(
-        label: 'home.tooltip.favorites'.tr,
-        icon: Icons.favorite_rounded,
-        count: controller.favoritesCount.value,
-        onTap: () => AuthGuard.navigateIfAuthenticated(
-          context,
-          Routes.FAVORITES,
-          featureName: 'home.feature.your_favorites'.tr,
-          useDialog: true,
-        ),
       ),
     ];
 
@@ -1522,16 +1511,31 @@ class HomeItemView extends GetView<HomeController> {
         context.ds.gutter,
         AppDesign.space2,
       ),
-      child: Row(
+      // Les quatre raccourcis tiennent sur une seule ligne ; au-delà, la
+      // grille passe à la ligne suivante.
+      child: Column(
         children: [
-          for (final entry in entries) ...[
-            Expanded(child: _QuickLinkTile(link: entry)),
-            if (entry != entries.last) SizedBox(width: AppDesign.space2),
+          for (var start = 0; start < entries.length; start += _quickLinksPerRow) ...[
+            if (start > 0) SizedBox(height: AppDesign.space2),
+            Row(
+              children: [
+                for (var i = start; i < start + _quickLinksPerRow; i++) ...[
+                  if (i > start) SizedBox(width: AppDesign.space2),
+                  Expanded(
+                    child: i < entries.length
+                        ? _QuickLinkTile(link: entries[i])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
           ],
         ],
       ),
     );
   }
+
+  static const _quickLinksPerRow = 4;
 
   Widget _buildBannerCarousel(BuildContext context) {
     final deviceType = AppThemeSystem.getDeviceType(context);
@@ -2499,14 +2503,21 @@ class _QuickLinkTile extends StatelessWidget {
                 ],
               ),
               SizedBox(height: AppDesign.space2),
-              Text(
-                link.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textStyle(
-                  FontSizeType.overline,
-                  fontWeight: FontWeight.w600,
-                  color: context.ds.textSecondary,
+              // Quatre tuiles par ligne : sur un écran étroit, « Bibliothèque »
+              // rétrécit légèrement plutôt que d'être tronqué.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    link.label,
+                    maxLines: 1,
+                    style: context.textStyle(
+                      FontSizeType.overline,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
                 ),
               ),
             ],

@@ -16,6 +16,7 @@ abstract class Routes {
   static const TRACKING = _Paths.TRACKING;
   static const PRODUCT = _Paths.PRODUCT;
   static const FAVORITES = _Paths.FAVORITES;
+  static const LIBRARY = _Paths.LIBRARY;
   static const SETTINGS = _Paths.SETTINGS;
   static const SHIPMENT = _Paths.SHIPMENT;
   static const PREFERENCES = _Paths.PREFERENCES;
@@ -82,6 +83,7 @@ abstract class _Paths {
   static const TRACKING = '/tracking';
   static const PRODUCT = '/product';
   static const FAVORITES = '/favorites';
+  static const LIBRARY = '/library';
   static const SETTINGS = '/settings';
   static const SHIPMENT = '/shipment';
   static const PREFERENCES = '/preferences';

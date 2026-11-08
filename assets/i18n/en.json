@@ -2081,7 +2081,8 @@
       "diaspo": "Diaspo",
       "wholesale": "Wholesale",
       "orders": "Orders",
-      "real_estate": "Real estate"
+      "real_estate": "Real estate",
+      "library": "Library"
     },
     "banner": {
       "welcome_title": "Welcome to Asso",
@@ -2181,6 +2182,17 @@
     "react_error": "Unable to react to the message"
   },
   "product": {
+    "book": {
+      "title": "Book details",
+      "by": "By @author",
+      "author": "Author",
+      "publisher": "Publisher",
+      "language": "Language",
+      "format": "Format",
+      "pages": "Pages",
+      "year": "Published",
+      "isbn": "ISBN"
+    },
     "error": "Error",
     "seller": "Seller",
     "share": {
@@ -2475,6 +2487,37 @@
       "books": "Books",
       "other": "Other"
     }
+  },
+  "library": {
+    "title": "Library",
+    "search_hint": "Title, author or ISBN",
+    "clear_search": "Clear search",
+    "all_shelves": "All shelves",
+    "all_genres": "All genres",
+    "filters": "Filters",
+    "language": "Language",
+    "format": "Format",
+    "any": "Any",
+    "reset": "Reset",
+    "apply": "Apply",
+    "languages": {
+      "fr": "French",
+      "en": "English"
+    },
+    "formats": {
+      "paperback": "Paperback",
+      "hardcover": "Hardcover",
+      "ebook": "E-book",
+      "audio": "Audiobook"
+    },
+    "empty_title": "Books are coming soon",
+    "empty_message": "The Library is filling up: check back in a few days.",
+    "no_result_title": "No books found",
+    "no_result_message": "Try another shelf or author, or remove some filters.",
+    "clear_filters": "Clear filters",
+    "error_title": "Could not load",
+    "load_failed": "The books could not be loaded.",
+    "retry": "Retry"
   },
   "favorites": {
     "error_title": "Error",

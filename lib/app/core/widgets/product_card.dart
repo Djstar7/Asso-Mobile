@@ -26,6 +26,7 @@ class ProductCard extends StatelessWidget {
     required this.name,
     required this.price,
     this.location,
+    this.locationIcon = Icons.location_on_outlined,
     this.imageBuilder,
     this.onTap,
     this.onFavoriteTap,
@@ -51,6 +52,9 @@ class ProductCard extends StatelessWidget {
   final String? originalPrice;
 
   final String? location;
+
+  /// Icône de la ligne [location] (l'auteur d'un livre n'est pas un lieu).
+  final IconData locationIcon;
 
   /// Construit le visuel du produit. Laissé à l'appelant car chaque module
   /// résout ses images différemment (URL distante, asset, placeholder).
@@ -349,7 +353,7 @@ class ProductCard extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.location_on_outlined,
+                              locationIcon,
                               size: 11,
                               color: context.ds.textTertiary,
                             ),

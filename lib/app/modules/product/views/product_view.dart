@@ -229,6 +229,7 @@ class ProductView extends GetView<ProductController> {
                 _buildLocationSection(context, product),
                 _sectionGap(context),
                 _buildDescriptionSection(context, product),
+                _buildBookSection(context, product),
                 _buildProductCharacteristics(context, product),
                 _sectionGap(context),
                 _buildSellerSection(context, product),
@@ -242,6 +243,12 @@ class ProductView extends GetView<ProductController> {
       ),
       bottomNavigationBar: _buildBottomBar(context, product),
     );
+  }
+
+  /// Fiche livre renvoyée par l'API (`product.book`), null hors Bibliothèque.
+  Map<String, dynamic>? _bookOf(Map<String, dynamic> product) {
+    final book = product['book'];
+    return book is Map ? Map<String, dynamic>.from(book) : null;
   }
 
   Widget _buildImageCarousel(
@@ -516,6 +523,19 @@ class ProductView extends GetView<ProductController> {
               height: 1.35,
             ),
           ),
+          if (_bookOf(product)?['author']?.toString().trim().isNotEmpty == true) ...[
+            SizedBox(height: AppDesign.space1),
+            Text(
+              'product.book.by'.trParams({
+                'author': _bookOf(product)!['author'].toString().trim(),
+              }),
+              style: context.textStyle(
+                FontSizeType.caption,
+                fontWeight: FontWeight.w600,
+                color: AppDesign.accent,
+              ),
+            ),
+          ],
           if (shopName.isNotEmpty) ...[
             SizedBox(height: AppDesign.space2),
             Row(
@@ -653,6 +673,63 @@ class ProductView extends GetView<ProductController> {
             if (i > 0) AppDivider(),
             rows[i],
           ],
+        ],
+      ),
+    );
+  }
+
+  /// Détails du livre : auteur, éditeur, langue, format, pages, année, ISBN.
+  /// Les libellés de langue et de format viennent de l'API, dans la langue
+  /// de l'utilisateur.
+  Widget _buildBookSection(BuildContext context, Map<String, dynamic> product) {
+    final book = _bookOf(product);
+    if (book == null) return const SizedBox.shrink();
+
+    String? text(String key) {
+      final value = book[key]?.toString().trim();
+      return (value == null || value.isEmpty || value == 'null') ? null : value;
+    }
+
+    final entries = <(String, String?)>[
+      ('product.book.author'.tr, text('author')),
+      ('product.book.publisher'.tr, text('publisher')),
+      ('product.book.language'.tr, text('language_label') ?? text('language')),
+      ('product.book.format'.tr, text('format_label')),
+      ('product.book.pages'.tr, text('pages')),
+      ('product.book.year'.tr, text('published_year')),
+      ('product.book.isbn'.tr, text('isbn')),
+    ];
+    final rows = [
+      for (final (label, value) in entries)
+        if (value != null) _specRow(context, label: label, value: value),
+    ];
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      color: context.ds.surface,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppDivider(),
+          Padding(
+            padding: EdgeInsets.only(top: AppDesign.space3),
+            child: Text(
+              'product.book.title'.tr,
+              style: context.textStyle(
+                FontSizeType.body1,
+                fontWeight: FontWeight.w700,
+                color: context.ds.textPrimary,
+              ),
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) AppDivider(),
+            rows[i],
+          ],
+          SizedBox(height: AppDesign.space2),
         ],
       ),
     );
