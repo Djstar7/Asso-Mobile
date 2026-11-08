@@ -1484,14 +1484,6 @@ class HomeItemView extends GetView<HomeController> {
         ),
       ),
       _QuickLink(
-        label: 'home.quick.wholesale'.tr,
-        icon: Icons.inventory_2_rounded,
-        onTap: () {
-          controller.handleTabTap(2);
-          controller.tabController.animateTo(controller.currentTabIndex.value);
-        },
-      ),
-      _QuickLink(
         label: 'home.quick.real_estate'.tr,
         icon: Icons.home_outlined,
         isNew: true,
@@ -1510,17 +1502,6 @@ class HomeItemView extends GetView<HomeController> {
         icon: Icons.receipt_long_rounded,
         onTap: controller.openOrdersTab,
       ),
-      _QuickLink(
-        label: 'home.tooltip.favorites'.tr,
-        icon: Icons.favorite_rounded,
-        count: controller.favoritesCount.value,
-        onTap: () => AuthGuard.navigateIfAuthenticated(
-          context,
-          Routes.FAVORITES,
-          featureName: 'home.feature.your_favorites'.tr,
-          useDialog: true,
-        ),
-      ),
     ];
 
     return Padding(
@@ -1530,8 +1511,8 @@ class HomeItemView extends GetView<HomeController> {
         context.ds.gutter,
         AppDesign.space2,
       ),
-      // Deux rangées de trois : six raccourcis sur une seule ligne
-      // rendraient les libellés illisibles sur un petit écran.
+      // Les quatre raccourcis tiennent sur une seule ligne ; au-delà, la
+      // grille passe à la ligne suivante.
       child: Column(
         children: [
           for (var start = 0; start < entries.length; start += _quickLinksPerRow) ...[
@@ -1554,7 +1535,7 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
-  static const _quickLinksPerRow = 3;
+  static const _quickLinksPerRow = 4;
 
   Widget _buildBannerCarousel(BuildContext context) {
     final deviceType = AppThemeSystem.getDeviceType(context);
@@ -2522,14 +2503,21 @@ class _QuickLinkTile extends StatelessWidget {
                 ],
               ),
               SizedBox(height: AppDesign.space2),
-              Text(
-                link.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textStyle(
-                  FontSizeType.overline,
-                  fontWeight: FontWeight.w600,
-                  color: context.ds.textSecondary,
+              // Quatre tuiles par ligne : sur un écran étroit, « Bibliothèque »
+              // rétrécit légèrement plutôt que d'être tronqué.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    link.label,
+                    maxLines: 1,
+                    style: context.textStyle(
+                      FontSizeType.overline,
+                      fontWeight: FontWeight.w600,
+                      color: context.ds.textSecondary,
+                    ),
+                  ),
                 ),
               ),
             ],
