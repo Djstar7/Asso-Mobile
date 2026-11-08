@@ -461,9 +461,81 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
       );
     }
 
-    return isSearching
-        ? _buildEmptyState(context, isDark)
-        : _buildSearchHistory(context, isDark);
+    if (isSearching) return _buildEmptyState(context, isDark);
+
+    // Catégorie choisie sans texte : un mur vide veut dire « rien dans cette
+    // catégorie », pas « rien cherché ». Ni historique ni suggestions ici.
+    final category = controller.selectedCategory.value;
+    if (category.isNotEmpty && category != 'Tous') {
+      return _buildEmptyCategoryState(context, isDark, category);
+    }
+
+    return _buildSearchHistory(context, isDark);
+  }
+
+  /// État vide d'une catégorie qui n'a encore aucun produit.
+  Widget _buildEmptyCategoryState(
+    BuildContext context,
+    bool isDark,
+    String category,
+  ) {
+    return Center(
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.all(AppThemeSystem.getHorizontalPadding(context)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: isDark ? AppThemeSystem.grey800 : AppThemeSystem.grey100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.category_outlined,
+                size: 64,
+                color: AppThemeSystem.grey500,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'search.empty_category_title'.tr,
+              textAlign: TextAlign.center,
+              style: context.textStyle(
+                FontSizeType.h4,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'search.empty_category_message'.trParams({
+                'category': _categoryLabel(category),
+              }),
+              textAlign: TextAlign.center,
+              style: context.textStyle(
+                FontSizeType.body2,
+                color: AppThemeSystem.grey600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => controller.selectCategory('Tous'),
+              icon: const Icon(Icons.grid_view_rounded),
+              label: Text('search.see_all_categories'.tr),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppThemeSystem.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// État de chargement : le squelette annonce le décalage du mur qui va le
@@ -619,49 +691,6 @@ class _SearchViewContent extends GetView<search_ctrl.SearchController> {
                 FontSizeType.body2,
                 color: AppThemeSystem.grey600,
               ),
-            ),
-            const SizedBox(height: 32),
-            // Suggestions de recherche
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children:
-                  [
-                    'Vêtements',
-                    'Électronique',
-                    'Chaussures',
-                    'Accessoires',
-                  ].map((tag) {
-                    return InkWell(
-                      onTap: () {
-                        controller.searchTextController.text = tag;
-                        controller.searchQuery.value = tag;
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppThemeSystem.grey800
-                              : AppThemeSystem.grey100,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark
-                                ? AppThemeSystem.grey700
-                                : AppThemeSystem.grey300,
-                          ),
-                        ),
-                        child: Text(
-                          _categoryLabel(tag),
-                          style: context.textStyle(FontSizeType.body2),
-                        ),
-                      ),
-                    );
-                  }).toList(),
             ),
           ],
         ),
