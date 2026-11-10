@@ -640,6 +640,22 @@ class StoreManagementController extends GetxController {
       // change par une demande validée par ASSO (requestLocationChange).
       final placed = isShopPlaced;
 
+      // Boutique pas encore placée : la position est obligatoire.
+      if (!placed &&
+          (latitude == null ||
+              longitude == null ||
+              (latitude == 0 && longitude == 0) ||
+              address.trim().isEmpty)) {
+        AppFeedback.show(
+          'vendor_config.validation.location_required_title'.tr,
+          'vendor_config.validation.location_required'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppThemeSystem.errorColor,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+
       // Premier placement : il doit tomber dans une zone de livraison.
       if (!placed && latitude != null && longitude != null) {
         await checkDeliveryAvailability(latitude, longitude);

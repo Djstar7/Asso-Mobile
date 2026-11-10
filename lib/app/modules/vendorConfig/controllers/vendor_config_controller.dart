@@ -398,7 +398,9 @@ class VendorConfigController extends GetxController {
       return false;
     }
 
-    if (shopLocation.value.isEmpty) {
+    // Position obligatoire : (0, 0) veut dire qu'aucun point n'a été choisi.
+    if (shopLocation.value.isEmpty ||
+        (shopLatitude.value == 0 && shopLongitude.value == 0)) {
       AppFeedback.show(
         'vendor_config.validation.location_required_title'.tr,
         'vendor_config.validation.location_required'.tr,
