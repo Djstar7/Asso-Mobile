@@ -19,6 +19,9 @@ class PriceTier {
   final double? lengthCm;
   final double? widthCm;
   final double? heightCm;
+
+  /// Volume d'un carton de [packSize] pièces (CBM), null : celui de la fiche.
+  final double? cbm;
   final String formattedPrice;
 
   const PriceTier({
@@ -33,6 +36,7 @@ class PriceTier {
     this.lengthCm,
     this.widthCm,
     this.heightCm,
+    this.cbm,
     required this.formattedPrice,
   });
 
@@ -51,6 +55,7 @@ class PriceTier {
     lengthCm: (j['length_cm'] as num?)?.toDouble(),
     widthCm: (j['width_cm'] as num?)?.toDouble(),
     heightCm: (j['height_cm'] as num?)?.toDouble(),
+    cbm: (j['cbm'] as num?)?.toDouble(),
     formattedPrice: j['formatted_price']?.toString() ?? '',
   );
 
@@ -126,10 +131,15 @@ class FreightLine {
   final List<double>? dimensionsCm;
   final int quantity;
 
+  /// Volume de toute la ligne tiré du CBM du carton (cartons entiers) ; prime
+  /// sur [dimensionsCm].
+  final double? volumeCbm;
+
   const FreightLine({
     required this.quantity,
     this.unitWeightKg,
     this.dimensionsCm,
+    this.volumeCbm,
   });
 }
 
@@ -154,25 +164,34 @@ class FreightMeasure {
   factory FreightMeasure.of(Iterable<FreightLine> lines) {
     var weight = 0.0;
     var cbm = 0.0;
+    var cbmFromWeight = 0.0;
     var missingWeight = false;
     var unmeasured = false;
     for (final line in lines) {
       final unit = line.unitWeightKg ?? 0;
       final dims = line.dimensionsCm;
+      final lineCbm =
+          line.volumeCbm ??
+          (dims == null
+              ? null
+              : dims[0] * dims[1] * dims[2] / 1000000 * line.quantity);
       missingWeight = missingWeight || unit <= 0;
-      unmeasured = unmeasured || (unit <= 0 && dims == null);
+      unmeasured = unmeasured || (unit <= 0 && lineCbm == null);
       weight += unit * line.quantity;
-      if (dims != null) {
-        cbm += dims[0] * dims[1] * dims[2] / 1000000 * line.quantity;
+      if (lineCbm != null) {
+        cbm += lineCbm;
+      } else {
+        // Aucun volume connu : 1 000 kg comptent pour 1 CBM.
+        cbmFromWeight += unit * line.quantity / 1000;
       }
     }
     return FreightMeasure(
       weightKg: weight,
       volumeCbm: cbm,
-      // Le poids et l'encombrement s'additionnent, comme sur le serveur.
+      // Avion : poids réel + poids volumétrique, comme sur le serveur.
       billableKg: weight + cbm * 1000000 / 6000,
-      // 1 000 kg comptent pour 1 CBM.
-      billableCbm: cbm + weight / 1000,
+      // Bateau : le volume seul ; le poids ne compte que sans volume connu.
+      billableCbm: cbm + cbmFromWeight,
       missingWeight: missingWeight,
       unmeasured: unmeasured,
     );
@@ -333,6 +352,10 @@ class WholesaleProduct {
   final double? widthCm;
   final double? heightCm;
 
+  /// Carton du devis : volume (CBM) et nombre de pièces qu'il contient.
+  final double? cbm;
+  final int? piecesPerCarton;
+
   /// Règles de transport de son pays d'origine.
   final FreightRules? freightRules;
   final List<PriceTier> priceTiers;
@@ -373,6 +396,8 @@ class WholesaleProduct {
     this.lengthCm,
     this.widthCm,
     this.heightCm,
+    this.cbm,
+    this.piecesPerCarton,
     this.freightRules,
     required this.priceTiers,
     this.variants = const [],
@@ -400,6 +425,28 @@ class WholesaleProduct {
     return null;
   }
 
+  /// Le volume vient-il d'un CBM de carton saisi (palier ou fiche) ?
+  bool hasDeclaredCbm(PriceTier? tier) =>
+      (tier?.cbm ?? 0) > 0 || (cbm ?? 0) > 0;
+
+  /// Volume (CBM) de [quantity] pièces d'après le CBM du carton, comme le
+  /// serveur (Product::packageVolumeCbm) : on paie les cartons entiers. Carton
+  /// du palier : `pack_size` pièces ; carton de la fiche : `pieces_per_carton`
+  /// (à défaut `pack_size`). Null sans CBM saisi.
+  double? cartonVolumeCbm(PriceTier? tier, int quantity) {
+    final packSize = (tier?.packSize ?? 0) > 0 ? tier!.packSize! : 1;
+    if ((tier?.cbm ?? 0) > 0) {
+      return (quantity / packSize).ceil() * tier!.cbm!;
+    }
+    if ((cbm ?? 0) > 0) {
+      final perCarton = (piecesPerCarton ?? 0) > 0
+          ? piecesPerCarton!
+          : packSize;
+      return (quantity / perCarton).ceil() * cbm!;
+    }
+    return null;
+  }
+
   factory WholesaleProduct.fromJson(Map<String, dynamic> j) => WholesaleProduct(
     id: j['id'] as int,
     name: j['name']?.toString() ?? '',
@@ -413,6 +460,8 @@ class WholesaleProduct {
     lengthCm: (j['length_cm'] as num?)?.toDouble(),
     widthCm: (j['width_cm'] as num?)?.toDouble(),
     heightCm: (j['height_cm'] as num?)?.toDouble(),
+    cbm: (j['cbm'] as num?)?.toDouble(),
+    piecesPerCarton: (j['pieces_per_carton'] as num?)?.toInt(),
     freightRules: FreightRules.fromJson(j['freight_rules']),
     priceTiers:
         (j['price_tiers'] as List?)

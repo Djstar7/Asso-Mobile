@@ -31,9 +31,9 @@ void main() {
       ),
     ]);
 
-    // 24 kg réels + 60 kg volumétriques ; 0,36 CBM + 0,024 CBM.
+    // Avion : 24 kg réels + 60 kg volumétriques. Bateau : 0,36 CBM seuls.
     expect(air.costFor(m), closeTo(1008000, 0.01));
-    expect(sea.costFor(m), closeTo(126720, 0.01));
+    expect(sea.costFor(m), closeTo(118800, 0.01));
   });
 
   test('without dimensions only weight counts, 1000 kg for 1 CBM', () {
@@ -54,7 +54,7 @@ void main() {
       ),
     ]);
 
-    expect(sea.costFor(m), closeTo(4405500, 0.01));
+    expect(sea.costFor(m), closeTo(4009500, 0.01));
     expect(air.isAvailableFor(m, _rules), isFalse);
     expect(sea.isAvailableFor(m, _rules), isTrue);
   });
@@ -90,6 +90,50 @@ void main() {
       sea.canPrice(FreightMeasure.of(const [FreightLine(quantity: 1)])),
       isFalse,
     );
+  });
+
+  test('the carton CBM is billed by whole cartons, without the weight', () {
+    // Mixeur MX-6030 : 8 pièces · 18,5 kg · 0,139 CBM par carton.
+    final product = WholesaleProduct.fromJson({
+      'id': 1,
+      'name': 'Mixeur',
+      'cbm': 0.139,
+      'pieces_per_carton': 8,
+      'unit_weight_kg': 2.3125,
+    });
+    final boat = _option('sea', 'per_cbm', 336600);
+    FreightMeasure pieces(int quantity) => FreightMeasure.of([
+      FreightLine(
+        quantity: quantity,
+        unitWeightKg: product.unitWeightKg,
+        volumeCbm: product.cartonVolumeCbm(null, quantity),
+      ),
+    ]);
+
+    expect(boat.billedQuantity(pieces(1)), closeTo(0.139, 1e-9));
+    expect(boat.costFor(pieces(1)), closeTo(46787.4, 0.01));
+    expect(boat.costFor(pieces(8)), closeTo(46787.4, 0.01));
+    expect(boat.costFor(pieces(9)), closeTo(93574.8, 0.01));
+  });
+
+  test('a tier carton CBM holds pack_size pieces', () {
+    final product = WholesaleProduct.fromJson({
+      'id': 1,
+      'name': 'Mixeur',
+      'cbm': 0.139,
+      'pieces_per_carton': 8,
+    });
+    final tier = PriceTier.fromJson({
+      'id': 1,
+      'label': 'Carton',
+      'unit_price': 1000,
+      'min_quantity': 1,
+      'pack_size': 4,
+      'cbm': 0.07,
+    });
+
+    expect(product.cartonVolumeCbm(tier, 5), closeTo(0.14, 1e-9));
+    expect(product.cartonVolumeCbm(null, 5), closeTo(0.139, 1e-9));
   });
 
   test('reads the dimensions option like the server', () {

@@ -290,7 +290,9 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
           unitWeightKg: tierWeight > 0
               ? tierWeight
               : widget.product.unitWeightKg,
-          // La taille choisie par le client prime sur le palier et la fiche.
+          // Le CBM du carton (palier ou fiche) fait foi, cartons entiers.
+          volumeCbm: widget.product.cartonVolumeCbm(tier, line.$2),
+          // Sinon la taille choisie par le client, puis le palier et la fiche.
           dimensionsCm:
               _chosenDimensions(line.$1) ?? widget.product.dimensionsFor(tier),
         );
@@ -594,14 +596,6 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
             child: Column(
               children: [
                 ..._availableShipping.map(_shippingTile),
-                if (_availableShipping.length < widget.shippingOptions.length)
-                  _shippingNotice(
-                    context,
-                    Icons.directions_boat_rounded,
-                    'import.wholesale.air_removed'.trParams({
-                      'weight': _kg(_freightRules?.airMaxWeightKg ?? 0),
-                    }),
-                  ),
                 if (_shipping != null && _shipping!.rateType != 'flat')
                   _shippingMeasureInfo(context),
               ],
@@ -1436,11 +1430,13 @@ class _WholesaleProductViewState extends State<WholesaleProductView> {
       billed <= 0
           ? 'import.wholesale.weight_set_by_asso'.tr
           : shipping.rateType == 'per_cbm'
-          ? 'import.wholesale.volume_computed'.trParams({
+          ? 'import.wholesale.volume_cost'.trParams({
               'volume': billed.toStringAsFixed(3),
+              'price': _fmt(_shippingCost),
             })
-          : 'import.wholesale.weight_computed'.trParams({
-              'weight': billed.toStringAsFixed(2),
+          : 'import.wholesale.weight_cost'.trParams({
+              'weight': _kg(double.parse(billed.toStringAsFixed(2))),
+              'price': _fmt(_shippingCost),
             }),
     );
   }
