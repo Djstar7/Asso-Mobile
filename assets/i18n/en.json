@@ -988,6 +988,11 @@
       "tracking_pending": "The tracking number will be available once the seller has handed the parcel to the carrier.",
       "copied": "Copied",
       "tracking_copied": "Tracking number copied",
+      "international_title": "International parcel",
+      "international_expected": "Expected at the ASSO warehouse in Douala around @date",
+      "international_late": "The parcel is running late: ASSO is following it and will keep you posted.",
+      "international_next": "As soon as it reaches Douala, delivery to you is arranged.",
+      "international_arrived": "Received at the ASSO warehouse in Douala on @date.",
       "tracking_number_label": "Tracking no.: ",
       "track_with_carrier": "Track with carrier",
       "status": "Status",
@@ -2344,8 +2349,10 @@
       "units_plural": "@count units",
       "weight": "Weight",
       "origin": "Origin",
-      "delivery_delay": "Delivery time"
+      "delivery_delay": "Delivery time",
+      "shipping": "Shipping"
     },
+    "ships_from_abroad": "Shipped from abroad to the ASSO warehouse in Douala, then delivered to you.",
     "out_of_stock": "Out of stock",
     "origin": {
       "local": "Local product (Cameroon)",

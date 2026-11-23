@@ -406,6 +406,66 @@ class CarrierTrackingCard extends StatelessWidget {
   }
 }
 
+/// Colis international (produits expédiés depuis l'étranger) : étape, arrivée
+/// prévue à l'entrepôt de Douala, transporteur et numéro de suivi.
+class InternationalShipmentCard extends StatelessWidget {
+  final InternationalShipment shipment;
+
+  const InternationalShipmentCard({super.key, required this.shipment});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat('d MMM', Get.locale?.toLanguageTag());
+    final color = shipment.isLate || shipment.stage == 'issue'
+        ? AppThemeSystem.warningColor
+        : AppThemeSystem.infoColor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'core.delivery.international_title'.tr,
+          style: context.textStyle(FontSizeType.body2, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        DeliveryNotice(
+          shipment.stageLabel,
+          icon: shipment.hasArrived ? Icons.warehouse_rounded : Icons.flight_takeoff_rounded,
+          color: color,
+        ),
+        if (shipment.hasArrived && shipment.arrivedAt != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'core.delivery.international_arrived'.trParams({'date': fmt.format(shipment.arrivedAt!)}),
+            style: context.caption,
+          ),
+        ] else ...[
+          if (shipment.expectedHubDate != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'core.delivery.international_expected'.trParams({'date': fmt.format(shipment.expectedHubDate!)}),
+              style: context.body2,
+            ),
+          ],
+          if (shipment.isLate) ...[
+            const SizedBox(height: 4),
+            Text('core.delivery.international_late'.tr, style: context.caption),
+          ],
+          const SizedBox(height: 4),
+          Text('core.delivery.international_next'.tr, style: context.caption),
+        ],
+        if (shipment.trackingNumber != null && !shipment.hasArrived) ...[
+          const SizedBox(height: 8),
+          CarrierTrackingCard(
+            companyName: shipment.carrierName,
+            trackingNumber: shipment.trackingNumber,
+            trackingUrl: shipment.trackingUrl,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// Chronologie datée des étapes de livraison.
 class DeliveryTimelineView extends StatelessWidget {
   final List<DeliveryTimelineStep> steps;
@@ -538,6 +598,10 @@ class OrderDeliveryDetails extends StatelessWidget {
         ),
         if (delivery.trackingStatusLabel != null)
           DeliveryInfoLine('core.delivery.status'.tr, delivery.trackingStatusLabel!),
+        if (delivery.internationalShipment case final shipment?) ...[
+          const SizedBox(height: 8),
+          InternationalShipmentCard(shipment: shipment),
+        ],
         if (delivery.isInternationalExport && delivery.solexAgency != null) ...[
           const SizedBox(height: 8),
           DeliveryNotice('core.delivery.export_path'.trParams({

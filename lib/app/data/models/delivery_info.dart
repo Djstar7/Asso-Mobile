@@ -160,6 +160,49 @@ class PickupAgency {
   }
 }
 
+/// Colis d'un fournisseur international (produits expédiés depuis l'étranger
+/// vers l'entrepôt ASSO de Douala) : étape, arrivée prévue et suivi.
+class InternationalShipment {
+  /// ordering | preparing | in_transit | arrived | issue
+  final String stage;
+  final String stageLabel;
+  final DateTime? expectedHubDate;
+  final bool isLate;
+  final DateTime? arrivedAt;
+  final String? carrierName;
+  final String? trackingNumber;
+  final String? trackingUrl;
+
+  const InternationalShipment({
+    required this.stage,
+    required this.stageLabel,
+    this.expectedHubDate,
+    this.isLate = false,
+    this.arrivedAt,
+    this.carrierName,
+    this.trackingNumber,
+    this.trackingUrl,
+  });
+
+  bool get hasArrived => stage == 'arrived';
+
+  static InternationalShipment? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final stage = _toText(raw['stage']);
+    if (stage == null) return null;
+    return InternationalShipment(
+      stage: stage,
+      stageLabel: _toText(raw['stage_label']) ?? '',
+      expectedHubDate: DateTime.tryParse(raw['expected_hub_date']?.toString() ?? ''),
+      isLate: raw['is_late'] == true,
+      arrivedAt: DateTime.tryParse(raw['arrived_at']?.toString() ?? '')?.toLocal(),
+      carrierName: _toText(raw['carrier_name']),
+      trackingNumber: _toText(raw['tracking_number']),
+      trackingUrl: _toText(raw['tracking_url']),
+    );
+  }
+}
+
 /// Bloc `delivery` des commandes (acheteur et vendeur).
 class DeliveryInfo {
   final String mode; // local | carrier
@@ -194,6 +237,9 @@ class DeliveryInfo {
   /// Commande en gros : trajet pays d'origine → Douala, avant la livraison locale.
   final DeliveryPriceGridRow? importLeg;
 
+  /// Produits expédiés depuis l'étranger : colis attendu à l'entrepôt de Douala.
+  final InternationalShipment? internationalShipment;
+
   const DeliveryInfo({
     this.mode = 'local',
     this.isCarrier = false,
@@ -222,6 +268,7 @@ class DeliveryInfo {
     this.receptionConfirmedAt,
     this.timeline = const [],
     this.importLeg,
+    this.internationalShipment,
   });
 
   static DeliveryInfo? fromMap(dynamic raw) {
@@ -255,6 +302,7 @@ class DeliveryInfo {
       receptionConfirmedAt: _toText(raw['reception_confirmed_at']),
       timeline: DeliveryTimelineStep.listFrom(raw['timeline']),
       importLeg: DeliveryPriceGridRow.listFrom([raw['import_leg']]).firstOrNull,
+      internationalShipment: InternationalShipment.fromMap(raw['international_shipment']),
     );
   }
 
