@@ -807,6 +807,15 @@ class ProductView extends GetView<ProductController> {
               value: deliveryDelay.label,
             ),
           ],
+          // Fournisseur international : délai plus long, livré depuis Douala.
+          if (product['ships_from_abroad'] == true) ...[
+            AppDivider(),
+            _specRow(
+              context,
+              label: 'product.specs.shipping'.tr,
+              value: 'product.ships_from_abroad'.tr,
+            ),
+          ],
         ],
       ),
     );

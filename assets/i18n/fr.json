@@ -988,6 +988,11 @@
       "tracking_pending": "Le numéro de suivi sera disponible dès que le vendeur aura remis le colis au transporteur.",
       "copied": "Copié",
       "tracking_copied": "Numéro de suivi copié",
+      "international_title": "Colis international",
+      "international_expected": "Arrivée prévue à l’entrepôt ASSO de Douala vers le @date",
+      "international_late": "Le colis a du retard : ASSO suit son acheminement et vous tiendra informé.",
+      "international_next": "Dès son arrivée à Douala, la livraison jusqu’à vous est lancée.",
+      "international_arrived": "Reçu à l’entrepôt ASSO de Douala le @date.",
       "tracking_number_label": "N° de suivi : ",
       "track_with_carrier": "Suivre chez le transporteur",
       "status": "Statut",
@@ -2344,8 +2349,10 @@
       "units_plural": "@count unités",
       "weight": "Poids",
       "origin": "Provenance",
-      "delivery_delay": "Délai de livraison"
+      "delivery_delay": "Délai de livraison",
+      "shipping": "Expédition"
     },
+    "ships_from_abroad": "Expédié depuis l’étranger vers l’entrepôt ASSO de Douala, puis livré chez vous.",
     "out_of_stock": "Épuisé",
     "origin": {
       "local": "Produit local (Cameroun)",
