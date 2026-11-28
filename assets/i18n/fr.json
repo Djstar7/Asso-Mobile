@@ -2069,8 +2069,7 @@
       "sign_in": "Se connecter"
     },
     "sections": {
-      "nearby": "Proche de vous",
-      "recent": "Récemment postés",
+      "feed": "À découvrir",
       "see_all": "Voir tout"
     },
     "empty_category": "Aucun produit dans cette catégorie",
@@ -2080,7 +2079,16 @@
       "subtitle": "Achetez ou vendez des kilos de bagage",
       "banner_title": "Envoyez vos colis par un voyageur",
       "open_trips_one": "@count trajet ouvert · achetez des kilos de bagage",
-      "open_trips_other": "@count trajets ouverts · achetez des kilos de bagage"
+      "open_trips_other": "@count trajets ouverts · achetez des kilos de bagage",
+      "banner_title_no_trip": "Vous voyagez bientôt ?",
+      "no_trip": "Vendez vos kilos de bagage avec Diaspo"
+    },
+    "interlude": {
+      "low_prices": "Petits prix",
+      "real_estate_title": "Un logement, un terrain ?",
+      "real_estate_subtitle": "Locations et ventes vérifiées par ASSO",
+      "library_title": "La Bibliothèque ASSO",
+      "library_subtitle": "Romans, jeunesse, scolaire : trouvez votre prochain livre"
     },
     "quick": {
       "diaspo": "Diaspo",
@@ -2099,7 +2107,12 @@
       "discover": "Découvrir"
     },
     "price_undefined": "Prix non défini",
-    "discover_more": "Découvrir plus",
+    "feed": {
+      "end": "Vous avez tout vu. Revenez bientôt pour de nouveaux produits.",
+      "back_to_top": "Revenir en haut",
+      "load_failed": "Impossible de charger la suite.",
+      "retry": "Réessayer"
+    },
     "ads": {
       "title": "Asso Ads",
       "subtitle": "Annonces de nos vendeurs"

@@ -33,7 +33,10 @@ class HomeController extends GetxController
   /// Page à ouvrir dans la rubrique (lien profond, notification).
   String? realEstateInitialRoute;
   Object? realEstateInitialArguments;
-  final ScrollController nestedScrollController = ScrollController();
+
+  /// Défilement du fil d'accueil : la page suivante part quand il reste
+  /// environ deux écrans à parcourir, pour que le fil ne s'arrête jamais.
+  final ScrollController feedScrollController = ScrollController();
 
   // Flag pour éviter d'utiliser des ressources disposées
   bool _isDisposed = false;
@@ -79,16 +82,24 @@ class HomeController extends GetxController
   /// séparé facturerait une seconde impression pour un seul affichage.
   final RxList<Map<String, dynamic>> sponsoredProducts =
       <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> nearbyProducts =
-      <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> recentProducts =
+
+  /// Rangée « Petits prix » glissée dans le fil pour casser la grille : les
+  /// moins chers de la catégorie affichée (le fil, lui, va du plus récent au
+  /// plus ancien, une rangée « Nouveautés » ne ferait que le répéter).
+  final RxList<Map<String, dynamic>> lowPriceProducts =
       <Map<String, dynamic>>[].obs;
   final RxBool isLoadingProducts = false.obs;
-  final RxBool isLoadingNearby = false.obs;
-  final RxBool isLoadingRecent = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMoreProducts = true.obs;
+
+  /// La page suivante n'a pas pu être chargée : le fil propose « Réessayer »
+  /// au lieu de relancer l'appel à chaque mouvement du doigt.
+  final RxBool loadMoreFailed = false.obs;
   int _currentPage = 1;
+
+  /// Incrémenté à chaque rechargement du fil (catégorie, rafraîchissement) :
+  /// une page demandée avant ne doit pas s'ajouter au nouveau fil.
+  int _feedGeneration = 0;
 
   // Passcolis (offres Diaspo) : la bannière annonce le nombre de trajets
   // encore ouverts, et le raccourci Diaspo le porte en pastille.
@@ -163,8 +174,8 @@ class HomeController extends GetxController
     print('  └─ Starting data load...');
     _loadData();
 
-    // Pagination scroll listener
-    nestedScrollController.addListener(_onScroll);
+    // Défilement continu du fil
+    feedScrollController.addListener(_onScroll);
 
     print('✅ HOME CONTROLLER: onInit() COMPLETED');
     print('========================================');
@@ -245,11 +256,10 @@ class HomeController extends GetxController
     }
 
     try {
-      if (nestedScrollController.hasClients) {
-        nestedScrollController.dispose();
-      }
+      feedScrollController.removeListener(_onScroll);
+      feedScrollController.dispose();
     } catch (e) {
-      print('  └─ Error disposing nestedScrollController: $e');
+      print('  └─ Error disposing feedScrollController: $e');
     }
 
     super.onClose();
@@ -260,13 +270,28 @@ class HomeController extends GetxController
   }
 
   void _onScroll() {
-    if (_isDisposed) return;
+    if (_isDisposed || !feedScrollController.hasClients) return;
 
-    if (nestedScrollController.hasClients &&
-        nestedScrollController.position.pixels >=
-            nestedScrollController.position.maxScrollExtent - 200) {
-      _loadMoreProducts();
+    final position = feedScrollController.position;
+    if (position.extentAfter < position.viewportDimension * 2) {
+      loadMoreProducts();
     }
+  }
+
+  /// Après l'affichage d'une page : si elle ne remplit pas encore deux écrans
+  /// d'avance, la suivante part sans attendre que l'utilisateur fasse défiler.
+  void _keepFeedAhead() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onScroll());
+  }
+
+  /// « Revenir en haut », proposé en fin de fil.
+  void scrollFeedToTop() {
+    if (!feedScrollController.hasClients) return;
+    feedScrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   /// Recharge les informations dépendantes de la session après une connexion
@@ -292,8 +317,7 @@ class HomeController extends GetxController
 
       // Load other data in parallel and wait for completion
       await Future.wait([
-        _loadNearbyProducts(),
-        _loadRecentProducts(),
+        _loadProducts(),
         _loadPasscolisOffers(),
         _loadFavoritesCount(),
         _loadBanners(),
@@ -448,50 +472,50 @@ class HomeController extends GetxController
     }
   }
 
-  Future<void> _loadProducts({bool refresh = false}) async {
-    if (refresh) {
-      _currentPage = 1;
-      hasMoreProducts.value = true;
-    }
-
+  /// Charge la première page du fil (catalogue entier ou catégorie choisie).
+  Future<void> _loadProducts() async {
+    final generation = ++_feedGeneration;
+    unawaited(_loadLowPriceProducts(generation));
+    _currentPage = 1;
+    hasMoreProducts.value = true;
+    loadMoreFailed.value = false;
+    isLoadingMore.value = false;
     isLoadingProducts.value = true;
 
     try {
       final response = await ProductService.getProducts(
-        page: _currentPage,
+        page: 1,
         categoryId: selectedCategoryId.value > 0
             ? selectedCategoryId.value
             : null,
       );
+      if (generation != _feedGeneration) return;
 
       if (response.success && response.data != null) {
         final productsList = response.data!['products'] as List? ?? [];
         final pagination =
             response.data!['pagination'] as Map<String, dynamic>? ?? {};
+        final all = productsList
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
 
-        if (refresh || _currentPage == 1) {
-          final all = productsList
-              .map((p) => Map<String, dynamic>.from(p))
-              .toList();
-
-          // Les annonces remontent dans leur propre section, en tête d'écran ;
-          // elles sont retirées de la grille pour ne pas s'y répéter.
-          sponsoredProducts.value = all
-              .where((p) => p['is_sponsored'] == true)
-              .toList();
-          products.value = all.where((p) => p['is_sponsored'] != true).toList();
-        } else {
-          products.addAll(
-            productsList.map((p) => Map<String, dynamic>.from(p)),
-          );
-        }
-
+        // Annonces Asso Ads de la 1re page : la première en bandeau, les
+        // suivantes en cartes horizontales juste dessous. Elles quittent le
+        // fil pour ne pas s'afficher deux fois ; celles des pages suivantes
+        // restent dans le fil, signalées « Annonce ».
+        final ads = all.where((p) => p['is_sponsored'] == true).toList();
+        sponsoredProducts.value = ads;
+        products.value = all.where((p) => p['is_sponsored'] != true).toList();
         hasMoreProducts.value = pagination['has_more'] ?? false;
 
         developer.log(
-          'Products loaded: ${productsList.length} items (page $_currentPage, category_id: ${selectedCategoryId.value})',
+          'Feed loaded: ${productsList.length} items (page 1, category_id: ${selectedCategoryId.value})',
           name: 'HomeController',
         );
+      } else {
+        products.clear();
+        sponsoredProducts.clear();
+        hasMoreProducts.value = false;
       }
     } catch (e) {
       developer.log(
@@ -500,110 +524,77 @@ class HomeController extends GetxController
         error: e.toString(),
       );
     } finally {
-      // Afficher immédiatement les produits sans attendre
-      // Les images se chargeront progressivement avec leur placeholder
-      isLoadingProducts.value = false;
+      if (generation == _feedGeneration) {
+        isLoadingProducts.value = false;
+        _keepFeedAhead();
+      }
     }
   }
 
-  Future<void> _loadMoreProducts() async {
-    if (isLoadingMore.value || !hasMoreProducts.value) return;
+  /// Page suivante du fil, ajoutée à la suite sans doublon.
+  Future<void> loadMoreProducts() async {
+    if (isLoadingProducts.value ||
+        isLoadingMore.value ||
+        loadMoreFailed.value ||
+        !hasMoreProducts.value) {
+      return;
+    }
 
+    final generation = _feedGeneration;
+    final page = _currentPage + 1;
     isLoadingMore.value = true;
-    _currentPage++;
 
     try {
       final response = await ProductService.getProducts(
-        page: _currentPage,
+        page: page,
         categoryId: selectedCategoryId.value > 0
             ? selectedCategoryId.value
             : null,
       );
+      if (generation != _feedGeneration) return;
 
-      if (response.success && response.data != null) {
-        final productsList = response.data!['products'] as List? ?? [];
-        final pagination =
-            response.data!['pagination'] as Map<String, dynamic>? ?? {};
-
-        products.addAll(productsList.map((p) => Map<String, dynamic>.from(p)));
-        hasMoreProducts.value = pagination['has_more'] ?? false;
+      if (!response.success || response.data == null) {
+        loadMoreFailed.value = true;
+        return;
       }
+      final productsList = response.data!['products'] as List? ?? [];
+      final pagination =
+          response.data!['pagination'] as Map<String, dynamic>? ?? {};
+
+      // Un produit publié pendant la lecture décale les pages : le dernier de
+      // la page précédente revient en tête de la suivante. On ne le répète pas.
+      final seen = {
+        for (final p in products)
+          if (p['is_sponsored'] != true) p['id'],
+      };
+      products.addAll(
+        productsList
+            .map((p) => Map<String, dynamic>.from(p))
+            .where((p) => p['is_sponsored'] == true || !seen.contains(p['id'])),
+      );
+      _currentPage = page;
+      hasMoreProducts.value = pagination['has_more'] ?? false;
     } catch (e) {
-      _currentPage--;
+      if (generation == _feedGeneration) loadMoreFailed.value = true;
       developer.log(
         'Failed to load more products',
         name: 'HomeController',
         error: e.toString(),
       );
     } finally {
-      isLoadingMore.value = false;
-    }
-  }
-
-  Future<void> _loadNearbyProducts() async {
-    isLoadingNearby.value = true;
-
-    try {
-      final response = await ProductService.getNearbyProducts(limit: 6);
-      if (response.success && response.data != null) {
-        final productsList = response.data!['products'] as List? ?? [];
-        nearbyProducts.value = productsList
-            .map((p) => Map<String, dynamic>.from(p))
-            .toList();
-
-        developer.log(
-          'Nearby products loaded: ${nearbyProducts.length} items',
-          name: 'HomeController',
-        );
+      if (generation == _feedGeneration) {
+        isLoadingMore.value = false;
+        if (!loadMoreFailed.value) _keepFeedAhead();
       }
-    } catch (e) {
-      developer.log(
-        'Failed to load nearby products',
-        name: 'HomeController',
-        error: e.toString(),
-      );
-    } finally {
-      // Afficher immédiatement les produits sans attendre
-      // Les images se chargeront progressivement avec leur placeholder
-      isLoadingNearby.value = false;
     }
   }
 
-  Future<void> _loadRecentProducts() async {
-    isLoadingRecent.value = true;
-
-    try {
-      final response = await ProductService.getRecentProducts(limit: 6);
-      if (response.success && response.data != null) {
-        final productsList = response.data!['products'] as List? ?? [];
-        recentProducts.value = productsList
-            .map((p) => Map<String, dynamic>.from(p))
-            .toList();
-
-        developer.log(
-          'Recent products loaded: ${recentProducts.length} items',
-          name: 'HomeController',
-        );
-      }
-    } catch (e) {
-      developer.log(
-        'Failed to load recent products',
-        name: 'HomeController',
-        error: e.toString(),
-      );
-    } finally {
-      // Afficher immédiatement les produits sans attendre
-      // Les images se chargeront progressivement avec leur placeholder
-      isLoadingRecent.value = false;
-    }
+  /// « Réessayer » en bas du fil après un échec de chargement.
+  void retryLoadMore() {
+    loadMoreFailed.value = false;
+    loadMoreProducts();
   }
 
-  /// Charge les offres Passcolis qui alimentent la bannière de l'accueil.
-  ///
-  /// Les trajets dont il ne reste plus de kilos sont écartés : ils ne sont pas
-  /// réservables, les compter gonflerait la promesse de la bannière. Un échec
-  /// laisse simplement la liste vide — c'est une vitrine, pas un contenu dont
-  /// l'absence casse la page.
   Future<void> _loadPasscolisOffers() async {
     if (!Get.isRegistered<DiaspoService>()) return;
 
@@ -787,15 +778,11 @@ class HomeController extends GetxController
 
     if (category == 'Tous') {
       selectedCategoryId.value = 0;
-      // Reload nearby and recent products for "Tous" view
-      _loadNearbyProducts();
-      _loadRecentProducts();
     } else {
       final cat = apiCategories.firstWhereOrNull((c) => c['name'] == category);
       selectedCategoryId.value = cat?['id'] ?? 0;
-      // Load filtered products for specific category
-      _loadProducts(refresh: true);
     }
+    _loadProducts();
 
     developer.log(
       'Category selected: $category (id: ${selectedCategoryId.value})',
@@ -813,8 +800,7 @@ class HomeController extends GetxController
   Future<void> refreshProducts() async {
     await Future.wait([
       _loadBanners(),
-      _loadNearbyProducts(),
-      _loadRecentProducts(),
+      _loadProducts(),
       _loadPasscolisOffers(),
       _loadFavoritesCount(),
     ]);
@@ -856,10 +842,6 @@ class HomeController extends GetxController
   /// La bannière Passcolis ouvre la recherche sur l'onglet des trajets.
   void onSeeAllPasscolis() =>
       goToSearchTab(scope: search_ctrl.SearchScope.passcolis);
-
-  void onSeeAllNearby() => goToSearchTab();
-
-  void onSeeAllRecent() => goToSearchTab();
 
   /// Toggle favorite for a product
   Future<void> toggleFavorite(int productId) async {
@@ -922,18 +904,44 @@ class HomeController extends GetxController
       products.refresh();
     }
 
-    // Update in nearby products list
-    final nearbyIndex = nearbyProducts.indexWhere((p) => p['id'] == productId);
-    if (nearbyIndex != -1) {
-      nearbyProducts[nearbyIndex]['is_favorite'] = isFavorite;
-      nearbyProducts.refresh();
+    // Et dans le bloc Asso Ads et la rangée « Petits prix »
+    for (final list in [sponsoredProducts, lowPriceProducts]) {
+      final index = list.indexWhere((p) => p['id'] == productId);
+      if (index != -1) {
+        list[index]['is_favorite'] = isFavorite;
+        list.refresh();
+      }
     }
+  }
 
-    // Update in recent products list
-    final recentIndex = recentProducts.indexWhere((p) => p['id'] == productId);
-    if (recentIndex != -1) {
-      recentProducts[recentIndex]['is_favorite'] = isFavorite;
-      recentProducts.refresh();
+  /// Rangée « Petits prix » de la catégorie affichée. Un échec la laisse vide :
+  /// le fil s'affiche sans elle.
+  Future<void> _loadLowPriceProducts(int generation) async {
+    try {
+      final response = await ProductService.getProducts(
+        page: 1,
+        perPage: 10,
+        sortBy: 'price',
+        sortOrder: 'asc',
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
+      );
+      if (generation != _feedGeneration) return;
+      final list = response.success
+          ? (response.data?['products'] as List? ?? [])
+          : const [];
+      lowPriceProducts.value = list
+          .map((p) => Map<String, dynamic>.from(p))
+          .where((p) => p['is_sponsored'] != true)
+          .toList();
+    } catch (e) {
+      if (generation == _feedGeneration) lowPriceProducts.clear();
+      developer.log(
+        'Failed to load low price products',
+        name: 'HomeController',
+        error: e.toString(),
+      );
     }
   }
 

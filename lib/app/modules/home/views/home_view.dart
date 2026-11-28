@@ -1,7 +1,7 @@
 import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -1021,6 +1021,7 @@ class HomeItemView extends GetView<HomeController> {
         onRefresh: controller.refreshProducts,
         color: AppThemeSystem.primaryColor,
         child: CustomScrollView(
+          controller: controller.feedScrollController,
           slivers: [
             // Carousel de bannières
             SliverToBoxAdapter(child: _buildBannerCarousel(context)),
@@ -1035,105 +1036,32 @@ class HomeItemView extends GetView<HomeController> {
             // page, où presque personne ne descendait.
             SliverToBoxAdapter(child: _buildPasscolisBanner(context)),
 
-            // Afficher les sections "Proche de vous" et "Récemment postés" seulement si "Tous" est sélectionné
-            // Asso Ads — annonces en tête d'accueil, juste sous le carrousel.
-            // Les vendeurs paient pour être vus : un emplacement en bas de
-            // page ne vaut pas son prix.
+            // Asso Ads — la première annonce en bandeau, juste sous le
+            // carrousel. Les autres restent dans le fil, signalées comme annonces.
             if (controller.sponsoredProducts.isNotEmpty)
               SliverToBoxAdapter(child: _buildSponsoredSection(context)),
 
-            if (controller.selectedCategory.value == 'Tous') ...[
-              // Vérifier si on est en train de charger ou s'il y a des produits
-              if (controller.isLoadingNearby.value ||
-                  controller.isLoadingRecent.value ||
-                  controller.nearbyProducts.isNotEmpty ||
-                  controller.recentProducts.isNotEmpty) ...[
-                // Section "Proche de vous" - afficher seulement s'il y a des produits ou en chargement
-                if (controller.isLoadingNearby.value ||
-                    controller.nearbyProducts.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: _buildSectionTitle(
-                      context,
-                      'home.sections.nearby'.tr,
-                      Icons.location_on_rounded,
-                      onSeeAll: controller.nearbyProducts.isNotEmpty
-                          ? controller.onSeeAllNearby
-                          : null,
-                    ),
-                  ),
-
-                  // Liste horizontale de produits proches
-                  SliverToBoxAdapter(
-                    child: AnimatedSwitcher(
-                      duration: AppConstants.shimmerFadeTransitionDuration,
-                      switchInCurve: Curves.easeIn,
-                      switchOutCurve: Curves.easeOut,
-                      child: controller.isLoadingNearby.value
-                          ? ShimmerWidgets.horizontalProductListShimmer(context)
-                          : _buildHorizontalProductList(
-                              context,
-                              controller.nearbyProducts,
-                            ),
-                    ),
-                  ),
-                ],
-
-                // Section "Récemment postés" - afficher seulement s'il y a des produits ou en chargement
-                if (controller.isLoadingRecent.value ||
-                    controller.recentProducts.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: _buildSectionTitle(
-                      context,
-                      'home.sections.recent'.tr,
-                      Icons.schedule_rounded,
-                      onSeeAll: controller.recentProducts.isNotEmpty
-                          ? controller.onSeeAllRecent
-                          : null,
-                    ),
-                  ),
-
-                  // Les offres récentes se parcourent dans les deux sens.
-                  SliverToBoxAdapter(
-                    child: controller.isLoadingRecent.value
-                        ? ShimmerWidgets.horizontalProductListShimmer(context)
-                        : _buildHorizontalProductList(
-                            context,
-                            controller.recentProducts,
-                          ),
-                  ),
-
-                  // Sortie de l'accueil : les six derniers produits vus, on
-                  // passe la main au catalogue complet.
-                  if (controller.recentProducts.isNotEmpty)
-                    SliverToBoxAdapter(
-                      child: _buildDiscoverMoreButton(context),
-                    ),
-                ],
-              ] else ...[
-                // État vide professionnel - affiché seulement quand il n'y a aucun produit
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEmptyState(context),
-                ),
-              ],
-            ],
-
-            // Afficher les produits filtrés par catégorie
-            if (controller.selectedCategory.value != 'Tous') ...[
-              // Section titre avec la catégorie sélectionnée
-              SliverToBoxAdapter(
-                child: _buildSectionTitle(
-                  context,
-                  _categoryLabel(controller.selectedCategory.value),
-                  Icons.category_rounded,
-                ),
+            // Fil vertical : tout le catalogue (ou la catégorie choisie), page
+            // après page, sans bouton pour aller plus loin.
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                context,
+                controller.selectedCategory.value == 'Tous'
+                    ? 'home.sections.feed'.tr
+                    : _categoryLabel(controller.selectedCategory.value),
+                Icons.category_rounded,
               ),
+            ),
 
-              // Grille de produits filtrés
-              controller.isLoadingProducts.value
-                  ? ShimmerWidgets.productGridShimmer(context, itemCount: 6)
-                  : controller.products.isEmpty
-                  ? SliverToBoxAdapter(
+            if (controller.isLoadingProducts.value)
+              ShimmerWidgets.productGridShimmer(context, itemCount: 6)
+            else if (controller.products.isEmpty)
+              controller.selectedCategory.value == 'Tous'
+                  ? SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(context),
+                    )
+                  : SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Center(
@@ -1157,20 +1085,12 @@ class HomeItemView extends GetView<HomeController> {
                         ),
                       ),
                     )
-                  : _buildProductSlivers(context),
-
-              // Indicateur de chargement pour la pagination
+            else ...[
+              ..._buildProductSlivers(context),
               if (controller.isLoadingMore.value)
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CircularProgressIndicator(
-                        color: AppThemeSystem.primaryColor,
-                      ),
-                    ),
-                  ),
-                ),
+                ShimmerWidgets.productGridShimmer(context, itemCount: 2)
+              else
+                SliverToBoxAdapter(child: _buildFeedFooter(context)),
             ],
 
             // Espacement en bas
@@ -1202,31 +1122,6 @@ class HomeItemView extends GetView<HomeController> {
 
         // Categories shimmer
         SliverToBoxAdapter(child: ShimmerWidgets.categoriesShimmer(context)),
-
-        // Section title placeholder
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: AppThemeSystem.getHorizontalPadding(context),
-              right: AppThemeSystem.getHorizontalPadding(context),
-              top: 8,
-              bottom: 12,
-            ),
-            child: Container(
-              width: 150,
-              height: 24,
-              decoration: BoxDecoration(
-                color: AppThemeSystem.grey200,
-                borderRadius: BorderRadius.circular(AppDesign.radiusMd),
-              ),
-            ),
-          ),
-        ),
-
-        // Horizontal products shimmer
-        SliverToBoxAdapter(
-          child: ShimmerWidgets.horizontalProductListShimmer(context),
-        ),
 
         // Section title placeholder
         SliverToBoxAdapter(
@@ -1515,7 +1410,11 @@ class HomeItemView extends GetView<HomeController> {
       // grille passe à la ligne suivante.
       child: Column(
         children: [
-          for (var start = 0; start < entries.length; start += _quickLinksPerRow) ...[
+          for (
+            var start = 0;
+            start < entries.length;
+            start += _quickLinksPerRow
+          ) ...[
             if (start > 0) SizedBox(height: AppDesign.space2),
             Row(
               children: [
@@ -1844,64 +1743,65 @@ class HomeItemView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildHorizontalProductList(
-    BuildContext context,
-    List<Map<String, dynamic>> products,
-  ) {
-    if (products.isEmpty) {
-      return SizedBox(height: AppDesign.space4);
+  /// Bas du fil : « Réessayer » après un échec, ou la fin du catalogue avec
+  /// un retour en haut. Rien tant qu'il reste des produits à charger.
+  Widget _buildFeedFooter(BuildContext context) {
+    final padding = EdgeInsets.fromLTRB(
+      context.ds.gutter,
+      AppDesign.space4,
+      context.ds.gutter,
+      AppDesign.space2,
+    );
+
+    if (controller.loadMoreFailed.value) {
+      return Padding(
+        padding: padding,
+        child: Column(
+          children: [
+            Text(
+              'home.feed.load_failed'.tr,
+              textAlign: TextAlign.center,
+              style: context.textStyle(
+                FontSizeType.body2,
+                color: context.ds.textSecondary,
+              ),
+            ),
+            SizedBox(height: AppDesign.space3),
+            AppButton(
+              label: 'home.feed.retry'.tr,
+              icon: Icons.refresh_rounded,
+              variant: AppButtonVariant.secondary,
+              onPressed: controller.retryLoadMore,
+            ),
+          ],
+        ),
+      );
     }
 
-    // La largeur des vignettes suit celle de la grille : on retrouve le même
-    // objet visuel que l'on scrolle horizontalement ou verticalement.
-    final cardWidth = ProductCard.widthInGrid(context);
+    if (controller.hasMoreProducts.value) {
+      return const SizedBox.shrink();
+    }
 
-    return SizedBox(
-      height: ProductCard.totalHeight(context, cardWidth),
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: {
-            ...ScrollConfiguration.of(context).dragDevices,
-            PointerDeviceKind.mouse,
-          },
-        ),
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
-          itemCount: products.length,
-          separatorBuilder: (_, __) => SizedBox(width: AppDesign.space3),
-          itemBuilder: (context, index) {
-            final product = products[index];
-            return _FadeInProduct(
-              delay: Duration(milliseconds: index * 50),
-              child: SizedBox(
-                width: cardWidth,
-                child: _buildProductCard(context, product),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  /// « Découvrir plus » : bascule sur l'onglet Recherche.
-  ///
-  /// L'accueil ne montre qu'une sélection ; c'est la recherche qui porte le
-  /// catalogue entier, ses filtres et sa pagination.
-  Widget _buildDiscoverMoreButton(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.ds.gutter,
-        AppDesign.space4,
-        context.ds.gutter,
-        AppDesign.space2,
-      ),
-      child: AppButton(
-        label: 'home.discover_more'.tr,
-        icon: Icons.search_rounded,
-        variant: AppButtonVariant.secondary,
-        onPressed: controller.goToSearchTab,
+      padding: padding,
+      child: Column(
+        children: [
+          Text(
+            'home.feed.end'.tr,
+            textAlign: TextAlign.center,
+            style: context.textStyle(
+              FontSizeType.body2,
+              color: context.ds.textSecondary,
+            ),
+          ),
+          SizedBox(height: AppDesign.space3),
+          AppButton(
+            label: 'home.feed.back_to_top'.tr,
+            icon: Icons.arrow_upward_rounded,
+            variant: AppButtonVariant.secondary,
+            onPressed: controller.scrollFeedToTop,
+          ),
+        ],
       ),
     );
   }
@@ -1912,16 +1812,25 @@ class HomeItemView extends GetView<HomeController> {
   /// catégories, il est vu sans qu'on ait à faire défiler tout le catalogue,
   /// et sa hauteur réduite ne repousse pas les produits.
   Widget _buildPasscolisBanner(BuildContext context) {
-    // Rien à annoncer tant qu'aucun trajet n'est ouvert : un bandeau qui
-    // promet des kilos sans en avoir déçoit au premier tap.
-    if (controller.isLoadingPasscolis.value ||
-        controller.openPasscolisCount == 0) {
+    // Le bandeau reste en place même sans trajet ouvert : il invite alors les
+    // voyageurs à publier leurs kilos (Diaspo) au lieu d'annoncer des trajets
+    // qui n'existent pas. Il ne disparaît que pendant le premier chargement.
+    if (controller.isLoadingPasscolis.value &&
+        controller.passcolisOffers.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final openCount = controller.openPasscolisCount;
     return _PasscolisBanner(
-      openCount: controller.openPasscolisCount,
-      onTap: controller.onSeeAllPasscolis,
+      openCount: openCount,
+      onTap: openCount > 0
+          ? controller.onSeeAllPasscolis
+          : () => AuthGuard.navigateIfAuthenticated(
+                context,
+                Routes.DIASPO,
+                featureName: 'home.feature.diaspora_mode'.tr,
+                useDialog: true,
+              ),
     );
   }
 
@@ -1931,11 +1840,8 @@ class HomeItemView extends GetView<HomeController> {
   /// l'emplacement qui se remarque. Les suivantes défilent horizontalement en
   /// cartes, pour ne pas repousser le contenu éditorial trop bas.
   Widget _buildSponsoredSection(BuildContext context) {
-    final ads = controller.sponsoredProducts;
-    final first = ads.first;
-    final rest = ads.length > 1
-        ? ads.sublist(1)
-        : const <Map<String, dynamic>>[];
+    final first = controller.sponsoredProducts.first;
+    final rest = controller.sponsoredProducts.skip(1).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1973,102 +1879,144 @@ class HomeItemView extends GetView<HomeController> {
           ),
         ),
         _buildAdsBanner(context, first),
+        // Les autres annonces en petites cartes, à faire glisser.
         if (rest.isNotEmpty) ...[
-          SizedBox(
-            height: ProductCard.totalHeight(
-              context,
-              ProductCard.widthInGrid(context),
-            ),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
-              itemCount: rest.length,
-              separatorBuilder: (context, index) =>
-                  SizedBox(width: AppDesign.space3),
-              itemBuilder: (context, index) => SizedBox(
-                width: ProductCard.widthInGrid(context),
-                child: _buildProductCard(context, rest[index]),
-              ),
-            ),
-          ),
+          _buildHorizontalProductList(context, rest),
           SizedBox(height: AppDesign.space3),
         ],
       ],
     );
   }
 
-  /// Grille principale, coupée par les bandeaux Asso Ads.
-  ///
-  /// Un `SliverGrid` ne peut pas héberger une cellule pleine largeur : on
-  /// découpe donc la liste en tronçons de grille séparés par des bandeaux.
-  /// Les produits sponsorisés déjà servis en carte dans la grille ne sont pas
-  /// repris en bandeau — deux formats pour la même annonce sur un seul écran
-  /// donneraient l'impression d'un fil saturé de publicité.
-  Widget _buildProductSlivers(BuildContext context) {
-    final products = controller.products;
-    final padding = EdgeInsets.symmetric(
-      horizontal: AppThemeSystem.getHorizontalPadding(context),
-    );
+  /// Rangée horizontale de cartes, à la largeur des cartes de la grille.
+  Widget _buildHorizontalProductList(
+    BuildContext context,
+    List<Map<String, dynamic>> products,
+  ) {
+    final cardWidth = ProductCard.widthInGrid(context);
 
-    // Bandeau après cette rangée de la grille (index de produit).
-    const bannerAfter = 8;
-
-    // Les annonces de la première page sont déjà servies en tête d'écran
-    // (section Asso Ads) et retirées de `products` : seules celles des pages
-    // suivantes, chargées à la pagination, s'intercalent ici.
-    final sponsored = products.firstWhereOrNull(
-      (p) => p['is_sponsored'] == true,
-    );
-
-    // Pas assez de produits pour couper le flux, ou aucune annonce à passer :
-    // une seule grille continue.
-    if (sponsored == null || products.length <= bannerAfter + 2) {
-      return SliverPadding(
-        padding: padding,
-        sliver: SliverGrid(
-          gridDelegate: ProductCard.gridDelegate(context),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _FadeInProduct(
-              delay: Duration(milliseconds: index * 50),
-              child: _buildProductCard(context, products[index]),
-            ),
-            childCount: products.length,
+    return SizedBox(
+      height: ProductCard.totalHeight(context, cardWidth),
+      child: ScrollConfiguration(
+        // La souris peut aussi faire glisser la rangée (version web).
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: {
+            ...ScrollConfiguration.of(context).dragDevices,
+            PointerDeviceKind.mouse,
+          },
+        ),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+          itemCount: products.length,
+          separatorBuilder: (_, _) => SizedBox(width: AppDesign.space3),
+          itemBuilder: (context, index) => SizedBox(
+            width: cardWidth,
+            child: _buildProductCard(context, products[index]),
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  /// Produits entre deux blocs du fil (5 rangées de 2 cartes).
+  static const _feedChunk = 10;
+
+  /// Bloc glissé après chaque tranche du fil, pour casser la grille : on
+  /// alterne petits prix, Diaspo, Immobilier et Bibliothèque. Un bloc sans
+  /// contenu (aucun petit prix) cède sa place au suivant.
+  Widget? _buildFeedInterlude(BuildContext context, int slot) {
+    final builders = <Widget? Function()>[
+      () => controller.lowPriceProducts.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle(
+                  context,
+                  'home.interlude.low_prices'.tr,
+                  Icons.local_offer_outlined,
+                ),
+                _buildHorizontalProductList(
+                  context,
+                  controller.lowPriceProducts,
+                ),
+                SizedBox(height: AppDesign.space2),
+              ],
+            ),
+      () => _buildPasscolisBanner(context),
+      () => _FeedPromoBanner(
+        icon: Icons.home_work_outlined,
+        title: 'home.interlude.real_estate_title'.tr,
+        subtitle: 'home.interlude.real_estate_subtitle'.tr,
+        background: AppDesign.infoSubtle,
+        foreground: AppDesign.infoText,
+        onTap: controller.openRealEstate,
+      ),
+      () => _FeedPromoBanner(
+        icon: Icons.menu_book_rounded,
+        title: 'home.interlude.library_title'.tr,
+        subtitle: 'home.interlude.library_subtitle'.tr,
+        background: AppDesign.successSubtle,
+        foreground: AppDesign.successText,
+        onTap: () => Get.toNamed(Routes.LIBRARY),
+      ),
+    ];
+    for (var i = 0; i < builders.length; i++) {
+      final widget = builders[(slot + i) % builders.length]();
+      if (widget != null) return widget;
     }
+    return null;
+  }
 
-    final head = products.sublist(0, bannerAfter);
-    final tail = products.sublist(bannerAfter);
+  /// Grille du fil. Les annonces Asso Ads y gardent leur place, en carte
+  /// signalée « Annonce », comme le serveur les a intercalées.
+  ///
+  /// Un `SliverGrid` ne peut pas porter une cellule pleine largeur : le fil
+  /// est donc découpé en tranches de grille séparées par des blocs variés.
+  List<Widget> _buildProductSlivers(BuildContext context) {
+    final products = controller.products;
+    final slivers = <Widget>[];
 
-    return SliverMainAxisGroup(
-      slivers: [
+    for (var start = 0; start < products.length; start += _feedChunk) {
+      final chunk = products.sublist(
+        start,
+        (start + _feedChunk).clamp(0, products.length),
+      );
+      slivers.add(
         SliverPadding(
-          padding: padding,
+          padding: EdgeInsets.symmetric(
+            horizontal: AppThemeSystem.getHorizontalPadding(context),
+          ),
           sliver: SliverGrid(
             gridDelegate: ProductCard.gridDelegate(context),
             delegate: SliverChildBuilderDelegate(
               (context, index) => _FadeInProduct(
+                // Seule la tranche qui apparaît s'anime, pas tout le fil.
                 delay: Duration(milliseconds: index * 50),
-                child: _buildProductCard(context, head[index]),
+                child: _buildProductCard(context, chunk[index]),
               ),
-              childCount: head.length,
+              childCount: chunk.length,
             ),
           ),
         ),
-        SliverToBoxAdapter(child: _buildAdsBanner(context, sponsored)),
-        SliverPadding(
-          padding: padding,
-          sliver: SliverGrid(
-            gridDelegate: ProductCard.gridDelegate(context),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildProductCard(context, tail[index]),
-              childCount: tail.length,
+      );
+      // Pas de bloc après la dernière tranche : c'est la fin du fil.
+      if (start + _feedChunk < products.length) {
+        final interlude = _buildFeedInterlude(context, start ~/ _feedChunk);
+        if (interlude != null) {
+          slivers.add(
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: AppDesign.space2),
+                child: interlude,
+              ),
             ),
-          ),
-        ),
-      ],
-    );
+          );
+        }
+      }
+    }
+    return slivers;
   }
 
   /// Bandeau Asso Ads pleine largeur, intercalé dans le défilement.
@@ -2139,7 +2087,8 @@ class HomeItemView extends GetView<HomeController> {
 class _PasscolisBanner extends StatefulWidget {
   const _PasscolisBanner({required this.openCount, required this.onTap});
 
-  /// Trajets encore réservables, annoncés dans le sous-titre.
+  /// Trajets encore réservables, annoncés dans le sous-titre. Zéro : le
+  /// bandeau invite à publier un trajet.
   final int openCount;
   final VoidCallback onTap;
 
@@ -2229,7 +2178,9 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'home.diaspo.banner_title'.tr,
+                              widget.openCount > 0
+                                  ? 'home.diaspo.banner_title'.tr
+                                  : 'home.diaspo.banner_title_no_trip'.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -2240,10 +2191,12 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              (widget.openCount > 1
-                                      ? 'home.diaspo.open_trips_other'
-                                      : 'home.diaspo.open_trips_one')
-                                  .trParams({'count': '${widget.openCount}'}),
+                              widget.openCount == 0
+                                  ? 'home.diaspo.no_trip'.tr
+                                  : (widget.openCount > 1
+                                          ? 'home.diaspo.open_trips_other'
+                                          : 'home.diaspo.open_trips_one')
+                                      .trParams({'count': '${widget.openCount}'}),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -2596,6 +2549,83 @@ class _NavItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bandeau d'appel glissé dans le fil (Immobilier, Bibliothèque) : même
+/// gabarit que le bandeau Diaspo, sans animation.
+class _FeedPromoBanner extends StatelessWidget {
+  const _FeedPromoBanner({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesign.space3,
+              vertical: AppDesign.space3,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: foreground),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w700,
+                          color: foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.overline,
+                          color: foreground.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: AppDesign.space2),
+                Icon(Icons.chevron_right_rounded, size: 20, color: foreground),
+              ],
+            ),
+          ),
         ),
       ),
     );

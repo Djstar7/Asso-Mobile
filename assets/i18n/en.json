@@ -2069,8 +2069,7 @@
       "sign_in": "Sign in"
     },
     "sections": {
-      "nearby": "Near you",
-      "recent": "Recently posted",
+      "feed": "Discover",
       "see_all": "See all"
     },
     "empty_category": "No products in this category",
@@ -2080,7 +2079,16 @@
       "subtitle": "Buy or sell luggage kilos",
       "banner_title": "Send your parcels with a traveler",
       "open_trips_one": "@count open trip · buy luggage kilos",
-      "open_trips_other": "@count open trips · buy luggage kilos"
+      "open_trips_other": "@count open trips · buy luggage kilos",
+      "banner_title_no_trip": "Travelling soon?",
+      "no_trip": "Sell your spare luggage kilos with Diaspo"
+    },
+    "interlude": {
+      "low_prices": "Low prices",
+      "real_estate_title": "Looking for a home or land?",
+      "real_estate_subtitle": "Rentals and sales verified by ASSO",
+      "library_title": "The ASSO Library",
+      "library_subtitle": "Novels, youth, school books: find your next read"
     },
     "quick": {
       "diaspo": "Diaspo",
@@ -2099,7 +2107,12 @@
       "discover": "Discover"
     },
     "price_undefined": "Price not set",
-    "discover_more": "Discover more",
+    "feed": {
+      "end": "You have seen everything. Come back soon for new products.",
+      "back_to_top": "Back to top",
+      "load_failed": "Could not load more products.",
+      "retry": "Try again"
+    },
     "ads": {
       "title": "Asso Ads",
       "subtitle": "Ads from our vendors"

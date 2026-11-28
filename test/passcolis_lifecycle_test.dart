@@ -142,7 +142,7 @@ void main() {
     },
   );
 
-  for (final entry in ['nearby', 'recent', 'search']) {
+  for (final entry in ['search']) {
     testWidgets('$entry ouvre Produits après une visite de Passcolis', (
       tester,
     ) async {
@@ -159,14 +159,7 @@ void main() {
       final controller = Get.find<search.SearchController>();
       expect(controller.scope.value, search.SearchScope.passcolis);
 
-      switch (entry) {
-        case 'nearby':
-          home.onSeeAllNearby();
-        case 'recent':
-          home.onSeeAllRecent();
-        default:
-          home.goToSearchTab();
-      }
+      home.goToSearchTab();
       await tester.pumpAndSettle();
       expect(home.currentTabIndex.value, 1);
       expect(Get.find<search.SearchController>(), same(controller));
