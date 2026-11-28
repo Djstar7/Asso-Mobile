@@ -2069,8 +2069,7 @@
       "sign_in": "Sign in"
     },
     "sections": {
-      "nearby": "Near you",
-      "recent": "Recently posted",
+      "feed": "Discover",
       "see_all": "See all"
     },
     "empty_category": "No products in this category",
@@ -2099,7 +2098,12 @@
       "discover": "Discover"
     },
     "price_undefined": "Price not set",
-    "discover_more": "Discover more",
+    "feed": {
+      "end": "You have seen everything. Come back soon for new products.",
+      "back_to_top": "Back to top",
+      "load_failed": "Could not load more products.",
+      "retry": "Try again"
+    },
     "ads": {
       "title": "Asso Ads",
       "subtitle": "Ads from our vendors"

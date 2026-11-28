@@ -2069,8 +2069,7 @@
       "sign_in": "Se connecter"
     },
     "sections": {
-      "nearby": "Proche de vous",
-      "recent": "Récemment postés",
+      "feed": "À découvrir",
       "see_all": "Voir tout"
     },
     "empty_category": "Aucun produit dans cette catégorie",
@@ -2099,7 +2098,12 @@
       "discover": "Découvrir"
     },
     "price_undefined": "Prix non défini",
-    "discover_more": "Découvrir plus",
+    "feed": {
+      "end": "Vous avez tout vu. Revenez bientôt pour de nouveaux produits.",
+      "back_to_top": "Revenir en haut",
+      "load_failed": "Impossible de charger la suite.",
+      "retry": "Réessayer"
+    },
     "ads": {
       "title": "Asso Ads",
       "subtitle": "Annonces de nos vendeurs"
