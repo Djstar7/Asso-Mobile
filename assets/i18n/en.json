@@ -2079,7 +2079,9 @@
       "subtitle": "Buy or sell luggage kilos",
       "banner_title": "Send your parcels with a traveler",
       "open_trips_one": "@count open trip · buy luggage kilos",
-      "open_trips_other": "@count open trips · buy luggage kilos"
+      "open_trips_other": "@count open trips · buy luggage kilos",
+      "banner_title_no_trip": "Travelling soon?",
+      "no_trip": "Sell your spare luggage kilos with Diaspo"
     },
     "quick": {
       "diaspo": "Diaspo",

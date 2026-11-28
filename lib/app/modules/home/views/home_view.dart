@@ -1811,16 +1811,25 @@ class HomeItemView extends GetView<HomeController> {
   /// catégories, il est vu sans qu'on ait à faire défiler tout le catalogue,
   /// et sa hauteur réduite ne repousse pas les produits.
   Widget _buildPasscolisBanner(BuildContext context) {
-    // Rien à annoncer tant qu'aucun trajet n'est ouvert : un bandeau qui
-    // promet des kilos sans en avoir déçoit au premier tap.
-    if (controller.isLoadingPasscolis.value ||
-        controller.openPasscolisCount == 0) {
+    // Le bandeau reste en place même sans trajet ouvert : il invite alors les
+    // voyageurs à publier leurs kilos (Diaspo) au lieu d'annoncer des trajets
+    // qui n'existent pas. Il ne disparaît que pendant le premier chargement.
+    if (controller.isLoadingPasscolis.value &&
+        controller.passcolisOffers.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final openCount = controller.openPasscolisCount;
     return _PasscolisBanner(
-      openCount: controller.openPasscolisCount,
-      onTap: controller.onSeeAllPasscolis,
+      openCount: openCount,
+      onTap: openCount > 0
+          ? controller.onSeeAllPasscolis
+          : () => AuthGuard.navigateIfAuthenticated(
+                context,
+                Routes.DIASPO,
+                featureName: 'home.feature.diaspora_mode'.tr,
+                useDialog: true,
+              ),
     );
   }
 
@@ -1962,7 +1971,8 @@ class HomeItemView extends GetView<HomeController> {
 class _PasscolisBanner extends StatefulWidget {
   const _PasscolisBanner({required this.openCount, required this.onTap});
 
-  /// Trajets encore réservables, annoncés dans le sous-titre.
+  /// Trajets encore réservables, annoncés dans le sous-titre. Zéro : le
+  /// bandeau invite à publier un trajet.
   final int openCount;
   final VoidCallback onTap;
 
@@ -2052,7 +2062,9 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'home.diaspo.banner_title'.tr,
+                              widget.openCount > 0
+                                  ? 'home.diaspo.banner_title'.tr
+                                  : 'home.diaspo.banner_title_no_trip'.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(
@@ -2063,10 +2075,12 @@ class _PasscolisBannerState extends State<_PasscolisBanner>
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              (widget.openCount > 1
-                                      ? 'home.diaspo.open_trips_other'
-                                      : 'home.diaspo.open_trips_one')
-                                  .trParams({'count': '${widget.openCount}'}),
+                              widget.openCount == 0
+                                  ? 'home.diaspo.no_trip'.tr
+                                  : (widget.openCount > 1
+                                          ? 'home.diaspo.open_trips_other'
+                                          : 'home.diaspo.open_trips_one')
+                                      .trParams({'count': '${widget.openCount}'}),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.textStyle(

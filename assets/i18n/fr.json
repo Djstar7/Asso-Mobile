@@ -2079,7 +2079,9 @@
       "subtitle": "Achetez ou vendez des kilos de bagage",
       "banner_title": "Envoyez vos colis par un voyageur",
       "open_trips_one": "@count trajet ouvert · achetez des kilos de bagage",
-      "open_trips_other": "@count trajets ouverts · achetez des kilos de bagage"
+      "open_trips_other": "@count trajets ouverts · achetez des kilos de bagage",
+      "banner_title_no_trip": "Vous voyagez bientôt ?",
+      "no_trip": "Vendez vos kilos de bagage avec Diaspo"
     },
     "quick": {
       "diaspo": "Diaspo",
