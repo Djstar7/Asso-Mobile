@@ -82,6 +82,12 @@ class HomeController extends GetxController
   /// séparé facturerait une seconde impression pour un seul affichage.
   final RxList<Map<String, dynamic>> sponsoredProducts =
       <Map<String, dynamic>>[].obs;
+
+  /// Rangée « Petits prix » glissée dans le fil pour casser la grille : les
+  /// moins chers de la catégorie affichée (le fil, lui, va du plus récent au
+  /// plus ancien, une rangée « Nouveautés » ne ferait que le répéter).
+  final RxList<Map<String, dynamic>> lowPriceProducts =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoadingProducts = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMoreProducts = true.obs;
@@ -469,6 +475,7 @@ class HomeController extends GetxController
   /// Charge la première page du fil (catalogue entier ou catégorie choisie).
   Future<void> _loadProducts() async {
     final generation = ++_feedGeneration;
+    unawaited(_loadLowPriceProducts(generation));
     _currentPage = 1;
     hasMoreProducts.value = true;
     loadMoreFailed.value = false;
@@ -492,11 +499,13 @@ class HomeController extends GetxController
             .map((p) => Map<String, dynamic>.from(p))
             .toList();
 
-        // La première annonce Asso Ads prend le bandeau en tête d'écran ; les
-        // autres restent à leur place dans le fil, signalées comme annonces.
-        final headline = all.firstWhereOrNull((p) => p['is_sponsored'] == true);
-        sponsoredProducts.value = headline == null ? [] : [headline];
-        products.value = all.where((p) => !identical(p, headline)).toList();
+        // Annonces Asso Ads de la 1re page : la première en bandeau, les
+        // suivantes en cartes horizontales juste dessous. Elles quittent le
+        // fil pour ne pas s'afficher deux fois ; celles des pages suivantes
+        // restent dans le fil, signalées « Annonce ».
+        final ads = all.where((p) => p['is_sponsored'] == true).toList();
+        sponsoredProducts.value = ads;
+        products.value = all.where((p) => p['is_sponsored'] != true).toList();
         hasMoreProducts.value = pagination['has_more'] ?? false;
 
         developer.log(
@@ -895,11 +904,44 @@ class HomeController extends GetxController
       products.refresh();
     }
 
-    // Et dans le bandeau d'annonce en tête d'écran
-    final adIndex = sponsoredProducts.indexWhere((p) => p['id'] == productId);
-    if (adIndex != -1) {
-      sponsoredProducts[adIndex]['is_favorite'] = isFavorite;
-      sponsoredProducts.refresh();
+    // Et dans le bloc Asso Ads et la rangée « Petits prix »
+    for (final list in [sponsoredProducts, lowPriceProducts]) {
+      final index = list.indexWhere((p) => p['id'] == productId);
+      if (index != -1) {
+        list[index]['is_favorite'] = isFavorite;
+        list.refresh();
+      }
+    }
+  }
+
+  /// Rangée « Petits prix » de la catégorie affichée. Un échec la laisse vide :
+  /// le fil s'affiche sans elle.
+  Future<void> _loadLowPriceProducts(int generation) async {
+    try {
+      final response = await ProductService.getProducts(
+        page: 1,
+        perPage: 10,
+        sortBy: 'price',
+        sortOrder: 'asc',
+        categoryId: selectedCategoryId.value > 0
+            ? selectedCategoryId.value
+            : null,
+      );
+      if (generation != _feedGeneration) return;
+      final list = response.success
+          ? (response.data?['products'] as List? ?? [])
+          : const [];
+      lowPriceProducts.value = list
+          .map((p) => Map<String, dynamic>.from(p))
+          .where((p) => p['is_sponsored'] != true)
+          .toList();
+    } catch (e) {
+      if (generation == _feedGeneration) lowPriceProducts.clear();
+      developer.log(
+        'Failed to load low price products',
+        name: 'HomeController',
+        error: e.toString(),
+      );
     }
   }
 

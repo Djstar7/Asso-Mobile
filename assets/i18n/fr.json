@@ -2083,6 +2083,13 @@
       "banner_title_no_trip": "Vous voyagez bientôt ?",
       "no_trip": "Vendez vos kilos de bagage avec Diaspo"
     },
+    "interlude": {
+      "low_prices": "Petits prix",
+      "real_estate_title": "Un logement, un terrain ?",
+      "real_estate_subtitle": "Locations et ventes vérifiées par ASSO",
+      "library_title": "La Bibliothèque ASSO",
+      "library_subtitle": "Romans, jeunesse, scolaire : trouvez votre prochain livre"
+    },
     "quick": {
       "diaspo": "Diaspo",
       "wholesale": "Grossiste",

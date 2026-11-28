@@ -39,6 +39,14 @@ void main() {
     if (!request.url.path.endsWith('/products')) {
       return http.Response(jsonEncode({'success': true, 'data': []}), 200);
     }
+    // Rangée « Petits prix » : appel à part, hors pagination du fil.
+    if (request.url.queryParameters['sort_by'] == 'price') {
+      return page([
+        product(40),
+        product(41, ad: true),
+        product(42),
+      ], more: false);
+    }
     requested.add(int.parse(request.url.queryParameters['page'] ?? '1'));
     return handler!(request);
   });
@@ -79,16 +87,19 @@ void main() {
         final home = HomeController();
         home.selectCategory('Tous');
         await pumpEventQueue();
-        // La 1re annonce passe en bandeau, l'autre reste dans le fil.
-        expect(home.sponsoredProducts.map((p) => p['id']), [1]);
-        expect(home.products.map((p) => p['id']), [2, 3, 9]);
+        // Les annonces de la 1re page passent dans le bloc Asso Ads (bandeau
+        // puis cartes) et quittent le fil pour ne pas s'afficher deux fois.
+        expect(home.sponsoredProducts.map((p) => p['id']), [1, 9]);
+        expect(home.products.map((p) => p['id']), [2, 3]);
+        // Petits prix : chargés à part, sans les annonces.
+        expect(home.lowPriceProducts.map((p) => p['id']), [40, 42]);
 
         await home.loadMoreProducts();
-        expect(home.products.map((p) => p['id']), [2, 3, 9, 4, 5]);
+        expect(home.products.map((p) => p['id']), [2, 3, 4, 5]);
         expect(home.hasMoreProducts.value, isTrue);
 
         await home.loadMoreProducts();
-        expect(home.products.map((p) => p['id']), [2, 3, 9, 4, 5, 6]);
+        expect(home.products.map((p) => p['id']), [2, 3, 4, 5, 6]);
         expect(home.hasMoreProducts.value, isFalse);
 
         // Fin du catalogue : plus aucun appel.

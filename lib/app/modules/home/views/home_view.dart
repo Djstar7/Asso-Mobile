@@ -1,6 +1,7 @@
 import 'package:asso/app/core/utils/app_feedback.dart';
 import 'dart:async';
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -1085,7 +1086,7 @@ class HomeItemView extends GetView<HomeController> {
                       ),
                     )
             else ...[
-              _buildProductSlivers(context),
+              ..._buildProductSlivers(context),
               if (controller.isLoadingMore.value)
                 ShimmerWidgets.productGridShimmer(context, itemCount: 2)
               else
@@ -1840,6 +1841,7 @@ class HomeItemView extends GetView<HomeController> {
   /// cartes, pour ne pas repousser le contenu éditorial trop bas.
   Widget _buildSponsoredSection(BuildContext context) {
     final first = controller.sponsoredProducts.first;
+    final rest = controller.sponsoredProducts.skip(1).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1877,30 +1879,144 @@ class HomeItemView extends GetView<HomeController> {
           ),
         ),
         _buildAdsBanner(context, first),
+        // Les autres annonces en petites cartes, à faire glisser.
+        if (rest.isNotEmpty) ...[
+          _buildHorizontalProductList(context, rest),
+          SizedBox(height: AppDesign.space3),
+        ],
       ],
     );
   }
 
-  /// Grille du fil. Les annonces Asso Ads y gardent leur place, en carte
-  /// signalée « Annonce », comme le serveur les a intercalées.
-  Widget _buildProductSlivers(BuildContext context) {
-    final products = controller.products;
+  /// Rangée horizontale de cartes, à la largeur des cartes de la grille.
+  Widget _buildHorizontalProductList(
+    BuildContext context,
+    List<Map<String, dynamic>> products,
+  ) {
+    final cardWidth = ProductCard.widthInGrid(context);
 
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppThemeSystem.getHorizontalPadding(context),
-      ),
-      sliver: SliverGrid(
-        gridDelegate: ProductCard.gridDelegate(context),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) => _FadeInProduct(
-            delay: Duration(milliseconds: index * 50),
+    return SizedBox(
+      height: ProductCard.totalHeight(context, cardWidth),
+      child: ScrollConfiguration(
+        // La souris peut aussi faire glisser la rangée (version web).
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: {
+            ...ScrollConfiguration.of(context).dragDevices,
+            PointerDeviceKind.mouse,
+          },
+        ),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+          itemCount: products.length,
+          separatorBuilder: (_, _) => SizedBox(width: AppDesign.space3),
+          itemBuilder: (context, index) => SizedBox(
+            width: cardWidth,
             child: _buildProductCard(context, products[index]),
           ),
-          childCount: products.length,
         ),
       ),
     );
+  }
+
+  /// Produits entre deux blocs du fil (5 rangées de 2 cartes).
+  static const _feedChunk = 10;
+
+  /// Bloc glissé après chaque tranche du fil, pour casser la grille : on
+  /// alterne petits prix, Diaspo, Immobilier et Bibliothèque. Un bloc sans
+  /// contenu (aucun petit prix) cède sa place au suivant.
+  Widget? _buildFeedInterlude(BuildContext context, int slot) {
+    final builders = <Widget? Function()>[
+      () => controller.lowPriceProducts.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle(
+                  context,
+                  'home.interlude.low_prices'.tr,
+                  Icons.local_offer_outlined,
+                ),
+                _buildHorizontalProductList(
+                  context,
+                  controller.lowPriceProducts,
+                ),
+                SizedBox(height: AppDesign.space2),
+              ],
+            ),
+      () => _buildPasscolisBanner(context),
+      () => _FeedPromoBanner(
+        icon: Icons.home_work_outlined,
+        title: 'home.interlude.real_estate_title'.tr,
+        subtitle: 'home.interlude.real_estate_subtitle'.tr,
+        background: AppDesign.infoSubtle,
+        foreground: AppDesign.infoText,
+        onTap: controller.openRealEstate,
+      ),
+      () => _FeedPromoBanner(
+        icon: Icons.menu_book_rounded,
+        title: 'home.interlude.library_title'.tr,
+        subtitle: 'home.interlude.library_subtitle'.tr,
+        background: AppDesign.successSubtle,
+        foreground: AppDesign.successText,
+        onTap: () => Get.toNamed(Routes.LIBRARY),
+      ),
+    ];
+    for (var i = 0; i < builders.length; i++) {
+      final widget = builders[(slot + i) % builders.length]();
+      if (widget != null) return widget;
+    }
+    return null;
+  }
+
+  /// Grille du fil. Les annonces Asso Ads y gardent leur place, en carte
+  /// signalée « Annonce », comme le serveur les a intercalées.
+  ///
+  /// Un `SliverGrid` ne peut pas porter une cellule pleine largeur : le fil
+  /// est donc découpé en tranches de grille séparées par des blocs variés.
+  List<Widget> _buildProductSlivers(BuildContext context) {
+    final products = controller.products;
+    final slivers = <Widget>[];
+
+    for (var start = 0; start < products.length; start += _feedChunk) {
+      final chunk = products.sublist(
+        start,
+        (start + _feedChunk).clamp(0, products.length),
+      );
+      slivers.add(
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppThemeSystem.getHorizontalPadding(context),
+          ),
+          sliver: SliverGrid(
+            gridDelegate: ProductCard.gridDelegate(context),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _FadeInProduct(
+                // Seule la tranche qui apparaît s'anime, pas tout le fil.
+                delay: Duration(milliseconds: index * 50),
+                child: _buildProductCard(context, chunk[index]),
+              ),
+              childCount: chunk.length,
+            ),
+          ),
+        ),
+      );
+      // Pas de bloc après la dernière tranche : c'est la fin du fil.
+      if (start + _feedChunk < products.length) {
+        final interlude = _buildFeedInterlude(context, start ~/ _feedChunk);
+        if (interlude != null) {
+          slivers.add(
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: AppDesign.space2),
+                child: interlude,
+              ),
+            ),
+          );
+        }
+      }
+    }
+    return slivers;
   }
 
   /// Bandeau Asso Ads pleine largeur, intercalé dans le défilement.
@@ -2433,6 +2549,83 @@ class _NavItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bandeau d'appel glissé dans le fil (Immobilier, Bibliothèque) : même
+/// gabarit que le bandeau Diaspo, sans animation.
+class _FeedPromoBanner extends StatelessWidget {
+  const _FeedPromoBanner({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.ds.gutter),
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppDesign.radiusMd),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesign.space3,
+              vertical: AppDesign.space3,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: foreground),
+                SizedBox(width: AppDesign.space3),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.body2,
+                          fontWeight: FontWeight.w700,
+                          color: foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textStyle(
+                          FontSizeType.overline,
+                          color: foreground.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: AppDesign.space2),
+                Icon(Icons.chevron_right_rounded, size: 20, color: foreground),
+              ],
+            ),
+          ),
         ),
       ),
     );
